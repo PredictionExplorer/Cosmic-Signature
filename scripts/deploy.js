@@ -9,7 +9,7 @@ const hre = require("hardhat");
 async function main() {
 
   const BiddingWar = await hre.ethers.getContractFactory("BidingWar");
-  const biddingWar = await BiddingWar.deploy(unlockTime, { value: lockedAmount });
+  const biddingWar = await BiddingWar.deploy();
 
   await biddingWar.deployed();
 
