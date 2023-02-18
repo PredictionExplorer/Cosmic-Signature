@@ -15,7 +15,7 @@ describe("BiddingWar", function () {
     const BiddingWar = await ethers.getContractFactory("BiddingWar");
     const biddingWar = await BiddingWar.deploy();
 
-    return biddingWar;
+    return {biddingWar};
   }
 
   describe("Deployment", function () {
