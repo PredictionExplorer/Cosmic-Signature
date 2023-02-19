@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./token.sol";
+import "./orbitals.sol";
 
 pragma solidity ^0.8.18;
 
@@ -13,7 +15,7 @@ contract BiddingWar is Ownable {
     uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
 
     // how much the deadline is pushed after every bid
-    uint256 public secondsExtra = 3600;
+    uint256 public nanoSecondsExtra = 3600 * 1_000_000_000;
 
     // how much is the secondsExtra increased by after every bid
     // 1.0001
@@ -36,6 +38,9 @@ contract BiddingWar is Ownable {
 
     uint256 public numWithdrawals = 0;
 
+    OrbitalToken public token;
+    Orbitals public nft;
+
     mapping(uint256 => bytes32) public seeds;
 
     event WithdrawalEvent(uint256 indexed withdrawalNum, address indexed destination, uint256 amount);
@@ -47,6 +52,20 @@ contract BiddingWar is Ownable {
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
+    }
+
+    function sqrt(uint y) internal pure returns (uint z) {
+        if (y > 3) {
+            z = y;
+            uint x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
+        // else z = 0 (default value)
     }
 
     function getBidPrice() public view returns (uint256) {
@@ -85,13 +104,20 @@ contract BiddingWar is Ownable {
         bidPrice = newBidPrice;
 
         // If someone bid after the deadline, make sure that 'secondsExtra' will be until the withdrawal
-        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsExtra;
-        secondsExtra = (secondsExtra * timeIncrease) / MILLION;
+        uint secondsAdded = nanoSecondsExtra / 1_000_000_000;
+        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
+        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
             (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
             require(success, "Transfer failed.");
         }
+
+        uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
+        uint256 reward = sqrt(minutesRemainingBefore);
+
+        // mint some tokens
+        token.mint(lastBidder, reward);
 
         emit BidEvent(lastBidder, bidPrice);
     }
@@ -113,7 +139,7 @@ contract BiddingWar is Ownable {
         require(_msgSender() == lastBidder, "Only last bidder can withdraw.");
         require(timeUntilWithdrawal() == 0, "Not enough time has elapsed.");
 
-        address destination = lastBidder;
+        address winner = lastBidder;
         lastBidder = address(0);
 
         uint256 amount = withdrawalAmount();
@@ -122,16 +148,29 @@ contract BiddingWar is Ownable {
         seeds[numWithdrawals] = entropy;
         numWithdrawals += 1;
 
-        (bool success, ) = destination.call{value: amount}("");
+        (bool success, ) = winner.call{value: amount}("");
         require(success, "Transfer failed.");
 
-        emit WithdrawalEvent(numWithdrawals - 1, destination, amount);
+        nft.mint(winner);
+
+        emit WithdrawalEvent(numWithdrawals - 1, winner, amount);
     }
 
     constructor() {
         entropy = keccak256(abi.encode(
             "Let's fight!",
             block.timestamp, blockhash(block.number)));
+    }
+
+    //OrbitalToken public token;
+    //Orbitals public nft;
+
+    function setTokenContract(address addr) public onlyOwner {
+        token = OrbitalToken(addr);
+    }
+
+    function setNftContract(address addr) public onlyOwner {
+        nft = Orbitals(addr);
     }
 
     function setTimeIncrease(uint256 newTimeIncrease) public onlyOwner {
@@ -142,8 +181,8 @@ contract BiddingWar is Ownable {
         priceIncrease = newPriceIncrease;
     }
 
-    function setSecondsExtra(uint256 newSecondsExtra) public onlyOwner {
-        secondsExtra = newSecondsExtra;
+    function setNanoSecondsExtra(uint256 newNanoSecondsExtra) public onlyOwner {
+        nanoSecondsExtra = newNanoSecondsExtra;
     }
 
     function setInitialSecondsUntilWithdrawal(uint256 newInitialSecondsUntilWithdrawal) public onlyOwner {

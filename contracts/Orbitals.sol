@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 pragma solidity ^0.8.18;
 
-contract RandomWalkNFT is ERC721Enumerable, Ownable {
+contract Orbitals is ERC721Enumerable, Ownable {
 
     mapping(uint256 => bytes32) public seeds;
 
