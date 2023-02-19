@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./token.sol";
-import "./orbitals.sol";
+import "./Token.sol";
+import "./Orbitals.sol";
 
 pragma solidity ^0.8.18;
 

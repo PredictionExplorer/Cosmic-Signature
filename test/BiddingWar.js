@@ -15,14 +15,20 @@ describe("BiddingWar", function () {
     const BiddingWar = await ethers.getContractFactory("BiddingWar");
     const biddingWar = await BiddingWar.deploy();
 
-    return {biddingWar};
+    const OrbitalToken = await ethers.getContractFactory("OrbitalToken");
+    const orbitalToken = await OrbitalToken.deploy(biddingWar.address);
+
+    const Orbitals = await ethers.getContractFactory("Orbitals");
+    const orbitals = await Orbitals.deploy(biddingWar.address);
+
+    return {biddingWar, orbitalToken, orbitals};
   }
 
   describe("Deployment", function () {
     it("Should set the right unlockTime", async function () {
-      const {biddingWar} = await loadFixture(deployBiddingWar);
-
-      expect(await biddingWar.secondsExtra()).to.equal(3600);
+      const {biddingWar, orbitalToken, orbitals} = await loadFixture(deployBiddingWar);
+      expect(await biddingWar.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
+      expect(await orbitalToken.totalSupply()).to.equal(0);
     });
   });
 })

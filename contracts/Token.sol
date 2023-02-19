@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 pragma solidity ^0.8.18;
 
-contract ERC20_Token_Sample is ERC20, ERC20Burnable {
+contract OrbitalToken is ERC20, ERC20Burnable {
 
     address public biddingWarContract;
 
