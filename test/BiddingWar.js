@@ -21,6 +21,9 @@ describe("BiddingWar", function () {
     const Orbitals = await ethers.getContractFactory("Orbitals");
     const orbitals = await Orbitals.deploy(biddingWar.address);
 
+    biddingWar.setTokenContract(orbitalToken.address);
+    biddingWar.setNftContract(orbitals.address);
+
     return {biddingWar, orbitalToken, orbitals};
   }
 
@@ -30,5 +33,19 @@ describe("BiddingWar", function () {
       expect(await biddingWar.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
       expect(await orbitalToken.totalSupply()).to.equal(0);
     });
+
+    it("Should be possible to bid", async function () {
+      [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+      const {biddingWar, orbitalToken, orbitals} = await loadFixture(deployBiddingWar);
+      let donationAmount = ethers.utils.parseEther('10');
+      await biddingWar.donate({value: donationAmount});
+      expect(await biddingWar.withdrawalAmount()).to.equal(donationAmount.div(2));
+      await expect(biddingWar.connect(addr1).bid({value: 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
+      let bidPrice = await biddingWar.getBidPrice();
+      await expect(biddingWar.connect(addr1).bid({value: bidPrice - 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
+      await expect(biddingWar.connect(addr1).bid({value: donationAmount})).to.be.revertedWith("The value submitted with this transaction is too low.");
+      console.log(bidPrice);
+    });
+
   });
 })
