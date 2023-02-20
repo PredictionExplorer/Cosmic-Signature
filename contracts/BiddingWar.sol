@@ -8,28 +8,30 @@ pragma solidity ^0.8.18;
 
 contract BiddingWar is Ownable {
 
-    uint256 constant MILLION = 1000000;
+    uint256 constant MILLION = 10**6;
 
     // how much the currentBid increases after every bid
     // we want 1%?
     uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
 
     // how much the deadline is pushed after every bid
-    uint256 public nanoSecondsExtra = 3600 * 1_000_000_000;
+    uint256 public nanoSecondsExtra = 3600 * 10**9;
 
     // how much is the secondsExtra increased by after every bid
     // 1.0001
     uint256 public timeIncrease = 1000100;
 
-    uint256 public bidPrice = 10**15; // Price starts at .001 eth
+    // we need to set the bidPrice to anything higher than 0 because the
+    // contract would break if it's zero and someone bids before a donation is made
+    uint256 public bidPrice = 10**15;
 
     address public lastBidder = address(0);
 
     // After a withdrawal, start off the clock with this much time.
     uint256 public initialSecondsUntilWithdrawal = 24 * 3600;
 
-    // The bid size will be 500 times smaller than the withdrawal amount initially
-    uint256 public initalBidAmountFraction = 500;
+    // The bid size will be 1000 times smaller than the withdrawal amount initially
+    uint256 public initalBidAmountFraction = 1000;
 
     uint256 public withdrawalFraction = 2;
 
@@ -72,8 +74,16 @@ contract BiddingWar is Ownable {
         return (bidPrice * priceIncrease) / MILLION;
     }
 
+    function initializeBidPrice() internal {
+        bidPrice = withdrawalAmount() / initalBidAmountFraction;
+    }
+
     // send some ETH into the contract and affect nothing else.
     function donate() public payable {
+        if (lastBidder == address(0)) {
+            initializeBidPrice();
+        }
+
         emit DonationEvent(_msgSender(), msg.value);
     }
 
@@ -90,7 +100,6 @@ contract BiddingWar is Ownable {
         if (lastBidder == address(0)) {
             // someone just withdrew and we are starting from scratch
             withdrawalTime = block.timestamp + initialSecondsUntilWithdrawal;
-            bidPrice = withdrawalAmount() / initalBidAmountFraction;
         }
 
         uint256 newBidPrice = getBidPrice();
@@ -152,6 +161,8 @@ contract BiddingWar is Ownable {
         require(success, "Transfer failed.");
 
         nft.mint(winner);
+        
+        initializeBidPrice();
 
         emit WithdrawalEvent(numWithdrawals - 1, winner, amount);
     }
@@ -161,9 +172,6 @@ contract BiddingWar is Ownable {
             "Let's fight!",
             block.timestamp, blockhash(block.number)));
     }
-
-    //OrbitalToken public token;
-    //Orbitals public nft;
 
     function setTokenContract(address addr) public onlyOwner {
         token = OrbitalToken(addr);

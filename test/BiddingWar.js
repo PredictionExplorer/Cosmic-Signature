@@ -21,8 +21,8 @@ describe("BiddingWar", function () {
     const Orbitals = await ethers.getContractFactory("Orbitals");
     const orbitals = await Orbitals.deploy(biddingWar.address);
 
-    biddingWar.setTokenContract(orbitalToken.address);
-    biddingWar.setNftContract(orbitals.address);
+    await biddingWar.setTokenContract(orbitalToken.address);
+    await biddingWar.setNftContract(orbitals.address);
 
     return {biddingWar, orbitalToken, orbitals};
   }
@@ -42,9 +42,13 @@ describe("BiddingWar", function () {
       expect(await biddingWar.withdrawalAmount()).to.equal(donationAmount.div(2));
       await expect(biddingWar.connect(addr1).bid({value: 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
       let bidPrice = await biddingWar.getBidPrice();
-      await expect(biddingWar.connect(addr1).bid({value: bidPrice - 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
-      await expect(biddingWar.connect(addr1).bid({value: donationAmount})).to.be.revertedWith("The value submitted with this transaction is too low.");
-      console.log(bidPrice);
+      await expect(biddingWar.connect(addr1).bid({value: bidPrice.sub(1)})).to.be.revertedWith("The value submitted with this transaction is too low.");
+
+      // check that if we sent too much, we get our money back
+      await biddingWar.connect(addr1).bid({value: bidPrice.add(1000)}); // this works
+      const contractBalance = await ethers.provider.getBalance(biddingWar.address);
+      expect(contractBalance).to.equal(donationAmount.add(bidPrice));
+
     });
 
   });
