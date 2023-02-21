@@ -69,6 +69,25 @@ describe("BiddingWar", function () {
       await expect(biddingWar.connect(addr1).withdraw()).to.be.revertedWith("Not enough time has elapsed.");
       await expect(biddingWar.connect(addr2).withdraw()).to.be.revertedWith("Only last bidder can withdraw.");
 
+      bidPrice = await biddingWar.getBidPrice();
+      await biddingWar.connect(addr2).bid({value: bidPrice});
+      await expect(biddingWar.connect(addr2).withdraw()).to.be.revertedWith("Not enough time has elapsed.");
+
+      withdrawalTime = await biddingWar.timeUntilWithdrawal();
+      await ethers.provider.send("evm_increaseTime", [withdrawalTime.sub(100).toNumber()]);
+      await ethers.provider.send("evm_mine");
+      await expect(biddingWar.connect(addr2).withdraw()).to.be.revertedWith("Not enough time has elapsed.");
+
+      await ethers.provider.send("evm_increaseTime", [100]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(biddingWar.connect(addr1).withdraw()).to.be.revertedWith("Only last bidder can withdraw.");
+
+      let withdrawalAmount = await biddingWar.withdrawalAmount();
+      await biddingWar.connect(addr2).withdraw();
+      let withdrawalAmount2 = await biddingWar.withdrawalAmount();
+      expect(withdrawalAmount2).to.equal(withdrawalAmount.div(2));
+
     });
 
   });
