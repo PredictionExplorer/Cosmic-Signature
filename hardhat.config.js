@@ -1,3 +1,4 @@
+require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 
@@ -17,7 +18,7 @@ module.exports = {
     flat: true,
     only: ['OrbitalToken', 'Orbitals', 'BiddingWar'],
     spacing: 2,
-    pretty: false,
+    pretty: true,
   },
   networks: {
     rinkeby: {

@@ -9,6 +9,7 @@
     "@openzeppelin/hardhat-upgrades": "^1.22.1",
     "ethereum-waffle": "^4.0.10",
     "ethers": "^5.7.2",
-    "hardhat": "^2.12.7"
+    "hardhat": "^2.12.7",
+    "hardhat-abi-exporter": "^2.10.1"
   }
 }
