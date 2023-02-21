@@ -79,6 +79,8 @@ contract BiddingWar is Ownable {
 
     // send some ETH into the contract and affect nothing else.
     function donate() public payable {
+        require (msg.value > 0);
+
         if (lastBidder == address(0)) {
             initializeBidPrice();
         }
