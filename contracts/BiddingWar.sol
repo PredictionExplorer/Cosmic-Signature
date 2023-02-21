@@ -43,14 +43,9 @@ contract BiddingWar is Ownable {
     OrbitalToken public token;
     Orbitals public nft;
 
-    mapping(uint256 => bytes32) public seeds;
-
     event WithdrawalEvent(uint256 indexed withdrawalNum, address indexed destination, uint256 amount);
     event BidEvent(address indexed lastBidder, uint256 bidPrice);
     event DonationEvent(address indexed donator, uint256 amount);
-
-    // Entropy
-    bytes32 public entropy;
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
@@ -85,14 +80,6 @@ contract BiddingWar is Ownable {
         }
 
         emit DonationEvent(_msgSender(), msg.value);
-    }
-
-    function updateEntropy() internal {
-        entropy = keccak256(abi.encode(
-            entropy,
-            block.timestamp,
-            blockhash(block.number),
-            lastBidder));
     }
 
     function bid() public payable {
@@ -153,8 +140,6 @@ contract BiddingWar is Ownable {
 
         uint256 amount = withdrawalAmount();
 
-        updateEntropy();
-        seeds[numWithdrawals] = entropy;
         numWithdrawals += 1;
 
         (bool success, ) = winner.call{value: amount}("");
@@ -167,11 +152,7 @@ contract BiddingWar is Ownable {
         emit WithdrawalEvent(numWithdrawals - 1, winner, amount);
     }
 
-    constructor() {
-        entropy = keccak256(abi.encode(
-            "Let's fight!",
-            block.timestamp, blockhash(block.number)));
-    }
+    constructor() {}
 
     function setTokenContract(address addr) public onlyOwner {
         token = OrbitalToken(addr);
