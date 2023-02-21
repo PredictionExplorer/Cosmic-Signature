@@ -44,10 +44,30 @@ describe("BiddingWar", function () {
       let bidPrice = await biddingWar.getBidPrice();
       await expect(biddingWar.connect(addr1).bid({value: bidPrice.sub(1)})).to.be.revertedWith("The value submitted with this transaction is too low.");
 
+      let withdrawalTime = await biddingWar.timeUntilWithdrawal();
+      expect(withdrawalTime).to.equal(0);
+
       // check that if we sent too much, we get our money back
       await biddingWar.connect(addr1).bid({value: bidPrice.add(1000)}); // this works
       const contractBalance = await ethers.provider.getBalance(biddingWar.address);
       expect(contractBalance).to.equal(donationAmount.add(bidPrice));
+
+      let nanoSecondsExtra = await biddingWar.nanoSecondsExtra();
+      withdrawalTime = await biddingWar.timeUntilWithdrawal();
+      expect(withdrawalTime).to.equal(nanoSecondsExtra.div(1000000000).add(24 * 3600));
+
+      bidPrice = await biddingWar.getBidPrice();
+      await biddingWar.connect(addr1).bid({value: bidPrice});
+      withdrawalTime = await biddingWar.timeUntilWithdrawal();
+      expect(withdrawalTime).to.equal(nanoSecondsExtra.div(1000000000).mul(2).add(24 * 3600 - 1));
+
+      bidPrice = await biddingWar.getBidPrice();
+      await biddingWar.connect(addr1).bid({value: bidPrice});
+      withdrawalTime = await biddingWar.timeUntilWithdrawal();
+      expect(withdrawalTime).to.equal(nanoSecondsExtra.div(1000000000).mul(3).add(24 * 3600 - 2)); // not super clear why we are subtracting 2 here and 1 above
+
+      await expect(biddingWar.connect(addr1).withdraw()).to.be.revertedWith("Not enough time has elapsed.");
+      await expect(biddingWar.connect(addr2).withdraw()).to.be.revertedWith("Only last bidder can withdraw.");
 
     });
 
