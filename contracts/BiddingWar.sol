@@ -3,6 +3,7 @@
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Token.sol";
 import "./Orbitals.sol";
+import "./RandomWalkNFT.sol";
 
 pragma solidity ^0.8.18;
 
@@ -40,11 +41,14 @@ contract BiddingWar is Ownable {
 
     uint256 public numWithdrawals = 0;
 
+    mapping(uint256 => bool) public usedRandomWalkNFTs;
+
     OrbitalToken public token;
     Orbitals public nft;
+    RandomWalkNFT public randomWalk;
 
     event WithdrawalEvent(uint256 indexed withdrawalNum, address indexed destination, uint256 amount);
-    event BidEvent(address indexed lastBidder, uint256 bidPrice);
+    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID);
     event DonationEvent(address indexed donator, uint256 amount);
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -82,6 +86,36 @@ contract BiddingWar is Ownable {
         emit DonationEvent(_msgSender(), msg.value);
     }
 
+    function bidWithRWLK(uint256 randomWalkNFTID) public {
+        // if you own a RandomWalkNFT, you can bid for free 1 time.
+        // Each NFT can be used only once.
+        if (lastBidder == address(0)) {
+            // someone just withdrew and we are starting from scratch
+            withdrawalTime = block.timestamp + initialSecondsUntilWithdrawal;
+        }
+
+        require(!usedRandomWalkNFTs[randomWalkNFTID]);
+        require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender());
+
+        usedRandomWalkNFTs[randomWalkNFTID] = true;
+
+        lastBidder = _msgSender();
+
+        // we are not going to increase the bid price
+        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
+        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
+
+        uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
+        uint256 reward = sqrt(minutesRemainingBefore);
+
+        // mint some tokens
+        token.mint(lastBidder, reward);
+
+        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID));
+
+    }
+
     function bid() public payable {
 
         if (lastBidder == address(0)) {
@@ -100,14 +134,9 @@ contract BiddingWar is Ownable {
         bidPrice = newBidPrice;
 
         // If someone bid after the deadline, make sure that 'secondsExtra' will be until the withdrawal
-        uint secondsAdded = nanoSecondsExtra / 1_000_000_000;
+        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
         withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
-        if (msg.value > bidPrice) {
-            // Return the extra money to the bidder.
-            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
-            require(success, "Transfer failed.");
-        }
 
         uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
         uint256 reward = sqrt(minutesRemainingBefore);
@@ -115,7 +144,13 @@ contract BiddingWar is Ownable {
         // mint some tokens
         token.mint(lastBidder, reward);
 
-        emit BidEvent(lastBidder, bidPrice);
+        if (msg.value > bidPrice) {
+            // Return the extra money to the bidder.
+            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
+            require(success, "Transfer failed.");
+        }
+
+        emit BidEvent(lastBidder, bidPrice, -1);
     }
 
     receive() external payable {
@@ -153,6 +188,10 @@ contract BiddingWar is Ownable {
     }
 
     constructor() {}
+
+    function setRandomWalk(address addr) public onlyOwner {
+        randomWalk = RandomWalkNFT(addr);
+    }
 
     function setTokenContract(address addr) public onlyOwner {
         token = OrbitalToken(addr);
