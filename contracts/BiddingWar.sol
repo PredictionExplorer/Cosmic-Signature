@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Token.sol";
 import "./Orbitals.sol";
 import "./RandomWalkNFT.sol";
@@ -55,20 +56,6 @@ contract BiddingWar is Ownable {
         return a >= b ? a : b;
     }
 
-    function sqrt(uint y) internal pure returns (uint z) {
-        if (y > 3) {
-            z = y;
-            uint x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
-        // else z = 0 (default value)
-    }
-
     function getBidPrice() public view returns (uint256) {
         return (bidPrice * priceIncrease) / MILLION;
     }
@@ -109,7 +96,7 @@ contract BiddingWar is Ownable {
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
 
         uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
-        uint256 reward = sqrt(minutesRemainingBefore);
+        uint256 reward = Math.sqrt(minutesRemainingBefore);
 
         // mint some tokens
         token.mint(lastBidder, reward);
@@ -141,7 +128,7 @@ contract BiddingWar is Ownable {
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
 
         uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
-        uint256 reward = sqrt(minutesRemainingBefore);
+        uint256 reward = Math.sqrt(minutesRemainingBefore);
 
         // mint some tokens
         token.mint(lastBidder, reward);
