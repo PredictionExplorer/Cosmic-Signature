@@ -7,6 +7,7 @@
   "function bid() payable",
   "function bidPrice() view returns (uint256)",
   "function bidWithRWLK(uint256)",
+  "function calculateReward() view returns (uint256)",
   "function donate() payable",
   "function getBidPrice() view returns (uint256)",
   "function initalBidAmountFraction() view returns (uint256)",

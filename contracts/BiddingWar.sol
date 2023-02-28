@@ -19,7 +19,7 @@ contract BiddingWar is Ownable {
     // how much the deadline is pushed after every bid
     uint256 public nanoSecondsExtra = 3600 * 10**9;
 
-    // how much is the secondsExtra increased by after every bid
+    // how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
     // 1.0001
     uint256 public timeIncrease = 1000100;
 
@@ -75,14 +75,15 @@ contract BiddingWar is Ownable {
         emit DonationEvent(_msgSender(), msg.value);
     }
 
+    function calculateReward() public view returns (uint256) {
+        uint256 minutesUntilWithdrawal = (max(withdrawalTime, block.timestamp) - block.timestamp) / 60;
+        return Math.sqrt(minutesUntilWithdrawal);
+    }
 
-    function pushBackWithdrawDeadlineAndCalculateReward() internal returns (uint256) {
+    function pushBackWithdrawDeadline() internal {
         uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
         withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
-
-        uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
-        return Math.sqrt(minutesRemainingBefore);
     }
 
     function bidWithRWLK(uint256 randomWalkNFTID) public {
@@ -93,15 +94,16 @@ contract BiddingWar is Ownable {
             withdrawalTime = block.timestamp + initialSecondsUntilWithdrawal;
         }
 
-        require(!usedRandomWalkNFTs[randomWalkNFTID]);
-        require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender());
-
-        usedRandomWalkNFTs[randomWalkNFTID] = true;
-
         lastBidder = _msgSender();
 
-        uint256 reward = pushBackWithdrawDeadlineAndCalculateReward();
+        require(!usedRandomWalkNFTs[randomWalkNFTID]);
+        require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender());
+        usedRandomWalkNFTs[randomWalkNFTID] = true;
+
+        uint256 reward = calculateReward();
         token.mint(lastBidder, reward);
+
+        pushBackWithdrawDeadline();
 
         emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID));
 
@@ -114,18 +116,20 @@ contract BiddingWar is Ownable {
             withdrawalTime = block.timestamp + initialSecondsUntilWithdrawal;
         }
 
+        lastBidder = _msgSender();
+
         uint256 newBidPrice = getBidPrice();
 
         require(
             msg.value >= newBidPrice,
             "The value submitted with this transaction is too low."
         );
-
-        lastBidder = _msgSender();
         bidPrice = newBidPrice;
 
-        uint256 reward = pushBackWithdrawDeadlineAndCalculateReward();
+        uint256 reward = calculateReward();
         token.mint(lastBidder, reward);
+
+        pushBackWithdrawDeadline();
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
