@@ -21,6 +21,16 @@ async function main() {
   const orbitals = await Orbitals.deploy(biddingWar.address);
   orbitals.deployed();
   console.log("Orbitals address:", orbitals.address);
+
+  const RandomWalkNFT = await hre.ethers.getContractFactory("RandomWalkNFT");
+  const randomWalkNFT = await RandomWalkNFT.deploy();
+  randomWalkNFT.deployed();
+  console.log("randomWalkNFT address:", randomWalkNFT.address);
+
+  await biddingWar.setTokenContract(orbitalToken.address);
+  await biddingWar.setNftContract(orbitals.address);
+  await biddingWar.setRandomWalk(randomWalkNFT.address);
+  console.log("Addresses set");
 }
 
 main().catch((error) => {
