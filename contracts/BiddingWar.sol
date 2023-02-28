@@ -75,6 +75,16 @@ contract BiddingWar is Ownable {
         emit DonationEvent(_msgSender(), msg.value);
     }
 
+
+    function pushBackWithdrawDeadlineAndCalculateReward() internal returns (uint256) {
+        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
+        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
+
+        uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
+        return Math.sqrt(minutesRemainingBefore);
+    }
+
     function bidWithRWLK(uint256 randomWalkNFTID) public {
         // if you own a RandomWalkNFT, you can bid for free 1 time.
         // Each NFT can be used only once.
@@ -90,15 +100,7 @@ contract BiddingWar is Ownable {
 
         lastBidder = _msgSender();
 
-        // we are not going to increase the bid price
-        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
-        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
-        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
-
-        uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
-        uint256 reward = Math.sqrt(minutesRemainingBefore);
-
-        // mint some tokens
+        uint256 reward = pushBackWithdrawDeadlineAndCalculateReward();
         token.mint(lastBidder, reward);
 
         emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID));
@@ -122,15 +124,7 @@ contract BiddingWar is Ownable {
         lastBidder = _msgSender();
         bidPrice = newBidPrice;
 
-        // If someone bid after the deadline, make sure that 'secondsExtra' will be until the withdrawal
-        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
-        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
-        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
-
-        uint256 minutesRemainingBefore = (withdrawalTime - block.timestamp - secondsAdded) / 60;
-        uint256 reward = Math.sqrt(minutesRemainingBefore);
-
-        // mint some tokens
+        uint256 reward = pushBackWithdrawDeadlineAndCalculateReward();
         token.mint(lastBidder, reward);
 
         if (msg.value > bidPrice) {
