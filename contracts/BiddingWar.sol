@@ -28,26 +28,27 @@ contract BiddingWar is Ownable {
 
     address public lastBidder = address(0);
 
+    // Some money will go to charity
     address public charity;
 
     // 10% of the prize pool goes to the charity
     uint256 public charityPercentage = 10;
 
-    // After a withdrawal, start off the clock with this much time.
-    uint256 public initialSecondsUntilWithdrawal = 24 * 3600;
+    // After a prize was claimed, start off the clock with this much time.
+    uint256 public initialSecondsUntilPrize = 24 * 3600;
 
-    // The bid size will be 1000 times smaller than the withdrawal amount initially
+    // The bid size will be 1000 times smaller than the prize amount initially
     uint256 public initalBidAmountFraction = 1000;
 
     // You get 100 tokens when you bid
     uint256 public tokenReward = 100 * 1e18;
 
-    uint256 public withdrawalPercentage = 50;
+    uint256 public prizePercentage = 50;
 
     // when the money can be taken out
-    uint256 public withdrawalTime;
+    uint256 public prizeTime;
 
-    uint256 public numWithdrawals = 0;
+    uint256 public numPrizes = 0;
 
     mapping(uint256 => bool) public usedRandomWalkNFTs;
 
@@ -55,7 +56,7 @@ contract BiddingWar is Ownable {
     CosmicSignature public nft;
     RandomWalkNFT public randomWalk;
 
-    event WithdrawalEvent(uint256 indexed withdrawalNum, address indexed destination, uint256 amount);
+    event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
     event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID);
     event DonationEvent(address indexed donor, uint256 amount);
 
@@ -68,7 +69,7 @@ contract BiddingWar is Ownable {
     }
 
     function initializeBidPrice() internal {
-        bidPrice = withdrawalAmount() / initalBidAmountFraction;
+        bidPrice = prizeAmount() / initalBidAmountFraction;
     }
 
     // send some ETH into the contract and affect nothing else.
@@ -82,9 +83,9 @@ contract BiddingWar is Ownable {
         emit DonationEvent(_msgSender(), msg.value);
     }
 
-    function pushBackWithdrawDeadline() internal {
+    function pushBackPrizeTime() internal {
         uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
-        withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
+        prizeTime = max(prizeTime, block.timestamp) + secondsAdded;
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
     }
 
@@ -92,8 +93,8 @@ contract BiddingWar is Ownable {
         // if you own a RandomWalkNFT, you can bid for free 1 time.
         // Each NFT can be used only once.
         if (lastBidder == address(0)) {
-            // someone just withdrew and we are starting from scratch
-            withdrawalTime = block.timestamp + initialSecondsUntilWithdrawal;
+            // someone just claimed a prize and we are starting from scratch
+            prizeTime = block.timestamp + initialSecondsUntilPrize;
         }
 
         lastBidder = _msgSender();
@@ -104,7 +105,7 @@ contract BiddingWar is Ownable {
 
         token.mint(lastBidder, tokenReward);
 
-        pushBackWithdrawDeadline();
+        pushBackPrizeTime();
 
         emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID));
 
@@ -113,8 +114,8 @@ contract BiddingWar is Ownable {
     function bid() public payable {
 
         if (lastBidder == address(0)) {
-            // someone just withdrew and we are starting from scratch
-            withdrawalTime = block.timestamp + initialSecondsUntilWithdrawal;
+            // someone just claimed a prize and we are starting from scratch
+            prizeTime = block.timestamp + initialSecondsUntilPrize;
         }
 
         lastBidder = _msgSender();
@@ -129,7 +130,7 @@ contract BiddingWar is Ownable {
 
         token.mint(lastBidder, tokenReward);
 
-        pushBackWithdrawDeadline();
+        pushBackPrizeTime();
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
@@ -144,42 +145,42 @@ contract BiddingWar is Ownable {
         bid();
     }
 
-    function timeUntilWithdrawal() public view returns (uint256) {
-        if (withdrawalTime < block.timestamp) return 0;
-        return withdrawalTime - block.timestamp;
+    function timeUntilPrize() public view returns (uint256) {
+        if (prizeTime < block.timestamp) return 0;
+        return prizeTime - block.timestamp;
     }
 
-    function withdrawalAmount() public view returns (uint256) {
-        return address(this).balance * withdrawalPercentage / 100;
+    function prizeAmount() public view returns (uint256) {
+        return address(this).balance * prizePercentage / 100;
     }
 
     function charityAmount() public view returns (uint256) {
         return address(this).balance * charityPercentage / 100;
     }
 
-    function withdraw() public {
-        require(_msgSender() == lastBidder, "Only last bidder can withdraw.");
-        require(timeUntilWithdrawal() == 0, "Not enough time has elapsed.");
+    function claimPrize() public {
+        require(_msgSender() == lastBidder, "Only last bidder can claim the prize.");
+        require(timeUntilPrize() == 0, "Not enough time has elapsed.");
 
         address winner = lastBidder;
         lastBidder = address(0);
 
-        numWithdrawals += 1;
+        numPrizes += 1;
 
         nft.mint(winner);
         
         initializeBidPrice();
 
-        uint256 withdrawalAmount_ = withdrawalAmount();
+        uint256 prizeAmount_ = prizeAmount();
         uint256 charityAmount_ = charityAmount();
 
-        (bool success, ) = winner.call{value: withdrawalAmount_}("");
+        (bool success, ) = winner.call{value: prizeAmount_}("");
         require(success, "Transfer failed.");
 
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer failed.");
 
-        emit WithdrawalEvent(numWithdrawals - 1, winner, withdrawalAmount_);
+        emit PrizeClaimEvent(numPrizes - 1, winner, prizeAmount_);
     }
 
     constructor() {
@@ -218,12 +219,12 @@ contract BiddingWar is Ownable {
         nanoSecondsExtra = newNanoSecondsExtra;
     }
 
-    function setInitialSecondsUntilWithdrawal(uint256 newInitialSecondsUntilWithdrawal) public onlyOwner {
-        initialSecondsUntilWithdrawal = newInitialSecondsUntilWithdrawal;
+    function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) public onlyOwner {
+        initialSecondsUntilPrize = newInitialSecondsUntilPrize;
     }
 
-    function updateWithdrawalPercentage(uint256 newWithdrawalPercentage) public onlyOwner {
-        withdrawalPercentage = newWithdrawalPercentage;
+    function updatePrizePercentage(uint256 newPrizePercentage) public onlyOwner {
+        prizePercentage = newPrizePercentage;
     }
 
     function updateInitalBidAmountFraction(uint256 newInitalBidAmountFraction) public onlyOwner {
