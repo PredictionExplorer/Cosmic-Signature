@@ -13,23 +13,37 @@ async function main() {
   console.log("BiddingWar address:", biddingWar.address);
 
   const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
-  const cosmicSignatureToken = await CosmicSignatureToken.deploy(biddingWar.address);
+  const cosmicSignatureToken = await CosmicSignatureToken.deploy();
   cosmicSignatureToken.deployed();
-  console.log("CosmicSignatureToken address:", CosmicSignatureToken.address);
+  await cosmicSignatureToken.transferOwnership(biddingWar.address);
+  console.log("CosmicSignatureToken address:", cosmicSignatureToken.address);
 
   const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
   const cosmicSignature = await CosmicSignature.deploy(biddingWar.address);
   cosmicSignature.deployed();
   console.log("Cosmic Signature address:", cosmicSignature.address);
 
+  const CosmicSignatureDAO = await hre.ethers.getContractFactory("CosmicSignatureDAO");
+  const cosmicSignatureDAO = await CosmicSignatureDAO.deploy(cosmicSignatureToken.address);
+  await cosmicSignatureDAO.deployed();
+  console.log("Cosmic Signature DAO address", cosmicSignatureDAO.address);
+
+  const CharityWallet = await hre.ethers.getContractFactory("CharityWallet");
+  const charityWallet = await CharityWallet.deploy();
+  charityWallet.deployed();
+  await charityWallet.transferOwnership(cosmicSignatureDAO.address);
+  console.log("Charity Wallet address:", charityWallet.address);
+
   const RandomWalkNFT = await hre.ethers.getContractFactory("RandomWalkNFT");
   const randomWalkNFT = await RandomWalkNFT.deploy();
   randomWalkNFT.deployed();
   console.log("randomWalkNFT address:", randomWalkNFT.address);
 
-  await biddingWar.setTokenContract(CosmicSignatureToken.address);
+  await biddingWar.setTokenContract(cosmicSignatureToken.address);
   await biddingWar.setNftContract(cosmicSignature.address);
+  await biddingWar.setCharity(charityWallet.address);
   await biddingWar.setRandomWalk(randomWalkNFT.address);
+
   console.log("Addresses set");
 }
 

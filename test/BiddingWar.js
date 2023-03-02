@@ -22,23 +22,27 @@ describe("BiddingWar", function () {
     const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
     const cosmicSignature = await CosmicSignature.deploy(biddingWar.address);
 
-    const CharityWallet = await ethers.getContractFactory("CharityWallet");
-    const charityWallet = await CharityWallet.deploy();
-
     const CosmicSignatureDAO = await ethers.getContractFactory("CosmicSignatureDAO");
     const cosmicSignatureDAO = await CosmicSignatureDAO.deploy(cosmicSignatureToken.address);
+
+    const CharityWallet = await ethers.getContractFactory("CharityWallet");
+    const charityWallet = await CharityWallet.deploy();
+    await charityWallet.transferOwnership(cosmicSignatureDAO.address);
+
+    const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
+    const randomWalkNFT = await RandomWalkNFT.deploy();
 
     await biddingWar.setTokenContract(cosmicSignatureToken.address);
     await biddingWar.setNftContract(cosmicSignature.address);
     await biddingWar.setCharity(charityWallet.address);
-    await charityWallet.transferOwnership(cosmicSignatureDAO.address);
+    await biddingWar.setRandomWalk(randomWalkNFT.address);
 
-    return {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO};
+    return {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT};
   }
 
   describe("Deployment", function () {
     it("Should set the right unlockTime", async function () {
-      const {biddingWar, cosmicSignatureToken, cosmicSignature} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       expect(await biddingWar.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
       expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
     });

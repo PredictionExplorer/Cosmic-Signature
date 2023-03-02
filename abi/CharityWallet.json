@@ -1,0 +1,8 @@
+[
+  "event CharityDonationEvent(address indexed,uint256)",
+  "event OwnershipTransferred(address indexed,address indexed)",
+  "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function send(address,uint256)",
+  "function transferOwnership(address)"
+]
