@@ -52,8 +52,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         return _baseTokenURI;
     }
 
-    function mint(address owner) public {
-        require (_msgSender() == biddingWarContract);
+    function mint(address owner) public payable {
+        require (_msgSender() == biddingWarContract,"only BiddingWar contract can mint");
 
         uint256 tokenId = numTokens;
         numTokens += 1;

@@ -74,7 +74,7 @@ contract BiddingWar is Ownable {
 
     // send some ETH into the contract and affect nothing else.
     function donate() public payable {
-        require (msg.value > 0);
+        require (msg.value > 0,"amount to donate must be greater than 0");
 
         if (lastBidder == address(0)) {
             initializeBidPrice();
@@ -99,11 +99,13 @@ contract BiddingWar is Ownable {
 
         lastBidder = _msgSender();
 
-        require(!usedRandomWalkNFTs[randomWalkNFTID]);
-        require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender());
+        require(!usedRandomWalkNFTs[randomWalkNFTID],"token with this ID was used already");
+        require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender(),"you must be the owner of the token");
         usedRandomWalkNFTs[randomWalkNFTID] = true;
 
-        token.mint(lastBidder, tokenReward);
+        (bool mint_success, ) =
+            address(token).call(abi.encodeWithSelector(CosmicSignatureToken.mint.selector, lastBidder,tokenReward));
+		require(mint_success,"CosmicSignatureToken mint() failed to mint reward tokens");
 
         pushBackPrizeTime();
 
@@ -128,7 +130,9 @@ contract BiddingWar is Ownable {
         );
         bidPrice = newBidPrice;
 
-        token.mint(lastBidder, tokenReward);
+        (bool mint_success, ) =
+            address(token).call(abi.encodeWithSelector(CosmicSignatureToken.mint.selector, lastBidder,tokenReward));
+		require(mint_success,"CosmicSignatureToken mint() failed to mint reward tokens");
 
         pushBackPrizeTime();
 
@@ -167,7 +171,9 @@ contract BiddingWar is Ownable {
 
         numPrizes += 1;
 
-        nft.mint(winner);
+        (bool mint_success, ) =
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
+		require(mint_success,"CosmicSignature mint() failed to mint token");
         
         initializeBidPrice();
 
