@@ -40,7 +40,7 @@ contract BiddingWar is Ownable {
     uint256 public initalBidAmountFraction = 1000;
 
     // You get 100 tokens when you bid
-    uint256 public tokenReward = 100;
+    uint256 public tokenReward = 100 * 1e18;
 
     uint256 public withdrawalPercentage = 50;
 
