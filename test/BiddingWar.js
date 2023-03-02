@@ -21,8 +21,12 @@ describe("BiddingWar", function () {
     const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
     const cosmicSignature = await CosmicSignature.deploy(biddingWar.address);
 
+    const CharityWallet = await ethers.getContractFactory("CharityWallet");
+    const charityWallet = await CharityWallet.deploy();
+
     await biddingWar.setTokenContract(cosmicSignatureToken.address);
     await biddingWar.setNftContract(cosmicSignature.address);
+    await biddingWar.setCharity(charityWallet.address);
 
     return {biddingWar, cosmicSignatureToken, cosmicSignature};
   }

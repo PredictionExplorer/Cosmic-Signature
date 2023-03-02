@@ -57,7 +57,7 @@ contract BiddingWar is Ownable {
 
     event WithdrawalEvent(uint256 indexed withdrawalNum, address indexed destination, uint256 amount);
     event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID);
-    event DonationEvent(address indexed donator, uint256 amount);
+    event DonationEvent(address indexed donor, uint256 amount);
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
@@ -184,6 +184,10 @@ contract BiddingWar is Ownable {
 
     constructor() {
         charity = _msgSender();
+    }
+
+    function setCharity(address addr) public onlyOwner {
+        charity = addr;
     }
 
     function setRandomWalk(address addr) public onlyOwner {
