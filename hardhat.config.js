@@ -1,6 +1,7 @@
 require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
+require("hardhat-tracer");
 
 module.exports = {
   solidity: {
