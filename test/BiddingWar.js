@@ -83,10 +83,13 @@ describe("BiddingWar", function () {
 
       await expect(biddingWar.connect(addr1).withdraw()).to.be.revertedWith("Only last bidder can withdraw.");
 
+
       let withdrawalAmount = await biddingWar.withdrawalAmount();
+      let charityAmount = await biddingWar.charityAmount();
       await biddingWar.connect(addr2).withdraw();
       let withdrawalAmount2 = await biddingWar.withdrawalAmount();
-      expect(withdrawalAmount2).to.equal(withdrawalAmount.div(2));
+      let expectedWithdrawalAmount = withdrawalAmount.sub(charityAmount).div(2);
+      expect(withdrawalAmount2).to.equal(expectedWithdrawalAmount);
 
       // after the withdrawal, let's bid again!
 
@@ -103,9 +106,10 @@ describe("BiddingWar", function () {
       await ethers.provider.send("evm_mine");
 
       withdrawalAmount = await biddingWar.withdrawalAmount();
+      charityAmount = await biddingWar.charityAmount();
       await biddingWar.connect(addr1).withdraw();
       withdrawalAmount2 = await biddingWar.withdrawalAmount();
-      expect(withdrawalAmount2).to.equal(withdrawalAmount.div(2));
+      expect(withdrawalAmount2).to.equal(withdrawalAmount.sub(charityAmount).div(2));
     });
 
   });

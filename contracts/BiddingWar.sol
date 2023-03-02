@@ -29,13 +29,18 @@ contract BiddingWar is Ownable {
 
     address public lastBidder = address(0);
 
+    address public charity;
+
+    // 10% of the prize pool goes to the charity
+    uint256 public charityPercentage = 10;
+
     // After a withdrawal, start off the clock with this much time.
     uint256 public initialSecondsUntilWithdrawal = 24 * 3600;
 
     // The bid size will be 1000 times smaller than the withdrawal amount initially
     uint256 public initalBidAmountFraction = 1000;
 
-    uint256 public withdrawalFraction = 2;
+    uint256 public withdrawalPercentage = 50;
 
     // when the money can be taken out
     uint256 public withdrawalTime;
@@ -150,7 +155,11 @@ contract BiddingWar is Ownable {
     }
 
     function withdrawalAmount() public view returns (uint256) {
-        return address(this).balance / withdrawalFraction;
+        return address(this).balance * withdrawalPercentage / 100;
+    }
+
+    function charityAmount() public view returns (uint256) {
+        return address(this).balance * charityPercentage / 100;
     }
 
     function withdraw() public {
@@ -160,24 +169,34 @@ contract BiddingWar is Ownable {
         address winner = lastBidder;
         lastBidder = address(0);
 
-        uint256 amount = withdrawalAmount();
-
         numWithdrawals += 1;
-
-        (bool success, ) = winner.call{value: amount}("");
-        require(success, "Transfer failed.");
 
         nft.mint(winner);
         
         initializeBidPrice();
 
-        emit WithdrawalEvent(numWithdrawals - 1, winner, amount);
+        uint256 withdrawalAmount_ = withdrawalAmount();
+        uint256 charityAmount_ = charityAmount();
+
+        (bool success, ) = winner.call{value: withdrawalAmount_}("");
+        require(success, "Transfer failed.");
+
+        (success, ) = charity.call{value: charityAmount_}("");
+        require(success, "Transfer failed.");
+
+        emit WithdrawalEvent(numWithdrawals - 1, winner, withdrawalAmount_);
     }
 
-    constructor() {}
+    constructor() {
+        charity = _msgSender();
+    }
 
     function setRandomWalk(address addr) public onlyOwner {
         randomWalk = RandomWalkNFT(addr);
+    }
+
+    function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {
+        charityPercentage = newCharityPercentage;
     }
 
     function setTokenContract(address addr) public onlyOwner {
@@ -204,8 +223,8 @@ contract BiddingWar is Ownable {
         initialSecondsUntilWithdrawal = newInitialSecondsUntilWithdrawal;
     }
 
-    function updateWithdrawalFraction(uint256 newWithdrawalFraction) public onlyOwner {
-        withdrawalFraction = newWithdrawalFraction;
+    function updateWithdrawalPercentage(uint256 newWithdrawalPercentage) public onlyOwner {
+        withdrawalPercentage = newWithdrawalPercentage;
     }
 
     function updateInitalBidAmountFraction(uint256 newInitalBidAmountFraction) public onlyOwner {
