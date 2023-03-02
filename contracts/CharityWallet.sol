@@ -6,15 +6,26 @@ pragma solidity ^0.8.18;
 
 contract CharityWallet is Ownable {
 
-    event CharityDonationEvent(address indexed donor, uint256 amount);
+    event DonationReceivedEvent(address indexed donor, uint256 amount);
+    event DonationSentEvent(address indexed charity, uint256 amount);
+    event CharityUpdatedEvent(address indexed newCharityAddress);
+
+    address charityAddress;
 
     receive() external payable {
-        emit CharityDonationEvent(_msgSender(), msg.value);
+        emit DonationReceivedEvent(_msgSender(), msg.value);
     }
 
-    function send(address destination, uint256 amount) public onlyOwner {
-        (bool success, ) = destination.call{value: amount}("");
+    function setCharity(address newCharityAddress) public onlyOwner {
+        charityAddress = newCharityAddress;
+        emit CharityUpdatedEvent(charityAddress);
+    }
+
+    function send() public {
+        uint256 amount = address(this).balance;
+        (bool success, ) = charityAddress.call{value: amount}("");
         require(success, "Transfer failed.");
+        emit DonationSentEvent(charityAddress, amount);
     }
 
 }
