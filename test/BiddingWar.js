@@ -15,28 +15,28 @@ describe("BiddingWar", function () {
     const BiddingWar = await ethers.getContractFactory("BiddingWar");
     const biddingWar = await BiddingWar.deploy();
 
-    const OrbitalToken = await ethers.getContractFactory("OrbitalToken");
-    const orbitalToken = await OrbitalToken.deploy(biddingWar.address);
+    const CosmicSignatureToken = await ethers.getContractFactory("CosmicSignatureToken");
+    const cosmicSignatureToken = await CosmicSignatureToken.deploy(biddingWar.address);
 
-    const Orbitals = await ethers.getContractFactory("Orbitals");
-    const orbitals = await Orbitals.deploy(biddingWar.address);
+    const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+    const cosmicSignature = await CosmicSignature.deploy(biddingWar.address);
 
-    await biddingWar.setTokenContract(orbitalToken.address);
-    await biddingWar.setNftContract(orbitals.address);
+    await biddingWar.setTokenContract(cosmicSignatureToken.address);
+    await biddingWar.setNftContract(cosmicSignature.address);
 
-    return {biddingWar, orbitalToken, orbitals};
+    return {biddingWar, cosmicSignatureToken, cosmicSignature};
   }
 
   describe("Deployment", function () {
     it("Should set the right unlockTime", async function () {
-      const {biddingWar, orbitalToken, orbitals} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignature} = await loadFixture(deployBiddingWar);
       expect(await biddingWar.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
-      expect(await orbitalToken.totalSupply()).to.equal(0);
+      expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
     });
 
     it("Should be possible to bid", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-      const {biddingWar, orbitalToken, orbitals} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignature} = await loadFixture(deployBiddingWar);
       let donationAmount = ethers.utils.parseEther('10');
       await biddingWar.donate({value: donationAmount});
       expect(await biddingWar.withdrawalAmount()).to.equal(donationAmount.div(2));

@@ -16,7 +16,7 @@ module.exports = {
     path: './abi',
     clear: true,
     flat: true,
-    only: ['OrbitalToken', 'Orbitals', 'BiddingWar', 'RandomWalkNFT'],
+    only: ['CosmicSignatureToken', 'CosmicSignature', 'BiddingWar', 'RandomWalkNFT'],
     spacing: 2,
     pretty: true,
   },

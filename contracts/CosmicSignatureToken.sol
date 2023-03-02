@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 pragma solidity ^0.8.18;
 
-contract OrbitalToken is ERC20, ERC20Burnable {
+contract CosmicSignatureToken is ERC20, ERC20Burnable {
 
     address public biddingWarContract;
 
-    constructor(address _biddingWarContract) ERC20("Obital Token", "ORB") {
+    constructor(address _biddingWarContract) ERC20("Cosmic Signature Token", "CST") {
         biddingWarContract = _biddingWarContract;
     }
 

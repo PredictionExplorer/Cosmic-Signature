@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 pragma solidity ^0.8.18;
 
-contract Orbitals is ERC721Enumerable, Ownable {
+contract CosmicSignature is ERC721Enumerable, Ownable {
 
     mapping(uint256 => bytes32) public seeds;
 
@@ -27,7 +27,7 @@ contract Orbitals is ERC721Enumerable, Ownable {
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
     string public tokenGenerationScript = "ipfs://TBD";
 
-    constructor(address _biddingWarContract) ERC721("Orbitals", "ORB") {
+    constructor(address _biddingWarContract) ERC721("CosmicSignature", "CSG") {
         entropy = keccak256(abi.encode(
             "newNFT",
             block.timestamp, blockhash(block.number)));

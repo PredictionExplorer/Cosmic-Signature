@@ -2,8 +2,8 @@
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./Token.sol";
-import "./Orbitals.sol";
+import "./CosmicSignatureToken.sol";
+import "./CosmicSignature.sol";
 import "./RandomWalkNFT.sol";
 
 pragma solidity ^0.8.18;
@@ -49,8 +49,8 @@ contract BiddingWar is Ownable {
 
     mapping(uint256 => bool) public usedRandomWalkNFTs;
 
-    OrbitalToken public token;
-    Orbitals public nft;
+    CosmicSignatureToken public token;
+    CosmicSignature public nft;
     RandomWalkNFT public randomWalk;
 
     event WithdrawalEvent(uint256 indexed withdrawalNum, address indexed destination, uint256 amount);
@@ -200,11 +200,11 @@ contract BiddingWar is Ownable {
     }
 
     function setTokenContract(address addr) public onlyOwner {
-        token = OrbitalToken(addr);
+        token = CosmicSignatureToken(addr);
     }
 
     function setNftContract(address addr) public onlyOwner {
-        nft = Orbitals(addr);
+        nft = CosmicSignature(addr);
     }
 
     function setTimeIncrease(uint256 newTimeIncrease) public onlyOwner {
