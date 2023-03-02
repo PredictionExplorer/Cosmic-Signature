@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./CosmicSignatureToken.sol";
 import "./CosmicSignature.sol";
 import "./RandomWalkNFT.sol";
@@ -39,6 +38,9 @@ contract BiddingWar is Ownable {
 
     // The bid size will be 1000 times smaller than the withdrawal amount initially
     uint256 public initalBidAmountFraction = 1000;
+
+    // You get 100 tokens when you bid
+    uint256 public tokenReward = 100;
 
     uint256 public withdrawalPercentage = 50;
 
@@ -80,11 +82,6 @@ contract BiddingWar is Ownable {
         emit DonationEvent(_msgSender(), msg.value);
     }
 
-    function calculateReward() public view returns (uint256) {
-        uint256 minutesUntilWithdrawal = (max(withdrawalTime, block.timestamp) - block.timestamp) / 60;
-        return Math.sqrt(minutesUntilWithdrawal);
-    }
-
     function pushBackWithdrawDeadline() internal {
         uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
         withdrawalTime = max(withdrawalTime, block.timestamp) + secondsAdded;
@@ -105,8 +102,7 @@ contract BiddingWar is Ownable {
         require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender());
         usedRandomWalkNFTs[randomWalkNFTID] = true;
 
-        uint256 reward = calculateReward();
-        token.mint(lastBidder, reward);
+        token.mint(lastBidder, tokenReward);
 
         pushBackWithdrawDeadline();
 
@@ -131,8 +127,7 @@ contract BiddingWar is Ownable {
         );
         bidPrice = newBidPrice;
 
-        uint256 reward = calculateReward();
-        token.mint(lastBidder, reward);
+        token.mint(lastBidder, tokenReward);
 
         pushBackWithdrawDeadline();
 
