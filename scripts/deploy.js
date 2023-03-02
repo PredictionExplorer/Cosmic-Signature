@@ -45,6 +45,11 @@ async function main() {
   await biddingWar.setRandomWalk(randomWalkNFT.address);
 
   console.log("Addresses set");
+
+  let donationAmount = hre.ethers.utils.parseEther('10');
+  await biddingWar.donate({value: donationAmount});
+
+  console.log("Donation complete");
 }
 
 main().catch((error) => {
