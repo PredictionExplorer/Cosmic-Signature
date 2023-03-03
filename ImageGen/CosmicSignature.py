@@ -27,7 +27,7 @@ p2_start = np.array([0, 0, 0])
 v2_start = np.array([0, 0, 0])
 
 # p3_start = x_3, y_3, z_3
-p3_start = np.array([10, 10, 12])
+p3_start = np.array([10, 10, 10])
 v3_start = np.array([3, 0, 0])
 
 def accelerations(p1, p2, p3, m_1, m_2, m_3):
@@ -109,27 +109,60 @@ ys = []
 for p in p1:
     ys.append(p[1])
 
-print(ys[100])
 x_min = min(xs)
 y_min = min(ys)
 x_max = max(xs)
 y_max = max(ys)
-print(x_min)
-print(x_max)
 
-im = Image.new("RGB", (1000, 1000))
+x_range = x_max - x_min
+y_range = y_max - y_min
+
+full_range = max(x_range, y_range)
+num_pixels = 1000
+
+meters_per_pixel = full_range / num_pixels
+
+x_middle = (x_max + x_min) / 2
+y_middle = (y_max + y_min) / 2
+
+width = 1000
+height = 1000
+border = 10
+
+xscreen_middle = (width - border) / 2
+yscreen_middle = (height - border) / 2
+
+#x = int(x - x_center + target_size[0] / 2) + border
+
+# We want to map from some huge area to 1000 by 1000
+
+im = Image.new("RGB", (width, height))
 draw = ImageDraw.Draw(im)
 
-mult = 1000
+# we need to center the image
+
+xm = []
+ym = []
+
 for i in range(1, len(xs)):
-    x1 = mult * ((xs[i - 1] - x_min) / (x_max - x_min))
-    x2 = mult * ((xs[i] - x_min) / (x_max - x_min))
-    y1 = mult * ((ys[i - 1] - y_min) / (y_max - y_min))
-    y2 = mult * ((ys[i] - y_min) / (y_max - y_min))
-    if i % 10000 == 0:
-        print(x1, x2, y1, y2)
+    x1_relative_to_middle = (xs[i - 1] - x_middle) / full_range # between -0.5 and 0.5
+    x1 = 0.9 * x1_relative_to_middle * width + width / 2
+
+    y1_relative_to_middle = (ys[i - 1] - y_middle) / full_range # between -0.5 and 0.5
+    y1 = 0.9 * y1_relative_to_middle * height + height / 2
+
+    xm.append(x1_relative_to_middle)
+    ym.append(y1_relative_to_middle)
+
+    x2_relative_to_middle = (xs[i] - x_middle) / full_range # between -0.5 and 0.5
+    x2 = 0.9 * x2_relative_to_middle * width + width / 2
+
+    y2_relative_to_middle = (ys[i] - y_middle) / full_range # between -0.5 and 0.5
+    y2 = 0.9 * y2_relative_to_middle * height + height / 2
+
     draw.line([x1, y1, x2, y2], fill=C[i-1], width=5)
-    #if i > 1000: break
+
+print(min(xm), max(xm), min(ym), max(ym))
 
 del draw
 
