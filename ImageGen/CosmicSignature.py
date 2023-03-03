@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import random
 
-random.seed(123)
+random.seed(125)
 
 def ran():
     return random.random() * 20 - 10
@@ -50,7 +50,7 @@ def acceleration(p1, p2, m_1, m_2):
     return a
     # f = m * a; a = f / m
 
-def accelerations2(p1, p2, p3, m_1, m_2, m_3):
+def accelerations(p1, p2, p3, m_1, m_2, m_3):
     planets = [p1, p2, p3]
     masses = [m_1, m_2, m_3]
     accs = []
@@ -63,25 +63,6 @@ def accelerations2(p1, p2, p3, m_1, m_2, m_3):
         accs.append(a)
     return accs[0], accs[1], accs[2]
 
-
-
-def accelerations(p1, p2, p3, m_1, m_2, m_3):
-    """
-    A function to calculate the derivatives of x, y, and z
-    given 3 object and their locations according to Newton's laws
-    """
-
-    #m_1, m_2, m_3 = self.m1, self.m2, self.m3
-    planet_1_dv = -9.8 * m_2 * (p1 - p2)/distance(p1, p2)**3 - \
-            9.8 * m_3 * (p1 - p3)/distance(p1, p3)**3
-
-    planet_2_dv = -9.8 * m_3 * (p2 - p3)/distance(p2, p3)**3 - \
-            9.8 * m_1 * (p2 - p1)/distance(p2, p1)**3
-
-    planet_3_dv = -9.8 * m_1 * (p3 - p1)/distance(p3, p1)**3 - \
-            9.8 * m_2 * (p3 - p2)/distance(p3, p2)**3
-
-    return planet_1_dv, planet_2_dv, planet_3_dv
 
 # parameters
 delta_t = 0.001
