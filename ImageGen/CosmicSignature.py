@@ -214,7 +214,9 @@ while im is not None:
 
 VIDEO_FPS=60
 
-out = cv2.VideoWriter(f'vid.mp4',cv2.VideoWriter_fourcc(*'MP4V'), VIDEO_FPS, (1000, 1000))
+num = random.randint(1, 1000)
+
+out = cv2.VideoWriter(f'vid_{num}.mp4',cv2.VideoWriter_fourcc(*'MP4V'), VIDEO_FPS, (1000, 1000))
 
 for i in range(len(images)):
     cv_img = cv2.cvtColor(np.array(images[i]), cv2.COLOR_RGB2BGR)
