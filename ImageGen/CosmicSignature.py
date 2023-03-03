@@ -1,3 +1,4 @@
+import cv2
 import sys
 from PIL import Image, ImageDraw
 
@@ -141,8 +142,16 @@ draw = ImageDraw.Draw(im)
 
 # we need to center the image
 
-xm = []
-ym = []
+
+
+images = []
+im = Image.new('RGB', (width, height))
+images.append(im)
+draw = ImageDraw.Draw(im)
+
+
+
+
 
 for i in range(1, len(xs)):
     x1_relative_to_middle = (xs[i - 1] - x_middle) / full_range # between -0.5 and 0.5
@@ -150,9 +159,6 @@ for i in range(1, len(xs)):
 
     y1_relative_to_middle = (ys[i - 1] - y_middle) / full_range # between -0.5 and 0.5
     y1 = 0.9 * y1_relative_to_middle * height + height / 2
-
-    xm.append(x1_relative_to_middle)
-    ym.append(y1_relative_to_middle)
 
     x2_relative_to_middle = (xs[i] - x_middle) / full_range # between -0.5 and 0.5
     x2 = 0.9 * x2_relative_to_middle * width + width / 2
@@ -162,12 +168,27 @@ for i in range(1, len(xs)):
 
     draw.line([x1, y1, x2, y2], fill=C[i-1], width=5)
 
-print(min(xm), max(xm), min(ym), max(ym))
+    if i % 1000 == 0:
+        images.append(im)
+        im = im.copy()
+        draw = ImageDraw.Draw(im)
+
+
+
+
+VIDEO_FPS=60
+
+out = cv2.VideoWriter(f'vid.mp4',cv2.VideoWriter_fourcc(*'MP4V'), VIDEO_FPS, (1000, 1000))
+
+for i in range(len(images)):
+    cv_img = cv2.cvtColor(np.array(images[i]), cv2.COLOR_RGB2BGR)
+    out.write(cv_img)
+
+out.release()
+print("Video saved")
+
 
 del draw
 
 # write to stdout
-im.save("res.png", "PNG")
-
-
-
+#im.save("res.png", "PNG")
