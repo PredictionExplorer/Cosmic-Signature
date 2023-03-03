@@ -33,6 +33,38 @@ v3_start = np.array([3, 0, 0])
 
 def distance(p1, p2):
     return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
+
+G = 9.8
+def force(p1, p2, m_1, m_2):
+    # force applied to p1
+    direction = p2 - p1
+    magnitude = direction[0]**2 + direction[1]**2 + direction[2]**2
+    magnitude = np.sqrt(magnitude)
+    direction = direction / magnitude
+    return (G*m_1*m_2 / (distance(p1, p2)**2)) * direction
+
+def acceleration(p1, p2, m_1, m_2):
+    # acceleration of p1
+    f = force(p1, p2, m_1, m_2)
+    a = f / m_1
+    return a
+    # f = m * a; a = f / m
+
+def accelerations2(p1, p2, p3, m_1, m_2, m_3):
+    planets = [p1, p2, p3]
+    masses = [m_1, m_2, m_3]
+    accs = []
+    for i in range(len(planets)):
+        a = np.array([0., 0., 0.])
+        for j in range(len(planets)):
+            if i == j:
+                continue
+            a += acceleration(planets[i], planets[j], masses[i], masses[j])
+        accs.append(a)
+    return accs[0], accs[1], accs[2]
+
+
+
 def accelerations(p1, p2, p3, m_1, m_2, m_3):
     """
     A function to calculate the derivatives of x, y, and z
@@ -216,6 +248,7 @@ while im is not None:
 
 VIDEO_FPS=60
 
+random.seed()
 num = random.randint(1, 1000)
 
 out = cv2.VideoWriter(f'vid_{num}.mp4',cv2.VideoWriter_fourcc(*'MP4V'), VIDEO_FPS, (1000, 1000))
