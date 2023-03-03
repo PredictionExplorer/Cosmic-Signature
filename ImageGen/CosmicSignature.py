@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import random
 
-#random.seed()
+random.seed(123)
 
 def ran():
     return random.random() * 20 - 10
@@ -31,6 +31,8 @@ v2_start = np.array([0, 0, 0])
 p3_start = np.array([10, 10, 10])
 v3_start = np.array([3, 0, 0])
 
+def distance(p1, p2):
+    return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
 def accelerations(p1, p2, p3, m_1, m_2, m_3):
     """
     A function to calculate the derivatives of x, y, and z
@@ -38,14 +40,14 @@ def accelerations(p1, p2, p3, m_1, m_2, m_3):
     """
 
     #m_1, m_2, m_3 = self.m1, self.m2, self.m3
-    planet_1_dv = -9.8 * m_2 * (p1 - p2)/(np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)**3) - \
-            9.8 * m_3 * (p1 - p3)/(np.sqrt((p1[0] - p3[0])**2 + (p1[1] - p3[1])**2 + (p1[2] - p3[2])**2)**3)
+    planet_1_dv = -9.8 * m_2 * (p1 - p2)/distance(p1, p2)**3 - \
+            9.8 * m_3 * (p1 - p3)/distance(p1, p3)**3
 
-    planet_2_dv = -9.8 * m_3 * (p2 - p3)/(np.sqrt((p2[0] - p3[0])**2 + (p2[1] - p3[1])**2 + (p2[2] - p3[2])**2)**3) - \
-            9.8 * m_1 * (p2 - p1)/(np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 + (p2[2] - p1[2])**2)**3)
+    planet_2_dv = -9.8 * m_3 * (p2 - p3)/distance(p2, p3)**3 - \
+            9.8 * m_1 * (p2 - p1)/distance(p2, p1)**3
 
-    planet_3_dv = -9.8 * m_1 * (p3 - p1)/(np.sqrt((p3[0] - p1[0])**2 + (p3[1] - p1[1])**2 + (p3[2] - p1[2])**2)**3) - \
-            9.8 * m_2 * (p3 - p2)/(np.sqrt((p3[0] - p2[0])**2 + (p3[1] - p2[1])**2 + (p3[2] - p2[2])**2)**3)
+    planet_3_dv = -9.8 * m_1 * (p3 - p1)/distance(p3, p1)**3 - \
+            9.8 * m_2 * (p3 - p2)/distance(p3, p2)**3
 
     return planet_1_dv, planet_2_dv, planet_3_dv
 
