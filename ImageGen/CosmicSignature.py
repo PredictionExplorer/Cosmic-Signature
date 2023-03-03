@@ -83,24 +83,30 @@ for i in range(steps-1):
     p2[i + 1] = p2[i] + v2[i] * delta_t
     p3[i + 1] = p3[i] + v3[i] * delta_t
 
-def random_color_1ch(num_steps):
-    '''Geenrate colors for 1 channel.'''
-    cur = 0
-    result = []
-    for _ in range(num_steps):
-        cur += 1 if random.randint(0, 1) == 1 else -1
-        result.append(cur)
-    lowest = min(result)
-    highest = max(result)
-    for i in range(len(result)):
-        result[i] = int(255 * (result[i] - lowest) / (highest - lowest))
-    return result
+def colors(n_steps):
 
-c1 = random_color_1ch(len(p1) - 1)
-c2 = random_color_1ch(len(p1) - 1)
-c3 = random_color_1ch(len(p1) - 1)
+    def random_color_1ch(num_steps):
+        '''Geenrate colors for 1 channel.'''
+        cur = 0
+        result = []
+        for _ in range(num_steps):
+            cur += 1 if random.randint(0, 1) == 1 else -1
+            result.append(cur)
+        lowest = min(result)
+        highest = max(result)
+        for i in range(len(result)):
+            result[i] = int(255 * (result[i] - lowest) / (highest - lowest))
+        return result
 
-C = list(zip(c1, c2, c3))
+    c1 = random_color_1ch(n_steps)
+    c2 = random_color_1ch(n_steps)
+    c3 = random_color_1ch(n_steps)
+
+    C = list(zip(c1, c2, c3))
+    return C
+
+
+C = colors(len(p1))
 
 xs = []
 for p in p1:
@@ -110,71 +116,77 @@ ys = []
 for p in p1:
     ys.append(p[1])
 
-x_min = min(xs)
-y_min = min(ys)
-x_max = max(xs)
-y_max = max(ys)
+class Painter:
 
-x_range = x_max - x_min
-y_range = y_max - y_min
+    def __init__(self, xs, ys, C, width, height):
+        self.xs = xs
+        self.ys = ys
+        x_min = min(xs)
+        y_min = min(ys)
+        x_max = max(xs)
+        y_max = max(ys)
 
-full_range = max(x_range, y_range)
-num_pixels = 1000
+        x_range = x_max - x_min
+        y_range = y_max - y_min
 
-meters_per_pixel = full_range / num_pixels
+        self.full_range = max(x_range, y_range)
+        self.x_middle = (x_max + x_min) / 2
+        self.y_middle = (y_max + y_min) / 2
 
-x_middle = (x_max + x_min) / 2
-y_middle = (y_max + y_min) / 2
+        self.width = width
+        self.height = height
+        self.border = 10
+        self.xscreen_middle = self.width / 2
+        self.yscreen_middle = self.height / 2
+
+        self.C = C
+
+        self.i = 1
+
+
+
+    def add_to_frame(self, im):
+
+        draw = ImageDraw.Draw(im)
+        if self.i > len(self.xs):
+            return None
+
+        while self.i < len(self.xs):
+            x1_relative_to_middle = (self.xs[self.i - 1] - self.x_middle) / self.full_range # between -0.5 and 0.5
+            x1 = 0.9 * x1_relative_to_middle * self.width + self.width / 2
+
+            y1_relative_to_middle = (self.ys[self.i - 1] - self.y_middle) / self.full_range # between -0.5 and 0.5
+            y1 = 0.9 * y1_relative_to_middle * self.height + self.height / 2
+
+            x2_relative_to_middle = (self.xs[self.i] - self.x_middle) / self.full_range # between -0.5 and 0.5
+            x2 = 0.9 * x2_relative_to_middle * self.width + self.width / 2
+
+            y2_relative_to_middle = (self.ys[self.i] - self.y_middle) / self.full_range # between -0.5 and 0.5
+            y2 = 0.9 * y2_relative_to_middle * self.height + self.height / 2
+
+            self.i += 1
+
+            draw.line([x1, y1, x2, y2], fill=C[self.i-1], width=5)
+
+            if self.i % 1000 == 0:
+                return im
+
 
 width = 1000
 height = 1000
-border = 10
-
-xscreen_middle = (width - border) / 2
-yscreen_middle = (height - border) / 2
-
-#x = int(x - x_center + target_size[0] / 2) + border
-
-# We want to map from some huge area to 1000 by 1000
-
-im = Image.new("RGB", (width, height))
-draw = ImageDraw.Draw(im)
-
-# we need to center the image
-
-
-
 images = []
 im = Image.new('RGB', (width, height))
 images.append(im)
-draw = ImageDraw.Draw(im)
 
+p = Painter(xs, ys, C, width, height)
 
-
-
-
-for i in range(1, len(xs)):
-    x1_relative_to_middle = (xs[i - 1] - x_middle) / full_range # between -0.5 and 0.5
-    x1 = 0.9 * x1_relative_to_middle * width + width / 2
-
-    y1_relative_to_middle = (ys[i - 1] - y_middle) / full_range # between -0.5 and 0.5
-    y1 = 0.9 * y1_relative_to_middle * height + height / 2
-
-    x2_relative_to_middle = (xs[i] - x_middle) / full_range # between -0.5 and 0.5
-    x2 = 0.9 * x2_relative_to_middle * width + width / 2
-
-    y2_relative_to_middle = (ys[i] - y_middle) / full_range # between -0.5 and 0.5
-    y2 = 0.9 * y2_relative_to_middle * height + height / 2
-
-    draw.line([x1, y1, x2, y2], fill=C[i-1], width=5)
-
-    if i % 1000 == 0:
-        images.append(im)
-        im = im.copy()
-        draw = ImageDraw.Draw(im)
-
-
-
+while True:
+    im = im.copy()
+    im = p.add_to_frame(im)
+    if im is None:
+        break
+    images.append(im)
+    im = im.copy()
 
 VIDEO_FPS=60
 
@@ -187,8 +199,3 @@ for i in range(len(images)):
 out.release()
 print("Video saved")
 
-
-del draw
-
-# write to stdout
-#im.save("res.png", "PNG")
