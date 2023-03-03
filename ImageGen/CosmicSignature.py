@@ -106,15 +106,37 @@ def colors(n_steps):
     return C
 
 
-C = colors(len(p1))
+C1 = colors(len(p1))
 
-xs = []
+xs1 = []
 for p in p1:
-    xs.append(p[0])
+    xs1.append(p[0])
 
-ys = []
+ys1 = []
 for p in p1:
-    ys.append(p[1])
+    ys1.append(p[1])
+
+C2 = colors(len(p2))
+
+xs2 = []
+for p in p2:
+    xs2.append(p[0])
+
+ys2 = []
+for p in p2:
+    ys2.append(p[1])
+
+
+C3 = colors(len(p3))
+
+xs3 = []
+for p in p3:
+    xs3.append(p[0])
+
+ys3 = []
+for p in p3:
+    ys3.append(p[1])
+
 
 class Painter:
 
@@ -140,9 +162,7 @@ class Painter:
         self.yscreen_middle = self.height / 2
 
         self.C = C
-
         self.i = 1
-
 
 
     def add_to_frame(self, im):
@@ -166,7 +186,7 @@ class Painter:
 
             self.i += 1
 
-            draw.line([x1, y1, x2, y2], fill=C[self.i-1], width=5)
+            draw.line([x1, y1, x2, y2], fill=self.C[self.i-1], width=5)
 
             if self.i % 1000 == 0:
                 return im
@@ -178,15 +198,19 @@ images = []
 im = Image.new('RGB', (width, height))
 images.append(im)
 
-p = Painter(xs, ys, C, width, height)
+p1 = Painter(xs1, ys1, C1, width, height)
+p2 = Painter(xs2, ys2, C2, width, height)
+p3 = Painter(xs3, ys3, C3, width, height)
 
-while True:
+painters = [p1, p2, p3]
+
+while im is not None:
     im = im.copy()
-    im = p.add_to_frame(im)
-    if im is None:
-        break
-    images.append(im)
-    im = im.copy()
+    for painter in painters:
+        im = painter.add_to_frame(im)
+        if im is None:
+            break
+        images.append(im)
 
 VIDEO_FPS=60
 
