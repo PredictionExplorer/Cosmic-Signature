@@ -120,38 +120,22 @@ def colors(n_steps):
     C = list(zip(c1, c2, c3))
     return C
 
-
-C1 = colors(len(p1))
-
-xs1 = []
-for p in p1:
-    xs1.append(p[0])
-
-ys1 = []
-for p in p1:
-    ys1.append(p[1])
-
-C2 = colors(len(p2))
-
-xs2 = []
-for p in p2:
-    xs2.append(p[0])
-
-ys2 = []
-for p in p2:
-    ys2.append(p[1])
-
-
-C3 = colors(len(p3))
-
-xs3 = []
-for p in p3:
-    xs3.append(p[0])
-
-ys3 = []
-for p in p3:
-    ys3.append(p[1])
-
+def get_x_y(planet, direction):
+    a, b = -1, -1
+    if direction == 0:
+        a, b = 0, 1
+    elif direction == 1:
+        a, b = 0, 2
+    elif direction == 2:
+        a, b = 1, 2
+    else:
+        raise
+    xs = []
+    ys = []
+    for p in planet:
+        xs.append(p[a])
+        ys.append(p[b])
+    return (xs, ys)
 
 class Painter:
 
@@ -206,6 +190,16 @@ class Painter:
             if self.i % 1000 == 0:
                 return im
 
+
+DIR = 2
+
+xs1, ys1 = get_x_y(p1, DIR)
+xs2, ys2 = get_x_y(p2, DIR)
+xs3, ys3 = get_x_y(p3, DIR)
+
+C1 = colors(len(p1))
+C2 = colors(len(p2))
+C3 = colors(len(p3))
 
 width = 1000
 height = 1000
