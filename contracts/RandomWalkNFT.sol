@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.19;
 
 contract RandomWalkNFT is ERC721Enumerable, Ownable {
 

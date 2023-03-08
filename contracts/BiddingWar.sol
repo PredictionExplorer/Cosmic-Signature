@@ -5,7 +5,7 @@ import "./CosmicSignatureToken.sol";
 import "./CosmicSignature.sol";
 import "./RandomWalkNFT.sol";
 
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.19;
 
 contract BiddingWar is Ownable {
 
