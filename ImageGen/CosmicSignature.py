@@ -21,7 +21,7 @@ m_3 = ran_mass()
 # starting coordinates for planets
 # p1_start = x_1, y_1, z_1
 p1_start = np.array([-10, 10 + ran(), -11])
-v1_start = np.array([-3, 0, 0])
+v1_start = np.array([0, 0, 0])
 
 # p2_start = x_2, y_2, z_2
 p2_start = np.array([0, 0, 0])
@@ -29,7 +29,7 @@ v2_start = np.array([0, 0, 0])
 
 # p3_start = x_3, y_3, z_3
 p3_start = np.array([10, 10, 10])
-v3_start = np.array([3, 0, 0])
+v3_start = np.array([0, 0, 0])
 
 def distance(p1, p2):
     return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
@@ -190,48 +190,49 @@ class Painter:
             if self.i % 1000 == 0:
                 return im
 
+def draw_picture(direction, num, suffix, p1, p2, p3):
+    xs1, ys1 = get_x_y(p1, direction)
+    xs2, ys2 = get_x_y(p2, direction)
+    xs3, ys3 = get_x_y(p3, direction)
 
-DIR = 2
+    C1 = colors(len(p1))
+    C2 = colors(len(p2))
+    C3 = colors(len(p3))
 
-xs1, ys1 = get_x_y(p1, DIR)
-xs2, ys2 = get_x_y(p2, DIR)
-xs3, ys3 = get_x_y(p3, DIR)
+    width = 1000
+    height = 1000
+    images = []
+    im = Image.new('RGB', (width, height))
+    images.append(im)
 
-C1 = colors(len(p1))
-C2 = colors(len(p2))
-C3 = colors(len(p3))
+    p1 = Painter(xs1, ys1, C1, width, height)
+    p2 = Painter(xs2, ys2, C2, width, height)
+    p3 = Painter(xs3, ys3, C3, width, height)
 
-width = 1000
-height = 1000
-images = []
-im = Image.new('RGB', (width, height))
-images.append(im)
+    painters = [p1, p2, p3]
 
-p1 = Painter(xs1, ys1, C1, width, height)
-p2 = Painter(xs2, ys2, C2, width, height)
-p3 = Painter(xs3, ys3, C3, width, height)
+    while im is not None:
+        im = im.copy()
+        for painter in painters:
+            im = painter.add_to_frame(im)
+            if im is None:
+                break
+            images.append(im)
 
-painters = [p1, p2, p3]
+    VIDEO_FPS=60
 
-while im is not None:
-    im = im.copy()
-    for painter in painters:
-        im = painter.add_to_frame(im)
-        if im is None:
-            break
-        images.append(im)
 
-VIDEO_FPS=60
+    out = cv2.VideoWriter(f'vid_{num}_{suffix}.mp4',cv2.VideoWriter_fourcc(*'MP4V'), VIDEO_FPS, (1000, 1000))
+
+    for i in range(len(images)):
+        cv_img = cv2.cvtColor(np.array(images[i]), cv2.COLOR_RGB2BGR)
+        out.write(cv_img)
+
+    out.release()
+    print("Video saved")
 
 random.seed()
 num = random.randint(1, 1000)
-
-out = cv2.VideoWriter(f'vid_{num}.mp4',cv2.VideoWriter_fourcc(*'MP4V'), VIDEO_FPS, (1000, 1000))
-
-for i in range(len(images)):
-    cv_img = cv2.cvtColor(np.array(images[i]), cv2.COLOR_RGB2BGR)
-    out.write(cv_img)
-
-out.release()
-print("Video saved")
-
+for direction in range(3):
+    draw_picture(direction, num, direction, p1, p2, p3)
+    print(direction)
