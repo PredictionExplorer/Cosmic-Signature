@@ -9,7 +9,8 @@ pragma solidity ^0.8.19;
 
 contract BiddingWar is Ownable {
 
-    uint256 constant MILLION = 10**6;
+    uint256 public constant MILLION = 10**6;
+    uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
     // how much the currentBid increases after every bid
     // we want 1%?
@@ -57,7 +58,7 @@ contract BiddingWar is Ownable {
     RandomWalkNFT public randomWalk;
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID);
+    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID, string message);
     event DonationEvent(address indexed donor, uint256 amount);
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -89,7 +90,7 @@ contract BiddingWar is Ownable {
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
     }
 
-    function bidWithRWLK(uint256 randomWalkNFTID) public {
+    function bidWithRWLK(uint256 randomWalkNFTID, string memory message) public {
         // if you own a RandomWalkNFT, you can bid for free 1 time.
         // Each NFT can be used only once.
         if (lastBidder == address(0)) {
@@ -101,6 +102,8 @@ contract BiddingWar is Ownable {
 
         require(!usedRandomWalkNFTs[randomWalkNFTID],"token with this ID was used already");
         require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender(),"you must be the owner of the token");
+        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "message is too long");
+
         usedRandomWalkNFTs[randomWalkNFTID] = true;
 
         (bool mint_success, ) =
@@ -109,11 +112,11 @@ contract BiddingWar is Ownable {
 
         pushBackPrizeTime();
 
-        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID));
+        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID), message);
 
     }
 
-    function bid() public payable {
+    function bid(string memory message) public payable {
 
         if (lastBidder == address(0)) {
             // someone just claimed a prize and we are starting from scratch
@@ -124,6 +127,7 @@ contract BiddingWar is Ownable {
 
         uint256 newBidPrice = getBidPrice();
 
+        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long");
         require(
             msg.value >= newBidPrice,
             "The value submitted with this transaction is too low."
@@ -142,11 +146,11 @@ contract BiddingWar is Ownable {
             require(success, "Transfer failed.");
         }
 
-        emit BidEvent(lastBidder, bidPrice, -1);
+        emit BidEvent(lastBidder, bidPrice, -1, message);
     }
 
     receive() external payable {
-        bid();
+        bid("");
     }
 
     function timeUntilPrize() public view returns (uint256) {

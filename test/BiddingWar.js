@@ -53,15 +53,15 @@ describe("BiddingWar", function () {
       let donationAmount = ethers.utils.parseEther('10');
       await biddingWar.donate({value: donationAmount});
       expect(await biddingWar.prizeAmount()).to.equal(donationAmount.div(2));
-      await expect(biddingWar.connect(addr1).bid({value: 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
+      await expect(biddingWar.connect(addr1).bid("", {value: 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
       let bidPrice = await biddingWar.getBidPrice();
-      await expect(biddingWar.connect(addr1).bid({value: bidPrice.sub(1)})).to.be.revertedWith("The value submitted with this transaction is too low.");
+      await expect(biddingWar.connect(addr1).bid("", {value: bidPrice.sub(1)})).to.be.revertedWith("The value submitted with this transaction is too low.");
 
       let prizeTime = await biddingWar.timeUntilPrize();
       expect(prizeTime).to.equal(0);
 
       // check that if we sent too much, we get our money back
-      await biddingWar.connect(addr1).bid({value: bidPrice.add(1000)}); // this works
+      await biddingWar.connect(addr1).bid("", {value: bidPrice.add(1000)}); // this works
       const contractBalance = await ethers.provider.getBalance(biddingWar.address);
       expect(contractBalance).to.equal(donationAmount.add(bidPrice));
 
@@ -70,12 +70,12 @@ describe("BiddingWar", function () {
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).add(24 * 3600));
 
       bidPrice = await biddingWar.getBidPrice();
-      await biddingWar.connect(addr1).bid({value: bidPrice});
+      await biddingWar.connect(addr1).bid("", {value: bidPrice});
       prizeTime = await biddingWar.timeUntilPrize();
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).mul(2).add(24 * 3600 - 1));
 
       bidPrice = await biddingWar.getBidPrice();
-      await biddingWar.connect(addr1).bid({value: bidPrice});
+      await biddingWar.connect(addr1).bid("", {value: bidPrice});
       prizeTime = await biddingWar.timeUntilPrize();
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).mul(3).add(24 * 3600 - 2)); // not super clear why we are subtracting 2 here and 1 above
 
@@ -83,7 +83,7 @@ describe("BiddingWar", function () {
       await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only last bidder can claim the prize.");
 
       bidPrice = await biddingWar.getBidPrice();
-      await biddingWar.connect(addr2).bid({value: bidPrice});
+      await biddingWar.connect(addr2).bid("", {value: bidPrice});
       await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
 
       prizeTime = await biddingWar.timeUntilPrize();
@@ -109,7 +109,7 @@ describe("BiddingWar", function () {
       await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only last bidder can claim the prize.");
 
       bidPrice = await biddingWar.getBidPrice();
-      await biddingWar.connect(addr1).bid({value: bidPrice});
+      await biddingWar.connect(addr1).bid("", {value: bidPrice});
       await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
 
       prizeTime = await biddingWar.timeUntilPrize();
@@ -131,7 +131,7 @@ describe("BiddingWar", function () {
       await randomWalkNFT.connect(addr1).mint({value: tokenPrice});	// tokenId=0
 
       // switch to another account and attempt to use tokenId=0 which we don't own
-      await expect(biddingWar.connect(owner).bidWithRWLK(ethers.BigNumber.from("0"))).to.be.revertedWith("you must be the owner of the token"); //tokenId=0
+      await expect(biddingWar.connect(owner).bidWithRWLK(ethers.BigNumber.from("0"), "")).to.be.revertedWith("you must be the owner of the token"); //tokenId=0
 
       tokenPrice = await randomWalkNFT.getMintPrice();
       let tx = await randomWalkNFT.connect(owner).mint({value: tokenPrice});
@@ -140,10 +140,10 @@ describe("BiddingWar", function () {
       let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
       let parsed_log = randomWalkNFT.interface.parseLog(log);
       let token_id = parsed_log.args[0]
-      await  biddingWar.connect(owner).bidWithRWLK(token_id);
+      await  biddingWar.connect(owner).bidWithRWLK(token_id, "");
 
       // try to mint again using the same tokenId
-      await expect(biddingWar.connect(owner).bidWithRWLK(ethers.BigNumber.from(token_id))).to.be.revertedWith("token with this ID was used already"); //tokenId=0
+      await expect(biddingWar.connect(owner).bidWithRWLK(ethers.BigNumber.from(token_id), "")).to.be.revertedWith("token with this ID was used already"); //tokenId=0
     });
     it("Should not be possible to mint CosmicSignature token by anyone", async function () {
 
@@ -156,7 +156,7 @@ describe("BiddingWar", function () {
       const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       let bidPrice = await biddingWar.getBidPrice();
       let addr1_bal = await ethers.provider.getBalance(addr1.address);
-      await biddingWar.connect(addr1).bid({value:bidPrice});
+      await biddingWar.connect(addr1).bid("", {value:bidPrice});
       let prizeTime = await biddingWar.timeUntilPrize();
       await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
       let tx = await biddingWar.connect(addr1).claimPrize();
@@ -168,7 +168,7 @@ describe("BiddingWar", function () {
       await cosmicSignature.connect(addr1).setTokenName(token_id,"name 0");
       let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
       expect(remote_token_name).to.equal("name 0");
-		
+
       await expect(cosmicSignature.connect(addr2)
             .setTokenName(token_id,"name 000"))
             .to.be.revertedWith("setTokenName caller is not owner nor approved");
