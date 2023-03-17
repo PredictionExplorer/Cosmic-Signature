@@ -2,6 +2,7 @@
   "constructor()",
   "event BidEvent(address indexed,uint256,int256,string)",
   "event DonationEvent(address indexed,uint256)",
+  "event NFTDonationEvent(address,uint256)",
   "event OwnershipTransferred(address indexed,address indexed)",
   "event PrizeClaimEvent(uint256 indexed,address indexed,uint256)",
   "function MAX_MESSAGE_LENGTH() view returns (uint256)",

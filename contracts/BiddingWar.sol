@@ -72,6 +72,7 @@ contract BiddingWar is Ownable {
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
     event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID, string message);
     event DonationEvent(address indexed donor, uint256 amount);
+    event NFTDonationEvent(IERC721 nftAddress, uint256 tokenId);
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
@@ -113,6 +114,7 @@ contract BiddingWar is Ownable {
             claimed: false
         });
         numDonatedNFTs += 1;
+        emit NFTDonationEvent(_nftAddress, _tokenId);
     }
 
     function claimDonatedNFT(uint256 num) public {
