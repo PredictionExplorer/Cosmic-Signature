@@ -80,7 +80,7 @@ describe("BiddingWar", function () {
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).mul(3).add(24 * 3600 - 2)); // not super clear why we are subtracting 2 here and 1 above
 
       await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
-      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only last bidder can claim the prize.");
+      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize.");
 
       bidPrice = await biddingWar.getBidPrice();
       await biddingWar.connect(addr2).bid("", {value: bidPrice});
@@ -94,7 +94,7 @@ describe("BiddingWar", function () {
       await ethers.provider.send("evm_increaseTime", [100]);
       await ethers.provider.send("evm_mine");
 
-      await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Only last bidder can claim the prize.");
+      await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize.");
 
 
       let prizeAmount = await biddingWar.prizeAmount();
@@ -106,7 +106,7 @@ describe("BiddingWar", function () {
 
       // after the prize has been claimed, let's bid again!
 
-      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only last bidder can claim the prize.");
+      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize.");
 
       bidPrice = await biddingWar.getBidPrice();
       await biddingWar.connect(addr1).bid("", {value: bidPrice});

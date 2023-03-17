@@ -49,9 +49,21 @@ contract BiddingWar is Ownable {
     // when the money can be taken out
     uint256 public prizeTime;
 
-    uint256 public numPrizes = 0;
+    uint256 public roundNum = 0;
 
     mapping(uint256 => bool) public usedRandomWalkNFTs;
+
+    mapping(uint256 => address) public winners;
+
+    struct DonatedNFT {
+        IERC721 nftAddress;
+        uint256 tokenId;
+        uint256 round;
+        bool claimed;
+    }
+
+    mapping (uint256 => DonatedNFT) public donatedNFTs;
+    uint256 numDonatedNFTs;
 
     CosmicSignatureToken public token;
     CosmicSignature public nft;
@@ -75,7 +87,7 @@ contract BiddingWar is Ownable {
 
     // send some ETH into the contract and affect nothing else.
     function donate() public payable {
-        require (msg.value > 0,"amount to donate must be greater than 0");
+        require (msg.value > 0, "amount to donate must be greater than 0");
 
         if (lastBidder == address(0)) {
             initializeBidPrice();
@@ -88,6 +100,29 @@ contract BiddingWar is Ownable {
         uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
         prizeTime = max(prizeTime, block.timestamp) + secondsAdded;
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
+    }
+
+    function donateNFT(IERC721 _nftAddress, uint256 _tokenId) public {
+        // If you are a creator you can donate some NFT to the winner of the
+        // current round (which might get you featured on the front page of the website).
+        _nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
+        donatedNFTs[numDonatedNFTs] = DonatedNFT({
+            nftAddress: _nftAddress,
+            tokenId: _tokenId,
+            round: roundNum,
+            claimed: false
+        });
+        numDonatedNFTs += 1;
+    }
+
+    function claimDonatedNFT(uint256 num) public {
+       require(num < numDonatedNFTs, "The donated NFT does not exist");
+       address winner = winners[donatedNFTs[num].round];
+       require(_msgSender() == winner, "You are not the winner of the round");
+       require(!donatedNFTs[num].claimed, "The NFT has already been claimed");
+       require(donatedNFTs[num].round < roundNum, "The round is not over yet");
+       donatedNFTs[num].claimed = true;
+       donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
     }
 
     function bidWithRWLK(uint256 randomWalkNFTID, string memory message) public {
@@ -167,13 +202,14 @@ contract BiddingWar is Ownable {
     }
 
     function claimPrize() public {
-        require(_msgSender() == lastBidder, "Only last bidder can claim the prize.");
+        require(_msgSender() == lastBidder, "Only the last bidder can claim the prize.");
         require(timeUntilPrize() == 0, "Not enough time has elapsed.");
 
         address winner = lastBidder;
         lastBidder = address(0);
+        winners[roundNum] = winner;
 
-        numPrizes += 1;
+        roundNum += 1;
 
         (bool mint_success, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
@@ -190,7 +226,7 @@ contract BiddingWar is Ownable {
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer failed.");
 
-        emit PrizeClaimEvent(numPrizes - 1, winner, prizeAmount_);
+        emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
     constructor() {
