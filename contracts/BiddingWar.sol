@@ -7,7 +7,7 @@ import "./RandomWalkNFT.sol";
 
 pragma solidity ^0.8.19;
 
-contract BiddingWar is Ownable {
+contract BiddingWar is Ownable, IERC721Receiver {
 
     uint256 public constant MILLION = 10**6;
     uint256 public constant MAX_MESSAGE_LENGTH = 280;
@@ -122,7 +122,6 @@ contract BiddingWar is Ownable {
        address winner = winners[donatedNFTs[num].round];
        require(_msgSender() == winner, "You are not the winner of the round");
        require(!donatedNFTs[num].claimed, "The NFT has already been claimed");
-       require(donatedNFTs[num].round < roundNum, "The round is not over yet");
        donatedNFTs[num].claimed = true;
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
     }
@@ -277,6 +276,11 @@ contract BiddingWar is Ownable {
 
     function updateInitalBidAmountFraction(uint256 newInitalBidAmountFraction) public onlyOwner {
         initalBidAmountFraction = newInitalBidAmountFraction;
+    }
+
+    // Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
+    function onERC721Received(address, address, uint256, bytes calldata) public pure returns(bytes4) {
+        return this.onERC721Received.selector;
     }
 
 }
