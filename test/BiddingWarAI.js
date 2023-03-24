@@ -33,7 +33,7 @@ describe("BiddingWarAI", function () {
     await biddingWar.setNftContract(nft.address);
     await biddingWar.setRandomWalk(randomWalk.address);
 
-      await biddingWar.donate({value: INITIAL_AMOUNT});
+    await biddingWar.donate({value: INITIAL_AMOUNT});
 
   });
 
@@ -53,24 +53,23 @@ describe("BiddingWarAI", function () {
 });
 
   it("should emit PrizeClaimEvent and update winner on successful prize claim", async function () {
-    const initialBidPrice = await biddingWar.bidPrice();
-    const bidAmount = initialBidPrice.mul(1010000).div(10 ** 6);
+    let bidPrice = await biddingWar.getBidPrice();
 
     let mintPrice = await randomWalk.getMintPrice();
     await randomWalk.connect(donor).mint({value: mintPrice});
 
     await randomWalk.connect(donor).setApprovalForAll(biddingWar.address, true);
 
-    await biddingWar.connect(donor).bidAndDonateNFT("", randomWalk.address, 0, { value: bidAmount });
+    await biddingWar.connect(donor).bidAndDonateNFT("", randomWalk.address, 0, { value: bidPrice });
 
-    // Bid a lot more
-    await biddingWar.connect(bidder1).bid("", { value: bidAmount.mul(2) });
+    bidPrice = await biddingWar.getBidPrice();
+    await biddingWar.connect(bidder1).bid("", { value: bidPrice });
 
     await expect(biddingWar.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round");
     await ethers.provider.send("evm_increaseTime", [26 * 3600]);
     await ethers.provider.send("evm_mine");
 
-    const prizeAmountBeforeClaim = await biddingWar.prizeAmount();
+    let prizeAmountBeforeClaim = await biddingWar.prizeAmount();
 
     await expect(biddingWar.connect(bidder1).claimPrize())
       .to.emit(biddingWar, "PrizeClaimEvent")
@@ -79,16 +78,43 @@ describe("BiddingWarAI", function () {
     const winner = await biddingWar.winners(0);
     expect(winner).to.equal(bidder1.address);
 
+    const prizeAmountAfterClaim = await biddingWar.prizeAmount();
+    expect(prizeAmountAfterClaim).to.equal(prizeAmountBeforeClaim.mul(40).div(100));
+
     await expect(biddingWar.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("The donated NFT does not exist");
     await expect(biddingWar.connect(bidder2).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round");
 
     await biddingWar.connect(bidder1).claimDonatedNFT(0);
     await expect(biddingWar.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("The NFT has already been claimed");
 
+    mintPrice = await randomWalk.getMintPrice();
+    await randomWalk.connect(donor).mint({value: mintPrice});
+    mintPrice = await randomWalk.getMintPrice();
+    await randomWalk.connect(donor).mint({value: mintPrice});
+
+    bidPrice = await biddingWar.getBidPrice();
+    await biddingWar.connect(bidder1).bid("", { value: bidPrice });
+
+    await biddingWar.connect(donor).bidWithRWLKAndDonateNFT(1, "hello", randomWalk.address, 2);
+
+    await ethers.provider.send("evm_increaseTime", [26 * 3600]);
+    await ethers.provider.send("evm_mine");
+
+    prizeAmountBeforeClaim = await biddingWar.prizeAmount();
+    await expect(biddingWar.connect(donor).claimPrize())
+      .to.emit(biddingWar, "PrizeClaimEvent")
+      .withArgs(1, donor.address, prizeAmountBeforeClaim);
+
+    await expect(biddingWar.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("You are not the winner of the round");
+
+
+    expect(await randomWalk.balanceOf(donor.address)).to.equal(1);
+    await biddingWar.connect(donor).claimDonatedNFT(1);
+    expect(await randomWalk.balanceOf(donor.address)).to.equal(2);
+
+    expect(await biddingWar.roundNum()).to.equal(2);
+
   });
 
 
 });
-
-
-
