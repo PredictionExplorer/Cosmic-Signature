@@ -124,8 +124,13 @@ describe("BiddingWarAI", function () {
 
     await biddingWar.connect(owner).setActivationTime(timestampBefore + 100);
 
-    bidPrice = await biddingWar.getBidPrice();
+    let bidPrice = await biddingWar.getBidPrice();
     await expect(biddingWar.connect(bidder1).bid("", { value: bidPrice })).to.be.revertedWith("Not active yet.");
+
+    await expect(bidder2.sendTransaction({
+      to: biddingWar.address,
+      value: bidPrice
+    })).to.be.revertedWith("Not active yet.");
 
     await ethers.provider.send('evm_increaseTime', [100]);
     await ethers.provider.send('evm_mine');
@@ -133,6 +138,19 @@ describe("BiddingWarAI", function () {
     await biddingWar.connect(bidder1).bid("", { value: bidPrice });
     expect (await biddingWar.getBidPrice() > bidPrice);
 
+  });
+
+  it("should be possible to bid by sending to the contract", async function () {
+    let bidPrice = await biddingWar.getBidPrice();
+    await biddingWar.connect(bidder1).bid("", { value: bidPrice });
+    expect(await biddingWar.getBidPrice() > bidPrice);
+
+    bidPrice = await biddingWar.getBidPrice();
+    await bidder2.sendTransaction({
+      to: biddingWar.address,
+      value: bidPrice
+    });
+    expect(await biddingWar.getBidPrice() > bidPrice);
   });
 
 });
