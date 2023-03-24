@@ -1,6 +1,6 @@
 [
   "constructor()",
-  "event BidEvent(address indexed,uint256,int256,string)",
+  "event BidEvent(address indexed,uint256,int256,uint256,string)",
   "event DonationEvent(address indexed,uint256)",
   "event NFTDonationEvent(address,uint256)",
   "event OwnershipTransferred(address indexed,address indexed)",

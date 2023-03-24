@@ -72,7 +72,8 @@ contract BiddingWar is Ownable, IERC721Receiver {
     RandomWalkNFT public randomWalk;
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, string message);
+    // randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
+    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(IERC721 nftAddress, uint256 tokenId);
 
@@ -160,7 +161,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
         pushBackPrizeTime();
 
-        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), message);
+        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), prizeTime, message);
 
     }
 
@@ -200,7 +201,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
             require(success, "Transfer failed.");
         }
 
-        emit BidEvent(lastBidder, bidPrice, -1, message);
+        emit BidEvent(lastBidder, bidPrice, -1, prizeTime, message);
     }
 
     function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
