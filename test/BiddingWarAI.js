@@ -9,35 +9,36 @@ describe("BiddingWarAI", function () {
 
   beforeEach(async function () {
 
-      [owner, charity, donor, bidder1, bidder2, bidder3] = await ethers.getSigners();
+    [owner, charity, donor, bidder1, bidder2, bidder3] = await ethers.getSigners();
 
-      BiddingWar = await ethers.getContractFactory("BiddingWar");
-      biddingWar = await BiddingWar.deploy();
-      await biddingWar.deployed();
+    BiddingWar = await ethers.getContractFactory("BiddingWar");
+    biddingWar = await BiddingWar.deploy();
 
-      CosmicSignatureToken = await ethers.getContractFactory("CosmicSignatureToken");
-      token = await CosmicSignatureToken.deploy();
-      await token.deployed();
-      token.transferOwnership(biddingWar.address);
+    await biddingWar.deployed();
 
-      CosmicSignatureNFT = await ethers.getContractFactory("CosmicSignatureNFT");
-      nft = await CosmicSignatureNFT.deploy(biddingWar.address);
-      await nft.deployed();
+    CosmicSignatureToken = await ethers.getContractFactory("CosmicSignatureToken");
+    token = await CosmicSignatureToken.deploy();
+    await token.deployed();
+    token.transferOwnership(biddingWar.address);
 
-      RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
-      randomWalk = await RandomWalkNFT.deploy();
-      await randomWalk.deployed();
+    CosmicSignatureNFT = await ethers.getContractFactory("CosmicSignatureNFT");
+    nft = await CosmicSignatureNFT.deploy(biddingWar.address);
+    await nft.deployed();
+
+    RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
+    randomWalk = await RandomWalkNFT.deploy();
+    await randomWalk.deployed();
 
     // Set contracts
     await biddingWar.setTokenContract(token.address);
     await biddingWar.setNftContract(nft.address);
     await biddingWar.setRandomWalk(randomWalk.address);
+    await biddingWar.setActivationTime(0);
 
     await biddingWar.donate({value: INITIAL_AMOUNT});
 
   });
 
-    describe("DonationEvent", function () {
   it("should emit DonationEvent on successful donation", async function () {
     const donationAmount = ethers.utils.parseEther("1");
 
@@ -50,7 +51,6 @@ describe("BiddingWarAI", function () {
     const contractBalance = await ethers.provider.getBalance(biddingWar.address);
     expect(contractBalance).to.equal(donationAmount.add(INITIAL_AMOUNT));
   });
-});
 
   it("should emit PrizeClaimEvent and update winner on successful prize claim", async function () {
     let bidPrice = await biddingWar.getBidPrice();
@@ -107,7 +107,6 @@ describe("BiddingWarAI", function () {
 
     await expect(biddingWar.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("You are not the winner of the round");
 
-
     expect(await randomWalk.balanceOf(donor.address)).to.equal(1);
     await biddingWar.connect(donor).claimDonatedNFT(1);
     expect(await randomWalk.balanceOf(donor.address)).to.equal(2);
@@ -116,5 +115,24 @@ describe("BiddingWarAI", function () {
 
   });
 
+  it("should not be possible to bid before activation", async function () {
+    const sevenDays = 7 * 24 * 60 * 60;
+
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    const timestampBefore = blockBefore.timestamp;
+
+    await biddingWar.connect(owner).setActivationTime(timestampBefore + 100);
+
+    bidPrice = await biddingWar.getBidPrice();
+    await expect(biddingWar.connect(bidder1).bid("", { value: bidPrice })).to.be.revertedWith("Not active yet.");
+
+    await ethers.provider.send('evm_increaseTime', [100]);
+    await ethers.provider.send('evm_mine');
+
+    await biddingWar.connect(bidder1).bid("", { value: bidPrice });
+    expect (await biddingWar.getBidPrice() > bidPrice);
+
+  });
 
 });

@@ -55,6 +55,8 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
     mapping(uint256 => address) public winners;
 
+    uint256 public activationTime = 1682377200; // April 24 2023 19:00 New York Time
+
     struct DonatedNFT {
         IERC721 nftAddress;
         uint256 tokenId;
@@ -80,6 +82,11 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
     function getBidPrice() public view returns (uint256) {
         return (bidPrice * priceIncrease) / MILLION;
+    }
+
+    function timeUntilActivation() public view returns (uint256) {
+        if (activationTime < block.timestamp) return 0;
+        return activationTime - block.timestamp;
     }
 
     function initializeBidPrice() internal {
@@ -127,6 +134,11 @@ contract BiddingWar is Ownable, IERC721Receiver {
     }
 
     function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
+        require(
+            block.timestamp >= activationTime,
+            "Not active yet."
+        );
+
         // if you own a RandomWalkNFT, you can bid for free 1 time.
         // Each NFT can be used only once.
         if (lastBidder == address(0)) {
@@ -153,16 +165,23 @@ contract BiddingWar is Ownable, IERC721Receiver {
     }
 
     function bid(string memory message) public payable {
+        require(
+            block.timestamp >= activationTime,
+            "Not active yet."
+        );
+
+        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long");
+
         if (lastBidder == address(0)) {
             // someone just claimed a prize and we are starting from scratch
             prizeTime = block.timestamp + initialSecondsUntilPrize;
         }
 
+
         lastBidder = _msgSender();
 
         uint256 newBidPrice = getBidPrice();
 
-        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long");
         require(
             msg.value >= newBidPrice,
             "The value submitted with this transaction is too low."
@@ -285,6 +304,10 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
     function updateInitalBidAmountFraction(uint256 newInitalBidAmountFraction) public onlyOwner {
         initalBidAmountFraction = newInitalBidAmountFraction;
+    }
+
+    function setActivationTime(uint256 newActivationTime) public onlyOwner {
+        activationTime = newActivationTime;
     }
 
     // Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface

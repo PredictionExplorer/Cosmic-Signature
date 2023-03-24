@@ -36,6 +36,7 @@ describe("BiddingWar", function () {
     await biddingWar.setNftContract(cosmicSignatureNFT.address);
     await biddingWar.setCharity(charityWallet.address);
     await biddingWar.setRandomWalk(randomWalkNFT.address);
+    await biddingWar.setActivationTime(0);
 
     return {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT};
 
