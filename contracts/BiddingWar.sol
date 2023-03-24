@@ -103,7 +103,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
     }
 
-    function donateNFT(IERC721 _nftAddress, uint256 _tokenId) public {
+    function donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
         // If you are a creator you can donate some NFT to the winner of the
         // current round (which might get you featured on the front page of the website).
         _nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
@@ -153,7 +153,6 @@ contract BiddingWar is Ownable, IERC721Receiver {
     }
 
     function bid(string memory message) public payable {
-
         if (lastBidder == address(0)) {
             // someone just claimed a prize and we are starting from scratch
             prizeTime = block.timestamp + initialSecondsUntilPrize;
@@ -183,6 +182,11 @@ contract BiddingWar is Ownable, IERC721Receiver {
         }
 
         emit BidEvent(lastBidder, bidPrice, -1, message);
+    }
+
+    function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
+        bid(message);
+        donateNFT(nftAddress, tokenId);
     }
 
     receive() external payable {

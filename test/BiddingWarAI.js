@@ -61,12 +61,13 @@ describe("BiddingWarAI", function () {
 
     await randomWalk.connect(donor).setApprovalForAll(biddingWar.address, true);
 
-    await biddingWar.connect(donor).donateNFT(randomWalk.address, 0);
+    await biddingWar.connect(donor).bidAndDonateNFT("", randomWalk.address, 0, { value: bidAmount });
 
-    await biddingWar.connect(bidder1).bid("", { value: bidAmount });
+    // Bid a lot more
+    await biddingWar.connect(bidder1).bid("", { value: bidAmount.mul(2) });
 
     await expect(biddingWar.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round");
-    await ethers.provider.send("evm_increaseTime", [24 * 3600 + 3601]);
+    await ethers.provider.send("evm_increaseTime", [26 * 3600]);
     await ethers.provider.send("evm_mine");
 
     const prizeAmountBeforeClaim = await biddingWar.prizeAmount();
@@ -83,7 +84,6 @@ describe("BiddingWarAI", function () {
 
     await biddingWar.connect(bidder1).claimDonatedNFT(0);
     await expect(biddingWar.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("The NFT has already been claimed");
-      //await biddingWar.connect(bidder1).claimDonatedNFT(1);
 
   });
 
