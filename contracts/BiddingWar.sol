@@ -2,7 +2,7 @@
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./CosmicSignatureToken.sol";
-import "./CosmicSignature.sol";
+import "./CosmicSignatureNFT.sol";
 import "./RandomWalkNFT.sol";
 
 pragma solidity ^0.8.19;
@@ -66,7 +66,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
     uint256 numDonatedNFTs;
 
     CosmicSignatureToken public token;
-    CosmicSignature public nft;
+    CosmicSignatureNFT public nft;
     RandomWalkNFT public randomWalk;
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
@@ -222,7 +222,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
         roundNum += 1;
 
         (bool mint_success, ) =
-            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
+            address(nft).call(abi.encodeWithSelector(CosmicSignatureNFT.mint.selector, winner));
 		require(mint_success,"CosmicSignature mint() failed to mint token");
         
         initializeBidPrice();
@@ -260,7 +260,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
     }
 
     function setNftContract(address addr) public onlyOwner {
-        nft = CosmicSignature(addr);
+        nft = CosmicSignatureNFT(addr);
     }
 
     function setTimeIncrease(uint256 newTimeIncrease) public onlyOwner {

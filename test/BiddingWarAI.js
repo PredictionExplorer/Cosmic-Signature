@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("BiddingWarAI", function () {
-  let BiddingWar, biddingWar, CosmicSignatureToken, token, CosmicSignature, nft, RandomWalkNFT, randomWalk;
+  let BiddingWar, biddingWar, CosmicSignatureToken, token, CosmicSignatureNFT, nft, RandomWalkNFT, randomWalk;
   let owner, charity, donor, bidder1, bidder2, bidder3;
   let INITIAL_AMOUNT = ethers.utils.parseEther('10');
 
@@ -20,8 +20,8 @@ describe("BiddingWarAI", function () {
       await token.deployed();
       token.transferOwnership(biddingWar.address);
 
-      CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-      nft = await CosmicSignature.deploy(biddingWar.address);
+      CosmicSignatureNFT = await ethers.getContractFactory("CosmicSignatureNFT");
+      nft = await CosmicSignatureNFT.deploy(biddingWar.address);
       await nft.deployed();
 
       RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");

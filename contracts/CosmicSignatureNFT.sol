@@ -6,11 +6,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 pragma solidity ^0.8.19;
 
-contract CosmicSignature is ERC721Enumerable, Ownable {
+contract CosmicSignatureNFT is ERC721Enumerable, Ownable {
 
     mapping(uint256 => bytes32) public seeds;
 
     mapping(uint256 => string) public tokenNames;
+
+    // The owner can control how the NFT is displayed by changing these settings.
+    // This integer is a bunch of boolean flags. It might also contain the number of steps in the simulation.
+    mapping(uint256 => uint256) public tokenSettings;
 
     // Entropy
     bytes32 public entropy;
@@ -22,6 +26,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     address public biddingWarContract;
 
     event TokenNameEvent(uint256 tokenId, string newName);
+    event TokenSettingsEvent(uint256 tokenId, uint256 settings);
     event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
 
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
@@ -46,6 +51,15 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         require(bytes(name).length <= 32, "Token name is too long.");
         tokenNames[tokenId] = name;
         emit TokenNameEvent(tokenId, name);
+    }
+
+    function setTokenSettings(uint256 tokenId, uint256 settings) public {
+        require(
+            _isApprovedOrOwner(_msgSender(), tokenId),
+            "setTokenSettings caller is not owner nor approved"
+        );
+        tokenSettings[tokenId] = settings;
+        emit TokenSettingsEvent(tokenId, settings);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {

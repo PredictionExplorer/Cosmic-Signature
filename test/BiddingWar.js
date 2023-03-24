@@ -19,8 +19,8 @@ describe("BiddingWar", function () {
     const cosmicSignatureToken = await CosmicSignatureToken.deploy();
     cosmicSignatureToken.transferOwnership(biddingWar.address);
 
-    const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-    const cosmicSignature = await CosmicSignature.deploy(biddingWar.address);
+    const CosmicSignatureNFT = await ethers.getContractFactory("CosmicSignatureNFT");
+    const cosmicSignatureNFT = await CosmicSignatureNFT.deploy(biddingWar.address);
 
     const CosmicSignatureDAO = await ethers.getContractFactory("CosmicSignatureDAO");
     const cosmicSignatureDAO = await CosmicSignatureDAO.deploy(cosmicSignatureToken.address);
@@ -33,23 +33,23 @@ describe("BiddingWar", function () {
     const randomWalkNFT = await RandomWalkNFT.deploy();
 
     await biddingWar.setTokenContract(cosmicSignatureToken.address);
-    await biddingWar.setNftContract(cosmicSignature.address);
+    await biddingWar.setNftContract(cosmicSignatureNFT.address);
     await biddingWar.setCharity(charityWallet.address);
     await biddingWar.setRandomWalk(randomWalkNFT.address);
 
-    return {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT};
+    return {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT};
 
   }
 
   describe("Deployment", function () {
     it("Should set the right unlockTime", async function () {
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       expect(await biddingWar.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
       expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
     });
     it("Should be possible to bid", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       let donationAmount = ethers.utils.parseEther('10');
       await biddingWar.donate({value: donationAmount});
       expect(await biddingWar.prizeAmount()).to.equal(donationAmount.div(2));
@@ -125,7 +125,7 @@ describe("BiddingWar", function () {
       expect(prizeAmount2).to.equal(prizeAmount.sub(charityAmount).div(2));
     });
     it("Should be possible to bid with RandomWalk token", async function () {
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       let tokenPrice = await randomWalkNFT.getMintPrice();
       await randomWalkNFT.connect(addr1).mint({value: tokenPrice});	// tokenId=0
@@ -147,13 +147,13 @@ describe("BiddingWar", function () {
     });
     it("Should not be possible to mint CosmicSignature token by anyone", async function () {
 
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("only BiddingWar contract can mint")
+	await expect(cosmicSignatureNFT.connect(owner).mint(owner.address)).to.be.revertedWith("only BiddingWar contract can mint")
      });
     it("Should be possible to setTokenName()", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       let bidPrice = await biddingWar.getBidPrice();
       let addr1_bal = await ethers.provider.getBalance(addr1.address);
       await biddingWar.connect(addr1).bid("", {value:bidPrice});
@@ -161,29 +161,29 @@ describe("BiddingWar", function () {
       await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
       let tx = await biddingWar.connect(addr1).claimPrize();
       let receipt = await tx.wait();
-      let topic_sig = cosmicSignature.interface.getEventTopic("MintEvent");
+      let topic_sig = cosmicSignatureNFT.interface.getEventTopic("MintEvent");
       let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
-      let parsed_log = cosmicSignature.interface.parseLog(log);
+      let parsed_log = cosmicSignatureNFT.interface.parseLog(log);
       let token_id = parsed_log.args.tokenId;
-      await cosmicSignature.connect(addr1).setTokenName(token_id,"name 0");
-      let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
+      await cosmicSignatureNFT.connect(addr1).setTokenName(token_id,"name 0");
+      let remote_token_name = await cosmicSignatureNFT.connect(addr1).tokenNames(token_id);
       expect(remote_token_name).to.equal("name 0");
 
-      await expect(cosmicSignature.connect(addr2)
+      await expect(cosmicSignatureNFT.connect(addr2)
             .setTokenName(token_id,"name 000"))
             .to.be.revertedWith("setTokenName caller is not owner nor approved");
-      await expect(cosmicSignature.connect(addr1)
+      await expect(cosmicSignatureNFT.connect(addr1)
             .setTokenName(token_id,"012345678901234567890123456789012"))
             .to.be.revertedWith("Token name is too long.");
     });
     it("Should not be possible to mint ERC721 tokens by anyone()", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
-      await expect(cosmicSignature.connect(addr1).mint(addr1.address)).
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      await expect(cosmicSignatureNFT.connect(addr1).mint(addr1.address)).
             to.be.revertedWith("only BiddingWar contract can mint");
 	});
     it("Should not be possible to donate 0 value", async function () {
-      const {biddingWar, cosmicSignatureToken, cosmicSignature, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
+      const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       await expect(biddingWar.connect(addr1).donate()).
             to.be.revertedWith("amount to donate must be greater than 0");
