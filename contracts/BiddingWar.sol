@@ -70,7 +70,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
     RandomWalkNFT public randomWalk;
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTID, string message);
+    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(IERC721 nftAddress, uint256 tokenId);
 
@@ -126,7 +126,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
     }
 
-    function bidWithRWLK(uint256 randomWalkNFTID, string memory message) public {
+    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
         // if you own a RandomWalkNFT, you can bid for free 1 time.
         // Each NFT can be used only once.
         if (lastBidder == address(0)) {
@@ -136,11 +136,11 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
         lastBidder = _msgSender();
 
-        require(!usedRandomWalkNFTs[randomWalkNFTID],"token with this ID was used already");
-        require(randomWalk.ownerOf(randomWalkNFTID) == _msgSender(),"you must be the owner of the token");
+        require(!usedRandomWalkNFTs[randomWalkNFTId],"token with this ID was used already");
+        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"you must be the owner of the token");
         require(bytes(message).length <= MAX_MESSAGE_LENGTH, "message is too long");
 
-        usedRandomWalkNFTs[randomWalkNFTID] = true;
+        usedRandomWalkNFTs[randomWalkNFTId] = true;
 
         (bool mint_success, ) =
             address(token).call(abi.encodeWithSelector(CosmicSignatureToken.mint.selector, lastBidder,tokenReward));
@@ -148,7 +148,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
         pushBackPrizeTime();
 
-        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTID), message);
+        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), message);
 
     }
 
@@ -186,6 +186,11 @@ contract BiddingWar is Ownable, IERC721Receiver {
 
     function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
         bid(message);
+        donateNFT(nftAddress, tokenId);
+    }
+
+    function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
+        bidWithRWLK(randomWalkNFTId, message);
         donateNFT(nftAddress, tokenId);
     }
 
