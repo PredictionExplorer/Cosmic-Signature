@@ -18,10 +18,10 @@ async function main() {
   await cosmicSignatureToken.transferOwnership(biddingWar.address);
   console.log("CosmicSignatureToken address:", cosmicSignatureToken.address);
 
-  const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
-  const cosmicSignature = await CosmicSignature.deploy(biddingWar.address);
-  cosmicSignature.deployed();
-  console.log("Cosmic Signature address:", cosmicSignature.address);
+  const CosmicSignatureNFT = await hre.ethers.getContractFactory("CosmicSignatureNFT");
+  const cosmicSignatureNFT = await CosmicSignatureNFT.deploy(biddingWar.address);
+  cosmicSignatureNFT.deployed();
+  console.log("Cosmic Signature NFT address:", cosmicSignatureNFT.address);
 
   const CosmicSignatureDAO = await hre.ethers.getContractFactory("CosmicSignatureDAO");
   const cosmicSignatureDAO = await CosmicSignatureDAO.deploy(cosmicSignatureToken.address);
@@ -40,7 +40,7 @@ async function main() {
   console.log("randomWalkNFT address:", randomWalkNFT.address);
 
   await biddingWar.setTokenContract(cosmicSignatureToken.address);
-  await biddingWar.setNftContract(cosmicSignature.address);
+  await biddingWar.setNftContract(cosmicSignatureNFT.address);
   await biddingWar.setCharity(charityWallet.address);
   await biddingWar.setRandomWalk(randomWalkNFT.address);
 
