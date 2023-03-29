@@ -75,7 +75,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
     // randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
     event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
-    event NFTDonationEvent(IERC721 nftAddress, uint256 tokenId);
+    event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 tokenId);
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
@@ -122,7 +122,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
             claimed: false
         });
         numDonatedNFTs += 1;
-        emit NFTDonationEvent(_nftAddress, _tokenId);
+        emit NFTDonationEvent(_msgSender(), _nftAddress, _tokenId);
     }
 
     function claimDonatedNFT(uint256 num) public {
