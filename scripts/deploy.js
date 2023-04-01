@@ -39,6 +39,11 @@ async function main() {
   randomWalkNFT.deployed();
   console.log("randomWalkNFT address:", randomWalkNFT.address);
 
+  const RandomWalkNFT2 = await hre.ethers.getContractFactory("RandomWalkNFT");
+  const randomWalkNFT2 = await RandomWalkNFT2.deploy();
+  randomWalkNFT2.deployed();
+  console.log("randomWalkNFT2 address:", randomWalkNFT2.address);
+
   await biddingWar.setTokenContract(cosmicSignatureToken.address);
   await biddingWar.setNftContract(cosmicSignatureNFT.address);
   await biddingWar.setCharity(charityWallet.address);
