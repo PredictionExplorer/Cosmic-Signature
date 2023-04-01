@@ -81,7 +81,6 @@ describe("BiddingWar", function () {
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).mul(3).add(24 * 3600 - 2)); // not super clear why we are subtracting 2 here and 1 above
 
       await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
-      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize.");
 
       bidPrice = await biddingWar.getBidPrice();
       await biddingWar.connect(addr2).bid("", {value: bidPrice});
@@ -95,7 +94,7 @@ describe("BiddingWar", function () {
       await ethers.provider.send("evm_increaseTime", [100]);
       await ethers.provider.send("evm_mine");
 
-      await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize.");
+      await expect(biddingWar.connect(addr1).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 3 hours.");
 
 
       let prizeAmount = await biddingWar.prizeAmount();
@@ -107,7 +106,7 @@ describe("BiddingWar", function () {
 
       // after the prize has been claimed, let's bid again!
 
-      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize.");
+      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 3 hours.");
 
       bidPrice = await biddingWar.getBidPrice();
       await biddingWar.connect(addr1).bid("", {value: bidPrice});
@@ -124,7 +123,23 @@ describe("BiddingWar", function () {
       await biddingWar.connect(addr1).claimPrize();
       prizeAmount2 = await biddingWar.prizeAmount();
       expect(prizeAmount2).to.equal(prizeAmount.sub(charityAmount).div(2));
+
+
+      // 3 hours after the deadline, anyone should be able to claim the prize
+      await biddingWar.connect(addr1).bid("", {value: bidPrice});
+      prizeTime = await biddingWar.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(biddingWar.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 3 hours.");
+
+      await ethers.provider.send("evm_increaseTime", [3600 * 3]);
+      await ethers.provider.send("evm_mine");
+
+      await biddingWar.connect(addr2).claimPrize();
+      expect(await biddingWar.lastBidder()).to.equal("0x0000000000000000000000000000000000000000");
     });
+
     it("Should be possible to bid with RandomWalk token", async function () {
       const {biddingWar, cosmicSignatureToken, cosmicSignatureNFT, charityWallet, cosmicSignatureDAO, randomWalkNFT} = await loadFixture(deployBiddingWar);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();

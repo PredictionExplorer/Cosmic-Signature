@@ -232,10 +232,18 @@ contract BiddingWar is Ownable, IERC721Receiver {
     }
 
     function claimPrize() public {
-        require(_msgSender() == lastBidder, "Only the last bidder can claim the prize.");
-        require(timeUntilPrize() == 0, "Not enough time has elapsed.");
+        require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
 
-        address winner = lastBidder;
+        if (block.timestamp - prizeTime < 3600 * 3) {
+            // The winner has 3 hours to claim the prize.
+            // After the 3 hours have elapsed, then *anyone* will be able to claim the prize!
+            // This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
+            // which would stop the creation of new Cosmic Signature NFTs.
+            require(_msgSender() == lastBidder,
+                    "Only the last bidder can claim the prize during the first 3 hours.");
+        }
+
+        address winner = _msgSender();
         lastBidder = address(0);
         winners[roundNum] = winner;
 
