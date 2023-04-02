@@ -9,6 +9,8 @@ struct Body {
     acceleration: Vector3<f64>,
 }
 
+const G: f64 = 9.8;
+
 impl Body {
     fn new(mass: f64, position: Vector3<f64>, velocity: Vector3<f64>) -> Body {
         Body {
@@ -19,19 +21,48 @@ impl Body {
         }
     }
 
-    fn update_acceleration(&mut self, other: &Body) {
+    fn reset_acceleration(&mut self) {
         self.acceleration = Vector3::zeros();
+    }
+
+    fn update_acceleration(&mut self, other: &Body) {
         let r = other.position - self.position;
         let distance = r.norm();
-        //println!("{}", distance);
-        self.acceleration += r * G * other.mass / distance.powi(3);
+        let force_magnitude = G * self.mass * other.mass / (distance * distance);
+        let force = force_magnitude * r / distance;
+        self.acceleration += force / self.mass
     }
 }
+
+
+/*
+fn verlet_integration(planets, dt, num_steps):
+    positions = {planet.name: np.zeros((num_steps, 3)) for planet in planets}
+    for i, planet in enumerate(planets):
+        positions[planet.name][0] = planet.position
+
+    for step in range(1, num_steps):
+        for i, planet1 in enumerate(planets):
+            acceleration = np.zeros(3)
+            for j, planet2 in enumerate(planets):
+                if i != j:
+                    force = gravitational_force(planet1, planet2)
+                    acceleration += force / planet1.mass
+            planet1.position += planet1.velocity * dt + 0.5 * acceleration * dt**2
+            planet1.velocity += acceleration * dt
+            positions[planet1.name][step] = planet1.position
+
+    return positions
+*/
+
+
+
 
 fn update_accelerations(bodies: &mut [Body]) {
     
     for i in 0..bodies.len() {
         let body1_ptr = &mut bodies[i] as *mut Body;
+        bodies[i].reset_acceleration();
 
         for j in 0..bodies.len() {
             if i != j {
@@ -58,12 +89,9 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     for body in bodies.iter_mut() {
         body.position += body.velocity * dt + body.acceleration * (dt * dt) * 0.5;
     }
-
-    update_accelerations(bodies);
     update_velocities(bodies, dt);
 }
 
-const G: f64 = 9.8;
 
 use image::{ImageBuffer, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
@@ -72,15 +100,6 @@ use std::f64::{INFINITY, NEG_INFINITY};
 
 
 fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
-    let flat_positions: Vec<(f64, f64, f64)> = positions
-        .iter()
-        .flat_map(|body_positions| {
-            body_positions.iter().map(|pos| (pos.x, pos.y, pos.z))
-        })
-        .collect();
-
-    // Replace the original positions variable with the flattened one
-    let positions = &flat_positions;
 
     // Set image dimensions, background color, and line color
     let width = 800;
@@ -92,29 +111,39 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
 
-    for &(x, y, _) in positions {
-        min_x = min_x.min(x);
-        min_y = min_y.min(y);
-        max_x = max_x.max(x);
-        max_y = max_y.max(y);
+    for i in 0..positions[0].len() - 1 {
+        let x = positions[0][i][0];
+        let y = positions[0][i][1];
+        if x < min_x { min_x = x; }
+        if y < min_y { min_y = y; }
+        if x > max_x { max_x = x; }
+        if y > max_y { max_y = y; }
     }
+
+    min_x = min_x - (max_x - min_x) * 0.1;
+    max_x = max_x + (max_x - min_x) * 0.1;
+
+    min_y = min_y - (max_y - min_y) * 0.1;
+    max_y = max_y + (max_y - min_y) * 0.1;
 
     // Create a new image with a white background
     let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
 
     // Draw lines between consecutive positions
-    for i in 0..positions.len() - 1 {
-        let (x1, y1, _) = positions[i];
-        let (x2, y2, _) = positions[i + 1];
+    for i in 0..positions[0].len() - 1 {
+        let x1 = positions[0][i][0];
+        let y1 = positions[0][i][1];
+        let x2 = positions[0][i + 1][0];
+        let y2 = positions[0][i + 1][1];
 
         // Scale and shift positions to fit within the image dimensions
-        let x1 = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-        let y1 = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
-        let x2 = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-        let y2 = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+        let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+        let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+        let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+        let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
         // Draw a line segment between the scaled positions
-        draw_line_segment_mut(&mut img, (x1 as f32, y1 as f32), (x2 as f32, y2 as f32), line_color);
+        draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
     }
 
     // Save the image to a file
@@ -129,17 +158,48 @@ fn TypeOf<T>(_: &T) {
 
 fn main() {
     let dt = 0.001;
-    let steps = 400000;
+    let steps = 200_000;
 
-
+    /*
     let body1 = Body::new(42.87781762, Vector3::new(133.47426179, -95.95830491, 16.90552867), Vector3::new(0.0, 0.0, 0.0));
     let body2 = Body::new(18.06659753, Vector3::new(19.90033799, 247.02239617, 70.52390568), Vector3::new(0.0, 0.0, 0.0));
     let body3 = Body::new(105.38238772, Vector3::new(-36.24854541, -25.77961209, -109.48262213), Vector3::new(0.0, 0.0, 0.0));
+    */
+
+    let body1 = Body::new(10.0, Vector3::new(-10.0, 10.0, -11.0), Vector3::new(-3.0, 0.0, 0.0));
+    let body2 = Body::new(20.0, Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0));
+    let body3 = Body::new(30.0, Vector3::new(10.0, 10.0, 12.0), Vector3::new(3.0, 0.0, 0.0));
+
+
+
+
+
+    /*
+m_1 = 10
+m_2 = 20
+m_3 = 30
+
+# starting coordinates for planets
+# p1_start = x_1, y_1, z_1
+p1_start = np.array([-10, 10, -11])
+v1_start = np.array([-3, 0, 0])
+
+# p2_start = x_2, y_2, z_2
+p2_start = np.array([0, 0, 0])
+v2_start = np.array([0, 0, 0])
+
+# p3_start = x_3, y_3, z_3
+p3_start = np.array([10, 10, 12])
+v3_start = np.array([3, 0, 0])
+
+*/
+
+
+
 
     let mut bodies = vec![body1, body2, body3];
 
     let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
-    TypeOf(&positions[0]);
 
     for step in 0..steps {
         for (i, body) in bodies.iter().enumerate() {
