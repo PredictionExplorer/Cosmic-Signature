@@ -22,11 +22,6 @@ impl Body {
     }
 
     fn update_acceleration(&mut self, other_mass: f64, other_position: Vector3<f64>) {
-        /*Calculates gravitational acceleration applying on a body.
-        :param m: Mass of object that creates acceleration
-        :param r: Distance between objects
-        */
-        //const G: f64 = 9.8;
         let dir: Vector3<f64> = self.position - other_position;
         let mag = dir.norm();
         self.acceleration += -G * other_mass * dir / (mag * mag * mag);
@@ -39,77 +34,12 @@ impl Body {
 }
 
 
-
-/*
-fn verlet_integration(planets, dt, num_steps):
-    positions = {planet.name: np.zeros((num_steps, 3)) for planet in planets}
-    for i, planet in enumerate(planets):
-        positions[planet.name][0] = planet.position
-
-    for step in range(1, num_steps):
-        for i, planet1 in enumerate(planets):
-            acceleration = np.zeros(3)
-            for j, planet2 in enumerate(planets):
-                if i != j:
-                    force = gravitational_force(planet1, planet2)
-                    acceleration += force / planet1.mass
-            planet1.position += planet1.velocity * dt + 0.5 * acceleration * dt**2
-            planet1.velocity += acceleration * dt
-            positions[planet1.name][step] = planet1.position
-
-    return positions
-*/
-
-
-
-fn gravity_acceleration(body: &Body, dir: Vector3<f64>) -> Vector3<f64> {
-    /*Calculates gravitational acceleration applying on a body.
-    :param m: Mass of object that creates acceleration
-    :param r: Distance between objects
-    */
-    //const G: f64 = 9.8;
-    let mag = dir.norm();
-    return -G * body.mass * dir / (mag * mag * mag);
-}
-
-
-
-/*
-fn update_velocities(body: Body, direction: Vector3) {
-    for body in bodies.iter_mut() {
-        body.velocity += body.acceleration * dt;
-    }
-}
-
 fn verlet_step(bodies: &mut [Body], dt: f64) {
-    update_accelerations(bodies);
-    for body in bodies.iter_mut() {
-        body.position += body.velocity * dt + body.acceleration * (dt * dt) * 0.5;
-    }
-    update_velocities(bodies, dt);
-}
-*/
-
-
-fn verlet_step_2(bodies: &mut [Body], dt: f64) {
-    /*Calculates velocity and position of three bodies for the next time step.
-    :param r: Positions of three bodies - #bodies x #dimensions
-    :param v: Velocities of three bodies - #bodies x #dimensions
-    :param m: Masses of three bodies - #bodies x 1
-    :param dt: Time-step in seconds
-    */
-
-
-    //let mut a = [Vector3::zeros(), Vector3::zeros(), Vector3::zeros()];
-
-    //a = np.zeros_like(r, dtype=np.float64) #initialize acceleration for all bodies: #bodies x #dimensions
-    //
     for i in 0..bodies.len() {
         bodies[i].reset_acceleration();
         for j in 0..bodies.len() {
             if i != j {
                 bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
-                //a[i] += gravity_acceleration(&bodies[j], bodies[i].position - bodies[j].position);
             }
         }
     }
@@ -121,7 +51,6 @@ fn verlet_step_2(bodies: &mut [Body], dt: f64) {
     for i in 0..bodies.len() {
         for j in 0..bodies.len() {
             if i != j {
-                //bodies[i].update_acceleration(&bodies[j]);
                 bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
             }
         }
@@ -205,7 +134,7 @@ fn main() {
         for (i, body) in bodies.iter().enumerate() {
             positions[i][step] = body.position;
         }
-        verlet_step_2(&mut bodies, dt);
+        verlet_step(&mut bodies, dt);
     }
 
     plot_positions(&positions);
