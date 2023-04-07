@@ -30,9 +30,7 @@ impl Body {
     fn reset_acceleration(&mut self) {
         self.acceleration = Vector3::zeros();
     }
-
 }
-
 
 fn verlet_step(bodies: &mut [Body], dt: f64) {
     for i in 0..bodies.len() {
@@ -65,21 +63,26 @@ use image::{ImageBuffer, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
 use std::f64::{INFINITY, NEG_INFINITY};
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
+fn print_type_of<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>());
+}
+
+
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
 
     // Set image dimensions, background color, and line color
     let width = 800;
     let height = 800;
-    let background_color = Rgb([255u8, 255u8, 255u8]);
-    let line_color = Rgb([0u8, 0u8, 0u8]);
+    let background_color = Rgb([0u8, 0u8, 0u8]);
+    let line_color = Rgb([255, 255, 255]);
 
     // Find the minimum and maximum coordinates for x and y
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
 
-    for i in 0..positions[1].len() - 1 {
-        let x = positions[1][i][0];
-        let y = positions[1][i][1];
+    for i in 0..positions[0].len() - 1 {
+        let x = positions[0][i][0];
+        let y = positions[0][i][1];
         if x < min_x { min_x = x; }
         if y < min_y { min_y = y; }
         if x > max_x { max_x = x; }
@@ -92,28 +95,36 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
     min_y = min_y - (max_y - min_y) * 0.1;
     max_y = max_y + (max_y - min_y) * 0.1;
 
+    let mut frames = Vec::new();
+
     // Create a new image with a white background
     let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
+    for (frame, chunk) in positions[0].chunks(frame_interval).enumerate() {
+        
+        // Draw lines between consecutive positions
+        for i in 0..chunk.len() - 1 {
+            let x1 = chunk[i][0];
+            let y1 = chunk[i][1];
+            let x2 = chunk[i + 1][0];
+            let y2 = chunk[i + 1][1];
 
-    // Draw lines between consecutive positions
-    for i in 0..positions[1].len() - 1 {
-        let x1 = positions[1][i][0];
-        let y1 = positions[1][i][1];
-        let x2 = positions[1][i + 1][0];
-        let y2 = positions[1][i + 1][1];
+            // Scale and shift positions to fit within the image dimensions
+            let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+            let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+            let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+            let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
-        // Scale and shift positions to fit within the image dimensions
-        let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-        let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
-        let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-        let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+            // Draw a line segment between the scaled positions
+            draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
+        }
 
-        // Draw a line segment between the scaled positions
-        draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
+        let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 3.0);
+
+        frames.push(blurred_img);
     }
 
-    // Save the image to a file
-    img.save("trajectory.png").unwrap();
+    return frames;
+
 }
 
 /*
@@ -141,13 +152,9 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
      return (non_chaoticness_1+non_chaoticness_2+non_chaoticness_3)/3
 */
 
-use std::process;
-
-
 extern crate rustfft;
 use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
-use rustfft::num_traits::Zero;
 
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     let n = input.len();
@@ -197,17 +204,17 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>
     let result2 = fourier_transform(&R2);
     let result3 = fourier_transform(&R3);
 
-    let mut absolute1: Vec<f64> = result1
+    let absolute1: Vec<f64> = result1
         .iter()
         .map(|&val| (val.norm()))
         .collect();
 
-    let mut absolute2: Vec<f64> = result2
+    let absolute2: Vec<f64> = result2
         .iter()
         .map(|&val| (val.norm()))
         .collect();
 
-    let mut absolute3: Vec<f64> = result3
+    let absolute3: Vec<f64> = result3
         .iter()
         .map(|&val| (val.norm()))
         .collect();
@@ -221,15 +228,63 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>
     println!("final3 {}", final_result3);
 }
 
+use std::io::Write;
+use std::process::{Command, Stdio};
+use image::DynamicImage;
+
+
+fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], output_file: &str, frame_rate: u32) {
+    let mut command = Command::new("ffmpeg");
+    command
+        .arg("-y") // Overwrite the output file if it exists
+        .arg("-f")
+        .arg("image2pipe")
+        .arg("-vcodec")
+        .arg("png")
+        .arg("-r")
+        .arg(frame_rate.to_string())
+        .arg("-i")
+        .arg("-")
+        .arg("-c:v")
+        .arg("libx264")
+        .arg("-pix_fmt")
+        .arg("yuv420p")
+        .arg(output_file)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    let mut ffmpeg = command.spawn().expect("Failed to spawn ffmpeg process");
+    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed to open ffmpeg stdin");
+
+    for frame in frames {
+        let dyn_image = DynamicImage::ImageRgb8(frame.clone());
+        dyn_image
+            .write_to(ffmpeg_stdin, image::ImageOutputFormat::Png)
+            .expect("Failed to write frame to ffmpeg stdin");
+    }
+
+    ffmpeg_stdin.flush().expect("Failed to flush ffmpeg stdin");
+    drop(ffmpeg_stdin); // Close stdin to signal EOF to ffmpeg
+
+    let output = ffmpeg.wait_with_output().expect("Failed to wait on ffmpeg process");
+
+    if !output.status.success() {
+        eprintln!(
+            "ffmpeg exited with an error: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
 fn main() {
     let dt = 0.001;
     //let steps = 800_000;
-    let steps = 200_000;
+    let steps = 10_000;
 
     let body1 = Body::new(71.75203285, Vector3::new(138.56428574, -235.17280379, -169.68820646), Vector3::new(0.0, 0.0, 0.0));
     let body2 = Body::new(24.72652452, Vector3::new(139.56263714, -134.93432058,  -89.39675993), Vector3::new(0.0, 0.0, 0.0));
     let body3 = Body::new(83.12462743, Vector3::new(-40.34692494, -120.48855271, -107.46054229), Vector3::new(0.0, 0.0, 0.0));
-
 
     let mut bodies = vec![body1, body2, body3];
 
@@ -242,10 +297,13 @@ fn main() {
         verlet_step(&mut bodies, dt);
     }
 
-
     non_chaoticness(bodies[0].mass, bodies[1].mass, bodies[2].mass, &positions);
 
-    //plot_positions(&positions);
-
-    println!("done");
+    println!("done simulating");
+    let frames = plot_positions(&positions, 1000);
+    create_video_from_frames_in_memory(&frames, "output.mp4", 60);
+    println!("done video");
 }
+
+
+
