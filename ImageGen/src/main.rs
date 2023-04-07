@@ -6,7 +6,7 @@ struct Body {
     mass: f64,
     position: Vector3<f64>,
     velocity: Vector3<f64>,
-    //acceleration: Vector3<f64>,
+    acceleration: Vector3<f64>,
 }
 
 const G: f64 = 9.8;
@@ -17,24 +17,27 @@ impl Body {
             mass,
             position,
             velocity,
-            //acceleration: Vector3::zeros(),
+            acceleration: Vector3::zeros(),
         }
     }
 
-    /*
+    fn update_acceleration(&mut self, other_mass: f64, other_position: Vector3<f64>) {
+        /*Calculates gravitational acceleration applying on a body.
+        :param m: Mass of object that creates acceleration
+        :param r: Distance between objects
+        */
+        //const G: f64 = 9.8;
+        let dir: Vector3<f64> = self.position - other_position;
+        let mag = dir.norm();
+        self.acceleration += -G * other_mass * dir / (mag * mag * mag);
+    }
+
     fn reset_acceleration(&mut self) {
         self.acceleration = Vector3::zeros();
     }
 
-    fn update_acceleration(&mut self, other: &Body) {
-        let r = other.position - self.position;
-        let distance = r.norm();
-        let force_magnitude = G * self.mass * other.mass / (distance * distance);
-        let force = force_magnitude * r / distance;
-        self.acceleration += force / self.mass
-    }
-    */
 }
+
 
 
 /*
@@ -97,44 +100,41 @@ fn verlet_step_2(bodies: &mut [Body], dt: f64) {
     */
 
 
-    let mut a = [Vector3::zeros(), Vector3::zeros(), Vector3::zeros()];
+    //let mut a = [Vector3::zeros(), Vector3::zeros(), Vector3::zeros()];
 
     //a = np.zeros_like(r, dtype=np.float64) #initialize acceleration for all bodies: #bodies x #dimensions
     //
     for i in 0..bodies.len() {
+        bodies[i].reset_acceleration();
         for j in 0..bodies.len() {
             if i != j {
-                a[i] += gravity_acceleration(&bodies[j], bodies[i].position - bodies[j].position);
+                bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
+                //a[i] += gravity_acceleration(&bodies[j], bodies[i].position - bodies[j].position);
             }
         }
     }
 
     for i in 0..bodies.len() {
-        bodies[i].position = bodies[i].position + bodies[i].velocity * dt + 0.5 * a[i] * (dt * dt);
+        bodies[i].position = bodies[i].position + bodies[i].velocity * dt + 0.5 * bodies[i].acceleration * (dt * dt);
     }
 
-    let mut a_new = [Vector3::zeros(), Vector3::zeros(), Vector3::zeros()];
     for i in 0..bodies.len() {
         for j in 0..bodies.len() {
             if i != j {
-                a_new[i] += gravity_acceleration(&bodies[j], bodies[i].position - bodies[j].position);
+                //bodies[i].update_acceleration(&bodies[j]);
+                bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
             }
         }
     }
-
+    
     for i in 0..bodies.len() {
-        bodies[i].velocity = bodies[i].velocity + 0.5 * (a[i] + a_new[i]) * dt;
+        bodies[i].velocity = bodies[i].velocity + 0.5 * bodies[i].acceleration * dt;
     }
 }
-
-
-
 
 use image::{ImageBuffer, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
 use std::f64::{INFINITY, NEG_INFINITY};
-
-
 
 fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
 
@@ -192,16 +192,6 @@ fn main() {
     let dt = 0.001;
     let steps = 800_000;
 
-    /*
-    let body1 = Body::new(42.87781762, Vector3::new(133.47426179, -95.95830491, 16.90552867), Vector3::new(0.0, 0.0, 0.0));
-    let body2 = Body::new(18.06659753, Vector3::new(19.90033799, 247.02239617, 70.52390568), Vector3::new(0.0, 0.0, 0.0));
-    let body3 = Body::new(105.38238772, Vector3::new(-36.24854541, -25.77961209, -109.48262213), Vector3::new(0.0, 0.0, 0.0));
-
-    let body1 = Body::new(10.0, Vector3::new(-10.0, 10.0, -11.0), Vector3::new(-3.0, 0.0, 0.0));
-    let body2 = Body::new(20.0, Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0));
-    let body3 = Body::new(30.0, Vector3::new(10.0, 10.0, 12.0), Vector3::new(3.0, 0.0, 0.0));
-    */
-
     let body1 = Body::new(71.75203285, Vector3::new(138.56428574, -235.17280379, -169.68820646), Vector3::new(0.0, 0.0, 0.0));
     let body2 = Body::new(24.72652452, Vector3::new(139.56263714, -134.93432058,  -89.39675993), Vector3::new(0.0, 0.0, 0.0));
     let body3 = Body::new(83.12462743, Vector3::new(-40.34692494, -120.48855271, -107.46054229), Vector3::new(0.0, 0.0, 0.0));
@@ -217,7 +207,6 @@ fn main() {
         }
         verlet_step_2(&mut bodies, dt);
     }
-    //println!("{}", positions[0]);
 
     plot_positions(&positions);
 
