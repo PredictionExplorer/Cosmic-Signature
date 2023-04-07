@@ -6,7 +6,7 @@ struct Body {
     mass: f64,
     position: Vector3<f64>,
     velocity: Vector3<f64>,
-    acceleration: Vector3<f64>,
+    //acceleration: Vector3<f64>,
 }
 
 const G: f64 = 9.8;
@@ -17,10 +17,11 @@ impl Body {
             mass,
             position,
             velocity,
-            acceleration: Vector3::zeros(),
+            //acceleration: Vector3::zeros(),
         }
     }
 
+    /*
     fn reset_acceleration(&mut self) {
         self.acceleration = Vector3::zeros();
     }
@@ -32,6 +33,7 @@ impl Body {
         let force = force_magnitude * r / distance;
         self.acceleration += force / self.mass
     }
+    */
 }
 
 
@@ -56,27 +58,6 @@ fn verlet_integration(planets, dt, num_steps):
 */
 
 
-
-
-fn update_accelerations(bodies: &mut [Body]) {
-    
-    for i in 0..bodies.len() {
-        let body1_ptr = &mut bodies[i] as *mut Body;
-        bodies[i].reset_acceleration();
-
-        for j in 0..bodies.len() {
-            if i != j {
-                let body2_ptr = &bodies[j] as *const Body;
-
-                unsafe {
-                    let body1 = &mut *body1_ptr;
-                    let body2 = &*body2_ptr;
-                    body1.update_acceleration(body2);
-                }
-            }
-        }
-    }
-}
 
 fn gravity_acceleration(body: &Body, dir: Vector3<f64>) -> Vector3<f64> {
     /*Calculates gravitational acceleration applying on a body.
@@ -107,8 +88,6 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
 */
 
 
-
-
 fn verlet_step_2(bodies: &mut [Body], dt: f64) {
     /*Calculates velocity and position of three bodies for the next time step.
     :param r: Positions of three bodies - #bodies x #dimensions
@@ -134,11 +113,11 @@ fn verlet_step_2(bodies: &mut [Body], dt: f64) {
         bodies[i].position = bodies[i].position + bodies[i].velocity * dt + 0.5 * a[i] * (dt * dt);
     }
 
-    let a_new = [Vector3::zeros(), Vector3::zeros(), Vector3::zeros()];
+    let mut a_new = [Vector3::zeros(), Vector3::zeros(), Vector3::zeros()];
     for i in 0..bodies.len() {
         for j in 0..bodies.len() {
             if i != j {
-                a[i] += gravity_acceleration(&bodies[j], bodies[i].position - bodies[j].position);
+                a_new[i] += gravity_acceleration(&bodies[j], bodies[i].position - bodies[j].position);
             }
         }
     }
@@ -206,11 +185,6 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>) {
 
     // Save the image to a file
     img.save("trajectory.png").unwrap();
-}
-
-
-fn TypeOf<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
 }
 
 
