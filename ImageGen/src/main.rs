@@ -67,6 +67,7 @@ fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
 
+use image::Pixel;
 
 fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
 
@@ -120,7 +121,28 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
 
         let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 3.0);
 
-        frames.push(blurred_img);
+        // Create a new image with the same dimensions as the input images
+        let mut combined_image = ImageBuffer::from_fn(width, height, |_, _| background_color);
+
+        // Iterate through the pixels of both images and take the brighter pixel
+        for y in 0..height {
+            for x in 0..width {
+                let pixel1 = blurred_img.get_pixel(x, y);
+                let pixel2 = img.get_pixel(x, y);
+
+                let luma1 = pixel1.to_luma();
+                let luma2 = pixel2.to_luma();
+
+                let brighter_pixel = if luma1[0] > luma2[0] {
+                    pixel1
+                } else {
+                    pixel2
+                };
+
+                combined_image.put_pixel(x, y, *brighter_pixel);
+            }
+        }
+        frames.push(combined_image);
     }
 
     return frames;
@@ -280,7 +302,7 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
 fn main() {
     let dt = 0.001;
     //let steps = 800_000;
-    let steps = 10_000;
+    let steps = 800_000;
 
     let body1 = Body::new(71.75203285, Vector3::new(138.56428574, -235.17280379, -169.68820646), Vector3::new(0.0, 0.0, 0.0));
     let body2 = Body::new(24.72652452, Vector3::new(139.56263714, -134.93432058,  -89.39675993), Vector3::new(0.0, 0.0, 0.0));
