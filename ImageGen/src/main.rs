@@ -276,7 +276,7 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
 
 fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    let steps = 100_000;
+    let steps = 200_000;
 
     let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
 
@@ -289,13 +289,27 @@ fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     positions
 }
 
+use rand::Rng;
+
+fn random_mass() -> f64 {
+    let mut rng = rand::thread_rng();
+    let mass = rng.gen_range(10.0..110.0);
+    mass
+}
+
+fn random_location() -> f64 {
+    let mut rng = rand::thread_rng();
+    let location = rng.gen_range(-250.0..250.0);
+    location
+}
+
 fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
     let mut many_bodies: Vec<Vec<Body>> = vec![];
     for _ in 0..num_iters {
-        let body1 = Body::new(71.75203285, Vector3::new(138.56428574, -235.17280379, -169.68820646), Vector3::new(0.0, 0.0, 0.0));
-        let body2 = Body::new(24.72652452, Vector3::new(139.56263714, -134.93432058,  -89.39675993), Vector3::new(0.0, 0.0, 0.0));
-        let body3 = Body::new(83.12462743, Vector3::new(-40.34692494, -120.48855271, -107.46054229), Vector3::new(0.0, 0.0, 0.0));
-
+        let body1 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
+        let body2 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
+        let body3 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
+        
         let mut bodies = vec![body1, body2, body3];
         many_bodies.push(bodies);
     }
@@ -339,10 +353,10 @@ fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
 
 fn main() {
 
-    get_best(100);
+    let positions = get_best(50);
 
     println!("done simulating");
-    //let frames = plot_positions(&positions, 1000);
-    //create_video_from_frames_in_memory(&frames, "output.mp4", 60);
-    //println!("done video");
+    let frames = plot_positions(&positions, 1000);
+    create_video_from_frames_in_memory(&frames, "output.mp4", 60);
+    println!("done video");
 }
