@@ -1,6 +1,8 @@
 extern crate nalgebra as na;
 use na::{Vector3};
 
+use rayon::prelude::*;
+
 #[derive(Clone)]
 struct Body {
     mass: f64,
@@ -227,6 +229,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 use image::DynamicImage;
 
+
 fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], output_file: &str, frame_rate: u32) {
     let mut command = Command::new("ffmpeg");
     command
@@ -298,26 +301,45 @@ fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
     }
     let mut best_chaos = f64::INFINITY;
     let mut best_positions = vec![];
-    
-    for bodies in many_bodies {
+
+
+    let mut results_par = vec![0.0; many_bodies.len()];
+    many_bodies.par_iter().map(|bodies| {
         let m1 = bodies[0].mass;
         let m2 = bodies[1].mass;
         let m3 = bodies[2].mass;
-        let positions = get_positions(bodies);
-        let chaos = non_chaoticness(m1, m2, m3, &positions);
-        println!("chaos: {}", chaos);
-        if chaos < best_chaos {
-            best_chaos = chaos;
-            best_positions = positions;
-            println!("best chaos: {}", best_chaos);
+        let positions = get_positions(bodies.clone());
+        non_chaoticness(m1, m2, m3, &positions)
+    }).collect_into_vec(&mut results_par);
+
+    let mut best_idx = 100;
+    let mut best_result = f64::INFINITY;
+    for (i, &res) in results_par.iter().enumerate() {
+        println!("chaos: {}", res);
+        if res < best_result {
+            best_result = res;
+            best_idx = i;
         }
+    }
+
+    let bodies = &many_bodies[best_idx];
+    let m1 = bodies[0].mass;
+    let m2 = bodies[1].mass;
+    let m3 = bodies[2].mass;
+    let positions = get_positions(bodies.clone());
+    let chaos = non_chaoticness(m1, m2, m3, &positions);
+    println!("chaos: {}", chaos);
+    if chaos < best_chaos {
+        best_chaos = chaos;
+        best_positions = positions;
+        println!("best chaos: {}", best_chaos);
     }
     best_positions
 }
 
 fn main() {
 
-    get_best(10);
+    get_best(100);
 
     println!("done simulating");
     //let frames = plot_positions(&positions, 1000);
