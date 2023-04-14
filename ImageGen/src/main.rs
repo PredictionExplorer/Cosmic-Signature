@@ -149,31 +149,6 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
 
 }
 
-/*
- def non_chaoticness_fun(m_1,m_2,m_3,p1,p2,p3):
-     """Finds non-chaoticness
-     :param m_1: Mass of body 1
-     :param m_2: Mass of body 2
-     :param m_3: Mass of body 3
-     :param p_1: Position vector of body 1
-     :param p_2: Position vector of body 2
-     :param p_3: Position vector of body 3
-     """
-
-     #Find distances (R) to other bodies' centre-of-mass
-     R1=np.sqrt(np.sum(np.square(p1-(m_2*p2+m_3*p3)/(m_2+m_3)),axis=-1))
-     R2=np.sqrt(np.sum(np.square(p2-(m_1*p1+m_3*p3)/(m_1+m_3)),axis=-1))
-     R3=np.sqrt(np.sum(np.square(p3-(m_2*p2+m_1*p1)/(m_2+m_1)),axis=-1))
-
-     #Find standard deviation of FFT of R
-     non_chaoticness_1=np.sqrt(np.std(np.abs(np.fft.rfft(R1))))
-     non_chaoticness_2=np.sqrt(np.std(np.abs(np.fft.rfft(R2))))
-     non_chaoticness_3=np.sqrt(np.std(np.abs(np.fft.rfft(R3))))
-
-     #average all bodies and return
-     return (non_chaoticness_1+non_chaoticness_2+non_chaoticness_3)/3
-*/
-
 extern crate rustfft;
 use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
@@ -199,7 +174,7 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
 
 use statrs::statistics::Statistics;
 
-fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) {
+fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
     let mut R1: Vec<f64> = vec![0.0; positions[0].len()];
     let mut R2: Vec<f64> = vec![0.0; positions[0].len()];
     let mut R3: Vec<f64> = vec![0.0; positions[0].len()];
@@ -245,15 +220,12 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>
     let final_result2 = absolute2.std_dev().sqrt();
     let final_result3 = absolute3.std_dev().sqrt();
 
-    println!("final1 {}", final_result1);
-    println!("final2 {}", final_result2);
-    println!("final3 {}", final_result3);
+    (final_result1 + final_result2 + final_result3) / 3.0
 }
 
 use std::io::Write;
 use std::process::{Command, Stdio};
 use image::DynamicImage;
-
 
 fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], output_file: &str, frame_rate: u32) {
     let mut command = Command::new("ffmpeg");
@@ -299,16 +271,9 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
     }
 }
 
-fn main() {
+fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    //let steps = 800_000;
-    let steps = 800_000;
-
-    let body1 = Body::new(71.75203285, Vector3::new(138.56428574, -235.17280379, -169.68820646), Vector3::new(0.0, 0.0, 0.0));
-    let body2 = Body::new(24.72652452, Vector3::new(139.56263714, -134.93432058,  -89.39675993), Vector3::new(0.0, 0.0, 0.0));
-    let body3 = Body::new(83.12462743, Vector3::new(-40.34692494, -120.48855271, -107.46054229), Vector3::new(0.0, 0.0, 0.0));
-
-    let mut bodies = vec![body1, body2, body3];
+    let steps = 100_000;
 
     let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
 
@@ -318,14 +283,44 @@ fn main() {
         }
         verlet_step(&mut bodies, dt);
     }
-
-    non_chaoticness(bodies[0].mass, bodies[1].mass, bodies[2].mass, &positions);
-
-    println!("done simulating");
-    let frames = plot_positions(&positions, 1000);
-    create_video_from_frames_in_memory(&frames, "output.mp4", 60);
-    println!("done video");
+    positions
 }
 
+fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
+    let mut many_bodies: Vec<Vec<Body>> = vec![];
+    for _ in 0..num_iters {
+        let body1 = Body::new(71.75203285, Vector3::new(138.56428574, -235.17280379, -169.68820646), Vector3::new(0.0, 0.0, 0.0));
+        let body2 = Body::new(24.72652452, Vector3::new(139.56263714, -134.93432058,  -89.39675993), Vector3::new(0.0, 0.0, 0.0));
+        let body3 = Body::new(83.12462743, Vector3::new(-40.34692494, -120.48855271, -107.46054229), Vector3::new(0.0, 0.0, 0.0));
 
+        let mut bodies = vec![body1, body2, body3];
+        many_bodies.push(bodies);
+    }
+    let mut best_chaos = f64::INFINITY;
+    let mut best_positions = vec![];
+    
+    for bodies in many_bodies {
+        let m1 = bodies[0].mass;
+        let m2 = bodies[1].mass;
+        let m3 = bodies[2].mass;
+        let positions = get_positions(bodies);
+        let chaos = non_chaoticness(m1, m2, m3, &positions);
+        println!("chaos: {}", chaos);
+        if chaos < best_chaos {
+            best_chaos = chaos;
+            best_positions = positions;
+            println!("best chaos: {}", best_chaos);
+        }
+    }
+    best_positions
+}
 
+fn main() {
+
+    get_best(10);
+
+    println!("done simulating");
+    //let frames = plot_positions(&positions, 1000);
+    //create_video_from_frames_in_memory(&frames, "output.mp4", 60);
+    //println!("done video");
+}
