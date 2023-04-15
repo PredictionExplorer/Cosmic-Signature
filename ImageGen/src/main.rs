@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use rand::Rng;
 
-const NUM_ITERS: usize = 1_000_000;
+const NUM_ITERS: usize = 5_000_000;
 const NUM_TRIES: usize = 1000;
 
 #[derive(Clone)]
@@ -84,16 +84,20 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
     let background_color = Rgb([0u8, 0u8, 0u8]);
 
     let mut rng = rand::thread_rng();
-    let h = rng.gen_range(0.0..360.0);
 
-    let hsl = Hsl::new(h, 1.0, 0.5);
+    let mut colors = Vec::new();
+    for _ in 0..3 {
+        let h = rng.gen_range(0.0..360.0);
+        let hsl = Hsl::new(h, 1.0, 0.5);
+        let my_new_rgb = Srgb::from_color(hsl);
 
-    let my_new_rgb = Srgb::from_color(hsl);
+        let r = (my_new_rgb.red * 255.0) as u8;
+        let g = (my_new_rgb.green * 255.0) as u8;
+        let b = (my_new_rgb.blue * 255.0) as u8;
 
-    let r = (my_new_rgb.red * 255.0) as u8;
-    let g = (my_new_rgb.green * 255.0) as u8;
-    let b = (my_new_rgb.blue * 255.0) as u8;
-    let line_color: Rgb<u8> = Rgb([r, g, b]);
+        let line_color: Rgb<u8> = Rgb([r, g, b]);
+        colors.push(line_color);
+    }
 
     // Find the minimum and maximum coordinates for x and y
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
@@ -142,7 +146,7 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
 
                 // Draw a line segment between the scaled positions
                 //draw_antialiased_line_segment_mut(&mut img, start, end, line_color, interpolate);
-                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 2, line_color);
+                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 2, colors[body_idx]);
                 //draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
             }
         }
