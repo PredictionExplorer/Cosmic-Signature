@@ -74,8 +74,8 @@ use image::Pixel;
 fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
 
     // Set image dimensions, background color, and line color
-    let width = 800;
-    let height = 800;
+    let width = 1600;
+    let height = 1600;
     let background_color = Rgb([0u8, 0u8, 0u8]);
     let line_color = Rgb([255, 255, 255]);
 
@@ -83,13 +83,15 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
 
-    for i in 0..positions[0].len() - 1 {
-        let x = positions[0][i][0];
-        let y = positions[0][i][1];
-        if x < min_x { min_x = x; }
-        if y < min_y { min_y = y; }
-        if x > max_x { max_x = x; }
-        if y > max_y { max_y = y; }
+    for body_idx in 0..positions.len() {
+        for step in 0..positions[body_idx].len() {
+            let x = positions[body_idx][step][0];
+            let y = positions[body_idx][step][1];
+            if x < min_x { min_x = x; }
+            if y < min_y { min_y = y; }
+            if x > max_x { max_x = x; }
+            if y > max_y { max_y = y; }
+        }
     }
 
     min_x = min_x - (max_x - min_x) * 0.1;
@@ -102,49 +104,32 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
 
     // Create a new image with a white background
     let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
-    for (frame, chunk) in positions[0].chunks(frame_interval).enumerate() {
-        
-        // Draw lines between consecutive positions
-        for i in 0..chunk.len() - 1 {
-            let x1 = chunk[i][0];
-            let y1 = chunk[i][1];
-            let x2 = chunk[i + 1][0];
-            let y2 = chunk[i + 1][1];
+    let mut idx = 0;
 
-            // Scale and shift positions to fit within the image dimensions
-            let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-            let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
-            let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-            let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+    loop {
+        for body_idx in 0..positions.len() {
+            for i in idx..idx + frame_interval - 1 {
+            
+                let x1 = positions[body_idx][i][0];
+                let y1 = positions[body_idx][i][1];
+                let x2 = positions[body_idx][i + 1][0];
+                let y2 = positions[body_idx][i + 1][1];
 
-            // Draw a line segment between the scaled positions
-            draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
-        }
+                // Scale and shift positions to fit within the image dimensions
+                let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+                let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+                let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+                let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
-        let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 3.0);
-
-        // Create a new image with the same dimensions as the input images
-        let mut combined_image = ImageBuffer::from_fn(width, height, |_, _| background_color);
-
-        // Iterate through the pixels of both images and take the brighter pixel
-        for y in 0..height {
-            for x in 0..width {
-                let pixel1 = blurred_img.get_pixel(x, y);
-                let pixel2 = img.get_pixel(x, y);
-
-                let luma1 = pixel1.to_luma();
-                let luma2 = pixel2.to_luma();
-
-                let brighter_pixel = if luma1[0] > luma2[0] {
-                    pixel1
-                } else {
-                    pixel2
-                };
-
-                combined_image.put_pixel(x, y, *brighter_pixel);
+                // Draw a line segment between the scaled positions
+                draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
             }
         }
-        frames.push(combined_image);
+        frames.push(img.clone());
+        idx += frame_interval;
+        if idx >= positions[0].len() - frame_interval { // maybe need to subtract 1??
+            break;
+        }
     }
 
     return frames;
@@ -276,7 +261,7 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
 
 fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    let steps = 200_000;
+    let steps = 500_000;
 
     let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
 
@@ -316,7 +301,6 @@ fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
     let mut best_chaos = f64::INFINITY;
     let mut best_positions = vec![];
 
-
     let mut results_par = vec![0.0; many_bodies.len()];
     many_bodies.par_iter().map(|bodies| {
         let m1 = bodies[0].mass;
@@ -353,7 +337,7 @@ fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
 
 fn main() {
 
-    let positions = get_best(50);
+    let positions = get_best(200);
 
     println!("done simulating");
     let frames = plot_positions(&positions, 1000);
