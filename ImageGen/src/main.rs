@@ -3,6 +3,11 @@ use na::{Vector3};
 
 use rayon::prelude::*;
 
+use rand::Rng;
+
+const NUM_ITERS: usize = 1_000_000;
+const NUM_TRIES: usize = 1000;
+
 #[derive(Clone)]
 struct Body {
     mass: f64,
@@ -61,15 +66,15 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-use image::{ImageBuffer, Rgb};
-use imageproc::drawing::draw_line_segment_mut;
+//use image::{ImageBuffer, Rgb};
+//use imageproc::drawing::draw_line_segment_mut;
 use std::f64::{INFINITY, NEG_INFINITY};
 
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>());
-}
+use image::{ImageBuffer, Rgb};
+use imageproc::drawing::draw_filled_circle_mut;
 
-use image::Pixel;
+
+use palette::{FromColor, Hsl, Hsv, IntoColor, Lch, Srgb};
 
 fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
 
@@ -77,7 +82,18 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
     let width = 1600;
     let height = 1600;
     let background_color = Rgb([0u8, 0u8, 0u8]);
-    let line_color = Rgb([255, 255, 255]);
+
+    let mut rng = rand::thread_rng();
+    let h = rng.gen_range(0.0..360.0);
+
+    let hsl = Hsl::new(h, 1.0, 0.5);
+
+    let my_new_rgb = Srgb::from_color(hsl);
+
+    let r = (my_new_rgb.red * 255.0) as u8;
+    let g = (my_new_rgb.green * 255.0) as u8;
+    let b = (my_new_rgb.blue * 255.0) as u8;
+    let line_color: Rgb<u8> = Rgb([r, g, b]);
 
     // Find the minimum and maximum coordinates for x and y
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
@@ -121,8 +137,13 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
                 let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
                 let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
+                let start = (x1p as i32, y1p as i32);
+                let end = (x2p as i32, y2p as i32);
+
                 // Draw a line segment between the scaled positions
-                draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
+                //draw_antialiased_line_segment_mut(&mut img, start, end, line_color, interpolate);
+                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 2, line_color);
+                //draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
             }
         }
         frames.push(img.clone());
@@ -214,7 +235,6 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 use image::DynamicImage;
 
-
 fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], output_file: &str, frame_rate: u32) {
     let mut command = Command::new("ffmpeg");
     command
@@ -261,7 +281,7 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
 
 fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    let steps = 500_000;
+    let steps = NUM_ITERS;
 
     let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
 
@@ -273,8 +293,6 @@ fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     }
     positions
 }
-
-use rand::Rng;
 
 fn random_mass() -> f64 {
     let mut rng = rand::thread_rng();
@@ -288,7 +306,7 @@ fn random_location() -> f64 {
     location
 }
 
-fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
+fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
     let mut many_bodies: Vec<Vec<Body>> = vec![];
     for _ in 0..num_iters {
         let body1 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
@@ -337,7 +355,7 @@ fn get_best(num_iters: i64) -> Vec<Vec<Vector3<f64>>>{
 
 fn main() {
 
-    let positions = get_best(200);
+    let positions = get_best(NUM_TRIES);
 
     println!("done simulating");
     let frames = plot_positions(&positions, 1000);
