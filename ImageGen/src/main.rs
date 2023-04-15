@@ -124,35 +124,57 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
 
     // Create a new image with a white background
     let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
-    let mut idx = 0;
+
+    let snake_length: usize = 150_000;
+    let mut snake_end: usize = 0;
 
     loop {
+        img = ImageBuffer::from_fn(width, height, |_, _| background_color);
+
         for body_idx in 0..positions.len() {
-            for i in idx..idx + frame_interval - 1 {
-            
+            let snake_start = if snake_end > snake_length {
+                snake_end - snake_length
+            } else {
+                0
+            };
+            for i in snake_start..snake_end {
+
                 let x1 = positions[body_idx][i][0];
                 let y1 = positions[body_idx][i][1];
-                let x2 = positions[body_idx][i + 1][0];
-                let y2 = positions[body_idx][i + 1][1];
 
                 // Scale and shift positions to fit within the image dimensions
                 let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
                 let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
-                let x2p = ((x2 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-                let y2p = ((y2 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
-                let start = (x1p as i32, y1p as i32);
-                let end = (x2p as i32, y2p as i32);
-
-                // Draw a line segment between the scaled positions
-                //draw_antialiased_line_segment_mut(&mut img, start, end, line_color, interpolate);
                 draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 2, colors[body_idx]);
-                //draw_line_segment_mut(&mut img, (x1p as f32, y1p as f32), (x2p as f32, y2p as f32), line_color);
             }
         }
-        frames.push(img.clone());
-        idx += frame_interval;
-        if idx >= positions[0].len() - frame_interval { // maybe need to subtract 1??
+
+        let white_color = Rgb([255, 255, 255]);
+        let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 5.0);
+        for body_idx in 0..positions.len() {
+            let snake_start = if snake_end > snake_length {
+                snake_end - snake_length
+            } else {
+                0
+            };
+            for i in snake_start..snake_end {
+
+                let x1 = positions[body_idx][i][0];
+                let y1 = positions[body_idx][i][1];
+
+                // Scale and shift positions to fit within the image dimensions
+                let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
+                let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+
+                draw_filled_circle_mut(&mut blurred_img, (x1p as i32, y1p as i32), 1, white_color);
+            }
+        }
+
+        //frames.push(blurred_img.clone());
+        frames.push(blurred_img);
+        snake_end += frame_interval;
+        if snake_end >= positions[0].len() { // maybe need to subtract 1??
             break;
         }
     }
