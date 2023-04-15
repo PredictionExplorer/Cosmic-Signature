@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use rand::Rng;
 
-const NUM_ITERS: usize = 5_000_000;
+const NUM_STEPS: usize = 5_000_000;
 const NUM_TRIES: usize = 1_000;
 
 #[derive(Clone)]
@@ -109,16 +109,22 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
             if y > max_y { max_y = y; }
         }
     }
-
-    min_x = min_x - (max_x - min_x) * 0.1;
-    max_x = max_x + (max_x - min_x) * 0.1;
-
-    min_y = min_y - (max_y - min_y) * 0.1;
-    max_y = max_y + (max_y - min_y) * 0.1;
+    // TODO: make sure that scaling is equal in both directions
+    let x_range = max_x - min_x;
+    let y_range = max_y - min_y;
+    let x_center = (min_x + max_x) / 2.0;
+    let y_center = (min_y + max_y) / 2.0;
+    let mut range = if x_range > y_range {
+        x_range
+    } else {
+        y_range
+    };
+    min_x = x_center - (range / 2.0) * 1.1;
+    max_x = x_center + (range / 2.0) * 1.1;
+    min_y = y_center - (range / 2.0) * 1.1;
+    range = max_x - min_x;
 
     let mut frames = Vec::new();
-
-    //let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
 
     let snake_length: usize = 150_000;
     let mut snake_end: usize = 0;
@@ -133,13 +139,12 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
                 0
             };
             for i in snake_start..snake_end {
-
                 let x1 = positions[body_idx][i][0];
                 let y1 = positions[body_idx][i][1];
 
                 // Scale and shift positions to fit within the image dimensions
-                let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-                let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+                let x1p = (((x1 - min_x) / range) * (width as f64)).round();
+                let y1p = (((y1 - min_y) / range) * (height as f64)).round();
 
                 draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 3, colors[body_idx]);
             }
@@ -158,8 +163,8 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
                 let y1 = positions[body_idx][i][1];
 
                 // Scale and shift positions to fit within the image dimensions
-                let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
-                let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
+                let x1p = ((x1 - min_x) / range * (width as f64 - 1.0)).round();
+                let y1p = ((y1 - min_y) / range * (height as f64 - 1.0)).round();
 
                 let white_color = Rgb([255, 255, 255]);
                 draw_filled_circle_mut(&mut blurred_img, (x1p as i32, y1p as i32), 1, white_color);
@@ -301,7 +306,7 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
 
 fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    let steps = NUM_ITERS;
+    let steps = NUM_STEPS;
 
     let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
 
@@ -316,7 +321,7 @@ fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
 
 fn random_mass() -> f64 {
     let mut rng = rand::thread_rng();
-    let mass = rng.gen_range(10.0..110.0);
+    let mass = rng.gen_range(100.0..300.0);
     mass
 }
 
@@ -346,7 +351,7 @@ fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
         non_chaoticness(m1, m2, m3, &positions)
     }).collect_into_vec(&mut results_par);
 
-    let mut best_idx = 100;
+    let mut best_idx = 0;
     let mut best_result = f64::INFINITY;
     for (i, &res) in results_par.iter().enumerate() {
         if res < best_result {
@@ -364,6 +369,6 @@ fn main() {
     let positions = get_best(NUM_TRIES);
     println!("done simulating");
     let frames = plot_positions(&positions, 1000);
-    create_video_from_frames_in_memory(&frames, "output.mp4", 60);
+    create_video_from_frames_in_memory(&frames, "output_exp.mp4", 60);
     println!("done creating video");
 }
