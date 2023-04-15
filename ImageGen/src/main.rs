@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use rand::Rng;
 
 const NUM_ITERS: usize = 5_000_000;
-const NUM_TRIES: usize = 1000;
+const NUM_TRIES: usize = 1_000;
 
 #[derive(Clone)]
 struct Body {
@@ -66,19 +66,15 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-//use image::{ImageBuffer, Rgb};
-//use imageproc::drawing::draw_line_segment_mut;
 use std::f64::{INFINITY, NEG_INFINITY};
 
 use image::{ImageBuffer, Rgb};
 use imageproc::drawing::draw_filled_circle_mut;
 
-
-use palette::{FromColor, Hsl, Hsv, IntoColor, Lch, Srgb};
+use palette::{FromColor, Hsl, Srgb};
 
 fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
 
-    // Set image dimensions, background color, and line color
     let width = 1600;
     let height = 1600;
     let background_color = Rgb([0u8, 0u8, 0u8]);
@@ -122,14 +118,13 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
 
     let mut frames = Vec::new();
 
-    // Create a new image with a white background
-    let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
+    //let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
 
     let snake_length: usize = 150_000;
     let mut snake_end: usize = 0;
 
     loop {
-        img = ImageBuffer::from_fn(width, height, |_, _| background_color);
+        let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
 
         for body_idx in 0..positions.len() {
             let snake_start = if snake_end > snake_length {
@@ -146,12 +141,11 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
                 let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
                 let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
-                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 2, colors[body_idx]);
+                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 3, colors[body_idx]);
             }
         }
 
-        let white_color = Rgb([255, 255, 255]);
-        let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 5.0);
+        let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 6.0);
         for body_idx in 0..positions.len() {
             let snake_start = if snake_end > snake_length {
                 snake_end - snake_length
@@ -167,14 +161,14 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
                 let x1p = ((x1 - min_x) / (max_x - min_x) * (width as f64 - 1.0)).round();
                 let y1p = ((y1 - min_y) / (max_y - min_y) * (height as f64 - 1.0)).round();
 
+                let white_color = Rgb([255, 255, 255]);
                 draw_filled_circle_mut(&mut blurred_img, (x1p as i32, y1p as i32), 1, white_color);
             }
         }
 
-        //frames.push(blurred_img.clone());
         frames.push(blurred_img);
         snake_end += frame_interval;
-        if snake_end >= positions[0].len() { // maybe need to subtract 1??
+        if snake_end >= positions[0].len() {
             break;
         }
     }
@@ -209,9 +203,9 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
 use statrs::statistics::Statistics;
 
 fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
-    let mut R1: Vec<f64> = vec![0.0; positions[0].len()];
-    let mut R2: Vec<f64> = vec![0.0; positions[0].len()];
-    let mut R3: Vec<f64> = vec![0.0; positions[0].len()];
+    let mut r1: Vec<f64> = vec![0.0; positions[0].len()];
+    let mut r2: Vec<f64> = vec![0.0; positions[0].len()];
+    let mut r3: Vec<f64> = vec![0.0; positions[0].len()];
 
     for i in 0..positions[0].len() {
         let p1 = positions[0][i];
@@ -226,14 +220,14 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>
         let dist2 = p2 - center_of_mass2;
         let dist3 = p3 - center_of_mass3;
 
-        R1[i] = dist1.norm();
-        R2[i] = dist2.norm();
-        R3[i] = dist3.norm();
+        r1[i] = dist1.norm();
+        r2[i] = dist2.norm();
+        r3[i] = dist3.norm();
     }
 
-    let result1 = fourier_transform(&R1);
-    let result2 = fourier_transform(&R2);
-    let result3 = fourier_transform(&R3);
+    let result1 = fourier_transform(&r1);
+    let result2 = fourier_transform(&r2);
+    let result3 = fourier_transform(&r3);
 
     let absolute1: Vec<f64> = result1
         .iter()
@@ -339,11 +333,9 @@ fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
         let body2 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
         let body3 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
         
-        let mut bodies = vec![body1, body2, body3];
+        let bodies = vec![body1, body2, body3];
         many_bodies.push(bodies);
     }
-    let mut best_chaos = f64::INFINITY;
-    let mut best_positions = vec![];
 
     let mut results_par = vec![0.0; many_bodies.len()];
     many_bodies.par_iter().map(|bodies| {
@@ -357,7 +349,6 @@ fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
     let mut best_idx = 100;
     let mut best_result = f64::INFINITY;
     for (i, &res) in results_par.iter().enumerate() {
-        println!("chaos: {}", res);
         if res < best_result {
             best_result = res;
             best_idx = i;
@@ -365,26 +356,14 @@ fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
     }
 
     let bodies = &many_bodies[best_idx];
-    let m1 = bodies[0].mass;
-    let m2 = bodies[1].mass;
-    let m3 = bodies[2].mass;
     let positions = get_positions(bodies.clone());
-    let chaos = non_chaoticness(m1, m2, m3, &positions);
-    println!("chaos: {}", chaos);
-    if chaos < best_chaos {
-        best_chaos = chaos;
-        best_positions = positions;
-        println!("best chaos: {}", best_chaos);
-    }
-    best_positions
+    positions
 }
 
 fn main() {
-
     let positions = get_best(NUM_TRIES);
-
     println!("done simulating");
     let frames = plot_positions(&positions, 1000);
     create_video_from_frames_in_memory(&frames, "output.mp4", 60);
-    println!("done video");
+    println!("done creating video");
 }
