@@ -3,7 +3,73 @@ use na::{Vector3};
 
 use rayon::prelude::*;
 
-use rand::Rng;
+use sha3::{Digest, Sha3_256};
+
+pub struct Sha3RandomByteStream {
+    hasher: Sha3_256,
+    buffer: Vec<u8>,
+    index: usize,
+}
+
+impl Sha3RandomByteStream {
+    pub fn new(seed: &Vec<u8>) -> Self {
+        let mut hasher = Sha3_256::new();
+        hasher.update(seed);
+        let buffer = hasher.clone().finalize().to_vec();
+        Self {
+            hasher,
+            buffer,
+            index: 0,
+        }
+    }
+
+    pub fn next_byte(&mut self) -> u8 {
+        if self.index >= self.buffer.len() {
+            self.hasher.update(&self.buffer);
+            self.buffer = self.hasher.finalize_reset().to_vec();
+            self.index = 0;
+        }
+
+        let byte = self.buffer[self.index];
+        self.index += 1;
+        byte
+    }
+
+    pub fn next_u64(&mut self) -> u64 {
+        let mut bytes = [0u8; 8];
+        for i in 0..8 {
+            bytes[i] = self.next_byte();
+        }
+        u64::from_le_bytes(bytes)
+    }
+
+    pub fn next_f64(&mut self) -> f64 {
+
+        // Convert the bits to a u64 integer
+        let value: u64 = self.next_u64();
+
+        // Normalize the integer to a float between 0 and 1
+        let max_value = u64::MAX;
+        (value as f64) / (max_value as f64)
+    }
+
+    pub fn gen_range(&mut self, min: f64, max: f64) -> f64 {
+        let num = self.next_f64();
+        let range = max - min;
+        let value = num * range + min;
+        value
+    }
+
+    pub fn random_mass(&mut self) -> f64 {
+        self.gen_range(100.0, 300.0)
+    }
+    
+    pub fn random_location(&mut self) -> f64 {
+        self.gen_range(-250.0, 250.0)
+    }
+
+    
+}
 
 #[derive(Clone)]
 struct Body {
@@ -70,17 +136,10 @@ use imageproc::drawing::draw_filled_circle_mut;
 
 use palette::{FromColor, Hsl, Srgb};
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-
-    let width = 1600;
-    let height = 1600;
-    let background_color = Rgb([0u8, 0u8, 0u8]);
-
-    let mut rng = rand::thread_rng();
-
+fn get_colors(rng: &mut Sha3RandomByteStream) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
     for _ in 0..3 {
-        let h = rng.gen_range(0.0..360.0);
+        let h = rng.gen_range(0.0, 360.0);
         let hsl = Hsl::new(h, 1.0, 0.5);
         let my_new_rgb = Srgb::from_color(hsl);
 
@@ -91,6 +150,14 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_interval: usize) -> 
         let line_color: Rgb<u8> = Rgb([r, g, b]);
         colors.push(line_color);
     }
+    colors
+}
+
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, colors: &Vec<Rgb<u8>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+
+    let width = 1600;
+    let height = 1600;
+    let background_color = Rgb([0u8, 0u8, 0u8]);
 
     // Find the minimum and maximum coordinates for x and y
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
@@ -315,24 +382,13 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
     positions
 }
 
-fn random_mass() -> f64 {
-    let mut rng = rand::thread_rng();
-    let mass = rng.gen_range(100.0..300.0);
-    mass
-}
+fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usize, num_steps_video: usize) -> Vec<Vec<Vector3<f64>>> {
 
-fn random_location() -> f64 {
-    let mut rng = rand::thread_rng();
-    let location = rng.gen_range(-250.0..250.0);
-    location
-}
-
-fn get_best(num_iters: usize, num_steps_sim: usize, num_steps_video: usize) -> Vec<Vec<Vector3<f64>>> {
     let mut many_bodies: Vec<Vec<Body>> = vec![];
     for _ in 0..num_iters {
-        let body1 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
-        let body2 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
-        let body3 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
+        let body1 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
+        let body2 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
+        let body3 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
         
         let bodies = vec![body1, body2, body3];
         many_bodies.push(bodies);
@@ -366,27 +422,41 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-   #[arg(long, default_value_t = 1_000)]
-   num_tries: usize,
+    #[arg(long, default_value = "00")]
+    seed: String,
 
-   #[arg(long, default_value_t = 5_000_000)]
-   num_steps_sim: usize,
+    #[arg(long, default_value_t = 1_000)]
+    num_tries: usize,
 
-   #[arg(long, default_value_t = 1_000_000)]
-   num_steps_video: usize,
+    #[arg(long, default_value_t = 5_000_000)]
+    num_steps_sim: usize,
 
-   #[arg(long, default_value_t = 60)]
-   frame_rate: u32,
+    #[arg(long, default_value_t = 1_000_000)]
+    num_steps_video: usize,
 
-   #[arg(long, default_value_t = 1000)]
-   steps_per_frame: usize,
+    #[arg(long, default_value_t = 60)]
+    frame_rate: u32,
+
+    #[arg(long, default_value_t = 1000)]
+    steps_per_frame: usize,
 }
+
+use hex;
 
 fn main() {
     let args = Args::parse();
-    let positions = get_best(args.num_tries, args.num_steps_sim, args.num_steps_video);
+    let string_seed = if args.seed.starts_with("0x") {
+            args.seed[2..].to_string()
+        } else {
+            args.seed.to_string()
+        };
+    let seed = hex::decode(string_seed).expect("Invalid hexadecimal string");
+    
+    let mut byte_stream = Sha3RandomByteStream::new(&seed);
+    let positions = get_best(&mut byte_stream, args.num_tries, args.num_steps_sim, args.num_steps_video);
     println!("done simulating");
-    let frames = plot_positions(&positions, args.steps_per_frame);
+    let colors: Vec<Rgb<u8>> = get_colors(&mut byte_stream);
+    let frames = plot_positions(&positions, &colors, args.steps_per_frame);
     create_video_from_frames_in_memory(&frames, "output_exp.mp4", 60);
     println!("done creating video");
 }
