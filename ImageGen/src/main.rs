@@ -153,8 +153,7 @@ fn get_colors(rng: &mut Sha3RandomByteStream) -> Vec<Rgb<u8>> {
     colors
 }
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, colors: &Vec<Rgb<u8>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &Vec<bool>, colors: &Vec<Rgb<u8>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let width = 1600;
     let height = 1600;
     let background_color = Rgb([0u8, 0u8, 0u8]);
@@ -190,15 +189,17 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, colors: &Vec<Rgb<u8>>, fra
 
     let mut frames = Vec::new();
 
-    let snake_length: usize = 150_000;
     let mut snake_end: usize = 0;
 
     loop {
         let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
 
         for body_idx in 0..positions.len() {
-            let snake_start = if snake_end > snake_length {
-                snake_end - snake_length
+            if hide[body_idx] {
+                continue;
+            }
+            let snake_start = if snake_end > snake_len {
+                snake_end - snake_len
             } else {
                 0
             };
@@ -216,8 +217,11 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, colors: &Vec<Rgb<u8>>, fra
 
         let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 6.0);
         for body_idx in 0..positions.len() {
-            let snake_start = if snake_end > snake_length {
-                snake_end - snake_length
+            if hide[body_idx] {
+                continue;
+            }
+            let snake_start = if snake_end > snake_len {
+                snake_end - snake_len
             } else {
                 0
             };
@@ -413,6 +417,11 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
     }
 
     let bodies = &many_bodies[best_idx];
+    println!("mass: {} {} {} pos: {} {} | {} {} | {} {}",
+        bodies[0].mass, bodies[1].mass, bodies[2].mass,
+        bodies[0].position[0], bodies[0].position[1],
+        bodies[1].position[0], bodies[1].position[1],
+        bodies[2].position[0], bodies[2].position[1]);
     get_positions(bodies.clone(), num_steps_video)
 }
 
@@ -431,7 +440,7 @@ struct Args {
     #[arg(long, default_value_t = 1_000)]
     num_tries: usize,
 
-    #[arg(long, default_value_t = 5_000_000)]
+    #[arg(long, default_value_t = 1_000_000)]
     num_steps_sim: usize,
 
     #[arg(long, default_value_t = 1_000_000)]
@@ -442,6 +451,18 @@ struct Args {
 
     #[arg(long, default_value_t = 1000)]
     steps_per_frame: usize,
+
+    #[arg(long, default_value_t = 150_000)]
+    snake_len: usize,
+
+    #[arg(long)]
+    hide_1: bool,
+
+    #[arg(long)]
+    hide_2: bool,
+
+    #[arg(long)]
+    hide_3: bool,
 }
 
 use hex;
@@ -461,7 +482,8 @@ fn main() {
     let colors: Vec<Rgb<u8>> = get_colors(&mut byte_stream);
     let s: &str = args.file_name.as_str();
     let file_name = format!("{}.mp4", s);
-    let frames = plot_positions(&positions, &colors, args.steps_per_frame);
+    let hide = vec![args.hide_1, args.hide_2, args.hide_3];
+    let frames = plot_positions(&positions, args.snake_len, &hide, &colors, args.steps_per_frame);
     create_video_from_frames_in_memory(&frames, &file_name, 60);
     println!("done creating video");
 }
