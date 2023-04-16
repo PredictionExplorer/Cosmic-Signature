@@ -425,6 +425,9 @@ struct Args {
     #[arg(long, default_value = "00")]
     seed: String,
 
+    #[arg(long, default_value = "output")]
+    file_name: String,
+
     #[arg(long, default_value_t = 1_000)]
     num_tries: usize,
 
@@ -456,7 +459,9 @@ fn main() {
     let positions = get_best(&mut byte_stream, args.num_tries, args.num_steps_sim, args.num_steps_video);
     println!("done simulating");
     let colors: Vec<Rgb<u8>> = get_colors(&mut byte_stream);
+    let s: &str = args.file_name.as_str();
+    let file_name = format!("{}.mp4", s);
     let frames = plot_positions(&positions, &colors, args.steps_per_frame);
-    create_video_from_frames_in_memory(&frames, "output_exp.mp4", 60);
+    create_video_from_frames_in_memory(&frames, &file_name, 60);
     println!("done creating video");
 }
