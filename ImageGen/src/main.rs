@@ -7,6 +7,7 @@ use sha3::{Digest, Sha3_256};
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
+    seed: Vec<u8>,
     buffer: Vec<u8>,
     index: usize,
 }
@@ -14,10 +15,12 @@ pub struct Sha3RandomByteStream {
 impl Sha3RandomByteStream {
     pub fn new(seed: &Vec<u8>) -> Self {
         let mut hasher = Sha3_256::new();
+        let cloned_seed = seed.clone();
         hasher.update(seed);
-        let buffer = hasher.clone().finalize().to_vec();
+        let buffer = hasher.clone().finalize_reset().to_vec();
         Self {
             hasher,
+            seed: cloned_seed,
             buffer,
             index: 0,
         }
@@ -25,6 +28,7 @@ impl Sha3RandomByteStream {
 
     pub fn next_byte(&mut self) -> u8 {
         if self.index >= self.buffer.len() {
+            self.hasher.update(&self.seed);
             self.hasher.update(&self.buffer);
             self.buffer = self.hasher.finalize_reset().to_vec();
             self.index = 0;
@@ -44,11 +48,7 @@ impl Sha3RandomByteStream {
     }
 
     pub fn next_f64(&mut self) -> f64 {
-
-        // Convert the bits to a u64 integer
         let value: u64 = self.next_u64();
-
-        // Normalize the integer to a float between 0 and 1
         let max_value = u64::MAX;
         (value as f64) / (max_value as f64)
     }
@@ -451,7 +451,7 @@ fn main() {
             args.seed.to_string()
         };
     let seed = hex::decode(string_seed).expect("Invalid hexadecimal string");
-    
+
     let mut byte_stream = Sha3RandomByteStream::new(&seed);
     let positions = get_best(&mut byte_stream, args.num_tries, args.num_steps_sim, args.num_steps_video);
     println!("done simulating");
