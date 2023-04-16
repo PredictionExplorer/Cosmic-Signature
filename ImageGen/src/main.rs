@@ -5,9 +5,6 @@ use rayon::prelude::*;
 
 use rand::Rng;
 
-const NUM_STEPS: usize = 5_000_000;
-const NUM_TRIES: usize = 1_000;
-
 #[derive(Clone)]
 struct Body {
     mass: f64,
@@ -304,13 +301,12 @@ fn create_video_from_frames_in_memory(frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>], 
     }
 }
 
-fn get_positions(mut bodies: Vec<Body>) -> Vec<Vec<Vector3<f64>>> {
+fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    let steps = NUM_STEPS;
 
-    let mut positions = vec![vec![Vector3::zeros(); steps]; bodies.len()];
+    let mut positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
 
-    for step in 0..steps {
+    for step in 0..num_steps {
         for (i, body) in bodies.iter().enumerate() {
             positions[i][step] = body.position;
         }
@@ -331,12 +327,12 @@ fn random_location() -> f64 {
     location
 }
 
-fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
+fn get_best(num_iters: usize, num_steps_sim: usize, num_steps_video: usize) -> Vec<Vec<Vector3<f64>>> {
     let mut many_bodies: Vec<Vec<Body>> = vec![];
     for _ in 0..num_iters {
-        let body1 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
-        let body2 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
-        let body3 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), random_location()), Vector3::new(0.0, 0.0, 0.0));
+        let body1 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
+        let body2 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
+        let body3 = Body::new(random_mass(), Vector3::new(random_location(), random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
         
         let bodies = vec![body1, body2, body3];
         many_bodies.push(bodies);
@@ -347,7 +343,7 @@ fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
         let m1 = bodies[0].mass;
         let m2 = bodies[1].mass;
         let m3 = bodies[2].mass;
-        let positions = get_positions(bodies.clone());
+        let positions = get_positions(bodies.clone() , num_steps_sim);
         non_chaoticness(m1, m2, m3, &positions)
     }).collect_into_vec(&mut results_par);
 
@@ -361,14 +357,36 @@ fn get_best(num_iters: usize) -> Vec<Vec<Vector3<f64>>>{
     }
 
     let bodies = &many_bodies[best_idx];
-    let positions = get_positions(bodies.clone());
-    positions
+    get_positions(bodies.clone(), num_steps_video)
+}
+
+use clap::Parser;
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+   #[arg(long, default_value_t = 1_000)]
+   num_tries: usize,
+
+   #[arg(long, default_value_t = 5_000_000)]
+   num_steps_sim: usize,
+
+   #[arg(long, default_value_t = 1_000_000)]
+   num_steps_video: usize,
+
+   #[arg(long, default_value_t = 60)]
+   frame_rate: u32,
+
+   #[arg(long, default_value_t = 1000)]
+   steps_per_frame: usize,
 }
 
 fn main() {
-    let positions = get_best(NUM_TRIES);
+    let args = Args::parse();
+    let positions = get_best(args.num_tries, args.num_steps_sim, args.num_steps_video);
     println!("done simulating");
-    let frames = plot_positions(&positions, 1000);
+    let frames = plot_positions(&positions, args.steps_per_frame);
     create_video_from_frames_in_memory(&frames, "output_exp.mp4", 60);
     println!("done creating video");
 }
