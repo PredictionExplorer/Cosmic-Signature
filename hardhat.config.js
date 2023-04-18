@@ -17,7 +17,7 @@ module.exports = {
     path: './abi',
     clear: true,
     flat: true,
-    only: ['CosmicSignatureToken', 'CosmicSignature', 'BiddingWar', 'RandomWalkNFT', 'CharityWallet', 'CosmicSignatureDAO'],
+    only: ['CharityWalle', 'CosmicDao', 'CosmicGame', 'CosmicSignature', 'CosmicToken', 'RaffleWallet', 'RandomWalkNFT'],
     spacing: 2,
     pretty: true,
   },

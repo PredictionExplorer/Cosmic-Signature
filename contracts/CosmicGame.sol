@@ -246,7 +246,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return address(this).balance * rafflePercentage / 100;
     }
 
-    function raffleWinner() internal returns (address) {
+    function raffleWinner() internal view returns (address) {
         return raffleParticipants[uint256(entropy) % numRaffleParticipants];
     }
 
@@ -294,10 +294,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer failed.");
 
-
         (success, ) =
-            address(raffleWallet).call(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
-		require(mint_success, "Deposit failed.");
+            address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
+		require(success, "Deposit failed.");
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
@@ -315,6 +314,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function setRandomWalk(address addr) public onlyOwner {
         randomWalk = RandomWalkNFT(addr);
+    }
+
+    function setRaffleWallet(address addr) public onlyOwner {
+        raffleWallet = RaffleWallet(addr);
     }
 
     function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {

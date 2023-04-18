@@ -7,32 +7,37 @@ async function main() {
 
   //console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const BiddingWar = await hre.ethers.getContractFactory("BiddingWar");
-  const biddingWar = await BiddingWar.deploy();
-  await biddingWar.deployed();
-  console.log("BiddingWar address:", biddingWar.address);
+  const CosmicGame = await hre.ethers.getContractFactory("CosmicGame");
+  const cosmicGame = await CosmicGame.deploy();
+  await cosmicGame.deployed();
+  console.log("CosmicGame address:", cosmicGame.address);
 
-  const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
-  const cosmicSignatureToken = await CosmicSignatureToken.deploy();
-  cosmicSignatureToken.deployed();
-  await cosmicSignatureToken.transferOwnership(biddingWar.address);
-  console.log("CosmicSignatureToken address:", cosmicSignatureToken.address);
+  const CosmicToken = await hre.ethers.getContractFactory("CosmicToken");
+  const cosmicToken = await CosmicToken.deploy();
+  cosmicToken.deployed();
+  await cosmicToken.transferOwnership(cosmicGame.address);
+  console.log("CosmicToken address:", cosmicToken.address);
 
-  const CosmicSignatureNFT = await hre.ethers.getContractFactory("CosmicSignatureNFT");
-  const cosmicSignatureNFT = await CosmicSignatureNFT.deploy(biddingWar.address);
-  cosmicSignatureNFT.deployed();
-  console.log("Cosmic Signature NFT address:", cosmicSignatureNFT.address);
+  const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
+  const cosmicSignature = await CosmicSignature.deploy(cosmicGame.address);
+  cosmicSignature.deployed();
+  console.log("CosmicSignature address:", cosmicSignature.address);
 
-  const CosmicSignatureDAO = await hre.ethers.getContractFactory("CosmicSignatureDAO");
-  const cosmicSignatureDAO = await CosmicSignatureDAO.deploy(cosmicSignatureToken.address);
-  await cosmicSignatureDAO.deployed();
-  console.log("Cosmic Signature DAO address", cosmicSignatureDAO.address);
+  const CosmicDAO = await hre.ethers.getContractFactory("CosmicDAO");
+  const cosmicDAO = await CosmicDAO.deploy(cosmicToken.address);
+  await cosmicDAO.deployed();
+  console.log("CosmicDAO address", cosmicDAO.address);
 
   const CharityWallet = await hre.ethers.getContractFactory("CharityWallet");
   const charityWallet = await CharityWallet.deploy();
   charityWallet.deployed();
-  await charityWallet.transferOwnership(cosmicSignatureDAO.address);
-  console.log("Charity Wallet address:", charityWallet.address);
+  await charityWallet.transferOwnership(cosmicDAO.address);
+  console.log("CharityWallet address:", charityWallet.address);
+
+  const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
+  const raffleWallet = await RaffleWallet.deploy();
+  raffleWallet.deployed();
+  console.log("RaffleWallet address:", raffleWallet.address);
 
   const RandomWalkNFT = await hre.ethers.getContractFactory("RandomWalkNFT");
   const randomWalkNFT = await RandomWalkNFT.deploy();
@@ -44,20 +49,23 @@ async function main() {
   randomWalkNFT2.deployed();
   console.log("randomWalkNFT2 address:", randomWalkNFT2.address);
 
-  await biddingWar.setTokenContract(cosmicSignatureToken.address);
-  await biddingWar.setNftContract(cosmicSignatureNFT.address);
-  await biddingWar.setCharity(charityWallet.address);
-  await biddingWar.setRandomWalk(randomWalkNFT.address);
+  await cosmicGame.setTokenContract(cosmicToken.address);
+  await cosmicGame.setNftContract(cosmicSignature.address);
+  await cosmicGame.setCharity(charityWallet.address);
+  await cosmicGame.setRaffleWallet(raffleWallet.address);
+  await cosmicGame.setRandomWalk(randomWalkNFT.address);
 
   console.log("Addresses set");
 
   let donationAmount = hre.ethers.utils.parseEther('10');
-  await biddingWar.donate({value: donationAmount});
+  await cosmicGame.donate({value: donationAmount});
 
   console.log("Donation complete");
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

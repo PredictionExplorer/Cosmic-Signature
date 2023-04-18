@@ -1,0 +1,9 @@
+[
+  "event OwnershipTransferred(address indexed,address indexed)",
+  "function deposit(address) payable",
+  "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function transferOwnership(address)",
+  "function winners(uint256) view returns (address, uint256, bool)",
+  "function withdraw(uint256)"
+]
