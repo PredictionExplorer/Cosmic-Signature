@@ -136,11 +136,22 @@ use imageproc::drawing::draw_filled_circle_mut;
 
 use palette::{FromColor, Hsl, Srgb};
 
-fn get_colors(rng: &mut Sha3RandomByteStream) -> Vec<Rgb<u8>> {
+fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
-    for _ in 0..3 {
-        let h = rng.gen_range(0.0, 360.0);
-        let hsl = Hsl::new(h, 1.0, 0.5);
+    let mut hue = rng.gen_range(0.0, 360.0);
+    for _ in 0..len {
+        if rng.next_byte() & 1 == 0 {
+            hue += 0.1;
+        } else {
+            hue -= 0.1;
+        }
+        if hue < 0.0 {
+            hue += 360.0;
+        }
+        if hue > 360.0 {
+            hue -= 360.0;
+        }
+        let hsl = Hsl::new(hue, 1.0, 0.5);
         let my_new_rgb = Srgb::from_color(hsl);
 
         let r = (my_new_rgb.red * 255.0) as u8;
@@ -153,7 +164,16 @@ fn get_colors(rng: &mut Sha3RandomByteStream) -> Vec<Rgb<u8>> {
     colors
 }
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &Vec<bool>, colors: &Vec<Rgb<u8>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>> {
+    let mut colors = Vec::new();
+    for _ in 0..3 {
+        let c = get_single_color_walk(rng, len);
+        colors.push(c);
+    }
+    colors
+}
+
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let width = 1600;
     let height = 1600;
     let background_color = Rgb([0u8, 0u8, 0u8]);
@@ -163,6 +183,9 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &V
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
 
     for body_idx in 0..positions.len() {
+        if hide[body_idx] {
+            continue;
+        }
         for step in 0..positions[body_idx].len() {
             let x = positions[body_idx][step][0];
             let y = positions[body_idx][step][1];
@@ -211,11 +234,12 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &V
                 let x1p = (((x1 - min_x) / range) * (width as f64)).round();
                 let y1p = (((y1 - min_y) / range) * (height as f64)).round();
 
-                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 3, colors[body_idx]);
+                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 6, colors[body_idx][i]);
             }
         }
 
         let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 6.0);
+        //let mut blurred_img = img.clone();
         for body_idx in 0..positions.len() {
             if hide[body_idx] {
                 continue;
@@ -479,7 +503,8 @@ fn main() {
     let mut byte_stream = Sha3RandomByteStream::new(&seed);
     let positions = get_best(&mut byte_stream, args.num_tries, args.num_steps_sim, args.num_steps_video);
     println!("done simulating");
-    let colors: Vec<Rgb<u8>> = get_colors(&mut byte_stream);
+    //let colors: Vec<Rgb<u8>> = get_colors(&mut byte_stream);
+    let colors = get_3_colors(&mut byte_stream, args.num_steps_video);
     let s: &str = args.file_name.as_str();
     let file_name = format!("{}.mp4", s);
     let hide = vec![args.hide_1, args.hide_2, args.hide_3];
