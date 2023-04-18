@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./CosmicSignatureToken.sol";
-import "./CosmicSignatureNFT.sol";
+import "./CosmicToken.sol";
+import "./CosmicSignature.sol";
 import "./RandomWalkNFT.sol";
 
 pragma solidity ^0.8.19;
 
-contract BiddingWar is Ownable, IERC721Receiver {
+contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public constant MILLION = 10**6;
     uint256 public constant MAX_MESSAGE_LENGTH = 280;
@@ -67,8 +67,8 @@ contract BiddingWar is Ownable, IERC721Receiver {
     mapping (uint256 => DonatedNFT) public donatedNFTs;
     uint256 numDonatedNFTs;
 
-    CosmicSignatureToken public token;
-    CosmicSignatureNFT public nft;
+    CosmicToken public token;
+    CosmicSignature public nft;
     RandomWalkNFT public randomWalk;
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
@@ -156,8 +156,8 @@ contract BiddingWar is Ownable, IERC721Receiver {
         usedRandomWalkNFTs[randomWalkNFTId] = true;
 
         (bool mint_success, ) =
-            address(token).call(abi.encodeWithSelector(CosmicSignatureToken.mint.selector, lastBidder,tokenReward));
-		require(mint_success,"CosmicSignatureToken mint() failed to mint reward tokens");
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
+		require(mint_success,"CosmicToken mint() failed to mint reward tokens");
 
         pushBackPrizeTime();
 
@@ -190,8 +190,8 @@ contract BiddingWar is Ownable, IERC721Receiver {
         bidPrice = newBidPrice;
 
         (bool mint_success, ) =
-            address(token).call(abi.encodeWithSelector(CosmicSignatureToken.mint.selector, lastBidder,tokenReward));
-		require(mint_success,"CosmicSignatureToken mint() failed to mint reward tokens");
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
+		require(mint_success,"CosmicToken mint() failed to mint reward tokens");
 
         pushBackPrizeTime();
 
@@ -250,7 +250,7 @@ contract BiddingWar is Ownable, IERC721Receiver {
         roundNum += 1;
 
         (bool mint_success, ) =
-            address(nft).call(abi.encodeWithSelector(CosmicSignatureNFT.mint.selector, winner));
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
 		require(mint_success,"CosmicSignature mint() failed to mint token");
         
         initializeBidPrice();
@@ -284,11 +284,11 @@ contract BiddingWar is Ownable, IERC721Receiver {
     }
 
     function setTokenContract(address addr) public onlyOwner {
-        token = CosmicSignatureToken(addr);
+        token = CosmicToken(addr);
     }
 
     function setNftContract(address addr) public onlyOwner {
-        nft = CosmicSignatureNFT(addr);
+        nft = CosmicSignature(addr);
     }
 
     function setTimeIncrease(uint256 newTimeIncrease) public onlyOwner {

@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 
-contract CosmicSignatureToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ERC20FlashMint {
+contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ERC20FlashMint {
     constructor()
-        ERC20("CosmicSignatureToken", "CST")
-        ERC20Permit("CosmicSignatureToken")
+        ERC20("CosmicToken", "CST")
+        ERC20Permit("CosmicToken")
     {}
 
     function mint(address to, uint256 amount) public onlyOwner {

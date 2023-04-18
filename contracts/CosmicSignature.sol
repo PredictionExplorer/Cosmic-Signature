@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 pragma solidity ^0.8.19;
 
-contract CosmicSignatureNFT is ERC721Enumerable, Ownable {
+contract CosmicSignature is ERC721Enumerable, Ownable {
 
     mapping(uint256 => bytes32) public seeds;
 
@@ -23,7 +23,7 @@ contract CosmicSignatureNFT is ERC721Enumerable, Ownable {
 
     string private _baseTokenURI;
 
-    address public biddingWarContract;
+    address public cosmicGameContract;
 
     event TokenNameEvent(uint256 tokenId, string newName);
     event TokenSettingsEvent(uint256 tokenId, uint256 settings);
@@ -32,11 +32,11 @@ contract CosmicSignatureNFT is ERC721Enumerable, Ownable {
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
     string public tokenGenerationScript = "ipfs://TBD";
 
-    constructor(address _biddingWarContract) ERC721("CosmicSignature", "CSG") {
+    constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
         entropy = keccak256(abi.encode(
             "newNFT",
             block.timestamp, blockhash(block.number)));
-        biddingWarContract = _biddingWarContract;
+        cosmicGameContract = _cosmicGameContract;
     }
 
     function setBaseURI(string memory baseURI) public onlyOwner {
@@ -67,7 +67,7 @@ contract CosmicSignatureNFT is ERC721Enumerable, Ownable {
     }
 
     function mint(address owner) public {
-        require (_msgSender() == biddingWarContract,"only BiddingWar contract can mint");
+        require (_msgSender() == cosmicGameContract,"only the CosmicGame contract can mint");
 
         uint256 tokenId = numTokens;
         numTokens += 1;
