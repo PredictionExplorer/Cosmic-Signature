@@ -3,6 +3,7 @@
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./CosmicToken.sol";
 import "./CosmicSignature.sol";
+import "./RaffleWallet.sol";
 import "./RandomWalkNFT.sol";
 
 pragma solidity ^0.8.19;
@@ -44,7 +45,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // You get 100 tokens when you bid
     uint256 public tokenReward = 100 * 1e18;
 
-    uint256 public prizePercentage = 50;
+    uint256 public prizePercentage = 45;
+
+    uint256 public rafflePercentage = 10;
 
     // when the money can be taken out
     uint256 public prizeTime;
@@ -56,6 +59,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
     mapping(uint256 => address) public winners;
 
     uint256 public activationTime = 1682377200; // April 24 2023 19:00 New York Time
+
+    bytes32 public entropy;
+
+    mapping(uint256 => address) public raffleParticipants;
+    uint256 public numRaffleParticipants;
+    RaffleWallet public raffleWallet;
 
     struct DonatedNFT {
         IERC721 nftAddress;
@@ -178,8 +187,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
             prizeTime = block.timestamp + initialSecondsUntilPrize;
         }
 
-
         lastBidder = _msgSender();
+
+        raffleParticipants[numRaffleParticipants] = lastBidder;
+        numRaffleParticipants += 1;
 
         uint256 newBidPrice = getBidPrice();
 
@@ -231,6 +242,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return address(this).balance * charityPercentage / 100;
     }
 
+    function raffleAmount() public view returns (uint256) {
+        return address(this).balance * rafflePercentage / 100;
+    }
+
+    function raffleWinner() internal returns (address) {
+        return raffleParticipants[uint256(entropy) % numRaffleParticipants];
+    }
+
     function claimPrize() public {
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
 
@@ -247,16 +266,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
         lastBidder = address(0);
         winners[roundNum] = winner;
 
+        entropy = keccak256(abi.encode(
+            entropy,
+            block.timestamp,
+            blockhash(block.number),
+            roundNum,
+            winner));
+
+        address raffleWinner_ = raffleWinner();
+        numRaffleParticipants = 0;
+
         roundNum += 1;
 
         (bool mint_success, ) =
-            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner, entropy));
 		require(mint_success,"CosmicSignature mint() failed to mint token");
         
         initializeBidPrice();
 
         uint256 prizeAmount_ = prizeAmount();
         uint256 charityAmount_ = charityAmount();
+        uint256 raffleAmount_ = raffleAmount();
 
         (bool success, ) = winner.call{value: prizeAmount_}("");
         require(success, "Transfer failed.");
@@ -264,10 +294,18 @@ contract CosmicGame is Ownable, IERC721Receiver {
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer failed.");
 
+
+        (success, ) =
+            address(raffleWallet).call(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
+		require(mint_success, "Deposit failed.");
+
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
     constructor() {
+        entropy = keccak256(abi.encode(
+             "Cosmic Signature 2023",
+             block.timestamp, blockhash(block.number)));
         charity = _msgSender();
     }
 
@@ -281,6 +319,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {
         charityPercentage = newCharityPercentage;
+    }
+
+    function setRafflePercentage(uint256 newRafflePercentage) public onlyOwner {
+        rafflePercentage = newRafflePercentage;
     }
 
     function setTokenContract(address addr) public onlyOwner {
@@ -323,5 +365,4 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function onERC721Received(address, address, uint256, bytes calldata) public pure returns(bytes4) {
         return this.onERC721Received.selector;
     }
-
 }

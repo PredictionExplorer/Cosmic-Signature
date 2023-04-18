@@ -53,7 +53,7 @@ describe("Cosmic", function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       let donationAmount = ethers.utils.parseEther('10');
       await cosmicGame.donate({value: donationAmount});
-      expect(await cosmicGame.prizeAmount()).to.equal(donationAmount.div(2));
+      expect(await cosmicGame.prizeAmount()).to.equal(donationAmount.mul(45).div(100));
       await expect(cosmicGame.connect(addr1).bid("", {value: 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
       let bidPrice = await cosmicGame.getBidPrice();
       await expect(cosmicGame.connect(addr1).bid("", {value: bidPrice.sub(1)})).to.be.revertedWith("The value submitted with this transaction is too low.");
@@ -99,9 +99,11 @@ describe("Cosmic", function () {
 
       let prizeAmount = await cosmicGame.prizeAmount();
       let charityAmount = await cosmicGame.charityAmount();
+      let raffleAmount = await cosmicGame.raffleAmount();
       await cosmicGame.connect(addr2).claimPrize();
       let prizeAmount2 = await cosmicGame.prizeAmount();
-      let expectedprizeAmount = prizeAmount.sub(charityAmount).div(2);
+      let balance = await ethers.provider.getBalance(cosmicGame.address);
+      let expectedprizeAmount = balance.mul(45).div(100);
       expect(prizeAmount2).to.equal(expectedprizeAmount);
 
       // after the prize has been claimed, let's bid again!
@@ -122,7 +124,9 @@ describe("Cosmic", function () {
       charityAmount = await cosmicGame.charityAmount();
       await cosmicGame.connect(addr1).claimPrize();
       prizeAmount2 = await cosmicGame.prizeAmount();
-      expect(prizeAmount2).to.equal(prizeAmount.sub(charityAmount).div(2));
+      balance = await ethers.provider.getBalance(cosmicGame.address);
+      expectedPrizeAmount = balance.mul(45).div(100);
+      expect(prizeAmount2).to.equal(expectedPrizeAmount);
 
 
       // 3 hours after the deadline, anyone should be able to claim the prize
@@ -165,13 +169,12 @@ describe("Cosmic", function () {
 
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("only the CosmicGame contract can mint")
+	await expect(cosmicSignature.connect(owner).mint(owner.address, ethers.utils.formatBytes32String("test-value"))).to.be.revertedWith("only the CosmicGame contract can mint")
      });
     it("Should be possible to setTokenName()", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       let bidPrice = await cosmicGame.getBidPrice();
-      let addr1_bal = await ethers.provider.getBalance(addr1.address);
       await cosmicGame.connect(addr1).bid("", {value:bidPrice});
       let prizeTime = await cosmicGame.timeUntilPrize();
       await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
@@ -195,7 +198,7 @@ describe("Cosmic", function () {
     it("Should not be possible to mint ERC721 tokens by anyone()", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
-      await expect(cosmicSignature.connect(addr1).mint(addr1.address)).
+      await expect(cosmicSignature.connect(addr1).mint(addr1.address, ethers.utils.formatBytes32String("test-value"))).
             to.be.revertedWith("only the CosmicGame contract can mint");
 	});
     it("Should not be possible to donate 0 value", async function () {

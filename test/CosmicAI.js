@@ -78,7 +78,9 @@ describe("CosmicAI", function () {
     expect(winner).to.equal(bidder1.address);
 
     const prizeAmountAfterClaim = await cosmicGame.prizeAmount();
-    expect(prizeAmountAfterClaim).to.equal(prizeAmountBeforeClaim.mul(40).div(100));
+    balance = await ethers.provider.getBalance(cosmicGame.address);
+    expectedPrizeAmount = balance.mul(45).div(100);
+    expect(prizeAmountAfterClaim).to.equal(expectedPrizeAmount);
 
     await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("The donated NFT does not exist");
     await expect(cosmicGame.connect(bidder2).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round");
