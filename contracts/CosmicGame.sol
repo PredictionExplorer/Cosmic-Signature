@@ -247,6 +247,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function raffleWinner() internal view returns (address) {
+		if (numRaffleParticipants == 0 ) return address(0);
         return raffleParticipants[uint256(entropy) % numRaffleParticipants];
     }
 
