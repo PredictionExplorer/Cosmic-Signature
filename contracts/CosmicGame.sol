@@ -40,7 +40,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public initialSecondsUntilPrize = 24 * 3600;
 
     // The bid size will be 1000 times smaller than the prize amount initially
-    uint256 public initalBidAmountFraction = 1000;
+    uint256 public initialBidAmountFraction = 1000;
 
     // You get 100 tokens when you bid
     uint256 public tokenReward = 100 * 1e18;
@@ -100,7 +100,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function initializeBidPrice() internal {
-        bidPrice = prizeAmount() / initalBidAmountFraction;
+        bidPrice = prizeAmount() / initialBidAmountFraction;
     }
 
     // send some ETH into the contract and affect nothing else.
@@ -356,8 +356,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
         prizePercentage = newPrizePercentage;
     }
 
-    function updateInitalBidAmountFraction(uint256 newInitalBidAmountFraction) public onlyOwner {
-        initalBidAmountFraction = newInitalBidAmountFraction;
+    function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) public onlyOwner {
+        initialBidAmountFraction = newInitialBidAmountFraction;
     }
 
     function setActivationTime(uint256 newActivationTime) public onlyOwner {
