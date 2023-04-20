@@ -69,7 +69,7 @@ describe("Security", function () {
     const RandomWalkNFT = await hre.ethers.getContractFactory("RandomWalkNFT");
     const randomWalkNFT = await RandomWalkNFT.deploy();
     randomWalkNFT.deployed();
-  
+
     const RandomWalkNFT2 = await hre.ethers.getContractFactory("RandomWalkNFT");
     const randomWalkNFT2 = await RandomWalkNFT2.deploy();
     randomWalkNFT2.deployed();
@@ -80,12 +80,11 @@ describe("Security", function () {
     await cosmicGame.setRaffleWallet(raffleWallet.address);
     await cosmicGame.setRandomWalk(randomWalkNFT.address);
 	await cosmicGame.setActivationTime(0);
-	let prizePercentage = "44";
+	let prizePercentage = "10";
 	await cosmicGame.updatePrizePercentage(ethers.BigNumber.from(prizePercentage));
 
     const ReClaim = await ethers.getContractFactory("ReClaim");
     const reclaim = await ReClaim.deploy(cosmicGame.address);
-
 
     let donationAmount = hre.ethers.utils.parseEther('10');
     await cosmicGame.donate({value: donationAmount});
@@ -102,12 +101,8 @@ describe("Security", function () {
 	console.log("Note: only works for prizePercentage <= "+prizePercentage);
     console.log("initial prizeAmount="+prizeAmount);
     let reclaim_bal_before = await ethers.provider.getBalance(reclaim.address);
-    await reclaim.connect(addr3).claim_and_reset(ethers.BigNumber.from("1"));
-    let reclaim_bal_after =  await ethers.provider.getBalance(reclaim.address);
-    console.log("Attacker's contract balance before: "+reclaim_bal_before);
-    console.log("Attacker's contract balance after:  "+reclaim_bal_after);
-	let profit_from_vulnerability = reclaim_bal_after.sub(prizeAmount);
-	console.log("Profit from vulnerability: "+profit_from_vulnerability);
+    // Make sure there is no re-entrancy
+    await expect(reclaim.connect(addr3).claim_and_reset(ethers.BigNumber.from("1"))).to.be.revertedWith("Transfer failed.");
   });
   it("Is possible to take prize before activation", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
@@ -122,8 +117,6 @@ describe("Security", function () {
 	  console.log("prizeAmount is     "+prizeAmount);
 	  let balance_before =(await addr3.getBalance());
 	  console.log("Account balance before: "+ balance_before);
-	  await cosmicGame.connect(addr3).claimPrize();
-	  let balance_after = (await addr3.getBalance());
-	  console.log("Account balance  after: "+balance_after);
+	  await expect(cosmicGame.connect(addr3).claimPrize()).to.be.revertedWith("There is no last bidder.");
   });
 })
