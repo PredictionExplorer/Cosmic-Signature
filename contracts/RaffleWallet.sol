@@ -26,6 +26,8 @@ contract RaffleWallet is Ownable {
     }
 
     function withdraw(uint256 depositId) public {
+        require(!winners[depositId].claimed,"Raffle claimed");
+        winners[depositId].claimed = true;
         (bool success, ) = winners[depositId].destination.call{value: winners[depositId].amount}("");
         require(success, "Transfer failed.");
     }
