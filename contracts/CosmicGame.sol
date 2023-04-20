@@ -45,9 +45,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // You get 100 tokens when you bid
     uint256 public tokenReward = 100 * 1e18;
 
-    uint256 public prizePercentage = 45;
+    uint256 public prizePercentage = 25;
 
-    uint256 public rafflePercentage = 10;
+    uint256 public rafflePercentage = 5;
+
+    uint256 public numRaffleWinnersPerRound = 3;
 
     // when the money can be taken out
     uint256 public prizeTime;
@@ -171,7 +173,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         pushBackPrizeTime();
 
         emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), prizeTime, message);
-
     }
 
     function bid(string memory message) public payable {
@@ -253,7 +254,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function claimPrize() public {
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
-
+        require(lastBidder != address(0), "There is no last bidder.");
         if (block.timestamp - prizeTime < 3600 * 3) {
             // The winner has 3 hours to claim the prize.
             // After the 3 hours have elapsed, then *anyone* will be able to claim the prize!
@@ -274,7 +275,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             roundNum,
             winner));
 
-        address raffleWinner_ = raffleWinner();
         numRaffleParticipants = 0;
 
         roundNum += 1;
@@ -295,9 +295,19 @@ contract CosmicGame is Ownable, IERC721Receiver {
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer failed.");
 
-        (success, ) =
-            address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
-		require(success, "Deposit failed.");
+        bytes32 raffleEntropy = entropy;
+        for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
+            raffleEntropy = keccak256(abi.encode(
+                raffleEntropy,
+                block.timestamp,
+                blockhash(block.number),
+                roundNum,
+                winner));
+            address raffleWinner_ = raffleWinner();
+            (success, ) =
+                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
+            require(success, "Deposit failed.");
+        }
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
@@ -319,6 +329,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function setRaffleWallet(address addr) public onlyOwner {
         raffleWallet = RaffleWallet(addr);
+    }
+
+    function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) public onlyOwner {
+        numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
     }
 
     function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {

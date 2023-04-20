@@ -53,7 +53,7 @@ describe("Cosmic", function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       let donationAmount = ethers.utils.parseEther('10');
       await cosmicGame.donate({value: donationAmount});
-      expect(await cosmicGame.prizeAmount()).to.equal(donationAmount.mul(45).div(100));
+      expect(await cosmicGame.prizeAmount()).to.equal(donationAmount.mul(25).div(100));
       await expect(cosmicGame.connect(addr1).bid("", {value: 1})).to.be.revertedWith("The value submitted with this transaction is too low.");
       let bidPrice = await cosmicGame.getBidPrice();
       await expect(cosmicGame.connect(addr1).bid("", {value: bidPrice.sub(1)})).to.be.revertedWith("The value submitted with this transaction is too low.");
@@ -103,12 +103,12 @@ describe("Cosmic", function () {
       await cosmicGame.connect(addr2).claimPrize();
       let prizeAmount2 = await cosmicGame.prizeAmount();
       let balance = await ethers.provider.getBalance(cosmicGame.address);
-      let expectedprizeAmount = balance.mul(45).div(100);
+      let expectedprizeAmount = balance.mul(25).div(100);
       expect(prizeAmount2).to.equal(expectedprizeAmount);
 
       // after the prize has been claimed, let's bid again!
 
-      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 3 hours.");
+      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("There is no last bidder.");
 
       bidPrice = await cosmicGame.getBidPrice();
       await cosmicGame.connect(addr1).bid("", {value: bidPrice});
@@ -125,7 +125,7 @@ describe("Cosmic", function () {
       await cosmicGame.connect(addr1).claimPrize();
       prizeAmount2 = await cosmicGame.prizeAmount();
       balance = await ethers.provider.getBalance(cosmicGame.address);
-      expectedPrizeAmount = balance.mul(45).div(100);
+      expectedPrizeAmount = balance.mul(25).div(100);
       expect(prizeAmount2).to.equal(expectedPrizeAmount);
 
 
