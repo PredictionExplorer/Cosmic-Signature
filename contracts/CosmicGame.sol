@@ -302,6 +302,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 block.timestamp,
                 blockhash(block.number),
                 roundNum,
+                i,
                 winner));
             address raffleWinner_ = raffleWinner();
             (success, ) =
