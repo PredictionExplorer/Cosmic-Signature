@@ -173,8 +173,9 @@ describe("Cosmic", function () {
 
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-	await expect(cosmicSignature.connect(owner).mint(owner.address, ethers.utils.formatBytes32String("test-value"))).to.be.revertedWith("only the CosmicGame contract can mint")
+	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("only the CosmicGame contract can mint")
      });
+
     it("Should be possible to setTokenName()", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
@@ -199,10 +200,10 @@ describe("Cosmic", function () {
             .setTokenName(token_id,"012345678901234567890123456789012"))
             .to.be.revertedWith("Token name is too long.");
     });
-    it("Should not be possible to mint ERC721 tokens by anyone()", async function () {
+    it("Should not be possible to mint ERC721 tokens by anyone", async function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
-      await expect(cosmicSignature.connect(addr1).mint(addr1.address, ethers.utils.formatBytes32String("test-value"))).
+      await expect(cosmicSignature.connect(addr1).mint(addr1.address)).
             to.be.revertedWith("only the CosmicGame contract can mint");
 	});
     it("Should not be possible to donate 0 value", async function () {

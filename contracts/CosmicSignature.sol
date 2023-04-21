@@ -16,6 +16,9 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     // This integer is a bunch of boolean flags. It might also contain the number of steps in the simulation.
     mapping(uint256 => uint256) public tokenSettings;
 
+    // Entropy
+    bytes32 public entropy;
+
     uint256 public numTokens = 0;
 
     string private _baseTokenURI;
@@ -30,6 +33,9 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     string public tokenGenerationScript = "ipfs://TBD";
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
+        entropy = keccak256(abi.encode(
+            "newNFT",
+            block.timestamp, blockhash(block.number)));
         cosmicGameContract = _cosmicGameContract;
     }
 
@@ -60,15 +66,21 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         return _baseTokenURI;
     }
 
-    function mint(address owner, bytes32 _entropy) public {
+    function mint(address owner) public {
         require (_msgSender() == cosmicGameContract,"only the CosmicGame contract can mint");
 
         uint256 tokenId = numTokens;
         numTokens += 1;
 
-        seeds[tokenId] = _entropy;
+        entropy = keccak256(abi.encode(
+            entropy,
+            block.timestamp,
+            blockhash(block.number),
+            tokenId,
+            owner));
+        seeds[tokenId] = entropy;
         _safeMint(owner, tokenId);
 
-        emit MintEvent(tokenId, owner, _entropy);
+        emit MintEvent(tokenId, owner, entropy);
     }
 }

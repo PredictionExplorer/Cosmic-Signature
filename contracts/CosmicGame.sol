@@ -62,7 +62,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public activationTime = 1682377200; // April 24 2023 19:00 New York Time
 
-    bytes32 public entropy;
+    // Entropy for the raffle.
+    bytes32 public raffleEntropy;
+
+    mapping(address => uint256) public raffleNFTWinners;
 
     mapping(uint256 => address) public raffleParticipants;
     uint256 public numRaffleParticipants;
@@ -247,9 +250,17 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return address(this).balance * rafflePercentage / 100;
     }
 
-    function raffleWinner() internal view returns (address) {
-		if (numRaffleParticipants == 0 ) return address(0);
-        return raffleParticipants[uint256(entropy) % numRaffleParticipants];
+    function updateEntropy() internal {
+        raffleEntropy = keccak256(abi.encode(
+            raffleEntropy,
+            block.timestamp,
+            blockhash(block.number)));
+    }
+
+    function raffleWinner() internal returns (address) {
+		// There should be at least 1 raffle participant when this function is called.
+        updateEntropy();
+        return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
     }
 
     function claimPrize() public {
@@ -268,17 +279,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         lastBidder = address(0);
         winners[roundNum] = winner;
 
-        entropy = keccak256(abi.encode(
-            entropy,
-            block.timestamp,
-            blockhash(block.number),
-            roundNum,
-            winner));
-
         roundNum += 1;
 
         (bool mint_success, ) =
-            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner, entropy));
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
 		require(mint_success,"CosmicSignature mint() failed to mint token");
         
         initializeBidPrice();
@@ -287,24 +291,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 charityAmount_ = charityAmount();
         uint256 raffleAmount_ = raffleAmount();
 
+        // Distribute 5 raffle NFTs initially. After 1 year, only 2.
+        uint256 numRaffleNFTWinnersPerRound = 5;
+        if (block.timestamp > activationTime + 3600 * 24 * 365) {
+            numRaffleNFTWinnersPerRound = 2;
+        }
+
+        for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
+            address raffleWinner_ = raffleWinner();
+            raffleNFTWinners[raffleWinner_] += 1;
+        }
+
         (bool success, ) = winner.call{value: prizeAmount_}("");
         require(success, "Transfer to the winner failed");
 
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer to charity contract failed");
 
-        bytes32 raffleEntropy = entropy;
         for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
-            raffleEntropy = keccak256(abi.encode(
-                raffleEntropy,
-                block.timestamp,
-                blockhash(block.number),
-                roundNum,
-                i,
-                winner));
             address raffleWinner_ = raffleWinner();
             (success, ) =
-                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_,roundNum-1));
+                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_, roundNum - 1));
             require(success, "Raffle deposit failed");
         }
         
@@ -313,8 +320,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
+    function claimRaffleNFT() public {
+        require (raffleNFTWinners[_msgSender()] > 0);
+        raffleNFTWinners[_msgSender()] -= 1;
+        (bool mint_success, ) =
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, _msgSender()));
+		require(mint_success,"CosmicSignature mint() failed to mint token");
+    }
+
     constructor() {
-        entropy = keccak256(abi.encode(
+        raffleEntropy = keccak256(abi.encode(
              "Cosmic Signature 2023",
              block.timestamp, blockhash(block.number)));
         charity = _msgSender();
