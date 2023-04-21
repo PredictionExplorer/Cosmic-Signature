@@ -102,7 +102,7 @@ describe("Security", function () {
     console.log("initial prizeAmount="+prizeAmount);
     let reclaim_bal_before = await ethers.provider.getBalance(reclaim.address);
     // Make sure there is no re-entrancy
-    await expect(reclaim.connect(addr3).claim_and_reset(ethers.BigNumber.from("1"))).to.be.revertedWith("Transfer failed.");
+    await expect(reclaim.connect(addr3).claim_and_reset(ethers.BigNumber.from("1"))).to.be.revertedWith("Transfer to the winner failed");
   });
   it("Is possible to take prize before activation", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
