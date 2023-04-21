@@ -275,8 +275,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             roundNum,
             winner));
 
-        numRaffleParticipants = 0;
-
         roundNum += 1;
 
         (bool mint_success, ) =
@@ -309,6 +307,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_,roundNum-1));
             require(success, "Raffle deposit failed");
         }
+        
+        numRaffleParticipants = 0;
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
