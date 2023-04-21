@@ -51,6 +51,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public numRaffleWinnersPerRound = 3;
 
+    uint256 public numRaffleNFTWinnersPerRound = 5;
+
     // when the money can be taken out
     uint256 public prizeTime;
 
@@ -291,12 +293,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 charityAmount_ = charityAmount();
         uint256 raffleAmount_ = raffleAmount();
 
-        // Distribute 5 raffle NFTs initially. After 1 year, only 2.
-        uint256 numRaffleNFTWinnersPerRound = 5;
-        if (block.timestamp > activationTime + 3600 * 24 * 365) {
-            numRaffleNFTWinnersPerRound = 2;
-        }
-
         for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
             address raffleWinner_ = raffleWinner();
             raffleNFTWinners[raffleWinner_] += 1;
@@ -351,6 +347,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
     }
 
+    function setNumRaffleNFTWinnersPerRound(uint256 newNumRaffleNFTWinnersPerRound) public onlyOwner {
+        numRaffleNFTWinnersPerRound = newNumRaffleNFTWinnersPerRound;
+    }
+    
     function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {
         charityPercentage = newCharityPercentage;
     }
