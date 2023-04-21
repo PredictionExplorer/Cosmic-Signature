@@ -24,7 +24,7 @@ contract RaffleWallet is Ownable {
         winners[numDeposits] = RaffleWinner({
             destination: winner,
             amount: msg.value,
-            deposit_id: round_num,
+            deposit_id: numDeposits,
             round: round_num,
             claimed: false
         });
