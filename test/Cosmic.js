@@ -29,6 +29,9 @@ describe("Cosmic", function () {
     const charityWallet = await CharityWallet.deploy();
     await charityWallet.transferOwnership(cosmicDAO.address);
 
+    const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
+    const raffleWallet = await RaffleWallet.deploy();
+
     const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
     const randomWalkNFT = await RandomWalkNFT.deploy();
 
@@ -36,9 +39,10 @@ describe("Cosmic", function () {
     await cosmicGame.setNftContract(cosmicSignature.address);
     await cosmicGame.setCharity(charityWallet.address);
     await cosmicGame.setRandomWalk(randomWalkNFT.address);
+    await cosmicGame.setRaffleWallet(raffleWallet.address);
     await cosmicGame.setActivationTime(0);
 
-    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT};
+    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
 
   }
 
@@ -206,6 +210,34 @@ describe("Cosmic", function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       await expect(cosmicGame.connect(addr1).donate()).
             to.be.revertedWith("amount to donate must be greater than 0");
+    });
+    it("Raffle deposits sent should match raffle deposits received", async function () {
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet} = await loadFixture(deployCosmic);
+      [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await ethers.getSigners();
+
+      let topic_sig = raffleWallet.interface.getEventTopic("RaffleDeposit");
+      let tx,receipt,log,parsed_log,bidPrice,winner;
+
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr1).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr2).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr3).bid("", {value:bidPrice});
+
+      let prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
+      await ethers.provider.send("evm_mine");
+
+      tx = await cosmicGame.connect(addr3).claimPrize();
+      receipt = await tx.wait();
+      // log indices: 3,4,5 where the c84324ec event signature (RaffleDeposit) is located
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[3]);
+      expect(parsed_log.args.deposit_id.toNumber()).to.equal(0);
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[4]);
+      expect(parsed_log.args.deposit_id.toNumber()).to.equal(1);
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[5]);
+      expect(parsed_log.args.deposit_id.toNumber()).to.equal(2);
     });
   });
 })

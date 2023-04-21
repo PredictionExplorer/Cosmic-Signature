@@ -98,25 +98,20 @@ describe("Security", function () {
     await ethers.provider.send("evm_mine");
 
     let prizeAmount = await cosmicGame.prizeAmount();
-	console.log("Note: only works for prizePercentage <= "+prizePercentage);
-    console.log("initial prizeAmount="+prizeAmount);
     let reclaim_bal_before = await ethers.provider.getBalance(reclaim.address);
     // Make sure there is no re-entrancy
-    await expect(reclaim.connect(addr3).claim_and_reset(ethers.BigNumber.from("1"))).to.be.revertedWith("Transfer failed.");
+    await expect(reclaim.connect(addr3).claim_and_reset(ethers.BigNumber.from("1"))).to.be.revertedWith("Transfer to the winner failed");
   });
   it("Is possible to take prize before activation", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       let donationAmount = ethers.utils.parseEther('10');
       await cosmicGame.donate({value: donationAmount});
-	  console.log("Donation amount is "+donationAmount);
 	  await ethers.provider.send("evm_mine"); // begin
 	  prizeTime = await cosmicGame.timeUntilPrize();
 	  await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
 	  await ethers.provider.send("evm_mine");
 	  let prizeAmount = await cosmicGame.prizeAmount();
-	  console.log("prizeAmount is     "+prizeAmount);
 	  let balance_before =(await addr3.getBalance());
-	  console.log("Account balance before: "+ balance_before);
 	  await expect(cosmicGame.connect(addr3).claimPrize()).to.be.revertedWith("There is no last bidder.");
   });
 })

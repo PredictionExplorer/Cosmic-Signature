@@ -275,8 +275,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             roundNum,
             winner));
 
-        numRaffleParticipants = 0;
-
         roundNum += 1;
 
         (bool mint_success, ) =
@@ -290,10 +288,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 raffleAmount_ = raffleAmount();
 
         (bool success, ) = winner.call{value: prizeAmount_}("");
-        require(success, "Transfer failed.");
+        require(success, "Transfer to the winner failed");
 
         (success, ) = charity.call{value: charityAmount_}("");
-        require(success, "Transfer failed.");
+        require(success, "Transfer to charity contract failed");
 
         bytes32 raffleEntropy = entropy;
         for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
@@ -302,12 +300,15 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 block.timestamp,
                 blockhash(block.number),
                 roundNum,
+                i,
                 winner));
             address raffleWinner_ = raffleWinner();
             (success, ) =
-                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
-            require(success, "Deposit failed.");
+                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_,roundNum-1));
+            require(success, "Raffle deposit failed");
         }
+        
+        numRaffleParticipants = 0;
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
