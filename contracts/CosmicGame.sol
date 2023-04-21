@@ -268,13 +268,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function claimPrize() public {
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
         require(lastBidder != address(0), "There is no last bidder.");
-        if (block.timestamp - prizeTime < 3600 * 3) {
-            // The winner has 3 hours to claim the prize.
-            // After the 3 hours have elapsed, then *anyone* will be able to claim the prize!
+        if (block.timestamp - prizeTime < 3600 * 24) {
+            // The winner has 24 hours to claim the prize.
+            // After the 24 hours have elapsed, then *anyone* is able to claim the prize!
             // This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
             // which would stop the creation of new Cosmic Signature NFTs.
             require(_msgSender() == lastBidder,
-                    "Only the last bidder can claim the prize during the first 3 hours.");
+                    "Only the last bidder can claim the prize during the first 24 hours.");
         }
 
         address winner = _msgSender();

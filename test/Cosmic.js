@@ -98,7 +98,7 @@ describe("Cosmic", function () {
       await ethers.provider.send("evm_increaseTime", [100]);
       await ethers.provider.send("evm_mine");
 
-      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 3 hours.");
+      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 24 hours.");
 
 
       let prizeAmount = await cosmicGame.prizeAmount();
@@ -139,9 +139,9 @@ describe("Cosmic", function () {
       await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
       await ethers.provider.send("evm_mine");
 
-      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 3 hours.");
+      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 24 hours.");
 
-      await ethers.provider.send("evm_increaseTime", [3600 * 3]);
+      await ethers.provider.send("evm_increaseTime", [3600 * 24]);
       await ethers.provider.send("evm_mine");
 
       await cosmicGame.connect(addr2).claimPrize();
