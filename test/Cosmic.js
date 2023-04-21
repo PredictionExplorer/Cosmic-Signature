@@ -239,6 +239,37 @@ describe("Cosmic", function () {
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(1);
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[5]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(2);
+
+      // let's begin a new round
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr1).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr2).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr3).bid("", {value:bidPrice});
+	  
+      prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
+      await ethers.provider.send("evm_mine");
+
+      let raffleAmount = await cosmicGame.raffleAmount();
+      tx = await cosmicGame.connect(addr3).claimPrize();
+      receipt = await tx.wait();
+      // log indices: 3,4,5 where the c84324ec event signature (RaffleDeposit) is located
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[3]);
+      expect(parsed_log.args.deposit_id.toNumber()).to.equal(3);
+      expect(parsed_log.args.round.toNumber()).to.equal(1);
+      expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
+
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[4]);
+      expect(parsed_log.args.deposit_id.toNumber()).to.equal(4);
+      expect(parsed_log.args.round.toNumber()).to.equal(1);
+      expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
+
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[5]);
+      expect(parsed_log.args.deposit_id.toNumber()).to.equal(5);
+      expect(parsed_log.args.round.toNumber()).to.equal(1);
+      expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
     });
   });
 })
