@@ -317,7 +317,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function claimRaffleNFT() public {
-        require (raffleNFTWinners[_msgSender()] > 0);
+        require (raffleNFTWinners[_msgSender()] > 0, "You have no unclaimed raffle NFTs.");
         raffleNFTWinners[_msgSender()] -= 1;
         (bool mint_success, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, _msgSender()));

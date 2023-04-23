@@ -240,6 +240,33 @@ describe("Cosmic", function () {
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[5]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(2);
 
+      // NFT Raffle winners
+      expect(await cosmicSignature.totalSupply()).to.equal(1);
+      w1 = await cosmicGame.raffleNFTWinners(addr1.address);
+      i1 = await cosmicSignature.balanceOf(addr1.address);
+      for (let i = 0; i < w1; i++) {
+        await cosmicGame.connect(addr1).claimRaffleNFT();
+      }
+      await expect(cosmicGame.connect(addr1).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
+      expect(await cosmicSignature.balanceOf(addr1.address)).to.equal(w1.add(i1));
+
+      w2 = await cosmicGame.raffleNFTWinners(addr2.address);
+      i2 = await cosmicSignature.balanceOf(addr2.address);
+      for (let i = 0; i < w2; i++) {
+        await cosmicGame.connect(addr2).claimRaffleNFT();
+      }
+      await expect(cosmicGame.connect(addr2).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
+      expect(await cosmicSignature.balanceOf(addr2.address)).to.equal(w2.add(i2));
+
+      w3 = await cosmicGame.raffleNFTWinners(addr3.address);
+      i3 = await cosmicSignature.balanceOf(addr3.address);
+      for (let i = 0; i < w3; i++) {
+        await cosmicGame.connect(addr3).claimRaffleNFT();
+      }
+      await expect(cosmicGame.connect(addr3).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
+      expect(await cosmicSignature.balanceOf(addr3.address)).to.equal(w3.add(i3));
+      expect(await cosmicSignature.totalSupply()).to.equal(6);
+
       // let's begin a new round
       bidPrice = await cosmicGame.getBidPrice();
       await cosmicGame.connect(addr1).bid("", {value:bidPrice});
@@ -247,7 +274,7 @@ describe("Cosmic", function () {
       await cosmicGame.connect(addr2).bid("", {value:bidPrice});
       bidPrice = await cosmicGame.getBidPrice();
       await cosmicGame.connect(addr3).bid("", {value:bidPrice});
-	  
+
       prizeTime = await cosmicGame.timeUntilPrize();
       await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
       await ethers.provider.send("evm_mine");
@@ -270,6 +297,34 @@ describe("Cosmic", function () {
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(5);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
+
+      expect(await cosmicSignature.totalSupply()).to.equal(7);
+      w1 = await cosmicGame.raffleNFTWinners(addr1.address);
+      i1 = await cosmicSignature.balanceOf(addr1.address);
+      for (let i = 0; i < w1; i++) {
+        await cosmicGame.connect(addr1).claimRaffleNFT();
+      }
+      await expect(cosmicGame.connect(addr1).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
+      expect(await cosmicSignature.balanceOf(addr1.address)).to.equal(w1.add(i1));
+
+      w2 = await cosmicGame.raffleNFTWinners(addr2.address);
+      i2 = await cosmicSignature.balanceOf(addr2.address);
+      for (let i = 0; i < w2; i++) {
+        await cosmicGame.connect(addr2).claimRaffleNFT();
+      }
+      await expect(cosmicGame.connect(addr2).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
+      expect(await cosmicSignature.balanceOf(addr2.address)).to.equal(w2.add(i2));
+
+      w3 = await cosmicGame.raffleNFTWinners(addr3.address);
+      i3 = await cosmicSignature.balanceOf(addr3.address);
+      for (let i = 0; i < w3; i++) {
+        await cosmicGame.connect(addr3).claimRaffleNFT();
+      }
+      await expect(cosmicGame.connect(addr3).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
+      expect(await cosmicSignature.balanceOf(addr3.address)).to.equal(w3.add(i3));
+      expect(await cosmicSignature.totalSupply()).to.equal(12);
+
+
     });
   });
 })
