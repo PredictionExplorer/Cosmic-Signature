@@ -42,7 +42,27 @@ describe("CosmicAI", function () {
 
   });
 
-  it("should emit correct events in the CharityWallet contract", async function () {
+  it("should emit the correct events in the CosmicSignature contract", async function () {
+    let bidPrice = await cosmicGame.getBidPrice();
+    await cosmicGame.connect(bidder1).bid("", { value: bidPrice });
+    await ethers.provider.send("evm_increaseTime", [26 * 3600]);
+    await ethers.provider.send("evm_mine");
+    const tx = await cosmicGame.connect(bidder1).claimPrize();
+    await tx.wait();
+    let seed = await nft.seeds(0);
+    expect(tx).to.emit(nft, "MintEvent").withArgs(0, bidder1.address, seed);
+
+    const tx2 = await cosmicGame.connect(bidder1).claimRaffleNFT();
+    await tx2.wait();
+    seed = await nft.seeds(1);
+    expect(tx2).to.emit(nft, "MintEvent").withArgs(1, bidder1.address, seed);
+
+    await expect(nft.connect(bidder1).setTokenName(1, "abc123"))
+      .to.emit(nft, "TokenNameEvent")
+      .withArgs(1, "abc123");
+  });
+
+  it("should emit the correct events in the CharityWallet contract", async function () {
     // DonationReceivedEvent
     let bidPrice = await cosmicGame.getBidPrice();
     await cosmicGame.connect(bidder1).bid("", { value: bidPrice });

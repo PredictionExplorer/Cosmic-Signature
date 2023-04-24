@@ -26,7 +26,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     address public cosmicGameContract;
 
     event TokenNameEvent(uint256 tokenId, string newName);
-    event TokenSettingsEvent(uint256 tokenId, uint256 settings);
     event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
 
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
@@ -51,15 +50,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         require(bytes(name).length <= 32, "Token name is too long.");
         tokenNames[tokenId] = name;
         emit TokenNameEvent(tokenId, name);
-    }
-
-    function setTokenSettings(uint256 tokenId, uint256 settings) public {
-        require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
-            "setTokenSettings caller is not owner nor approved."
-        );
-        tokenSettings[tokenId] = settings;
-        emit TokenSettingsEvent(tokenId, settings);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
