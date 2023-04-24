@@ -232,12 +232,12 @@ describe("Cosmic", function () {
 
       tx = await cosmicGame.connect(addr3).claimPrize();
       receipt = await tx.wait();
-      // log indices: 3,4,5 where the c84324ec event signature (RaffleDeposit) is located
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[3]);
+      // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(0);
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[4]);
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[9]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(1);
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[5]);
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[10]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(2);
 
       // NFT Raffle winners
@@ -282,18 +282,18 @@ describe("Cosmic", function () {
       let raffleAmount = await cosmicGame.raffleAmount();
       tx = await cosmicGame.connect(addr3).claimPrize();
       receipt = await tx.wait();
-      // log indices: 3,4,5 where the c84324ec event signature (RaffleDeposit) is located
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[3]);
+      // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(3);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
 
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[4]);
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[9]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(4);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
 
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[5]);
+      parsed_log = raffleWallet.interface.parseLog(receipt.logs[10]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(5);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
