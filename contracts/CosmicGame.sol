@@ -112,7 +112,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     // send some ETH into the contract and affect nothing else.
     function donate() public payable {
-        require (msg.value > 0, "amount to donate must be greater than 0");
+        require (msg.value > 0, "Donation amount must be greater than 0.");
 
         if (lastBidder == address(0)) {
             initializeBidPrice();
@@ -142,10 +142,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function claimDonatedNFT(uint256 num) public {
-       require(num < numDonatedNFTs, "The donated NFT does not exist");
+       require(num < numDonatedNFTs, "The donated NFT does not exist.");
        address winner = winners[donatedNFTs[num].round];
-       require(_msgSender() == winner, "You are not the winner of the round");
-       require(!donatedNFTs[num].claimed, "The NFT has already been claimed");
+       require(_msgSender() == winner, "You are not the winner of the round.");
+       require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
        donatedNFTs[num].claimed = true;
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
     }
@@ -165,15 +165,15 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         lastBidder = _msgSender();
 
-        require(!usedRandomWalkNFTs[randomWalkNFTId],"token with this ID was used already");
-        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"you must be the owner of the token");
-        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "message is too long");
+        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
+        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
+        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
 
         usedRandomWalkNFTs[randomWalkNFTId] = true;
 
         (bool mint_success, ) =
             address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
-		require(mint_success,"CosmicToken mint() failed to mint reward tokens");
+		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
 
         pushBackPrizeTime();
 
@@ -186,7 +186,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             "Not active yet."
         );
 
-        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long");
+        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
 
         if (lastBidder == address(0)) {
             // someone just claimed a prize and we are starting from scratch
@@ -208,14 +208,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         (bool mint_success, ) =
             address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
-		require(mint_success,"CosmicToken mint() failed to mint reward tokens");
+		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
 
         pushBackPrizeTime();
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
             (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
-            require(success, "Transfer failed.");
+            require(success, "Refund transfer failed.");
         }
 
         emit BidEvent(lastBidder, bidPrice, -1, prizeTime, message);
@@ -285,7 +285,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         (bool mint_success, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
-		require(mint_success,"CosmicSignature mint() failed to mint token");
+		require(mint_success, "CosmicSignature mint() failed to mint NFT.");
         
         initializeBidPrice();
 
@@ -299,16 +299,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
         }
 
         (bool success, ) = winner.call{value: prizeAmount_}("");
-        require(success, "Transfer to the winner failed");
+        require(success, "Transfer to the winner failed.");
 
         (success, ) = charity.call{value: charityAmount_}("");
-        require(success, "Transfer to charity contract failed");
+        require(success, "Transfer to charity contract failed.");
 
         for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
             address raffleWinner_ = raffleWinner();
             (success, ) =
                 address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_, roundNum - 1));
-            require(success, "Raffle deposit failed");
+            require(success, "Raffle deposit failed.");
         }
         
         numRaffleParticipants = 0;
@@ -321,7 +321,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         raffleNFTWinners[_msgSender()] -= 1;
         (bool mint_success, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, _msgSender()));
-		require(mint_success,"CosmicSignature mint() failed to mint token");
+		require(mint_success, "CosmicSignature mint() failed to mint NFT.");
     }
 
     constructor() {

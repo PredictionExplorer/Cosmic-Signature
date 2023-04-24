@@ -20,7 +20,7 @@ contract RaffleWallet is Ownable {
     event RaffleDeposit(address indexed winner, uint256 indexed round,uint256 deposit_id,uint256 amount);
 
     function deposit(address winner,uint256 round_num) public payable {
-        require(msg.value > 0);
+        require(msg.value > 0, "No ETH has been sent.");
         winners[numDeposits] = RaffleWinner({
             destination: winner,
             amount: msg.value,
@@ -28,12 +28,12 @@ contract RaffleWallet is Ownable {
             round: round_num,
             claimed: false
         });
+        emit RaffleDeposit(winner, round_num, numDeposits, msg.value);
         numDeposits += 1;
-        emit RaffleDeposit(winner,round_num,numDeposits-1,msg.value);
     }
 
     function withdraw(uint256 depositId) public {
-        require(!winners[depositId].claimed,"Raffle claimed");
+        require(!winners[depositId].claimed, "Raffle has alredy been claimed.");
         winners[depositId].claimed = true;
         (bool success, ) = winners[depositId].destination.call{value: winners[depositId].amount}("");
         require(success, "Transfer failed.");

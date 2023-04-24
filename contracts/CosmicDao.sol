@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFractio
 
 contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction {
     constructor(IVotes _token)
-        Governor("CosmicSignatureDAO")
+        Governor("CosmicDAO")
         GovernorSettings(7200 /* 1 day */, 216000 /* 1 month */, 100e18)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)

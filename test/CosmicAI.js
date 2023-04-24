@@ -64,7 +64,7 @@ describe("CosmicAI", function () {
     bidPrice = await cosmicGame.getBidPrice();
     await cosmicGame.connect(bidder1).bid("", { value: bidPrice });
 
-    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round");
+    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round.");
     await ethers.provider.send("evm_increaseTime", [26 * 3600]);
     await ethers.provider.send("evm_mine");
 
@@ -82,11 +82,11 @@ describe("CosmicAI", function () {
     expectedPrizeAmount = balance.mul(25).div(100);
     expect(prizeAmountAfterClaim).to.equal(expectedPrizeAmount);
 
-    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("The donated NFT does not exist");
-    await expect(cosmicGame.connect(bidder2).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round");
+    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("The donated NFT does not exist.");
+    await expect(cosmicGame.connect(bidder2).claimDonatedNFT(0)).to.be.revertedWith("You are not the winner of the round.");
 
     await cosmicGame.connect(bidder1).claimDonatedNFT(0);
-    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("The NFT has already been claimed");
+    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith("The NFT has already been claimed.");
 
     mintPrice = await randomWalk.getMintPrice();
     await randomWalk.connect(donor).mint({value: mintPrice});
@@ -106,7 +106,7 @@ describe("CosmicAI", function () {
       .to.emit(cosmicGame, "PrizeClaimEvent")
       .withArgs(1, donor.address, prizeAmountBeforeClaim);
 
-    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("You are not the winner of the round");
+    await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith("You are not the winner of the round.");
 
     expect(await randomWalk.balanceOf(donor.address)).to.equal(1);
     await cosmicGame.connect(donor).claimDonatedNFT(1);

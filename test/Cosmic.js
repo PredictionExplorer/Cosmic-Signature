@@ -155,7 +155,7 @@ describe("Cosmic", function () {
       await randomWalkNFT.connect(addr1).mint({value: tokenPrice});	// tokenId=0
 
       // switch to another account and attempt to use tokenId=0 which we don't own
-      await expect(cosmicGame.connect(owner).bidWithRWLK(ethers.BigNumber.from("0"), "")).to.be.revertedWith("you must be the owner of the token"); //tokenId=0
+      await expect(cosmicGame.connect(owner).bidWithRWLK(ethers.BigNumber.from("0"), "")).to.be.revertedWith("You must be the owner of the RandomWalkNFT."); //tokenId=0
 
       tokenPrice = await randomWalkNFT.getMintPrice();
       let tx = await randomWalkNFT.connect(owner).mint({value: tokenPrice});
@@ -167,13 +167,13 @@ describe("Cosmic", function () {
       await cosmicGame.connect(owner).bidWithRWLK(token_id, "");
 
       // try to mint again using the same tokenId
-      await expect(cosmicGame.connect(owner).bidWithRWLK(ethers.BigNumber.from(token_id), "")).to.be.revertedWith("token with this ID was used already"); //tokenId=0
+      await expect(cosmicGame.connect(owner).bidWithRWLK(ethers.BigNumber.from(token_id), "")).to.be.revertedWith("This RandomWalkNFT has already been used for bidding."); //tokenId=0
     });
     it("Should not be possible to mint CosmicSignature token by anyone", async function () {
 
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("only the CosmicGame contract can mint")
+	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("Only the CosmicGame contract can mint.")
      });
 
     it("Should be possible to setTokenName()", async function () {
@@ -195,7 +195,7 @@ describe("Cosmic", function () {
 
       await expect(cosmicSignature.connect(addr2)
             .setTokenName(token_id,"name 000"))
-            .to.be.revertedWith("setTokenName caller is not owner nor approved");
+            .to.be.revertedWith("setTokenName caller is not owner nor approved.");
       await expect(cosmicSignature.connect(addr1)
             .setTokenName(token_id,"012345678901234567890123456789012"))
             .to.be.revertedWith("Token name is too long.");
@@ -204,13 +204,13 @@ describe("Cosmic", function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       await expect(cosmicSignature.connect(addr1).mint(addr1.address)).
-            to.be.revertedWith("only the CosmicGame contract can mint");
+            to.be.revertedWith("Only the CosmicGame contract can mint.");
 	});
     it("Should not be possible to donate 0 value", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
       await expect(cosmicGame.connect(addr1).donate()).
-            to.be.revertedWith("amount to donate must be greater than 0");
+            to.be.revertedWith("Donation amount must be greater than 0.");
     });
     it("Raffle deposits sent should match raffle deposits received", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet} = await loadFixture(deployCosmic);

@@ -46,7 +46,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     function setTokenName(uint256 tokenId, string memory name) public {
         require(
             _isApprovedOrOwner(_msgSender(), tokenId),
-            "setTokenName caller is not owner nor approved"
+            "setTokenName caller is not owner nor approved."
         );
         require(bytes(name).length <= 32, "Token name is too long.");
         tokenNames[tokenId] = name;
@@ -56,7 +56,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     function setTokenSettings(uint256 tokenId, uint256 settings) public {
         require(
             _isApprovedOrOwner(_msgSender(), tokenId),
-            "setTokenSettings caller is not owner nor approved"
+            "setTokenSettings caller is not owner nor approved."
         );
         tokenSettings[tokenId] = settings;
         emit TokenSettingsEvent(tokenId, settings);
@@ -67,7 +67,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     }
 
     function mint(address owner) public {
-        require (_msgSender() == cosmicGameContract,"only the CosmicGame contract can mint");
+        require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
 
         uint256 tokenId = numTokens;
         numTokens += 1;
