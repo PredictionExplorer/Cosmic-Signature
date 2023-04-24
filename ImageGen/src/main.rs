@@ -509,6 +509,12 @@ fn main() {
     let file_name = format!("{}.mp4", s);
     let hide = vec![args.hide_1, args.hide_2, args.hide_3];
     let frames = plot_positions(&positions, args.snake_len, &hide, &colors, args.steps_per_frame);
+    let last_frame = frames[frames.len() - 1].clone();
+    if let Err(e) = last_frame.save(format!("{}.png", s)) {
+        eprintln!("Error saving image: {:?}", e);
+    } else {
+        println!("Image saved successfully.");
+    }
     create_video_from_frames_in_memory(&frames, &file_name, 60);
     println!("done creating video");
 }
