@@ -216,7 +216,7 @@ describe("Cosmic", function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet} = await loadFixture(deployCosmic);
       [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await ethers.getSigners();
 
-      let topic_sig = raffleWallet.interface.getEventTopic("RaffleDeposit");
+      let topic_sig = raffleWallet.interface.getEventTopic("RaffleDepositEvent");
       let tx,receipt,log,parsed_log,bidPrice,winner;
 
       bidPrice = await cosmicGame.getBidPrice();

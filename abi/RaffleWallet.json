@@ -1,6 +1,6 @@
 [
   "event OwnershipTransferred(address indexed,address indexed)",
-  "event RaffleDeposit(address indexed,uint256 indexed,uint256,uint256)",
+  "event RaffleDepositEvent(address indexed,uint256 indexed,uint256,uint256)",
   "function deposit(address,uint256) payable",
   "function owner() view returns (address)",
   "function renounceOwnership()",

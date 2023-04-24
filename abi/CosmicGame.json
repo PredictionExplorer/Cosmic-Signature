@@ -5,6 +5,8 @@
   "event NFTDonationEvent(address indexed,address indexed,uint256)",
   "event OwnershipTransferred(address indexed,address indexed)",
   "event PrizeClaimEvent(uint256 indexed,address indexed,uint256)",
+  "event RaffleNFTClaimedEvent(address indexed)",
+  "event RaffleNFTWinnerEvent(address indexed,uint256 indexed,uint256)",
   "function MAX_MESSAGE_LENGTH() view returns (uint256)",
   "function MILLION() view returns (uint256)",
   "function activationTime() view returns (uint256)",

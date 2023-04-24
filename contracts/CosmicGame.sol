@@ -92,6 +92,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 tokenId);
+    event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winner_index);
+    event RaffleNFTClaimedEvent(address indexed winner);
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
@@ -296,6 +298,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
             address raffleWinner_ = raffleWinner();
             raffleNFTWinners[raffleWinner_] += 1;
+            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, i);
         }
 
         (bool success, ) = winner.call{value: prizeAmount_}("");
@@ -322,6 +325,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         (bool mint_success, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, _msgSender()));
 		require(mint_success, "CosmicSignature mint() failed to mint NFT.");
+        emit RaffleNFTClaimedEvent(_msgSender());
     }
 
     constructor() {

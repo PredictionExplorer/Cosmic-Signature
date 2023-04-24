@@ -17,7 +17,7 @@ contract RaffleWallet is Ownable {
     mapping(uint256 => RaffleWinner) public winners;
     uint256 numDeposits;
 
-    event RaffleDeposit(address indexed winner, uint256 indexed round,uint256 deposit_id,uint256 amount);
+    event RaffleDepositEvent(address indexed winner, uint256 indexed round, uint256 deposit_id, uint256 amount);
 
     function deposit(address winner,uint256 round_num) public payable {
         require(msg.value > 0, "No ETH has been sent.");
@@ -28,7 +28,7 @@ contract RaffleWallet is Ownable {
             round: round_num,
             claimed: false
         });
-        emit RaffleDeposit(winner, round_num, numDeposits, msg.value);
+        emit RaffleDepositEvent(winner, round_num, numDeposits, msg.value);
         numDeposits += 1;
     }
 
