@@ -173,7 +173,7 @@ fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>>
     colors
 }
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let width = 1600;
     let height = 1600;
     let background_color = Rgb([0u8, 0u8, 0u8]);
@@ -263,7 +263,9 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, hide: &V
             }
         }
 
-        frames.push(blurred_img);
+        if snake_end >= init_len {
+            frames.push(blurred_img);
+        }
         snake_end += frame_interval;
         if snake_end >= positions[0].len() {
             break;
@@ -479,6 +481,9 @@ struct Args {
     #[arg(long, default_value_t = 150_000)]
     snake_len: usize,
 
+    #[arg(long, default_value_t = 150_000)]
+    init_len: usize,
+
     #[arg(long)]
     hide_1: bool,
 
@@ -508,7 +513,7 @@ fn main() {
     let s: &str = args.file_name.as_str();
     let file_name = format!("{}.mp4", s);
     let hide = vec![args.hide_1, args.hide_2, args.hide_3];
-    let frames = plot_positions(&positions, args.snake_len, &hide, &colors, args.steps_per_frame);
+    let frames = plot_positions(&positions, args.snake_len, args.init_len, &hide, &colors, args.steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
