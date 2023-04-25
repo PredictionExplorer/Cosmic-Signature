@@ -173,9 +173,7 @@ fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>>
     colors
 }
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-    let width = 1600;
-    let height = 1600;
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: usize, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let background_color = Rgb([0u8, 0u8, 0u8]);
 
     // Find the minimum and maximum coordinates for x and y
@@ -215,7 +213,7 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, init_len
     let mut snake_end: usize = 0;
 
     loop {
-        let mut img = ImageBuffer::from_fn(width, height, |_, _| background_color);
+        let mut img = ImageBuffer::from_fn(frame_size, frame_size, |_, _| background_color);
 
         for body_idx in 0..positions.len() {
             if hide[body_idx] {
@@ -231,8 +229,8 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, init_len
                 let y1 = positions[body_idx][i][1];
 
                 // Scale and shift positions to fit within the image dimensions
-                let x1p = (((x1 - min_x) / range) * (width as f64)).round();
-                let y1p = (((y1 - min_y) / range) * (height as f64)).round();
+                let x1p = (((x1 - min_x) / range) * (frame_size as f64)).round();
+                let y1p = (((y1 - min_y) / range) * (frame_size as f64)).round();
 
                 draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 6, colors[body_idx][i]);
             }
@@ -255,8 +253,8 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, snake_len: usize, init_len
                 let y1 = positions[body_idx][i][1];
 
                 // Scale and shift positions to fit within the image dimensions
-                let x1p = ((x1 - min_x) / range * (width as f64 - 1.0)).round();
-                let y1p = ((y1 - min_y) / range * (height as f64 - 1.0)).round();
+                let x1p = ((x1 - min_x) / range * (frame_size as f64 - 1.0)).round();
+                let y1p = ((y1 - min_y) / range * (frame_size as f64 - 1.0)).round();
 
                 let white_color = Rgb([255, 255, 255]);
                 draw_filled_circle_mut(&mut blurred_img, (x1p as i32, y1p as i32), 1, white_color);
@@ -475,6 +473,9 @@ struct Args {
     #[arg(long, default_value_t = 60)]
     frame_rate: u32,
 
+    #[arg(long, default_value_t = 2200)]
+    frame_size: u32,
+
     #[arg(long, default_value_t = 1000)]
     steps_per_frame: usize,
 
@@ -513,7 +514,7 @@ fn main() {
     let s: &str = args.file_name.as_str();
     let file_name = format!("{}.mp4", s);
     let hide = vec![args.hide_1, args.hide_2, args.hide_3];
-    let frames = plot_positions(&positions, args.snake_len, args.init_len, &hide, &colors, args.steps_per_frame);
+    let frames = plot_positions(&positions, args.frame_size, args.snake_len, args.init_len, &hide, &colors, args.steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
