@@ -262,7 +262,7 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
         }
 
         if snake_end >= init_len {
-            frames.push(blurred_img);
+            frames.push(imageproc::filter::gaussian_blur_f32(&blurred_img, 1.0));
         }
         snake_end += frame_interval;
         if snake_end >= positions[0].len() {
