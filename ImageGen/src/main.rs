@@ -495,6 +495,39 @@ struct Args {
     hide_3: bool,
 }
 
+/*
+pub struct Parameters {
+    snake_len: usize,
+    init_len: usize,
+    hide_1: bool,
+    hide_2: bool,
+    hide_3: bool,
+    num_steps: usize,
+    rng: &mut Sha3RandomByteStream,
+}
+
+impl Parameters {
+    pub fn new(rng: &mut Sha3RandomByteStream) -> Self {
+        Self {
+            snake_len: 150000,
+            init_len: 0,
+            hide_1: false,
+            hide_2: false,
+            hide_3: false,
+            num_steps: 1000000,
+            rng: rng,
+        }
+    }
+
+    pub fn generate(&mut self) {
+        self.snake_len = usize(self.rng.gen_range(200000.0, 2000000.0));
+    }
+}
+
+*/
+
+
+
 use hex;
 
 fn main() {
@@ -506,15 +539,27 @@ fn main() {
         };
     let seed = hex::decode(string_seed).expect("Invalid hexadecimal string");
 
-    let mut byte_stream = Sha3RandomByteStream::new(&seed);
-    let positions = get_best(&mut byte_stream, args.num_tries, args.num_steps_sim, args.num_steps_video);
-    println!("done simulating");
-    //let colors: Vec<Rgb<u8>> = get_colors(&mut byte_stream);
-    let colors = get_3_colors(&mut byte_stream, args.num_steps_video);
+    let mut byte_stream = Sha3RandomByteStream::new(&seed); 
+
+
+    let steps = byte_stream.gen_range(300_000.0, 3_000_000.0) as usize;
+    let num_tries: usize = 1_000;
+    let positions = get_best(&mut byte_stream, num_tries, steps, steps);
+    let colors = get_3_colors(&mut byte_stream, steps);
     let s: &str = args.file_name.as_str();
     let file_name = format!("{}.mp4", s);
-    let hide = vec![args.hide_1, args.hide_2, args.hide_3];
-    let frames = plot_positions(&positions, args.frame_size, args.snake_len, args.init_len, &hide, &colors, args.steps_per_frame);
+    println!("done simulating");
+    
+    let snake_len = byte_stream.gen_range(50_000.0, 300_000.0) as usize;
+    let init_len: usize = 0;
+    let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
+    let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
+    let hide = vec![false, hide_2, hide_3];
+    
+    let target_length = 60 * 30; // 30 seconds
+    let steps_per_frame: usize = steps / target_length;
+
+    let frames = plot_positions(&positions, args.frame_size, snake_len, init_len, &hide, &colors, steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);

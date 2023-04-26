@@ -13,8 +13,8 @@ def run_program(command):
 def main():
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
-    max_concurrent_executions = 5
-    N = 100
+    max_concurrent_executions = 6
+    N = 200
 
     # Specify the different parameters for each execution
     const_params = ['--num-steps-sim', '1000000', '--num-steps-video', '1000000', '--init-len', '0', '--hide-1', '--hide-2']
@@ -22,9 +22,9 @@ def main():
     for i in range(N):
         cur = list(const_params)
         cur.append('--seed')
-        cur.append(f'0x4000{i:06}')
+        cur.append(f'0x6000{i:06}')
         cur.append('--file-name')
-        cur.append(f'0x4000{i:06}')
+        cur.append(f'0x6000{i:06}')
         parameters.append(cur)
 
     # Run the program N times in parallel with different parameters, limiting concurrent executions
