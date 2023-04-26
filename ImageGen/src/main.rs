@@ -61,11 +61,11 @@ impl Sha3RandomByteStream {
     }
 
     pub fn random_mass(&mut self) -> f64 {
-        self.gen_range(100.0, 300.0)
+        self.gen_range(50.0, 5000.0)
     }
     
     pub fn random_location(&mut self) -> f64 {
-        self.gen_range(-250.0, 250.0)
+        self.gen_range(-2500.0, 2500.0)
     }
 
     
@@ -460,73 +460,7 @@ struct Args {
 
     #[arg(long, default_value = "output")]
     file_name: String,
-
-    #[arg(long, default_value_t = 1_000)]
-    num_tries: usize,
-
-    #[arg(long, default_value_t = 1_000_000)]
-    num_steps_sim: usize,
-
-    #[arg(long, default_value_t = 1_000_000)]
-    num_steps_video: usize,
-
-    #[arg(long, default_value_t = 60)]
-    frame_rate: u32,
-
-    #[arg(long, default_value_t = 2200)]
-    frame_size: u32,
-
-    #[arg(long, default_value_t = 1000)]
-    steps_per_frame: usize,
-
-    #[arg(long, default_value_t = 150_000)]
-    snake_len: usize,
-
-    #[arg(long, default_value_t = 150_000)]
-    init_len: usize,
-
-    #[arg(long)]
-    hide_1: bool,
-
-    #[arg(long)]
-    hide_2: bool,
-
-    #[arg(long)]
-    hide_3: bool,
 }
-
-/*
-pub struct Parameters {
-    snake_len: usize,
-    init_len: usize,
-    hide_1: bool,
-    hide_2: bool,
-    hide_3: bool,
-    num_steps: usize,
-    rng: &mut Sha3RandomByteStream,
-}
-
-impl Parameters {
-    pub fn new(rng: &mut Sha3RandomByteStream) -> Self {
-        Self {
-            snake_len: 150000,
-            init_len: 0,
-            hide_1: false,
-            hide_2: false,
-            hide_3: false,
-            num_steps: 1000000,
-            rng: rng,
-        }
-    }
-
-    pub fn generate(&mut self) {
-        self.snake_len = usize(self.rng.gen_range(200000.0, 2000000.0));
-    }
-}
-
-*/
-
-
 
 use hex;
 
@@ -558,8 +492,9 @@ fn main() {
     
     let target_length = 60 * 30; // 30 seconds
     let steps_per_frame: usize = steps / target_length;
+    const FRAME_SIZE: u32 = 2200;
 
-    let frames = plot_positions(&positions, args.frame_size, snake_len, init_len, &hide, &colors, steps_per_frame);
+    let frames = plot_positions(&positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
