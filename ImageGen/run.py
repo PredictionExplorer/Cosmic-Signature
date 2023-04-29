@@ -22,9 +22,9 @@ def main():
     for i in range(N):
         cur = list(const_params)
         cur.append('--seed')
-        cur.append(f'0x1300{i:06}')
+        cur.append(f'0x1500{i:06}')
         cur.append('--file-name')
-        cur.append(f'0x1300{i:06}')
+        cur.append(f'0x1500{i:06}')
         parameters.append(cur)
 
     # Run the program N times in parallel with different parameters, limiting concurrent executions
