@@ -61,11 +61,16 @@ impl Sha3RandomByteStream {
     }
 
     pub fn random_mass(&mut self) -> f64 {
-        self.gen_range(50.0, 5000.0)
+        self.gen_range(100.0, 300.0)
     }
     
     pub fn random_location(&mut self) -> f64 {
-        self.gen_range(-2500.0, 2500.0)
+        let n = 500.0;
+        self.gen_range(-n, n)
+    }
+
+    pub fn random_velocity(&mut self) -> f64 {
+        self.gen_range(-2.5, 2.5)
     }
 
     
@@ -173,12 +178,14 @@ fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>>
     colors
 }
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: usize, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: f64, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let background_color = Rgb([0u8, 0u8, 0u8]);
 
     // Find the minimum and maximum coordinates for x and y
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
+
+    let white_color = Rgb([255, 255, 255]);
 
     for body_idx in 0..positions.len() {
         if hide[body_idx] {
@@ -210,20 +217,41 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
 
     let mut frames = Vec::new();
 
-    let mut snake_end: usize = 0;
+    let mut snake_end: usize = frame_interval;
 
     loop {
         let mut img = ImageBuffer::from_fn(frame_size, frame_size, |_, _| background_color);
+
+        let mut snake_start: usize = 0;
 
         for body_idx in 0..positions.len() {
             if hide[body_idx] {
                 continue;
             }
+            /*
             let snake_start = if snake_end > snake_len {
                 snake_end - snake_len
             } else {
                 0
             };
+            */
+
+            let mut total_dist: f64 = 0.0;
+            let mut idx = snake_end;
+            loop {
+                if idx <= 1 || total_dist > range * snake_len as f64 {
+                    break;
+                }
+                let x1 = positions[body_idx][idx][0];
+                let y1 = positions[body_idx][idx][1];
+                let x2 = positions[body_idx][idx - 1][0];
+                let y2 = positions[body_idx][idx - 1][1];
+                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+                total_dist += dist;
+                idx -= 1;
+            }
+            snake_start = idx;
+
             for i in snake_start..snake_end {
                 let x1 = positions[body_idx][i][0];
                 let y1 = positions[body_idx][i][1];
@@ -233,6 +261,7 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
                 let y1p = (((y1 - min_y) / range) * (frame_size as f64)).round();
 
                 draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 6, colors[body_idx][i]);
+                //draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 6, white_color);
             }
         }
 
@@ -242,11 +271,15 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
             if hide[body_idx] {
                 continue;
             }
+            
+            /* 
             let snake_start = if snake_end > snake_len {
                 snake_end - snake_len
             } else {
                 0
             };
+            */
+
             for i in snake_start..snake_end {
 
                 let x1 = positions[body_idx][i][0];
@@ -256,7 +289,7 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
                 let x1p = ((x1 - min_x) / range * (frame_size as f64 - 1.0)).round();
                 let y1p = ((y1 - min_y) / range * (frame_size as f64 - 1.0)).round();
 
-                let white_color = Rgb([255, 255, 255]);
+                
                 draw_filled_circle_mut(&mut blurred_img, (x1p as i32, y1p as i32), 1, white_color);
             }
         }
@@ -414,9 +447,9 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
 
     let mut many_bodies: Vec<Vec<Body>> = vec![];
     for _ in 0..num_iters {
-        let body1 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
-        let body2 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
-        let body3 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, 0.0));
+        let body1 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, rng.random_velocity()));
+        let body2 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, rng.random_velocity()));
+        let body3 = Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), 0.0), Vector3::new(0.0, 0.0, rng.random_velocity()));
         
         let bodies = vec![body1, body2, body3];
         many_bodies.push(bodies);
@@ -473,10 +506,10 @@ fn main() {
         };
     let seed = hex::decode(string_seed).expect("Invalid hexadecimal string");
 
-    let mut byte_stream = Sha3RandomByteStream::new(&seed); 
+    let mut byte_stream = Sha3RandomByteStream::new(&seed);
 
 
-    let steps = byte_stream.gen_range(300_000.0, 3_000_000.0) as usize;
+    let steps = byte_stream.gen_range(800_000.0, 1_200_000.0) as usize;
     let num_tries: usize = 1_000;
     let positions = get_best(&mut byte_stream, num_tries, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
@@ -484,10 +517,13 @@ fn main() {
     let file_name = format!("{}.mp4", s);
     println!("done simulating");
     
-    let snake_len = byte_stream.gen_range(50_000.0, 300_000.0) as usize;
+    let snake_len = byte_stream.gen_range(0.2, 3.0);
+    //let snake_len = 0.5;
     let init_len: usize = 0;
-    let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
+    //let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
+    //let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
+    let hide_2 = true;
+    let hide_3 = true;
     let hide = vec![false, hide_2, hide_3];
     
     let target_length = 60 * 30; // 30 seconds
