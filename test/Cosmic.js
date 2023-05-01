@@ -325,6 +325,36 @@ describe("Cosmic", function () {
       expect(await cosmicSignature.totalSupply()).to.equal(12);
 
 
-    });
+    })
+    it("There is an exeuction path for all bidders being RWalk token bidders", async function () {
+     async function mint_rwalk(a) {
+      tokenPrice = await randomWalkNFT.getMintPrice();
+      let tx = await randomWalkNFT.connect(a).mint({value: tokenPrice});
+      let receipt = await tx.wait();
+      let topic_sig = randomWalkNFT.interface.getEventTopic("MintEvent");
+      let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+      let parsed_log = randomWalkNFT.interface.parseLog(log);
+      let token_id = parsed_log.args[0]
+      return token_id;
+    }
+
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet} = await loadFixture(deployCosmic);
+      [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await ethers.getSigners();
+      let token_id = await mint_rwalk(addr1)
+      await  cosmicGame.connect(addr1).bidWithRWLK(token_id,"bidWithRWLK");
+      token_id = await mint_rwalk(addr2)
+      await  cosmicGame.connect(addr2).bidWithRWLK(token_id,"bidWithRWLK");
+      token_id = await mint_rwalk(addr3)
+      await  cosmicGame.connect(addr3).bidWithRWLK(token_id,"bidWithRWLK");
+      token_id = await mint_rwalk(addr4)
+      await  cosmicGame.connect(addr4).bidWithRWLK(token_id,"bidWithRWLK");
+      token_id = await mint_rwalk(addr5)
+      await  cosmicGame.connect(addr5).bidWithRWLK(token_id,"bidWithRWLK");
+
+      let prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
+      await ethers.provider.send("evm_mine");
+      await expect(cosmicGame.connect(addr5).claimPrize()).not.to.be.revertedWith('panic code 0x12'); // divide by zero
+	});
   });
 })
