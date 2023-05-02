@@ -232,6 +232,12 @@ describe("Cosmic", function () {
 
       tx = await cosmicGame.connect(addr3).claimPrize();
       receipt = await tx.wait();
+
+      //make sure the number of deposits matches numRaffleWinnersPerRound variable
+      let deposit_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
+      let nrwpr = await cosmicGame.numRaffleWinnersPerRound();
+      expect(nrwpr.toNumber()).to.equal(deposit_logs.length);
+
       // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
       expect(parsed_log.args.deposit_id.toNumber()).to.equal(0);
