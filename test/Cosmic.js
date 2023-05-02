@@ -336,6 +336,9 @@ describe("Cosmic", function () {
       expect(await cosmicSignature.balanceOf(addr3.address)).to.equal(w3.add(i3));
       expect(await cosmicSignature.totalSupply()).to.equal(12);
 
+      // make sure numRaffleParticipants have been reset
+      let numRaffleParticipants = await cosmicGame.numRaffleParticipants()
+      expect(numRaffleParticipants.toNumber()).to.equal(0);
 
     })
     it("There is an exeuction path for all bidders being RWalk token bidders", async function () {
