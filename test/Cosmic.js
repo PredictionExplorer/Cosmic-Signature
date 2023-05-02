@@ -230,8 +230,14 @@ describe("Cosmic", function () {
       await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
       await ethers.provider.send("evm_mine");
 
+      let roundNumBefore = await cosmicGame.roundNum();
+
       tx = await cosmicGame.connect(addr3).claimPrize();
       receipt = await tx.wait();
+
+      // check tnat roundNum is incremented
+      let roundNumAfter = await cosmicGame.roundNum();
+      expect(roundNumAfter.sub(1).toNumber()).to.equal(roundNumBefore);
 
       //make sure the number of deposits matches numRaffleWinnersPerRound variable
       let deposit_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
