@@ -239,6 +239,10 @@ describe("Cosmic", function () {
       let roundNumAfter = await cosmicGame.roundNum();
       expect(roundNumAfter.sub(1).toNumber()).to.equal(roundNumBefore);
 
+      // check winners[] map contains correct winner value
+      let curWinner = await cosmicGame.winners(roundNumBefore)
+      expect(curWinner).to.equal(addr3.address);
+
       //make sure the number of deposits matches numRaffleWinnersPerRound variable
       let deposit_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
       let nrwpr = await cosmicGame.numRaffleWinnersPerRound();
