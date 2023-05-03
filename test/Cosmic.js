@@ -344,6 +344,16 @@ describe("Cosmic", function () {
       let numRaffleParticipants = await cosmicGame.numRaffleParticipants()
       expect(numRaffleParticipants.toNumber()).to.equal(0);
 
+      var unique_winners = {};
+      for (let i = 0; i< deposit_logs.length; i++) {
+          let wlog = raffleWallet.interface.parseLog(deposit_logs[i]);
+          let winner_signer = raffleWallet.provider.getSigner(wlog.args.winner);
+          let balance_before =await winner_signer.getBalance();
+          let deposit_id = wlog.args.deposit_id;
+          await raffleWallet.connect(owner).withdraw(deposit_id);
+          let balance_after =await winner_signer.getBalance();
+          expect(balance_before.add(wlog.args.amount).toString()).to.equal(balance_after.toString());
+      }
     })
     it("There is an exeuction path for all bidders being RWalk token bidders", async function () {
      async function mint_rwalk(a) {
