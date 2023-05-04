@@ -385,5 +385,65 @@ describe("Cosmic", function () {
       await ethers.provider.send("evm_mine");
       await expect(cosmicGame.connect(addr5).claimPrize()).not.to.be.revertedWith('panic code 0x12'); // divide by zero
 	});
+    it("Setters are working", async function () {
+
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+      [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("Only the CosmicGame contract can mint.")
+
+      await cosmicGame.connect(owner).setCharity(addr2.address);
+      expect(await cosmicGame.charity()).to.equal(addr2.address);
+
+      await cosmicGame.connect(owner).setRandomWalk(addr2.address);
+      expect(await cosmicGame.randomWalk()).to.equal(addr2.address);
+
+      await cosmicGame.connect(owner).setRaffleWallet(addr2.address);
+      expect(await cosmicGame.randomWalk()).to.equal(addr2.address);
+
+      await cosmicGame.connect(owner).setNumRaffleWinnersPerRound(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.numRaffleWinnersPerRound()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setNumRaffleNFTWinnersPerRound(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.numRaffleNFTWinnersPerRound()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setCharityPercentage(ethers.BigNumber.from("999"));
+      expect((await cosmicGame.charityPercentage()).toString()).to.equal("999");
+
+      await cosmicGame.connect(owner).setRafflePercentage(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.rafflePercentage()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setTokenContract(addr2.address);
+      expect(await cosmicGame.token()).to.equal(addr2.address);
+
+      await cosmicGame.connect(owner).setNftContract(addr2.address);
+      expect(await cosmicGame.nft()).to.equal(addr2.address);
+
+      await cosmicGame.connect(owner).setTimeIncrease(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.timeIncrease()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setPriceIncrease(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.priceIncrease()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setNanoSecondsExtra(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.nanoSecondsExtra()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setInitialSecondsUntilPrize(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.initialSecondsUntilPrize()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).updatePrizePercentage(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.prizePercentage()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).updateInitialBidAmountFraction(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.initialBidAmountFraction()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).setActivationTime(ethers.BigNumber.from("99"));
+      expect(await cosmicGame.activationTime()).to.equal(ethers.BigNumber.from("99"));
+
+      await cosmicGame.connect(owner).transferOwnership(addr2.address);
+      expect((await cosmicGame.owner()).toString()).to.equal(addr2.address.toString());
+      await cosmicGame.connect(addr2).transferOwnership(owner.address);
+      expect((await cosmicGame.owner()).toString()).to.equal(owner.address.toString());
+	
+     });
   });
 })
