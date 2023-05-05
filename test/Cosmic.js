@@ -445,5 +445,58 @@ describe("Cosmic", function () {
       expect((await cosmicGame.owner()).toString()).to.equal(owner.address.toString());
 	
      });
+    it("Change charityAddress via DAO (Governor) is working", async function () {
+       const forward_blocks = async (n) => {
+           for (let i = 0; i < n; i++) {
+                 await ethers.provider.send("evm_mine");
+           }
+      }
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+      [owner, addr1, addr2,addr3, ...addrs] = await ethers.getSigners();
+
+      let tx,receipt,log,parsed_log,bidPrice,winner,donationAmount;
+
+      donationAmount = ethers.utils.parseEther('10');
+      await cosmicGame.donate({value: donationAmount});
+
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(owner).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr1).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr2).bid("", {value:bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr3).bid("", {value:bidPrice});
+
+      let voting_delay = await cosmicDAO.votingDelay();
+      let voting_period = await cosmicDAO.votingPeriod();
+
+      await cosmicToken.connect(owner).delegate(owner.address);
+      await cosmicToken.connect(addr1).delegate(addr1.address);
+      await cosmicToken.connect(addr2).delegate(addr2.address);
+      await cosmicToken.connect(addr3).delegate(addr3.address);
+      let proposal_func = charityWallet.interface.encodeFunctionData("setCharity",[addr1.address]);
+      let proposal_desc = "set charityWallet to new addr";
+      tx = await cosmicDAO.connect(owner).propose([charityWallet.address],[0],[proposal_func],proposal_desc);
+      receipt = await tx.wait();
+
+      parsed_log = cosmicDAO.interface.parseLog(receipt.logs[0])
+      let proposal_id = parsed_log.args.proposalId;
+
+      await forward_blocks(voting_delay.toNumber());
+
+      let vote = await cosmicDAO.connect(addr1).castVote(proposal_id,1);
+      vote = await cosmicDAO.connect(addr2).castVote(proposal_id,1);
+      vote = await cosmicDAO.connect(addr3).castVote(proposal_id,1);
+
+      await forward_blocks(voting_period);
+
+      let desc_hash = hre.ethers.utils.id(proposal_desc);
+      tx = await cosmicDAO.connect(owner).execute([charityWallet.address],[0],[proposal_func],desc_hash);
+      receipt = await tx.wait();
+
+      let new_charity_addr = await charityWallet.charityAddress();
+      expect(new_charity_addr.toString()).to.equal(addr1.address.toString());
+	})
   });
 })
