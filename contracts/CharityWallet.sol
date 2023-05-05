@@ -10,7 +10,7 @@ contract CharityWallet is Ownable {
     event DonationSentEvent(address indexed charity, uint256 amount);
     event CharityUpdatedEvent(address indexed newCharityAddress);
 
-    address charityAddress;
+    address public charityAddress;
 
     receive() external payable {
         emit DonationReceivedEvent(_msgSender(), msg.value);

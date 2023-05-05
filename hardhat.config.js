@@ -13,6 +13,9 @@ module.exports = {
       },
     },
   },
+  mocha: {
+    timeout: 600000
+  },
   abiExporter: {
     path: './abi',
     clear: true,

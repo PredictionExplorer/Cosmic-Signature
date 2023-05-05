@@ -443,7 +443,6 @@ describe("Cosmic", function () {
       expect((await cosmicGame.owner()).toString()).to.equal(addr2.address.toString());
       await cosmicGame.connect(addr2).transferOwnership(owner.address);
       expect((await cosmicGame.owner()).toString()).to.equal(owner.address.toString());
-	
      });
     it("Change charityAddress via DAO (Governor) is working", async function () {
        const forward_blocks = async (n) => {

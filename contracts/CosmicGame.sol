@@ -152,42 +152,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
     }
 
-    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
+    function bidCommon(string memory message) internal {
         require(
             block.timestamp >= activationTime,
             "Not active yet."
         );
-
-        // if you own a RandomWalkNFT, you can bid for free 1 time.
-        // Each NFT can be used only once.
-        if (lastBidder == address(0)) {
-            // someone just claimed a prize and we are starting from scratch
-            prizeTime = block.timestamp + initialSecondsUntilPrize;
-        }
-
-        lastBidder = _msgSender();
-
-        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
-        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
-        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
-
-        usedRandomWalkNFTs[randomWalkNFTId] = true;
-
-        (bool mint_success, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
-		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
-
-        pushBackPrizeTime();
-
-        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), prizeTime, message);
-    }
-
-    function bid(string memory message) public payable {
-        require(
-            block.timestamp >= activationTime,
-            "Not active yet."
-        );
-
         require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
 
         if (lastBidder == address(0)) {
@@ -200,6 +169,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
         raffleParticipants[numRaffleParticipants] = lastBidder;
         numRaffleParticipants += 1;
 
+        (bool mint_success, ) =
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
+		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
+
+        pushBackPrizeTime();
+    }
+
+    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
+
+        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
+        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
+
+        usedRandomWalkNFTs[randomWalkNFTId] = true;
+
+        bidCommon(message);
+
+        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), prizeTime, message);
+    }
+
+    function bid(string memory message) public payable {
+
         uint256 newBidPrice = getBidPrice();
 
         require(
@@ -208,20 +198,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
         );
         bidPrice = newBidPrice;
 
-        (bool mint_success, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
-		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
-
-        pushBackPrizeTime();
+        bidCommon(message);
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
             (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
             require(success, "Refund transfer failed.");
         }
-
         emit BidEvent(lastBidder, bidPrice, -1, prizeTime, message);
     }
+
 
     function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
         bid(message);
