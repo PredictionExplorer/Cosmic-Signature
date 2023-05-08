@@ -495,26 +495,27 @@ fn main() {
     let mut byte_stream = Sha3RandomByteStream::new(&seed);
 
 
-    let steps = byte_stream.gen_range(800_000.0, 1_200_000.0) as usize;
-    let num_tries: usize = 1_000;
-    let positions = get_best(&mut byte_stream, num_tries, steps, steps);
+    let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
+    const NUM_TRIES: usize = 1_000;
+    let positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
     let s: &str = args.file_name.as_str();
     let file_name = format!("{}.mp4", s);
     println!("done simulating");
     
-    let snake_len = byte_stream.gen_range(0.2, 3.0);
+    let snake_len = byte_stream.gen_range(0.2, 2.0);
     //let snake_len = 0.5;
     let init_len: usize = 0;
     //let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
     //let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    let hide_2 = false;
-    let hide_3 = false;
+    let hide_2 = true;
+    let hide_3 = true;
     let hide = vec![false, hide_2, hide_3];
     
-    let target_length = 60 * 30; // 30 seconds
+    const NUM_SECONDS: usize = 15;
+    let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
-    const FRAME_SIZE: u32 = 2200;
+    const FRAME_SIZE: u32 = 800;
 
     let frames = plot_positions(&positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
