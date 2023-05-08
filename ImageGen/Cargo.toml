@@ -18,3 +18,8 @@ sha3 = "0.9"
 hex = "0.4"
 digest = "0.9"
 clap = { version = "4.2", features = ["derive"]}
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
