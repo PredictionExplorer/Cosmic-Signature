@@ -3,6 +3,7 @@
   "event DonationReceivedEvent(address indexed,uint256)",
   "event DonationSentEvent(address indexed,uint256)",
   "event OwnershipTransferred(address indexed,address indexed)",
+  "function charityAddress() view returns (address)",
   "function owner() view returns (address)",
   "function renounceOwnership()",
   "function send()",
