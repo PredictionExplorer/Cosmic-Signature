@@ -104,6 +104,22 @@ Renouncing ownership is a feature of the "Ownable" smart contract. When the deve
 - **Why would the team renounce ownership?**  
 The team's goal is to create a fair and decentralized game. Renouncing ownership ensures that the game's rules can't be changed arbitrarily once it's up and running, adding a layer of trust and transparency for the players.
 
+- **Does the time added per bid always stay the same?**  
+No, the time added after each bid starts at 1 hour, but it will gradually increase over time. This increment is designed to be very slow, approximately 10% to 20% per year (exponential growth).
+
+- **Why does the time added per bid increase over time?**  
+The primary reason for this mechanism is to control the total number of Cosmic Signature NFTs that are minted. By slowing down the game, we limit the number of new NFTs being created, maintaining their exclusivity and potential value over time.
+
+- **Does this mean that the number of Cosmic Signature NFTs is limited?**  
+Yes, due to the gradual increase in time added per bid, the pace of new NFT creation slows down over time. This effectively limits the total number of Cosmic Signature NFTs, making them a limited resource in the long run.
+
+- **How does the increase in time per bid affect the game?**  
+As the time added per bid increases, the game slows down, which means that rounds will last longer. This change is designed to be gradual and slow, ensuring a smooth game experience while also limiting the total number of Cosmic Signature NFTs.
+
+- **What impact does limiting the number of Cosmic Signature NFTs have?**  
+By limiting the total number of Cosmic Signature NFTs, we aim to maintain their exclusivity and potential value. As the time added per bid increases and the creation of new NFTs slows down, each Cosmic Signature NFT becomes a more exclusive asset. This limited supply could potentially make each NFT more valuable over time.
+
+
 ## Key Features:
 
 * Generative Art - Cosmic Signature NFTs showcase mesmerizing patterns inspired by the three-body problem in physics, simulating planetary trajectories to create captivating, cosmic visuals.
