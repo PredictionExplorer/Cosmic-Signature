@@ -134,6 +134,18 @@ Our choice to deploy on Arbitrum was strategic. We believe that in the long run,
 - **What makes Arbitrum as secure as Ethereum Layer 1?**  
 Arbitrum is not a sidechain; it's a Rollup. This means that it bundles or "rolls up" multiple transfers into a single transaction, reducing the cost of transactions. But importantly, all its data and operations are still recorded on the Ethereum mainnet. This means that the security of Arbitrum is rooted in the Ethereum network, making it just as secure as Ethereum Layer 1.
 
+- **What makes Cosmic Signature NFTs unique?**  
+Cosmic Signature NFTs are unique in that they are on-chain and self-sustaining. Each NFT is created with a randomly generated seed that's stored in the smart contract. The image and video of the NFT is produced from this seed using an open-source Rust program. The seed determines the starting positions and the number of planets displayed in the NFT, making every NFT unique and special.
+
+- **What is the significance of generating NFTs with a random seed?**  
+The seed-based creation process of Cosmic Signature NFTs ensures their long-lasting existence. Unlike other NFT projects where images are stored on centralized servers that can go down, making the NFT images unavailable, the seed for each Cosmic Signature NFT is stored on the blockchain. With our open-source Rust program, anyone can take the seed and generate the NFT image and video at any time.
+
+- **What if the team behind Cosmic Signature disappears?**  
+Should anything happen to the team, the project is designed to be self-sustaining. Since the seeds for each NFT are stored on-chain, anyone can recreate the NFT images and videos using our open-source Rust program. This ensures the longevity and continued existence of your Cosmic Signature NFTs, irrespective of the project team's status.
+
+- **Can I create a competing site with the Cosmic Signature NFTs?**  
+Absolutely! The open-source nature of our project allows anyone to generate the NFT images and videos based on the seeds. If you wish, you could create a competing site using the same mechanism. This open ecosystem encourages creativity and fosters a sense of community around the project.
+
 ## Key Features:
 
 * Generative Art - Cosmic Signature NFTs showcase mesmerizing patterns inspired by the three-body problem in physics, simulating planetary trajectories to create captivating, cosmic visuals.
