@@ -119,6 +119,20 @@ As the time added per bid increases, the game slows down, which means that round
 - **What impact does limiting the number of Cosmic Signature NFTs have?**  
 By limiting the total number of Cosmic Signature NFTs, we aim to maintain their exclusivity and potential value. As the time added per bid increases and the creation of new NFTs slows down, each Cosmic Signature NFT becomes a more exclusive asset. This limited supply could potentially make each NFT more valuable over time.
 
+- **Why was Cosmic Signature created?**  
+Cosmic Signature was born out of a fascination with chaos theory and the unsolvable nature of the three-body problem. The idea of creating unique, dynamic art inspired by these principles felt intriguing and exciting. Our project is a blend of art, science, and blockchain technology.
+
+- **Is there a game theory element in Cosmic Signature?**  
+Absolutely! We're eager to see how participants will compete with each other within the parameters of the game. It's not just about winning; it's about strategy, timing, and risk assessment. The social dynamics and game theory aspects of Cosmic Signature are some of its most interesting features.
+
+- **How does the Cosmic Signature team profit from this project?**  
+We want to be transparent about this: our team doesn't pocket any money directly from the project. All the funds go into an immutable smart contract not controlled by us. Our interest lies in the Random Walk NFTs that we own, as we believe the success of Cosmic Signature will increase their value. That's our business interest, but our primary motivations are curiosity, creativity, and contribution to the blockchain community.
+
+- **Why is Cosmic Signature deployed on Arbitrum and not Ethereum?**  
+Our choice to deploy on Arbitrum was strategic. We believe that in the long run, most activity on Ethereum will migrate to Layer 2 solutions like Arbitrum. This is due to the significantly lower gas fees on Arbitrum while maintaining the same level of security as Ethereum Layer 1.
+
+- **What makes Arbitrum as secure as Ethereum Layer 1?**  
+Arbitrum is not a sidechain; it's a Rollup. This means that it bundles or "rolls up" multiple transfers into a single transaction, reducing the cost of transactions. But importantly, all its data and operations are still recorded on the Ethereum mainnet. This means that the security of Arbitrum is rooted in the Ethereum network, making it just as secure as Ethereum Layer 1.
 
 ## Key Features:
 
