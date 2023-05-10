@@ -92,6 +92,18 @@ You can view your Cosmic Tokens and NFTs directly on the Cosmic Signature websit
 - **Can I trade my Cosmic Tokens and NFTs on Arbitrum?**  
 Yes, Cosmic Tokens and NFTs can be traded on any marketplace or exchange that supports the Arbitrum network. This includes popular platforms like Uniswap for tokens and OpenSea for NFTs. Always make sure to verify that you are interacting with the correct contract addresses when trading.
 
+- **What controls does the team have over the Cosmic Signature game?**  
+Initially, the team behind Cosmic Signature will have the ability to adjust certain parameters of the game, such as the number of hours added after each bid or the percentage of the pot that goes to the raffle winners. This control is facilitated through the smart contract's "Ownable" feature, which assigns control to the address that deployed the contract.
+
+- **Will the team always have control over the game's parameters?**  
+No. Once the project is stable and functioning as intended, the developers will renounce their ownership of the contract, effectively giving up control over these parameters. This is done by calling the renounceOwnership() function in the contract.
+
+- **What does it mean to "renounce ownership"?**  
+Renouncing ownership is a feature of the "Ownable" smart contract. When the developers call the renounceOwnership() function, they are permanently transferring control from their address. Once this function is called, the parameters of the game become immutable and cannot be changed.
+
+- **Why would the team renounce ownership?**  
+The team's goal is to create a fair and decentralized game. Renouncing ownership ensures that the game's rules can't be changed arbitrarily once it's up and running, adding a layer of trust and transparency for the players.
+
 ## Key Features:
 
 * Generative Art - Cosmic Signature NFTs showcase mesmerizing patterns inspired by the three-body problem in physics, simulating planetary trajectories to create captivating, cosmic visuals.
