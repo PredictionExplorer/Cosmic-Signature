@@ -94,6 +94,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winner_index);
     event RaffleNFTClaimedEvent(address indexed winner);
+    event DonatedNFTClaimed(uint256 indexed round,uint256 index,address nftAddressdonatedNFTs,uint256 tokenId);
 
 	/// Admin events
 	event CharityPercentageChanged(uint256 newCharityPercentage);
@@ -168,6 +169,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
        require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
        donatedNFTs[num].claimed = true;
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
+       emit DonatedNFTClaimed(donatedNFTs[num].round,num,address(donatedNFTs[num].nftAddress),donatedNFTs[num].tokenId);
     }
 
     function bidCommon(string memory message) internal {
