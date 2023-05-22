@@ -81,7 +81,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     mapping (uint256 => DonatedNFT) public donatedNFTs;
-    uint256 numDonatedNFTs;
+    uint256 public numDonatedNFTs;
 
     CosmicToken public token;
     CosmicSignature public nft;
