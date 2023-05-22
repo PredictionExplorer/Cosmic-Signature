@@ -95,6 +95,24 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winner_index);
     event RaffleNFTClaimedEvent(address indexed winner);
 
+	/// Admin events
+	event CharityPercentageChanged(uint256 newCharityPercentage);
+	event PrizePercentageChanged(uint256 newPrizePercentage);
+	event RafflePercentageChanged(uint256 newRafflePercentage);
+	event NumRaffleWinnersPerRoundChanged(uint256 newNumRaffleWinnersPerRound);
+	event NumRaffleNFTWinnersPerRoundChanged(uint256 newNumRaffleNFTWinnersPerRound);
+	event CharityAddressChanged(address newCharity);
+	event RandomWalkAddressChanged(address newRandomWalk);
+	event RaffleWalletAddressChanged(address newRaffleWallet);
+	event CosmicTokenAddressChanged(address newCosmicToken);
+	event CosmicSignatureAddressChanged(address newCosmicSignature);
+	event TimeIncreaseChanged(uint256 newTimeIncrease);
+	event PriceIncreaseChanged(uint256 newPriceIncrease);
+	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
+	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
+	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
+	event ActivationTimeChanged(uint256 newActivationTime);
+
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
     }
@@ -323,66 +341,82 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function setCharity(address addr) public onlyOwner {
         charity = addr;
+        emit CharityAddressChanged(charity);
     }
 
     function setRandomWalk(address addr) public onlyOwner {
         randomWalk = RandomWalkNFT(addr);
+		emit RandomWalkAddressChanged(addr);
     }
 
     function setRaffleWallet(address addr) public onlyOwner {
         raffleWallet = RaffleWallet(addr);
+		emit RaffleWalletAddressChanged(addr);
     }
 
     function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) public onlyOwner {
         numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
+		emit NumRaffleWinnersPerRoundChanged(numRaffleWinnersPerRound);
     }
 
     function setNumRaffleNFTWinnersPerRound(uint256 newNumRaffleNFTWinnersPerRound) public onlyOwner {
         numRaffleNFTWinnersPerRound = newNumRaffleNFTWinnersPerRound;
+		emit NumRaffleNFTWinnersPerRoundChanged(numRaffleNFTWinnersPerRound);
     }
     
     function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {
         charityPercentage = newCharityPercentage;
+	    emit CharityPercentageChanged(charityPercentage);
     }
 
     function setRafflePercentage(uint256 newRafflePercentage) public onlyOwner {
         rafflePercentage = newRafflePercentage;
+		emit RafflePercentageChanged(rafflePercentage);
     }
 
     function setTokenContract(address addr) public onlyOwner {
         token = CosmicToken(addr);
+		emit CosmicTokenAddressChanged(addr);
     }
 
     function setNftContract(address addr) public onlyOwner {
         nft = CosmicSignature(addr);
+		emit CosmicSignatureAddressChanged(addr);
     }
 
     function setTimeIncrease(uint256 newTimeIncrease) public onlyOwner {
         timeIncrease = newTimeIncrease;
+		emit TimeIncreaseChanged(timeIncrease);
     }
 
     function setPriceIncrease(uint256 newPriceIncrease) public onlyOwner {
         priceIncrease = newPriceIncrease;
+		emit PriceIncreaseChanged(priceIncrease);
     }
 
     function setNanoSecondsExtra(uint256 newNanoSecondsExtra) public onlyOwner {
         nanoSecondsExtra = newNanoSecondsExtra;
+		emit NanoSecondsExtraChanged(nanoSecondsExtra);
     }
 
     function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) public onlyOwner {
         initialSecondsUntilPrize = newInitialSecondsUntilPrize;
+		emit InitialSecondsUntilPrizeChanged(initialSecondsUntilPrize);
     }
 
     function updatePrizePercentage(uint256 newPrizePercentage) public onlyOwner {
         prizePercentage = newPrizePercentage;
+		emit PrizePercentageChanged(prizePercentage);
     }
 
     function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) public onlyOwner {
         initialBidAmountFraction = newInitialBidAmountFraction;
+		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
     }
 
     function setActivationTime(uint256 newActivationTime) public onlyOwner {
         activationTime = newActivationTime;
+		emit ActivationTimeChanged(activationTime);
     }
 
     // Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
