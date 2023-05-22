@@ -89,7 +89,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
     // randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
-    event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
+    event BidEvent(address indexed lastBidder, uint256 indexed round, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winner_index);
@@ -185,7 +185,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         bidCommon(message);
 
-        emit BidEvent(lastBidder, bidPrice, int256(randomWalkNFTId), prizeTime, message);
+        emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
     }
 
     function bid(string memory message) public payable {
@@ -205,7 +205,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
             require(success, "Refund transfer failed.");
         }
-        emit BidEvent(lastBidder, bidPrice, -1, prizeTime, message);
+        emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
     }
 
 
