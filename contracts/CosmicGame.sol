@@ -91,7 +91,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
     event BidEvent(address indexed lastBidder, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
-    event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 tokenId, uint256 index);
+    event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winner_index);
     event RaffleNFTClaimedEvent(address indexed winner);
 
@@ -140,7 +140,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             claimed: false
         });
         numDonatedNFTs += 1;
-        emit NFTDonationEvent(_msgSender(), _nftAddress, _tokenId, numDonatedNFTs-1);
+        emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs-1);
     }
 
     function claimDonatedNFT(uint256 num) public {
