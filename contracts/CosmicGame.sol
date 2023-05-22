@@ -295,8 +295,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
 		require(mint_success, "CosmicSignature mint() failed to mint NFT.");
         
-        initializeBidPrice();
-
         uint256 prizeAmount_ = prizeAmount();
         uint256 charityAmount_ = charityAmount();
         uint256 raffleAmount_ = raffleAmount();
@@ -321,6 +319,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
         }
         
         numRaffleParticipants = 0;
+
+        initializeBidPrice();
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
