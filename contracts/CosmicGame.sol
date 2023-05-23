@@ -6,7 +6,7 @@ import "./CosmicSignature.sol";
 import "./RaffleWallet.sol";
 import "./RandomWalkNFT.sol";
 
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 contract CosmicGame is Ownable, IERC721Receiver {
 
