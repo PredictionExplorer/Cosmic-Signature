@@ -25,7 +25,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     address public immutable cosmicGameContract;
 
-    event TokenNameEvent(uint256 tokenId, string newName);
+    event TokenNameEvent(uint256 indexed tokenId, string newName);
     event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
 
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
