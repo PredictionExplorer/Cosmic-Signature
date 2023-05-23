@@ -367,11 +367,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
     
     function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {
+		require(newCharityPercentage<100,"Percentage value overflow, must be lower than 100.");
         charityPercentage = newCharityPercentage;
 	    emit CharityPercentageChanged(charityPercentage);
     }
 
     function setRafflePercentage(uint256 newRafflePercentage) public onlyOwner {
+		require(newRafflePercentage<100,"Percentage value overflow, must be lower than 100.");
         rafflePercentage = newRafflePercentage;
 		emit RafflePercentageChanged(rafflePercentage);
     }
@@ -407,6 +409,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function updatePrizePercentage(uint256 newPrizePercentage) public onlyOwner {
+		require(newPrizePercentage<100,"Percentage value overflow, must be lower than 100.");
         prizePercentage = newPrizePercentage;
 		emit PrizePercentageChanged(prizePercentage);
     }
