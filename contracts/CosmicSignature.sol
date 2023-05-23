@@ -23,7 +23,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     string private _baseTokenURI;
 
-    address public cosmicGameContract;
+    address public immutable cosmicGameContract;
 
     event TokenNameEvent(uint256 tokenId, string newName);
     event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
