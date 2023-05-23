@@ -16,12 +16,12 @@ contract CharityWallet is Ownable {
         emit DonationReceivedEvent(_msgSender(), msg.value);
     }
 
-    function setCharity(address newCharityAddress) public onlyOwner {
+    function setCharity(address newCharityAddress) external onlyOwner {
         charityAddress = newCharityAddress;
         emit CharityUpdatedEvent(charityAddress);
     }
 
-    function send() public {
+    function send() external {
         uint256 amount = address(this).balance;
         (bool success, ) = charityAddress.call{value: amount}("");
         require(success, "Transfer failed.");

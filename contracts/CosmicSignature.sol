@@ -38,11 +38,11 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         cosmicGameContract = _cosmicGameContract;
     }
 
-    function setBaseURI(string memory baseURI) public onlyOwner {
+    function setBaseURI(string memory baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
     }
 
-    function setTokenName(uint256 tokenId, string memory name) public {
+    function setTokenName(uint256 tokenId, string memory name) external {
         require(
             _isApprovedOrOwner(_msgSender(), tokenId),
             "setTokenName caller is not owner nor approved."
@@ -56,7 +56,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         return _baseTokenURI;
     }
 
-    function mint(address owner) public {
+    function mint(address owner) external {
         require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
 
         uint256 tokenId = numTokens;

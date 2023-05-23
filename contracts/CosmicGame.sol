@@ -122,7 +122,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return (bidPrice * priceIncrease) / MILLION;
     }
 
-    function timeUntilActivation() public view returns (uint256) {
+    function timeUntilActivation() external view returns (uint256) {
         if (activationTime < block.timestamp) return 0;
         return activationTime - block.timestamp;
     }
@@ -132,7 +132,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     // send some ETH into the contract and affect nothing else.
-    function donate() public payable {
+    function donate() external payable {
         require (msg.value > 0, "Donation amount must be greater than 0.");
 
         if (lastBidder == address(0)) {
@@ -162,7 +162,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs-1);
     }
 
-    function claimDonatedNFT(uint256 num) public {
+    function claimDonatedNFT(uint256 num) external {
        require(num < numDonatedNFTs, "The donated NFT does not exist.");
        address winner = winners[donatedNFTs[num].round];
        require(_msgSender() == winner, "You are not the winner of the round.");
@@ -229,12 +229,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
 
-    function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
+    function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
         bid(message);
         donateNFT(nftAddress, tokenId);
     }
 
-    function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) public payable {
+    function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
         bidWithRWLK(randomWalkNFTId, message);
         donateNFT(nftAddress, tokenId);
     }
@@ -243,7 +243,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         bid("");
     }
 
-    function timeUntilPrize() public view returns (uint256) {
+    function timeUntilPrize() external view returns (uint256) {
         if (prizeTime < block.timestamp) return 0;
         return prizeTime - block.timestamp;
     }
@@ -273,7 +273,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
     }
 
-    function claimPrize() public {
+    function claimPrize() external {
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
         require(lastBidder != address(0), "There is no last bidder.");
         if (block.timestamp - prizeTime < 3600 * 24) {
@@ -325,7 +325,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
-    function claimRaffleNFT() public {
+    function claimRaffleNFT() external {
         require (raffleNFTWinners[_msgSender()] > 0, "You have no unclaimed raffle NFTs.");
         raffleNFTWinners[_msgSender()] -= 1;
         (bool mint_success, ) =
@@ -341,91 +341,91 @@ contract CosmicGame is Ownable, IERC721Receiver {
         charity = _msgSender();
     }
 
-    function setCharity(address addr) public onlyOwner {
+    function setCharity(address addr) external onlyOwner {
         charity = addr;
         emit CharityAddressChanged(charity);
     }
 
-    function setRandomWalk(address addr) public onlyOwner {
+    function setRandomWalk(address addr) external onlyOwner {
         randomWalk = RandomWalkNFT(addr);
 		emit RandomWalkAddressChanged(addr);
     }
 
-    function setRaffleWallet(address addr) public onlyOwner {
+    function setRaffleWallet(address addr) external onlyOwner {
         raffleWallet = RaffleWallet(addr);
 		emit RaffleWalletAddressChanged(addr);
     }
 
-    function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) public onlyOwner {
+    function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) external onlyOwner {
         numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
 		emit NumRaffleWinnersPerRoundChanged(numRaffleWinnersPerRound);
     }
 
-    function setNumRaffleNFTWinnersPerRound(uint256 newNumRaffleNFTWinnersPerRound) public onlyOwner {
+    function setNumRaffleNFTWinnersPerRound(uint256 newNumRaffleNFTWinnersPerRound) external onlyOwner {
         numRaffleNFTWinnersPerRound = newNumRaffleNFTWinnersPerRound;
 		emit NumRaffleNFTWinnersPerRoundChanged(numRaffleNFTWinnersPerRound);
     }
     
-    function setCharityPercentage(uint256 newCharityPercentage) public onlyOwner {
+    function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
 		require(newCharityPercentage<100,"Percentage value overflow, must be lower than 100.");
         charityPercentage = newCharityPercentage;
 	    emit CharityPercentageChanged(charityPercentage);
     }
 
-    function setRafflePercentage(uint256 newRafflePercentage) public onlyOwner {
+    function setRafflePercentage(uint256 newRafflePercentage) external onlyOwner {
 		require(newRafflePercentage<100,"Percentage value overflow, must be lower than 100.");
         rafflePercentage = newRafflePercentage;
 		emit RafflePercentageChanged(rafflePercentage);
     }
 
-    function setTokenContract(address addr) public onlyOwner {
+    function setTokenContract(address addr) external onlyOwner {
         token = CosmicToken(addr);
 		emit CosmicTokenAddressChanged(addr);
     }
 
-    function setNftContract(address addr) public onlyOwner {
+    function setNftContract(address addr) external onlyOwner {
         nft = CosmicSignature(addr);
 		emit CosmicSignatureAddressChanged(addr);
     }
 
-    function setTimeIncrease(uint256 newTimeIncrease) public onlyOwner {
+    function setTimeIncrease(uint256 newTimeIncrease) external onlyOwner {
         timeIncrease = newTimeIncrease;
 		emit TimeIncreaseChanged(timeIncrease);
     }
 
-    function setPriceIncrease(uint256 newPriceIncrease) public onlyOwner {
+    function setPriceIncrease(uint256 newPriceIncrease) external onlyOwner {
         priceIncrease = newPriceIncrease;
 		emit PriceIncreaseChanged(priceIncrease);
     }
 
-    function setNanoSecondsExtra(uint256 newNanoSecondsExtra) public onlyOwner {
+    function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external onlyOwner {
         nanoSecondsExtra = newNanoSecondsExtra;
 		emit NanoSecondsExtraChanged(nanoSecondsExtra);
     }
 
-    function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) public onlyOwner {
+    function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) external onlyOwner {
         initialSecondsUntilPrize = newInitialSecondsUntilPrize;
 		emit InitialSecondsUntilPrizeChanged(initialSecondsUntilPrize);
     }
 
-    function updatePrizePercentage(uint256 newPrizePercentage) public onlyOwner {
+    function updatePrizePercentage(uint256 newPrizePercentage) external onlyOwner {
 		require(newPrizePercentage<100,"Percentage value overflow, must be lower than 100.");
         prizePercentage = newPrizePercentage;
 		emit PrizePercentageChanged(prizePercentage);
     }
 
-    function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) public onlyOwner {
+    function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner {
         initialBidAmountFraction = newInitialBidAmountFraction;
 		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
     }
 
-    function setActivationTime(uint256 newActivationTime) public onlyOwner {
+    function setActivationTime(uint256 newActivationTime) external onlyOwner {
         activationTime = newActivationTime;
 		emit ActivationTimeChanged(activationTime);
     }
 
     // Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
-    function onERC721Received(address, address, uint256, bytes calldata) public pure returns(bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns(bytes4) {
         return this.onERC721Received.selector;
     }
 }
