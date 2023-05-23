@@ -43,7 +43,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public initialBidAmountFraction = 1000;
 
     // You get 100 tokens when you bid
-    uint256 public tokenReward = 100 * 1e18;
+    uint256 public constant tokenReward = 100 * 1e18;
 
     uint256 public prizePercentage = 25;
 
