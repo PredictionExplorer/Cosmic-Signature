@@ -20,6 +20,7 @@ contract RaffleWallet is Ownable {
     event RaffleDepositEvent(address indexed winner, uint256 indexed round, uint256 deposit_id, uint256 amount);
 
     function deposit(address winner,uint256 round_num) external payable {
+        require(winner != address(0), "Zero-address was given.");
         require(msg.value > 0, "No ETH has been sent.");
         winners[numDeposits] = RaffleWinner({
             destination: winner,

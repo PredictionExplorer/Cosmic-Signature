@@ -342,16 +342,19 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function setCharity(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
         charity = addr;
         emit CharityAddressChanged(charity);
     }
 
     function setRandomWalk(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
         randomWalk = RandomWalkNFT(addr);
 		emit RandomWalkAddressChanged(addr);
     }
 
     function setRaffleWallet(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
         raffleWallet = RaffleWallet(addr);
 		emit RaffleWalletAddressChanged(addr);
     }
@@ -379,11 +382,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function setTokenContract(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
         token = CosmicToken(addr);
 		emit CosmicTokenAddressChanged(addr);
     }
 
     function setNftContract(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
         nft = CosmicSignature(addr);
 		emit CosmicSignatureAddressChanged(addr);
     }

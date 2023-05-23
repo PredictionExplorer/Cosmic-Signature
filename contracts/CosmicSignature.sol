@@ -32,6 +32,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     string public tokenGenerationScript = "ipfs://TBD";
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
+        require(_cosmicGameContract != address(0), "Zero-address was given.");
         entropy = keccak256(abi.encode(
             "newNFT",
             block.timestamp, blockhash(block.number)));
@@ -57,6 +58,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     }
 
     function mint(address owner) external {
+        require(owner != address(0), "Zero-address was given.");
         require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
 
         uint256 tokenId = numTokens;

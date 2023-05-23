@@ -17,6 +17,7 @@ contract CharityWallet is Ownable {
     }
 
     function setCharity(address newCharityAddress) external onlyOwner {
+        require(newCharityAddress != address(0), "Zero-address was given.");
         charityAddress = newCharityAddress;
         emit CharityUpdatedEvent(charityAddress);
     }
