@@ -15,7 +15,7 @@ contract RaffleWallet is Ownable {
     }
 
     mapping(uint256 => RaffleWinner) public winners;
-    uint256 numDeposits;
+    uint256 public numDeposits;
 
     event RaffleDepositEvent(address indexed winner, uint256 indexed round, uint256 deposit_id, uint256 amount);
 
