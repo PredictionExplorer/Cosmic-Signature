@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 contract CosmicSignature is ERC721Enumerable, Ownable {
 
@@ -23,26 +23,27 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     string private _baseTokenURI;
 
-    address public cosmicGameContract;
+    address public immutable cosmicGameContract;
 
-    event TokenNameEvent(uint256 tokenId, string newName);
+    event TokenNameEvent(uint256 indexed tokenId, string newName);
     event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
 
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
     string public tokenGenerationScript = "ipfs://TBD";
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
+        require(_cosmicGameContract != address(0), "Zero-address was given.");
         entropy = keccak256(abi.encode(
             "newNFT",
             block.timestamp, blockhash(block.number)));
         cosmicGameContract = _cosmicGameContract;
     }
 
-    function setBaseURI(string memory baseURI) public onlyOwner {
+    function setBaseURI(string memory baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
     }
 
-    function setTokenName(uint256 tokenId, string memory name) public {
+    function setTokenName(uint256 tokenId, string memory name) external {
         require(
             _isApprovedOrOwner(_msgSender(), tokenId),
             "setTokenName caller is not owner nor approved."
@@ -56,7 +57,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         return _baseTokenURI;
     }
 
-    function mint(address owner) public {
+    function mint(address owner) external {
+        require(owner != address(0), "Zero-address was given.");
         require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
 
         uint256 tokenId = numTokens;

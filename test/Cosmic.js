@@ -406,8 +406,8 @@ describe("Cosmic", function () {
       await cosmicGame.connect(owner).setNumRaffleNFTWinnersPerRound(ethers.BigNumber.from("99"));
       expect(await cosmicGame.numRaffleNFTWinnersPerRound()).to.equal(ethers.BigNumber.from("99"));
 
-      await cosmicGame.connect(owner).setCharityPercentage(ethers.BigNumber.from("999"));
-      expect((await cosmicGame.charityPercentage()).toString()).to.equal("999");
+      await cosmicGame.connect(owner).setCharityPercentage(ethers.BigNumber.from("99"));
+      expect((await cosmicGame.charityPercentage()).toString()).to.equal("99");
 
       await cosmicGame.connect(owner).setRafflePercentage(ethers.BigNumber.from("99"));
       expect(await cosmicGame.rafflePercentage()).to.equal(ethers.BigNumber.from("99"));

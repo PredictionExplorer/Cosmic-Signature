@@ -1,4 +1,4 @@
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import "./CosmicGame.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
