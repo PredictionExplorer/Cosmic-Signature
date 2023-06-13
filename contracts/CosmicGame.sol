@@ -11,6 +11,13 @@ import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
 
+    struct DonatedNFT {
+        IERC721 nftAddress;
+        uint256 tokenId;
+        uint256 round;
+        bool claimed;
+    }
+
     uint256 public constant MILLION = 10**6;
     uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
@@ -73,13 +80,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     mapping(uint256 => address) public raffleParticipants;
     uint256 public numRaffleParticipants;
     RaffleWallet public raffleWallet;
-
-    struct DonatedNFT {
-        IERC721 nftAddress;
-        uint256 tokenId;
-        uint256 round;
-        bool claimed;
-    }
 
     mapping (uint256 => DonatedNFT) public donatedNFTs;
     uint256 public numDonatedNFTs;
