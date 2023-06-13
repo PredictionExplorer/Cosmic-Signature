@@ -24,11 +24,11 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     address public immutable cosmicGameContract;
 
-    event TokenNameEvent(uint256 indexed tokenId, string newName);
-    event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
-
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
     string public tokenGenerationScript = "ipfs://TBD";
+
+    event TokenNameEvent(uint256 indexed tokenId, string newName);
+    event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
         require(_cosmicGameContract != address(0), "Zero-address was given.");

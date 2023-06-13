@@ -5,11 +5,11 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CharityWallet is Ownable {
 
+    address public charityAddress;
+
     event DonationReceivedEvent(address indexed donor, uint256 amount);
     event DonationSentEvent(address indexed charity, uint256 amount);
     event CharityUpdatedEvent(address indexed newCharityAddress);
-
-    address public charityAddress;
 
     receive() external payable {
         emit DonationReceivedEvent(_msgSender(), msg.value);
