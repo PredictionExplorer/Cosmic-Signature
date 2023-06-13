@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
+pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-pragma solidity 0.8.19;
 
 contract CharityWallet is Ownable {
 
