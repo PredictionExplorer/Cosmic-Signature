@@ -44,7 +44,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public initialBidAmountFraction = 1000;
 
     // You get 100 tokens when you bid
-    uint256 public constant tokenReward = 100 * 1e18;
+    uint256 public constant TOKEN_REWARD = 100 * 1e18;
 
     uint256 public prizePercentage = 25;
 
@@ -191,7 +191,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         numRaffleParticipants += 1;
 
         (bool mint_success, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,tokenReward));
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,TOKEN_REWARD));
 		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
 
         pushBackPrizeTime();
