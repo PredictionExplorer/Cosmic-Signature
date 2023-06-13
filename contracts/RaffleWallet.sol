@@ -8,7 +8,7 @@ contract RaffleWallet is Ownable {
     struct RaffleWinner {
         address destination;
         uint256 amount;
-        uint256 deposit_id;
+        uint256 depositId;
         uint256 round;
         bool claimed;
     }
@@ -16,19 +16,19 @@ contract RaffleWallet is Ownable {
     mapping(uint256 => RaffleWinner) public winners;
     uint256 public numDeposits;
 
-    event RaffleDepositEvent(address indexed winner, uint256 indexed round, uint256 deposit_id, uint256 amount);
+    event RaffleDepositEvent(address indexed winner, uint256 indexed round, uint256 depositId, uint256 amount);
 
-    function deposit(address winner,uint256 round_num) external payable {
+    function deposit(address winner,uint256 roundNum) external payable {
         require(winner != address(0), "Zero-address was given.");
         require(msg.value > 0, "No ETH has been sent.");
         winners[numDeposits] = RaffleWinner({
             destination: winner,
             amount: msg.value,
-            deposit_id: numDeposits,
-            round: round_num,
+            depositId: numDeposits,
+            round: roundNum,
             claimed: false
         });
-        emit RaffleDepositEvent(winner, round_num, numDeposits, msg.value);
+        emit RaffleDepositEvent(winner, roundNum, numDeposits, msg.value);
         numDeposits += 1;
     }
 

@@ -93,7 +93,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event BidEvent(address indexed lastBidder, uint256 indexed round, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
-    event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winner_index);
+    event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
     event RaffleNFTClaimedEvent(address indexed winner);
     event DonatedNFTClaimedEvent(uint256 indexed round,uint256 index,address winner,address nftAddressdonatedNFTs,uint256 tokenId);
 
@@ -190,9 +190,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
         raffleParticipants[numRaffleParticipants] = lastBidder;
         numRaffleParticipants += 1;
 
-        (bool mint_success, ) =
+        (bool mintSuccess, ) =
             address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,TOKEN_REWARD));
-		require(mint_success, "CosmicToken mint() failed to mint reward tokens.");
+		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
 
         pushBackPrizeTime();
     }
@@ -292,9 +292,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         roundNum += 1;
 
-        (bool mint_success, ) =
+        (bool mintSuccess, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
-		require(mint_success, "CosmicSignature mint() failed to mint NFT.");
+		require(mintSuccess, "CosmicSignature mint() failed to mint NFT.");
         
         uint256 prizeAmount_ = prizeAmount();
         uint256 charityAmount_ = charityAmount();
@@ -329,9 +329,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function claimRaffleNFT() external {
         require (raffleNFTWinners[_msgSender()] > 0, "You have no unclaimed raffle NFTs.");
         raffleNFTWinners[_msgSender()] -= 1;
-        (bool mint_success, ) =
+        (bool mintSuccess, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, _msgSender()));
-		require(mint_success, "CosmicSignature mint() failed to mint NFT.");
+		require(mintSuccess, "CosmicSignature mint() failed to mint NFT.");
         emit RaffleNFTClaimedEvent(_msgSender());
     }
 

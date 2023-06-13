@@ -10,8 +10,8 @@ contract ReClaim is IERC721Receiver {
     constructor(address payable _cosmicGameContract) {
         cosmicGameContract = CosmicGame(_cosmicGameContract);
     }   
-    function claim_and_reset(uint256 p_num_iterations) public {
-        numIterations = p_num_iterations;
+    function claimAndReset(uint256 pNumIterations) public {
+        numIterations = pNumIterations;
         cosmicGameContract.claimPrize();
     }   
     receive() external payable {
