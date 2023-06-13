@@ -115,7 +115,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
 
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
     }
 
@@ -128,7 +128,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return activationTime - block.timestamp;
     }
 
-    function initializeBidPrice() internal {
+    function _initializeBidPrice() internal {
         bidPrice = prizeAmount() / initialBidAmountFraction;
     }
 
@@ -137,19 +137,19 @@ contract CosmicGame is Ownable, IERC721Receiver {
         require (msg.value > 0, "Donation amount must be greater than 0.");
 
         if (lastBidder == address(0)) {
-            initializeBidPrice();
+            _initializeBidPrice();
         }
 
         emit DonationEvent(_msgSender(), msg.value);
     }
 
-    function pushBackPrizeTime() internal {
+    function _pushBackPrizeTime() internal {
         uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
-        prizeTime = max(prizeTime, block.timestamp) + secondsAdded;
+        prizeTime = _max(prizeTime, block.timestamp) + secondsAdded;
         nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
     }
 
-    function donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
+    function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
         // If you are a creator you can donate some NFT to the winner of the
         // current round (which might get you featured on the front page of the website).
         _nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
@@ -173,7 +173,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
        emit DonatedNFTClaimedEvent(donatedNFTs[num].round,num,winner,address(donatedNFTs[num].nftAddress),donatedNFTs[num].tokenId);
     }
 
-    function bidCommon(string memory message) internal {
+    function _bidCommon(string memory message) internal {
         require(
             block.timestamp >= activationTime,
             "Not active yet."
@@ -194,7 +194,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,TOKEN_REWARD));
 		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
 
-        pushBackPrizeTime();
+        _pushBackPrizeTime();
     }
 
     function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
@@ -204,7 +204,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         usedRandomWalkNFTs[randomWalkNFTId] = true;
 
-        bidCommon(message);
+        _bidCommon(message);
 
         emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
     }
@@ -219,7 +219,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         );
         bidPrice = newBidPrice;
 
-        bidCommon(message);
+        _bidCommon(message);
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
@@ -232,12 +232,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
         bid(message);
-        donateNFT(nftAddress, tokenId);
+        _donateNFT(nftAddress, tokenId);
     }
 
     function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
         bidWithRWLK(randomWalkNFTId, message);
-        donateNFT(nftAddress, tokenId);
+        _donateNFT(nftAddress, tokenId);
     }
 
     receive() external payable {
@@ -261,16 +261,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return address(this).balance * rafflePercentage / 100;
     }
 
-    function updateEntropy() internal {
+    function _updateEntropy() internal {
         raffleEntropy = keccak256(abi.encode(
             raffleEntropy,
             block.timestamp,
             blockhash(block.number)));
     }
 
-    function raffleWinner() internal returns (address) {
+    function _raffleWinner() internal returns (address) {
 		// There should be at least 1 raffle participant when this function is called.
-        updateEntropy();
+        _updateEntropy();
         return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
     }
 
@@ -301,7 +301,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 raffleAmount_ = raffleAmount();
 
         for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
-            address raffleWinner_ = raffleWinner();
+            address raffleWinner_ = _raffleWinner();
             raffleNFTWinners[raffleWinner_] += 1;
             emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, i);
         }
@@ -313,7 +313,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         require(success, "Transfer to charity contract failed.");
 
         for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
-            address raffleWinner_ = raffleWinner();
+            address raffleWinner_ = _raffleWinner();
             (success, ) =
                 address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_, roundNum - 1));
             require(success, "Raffle deposit failed.");
@@ -321,7 +321,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         
         numRaffleParticipants = 0;
 
-        initializeBidPrice();
+        _initializeBidPrice();
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
