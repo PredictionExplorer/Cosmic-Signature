@@ -1,7 +1,8 @@
 pragma solidity 0.8.19;
 
-import "./CosmicGame.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { CosmicGame } from "./CosmicGame.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract ReClaim is IERC721Receiver {
     CosmicGame public cosmicGameContract;

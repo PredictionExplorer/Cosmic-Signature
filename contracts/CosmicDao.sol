@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/governance/Governor.sol";
-import "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
-import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
-import "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
-import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import { Governor,IGovernor } from "@openzeppelin/contracts/governance/Governor.sol";
+import { GovernorSettings } from "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
+import { GovernorCountingSimple } from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import { GovernorVotes,IVotes } from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
+import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
 
 contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction {
     constructor(IVotes _token)

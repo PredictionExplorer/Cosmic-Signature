@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./CosmicToken.sol";
-import "./CosmicSignature.sol";
-import "./RaffleWallet.sol";
-import "./RandomWalkNFT.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
+import { RaffleWallet } from "./RaffleWallet.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
 
