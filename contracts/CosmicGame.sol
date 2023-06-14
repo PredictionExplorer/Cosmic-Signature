@@ -122,6 +122,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         charity = _msgSender();
     }
 
+    receive() external payable {
+        bid("");
+    }
+
     function _max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
     }
@@ -245,10 +249,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
         bidWithRWLK(randomWalkNFTId, message);
         _donateNFT(nftAddress, tokenId);
-    }
-
-    receive() external payable {
-        bid("");
     }
 
     function timeUntilPrize() external view returns (uint256) {
