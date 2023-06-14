@@ -52,10 +52,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         emit TokenNameEvent(tokenId, name);
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _baseTokenURI;
-    }
-
     function mint(address owner) external {
         require(owner != address(0), "Zero-address was given.");
         require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
@@ -73,5 +69,9 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         _safeMint(owner, tokenId);
 
         emit MintEvent(tokenId, owner, entropy);
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
     }
 }
