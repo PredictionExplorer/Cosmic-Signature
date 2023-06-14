@@ -321,12 +321,52 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return this.onERC721Received.selector;
     }
 
-    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
-
     function getBidPrice() public view returns (uint256) {
         return (bidPrice * priceIncrease) / MILLION;
+    }
+
+    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
+
+        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
+        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
+
+        usedRandomWalkNFTs[randomWalkNFTId] = true;
+
+        _bidCommon(message);
+
+        emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
+    }
+
+    function bid(string memory message) public payable {
+
+        uint256 newBidPrice = getBidPrice();
+
+        require(
+            msg.value >= newBidPrice,
+            "The value submitted with this transaction is too low."
+        );
+        bidPrice = newBidPrice;
+
+        _bidCommon(message);
+
+        if (msg.value > bidPrice) {
+            // Return the extra money to the bidder.
+            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
+            require(success, "Refund transfer failed.");
+        }
+        emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
+    }
+
+    function prizeAmount() public view returns (uint256) {
+        return address(this).balance * prizePercentage / 100;
+    }
+
+    function charityAmount() public view returns (uint256) {
+        return address(this).balance * charityPercentage / 100;
+    }
+
+    function raffleAmount() public view returns (uint256) {
+        return address(this).balance * rafflePercentage / 100;
     }
 
     function _initializeBidPrice() internal {
@@ -377,48 +417,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
         _pushBackPrizeTime();
     }
 
-    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
-
-        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
-        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
-
-        usedRandomWalkNFTs[randomWalkNFTId] = true;
-
-        _bidCommon(message);
-
-        emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
-    }
-
-    function bid(string memory message) public payable {
-
-        uint256 newBidPrice = getBidPrice();
-
-        require(
-            msg.value >= newBidPrice,
-            "The value submitted with this transaction is too low."
-        );
-        bidPrice = newBidPrice;
-
-        _bidCommon(message);
-
-        if (msg.value > bidPrice) {
-            // Return the extra money to the bidder.
-            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
-            require(success, "Refund transfer failed.");
-        }
-        emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
-    }
-
-    function prizeAmount() public view returns (uint256) {
-        return address(this).balance * prizePercentage / 100;
-    }
-
-    function charityAmount() public view returns (uint256) {
-        return address(this).balance * charityPercentage / 100;
-    }
-
-    function raffleAmount() public view returns (uint256) {
-        return address(this).balance * rafflePercentage / 100;
+    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a : b;
     }
 
     function _updateEntropy() internal {
