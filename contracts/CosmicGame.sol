@@ -417,10 +417,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         _pushBackPrizeTime();
     }
 
-    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
-
     function _updateEntropy() internal {
         raffleEntropy = keccak256(abi.encode(
             raffleEntropy,
@@ -432,5 +428,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		// There should be at least 1 raffle participant when this function is called.
         _updateEntropy();
         return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
+    }
+
+    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a : b;
     }
 }
