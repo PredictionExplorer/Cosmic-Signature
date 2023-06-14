@@ -126,23 +126,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         bid("");
     }
 
-    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
-
-    function getBidPrice() public view returns (uint256) {
-        return (bidPrice * priceIncrease) / MILLION;
-    }
-
-    function timeUntilActivation() external view returns (uint256) {
-        if (activationTime < block.timestamp) return 0;
-        return activationTime - block.timestamp;
-    }
-
-    function _initializeBidPrice() internal {
-        bidPrice = prizeAmount() / initialBidAmountFraction;
-    }
-
     // send some ETH into the contract and affect nothing else.
     function donate() external payable {
         require (msg.value > 0, "Donation amount must be greater than 0.");
@@ -154,24 +137,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit DonationEvent(_msgSender(), msg.value);
     }
 
-    function _pushBackPrizeTime() internal {
-        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
-        prizeTime = _max(prizeTime, block.timestamp) + secondsAdded;
-        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
-    }
-
-    function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
-        // If you are a creator you can donate some NFT to the winner of the
-        // current round (which might get you featured on the front page of the website).
-        _nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
-        donatedNFTs[numDonatedNFTs] = DonatedNFT({
-            nftAddress: _nftAddress,
-            tokenId: _tokenId,
-            round: roundNum,
-            claimed: false
-        });
-        numDonatedNFTs += 1;
-        emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs-1);
+    function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
+        bid(message);
+        _donateNFT(nftAddress, tokenId);
     }
 
     function claimDonatedNFT(uint256 num) external {
@@ -184,101 +152,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
        emit DonatedNFTClaimedEvent(donatedNFTs[num].round,num,winner,address(donatedNFTs[num].nftAddress),donatedNFTs[num].tokenId);
     }
 
-    function _bidCommon(string memory message) internal {
-        require(
-            block.timestamp >= activationTime,
-            "Not active yet."
-        );
-        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
-
-        if (lastBidder == address(0)) {
-            // someone just claimed a prize and we are starting from scratch
-            prizeTime = block.timestamp + initialSecondsUntilPrize;
-        }
-
-        lastBidder = _msgSender();
-
-        raffleParticipants[numRaffleParticipants] = lastBidder;
-        numRaffleParticipants += 1;
-
-        (bool mintSuccess, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,TOKEN_REWARD));
-		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
-
-        _pushBackPrizeTime();
-    }
-
-    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
-
-        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
-        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
-
-        usedRandomWalkNFTs[randomWalkNFTId] = true;
-
-        _bidCommon(message);
-
-        emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
-    }
-
-    function bid(string memory message) public payable {
-
-        uint256 newBidPrice = getBidPrice();
-
-        require(
-            msg.value >= newBidPrice,
-            "The value submitted with this transaction is too low."
-        );
-        bidPrice = newBidPrice;
-
-        _bidCommon(message);
-
-        if (msg.value > bidPrice) {
-            // Return the extra money to the bidder.
-            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
-            require(success, "Refund transfer failed.");
-        }
-        emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
-    }
-
-
-    function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
-        bid(message);
-        _donateNFT(nftAddress, tokenId);
-    }
-
     function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
         bidWithRWLK(randomWalkNFTId, message);
         _donateNFT(nftAddress, tokenId);
-    }
-
-    function timeUntilPrize() external view returns (uint256) {
-        if (prizeTime < block.timestamp) return 0;
-        return prizeTime - block.timestamp;
-    }
-
-    function prizeAmount() public view returns (uint256) {
-        return address(this).balance * prizePercentage / 100;
-    }
-
-    function charityAmount() public view returns (uint256) {
-        return address(this).balance * charityPercentage / 100;
-    }
-
-    function raffleAmount() public view returns (uint256) {
-        return address(this).balance * rafflePercentage / 100;
-    }
-
-    function _updateEntropy() internal {
-        raffleEntropy = keccak256(abi.encode(
-            raffleEntropy,
-            block.timestamp,
-            blockhash(block.number)));
-    }
-
-    function _raffleWinner() internal returns (address) {
-		// There should be at least 1 raffle participant when this function is called.
-        _updateEntropy();
-        return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
     }
 
     function claimPrize() external {
@@ -430,8 +306,131 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit ActivationTimeChanged(activationTime);
     }
 
+    function timeUntilActivation() external view returns (uint256) {
+        if (activationTime < block.timestamp) return 0;
+        return activationTime - block.timestamp;
+    }
+
+    function timeUntilPrize() external view returns (uint256) {
+        if (prizeTime < block.timestamp) return 0;
+        return prizeTime - block.timestamp;
+    }
+
     // Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns(bytes4) {
         return this.onERC721Received.selector;
+    }
+
+    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a : b;
+    }
+
+    function getBidPrice() public view returns (uint256) {
+        return (bidPrice * priceIncrease) / MILLION;
+    }
+
+    function _initializeBidPrice() internal {
+        bidPrice = prizeAmount() / initialBidAmountFraction;
+    }
+
+    function _pushBackPrizeTime() internal {
+        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+        prizeTime = _max(prizeTime, block.timestamp) + secondsAdded;
+        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
+    }
+
+    function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
+        // If you are a creator you can donate some NFT to the winner of the
+        // current round (which might get you featured on the front page of the website).
+        _nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
+        donatedNFTs[numDonatedNFTs] = DonatedNFT({
+            nftAddress: _nftAddress,
+            tokenId: _tokenId,
+            round: roundNum,
+            claimed: false
+        });
+        numDonatedNFTs += 1;
+        emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs-1);
+    }
+
+    function _bidCommon(string memory message) internal {
+        require(
+            block.timestamp >= activationTime,
+            "Not active yet."
+        );
+        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
+
+        if (lastBidder == address(0)) {
+            // someone just claimed a prize and we are starting from scratch
+            prizeTime = block.timestamp + initialSecondsUntilPrize;
+        }
+
+        lastBidder = _msgSender();
+
+        raffleParticipants[numRaffleParticipants] = lastBidder;
+        numRaffleParticipants += 1;
+
+        (bool mintSuccess, ) =
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,TOKEN_REWARD));
+		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
+
+        _pushBackPrizeTime();
+    }
+
+    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
+
+        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
+        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
+
+        usedRandomWalkNFTs[randomWalkNFTId] = true;
+
+        _bidCommon(message);
+
+        emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
+    }
+
+    function bid(string memory message) public payable {
+
+        uint256 newBidPrice = getBidPrice();
+
+        require(
+            msg.value >= newBidPrice,
+            "The value submitted with this transaction is too low."
+        );
+        bidPrice = newBidPrice;
+
+        _bidCommon(message);
+
+        if (msg.value > bidPrice) {
+            // Return the extra money to the bidder.
+            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
+            require(success, "Refund transfer failed.");
+        }
+        emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
+    }
+
+    function prizeAmount() public view returns (uint256) {
+        return address(this).balance * prizePercentage / 100;
+    }
+
+    function charityAmount() public view returns (uint256) {
+        return address(this).balance * charityPercentage / 100;
+    }
+
+    function raffleAmount() public view returns (uint256) {
+        return address(this).balance * rafflePercentage / 100;
+    }
+
+    function _updateEntropy() internal {
+        raffleEntropy = keccak256(abi.encode(
+            raffleEntropy,
+            block.timestamp,
+            blockhash(block.number)));
+    }
+
+    function _raffleWinner() internal returns (address) {
+		// There should be at least 1 raffle participant when this function is called.
+        _updateEntropy();
+        return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
     }
 }
