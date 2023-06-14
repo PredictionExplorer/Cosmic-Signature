@@ -115,6 +115,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
 
+    constructor() {
+        raffleEntropy = keccak256(abi.encode(
+             "Cosmic Signature 2023",
+             block.timestamp, blockhash(block.number)));
+        charity = _msgSender();
+    }
+
     function _max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
     }
@@ -333,13 +340,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, _msgSender()));
 		require(mintSuccess, "CosmicSignature mint() failed to mint NFT.");
         emit RaffleNFTClaimedEvent(_msgSender());
-    }
-
-    constructor() {
-        raffleEntropy = keccak256(abi.encode(
-             "Cosmic Signature 2023",
-             block.timestamp, blockhash(block.number)));
-        charity = _msgSender();
     }
 
     function setCharity(address addr) external onlyOwner {
