@@ -321,10 +321,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return this.onERC721Received.selector;
     }
 
-    function getBidPrice() public view returns (uint256) {
-        return (bidPrice * priceIncrease) / MILLION;
-    }
-
     function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
 
         require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
@@ -355,6 +351,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
             require(success, "Refund transfer failed.");
         }
         emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
+    }
+
+    function getBidPrice() public view returns (uint256) {
+        return (bidPrice * priceIncrease) / MILLION;
     }
 
     function prizeAmount() public view returns (uint256) {
