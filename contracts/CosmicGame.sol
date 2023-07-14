@@ -61,6 +61,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public numRaffleNFTWinnersPerRound = 5;
 
+    uint256 public numHolderNFTWinnersPerRound = 2;
+
     // when the money can be taken out
     uint256 public prizeTime;
 
@@ -103,6 +105,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 	event NumRaffleWinnersPerRoundChanged(uint256 newNumRaffleWinnersPerRound);
 	event NumRaffleNFTWinnersPerRoundChanged(uint256 newNumRaffleNFTWinnersPerRound);
+	event NumHolderNFTWinnersPerRoundChanged(uint256 newNumHolderNFTWinnersPerRound);
 	event CharityAddressChanged(address newCharity);
 	event RandomWalkAddressChanged(address newRandomWalk);
 	event RaffleWalletAddressChanged(address newRaffleWallet);
@@ -189,6 +192,32 @@ contract CosmicGame is Ownable, IERC721Receiver {
             emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, i);
         }
 
+        uint256 rwalkSupply = randomWalk.totalSupply();
+        uint256 cosmicSupply = nft.totalSupply();
+
+        uint256 winnerIndex = numRaffleNFTWinnersPerRound;
+        for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
+            // Give some Cosmic NFTs to a random RandomWalkNFT holders
+            if (rwalkSupply > 0) {
+                _updateEntropy();
+                uint256 rwalkWinnerNFTnum = uint256(raffleEntropy) % rwalkSupply;
+                address rwalkWinner = randomWalk.ownerOf(rwalkWinnerNFTnum);
+                raffleNFTWinners[rwalkWinner] += 1;
+                emit RaffleNFTWinnerEvent(rwalkWinner, roundNum - 1, winnerIndex);
+                winnerIndex += 1;
+            }
+
+            // Give some Cosmic NFTs to random Cosmic NFT holders
+            if (cosmicSupply > 0) {
+                _updateEntropy();
+                uint256 cosmicNFTnum = uint256(raffleEntropy) % cosmicSupply;
+                address cosmicWinner = nft.ownerOf(cosmicNFTnum);
+                raffleNFTWinners[cosmicWinner] += 1;
+                emit RaffleNFTWinnerEvent(cosmicWinner, roundNum - 1, winnerIndex);
+                winnerIndex += 1;
+            }
+        }
+
         (bool success, ) = winner.call{value: prizeAmount_}("");
         require(success, "Transfer to the winner failed.");
 
@@ -245,7 +274,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
         numRaffleNFTWinnersPerRound = newNumRaffleNFTWinnersPerRound;
 		emit NumRaffleNFTWinnersPerRoundChanged(numRaffleNFTWinnersPerRound);
     }
-    
+
+    function setNumHolderNFTWinnersPerRound(uint256 newNumHolderNFTWinnersPerRound) external onlyOwner {
+        numHolderNFTWinnersPerRound = newNumHolderNFTWinnersPerRound;
+		emit NumHolderNFTWinnersPerRoundChanged(numHolderNFTWinnersPerRound);
+    }
+
     function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
 		require(newCharityPercentage<100,"Percentage value overflow, must be lower than 100.");
         charityPercentage = newCharityPercentage;
