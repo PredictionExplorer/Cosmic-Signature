@@ -250,11 +250,11 @@ describe("Cosmic", function () {
 
       // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
-      expect(parsed_log.args.deposit_id.toNumber()).to.equal(0);
+      expect(parsed_log.args.depositId.toNumber()).to.equal(0);
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[9]);
-      expect(parsed_log.args.deposit_id.toNumber()).to.equal(1);
+      expect(parsed_log.args.depositId.toNumber()).to.equal(1);
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[10]);
-      expect(parsed_log.args.deposit_id.toNumber()).to.equal(2);
+      expect(parsed_log.args.depositId.toNumber()).to.equal(2);
 
       // NFT Raffle winners
       expect(await cosmicSignature.totalSupply()).to.equal(1);
@@ -300,17 +300,17 @@ describe("Cosmic", function () {
       receipt = await tx.wait();
       // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
-      expect(parsed_log.args.deposit_id.toNumber()).to.equal(3);
+      expect(parsed_log.args.depositId.toNumber()).to.equal(3);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
 
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[9]);
-      expect(parsed_log.args.deposit_id.toNumber()).to.equal(4);
+      expect(parsed_log.args.depositId.toNumber()).to.equal(4);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
 
       parsed_log = raffleWallet.interface.parseLog(receipt.logs[10]);
-      expect(parsed_log.args.deposit_id.toNumber()).to.equal(5);
+      expect(parsed_log.args.depositId.toNumber()).to.equal(5);
       expect(parsed_log.args.round.toNumber()).to.equal(1);
       expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
 
@@ -349,7 +349,7 @@ describe("Cosmic", function () {
           let wlog = raffleWallet.interface.parseLog(deposit_logs[i]);
           let winner_signer = raffleWallet.provider.getSigner(wlog.args.winner);
           let balance_before =await winner_signer.getBalance();
-          let deposit_id = wlog.args.deposit_id;
+          let deposit_id = wlog.args.depositId;
           await raffleWallet.connect(owner).withdraw(deposit_id);
           let balance_after =await winner_signer.getBalance();
           expect(balance_before.add(wlog.args.amount).toString()).to.equal(balance_after.toString());

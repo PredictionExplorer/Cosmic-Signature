@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
-
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 pragma solidity 0.8.19;
+
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CosmicSignature is ERC721Enumerable, Ownable {
 
@@ -25,11 +24,11 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     address public immutable cosmicGameContract;
 
-    event TokenNameEvent(uint256 indexed tokenId, string newName);
-    event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
-
     // IPFS link to the Python script that generates images and videos for each NFT based on seed.
     string public tokenGenerationScript = "ipfs://TBD";
+
+    event TokenNameEvent(uint256 indexed tokenId, string newName);
+    event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
         require(_cosmicGameContract != address(0), "Zero-address was given.");
@@ -53,10 +52,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         emit TokenNameEvent(tokenId, name);
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _baseTokenURI;
-    }
-
     function mint(address owner) external {
         require(owner != address(0), "Zero-address was given.");
         require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
@@ -74,5 +69,9 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         _safeMint(owner, tokenId);
 
         emit MintEvent(tokenId, owner, entropy);
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
     }
 }
