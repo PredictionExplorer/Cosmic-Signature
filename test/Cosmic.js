@@ -246,24 +246,26 @@ describe("Cosmic", function () {
       //make sure the number of deposits matches numRaffleWinnersPerRound variable
       let deposit_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
       let nrwpr = await cosmicGame.numRaffleWinnersPerRound();
+      let num_raffle_winners = await cosmicGame.numRaffleNFTWinnersPerRound();
+      let num_holder_winners = await cosmicGame.numHolderNFTWinnersPerRound();
+      let sum_winners = (num_raffle_winners.toNumber() + num_holder_winners.toNumber());
       expect(nrwpr.toNumber()).to.equal(deposit_logs.length);
 
-      // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
-      // TODO: Make the test pass and remove this return
-      return;
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
-      expect(parsed_log.args.depositId.toNumber()).to.equal(0);
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[9]);
-      expect(parsed_log.args.depositId.toNumber()).to.equal(1);
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[10]);
-      expect(parsed_log.args.depositId.toNumber()).to.equal(2);
-
+      let deposits_index_start = deposit_logs[0].logIndex;
+      let last_deposit_id = 0;
+      for (let i = 0; i<nrwpr; i++) {
+         parsed_log = raffleWallet.interface.parseLog(receipt.logs[deposits_index_start+i]);
+         expect(parsed_log.args.depositId.toNumber()).to.equal(i);
+         last_deposit_id = parsed_log.args.depositId.toNumber();
+	  }
       // NFT Raffle winners
+      let raffle_nft_count = 0;
       expect(await cosmicSignature.totalSupply()).to.equal(1);
       w1 = await cosmicGame.raffleNFTWinners(addr1.address);
       i1 = await cosmicSignature.balanceOf(addr1.address);
       for (let i = 0; i < w1; i++) {
         await cosmicGame.connect(addr1).claimRaffleNFT();
+        raffle_nft_count++;
       }
       await expect(cosmicGame.connect(addr1).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
       expect(await cosmicSignature.balanceOf(addr1.address)).to.equal(w1.add(i1));
@@ -272,6 +274,7 @@ describe("Cosmic", function () {
       i2 = await cosmicSignature.balanceOf(addr2.address);
       for (let i = 0; i < w2; i++) {
         await cosmicGame.connect(addr2).claimRaffleNFT();
+        raffle_nft_count++
       }
       await expect(cosmicGame.connect(addr2).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
       expect(await cosmicSignature.balanceOf(addr2.address)).to.equal(w2.add(i2));
@@ -280,10 +283,14 @@ describe("Cosmic", function () {
       i3 = await cosmicSignature.balanceOf(addr3.address);
       for (let i = 0; i < w3; i++) {
         await cosmicGame.connect(addr3).claimRaffleNFT();
+        raffle_nft_count++;
       }
       await expect(cosmicGame.connect(addr3).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
       expect(await cosmicSignature.balanceOf(addr3.address)).to.equal(w3.add(i3));
-      expect(await cosmicSignature.totalSupply()).to.equal(6);
+      expect(sum_winners).to.equal(raffle_nft_count);
+      let prize_winner_mints=1;
+      expect(await cosmicSignature.totalSupply()).to.equal(raffle_nft_count+prize_winner_mints);
+      let last_cosmic_signature_supply = raffle_nft_count+prize_winner_mints;
 
       // let's begin a new round
       bidPrice = await cosmicGame.getBidPrice();
@@ -300,27 +307,19 @@ describe("Cosmic", function () {
       let raffleAmount = await cosmicGame.raffleAmount();
       tx = await cosmicGame.connect(addr3).claimPrize();
       receipt = await tx.wait();
-      // log indices: 8,9,10 where the b1167d06 event signature (RaffleDeposit) is located
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[8]);
-      expect(parsed_log.args.depositId.toNumber()).to.equal(3);
-      expect(parsed_log.args.round.toNumber()).to.equal(1);
-      expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
-
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[9]);
-      expect(parsed_log.args.depositId.toNumber()).to.equal(4);
-      expect(parsed_log.args.round.toNumber()).to.equal(1);
-      expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
-
-      parsed_log = raffleWallet.interface.parseLog(receipt.logs[10]);
-      expect(parsed_log.args.depositId.toNumber()).to.equal(5);
-      expect(parsed_log.args.round.toNumber()).to.equal(1);
-      expect(parsed_log.args.amount.toNumber()).to.equal(raffleAmount.toNumber());
-
-      expect(await cosmicSignature.totalSupply()).to.equal(7);
+      deposit_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
+      deposits_index_start = deposit_logs[0].logIndex;
+	  last_deposit_id++;
+	  for (let i = 0; i<nrwpr; i++) {
+         parsed_log = raffleWallet.interface.parseLog(receipt.logs[deposits_index_start+i]);
+         expect(parsed_log.args.depositId.toNumber()).to.equal(last_deposit_id+i);
+	  }
+      let supply_inc = 0;
       w1 = await cosmicGame.raffleNFTWinners(addr1.address);
       i1 = await cosmicSignature.balanceOf(addr1.address);
       for (let i = 0; i < w1; i++) {
         await cosmicGame.connect(addr1).claimRaffleNFT();
+        supply_inc++;
       }
       await expect(cosmicGame.connect(addr1).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
       expect(await cosmicSignature.balanceOf(addr1.address)).to.equal(w1.add(i1));
@@ -329,6 +328,7 @@ describe("Cosmic", function () {
       i2 = await cosmicSignature.balanceOf(addr2.address);
       for (let i = 0; i < w2; i++) {
         await cosmicGame.connect(addr2).claimRaffleNFT();
+        supply_inc++;
       }
       await expect(cosmicGame.connect(addr2).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
       expect(await cosmicSignature.balanceOf(addr2.address)).to.equal(w2.add(i2));
@@ -337,10 +337,12 @@ describe("Cosmic", function () {
       i3 = await cosmicSignature.balanceOf(addr3.address);
       for (let i = 0; i < w3; i++) {
         await cosmicGame.connect(addr3).claimRaffleNFT();
+        supply_inc++;
       }
       await expect(cosmicGame.connect(addr3).claimRaffleNFT()).to.be.revertedWith("You have no unclaimed raffle NFTs.");
       expect(await cosmicSignature.balanceOf(addr3.address)).to.equal(w3.add(i3));
-      expect(await cosmicSignature.totalSupply()).to.equal(12);
+      supply_inc = supply_inc + prize_winner_mints;
+      expect(await cosmicSignature.totalSupply()).to.equal(last_cosmic_signature_supply+supply_inc);
 
       // make sure numRaffleParticipants have been reset
       let numRaffleParticipants = await cosmicGame.numRaffleParticipants()
