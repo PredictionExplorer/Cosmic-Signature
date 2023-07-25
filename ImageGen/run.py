@@ -3,6 +3,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def run_program(command):
+    print("Running", command)
     try:
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return result.stdout.strip()
@@ -13,7 +14,7 @@ def run_program(command):
 def main():
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
-    max_concurrent_executions = 1
+    max_concurrent_executions = 6
     N = 200
 
     # Specify the different parameters for each execution
@@ -22,9 +23,9 @@ def main():
     for i in range(N):
         cur = list(const_params)
         cur.append('--seed')
-        cur.append(f'0x1500{i:06}')
+        cur.append(f'0x1501{i:06}')
         cur.append('--file-name')
-        cur.append(f'0x1500{i:06}')
+        cur.append(f'0x1501{i:06}')
         parameters.append(cur)
 
     # Run the program N times in parallel with different parameters, limiting concurrent executions

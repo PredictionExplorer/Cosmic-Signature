@@ -65,12 +65,12 @@ impl Sha3RandomByteStream {
     }
     
     pub fn random_location(&mut self) -> f64 {
-        let n = 1500.0;
+        let n = 250.0;
         self.gen_range(-n, n)
     }
 
     pub fn random_velocity(&mut self) -> f64 {
-        let n: f64 = 25.0;
+        let n: f64 = 2.0;
         self.gen_range(-n, n)
     }
 
@@ -495,7 +495,8 @@ fn main() {
     let mut byte_stream = Sha3RandomByteStream::new(&seed);
 
 
-    let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
+    //let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
+    let steps = 1000000;
     const NUM_TRIES: usize = 1_000;
     let positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
@@ -508,14 +509,14 @@ fn main() {
     let init_len: usize = 0;
     //let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
     //let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    let hide_2 = true;
-    let hide_3 = true;
+    let hide_2 = false;
+    let hide_3 = false;
     let hide = vec![false, hide_2, hide_3];
     
-    const NUM_SECONDS: usize = 15;
+    const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
-    const FRAME_SIZE: u32 = 800;
+    const FRAME_SIZE: u32 = 1600;
 
     let frames = plot_positions(&positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
