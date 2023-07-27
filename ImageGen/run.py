@@ -77,6 +77,7 @@ def main():
             params = futures[future]
             try:
                 output = future.result()
+                print(output)
             except Exception as e:
                 sys.stderr.write(f'Error running program with parameters {params}: {e}\n')
 
