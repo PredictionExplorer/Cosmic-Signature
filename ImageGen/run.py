@@ -6,7 +6,6 @@ import subprocess
 import sys
 
 def run_program(command):
-    print("Running", command)
     try:
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return result.stdout.strip()
@@ -15,6 +14,7 @@ def run_program(command):
         return None
 
 def main():
+    print("starting")
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
     max_concurrent_executions = 6
@@ -47,6 +47,8 @@ def main():
             cur.append('--num-steps')
             cur.append(str(num_steps))
 
+            cur.append('--avoid-effects')
+
             cur.append('--location')
             cur.append(str(float(location)))
 
@@ -75,7 +77,7 @@ def main():
             params = futures[future]
             try:
                 output = future.result()
-                print(f'Result with parameters {params}: {output}')
+                print(output)
             except Exception as e:
                 sys.stderr.write(f'Error running program with parameters {params}: {e}\n')
 
