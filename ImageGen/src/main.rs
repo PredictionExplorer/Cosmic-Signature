@@ -189,8 +189,9 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
 
 fn get_white_color_walk(len: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
+    const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
     for _ in 0..len {
-        colors.push(Rgb([255u8, 255u8, 255u8]));
+        colors.push(WHITE_COLOR);
     }
     colors
 }
@@ -209,14 +210,10 @@ fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>>
     colors
 }
 
-fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: f64, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-    let background_color = Rgb([0u8, 0u8, 0u8]);
-
-    // Find the minimum and maximum coordinates for x and y
+fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
+    // we want to convert the positions to a range of 0.0 to 1.0
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
-
-    let white_color = Rgb([255, 255, 255]);
 
     for body_idx in 0..positions.len() {
         if hide[body_idx] {
@@ -231,27 +228,33 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
             if y > max_y { max_y = y; }
         }
     }
-    // TODO: make sure that scaling is equal in both directions
     let x_range = max_x - min_x;
     let y_range = max_y - min_y;
-    let x_center = (min_x + max_x) / 2.0;
-    let y_center = (min_y + max_y) / 2.0;
-    let mut range = if x_range > y_range {
+    let range = if x_range > y_range {
         x_range
     } else {
         y_range
     };
-    min_x = x_center - (range / 2.0) * 1.1;
-    max_x = x_center + (range / 2.0) * 1.1;
-    min_y = y_center - (range / 2.0) * 1.1;
-    range = max_x - min_x;
+
+    for body_idx in 0..positions.len() {
+        for step in 0..positions[body_idx].len() {
+            positions[body_idx][step][0] = (positions[body_idx][step][0] - min_x) / range;
+            positions[body_idx][step][1] = (positions[body_idx][step][1] - min_y) / range;
+        }
+    }
+}
+
+fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: f64, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+    convert_positions(positions, hide);
 
     let mut frames = Vec::new();
 
     let mut snake_end: usize = frame_interval;
 
+    const BACKGROUND_COLOR: Rgb<u8> = Rgb([0u8, 0u8, 0u8]);
+    const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
     loop {
-        let mut img = ImageBuffer::from_fn(frame_size, frame_size, |_, _| background_color);
+        let mut img = ImageBuffer::from_fn(frame_size, frame_size, |_, _| BACKGROUND_COLOR);
 
         let mut snake_starts: [usize; 3] = [0, 0, 0];
 
@@ -263,7 +266,7 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
             let mut total_dist: f64 = 0.0;
             let mut idx = snake_end;
             loop {
-                if idx <= 1 || total_dist > range * snake_len {
+                if idx <= 1 || total_dist > snake_len {
                     break;
                 }
                 let x1 = positions[body_idx][idx][0];
@@ -277,15 +280,14 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
             snake_starts[body_idx] = idx;
 
             for i in snake_starts[body_idx]..snake_end {
-                let x1 = positions[body_idx][i][0];
-                let y1 = positions[body_idx][i][1];
+                let x = positions[body_idx][i][0];
+                let y = positions[body_idx][i][1];
 
                 // Scale and shift positions to fit within the image dimensions
-                let x1p = (((x1 - min_x) / range) * (frame_size as f64)).round();
-                let y1p = (((y1 - min_y) / range) * (frame_size as f64)).round();
+                let xp = (x * frame_size as f64).round();
+                let yp = (y * frame_size as f64).round();
 
-                draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 6, colors[body_idx][i]);
-                //draw_filled_circle_mut(&mut img, (x1p as i32, y1p as i32), 6, white_color);
+                draw_filled_circle_mut(&mut img, (xp as i32, yp as i32), 6, colors[body_idx][i]);
             }
         }
 
@@ -297,16 +299,14 @@ fn plot_positions(positions: &Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len
             }
 
             for i in snake_starts[body_idx]..snake_end {
-
-                let x1 = positions[body_idx][i][0];
-                let y1 = positions[body_idx][i][1];
+                let x = positions[body_idx][i][0];
+                let y = positions[body_idx][i][1];
 
                 // Scale and shift positions to fit within the image dimensions
-                let x1p = ((x1 - min_x) / range * (frame_size as f64 - 1.0)).round();
-                let y1p = ((y1 - min_y) / range * (frame_size as f64 - 1.0)).round();
-
+                let xp = (x * frame_size as f64).round();
+                let yp = (y * frame_size as f64).round();
                 
-                draw_filled_circle_mut(&mut blurred_img, (x1p as i32, y1p as i32), 1, white_color);
+                draw_filled_circle_mut(&mut blurred_img, (xp as i32, yp as i32), 1, WHITE_COLOR);
             }
         }
 
@@ -544,7 +544,7 @@ fn main() {
     //let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
     let steps = args.num_steps;
     const NUM_TRIES: usize = 1_000;
-    let positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
+    let mut positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
     let s: &str = args.file_name.as_str();
     let file_name = format!("vids/{}.mp4", s);
@@ -564,7 +564,7 @@ fn main() {
     let steps_per_frame: usize = steps / target_length;
     const FRAME_SIZE: u32 = 1600;
 
-    let frames = plot_positions(&positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
+    let frames = plot_positions(&mut positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("pics/{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
