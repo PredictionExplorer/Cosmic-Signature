@@ -254,7 +254,7 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     }
 }
 
-fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: f64, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: f64, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize, avoid_effects: bool) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     convert_positions(positions, hide);
 
     let mut frames = Vec::new();
@@ -283,7 +283,7 @@ fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake
                 let y1 = positions[body_idx][idx][1];
                 let x2 = positions[body_idx][idx - 1][0];
                 let y2 = positions[body_idx][idx - 1][1];
-                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt(); // TODO: use distance function in the struct
                 total_dist += dist;
                 idx -= 1;
             }
@@ -301,27 +301,29 @@ fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake
             }
         }
 
-        let mut blurred_img = imageproc::filter::gaussian_blur_f32(&img, 6.0);
-        //let mut blurred_img = img.clone();
-        for body_idx in 0..positions.len() {
-            if hide[body_idx] {
-                continue;
-            }
+        if !avoid_effects {
+            img = imageproc::filter::gaussian_blur_f32(&img.clone(), 6.0);
+            //let mut blurred_img = img.clone();
+            for body_idx in 0..positions.len() {
+                if hide[body_idx] {
+                    continue;
+                }
 
-            for i in snake_starts[body_idx]..snake_end {
-                let x = positions[body_idx][i][0];
-                let y = positions[body_idx][i][1];
+                for i in snake_starts[body_idx]..snake_end {
+                    let x = positions[body_idx][i][0];
+                    let y = positions[body_idx][i][1];
 
-                // Scale and shift positions to fit within the image dimensions
-                let xp = (x * frame_size as f64).round();
-                let yp = (y * frame_size as f64).round();
-                
-                draw_filled_circle_mut(&mut blurred_img, (xp as i32, yp as i32), 1, WHITE_COLOR);
+                    // Scale and shift positions to fit within the image dimensions
+                    let xp = (x * frame_size as f64).round();
+                    let yp = (y * frame_size as f64).round();
+                    
+                    draw_filled_circle_mut(&mut img, (xp as i32, yp as i32), 1, WHITE_COLOR);
+                }
             }
         }
-
+        
         if snake_end >= init_len {
-            frames.push(imageproc::filter::gaussian_blur_f32(&blurred_img, 1.0));
+            frames.push(imageproc::filter::gaussian_blur_f32(&img, 1.0));
         }
         snake_end += frame_interval;
         if snake_end >= positions[0].len() {
@@ -358,11 +360,31 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
 
 use statrs::statistics::Statistics;
 
-fn analyze_trajectories(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> (f64, f64) {
+fn analyze_trajectories(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> (f64, f64, f64) {
     let chaos = non_chaoticness(m1, m2, m3, &positions);
     let avg_area = triangle_area(&positions);
-    return(chaos, avg_area);
+    let total_dist = calculate_total_distance(&positions);
+    return(chaos, avg_area, total_dist);
     //(chaos * chaos * (1.0 / avg_area)).sqrt()
+}
+
+fn calculate_total_distance(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
+    let mut new_positions = positions.clone();
+    //let hide = vec![false, false, false];
+    convert_positions(&mut new_positions, &vec![false, false, false]);
+
+    let mut total_dist = 0.0;
+    for body_idx in 0..new_positions.len() {
+        for step_idx in 1..new_positions[body_idx].len() {
+            let x1 = positions[body_idx][step_idx][0];
+            let y1 = positions[body_idx][step_idx][1];
+            let x2 = positions[body_idx][step_idx - 1][0];
+            let y2 = positions[body_idx][step_idx - 1][1];
+            let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+            total_dist += dist;
+        }
+    }
+    total_dist
 }
 
 fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
@@ -512,7 +534,7 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
         many_bodies.push(bodies);
     }
 
-    let mut results_par = vec![(0.0, 0.0); many_bodies.len()];
+    let mut results_par = vec![(0.0, 0., 0.0); many_bodies.len()];
     many_bodies.par_iter().map(|bodies| {
         let m1 = bodies[0].mass;
         let m2 = bodies[1].mass;
@@ -522,7 +544,7 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
     }).collect_into_vec(&mut results_par);
 
     // sort the list and keep the indeces
-    let mut indexed_pairs: Vec<(usize, (f64, f64))> = results_par.clone().into_iter().enumerate().collect();
+    let mut indexed_pairs: Vec<(usize, (f64, f64, f64))> = results_par.clone().into_iter().enumerate().collect();
 
     // Sort by the (f64, f64) pairs
     indexed_pairs.sort_by(|a, b| a.1.0.partial_cmp(&b.1.0).unwrap());
@@ -532,7 +554,7 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
     let mut best_idx = 0;
     let mut best_result = f64::NEG_INFINITY;
     for i in 0..N {
-        let (original_index, (_chaos, avg_area)) = indexed_pairs[i];
+        let (original_index, (_chaos, avg_area, _total_dist)) = indexed_pairs[i];
         if avg_area > best_result {
             best_result = avg_area;
             best_idx = original_index;
@@ -546,8 +568,10 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
         bodies[1].position[0], bodies[1].position[1],
         bodies[2].position[0], bodies[2].position[1]);
     let result = get_positions(bodies.clone(), num_steps_video);
-    let avg_area = triangle_area(&result);
+    let avg_area = results_par[best_idx].1;
+    let total_distance = results_par[best_idx].2;
     println!("Area: {}", avg_area);
+    println!("Dist: {}", total_distance);
     result
 }
 
@@ -578,6 +602,9 @@ struct Args {
     #[arg(long, default_value_t = 300.0)]
     max_mass: f64,
 
+    #[arg(long, default_value_t = false)]
+    avoid_effects: bool,
+
 }
 
 use hex;
@@ -606,7 +633,8 @@ fn main() {
     let file_name = format!("vids/{}.mp4", s);
     println!("done simulating");
     
-    let snake_len = byte_stream.gen_range(0.2, 2.0);
+    //let snake_len = byte_stream.gen_range(0.2, 2.0);
+    let snake_len = 0.2;
     //let snake_len = 0.5;
     let init_len: usize = 0;
     //let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
@@ -617,7 +645,7 @@ fn main() {
     let steps_per_frame: usize = steps / target_length;
     const FRAME_SIZE: u32 = 1600;
 
-    let frames = plot_positions(&mut positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
+    let frames = plot_positions(&mut positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame, args.avoid_effects);
     let last_frame = frames[frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("pics/{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
