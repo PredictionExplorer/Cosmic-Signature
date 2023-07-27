@@ -17,7 +17,7 @@ def run_program(command):
 def main():
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
-    max_concurrent_executions = 10
+    max_concurrent_executions = 6
     N = 8
 
     # Specify the different parameters for each execution

@@ -82,6 +82,15 @@ impl Sha3RandomByteStream {
         self.gen_range(-self.velocity, self.velocity)
     }
 
+    pub fn is_white(&mut self) -> bool {
+        const CHANCE_WHITE: f64 = 0.1;
+        if self.gen_range(0.0, 1.0) < CHANCE_WHITE {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     
 }
 
@@ -178,11 +187,24 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
     colors
 }
 
+fn get_white_color_walk(len: usize) -> Vec<Rgb<u8>> {
+    let mut colors = Vec::new();
+    for _ in 0..len {
+        colors.push(Rgb([255u8, 255u8, 255u8]));
+    }
+    colors
+}
+
 fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>> {
     let mut colors = Vec::new();
     for _ in 0..3 {
-        let c = get_single_color_walk(rng, len);
-        colors.push(c);
+        if rng.is_white() {
+            let c = get_white_color_walk(len);
+            colors.push(c);
+        } else {
+            let c = get_single_color_walk(rng, len);
+            colors.push(c);
+        }
     }
     colors
 }
