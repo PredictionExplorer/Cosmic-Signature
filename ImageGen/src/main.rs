@@ -358,7 +358,15 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
 
 use statrs::statistics::Statistics;
 
+fn analyze_trajectories(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> (f64, f64) {
+    let chaos = non_chaoticness(m1, m2, m3, &positions);
+    let avg_area = triangle_area(&positions);
+    return(chaos, avg_area);
+    //(chaos * chaos * (1.0 / avg_area)).sqrt()
+}
+
 fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
+    // The lower, the better
     let mut r1: Vec<f64> = vec![0.0; positions[0].len()];
     let mut r2: Vec<f64> = vec![0.0; positions[0].len()];
     let mut r3: Vec<f64> = vec![0.0; positions[0].len()];
@@ -504,21 +512,30 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
         many_bodies.push(bodies);
     }
 
-    let mut results_par = vec![0.0; many_bodies.len()];
+    let mut results_par = vec![(0.0, 0.0); many_bodies.len()];
     many_bodies.par_iter().map(|bodies| {
         let m1 = bodies[0].mass;
         let m2 = bodies[1].mass;
         let m3 = bodies[2].mass;
         let positions = get_positions(bodies.clone() , num_steps_sim);
-        non_chaoticness(m1, m2, m3, &positions)
+        analyze_trajectories(m1, m2, m3, &positions)
     }).collect_into_vec(&mut results_par);
 
+    // sort the list and keep the indeces
+    let mut indexed_pairs: Vec<(usize, (f64, f64))> = results_par.clone().into_iter().enumerate().collect();
+
+    // Sort by the (f64, f64) pairs
+    indexed_pairs.sort_by(|a, b| a.1.0.partial_cmp(&b.1.0).unwrap());
+
+
+    const N: usize = 50;
     let mut best_idx = 0;
-    let mut best_result = f64::INFINITY;
-    for (i, &res) in results_par.iter().enumerate() {
-        if res < best_result {
-            best_result = res;
-            best_idx = i;
+    let mut best_result = f64::NEG_INFINITY;
+    for i in 0..N {
+        let (original_index, (_chaos, avg_area)) = indexed_pairs[i];
+        if avg_area > best_result {
+            best_result = avg_area;
+            best_idx = original_index;
         }
     }
 
