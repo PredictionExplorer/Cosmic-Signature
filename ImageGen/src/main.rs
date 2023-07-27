@@ -469,43 +469,30 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
     positions
 }
 
-fn get_rectangle_size(positions: &Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) -> f64 {
+fn triangle_area(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
     // calculate what percentage of screen is occupied by the 3 bodies
 
     let mut new_positions = positions.clone();
-    convert_positions(&mut new_positions, hide);
+    //let hide = vec![false, false, false];
+    convert_positions(&mut new_positions, &vec![false, false, false]);
 
     let mut result = 0.0;
     let mut total_num = 0.0;
 
-    for body_idx in 0..new_positions.len() {
-        if hide[body_idx] {
-            continue;
-        }
+    for step in 0..new_positions[0].len() {
+        // (1/2) * |x1(y2 − y3) + x2(y3 − y1) + x3(y1 − y2)|
+        let y_diff_p2_p3 = new_positions[1][step][1] - new_positions[2][step][1];
+        let y_diff_p3_p1 = new_positions[2][step][1] - new_positions[0][step][1];
+        let y_diff_p1_p2 = new_positions[0][step][1]- new_positions[1][step][1];
+        let area = 0.5 * ((new_positions[0][step][0] * y_diff_p2_p3 + new_positions[1][step][0] * y_diff_p3_p1 + new_positions[2][step][0] * y_diff_p1_p2).abs());
 
-        let (mut min_x, mut min_y) = (INFINITY, INFINITY);
-        let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
-        for step in 0..new_positions[body_idx].len() {
-            let x = new_positions[body_idx][step][0];
-            let y = new_positions[body_idx][step][1];
-            if x < min_x { min_x = x; }
-            if y < min_y { min_y = y; }
-            if x > max_x { max_x = x; }
-            if y > max_y { max_y = y; }
-        }
-        let x_range = max_x - min_x;
-        let y_range = max_y - min_y;
-        let area = x_range * y_range;
-        assert!(area >= 0.0);
-        assert!(area <= 1.0);
         result += area;
         total_num += 1.0;
     }
-
     result / total_num
 }
 
-fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usize, num_steps_video: usize, hide: &Vec<bool>) -> Vec<Vec<Vector3<f64>>> {
+fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usize, num_steps_video: usize) -> Vec<Vec<Vector3<f64>>> {
 
     let mut many_bodies: Vec<Vec<Body>> = vec![];
     for _ in 0..num_iters {
@@ -542,8 +529,8 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
         bodies[1].position[0], bodies[1].position[1],
         bodies[2].position[0], bodies[2].position[1]);
     let result = get_positions(bodies.clone(), num_steps_video);
-    let rectangle_size = get_rectangle_size(&result, &hide);
-    println!("rectangle size: {}", rectangle_size);
+    let avg_area = triangle_area(&result);
+    println!("Area: {}", avg_area);
     result
 }
 
@@ -596,7 +583,7 @@ fn main() {
     let hide_2 = false;
     let hide_3 = false;
     let hide = vec![false, hide_2, hide_3];
-    let mut positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps, &hide);
+    let mut positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
     let s: &str = args.file_name.as_str();
     let file_name = format!("vids/{}.mp4", s);
