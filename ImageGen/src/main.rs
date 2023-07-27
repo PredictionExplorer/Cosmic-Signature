@@ -10,10 +10,14 @@ pub struct Sha3RandomByteStream {
     seed: Vec<u8>,
     buffer: Vec<u8>,
     index: usize,
+    min_mass: f64,
+    max_mass: f64,
+    location: f64,
+    velocity: f64,
 }
 
 impl Sha3RandomByteStream {
-    pub fn new(seed: &Vec<u8>) -> Self {
+    pub fn new(seed: &Vec<u8>, min_mass: f64, max_mass: f64, location: f64, velocity: f64) -> Self {
         let mut hasher = Sha3_256::new();
         let cloned_seed = seed.clone();
         hasher.update(seed);
@@ -23,6 +27,10 @@ impl Sha3RandomByteStream {
             seed: cloned_seed,
             buffer,
             index: 0,
+            min_mass,
+            max_mass,
+            location,
+            velocity
         }
     }
 
@@ -61,17 +69,17 @@ impl Sha3RandomByteStream {
     }
 
     pub fn random_mass(&mut self) -> f64 {
-        self.gen_range(100.0, 300.0)
+        // 100 - 300
+        self.gen_range(self.min_mass, self.max_mass)
     }
     
     pub fn random_location(&mut self) -> f64 {
-        let n = 250.0;
-        self.gen_range(-n, n)
+        // let n = 250.0;
+        self.gen_range(-self.location, self.location)
     }
 
     pub fn random_velocity(&mut self) -> f64 {
-        let n: f64 = 2.0;
-        self.gen_range(-n, n)
+        self.gen_range(-self.velocity, self.velocity)
     }
 
     
@@ -479,6 +487,22 @@ struct Args {
 
     #[arg(long, default_value = "output")]
     file_name: String,
+
+    #[arg(long, default_value_t = 1_000_000)]
+    num_steps: usize,
+
+    #[arg(long, default_value_t = 250.0)]
+    location: f64,
+
+    #[arg(long, default_value_t = 2.0)]
+    velocity: f64,
+
+    #[arg(long, default_value_t = 100.0)]
+    min_mass: f64,
+
+    #[arg(long, default_value_t = 300.0)]
+    max_mass: f64,
+
 }
 
 use hex;
@@ -492,16 +516,16 @@ fn main() {
         };
     let seed = hex::decode(string_seed).expect("Invalid hexadecimal string");
 
-    let mut byte_stream = Sha3RandomByteStream::new(&seed);
+    let mut byte_stream = Sha3RandomByteStream::new(&seed, args.min_mass, args.max_mass, args.location, args.velocity);
 
 
     //let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
-    let steps = 1000000;
+    let steps = args.num_steps;
     const NUM_TRIES: usize = 1_000;
     let positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
     let s: &str = args.file_name.as_str();
-    let file_name = format!("{}.mp4", s);
+    let file_name = format!("vids/{}.mp4", s);
     println!("done simulating");
     
     let snake_len = byte_stream.gen_range(0.2, 2.0);
@@ -520,7 +544,7 @@ fn main() {
 
     let frames = plot_positions(&positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame);
     let last_frame = frames[frames.len() - 1].clone();
-    if let Err(e) = last_frame.save(format!("{}.png", s)) {
+    if let Err(e) = last_frame.save(format!("pics/{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
     } else {
         println!("Image saved successfully.");
