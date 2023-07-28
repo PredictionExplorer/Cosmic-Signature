@@ -41,9 +41,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // Some money will go to charity
     address public charity;
 
-    // 10% of the prize pool goes to the charity
-    uint256 public charityPercentage = 10;
-
     // After a prize was claimed, start off the clock with this much time.
     uint256 public initialSecondsUntilPrize = 24 * 3600;
 
@@ -54,6 +51,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public constant TOKEN_REWARD = 100 * 1e18;
 
     uint256 public prizePercentage = 25;
+
+    // 10% of the prize pool goes to the charity
+    uint256 public charityPercentage = 10;
 
     uint256 public rafflePercentage = 5;
 
@@ -161,6 +161,17 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function claimPrize() external {
+        // In this function we give:
+        // - 10 Cosmic NFTs:
+        //     - 1 to the game winner
+        //     - 5 to raffle winners
+        //     - 2 to RandomWalkNFT holders
+        //     - 2 to Cosmic NFT holders
+        // - 40% of the ETH in the contract
+        //     - 25% to the game winner
+        //     - 10% to the charity
+        //     -  5% to the raffle winner
+
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
         require(lastBidder != address(0), "There is no last bidder.");
         if (block.timestamp - prizeTime < 3600 * 24) {
@@ -172,22 +183,21 @@ contract CosmicGame is Ownable, IERC721Receiver {
                     "Only the last bidder can claim the prize during the first 24 hours.");
         }
 
-        address winner = _msgSender();
         lastBidder = address(0);
+        address winner = _msgSender();
         winners[roundNum] = winner;
 
         roundNum += 1;
 
+        // Give the NFT to the winner.
         (bool mintSuccess, ) =
             address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
 		require(mintSuccess, "CosmicSignature mint() failed to mint NFT.");
-        
-        uint256 prizeAmount_ = prizeAmount();
-        uint256 charityAmount_ = charityAmount();
-        uint256 raffleAmount_ = raffleAmount();
 
+        // Give NFTs to the NFT raffle winners.
         for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
-            address raffleWinner_ = _raffleWinner();
+            _updateEntropy();
+            address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
             raffleNFTWinners[raffleWinner_] += 1;
             emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, i);
         }
@@ -195,9 +205,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 rwalkSupply = randomWalk.totalSupply();
         uint256 cosmicSupply = nft.totalSupply();
 
+        // Give some Cosmic NFTs to random RandomWalkNFT and Cosmic NFT holders.
+        // The winnerIndex variable is just here in order to emit a correct event.
         uint256 winnerIndex = numRaffleNFTWinnersPerRound;
         for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
-            // Give some Cosmic NFTs to a random RandomWalkNFT holders
+            // Give some Cosmic NFTs to some random RandomWalkNFT holders.
             if (rwalkSupply > 0) {
                 _updateEntropy();
                 uint256 rwalkWinnerNFTnum = uint256(raffleEntropy) % rwalkSupply;
@@ -207,7 +219,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 winnerIndex += 1;
             }
 
-            // Give some Cosmic NFTs to random Cosmic NFT holders
+            // Give some Cosmic NFTs to random Cosmic NFT holders.
             if (cosmicSupply > 0) {
                 _updateEntropy();
                 uint256 cosmicNFTnum = uint256(raffleEntropy) % cosmicSupply;
@@ -218,21 +230,30 @@ contract CosmicGame is Ownable, IERC721Receiver {
             }
         }
 
+        // Give ETH to the right parties in this section
+        uint256 prizeAmount_ = prizeAmount();
+        uint256 charityAmount_ = charityAmount();
+        uint256 raffleAmount_ = raffleAmount();
+
+        // Give ETH to the winner.
         (bool success, ) = winner.call{value: prizeAmount_}("");
         require(success, "Transfer to the winner failed.");
 
+        // Give ETH to the charity.
         (success, ) = charity.call{value: charityAmount_}("");
         require(success, "Transfer to charity contract failed.");
 
+        // Give ETH to the ETH raffle winners.
         for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
-            address raffleWinner_ = _raffleWinner();
+            _updateEntropy();
+            address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
             (success, ) =
                 address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_, roundNum - 1));
             require(success, "Raffle deposit failed.");
         }
         
+        // Initialize the next round
         numRaffleParticipants = 0;
-
         _initializeBidPrice();
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
@@ -280,15 +301,21 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit NumHolderNFTWinnersPerRoundChanged(numHolderNFTWinnersPerRound);
     }
 
+    function updatePrizePercentage(uint256 newPrizePercentage) external onlyOwner {
+        prizePercentage = newPrizePercentage;
+		require(prizePercentage + charityPercentage + rafflePercentage < 100, "Percentage value overflow, must be lower than 100.");
+		emit PrizePercentageChanged(prizePercentage);
+    }
+
     function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
-		require(newCharityPercentage<100,"Percentage value overflow, must be lower than 100.");
         charityPercentage = newCharityPercentage;
+		require(prizePercentage + charityPercentage + rafflePercentage < 100, "Percentage value overflow, must be lower than 100.");
 	    emit CharityPercentageChanged(charityPercentage);
     }
 
     function setRafflePercentage(uint256 newRafflePercentage) external onlyOwner {
-		require(newRafflePercentage<100,"Percentage value overflow, must be lower than 100.");
         rafflePercentage = newRafflePercentage;
+		require(prizePercentage + charityPercentage + rafflePercentage < 100, "Percentage value overflow, must be lower than 100.");
 		emit RafflePercentageChanged(rafflePercentage);
     }
 
@@ -322,12 +349,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) external onlyOwner {
         initialSecondsUntilPrize = newInitialSecondsUntilPrize;
 		emit InitialSecondsUntilPrizeChanged(initialSecondsUntilPrize);
-    }
-
-    function updatePrizePercentage(uint256 newPrizePercentage) external onlyOwner {
-		require(newPrizePercentage<100,"Percentage value overflow, must be lower than 100.");
-        prizePercentage = newPrizePercentage;
-		emit PrizePercentageChanged(prizePercentage);
     }
 
     function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner {
@@ -456,12 +477,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             raffleEntropy,
             block.timestamp,
             blockhash(block.number)));
-    }
-
-    function _raffleWinner() internal returns (address) {
-		// There should be at least 1 raffle participant when this function is called.
-        _updateEntropy();
-        return raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
     }
 
     function _max(uint256 a, uint256 b) internal pure returns (uint256) {
