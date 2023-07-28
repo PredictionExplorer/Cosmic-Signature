@@ -24,11 +24,11 @@ def main():
     const_params = []
     parameters = []
 
-    possible_num_steps = [200000, 400000, 800000, 1600000]
-    possible_locations = [50, 100, 200, 400]
-    possible_velocities = [2, 4, 8, 16]
-    possible_min_mass = [100, 50, 25, 10]
-    possible_max_mass = [50, 100, 200, 400, 800]
+    possible_num_steps = [400000, 800000]
+    possible_locations = [100, 200, 400, 800]
+    possible_velocities = [1, 2, 4]
+    possible_min_mass = [100, 50]
+    possible_max_mass = [100, 200, 400, 800]
 
     values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass]
 
@@ -77,6 +77,7 @@ def main():
             params = futures[future]
             try:
                 output = future.result()
+                print(params)
                 print(output)
             except Exception as e:
                 sys.stderr.write(f'Error running program with parameters {params}: {e}\n')
