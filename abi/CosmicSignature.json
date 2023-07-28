@@ -4,7 +4,7 @@
   "event ApprovalForAll(address indexed,address indexed,bool)",
   "event MintEvent(uint256 indexed,address indexed,bytes32)",
   "event OwnershipTransferred(address indexed,address indexed)",
-  "event TokenNameEvent(uint256,string)",
+  "event TokenNameEvent(uint256 indexed,string)",
   "event Transfer(address indexed,address indexed,uint256 indexed)",
   "function approve(address,uint256)",
   "function balanceOf(address) view returns (uint256)",
