@@ -167,10 +167,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         //     - 5 to raffle winners
         //     - 2 to RandomWalkNFT holders
         //     - 2 to Cosmic NFT holders
-        // - 40% of the ETH in the contract
+        // - 55% of the ETH in the contract
         //     - 25% to the game winner
         //     - 10% to the charity
-        //     -  5% to the raffle winner
+        //     - 15% to the raffle winner
 
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
         require(lastBidder != address(0), "There is no last bidder.");

@@ -10,8 +10,9 @@ class Simulation:
         self.charityPercentage = 0.10
         self.rafflePercentage = 0.05
         self.num_raffle_winners = 3
-        self.withdrawalPercentage = 0.25
+        self.prize_percentage = 0.25
         self.bid_limit_eth = 3
+        self.num_new_nfts = 10
 
     def simulate_bids(self, num_years):
         num_withdrawals = 0
@@ -22,15 +23,15 @@ class Simulation:
             num_bids += 1
             self.balance += self.bid
             self.bid *= self.price_increase
-            prize = self.balance * self.withdrawalPercentage
-            charity = self.balance * self.charityPercentage
-            raffle = self.balance * self.rafflePercentage
-            ratio = prize / self.bid
             hours += self.time_extra
             self.time_extra *= self.time_increase
             if self.bid > self.bid_limit_eth:
+                prize = self.balance * self.prize_percentage
+                charity = self.balance * self.charityPercentage
+                raffle = self.balance * self.rafflePercentage
+                ratio = prize / self.bid
                 num_withdrawals += 1
-                total_num_nfts = num_withdrawals * 6
+                total_num_nfts = num_withdrawals * self.num_new_nfts
                 days = hours / 24
                 print(f"years: {days / 365:.2f} days: {days:.2f} days between: {days - days_withdraw:.2f} num bids: {num_bids} num withdrawals: {num_withdrawals} num nfts: {total_num_nfts} time extra: {self.time_extra} "
                       f"bid size: {self.bid:.4f} prize: {prize:.2f} ratio: {ratio:.2f} raffle: {raffle:.2f} charity: {charity:.2f} balance: {self.balance:.2f}")
@@ -54,13 +55,13 @@ class Simulation:
             num_bids += 1
             self.balance += self.bid
             self.bid *= self.price_increase
-            prize = self.balance * self.withdrawalPercentage
+            prize = self.balance * self.prize_percentage
             charity = self.balance * self.charityPercentage
             raffle = self.balance * self.rafflePercentage
             hours += self.time_extra
             self.time_extra *= self.time_increase
             num_withdrawals += 1
-            total_num_nfts = num_withdrawals * 5
+            total_num_nfts = num_withdrawals * self.num_new_nfts
             days = hours / 24
             print(f"years: {days / 365:.2f} days: {days:.2f} days between: {days - days_withdraw:.2f} num bids: {num_bids} num withdrawals: {num_withdrawals} num nfts: {total_num_nfts} time extra: {self.time_extra} "
                   f"bid size: {self.bid:.4f} prize: {prize:.2f} raffle: {raffle:.2f} charity: {charity:.2f} balance: {self.balance:.2f}")
@@ -73,5 +74,10 @@ class Simulation:
             self.bid = prize / (self.initialBidAmountFraction)
             hours += 24
 
-s = Simulation()
-s.simulate_bids(10)
+def main():
+    s = Simulation()
+    # s.simulate_bids(num_years=10)
+    s.simulate_worst_case(num_years=10)
+
+if __name__ == '__main__':
+    main()
