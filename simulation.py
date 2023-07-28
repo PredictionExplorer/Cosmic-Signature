@@ -2,7 +2,7 @@ class Simulation:
 
     def __init__(self):
         self.balance = 1
-        self.initialBidAmountFraction = 200
+        self.initialBidAmountFraction = 500
         self.bid = self.balance / self.initialBidAmountFraction
         self.price_increase = 1.01
         self.time_extra = 1
@@ -11,7 +11,7 @@ class Simulation:
         self.rafflePercentage = 0.05
         self.num_raffle_winners = 3
         self.prize_percentage = 0.25
-        self.bid_limit_eth = 3
+        self.bid_limit_eth = 0.1
         self.num_new_nfts = 10
 
     def simulate_bids(self, num_years):
@@ -41,7 +41,7 @@ class Simulation:
                 self.balance -= charity
                 self.balance -= raffle * self.num_raffle_winners
                 old_bid = self.bid
-                self.bid = prize / (self.initialBidAmountFraction)
+                self.bid = self.balance / self.initialBidAmountFraction
                 print(f"bid: {self.bid:.4f} old bid new bid ratio: {old_bid / self.bid:.2f}")
                 hours += 24
 
@@ -71,13 +71,13 @@ class Simulation:
             self.balance -= charity
             self.balance -= raffle * self.num_raffle_winners
             old_bid = self.bid
-            self.bid = prize / (self.initialBidAmountFraction)
+            self.bid = self.balance / self.initialBidAmountFraction
             hours += 24
 
 def main():
     s = Simulation()
-    # s.simulate_bids(num_years=10)
-    s.simulate_worst_case(num_years=10)
+    s.simulate_bids(num_years=10)
+    # s.simulate_worst_case(num_years=10)
 
 if __name__ == '__main__':
     main()
