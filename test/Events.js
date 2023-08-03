@@ -203,4 +203,145 @@ describe("CosmicAI", function () {
     expect(await cosmicGame.getBidPrice() > bidPrice);
   });
 
+  it("Admin events should work", async function () {
+
+    [owner,testAcct] = await ethers.getSigners();
+	var percentage = ethers.BigNumber.from("11");
+    await expect(
+      cosmicGame.connect(owner).setCharityPercentage(percentage)
+    )
+      .to.emit(cosmicGame, "CharityPercentageChanged")
+      .withArgs(percentage);
+	expect((await cosmicGame.charityPercentage()).toString()).to.equal(percentage.toString());
+
+	percentage = ethers.BigNumber.from("12");
+    await expect(
+      cosmicGame.connect(owner).updatePrizePercentage(percentage)
+    )
+      .to.emit(cosmicGame, "PrizePercentageChanged")
+      .withArgs(percentage);
+	expect((await cosmicGame.prizePercentage()).toString()).to.equal(percentage.toString());
+
+	percentage = ethers.BigNumber.from("13");
+    await expect(
+      cosmicGame.connect(owner).setRafflePercentage(percentage)
+    )
+      .to.emit(cosmicGame, "RafflePercentageChanged")
+      .withArgs(percentage);
+	expect((await cosmicGame.rafflePercentage()).toString()).to.equal(percentage.toString());
+
+	var num_winners = ethers.BigNumber.from("11");
+    await expect(
+      cosmicGame.connect(owner).setNumRaffleWinnersPerRound(num_winners)
+    )
+      .to.emit(cosmicGame, "NumRaffleWinnersPerRoundChanged")
+      .withArgs(num_winners);
+	expect((await cosmicGame.numRaffleWinnersPerRound()).toString()).to.equal(num_winners.toString());
+
+	var num_winners = ethers.BigNumber.from("12");
+    await expect(
+      cosmicGame.connect(owner).setNumRaffleNFTWinnersPerRound(num_winners)
+    )
+      .to.emit(cosmicGame, "NumRaffleNFTWinnersPerRoundChanged")
+      .withArgs(num_winners);
+	expect((await cosmicGame.numRaffleNFTWinnersPerRound()).toString()).to.equal(num_winners.toString());
+
+	var num_winners = ethers.BigNumber.from("13");
+    await expect(
+      cosmicGame.connect(owner).setNumHolderNFTWinnersPerRound(num_winners)
+    )
+      .to.emit(cosmicGame, "NumHolderNFTWinnersPerRoundChanged")
+      .withArgs(num_winners);
+	expect((await cosmicGame.numHolderNFTWinnersPerRound()).toString()).to.equal(num_winners.toString());
+
+	testAcct = ethers.Wallet.createRandom()
+    await expect(
+      cosmicGame.connect(owner).setCharity(testAcct.address)
+    )
+      .to.emit(cosmicGame, "CharityAddressChanged")
+      .withArgs(testAcct.address);
+    expect((await cosmicGame.charity()).toString()).to.equal(testAcct.address.toString());
+
+	testAcct = ethers.Wallet.createRandom()
+    await expect(
+      cosmicGame.connect(owner).setRandomWalk(testAcct.address)
+    )
+      .to.emit(cosmicGame, "RandomWalkAddressChanged")
+      .withArgs(testAcct.address);
+	expect(await cosmicGame.randomWalk()).to.equal(testAcct.address);
+
+	testAcct = ethers.Wallet.createRandom()
+    await expect(
+      cosmicGame.connect(owner).setRaffleWallet(testAcct.address)
+    )
+      .to.emit(cosmicGame, "RaffleWalletAddressChanged")
+      .withArgs(testAcct.address);
+	expect(await cosmicGame.raffleWallet()).to.equal(testAcct.address);
+
+	testAcct = ethers.Wallet.createRandom()
+    await expect(
+      cosmicGame.connect(owner).setTokenContract(testAcct.address)
+    )
+      .to.emit(cosmicGame, "CosmicTokenAddressChanged")
+      .withArgs(testAcct.address);
+	expect(await cosmicGame.token()).to.equal(testAcct.address);
+
+	testAcct = ethers.Wallet.createRandom()
+    await expect(
+      cosmicGame.connect(owner).setNftContract(testAcct.address)
+    )
+      .to.emit(cosmicGame, "CosmicSignatureAddressChanged")
+      .withArgs(testAcct.address);
+	expect(await cosmicGame.nft()).to.equal(testAcct.address);
+
+	var time_increase = ethers.BigNumber.from("1001");
+    await expect(
+      cosmicGame.connect(owner).setTimeIncrease(time_increase)
+    )
+      .to.emit(cosmicGame, "TimeIncreaseChanged")
+      .withArgs(time_increase);
+	expect((await cosmicGame.timeIncrease()).toString()).to.equal(time_increase.toString());
+
+	var price_increase = ethers.BigNumber.from("1002");
+    await expect(
+      cosmicGame.connect(owner).setPriceIncrease(price_increase)
+    )
+      .to.emit(cosmicGame, "PriceIncreaseChanged")
+      .withArgs(price_increase);
+	expect((await cosmicGame.priceIncrease()).toString()).to.equal(price_increase.toString());
+
+	var nanoseconds = ethers.BigNumber.from("1003");
+    await expect(
+      cosmicGame.connect(owner).setNanoSecondsExtra(nanoseconds)
+    )
+      .to.emit(cosmicGame, "NanoSecondsExtraChanged")
+      .withArgs(nanoseconds);
+	expect((await cosmicGame.nanoSecondsExtra()).toString()).to.equal(nanoseconds.toString());
+
+	var initialseconds = ethers.BigNumber.from("1004");
+    await expect(
+      cosmicGame.connect(owner).setInitialSecondsUntilPrize(initialseconds)
+    )
+      .to.emit(cosmicGame, "InitialSecondsUntilPrizeChanged")
+      .withArgs(initialseconds);
+	expect((await cosmicGame.initialSecondsUntilPrize()).toString()).to.equal(initialseconds.toString());
+
+	var bidamount = ethers.BigNumber.from("1005");
+    await expect(
+      cosmicGame.connect(owner).updateInitialBidAmountFraction(bidamount)
+    )
+      .to.emit(cosmicGame, "InitialBidAmountFractionChanged")
+      .withArgs(bidamount);
+	expect((await cosmicGame.initialBidAmountFraction()).toString()).to.equal(bidamount.toString());
+
+	var activationtime = ethers.BigNumber.from("1006");
+    await expect(
+      cosmicGame.connect(owner).setActivationTime(activationtime)
+    )
+      .to.emit(cosmicGame, "ActivationTimeChanged")
+      .withArgs(activationtime);
+	expect((await cosmicGame.activationTime()).toString()).to.equal(activationtime.toString());
+
+  });
+
 });
