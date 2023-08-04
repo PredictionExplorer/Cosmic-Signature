@@ -385,7 +385,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         _bidCommon(message);
 
-        emit BidEvent(lastBidder, roundNum, bidPrice, int256(randomWalkNFTId), prizeTime, message);
+        emit BidEvent(lastBidder, roundNum, 0, int256(randomWalkNFTId), prizeTime, message);
     }
 
     function bid(string memory message) public payable {
