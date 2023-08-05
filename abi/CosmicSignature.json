@@ -12,7 +12,7 @@
   "function entropy() view returns (bytes32)",
   "function getApproved(uint256) view returns (address)",
   "function isApprovedForAll(address,address) view returns (bool)",
-  "function mint(address)",
+  "function mint(address) returns (uint256)",
   "function name() view returns (string)",
   "function numTokens() view returns (uint256)",
   "function owner() view returns (address)",
