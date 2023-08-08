@@ -5,38 +5,23 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RaffleWallet is Ownable {
 
-    struct RaffleWinner {
-        address destination;
-        uint256 amount;
-        uint256 depositId;
-        uint256 round;
-        bool claimed;
-    }
+    mapping(address => uint256) public balances;
+    event RaffleDepositEvent(address indexed winner, uint256 amount);
+    event RaffleWithdrawalEvent(address indexed destination, uint256 amount);
 
-    mapping(uint256 => RaffleWinner) public winners;
-    uint256 public numDeposits;
-
-    event RaffleDepositEvent(address indexed winner, uint256 indexed round, uint256 depositId, uint256 amount);
-
-    function deposit(address winner,uint256 roundNum) external payable {
+    function deposit(address winner) external payable {
         require(winner != address(0), "Zero-address was given.");
         require(msg.value > 0, "No ETH has been sent.");
-        winners[numDeposits] = RaffleWinner({
-            destination: winner,
-            amount: msg.value,
-            depositId: numDeposits,
-            round: roundNum,
-            claimed: false
-        });
-        emit RaffleDepositEvent(winner, roundNum, numDeposits, msg.value);
-        numDeposits += 1;
+        balances[winner] += msg.value;
+        emit RaffleDepositEvent(winner, msg.value);
     }
 
-    function withdraw(uint256 depositId) external {
-        require(!winners[depositId].claimed, "Raffle has alredy been claimed.");
-        winners[depositId].claimed = true;
-        (bool success, ) = winners[depositId].destination.call{value: winners[depositId].amount}("");
+    function withdraw() external {
+        uint256 balance = balances[msg.sender];
+        require(balance > 0, "Your balance is 0.");
+        balances[msg.sender] = 0;
+        (bool success, ) = msg.sender.call{value: balance}("");
         require(success, "Transfer failed.");
+        emit RaffleWithdrawalEvent(msg.sender, balance);
     }
-
 }
