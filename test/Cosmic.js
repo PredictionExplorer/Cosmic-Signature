@@ -395,14 +395,18 @@ describe("Cosmic", function () {
       [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 	await expect(cosmicSignature.connect(owner).mint(owner.address)).to.be.revertedWith("Only the CosmicGame contract can mint.")
 
-      await cosmicGame.connect(owner).setCharity(addr2.address);
-      expect(await cosmicGame.charity()).to.equal(addr2.address);
+	  var testAcct
+	  testAcct = ethers.Wallet.createRandom()
+      await cosmicGame.connect(owner).setCharity(testAcct.address);
+      expect(await cosmicGame.charity()).to.equal(testAcct.address);
 
-      await cosmicGame.connect(owner).setRandomWalk(addr2.address);
-      expect(await cosmicGame.randomWalk()).to.equal(addr2.address);
+	  testAcct = ethers.Wallet.createRandom()
+      await cosmicGame.connect(owner).setRandomWalk(testAcct.address);
+      expect(await cosmicGame.randomWalk()).to.equal(testAcct.address);
 
-      await cosmicGame.connect(owner).setRaffleWallet(addr2.address);
-      expect(await cosmicGame.randomWalk()).to.equal(addr2.address);
+	  testAcct = ethers.Wallet.createRandom()
+      await cosmicGame.connect(owner).setRaffleWallet(testAcct.address);
+      expect(await cosmicGame.raffleWallet()).to.equal(testAcct.address);
 
       await cosmicGame.connect(owner).setNumRaffleWinnersPerRound(ethers.BigNumber.from("99"));
       expect(await cosmicGame.numRaffleWinnersPerRound()).to.equal(ethers.BigNumber.from("99"));
@@ -416,11 +420,13 @@ describe("Cosmic", function () {
       await cosmicGame.connect(owner).setRafflePercentage(ethers.BigNumber.from("6"));
       expect(await cosmicGame.rafflePercentage()).to.equal(ethers.BigNumber.from("6"));
 
-      await cosmicGame.connect(owner).setTokenContract(addr2.address);
-      expect(await cosmicGame.token()).to.equal(addr2.address);
+	  testAcct = ethers.Wallet.createRandom()
+      await cosmicGame.connect(owner).setTokenContract(testAcct.address);
+      expect(await cosmicGame.token()).to.equal(testAcct.address);
 
-      await cosmicGame.connect(owner).setNftContract(addr2.address);
-      expect(await cosmicGame.nft()).to.equal(addr2.address);
+	  testAcct = ethers.Wallet.createRandom()
+      await cosmicGame.connect(owner).setNftContract(testAcct.address);
+      expect(await cosmicGame.nft()).to.equal(testAcct.address);
 
       await cosmicGame.connect(owner).setTimeIncrease(ethers.BigNumber.from("99"));
       expect(await cosmicGame.timeIncrease()).to.equal(ethers.BigNumber.from("99"));
