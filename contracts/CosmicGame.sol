@@ -96,7 +96,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
-    event RaffleNFTClaimedEvent(address indexed winner);
+    event RaffleNFTClaimedEvent(address indexed winner, uint256 indexed tokenId);
     event DonatedNFTClaimedEvent(uint256 indexed round,uint256 index,address winner,address nftAddressdonatedNFTs,uint256 tokenId);
 
 	/// Admin events
@@ -272,7 +272,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function claimRaffleNFT(uint256 tokenId) external {
         require (raffleNFTWinners[tokenId] == _msgSender(), "Not your NFT.");
         nft.safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit RaffleNFTClaimedEvent(_msgSender());
+        emit RaffleNFTClaimedEvent(_msgSender(), tokenId);
     }
 
     function setCharity(address addr) external onlyOwner {
