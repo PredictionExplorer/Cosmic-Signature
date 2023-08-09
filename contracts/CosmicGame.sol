@@ -269,12 +269,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
-    function claimRaffleNFT(uint256 tokenId) public {
-        require (raffleNFTWinners[tokenId] == _msgSender(), "Not your NFT.");
-        nft.safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit RaffleNFTClaimedEvent(_msgSender(), tokenId);
-    }
-
 	function claimManyRaffleNFTs(uint256[] memory tokens) external {
 		for (uint256 i = 0; i < tokens.length; i++) {
 			claimRaffleNFT(tokens[i]);
@@ -399,6 +393,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
         _bidCommon(message);
 
         emit BidEvent(lastBidder, roundNum, 0, int256(randomWalkNFTId), prizeTime, message);
+    }
+
+    function claimRaffleNFT(uint256 tokenId) public {
+        require (raffleNFTWinners[tokenId] == _msgSender(), "Not your NFT.");
+        nft.safeTransferFrom(address(this), _msgSender(), tokenId);
+        emit RaffleNFTClaimedEvent(_msgSender(), tokenId);
     }
 
     function bid(string memory message) public payable {
