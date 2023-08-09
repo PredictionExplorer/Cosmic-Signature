@@ -145,16 +145,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         _donateNFT(nftAddress, tokenId);
     }
 
-    function claimDonatedNFT(uint256 num) public {
-       require(num < numDonatedNFTs, "The donated NFT does not exist.");
-       address winner = winners[donatedNFTs[num].round];
-       require(_msgSender() == winner, "You are not the winner of the round.");
-       require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
-       donatedNFTs[num].claimed = true;
-       donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
-       emit DonatedNFTClaimedEvent(donatedNFTs[num].round,num,winner,address(donatedNFTs[num].nftAddress),donatedNFTs[num].tokenId);
-    }
-
 	function claimManyDonatedNFTs(uint256[] memory tokens) external {
 		for (uint256 i = 0; i < tokens.length; i++) {
 			claimDonatedNFT(tokens[i]);
@@ -399,6 +389,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
         _bidCommon(message);
 
         emit BidEvent(lastBidder, roundNum, 0, int256(randomWalkNFTId), prizeTime, message);
+    }
+
+    function claimDonatedNFT(uint256 num) public {
+       require(num < numDonatedNFTs, "The donated NFT does not exist.");
+       address winner = winners[donatedNFTs[num].round];
+       require(_msgSender() == winner, "You are not the winner of the round.");
+       require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
+       donatedNFTs[num].claimed = true;
+       donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
+       emit DonatedNFTClaimedEvent(donatedNFTs[num].round,num,winner,address(donatedNFTs[num].nftAddress),donatedNFTs[num].tokenId);
     }
 
     function claimRaffleNFT(uint256 tokenId) public {
