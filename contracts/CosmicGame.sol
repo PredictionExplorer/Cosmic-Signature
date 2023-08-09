@@ -269,11 +269,17 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
-    function claimRaffleNFT(uint256 tokenId) external {
+    function claimRaffleNFT(uint256 tokenId) public {
         require (raffleNFTWinners[tokenId] == _msgSender(), "Not your NFT.");
         nft.safeTransferFrom(address(this), _msgSender(), tokenId);
         emit RaffleNFTClaimedEvent(_msgSender(), tokenId);
     }
+
+	function claimManyRaffleNFTs(uint256[] memory tokens) external {
+		for (uint256 i = 0; i < tokens.length; i++) {
+			claimRaffleNFT(tokens[i]);
+		}
+	}
 
     function setCharity(address addr) external onlyOwner {
         require(addr != address(0), "Zero-address was given.");
