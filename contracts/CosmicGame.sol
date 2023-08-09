@@ -95,7 +95,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event BidEvent(address indexed lastBidder, uint256 indexed round, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
-    event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
+    event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 indexed tokenId, uint256 winnerIndex);
     event RaffleNFTClaimedEvent(address indexed winner, uint256 indexed tokenId);
     event DonatedNFTClaimedEvent(uint256 indexed round,uint256 index,address winner,address nftAddressdonatedNFTs,uint256 tokenId);
 
@@ -198,7 +198,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(this)));
             uint256 tokenId = abi.decode(data, (uint256));
             raffleNFTWinners[tokenId] = raffleWinner_;
-            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, i);
+            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, tokenId, i);
         }
 
         uint256 rwalkSupply = randomWalk.totalSupply();
@@ -218,7 +218,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
                     address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(this)));
                 uint256 tokenId = abi.decode(data, (uint256));
                 raffleNFTWinners[tokenId] = rwalkWinner;
-                emit RaffleNFTWinnerEvent(rwalkWinner, roundNum - 1, winnerIndex);
+                emit RaffleNFTWinnerEvent(rwalkWinner, roundNum - 1, tokenId, winnerIndex);
                 winnerIndex += 1;
             }
 
@@ -231,7 +231,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
                     address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(this)));
                 uint256 tokenId = abi.decode(data, (uint256));
                 raffleNFTWinners[tokenId] = cosmicWinner;
-                emit RaffleNFTWinnerEvent(cosmicWinner, roundNum - 1, winnerIndex);
+                emit RaffleNFTWinnerEvent(cosmicWinner, roundNum - 1, tokenId, winnerIndex);
                 winnerIndex += 1;
             }
         }
