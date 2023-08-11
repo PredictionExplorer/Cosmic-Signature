@@ -28,7 +28,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
     string public tokenGenerationScript = "ipfs://TBD";
 
     event TokenNameEvent(uint256 indexed tokenId, string newName);
-    event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed);
+    event MintEvent(uint256 indexed tokenId, address indexed owner, uint256 indexed roundNum, bytes32 seed);
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
         require(_cosmicGameContract != address(0), "Zero-address was given.");
@@ -52,7 +52,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         emit TokenNameEvent(tokenId, name);
     }
 
-    function mint(address owner) external returns (uint256) {
+    function mint(address owner, uint256 roundNum) external returns (uint256) {
         require(owner != address(0), "Zero-address was given.");
         require (_msgSender() == cosmicGameContract,"Only the CosmicGame contract can mint.");
 
@@ -68,7 +68,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         seeds[tokenId] = entropy;
         _safeMint(owner, tokenId);
 
-        emit MintEvent(tokenId, owner, entropy);
+        emit MintEvent(tokenId, owner, roundNum, entropy);
         return tokenId;
     }
 
