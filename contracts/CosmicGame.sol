@@ -77,8 +77,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // Entropy for the raffle.
     bytes32 public raffleEntropy;
 
-    mapping(uint256 => address) public raffleNFTWinners;
-
     mapping(uint256 => address) public raffleParticipants;
     uint256 public numRaffleParticipants;
     RaffleWallet public raffleWallet;
@@ -96,7 +94,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 indexed tokenId, uint256 winnerIndex);
-    event RaffleNFTClaimedEvent(address indexed winner, uint256 indexed tokenId);
     event DonatedNFTClaimedEvent(uint256 indexed round,uint256 index,address winner,address nftAddressdonatedNFTs,uint256 tokenId);
 
 	/// Admin events
@@ -187,18 +184,23 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         // Give the NFT to the winner.
         (bool mintSuccess, ) =
-            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner));
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum - 1));
 		require(mintSuccess, "CosmicSignature mint() failed to mint NFT.");
 
+        uint256 winnerIndex = 0;
         // Give NFTs to the NFT raffle winners.
+        // Only EOA accounts are eligible, contract accounts are ignored.
         for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
             _updateEntropy();
             address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
+            if (raffleWinner_.code.length > 0) {
+                continue;
+            }
             (, bytes memory data) =
-                address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(this)));
+                address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum - 1));
             uint256 tokenId = abi.decode(data, (uint256));
-            raffleNFTWinners[tokenId] = raffleWinner_;
-            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, tokenId, i);
+            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, tokenId, winnerIndex);
+            winnerIndex+=1;
         }
 
         uint256 rwalkSupply = randomWalk.totalSupply();
@@ -206,18 +208,18 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         // Give some Cosmic NFTs to random RandomWalkNFT and Cosmic NFT holders.
         // The winnerIndex variable is just here in order to emit a correct event.
-        uint256 winnerIndex = numRaffleNFTWinnersPerRound;
         for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
             // Give some Cosmic NFTs to some random RandomWalkNFT holders.
             if (rwalkSupply > 0) {
                 _updateEntropy();
                 uint256 rwalkWinnerNFTnum = uint256(raffleEntropy) % rwalkSupply;
                 address rwalkWinner = randomWalk.ownerOf(rwalkWinnerNFTnum);
-
+                if (rwalkWinner.code.length > 0) {
+                    continue;
+                }
                 (, bytes memory data) =
-                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(this)));
+                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(rwalkWinner),roundNum - 1));
                 uint256 tokenId = abi.decode(data, (uint256));
-                raffleNFTWinners[tokenId] = rwalkWinner;
                 emit RaffleNFTWinnerEvent(rwalkWinner, roundNum - 1, tokenId, winnerIndex);
                 winnerIndex += 1;
             }
@@ -227,10 +229,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 _updateEntropy();
                 uint256 cosmicNFTnum = uint256(raffleEntropy) % cosmicSupply;
                 address cosmicWinner = nft.ownerOf(cosmicNFTnum);
+                if (cosmicWinner.code.length > 0) {
+                    continue;
+                }
                 (, bytes memory data) =
-                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(this)));
+                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(cosmicWinner), roundNum -1 ));
                 uint256 tokenId = abi.decode(data, (uint256));
-                raffleNFTWinners[tokenId] = cosmicWinner;
                 emit RaffleNFTWinnerEvent(cosmicWinner, roundNum - 1, tokenId, winnerIndex);
                 winnerIndex += 1;
             }
@@ -264,12 +268,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
-
-	function claimManyRaffleNFTs(uint256[] memory tokens) external {
-		for (uint256 i = 0; i < tokens.length; i++) {
-			claimRaffleNFT(tokens[i]);
-		}
-	}
 
     function setCharity(address addr) external onlyOwner {
         require(addr != address(0), "Zero-address was given.");
@@ -399,12 +397,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
        donatedNFTs[num].claimed = true;
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
        emit DonatedNFTClaimedEvent(donatedNFTs[num].round,num,winner,address(donatedNFTs[num].nftAddress),donatedNFTs[num].tokenId);
-    }
-
-    function claimRaffleNFT(uint256 tokenId) public {
-        require (raffleNFTWinners[tokenId] == _msgSender(), "Not your NFT.");
-        nft.safeTransferFrom(address(this), _msgSender(), tokenId);
-        emit RaffleNFTClaimedEvent(_msgSender(), tokenId);
     }
 
     function bid(string memory message) public payable {
