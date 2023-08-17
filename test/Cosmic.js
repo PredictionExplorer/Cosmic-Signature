@@ -454,6 +454,19 @@ describe("Cosmic", function () {
       await cosmicGame.connect(addr2).transferOwnership(owner.address);
       expect((await cosmicGame.owner()).toString()).to.equal(owner.address.toString());
      });
+	 it("BaseURI/TokenURI works", async function () {
+
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+      [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+      let bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr1).bid("", {value:bidPrice});
+      let prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+      let tx = await cosmicGame.connect(addr1).claimPrize();
+      let receipt = await tx.wait();
+      await cosmicSignature.connect(owner).setBaseURI("somebase/");
+      expect(await cosmicSignature.tokenURI(ethers.BigNumber.from("0"))).to.equal("somebase/0");
+    });
     it("Change charityAddress via DAO (Governor) is working", async function () {
        const forward_blocks = async (n) => {
            for (let i = 0; i < n; i++) {
