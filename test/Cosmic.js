@@ -396,6 +396,20 @@ describe("Cosmic", function () {
       await cosmicSignature.connect(owner).setBaseURI("somebase/");
       expect(await cosmicSignature.tokenURI(ethers.BigNumber.from("0"))).to.equal("somebase/0");
     });
+
+    it("CharityWallet is sending the right amount", async function () {
+
+        const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+        [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+        let amountSent = ethers.utils.parseEther('9');
+        let receiver = await charityWallet.charityAddress();
+        await addr2.sendTransaction({to: charityWallet.address,value: amountSent});
+        let balanceBefore = await ethers.provider.getBalance(receiver);
+        await charityWallet.send();
+        let balanceAfter = await ethers.provider.getBalance(receiver);
+        expect(balanceAfter).to.equal(balanceBefore.add(amountSent));
+    });
+
 	  /*
     it("Change charityAddress via DAO (Governor) is working", async function () {
        const forward_blocks = async (n) => {
