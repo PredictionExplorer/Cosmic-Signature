@@ -135,6 +135,20 @@ describe("CosmicAI", function () {
 	  expect(num_eth_winners).to.equal(deposit_logs.length);
   });
 
+  it("RaffleWithdrawalEvent is working", async function () {
+
+	  [owner, addr1, addr2, addr3 ] = await ethers.getSigners();
+	  let depositAmount = ethers.utils.parseEther('10');
+	  await expect(raffleWallet.connect(addr1).deposit(addr2.address,{value:depositAmount}))
+      .to.emit(raffleWallet, "RaffleDepositEvent")
+      .withArgs(addr2.address, depositAmount);
+
+	  await expect(raffleWallet.connect(addr2).withdraw())
+	   .to.emit(raffleWallet,"RaffleWithdrawalEvent")
+	   .withArgs(addr2.address,depositAmount);
+
+  });
+
   it("should emit PrizeClaimEvent and update winner on successful prize claim", async function () {
     let bidPrice = await cosmicGame.getBidPrice();
 
