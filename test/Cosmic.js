@@ -411,6 +411,48 @@ describe("Cosmic", function () {
         expect(balanceAfter).to.equal(balanceBefore.add(amountSent));
     });
 
+    it("claimManyDonatedNFTs() works properly", async function () {
+
+        const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+        [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
+        let bidPrice = await cosmicGame.getBidPrice();
+        let mintPrice = await randomWalkNFT.getMintPrice();
+        await randomWalkNFT.connect(addr1).mint({value: mintPrice});
+        await randomWalkNFT.connect(addr1).setApprovalForAll(cosmicGame.address, true);
+        await cosmicGame.connect(addr1).bidAndDonateNFT("", randomWalkNFT.address, 0, { value: bidPrice });
+
+        bidPrice = await cosmicGame.getBidPrice();
+        mintPrice = await randomWalkNFT.getMintPrice();
+        await randomWalkNFT.connect(addr1).mint({value: mintPrice});
+        await cosmicGame.connect(addr1).bidAndDonateNFT("", randomWalkNFT.address, 1, { value: bidPrice });
+
+        let prizeTime = await cosmicGame.timeUntilPrize();
+        await ethers.provider.send("evm_increaseTime", [prizeTime.add(100).toNumber()]);
+        await ethers.provider.send("evm_mine");
+        await expect(cosmicGame.connect(addr1).claimPrize());
+
+        let tx = await cosmicGame.connect(addr1).claimManyDonatedNFTs([0,1]);
+        let receipt = await tx.wait();
+        let topic_sig = cosmicGame.interface.getEventTopic("DonatedNFTClaimedEvent");
+        let event_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
+        expect(event_logs.length).to.equal(2);
+        let parsed_log = cosmicGame.interface.parseLog(event_logs[0])
+        expect(parsed_log.args.tokenId).to.equal(0);
+        expect(parsed_log.args.winner).to.equal(addr1.address);
+        expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(randomWalkNFT.address);
+        expect(parsed_log.args.round).to.equal(0);
+        expect(parsed_log.args.index).to.equal(0);
+
+        parsed_log = cosmicGame.interface.parseLog(event_logs[1])
+        expect(parsed_log.args.tokenId).to.equal(1);
+        expect(parsed_log.args.winner).to.equal(addr1.address);
+        expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(randomWalkNFT.address);
+        expect(parsed_log.args.round).to.equal(0);
+        expect(parsed_log.args.index).to.equal(1);
+
+    });
+
     it("Change charityAddress via DAO (Governor) is working", async function () {
        if (SKIP_LONG_TESTS == "1") return;
        const forward_blocks = async (n) => {
