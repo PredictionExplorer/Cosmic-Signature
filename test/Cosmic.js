@@ -4,6 +4,7 @@ const {
 } = require("@nomicfoundation/hardhat-network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
+const SKIP_LONG_TESTS = "1";
 
 describe("Cosmic", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -410,8 +411,8 @@ describe("Cosmic", function () {
         expect(balanceAfter).to.equal(balanceBefore.add(amountSent));
     });
 
-	  /*
     it("Change charityAddress via DAO (Governor) is working", async function () {
+       if (SKIP_LONG_TESTS == "1") return;
        const forward_blocks = async (n) => {
            for (let i = 0; i < n; i++) {
                  await ethers.provider.send("evm_mine");
@@ -463,6 +464,6 @@ describe("Cosmic", function () {
 
       let new_charity_addr = await charityWallet.charityAddress();
       expect(new_charity_addr.toString()).to.equal(addr1.address.toString());
-	})*/
+	})
   });
 })
