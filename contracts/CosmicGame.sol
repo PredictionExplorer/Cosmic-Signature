@@ -32,6 +32,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // 1.0001
     uint256 public timeIncrease = 1000100;
 
+	// timeout for the winner to claim prize (seconds)
+	uint256 public timeoutClaimPrize = 24 * 3600;	
+
     // we need to set the bidPrice to anything higher than 0 because the
     // contract would break if it's zero and someone bids before a donation is made
     uint256 public bidPrice = 10**15;
@@ -109,6 +112,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 	event TimeIncreaseChanged(uint256 newTimeIncrease);
+	event TimeoutClaimPrizeChanged(uint256 newTimeout);
 	event PriceIncreaseChanged(uint256 newPriceIncrease);
 	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
 	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
@@ -167,9 +171,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
         require(lastBidder != address(0), "There is no last bidder.");
-        if (block.timestamp - prizeTime < 3600 * 24) {
-            // The winner has 24 hours to claim the prize.
-            // After the 24 hours have elapsed, then *anyone* is able to claim the prize!
+        if (block.timestamp - prizeTime < timeoutClaimPrize) {
+            // The winner has [timeoutClaimPrize] to claim the prize.
+            // After the this interval have elapsed, then *anyone* is able to claim the prize!
             // This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
             // which would stop the creation of new Cosmic Signature NFTs.
             require(_msgSender() == lastBidder,
@@ -335,6 +339,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function setTimeIncrease(uint256 newTimeIncrease) external onlyOwner {
         timeIncrease = newTimeIncrease;
 		emit TimeIncreaseChanged(timeIncrease);
+    }
+
+    function setTimeoutClaimPrize(uint256 newTimeout) external onlyOwner {
+        timeoutClaimPrize = newTimeout;
+		emit TimeoutClaimPrizeChanged(timeoutClaimPrize);
     }
 
     function setPriceIncrease(uint256 newPriceIncrease) external onlyOwner {

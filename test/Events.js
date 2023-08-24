@@ -378,6 +378,14 @@ describe("CosmicAI", function () {
       .withArgs(time_increase);
 	expect((await cosmicGame.timeIncrease()).toString()).to.equal(time_increase.toString());
 
+	var timeout_claim_prize = ethers.BigNumber.from("1003");
+    await expect(
+      cosmicGame.connect(owner).setTimeoutClaimPrize(timeout_claim_prize)
+    )
+      .to.emit(cosmicGame, "TimeoutClaimPrizeChanged")
+      .withArgs(timeout_claim_prize);
+	expect((await cosmicGame.timeoutClaimPrize()).toString()).to.equal(timeout_claim_prize.toString());
+
 	var price_increase = ethers.BigNumber.from("1002");
     await expect(
       cosmicGame.connect(owner).setPriceIncrease(price_increase)
