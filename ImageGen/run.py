@@ -47,7 +47,7 @@ def main():
             cur.append('--num-steps')
             cur.append(str(num_steps))
 
-            cur.append('--avoid-effects')
+            # cur.append('--avoid-effects')
 
             cur.append('--location')
             cur.append(str(float(location)))

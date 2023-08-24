@@ -254,12 +254,16 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     }
 }
 
-fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_len: f64, init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize, avoid_effects: bool) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake_lens: [f64; 3], init_len: usize, hide: &Vec<bool>, colors: &Vec<Vec<Rgb<u8>>>, frame_interval: usize, avoid_effects: bool, one_frame: bool) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     convert_positions(positions, hide);
 
     let mut frames = Vec::new();
 
-    let mut snake_end: usize = frame_interval;
+    let mut snake_end: usize = if one_frame {
+        positions[0].len() - 1
+    } else {
+        frame_interval
+    };
 
     const BACKGROUND_COLOR: Rgb<u8> = Rgb([0u8, 0u8, 0u8]);
     const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
@@ -276,7 +280,7 @@ fn plot_positions(positions: &mut Vec<Vec<Vector3<f64>>>, frame_size: u32, snake
             let mut total_dist: f64 = 0.0;
             let mut idx = snake_end;
             loop {
-                if idx <= 1 || total_dist > snake_len {
+                if idx <= 1 || total_dist > snake_lens[body_idx] {
                     break;
                 }
                 let x1 = positions[body_idx][idx][0];
@@ -549,7 +553,6 @@ fn get_best(rng: &mut Sha3RandomByteStream, num_iters: usize, num_steps_sim: usi
     // Sort by the (f64, f64) pairs
     indexed_pairs.sort_by(|a, b| a.1.0.partial_cmp(&b.1.0).unwrap());
 
-
     const N: usize = 50;
     let mut best_idx = 0;
     let mut best_result = f64::NEG_INFINITY;
@@ -624,8 +627,8 @@ fn main() {
     //let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
     let steps = args.num_steps;
     const NUM_TRIES: usize = 1_000;
-    let hide_2 = false;
-    let hide_3 = false;
+    let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
+    let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
     let hide = vec![false, hide_2, hide_3];
     let mut positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
     let colors = get_3_colors(&mut byte_stream, steps);
@@ -634,24 +637,33 @@ fn main() {
     println!("done simulating");
     
     //let snake_len = byte_stream.gen_range(0.2, 2.0);
-    let snake_len = 0.2;
+    
     //let snake_len = 0.5;
     let init_len: usize = 0;
     //let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
     //let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    
+
     const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
     const FRAME_SIZE: u32 = 1600;
+    let min_vid_len: f64 = 0.1;
+    let max_vid_len: f64= 1.0;
+    let min_pic_len: f64 = 1.0;
+    let max_pic_len: f64 = 8.0;
+    let vid_snake_lens: [f64; 3] = [byte_stream.gen_range(min_vid_len, max_vid_len), byte_stream.gen_range(min_vid_len, max_vid_len), byte_stream.gen_range(min_vid_len, max_vid_len)];
+    let pic_snake_lens: [f64; 3] = [byte_stream.gen_range(min_pic_len, max_pic_len), byte_stream.gen_range(min_pic_len, max_pic_len), byte_stream.gen_range(min_pic_len, max_pic_len)];
 
-    let frames = plot_positions(&mut positions, FRAME_SIZE, snake_len, init_len, &hide, &colors, steps_per_frame, args.avoid_effects);
-    let last_frame = frames[frames.len() - 1].clone();
+    let pic_frames = plot_positions(&mut positions, FRAME_SIZE, pic_snake_lens, init_len, &hide, &colors, steps_per_frame, args.avoid_effects, true);
+    let last_frame = pic_frames[pic_frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("pics/{}.png", s)) {
         eprintln!("Error saving image: {:?}", e);
     } else {
         println!("Image saved successfully.");
     }
+
+    let frames = plot_positions(&mut positions, FRAME_SIZE, vid_snake_lens, init_len, &hide, &colors, steps_per_frame, args.avoid_effects, false);
+    
     create_video_from_frames_in_memory(&frames, &file_name, 60);
     println!("done creating video");
 }
