@@ -75,7 +75,7 @@ describe("CosmicAI", function () {
       .to.emit(charityWallet, "CharityUpdatedEvent")
       .withArgs(bidder3.address);
 
-    // CharityUpdatedEvent
+    // DonationSentEvent
     await expect(charityWallet.connect(bidder2).send())
       .to.emit(charityWallet, "DonationSentEvent")
       .withArgs(bidder3.address, balance);
