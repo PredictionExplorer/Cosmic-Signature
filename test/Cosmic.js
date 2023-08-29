@@ -5,46 +5,16 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
+const {basicDeployment} = require("./Deploy.js");
 
 describe("Cosmic", function () {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
   async function deployCosmic() {
-    const [owner, otherAccount] = await ethers.getSigners();
-
-    const CosmicGame = await ethers.getContractFactory("CosmicGame");
-    const cosmicGame = await CosmicGame.deploy();
-
-    const CosmicToken = await ethers.getContractFactory("CosmicToken");
-    const cosmicToken = await CosmicToken.deploy();
-    cosmicToken.transferOwnership(cosmicGame.address);
-
-    const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-    const cosmicSignature = await CosmicSignature.deploy(cosmicGame.address);
-
-    const CosmicDAO = await ethers.getContractFactory("CosmicDAO");
-    const cosmicDAO = await CosmicDAO.deploy(cosmicToken.address);
-
-    const CharityWallet = await ethers.getContractFactory("CharityWallet");
-    const charityWallet = await CharityWallet.deploy();
-    await charityWallet.transferOwnership(cosmicDAO.address);
-
-    const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-    const raffleWallet = await RaffleWallet.deploy();
-
-    const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
-    const randomWalkNFT = await RandomWalkNFT.deploy();
-
-    await cosmicGame.setTokenContract(cosmicToken.address);
-    await cosmicGame.setNftContract(cosmicSignature.address);
-    await cosmicGame.setCharity(charityWallet.address);
-    await cosmicGame.setRandomWalk(randomWalkNFT.address);
-    await cosmicGame.setRaffleWallet(raffleWallet.address);
-    await cosmicGame.setActivationTime(0);
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(undefined,0,undefined,true);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
-
   }
 
   describe("Deployment", function () {
