@@ -1,45 +1,45 @@
 const { ethers } = require("hardhat");
 
-const basicDeployment = async function(randomWalkAddr,activationTime,charityAddr,transferOwnership) {
+const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTime,charityAddr,transferOwnership) {
 
 	let cosmicGame,cosmicToken,cosmicSignature,charityWallet,cosmicDAO,randomWalkNFT,raffleWallet;
-    const [owner, otherAccount] = await ethers.getSigners();
 
     const CosmicGame = await ethers.getContractFactory("CosmicGame");
-    cosmicGame = await CosmicGame.deploy();
+    cosmicGame = await CosmicGame.connect(deployerAcct).deploy();
 	await cosmicGame.deployed();
 
     const CosmicToken = await ethers.getContractFactory("CosmicToken");
-    cosmicToken = await CosmicToken.deploy();
+    cosmicToken = await CosmicToken.connect(deployerAcct).deploy();
 	await cosmicToken.deployed();
-    cosmicToken.transferOwnership(cosmicGame.address);
+    await cosmicToken.connect(deployerAcct).transferOwnership(cosmicGame.address);
 
     const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-    cosmicSignature = await CosmicSignature.deploy(cosmicGame.address);
+    cosmicSignature = await CosmicSignature.connect(deployerAcct).deploy(cosmicGame.address);
 	await cosmicSignature.deployed();
 
     const CosmicDAO = await ethers.getContractFactory("CosmicDAO");
-    cosmicDAO = await CosmicDAO.deploy(cosmicToken.address);
+    cosmicDAO = await CosmicDAO.connect(deployerAcct).deploy(cosmicToken.address);
 	await cosmicDAO.deployed();
 
     const CharityWallet = await ethers.getContractFactory("CharityWallet");
-    charityWallet = await CharityWallet.deploy();
+    charityWallet = await CharityWallet.connect(deployerAcct).deploy();
 	await charityWallet.deployed();
 	if (typeof charityAddr === 'undefined') {
+    	const [owner, otherAccount] = await ethers.getSigners();
 		charityAddr = otherAccount.address;
 	}
 	await charityWallet.setCharity(charityAddr);
 	if (transferOwnership) {
-	    await charityWallet.transferOwnership(cosmicDAO.address);
+	    await charityWallet.connect(deployerAcct).transferOwnership(cosmicDAO.address);
 	}
 
     const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-    raffleWallet = await RaffleWallet.deploy();
+    raffleWallet = await RaffleWallet.connect(deployerAcct).deploy();
 	await raffleWallet.deployed();
 
     const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
 	if (typeof random_walk_addr === 'undefined') {
-	    randomWalkNFT = await RandomWalkNFT.deploy();
+	    randomWalkNFT = await RandomWalkNFT.connect(deployerAcct).deploy();
 	    await randomWalkNFT.deployed();
 	} else {
 		randomWalkNFT = await ethers.getContractAt("RandomWalkNFT",randomWalkAddr)

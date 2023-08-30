@@ -4,11 +4,13 @@ const {
 } = require("@nomicfoundation/hardhat-network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
-const {basicDeployment} = require("./Deploy.js");
+const {basicDeployment} = require("../src/Deploy.js");
 
 describe("Security", function () {
   async function deployCosmic() {
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(undefined,0,undefined,true);
+	  let contractDeployerAcct;
+      [contractDeployerAcct] = await ethers.getSigners();
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,undefined,0,undefined,true);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
   }

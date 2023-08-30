@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const {basicDeployment} = require("./Deploy.js");
+const {basicDeployment} = require("../src/Deploy.js");
 const {
   time,
   loadFixture,
@@ -9,7 +9,9 @@ const {
 describe("CosmicAI", function () {
   let INITIAL_AMOUNT = ethers.utils.parseEther('10');
   async function deployCosmic() {
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(undefined,0,undefined,true);
+	  let contractDeployerAcct;
+      [contractDeployerAcct] = await ethers.getSigners();
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,undefined,0,undefined,true);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
   }
@@ -27,8 +29,8 @@ describe("CosmicAI", function () {
   });
 
   it("should emit the correct events in the CharityWallet contract", async function () {
-    const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(undefined,0,undefined,false);
     [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
+    const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(owner,undefined,0,undefined,false);
     // DonationReceivedEvent
     let bidPrice = await cosmicGame.getBidPrice();
     await cosmicGame.connect(bidder1).bid("", { value: bidPrice });
@@ -234,6 +236,7 @@ describe("CosmicAI", function () {
   });
 
   it("should not be possible to bid before activation", async function () {
+    [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
     const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet} = await loadFixture(deployCosmic);
     const sevenDays = 7 * 24 * 60 * 60;
 
@@ -260,6 +263,7 @@ describe("CosmicAI", function () {
   });
 
   it("should be possible to bid by sending to the contract", async function () {
+    [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
     const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet} = await loadFixture(deployCosmic);
     let bidPrice = await cosmicGame.getBidPrice();
     await cosmicGame.connect(bidder1).bid("", { value: bidPrice });
