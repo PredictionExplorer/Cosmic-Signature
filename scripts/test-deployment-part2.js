@@ -19,7 +19,7 @@ async function claim_raffle_eth(testingAcct,raffleWallet,event_logs) {
 }
 async function claim_prize(testingAcct,cosmicGame) {
 	let prizeAmount = await cosmicGame.prizeAmount();
-	let charityAmount = await cosmicGame.prizeAmount();
+	let charityAmount = await cosmicGame.charityAmount();
 	let tx = await cosmicGame.connect(testingAcct).claimPrize({gasLimit:2500000});
 	let receipt = await tx.wait();
 	let topic_sig = cosmicGame.interface.getEventTopic("PrizeClaimEvent");
@@ -48,7 +48,7 @@ async function claim_prize(testingAcct,cosmicGame) {
 	let charityWallet = await ethers.getContractAt("CharityWallet",CharityWalletAddr)
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceivedEvent");
 	event_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
-	parsed_log = cosmicGame.interface.parseLog(event_logs[0])
+	parsed_log = charityWallet.interface.parseLog(event_logs[0])
 	expect(parsed_log.args.amount).to.equal(charityAmount);
 }
 async function main() {
@@ -62,7 +62,7 @@ async function main() {
 
 	await claim_prize(testingAcct,cosmicGame);
   
-	console.log("Test result: success");
+	console.log("Claim prize test result: success");
 }
 main()
 	.then(() => process.exit(0))
