@@ -45,12 +45,12 @@ const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTim
 		randomWalkNFT = await ethers.getContractAt("RandomWalkNFT",randomWalkAddr)
 	}
 
-    await cosmicGame.setTokenContract(cosmicToken.address);
-    await cosmicGame.setNftContract(cosmicSignature.address);
-    await cosmicGame.setCharity(charityWallet.address);
-    await cosmicGame.setRandomWalk(randomWalkNFT.address);
-    await cosmicGame.setRaffleWallet(raffleWallet.address);
-    await cosmicGame.setActivationTime(activationTime);
+    await cosmicGame.connect(deployerAcct).setTokenContract(cosmicToken.address);
+    await cosmicGame.connect(deployerAcct).setNftContract(cosmicSignature.address);
+    await cosmicGame.connect(deployerAcct).setCharity(charityWallet.address);
+    await cosmicGame.connect(deployerAcct).setRandomWalk(randomWalkNFT.address);
+    await cosmicGame.connect(deployerAcct).setRaffleWallet(raffleWallet.address);
+    await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT};
 };

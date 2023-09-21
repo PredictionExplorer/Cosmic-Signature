@@ -4,7 +4,7 @@ const {basicDeployment} = require("../src/Deploy.js");
 const transferOwnership = false;
 const activationTime = 0;
 const charityAddr = "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5"; //https://l2beat.com/donate
-const randomWalkAddr = "0xFA1045cD89E8b8928dAEC09946b179E435147fcc";
+const randomWalkAddr = "0x1EC44E2099FcAF2203e104b5514995729a6b7436";
 async function main() {
 
   let privKey = process.env.PRIVKEY;
