@@ -40,6 +40,7 @@ module.exports = {
 	sepolia: {
 		url: `http://170.187.142.12:22545/`,
 		accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+		gasMultiplier: 2,
     }
   },
   etherscan: {

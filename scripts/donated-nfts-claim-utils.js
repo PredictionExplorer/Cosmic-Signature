@@ -61,7 +61,10 @@ async function main() {
 	let testingAcct;
 	let cosmicGame = await getCosmicGameContract();
 	let nfts = await get_unclaimed_donated_nfts(cosmicGame);
-
+	if (nfts.length == 0) {
+		console.log("Map of donated unclaimed tokens is empty, no claiming is possible");
+		return
+	}
 	if ((typeof privKey === 'undefined') || (privKey.length == 0) )  {
 		console.log("Fetching tokens, please wait ...");
 		await list_donated_nfts(nfts);
@@ -69,11 +72,12 @@ async function main() {
 	} else {
 		testingAcct = new hre.ethers.Wallet(privKey,hre.ethers.provider);
 	}
-	let roundToClaim = parseInt(process.env.ROUND_NUM,10);
-	if ((typeof roundToClaim === 'undefined') || (roundToClaim.length == 0) )  {
+	let roundNumStr = process.env.ROUND_NUM;
+	if ((typeof roundNumStr === 'undefined') || (roundNumStr.length == 0) )  {
 		console.log("Please provide ROUND_NUM environment variable to claim tokens")
 		process.exit(1);
 	}
+	let roundToClaim = parseInt(roundNumStr,10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
 	let prizeWinner = await cosmicGame.winners(roundToClaim);
 	if (prizeWinner.toString() != testingAcct.address.toString()) {
@@ -81,7 +85,12 @@ async function main() {
 		process.exit(1);
 	}
 
-	await cosmicGame.connect(testingAcct).claimManyDonatedNFTs(paramList);
+	if (privKey.length > 0) {
+		if (paramList.length > 0 ) {
+			console.log("Sending claimMany transaction");
+			await cosmicGame.connect(testingAcct).claimManyDonatedNFTs(paramList);
+		}
+	}
 }
 main()
 	.then(() => process.exit(0))
