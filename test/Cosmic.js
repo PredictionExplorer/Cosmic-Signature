@@ -2,6 +2,7 @@ const {
   time,
   loadFixture,
 } = require("@nomicfoundation/hardhat-network-helpers");
+const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
@@ -424,7 +425,34 @@ describe("Cosmic", function () {
         expect(parsed_log.args.index).to.equal(1);
 
     });
+    it("Check access to privileged functions", async function () {
 
+        const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+
+        [owner,addr1] = await ethers.getSigners();
+		await expect(cosmicToken.connect(addr1).mint(addr1.address,ethers.BigNumber.from("10000"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setCharity(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setRandomWalk(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setRaffleWallet(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNumRaffleWinnersPerRound(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNumRaffleNFTWinnersPerRound(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNumHolderNFTWinnersPerRound(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).updatePrizePercentage(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setCharityPercentage(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setRafflePercentage(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setTokenContract(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNftContract(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setTimeIncrease(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setTimeoutClaimPrize(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setPriceIncrease(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNanoSecondsExtra(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setInitialSecondsUntilPrize(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).updateInitialBidAmountFraction(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setActivationTime(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(charityWallet.connect(addr1).setCharity(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicSignature.connect(addr1).setBaseURI("://uri")).to.be.revertedWith("Ownable: caller is not the owner");
+
+    });
     it("Change charityAddress via DAO (Governor) is working", async function () {
        if (SKIP_LONG_TESTS == "1") return;
        const forward_blocks = async (n) => {
