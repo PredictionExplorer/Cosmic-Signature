@@ -163,7 +163,15 @@ describe("Cosmic", function () {
       let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
       let parsed_log = cosmicSignature.interface.parseLog(log);
       let token_id = parsed_log.args.tokenId;
-      await cosmicSignature.connect(addr1).setTokenName(token_id,"name 0");
+      tx = await cosmicSignature.connect(addr1).setTokenName(token_id,"name 0");
+      receipt = await tx.wait();
+      topic_sig = cosmicSignature.interface.getEventTopic("TokenNameEvent");
+      log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+      parsed_log = cosmicSignature.interface.parseLog(log);
+	  let name = parsed_log.args.newName;
+      expect(name).to.equal("name 0");
+	  expect(token_id).to.equal(parsed_log.args.tokenId);
+
       let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
       expect(remote_token_name).to.equal("name 0");
 
@@ -393,7 +401,13 @@ describe("Cosmic", function () {
         let mintPrice = await randomWalkNFT.getMintPrice();
         await randomWalkNFT.connect(addr1).mint({value: mintPrice});
         await randomWalkNFT.connect(addr1).setApprovalForAll(cosmicGame.address, true);
-        await cosmicGame.connect(addr1).bidAndDonateNFT("", randomWalkNFT.address, 0, { value: bidPrice });
+        let tx = await cosmicGame.connect(addr1).bidAndDonateNFT("", randomWalkNFT.address, 0, { value: bidPrice });
+	    let receipt = await tx.wait();
+		let topic_sig = cosmicGame.interface.getEventTopic("NFTDonationEvent");
+        let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+        let parsed_log = cosmicGame.interface.parseLog(log);
+        expect(parsed_log.args.donor).to.equal(addr1.address);
+		expect(parsed_log.args.tokenId).to.equal(0);
 
         bidPrice = await cosmicGame.getBidPrice();
         mintPrice = await randomWalkNFT.getMintPrice();
@@ -405,12 +419,12 @@ describe("Cosmic", function () {
         await ethers.provider.send("evm_mine");
         await expect(cosmicGame.connect(addr1).claimPrize());
 
-        let tx = await cosmicGame.connect(addr1).claimManyDonatedNFTs([0,1]);
-        let receipt = await tx.wait();
-        let topic_sig = cosmicGame.interface.getEventTopic("DonatedNFTClaimedEvent");
+        tx = await cosmicGame.connect(addr1).claimManyDonatedNFTs([0,1]);
+        receipt = await tx.wait();
+        topic_sig = cosmicGame.interface.getEventTopic("DonatedNFTClaimedEvent");
         let event_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
         expect(event_logs.length).to.equal(2);
-        let parsed_log = cosmicGame.interface.parseLog(event_logs[0])
+        parsed_log = cosmicGame.interface.parseLog(event_logs[0])
         expect(parsed_log.args.tokenId).to.equal(0);
         expect(parsed_log.args.winner).to.equal(addr1.address);
         expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(randomWalkNFT.address);
