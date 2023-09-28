@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+//const { ethers } = require("hardhat");
 
 const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTime,charityAddr,transferOwnership) {
 
@@ -24,7 +24,7 @@ const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTim
     const CharityWallet = await ethers.getContractFactory("CharityWallet");
     charityWallet = await CharityWallet.connect(deployerAcct).deploy();
 	await charityWallet.deployed();
-	if (typeof charityAddr === 'undefined') {
+	if (charityAddr.length == 0) {
     	const [owner, otherAccount] = await ethers.getSigners();
 		charityAddr = otherAccount.address;
 	}
@@ -38,7 +38,7 @@ const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTim
 	await raffleWallet.deployed();
 
     const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
-	if (typeof random_walk_addr === 'undefined') {
+	if (randomWalkAddr.length === 0) {
 	    randomWalkNFT = await RandomWalkNFT.connect(deployerAcct).deploy();
 	    await randomWalkNFT.deployed();
 	} else {

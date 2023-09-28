@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+//const hre = require("hardhat");
 async function getCosmicGameContract() {
 
 	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;

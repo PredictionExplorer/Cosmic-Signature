@@ -2,7 +2,7 @@ require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-tracer");
-
+require("./tasks/cosmic-tasks.js");
 module.exports = {
   solidity: {
     version: "0.8.19",
