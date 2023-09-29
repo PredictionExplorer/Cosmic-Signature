@@ -1,0 +1,7 @@
+{
+	"privKey":"0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
+	"randomWalkAddr" : "",
+	"activationTime" : 0,
+	"charityAddr" : "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+	"transferOwnership" : false
+}

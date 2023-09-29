@@ -45,7 +45,7 @@ task("deploy-local","Deploys contracts to local network",async (args,hre) => {
 	console.log("Donation of "+etherStr+" ETH complete");
 
 }).addParam("deployconfig","Config file (JSON)");
-task("deploy-arbitrum-prod","Deploys contracts Arbitrum network",async (args,hre) => {
+task("deploy-arbitrum","Deploys contracts Arbitrum network",async (args,hre) => {
 	// same script as for local, but without donate() step
 	let configFile = args.deployconfig;
 	if ((typeof configFile === 'undefined') || (configFile.length == 0 )) {
