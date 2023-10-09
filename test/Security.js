@@ -4,40 +4,16 @@ const {
 } = require("@nomicfoundation/hardhat-network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
+const {basicDeployment} = require("../src/Deploy.js");
 
 describe("Security", function () {
   async function deployCosmic() {
-    const [owner, otherAccount] = await ethers.getSigners();
+	  let contractDeployerAcct;
+      [contractDeployerAcct] = await ethers.getSigners();
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,undefined,0,undefined,true);
 
-    const CosmicGame = await ethers.getContractFactory("CosmicGame");
-    const cosmicGame = await CosmicGame.deploy();
-
-    const CosmicToken = await ethers.getContractFactory("CosmicToken");
-    const cosmicToken = await CosmicToken.deploy();
-    cosmicToken.transferOwnership(cosmicGame.address);
-
-    const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-    const cosmicSignature = await CosmicSignature.deploy(cosmicGame.address);
-
-    const CosmicDAO = await ethers.getContractFactory("CosmicDAO");
-    const cosmicDAO = await CosmicDAO.deploy(cosmicToken.address);
-
-    const CharityWallet = await ethers.getContractFactory("CharityWallet");
-    const charityWallet = await CharityWallet.deploy();
-    await charityWallet.transferOwnership(cosmicDAO.address);
-
-    const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
-    const randomWalkNFT = await RandomWalkNFT.deploy();
-
-    await cosmicGame.setTokenContract(cosmicToken.address);
-    await cosmicGame.setNftContract(cosmicSignature.address);
-    await cosmicGame.setCharity(charityWallet.address);
-    await cosmicGame.setRandomWalk(randomWalkNFT.address);
-    await cosmicGame.setActivationTime(0);
-
-    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT};
-}
-
+    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
+  }
     it("Vulnerability to claimPrize() multiple times", async function () {
 
     const CosmicGame = await hre.ethers.getContractFactory("CosmicGame");

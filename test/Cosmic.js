@@ -2,48 +2,22 @@ const {
   time,
   loadFixture,
 } = require("@nomicfoundation/hardhat-network-helpers");
+const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
+const SKIP_LONG_TESTS = "1";
+const {basicDeployment} = require("../src//Deploy.js");
 
 describe("Cosmic", function () {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
-  async function deployCosmic() {
-    const [owner, otherAccount] = await ethers.getSigners();
-
-    const CosmicGame = await ethers.getContractFactory("CosmicGame");
-    const cosmicGame = await CosmicGame.deploy();
-
-    const CosmicToken = await ethers.getContractFactory("CosmicToken");
-    const cosmicToken = await CosmicToken.deploy();
-    cosmicToken.transferOwnership(cosmicGame.address);
-
-    const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-    const cosmicSignature = await CosmicSignature.deploy(cosmicGame.address);
-
-    const CosmicDAO = await ethers.getContractFactory("CosmicDAO");
-    const cosmicDAO = await CosmicDAO.deploy(cosmicToken.address);
-
-    const CharityWallet = await ethers.getContractFactory("CharityWallet");
-    const charityWallet = await CharityWallet.deploy();
-    await charityWallet.transferOwnership(cosmicDAO.address);
-
-    const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-    const raffleWallet = await RaffleWallet.deploy();
-
-    const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
-    const randomWalkNFT = await RandomWalkNFT.deploy();
-
-    await cosmicGame.setTokenContract(cosmicToken.address);
-    await cosmicGame.setNftContract(cosmicSignature.address);
-    await cosmicGame.setCharity(charityWallet.address);
-    await cosmicGame.setRandomWalk(randomWalkNFT.address);
-    await cosmicGame.setRaffleWallet(raffleWallet.address);
-    await cosmicGame.setActivationTime(0);
+  async function deployCosmic(deployerAcct) {
+	  let contractDeployerAcct;
+      [contractDeployerAcct] = await ethers.getSigners();
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,undefined,0,undefined,true);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
-
   }
 
   describe("Deployment", function () {
@@ -189,7 +163,15 @@ describe("Cosmic", function () {
       let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
       let parsed_log = cosmicSignature.interface.parseLog(log);
       let token_id = parsed_log.args.tokenId;
-      await cosmicSignature.connect(addr1).setTokenName(token_id,"name 0");
+      tx = await cosmicSignature.connect(addr1).setTokenName(token_id,"name 0");
+      receipt = await tx.wait();
+      topic_sig = cosmicSignature.interface.getEventTopic("TokenNameEvent");
+      log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+      parsed_log = cosmicSignature.interface.parseLog(log);
+	  let name = parsed_log.args.newName;
+      expect(name).to.equal("name 0");
+	  expect(token_id).to.equal(parsed_log.args.tokenId);
+
       let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
       expect(remote_token_name).to.equal("name 0");
 
@@ -396,8 +378,97 @@ describe("Cosmic", function () {
       await cosmicSignature.connect(owner).setBaseURI("somebase/");
       expect(await cosmicSignature.tokenURI(ethers.BigNumber.from("0"))).to.equal("somebase/0");
     });
-	  /*
+
+    it("CharityWallet is sending the right amount", async function () {
+
+        const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+        [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+        let amountSent = ethers.utils.parseEther('9');
+        let receiver = await charityWallet.charityAddress();
+        await addr2.sendTransaction({to: charityWallet.address,value: amountSent});
+        let balanceBefore = await ethers.provider.getBalance(receiver);
+        await charityWallet.send();
+        let balanceAfter = await ethers.provider.getBalance(receiver);
+        expect(balanceAfter).to.equal(balanceBefore.add(amountSent));
+    });
+
+    it("claimManyDonatedNFTs() works properly", async function () {
+
+        const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+        [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
+        let bidPrice = await cosmicGame.getBidPrice();
+        let mintPrice = await randomWalkNFT.getMintPrice();
+        await randomWalkNFT.connect(addr1).mint({value: mintPrice});
+        await randomWalkNFT.connect(addr1).setApprovalForAll(cosmicGame.address, true);
+        let tx = await cosmicGame.connect(addr1).bidAndDonateNFT("", randomWalkNFT.address, 0, { value: bidPrice });
+	    let receipt = await tx.wait();
+		let topic_sig = cosmicGame.interface.getEventTopic("NFTDonationEvent");
+        let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+        let parsed_log = cosmicGame.interface.parseLog(log);
+        expect(parsed_log.args.donor).to.equal(addr1.address);
+		expect(parsed_log.args.tokenId).to.equal(0);
+
+        bidPrice = await cosmicGame.getBidPrice();
+        mintPrice = await randomWalkNFT.getMintPrice();
+        await randomWalkNFT.connect(addr1).mint({value: mintPrice});
+        await cosmicGame.connect(addr1).bidAndDonateNFT("", randomWalkNFT.address, 1, { value: bidPrice });
+
+        let prizeTime = await cosmicGame.timeUntilPrize();
+        await ethers.provider.send("evm_increaseTime", [prizeTime.add(100).toNumber()]);
+        await ethers.provider.send("evm_mine");
+        await expect(cosmicGame.connect(addr1).claimPrize());
+
+        tx = await cosmicGame.connect(addr1).claimManyDonatedNFTs([0,1]);
+        receipt = await tx.wait();
+        topic_sig = cosmicGame.interface.getEventTopic("DonatedNFTClaimedEvent");
+        let event_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
+        expect(event_logs.length).to.equal(2);
+        parsed_log = cosmicGame.interface.parseLog(event_logs[0])
+        expect(parsed_log.args.tokenId).to.equal(0);
+        expect(parsed_log.args.winner).to.equal(addr1.address);
+        expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(randomWalkNFT.address);
+        expect(parsed_log.args.round).to.equal(0);
+        expect(parsed_log.args.index).to.equal(0);
+
+        parsed_log = cosmicGame.interface.parseLog(event_logs[1])
+        expect(parsed_log.args.tokenId).to.equal(1);
+        expect(parsed_log.args.winner).to.equal(addr1.address);
+        expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(randomWalkNFT.address);
+        expect(parsed_log.args.round).to.equal(0);
+        expect(parsed_log.args.index).to.equal(1);
+
+    });
+    it("Check access to privileged functions", async function () {
+
+        const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+
+        [owner,addr1] = await ethers.getSigners();
+		await expect(cosmicToken.connect(addr1).mint(addr1.address,ethers.BigNumber.from("10000"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setCharity(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setRandomWalk(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setRaffleWallet(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNumRaffleWinnersPerRound(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNumRaffleNFTWinnersPerRound(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNumHolderNFTWinnersPerRound(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).updatePrizePercentage(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setCharityPercentage(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setRafflePercentage(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setTokenContract(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNftContract(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setTimeIncrease(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setTimeoutClaimPrize(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setPriceIncrease(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setNanoSecondsExtra(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setInitialSecondsUntilPrize(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).updateInitialBidAmountFraction(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicGame.connect(addr1).setActivationTime(ethers.BigNumber.from("1"))).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(charityWallet.connect(addr1).setCharity(addr1.address)).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(cosmicSignature.connect(addr1).setBaseURI("://uri")).to.be.revertedWith("Ownable: caller is not the owner");
+
+    });
     it("Change charityAddress via DAO (Governor) is working", async function () {
+       if (SKIP_LONG_TESTS == "1") return;
        const forward_blocks = async (n) => {
            for (let i = 0; i < n; i++) {
                  await ethers.provider.send("evm_mine");
@@ -449,6 +520,6 @@ describe("Cosmic", function () {
 
       let new_charity_addr = await charityWallet.charityAddress();
       expect(new_charity_addr.toString()).to.equal(addr1.address.toString());
-	})*/
+	})
   });
 })

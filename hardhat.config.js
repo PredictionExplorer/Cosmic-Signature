@@ -2,10 +2,10 @@ require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-tracer");
-
+require("./tasks/cosmic-tasks.js");
 module.exports = {
   solidity: {
-    version: "0.8.21",
+    version: "0.8.19",
     settings: {
       optimizer: {
         enabled: true,
@@ -37,7 +37,11 @@ module.exports = {
       url: `https://arb1.arbitrum.io/rpc`,
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
     },
-
+	sepolia: {
+		url: `http://170.187.142.12:22545/`,
+		accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+		gasMultiplier: 2,
+    }
   },
   etherscan: {
     apiKey: process.env.API_KEY,
