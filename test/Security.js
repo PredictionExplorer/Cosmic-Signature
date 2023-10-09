@@ -10,7 +10,7 @@ describe("Security", function () {
   async function deployCosmic() {
 	  let contractDeployerAcct;
       [contractDeployerAcct] = await ethers.getSigners();
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,undefined,0,undefined,true);
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,"",0,"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",true);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
   }

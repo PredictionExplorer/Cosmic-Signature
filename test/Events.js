@@ -11,7 +11,7 @@ describe("CosmicAI", function () {
   async function deployCosmic() {
 	  let contractDeployerAcct;
       [contractDeployerAcct] = await ethers.getSigners();
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,undefined,0,undefined,true);
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,"",0,"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",true);
 
     return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
   }
@@ -30,7 +30,7 @@ describe("CosmicAI", function () {
 
   it("should emit the correct events in the CharityWallet contract", async function () {
     [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
-    const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(owner,undefined,0,undefined,false);
+    const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(owner,"",0,"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",false);
     // DonationReceivedEvent
     let bidPrice = await cosmicGame.getBidPrice();
     await cosmicGame.connect(bidder1).bid("", { value: bidPrice });
