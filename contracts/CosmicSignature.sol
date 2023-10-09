@@ -11,10 +11,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     mapping(uint256 => string) public tokenNames;
 
-    // The owner can control how the NFT is displayed by changing these settings.
-    // This integer is a bunch of boolean flags. It might also contain the number of steps in the simulation.
-    mapping(uint256 => uint256) public tokenSettings;
-
     // Entropy
     bytes32 public entropy;
 
