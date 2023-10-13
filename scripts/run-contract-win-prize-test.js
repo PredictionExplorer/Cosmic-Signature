@@ -1,18 +1,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
-const {getCosmicGameContract}  = require("./helper.js");
+const {getCosmicGameContract,getBidderContract}  = require("./helper.js");
 
-async function getBidderContract() {
-
-	let bidderContractAddr = process.env.BIDDER_CONTRACT_ADDRESS;
-	if ((typeof bidderContractAddr === 'undefined') || (bidderContractAddr.length != 42) )  {
-		console.log("BIDDER_CONTRACT_ADDRESS environment variable does not contain contract address");
-		process.exit(1);
-	}
-	console.log(bidderContractAddr)
-	let bidderContract = await ethers.getContractAt("BidderContract",bidderContractAddr)
-	return bidderContract;
-}
 async function main() {
 
 	let bidderContract = await getBidderContract();
