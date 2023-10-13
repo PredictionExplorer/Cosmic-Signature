@@ -41,7 +41,11 @@ module.exports = {
 		url: `http://170.187.142.12:22545/`,
 		accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 		gasMultiplier: 2,
-    }
+    },
+	localhost: {
+		url : `http://localhost:8545/`,
+		gasMultiplier: 3,
+	}
   },
   etherscan: {
     apiKey: process.env.API_KEY,
