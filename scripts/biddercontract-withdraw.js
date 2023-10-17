@@ -5,7 +5,7 @@ const {getBidderContract}  = require("./helper.js");
 async function main() {
 
 	let bidderContract = await getBidderContract();
-	await bidderContract.withdraw_all();
+	await bidderContract.withdrawAll();
 }
 main()
 	.then(() => process.exit(0))

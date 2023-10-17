@@ -5,7 +5,7 @@ const {getCosmicGameContract,getBidderContract}  = require("./helper.js");
 async function main() {
 
 	let bidderContract = await getBidderContract();
-	let cosmicGameAddr = await bidderContract.cosmicGameContract();
+	let cosmicGameAddr = await bidderContract.cosmicGame();
 	let cosmicGame = await ethers.getContractAt("CosmicGame",cosmicGameAddr)
 	let bidPrice = await cosmicGame.getBidPrice();
 
@@ -19,6 +19,7 @@ async function main() {
 	let randomWalk = await ethers.getContractAt("RandomWalkNFT",randomWalkAddr);
 	let rwalkPrice = await randomWalk.getMintPrice();
 	await randomWalk.connect(owner).setApprovalForAll(cosmicGame.address, true);
+	await randomWalk.connect(owner).setApprovalForAll(bidderContract.address, true);
 	let tx = await randomWalk.connect(owner).mint({value: rwalkPrice});
 	let receipt = await tx.wait();
 	let topic_sig = randomWalk.interface.getEventTopic("MintEvent");
@@ -27,15 +28,16 @@ async function main() {
 	let token_id = parsed_log.args.tokenId;
 	bidPrice = await cosmicGame.getBidPrice();
 	console.log("tokenid= "+token_id);
-	await bidderContract.connect(owner).do_bid_and_donate(randomWalkAddr,token_id,{value:bidPrice});
+	await randomWalk.connect(owner).transferFrom(owner.address,bidderContract.address,token_id)
+	await bidderContract.connect(owner).doBidAndDonate(randomWalkAddr,token_id,{value:bidPrice});
 
 	bidPrice = await cosmicGame.getBidPrice();
-	await bidderContract.connect(owner).do_bid({value:bidPrice});
+	await bidderContract.connect(owner).doBid({value:bidPrice});
   
 	let prizeTime = await cosmicGame.timeUntilPrize();
 	await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 
-	await bidderContract.connect(owner).do_claim();
+	await bidderContract.connect(owner).doClaim();
 }
 main()
 	.then(() => process.exit(0))
