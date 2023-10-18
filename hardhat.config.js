@@ -44,7 +44,7 @@ module.exports = {
     },
 	localhost: {
 		url : `http://localhost:8545/`,
-		gasMultiplier: 3,
+		gasMultiplier: 4,
 	}
   },
   etherscan: {

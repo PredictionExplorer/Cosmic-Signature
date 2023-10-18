@@ -33,6 +33,16 @@ async function main() {
 
 	bidPrice = await cosmicGame.getBidPrice();
 	await bidderContract.connect(owner).doBid({value:bidPrice});
+
+	rwalkPrice = await randomWalk.getMintPrice();
+	tx = await randomWalk.connect(owner).mint({value: rwalkPrice});
+	receipt = await tx.wait();
+	topic_sig = randomWalk.interface.getEventTopic("MintEvent");
+	log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+	parsed_log = randomWalk.interface.parseLog(log);
+	token_id = parsed_log.args.tokenId;
+	await randomWalk.connect(owner).transferFrom(owner.address,bidderContract.address,token_id)
+	await bidderContract.connect(owner).doBidRWalk(token_id);
   
 	let prizeTime = await cosmicGame.timeUntilPrize();
 	await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);

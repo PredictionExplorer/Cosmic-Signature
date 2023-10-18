@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.19;
-
 import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
@@ -13,8 +12,7 @@ import { IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 contract BidderContract is IERC721Receiver {
     CosmicGame public cosmicGame;
 	address public creator;
-	uint256[] public collectedTokens;
-	uint256 public numCollectedTokens;
+	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNFTs;
 	uint256 public numMyDonatedNFTs;
     constructor(address payable _cosmicGame) {
@@ -25,6 +23,9 @@ contract BidderContract is IERC721Receiver {
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
 		cosmicGame.bid{value:price}("contract bid");
+	}
+	function doBidRWalk(uint256 tokenId) external {
+    	cosmicGame.bidWithRWLK(tokenId,"contract bid rwalk");
 	}
 	function doBidAndDonate(address nftAddress,uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame),true);
@@ -46,11 +47,16 @@ contract BidderContract is IERC721Receiver {
 		CosmicSignature nft = cosmicGame.nft();
 		(bool success,) = creator.call{value:address(this).balance}("");
 		success = false;
-		for (uint256 i = 0; i< numCollectedTokens; i++) {
-			nft.safeTransferFrom(address(this),creator,collectedTokens[i]);
-		}                                   
-		delete collectedTokens;
-		numCollectedTokens = 0;
+        uint256 totalSupply = nft.totalSupply();
+		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
+			address tokenOwner = nft.ownerOf(i);
+			if ( tokenOwner == address(this) ) {
+				nft.safeTransferFrom(address(this),creator,i);
+			}
+		}                                 
+	  	if ( totalSupply > 0 ) {	
+			lastTokenIdChecked = totalSupply - 1;
+		}
 		CosmicToken token = cosmicGame.token();
 		uint ctokenBalance = token.balanceOf(address(this));
 		if ( ctokenBalance > 0 ) {
@@ -66,12 +72,7 @@ contract BidderContract is IERC721Receiver {
 		delete myDonatedNFTs;
 		numMyDonatedNFTs = 0;
 	}
-    function onERC721Received(address operator, address , uint256 tokenId, bytes calldata) public returns(bytes4) {
-		CosmicSignature nft = cosmicGame.nft();
-		if (address(nft) == operator) { // only track CosmicSignature tokens
-			collectedTokens.push(tokenId);
-			numCollectedTokens++;
-		}
+    function onERC721Received(address , address , uint256 tokenId, bytes calldata) public returns(bytes4) {
         return this.onERC721Received.selector;
     }
 }
