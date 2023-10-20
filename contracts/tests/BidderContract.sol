@@ -72,7 +72,7 @@ contract BidderContract is IERC721Receiver {
 		delete myDonatedNFTs;
 		numMyDonatedNFTs = 0;
 	}
-    function onERC721Received(address , address , uint256 tokenId, bytes calldata) public returns(bytes4) {
+    function onERC721Received(address , address , uint256 , bytes calldata) external pure returns(bytes4) {
         return this.onERC721Received.selector;
     }
 }
