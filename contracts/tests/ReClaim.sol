@@ -5,7 +5,7 @@ import { CosmicGame } from "../CosmicGame.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract ReClaim is IERC721Receiver {
+contract ReClaim {
     CosmicGame public cosmicGameContract;
     uint public numIterations = 0;
     constructor(address payable _cosmicGameContract) {
@@ -22,9 +22,5 @@ contract ReClaim is IERC721Receiver {
         numIterations = pNumIterations;
         cosmicGameContract.claimPrize();
     }   
-    function onERC721Received(address, address, uint256, bytes calldata) public pure returns(bytes4) {
-        return this.onERC721Received.selector;
-    }
-
 }
 
