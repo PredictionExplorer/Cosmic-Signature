@@ -364,6 +364,9 @@ describe("Cosmic", function () {
       expect((await cosmicGame.owner()).toString()).to.equal(addr2.address.toString());
       await cosmicGame.connect(addr2).transferOwnership(owner.address);
       expect((await cosmicGame.owner()).toString()).to.equal(owner.address.toString());
+
+	  await cosmicSignature.connect(owner).setTokenGenerationScriptURL("url://");
+      expect(await cosmicSignature.tokenGenerationScriptURL()).to.equal("url://");
      });
 	 it("BaseURI/TokenURI works", async function () {
 
