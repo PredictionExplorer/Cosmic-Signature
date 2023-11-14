@@ -62,7 +62,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
             tokenId,
             owner));
         seeds[tokenId] = entropy;
-        _safeMint(owner, tokenId);
+        _mint(owner, tokenId);
 
         emit MintEvent(tokenId, owner, roundNum, entropy);
         return tokenId;
