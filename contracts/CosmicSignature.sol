@@ -20,8 +20,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     address public immutable cosmicGameContract;
 
-    // IPFS link to the Python script that generates images and videos for each NFT based on seed.
-    string public tokenGenerationScript = "ipfs://TBD";
+    // IPFS link to the script that generates images and videos for each NFT based on seed.
+    string public tokenGenerationScriptURL = "ipfs://TBD";
 
     event TokenNameEvent(uint256 indexed tokenId, string newName);
     event MintEvent(uint256 indexed tokenId, address indexed owner, uint256 indexed roundNum, bytes32 seed);
@@ -32,6 +32,10 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
             "newNFT",
             block.timestamp, blockhash(block.number)));
         cosmicGameContract = _cosmicGameContract;
+    }
+
+    function setTokenGenerationScriptURL(string memory newTokenGenerationScriptURL) external onlyOwner {
+        tokenGenerationScriptURL = newTokenGenerationScriptURL;
     }
 
     function setBaseURI(string memory baseURI) external onlyOwner {
