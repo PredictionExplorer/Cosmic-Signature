@@ -76,4 +76,21 @@ contract BidderContract is IERC721Receiver {
         return this.onERC721Received.selector;
     }
 }
+contract BidCNonRecv {	// Bidder Contract but not ERC721 receiver
+    CosmicGame public cosmicGame;
+	address public creator;
+    constructor(address payable _cosmicGame) {
+        cosmicGame= CosmicGame(_cosmicGame);
+		creator = msg.sender;
+    } 
+	receive() external payable { }
+	function doBid() external payable  {
+		uint256 price = cosmicGame.getBidPrice();
+		cosmicGame.bid{value:price}("non-erc721 receiver bid");
+	}
+    function doClaim() external {
+        cosmicGame.claimPrize();
+    }   
+}
+
 

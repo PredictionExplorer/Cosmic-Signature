@@ -80,4 +80,30 @@ describe("Contract", function () {
 	expect(donatedTokenOwner).to.equal(owner.address);
 
   });
+    it("Non-ERC721 receiver contract can bid", async function () {
+
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+
+      [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+      const BNonRec = await ethers.getContractFactory("BidCNonRecv");
+      let bnonrec = await BNonRec.connect(owner).deploy(cosmicGame.address);
+      await bnonrec.deployed();
+
+      let bidPrice;
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(owner).bid("owner bids", {value: bidPrice});
+      bidPrice = await cosmicGame.getBidPrice();
+      await bnonrec.connect(owner).doBid({value:bidPrice});
+
+      let prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+      let tx = await bnonrec.connect(owner).doClaim();
+      let receipt = await tx.wait();
+      topic_sig = cosmicSignature.interface.getEventTopic("MintEvent");
+      let mint_logs = receipt.logs.filter(x=>x.topics.indexOf(topic_sig)>=0);
+	  let prizeWinnerTokenIndex = 0;
+      let parsed_log = cosmicSignature.interface.parseLog(mint_logs[prizeWinnerTokenIndex]);
+	  let o = await cosmicSignature.ownerOf(parsed_log.args.tokenId);
+      expect(bnonrec.address.toString()).to.equal(o.toString());
+	});
 })
