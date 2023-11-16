@@ -75,7 +75,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     mapping(uint256 => address) public winners;
 
-    uint256 public activationTime = 1682377200; // April 24 2023 19:00 New York Time
+    uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 
     // Entropy for the raffle.
     bytes32 public raffleEntropy;
