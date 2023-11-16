@@ -25,6 +25,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     event TokenNameEvent(uint256 indexed tokenId, string newName);
     event MintEvent(uint256 indexed tokenId, address indexed owner, uint256 indexed roundNum, bytes32 seed);
+    event TokenGenerationScriptURLEvent(string newURL);
+    event BaseURIEvent(string newURI);
 
     constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
         require(_cosmicGameContract != address(0), "Zero-address was given.");
@@ -36,10 +38,12 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     function setTokenGenerationScriptURL(string memory newTokenGenerationScriptURL) external onlyOwner {
         tokenGenerationScriptURL = newTokenGenerationScriptURL;
+        emit TokenGenerationScriptURLEvent(newTokenGenerationScriptURL);
     }
 
     function setBaseURI(string memory baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
+        emit BaseURIEvent(baseURI);
     }
 
     function setTokenName(uint256 tokenId, string memory name) external {
