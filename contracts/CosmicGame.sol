@@ -280,14 +280,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
     }
 
-    // send some ETH into the contract and affect nothing else.
+    // Donate some ETH to the game.
     function donate() external payable {
         require (msg.value > 0, "Donation amount must be greater than 0.");
-
-        if (lastBidder == address(0)) {
+        if (block.timestamp < activationTime) {
+            // Set the initial bid prize only if the game has not started yet.
             _initializeBidPrice();
         }
-
         emit DonationEvent(_msgSender(), msg.value);
     }
 
