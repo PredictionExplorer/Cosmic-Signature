@@ -32,7 +32,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         require(_cosmicGameContract != address(0), "Zero-address was given.");
         entropy = keccak256(abi.encode(
             "newNFT",
-            block.timestamp, blockhash(block.number)));
+            block.timestamp, blockhash(block.number - 1)));
         cosmicGameContract = _cosmicGameContract;
     }
 
@@ -66,7 +66,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
         entropy = keccak256(abi.encode(
             entropy,
             block.timestamp,
-            blockhash(block.number),
+            blockhash(block.number - 1),
             tokenId,
             owner));
         seeds[tokenId] = entropy;

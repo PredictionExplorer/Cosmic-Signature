@@ -122,7 +122,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     constructor() {
         raffleEntropy = keccak256(abi.encode(
              "Cosmic Signature 2023",
-             block.timestamp, blockhash(block.number)));
+             block.timestamp, blockhash(block.number - 1)));
         charity = _msgSender();
     }
 
@@ -500,7 +500,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         raffleEntropy = keccak256(abi.encode(
             raffleEntropy,
             block.timestamp,
-            blockhash(block.number)));
+            blockhash(block.number - 1)));
     }
 
     function _max(uint256 a, uint256 b) internal pure returns (uint256) {
