@@ -8,6 +8,7 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { StakingWallet } from "./StakingWallet.sol";
+import { MarketingWallet } from "./MarketingWallet.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
@@ -53,6 +54,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     // You get 100 tokens when you bid
     uint256 public constant TOKEN_REWARD = 100 * 1e18;
+    uint256 public constant MARKETING_REWARD = 15 * 1e18;
 
     uint256 public prizePercentage = 25;
 
@@ -88,6 +90,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     RaffleWallet public raffleWallet;
 
     StakingWallet public stakingWallet;
+    MarketingWallet public marketingWallet;
 
     mapping (uint256 => DonatedNFT) public donatedNFTs;
     uint256 public numDonatedNFTs;
@@ -116,6 +119,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event RandomWalkAddressChanged(address newRandomWalk);
 	event RaffleWalletAddressChanged(address newRaffleWallet);
     event StakingWalletAddressChanged(address newStakingWallet);
+    event MarketingWalletAddressChanged(address newMarketingWallet);
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 	event TimeIncreaseChanged(uint256 newTimeIncrease);
@@ -346,6 +350,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit StakingWalletAddressChanged(addr);
     }
 
+    function setMarketingWallet(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
+        marketingWallet = MarketingWallet(addr);
+		emit MarketingWalletAddressChanged(addr);
+    }
+
     function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) external onlyOwner {
         numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
 		emit NumRaffleWinnersPerRoundChanged(numRaffleWinnersPerRound);
@@ -517,6 +527,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         (bool mintSuccess, ) =
             address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, TOKEN_REWARD));
+		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
+
+        (mintSuccess, ) =
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, MARKETING_REWARD));
 		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
 
         _pushBackPrizeTime();
