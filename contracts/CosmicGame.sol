@@ -222,11 +222,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
             require(success, "Staking deposit failed.");
         }
 
-        roundNum += 1;
-
         // Give the NFT to the winner.
         (bool mintSuccess, ) =
-            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum - 1));
+            address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum));
 		require(mintSuccess, "CosmicSignature mint() failed to mint NFT.");
 
         // Winner index is used to emit the correct event.
@@ -236,9 +234,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
             _updateEntropy();
             address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
             (, bytes memory data) =
-                address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum - 1));
+                address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum));
             uint256 tokenId = abi.decode(data, (uint256));
-            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, tokenId, winnerIndex);
+            emit RaffleNFTWinnerEvent(raffleWinner_, roundNum, tokenId, winnerIndex);
             winnerIndex += 1;
         }
 
@@ -251,9 +249,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 uint256 rwalkWinnerNFTnum = uint256(raffleEntropy) % rwalkSupply;
                 address rwalkWinner = randomWalk.ownerOf(rwalkWinnerNFTnum);
                 (, bytes memory data) =
-                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(rwalkWinner),roundNum - 1));
+                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, rwalkWinner, roundNum));
                 uint256 tokenId = abi.decode(data, (uint256));
-                emit RaffleNFTWinnerEvent(rwalkWinner, roundNum - 1, tokenId, winnerIndex);
+                emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex);
                 winnerIndex += 1;
             }
 
@@ -263,9 +261,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 uint256 cosmicNFTnum = uint256(raffleEntropy) % cosmicSupply;
                 address cosmicWinner = nft.ownerOf(cosmicNFTnum);
                 (, bytes memory data) =
-                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(cosmicWinner), roundNum - 1));
+                    address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, address(cosmicWinner), roundNum));
                 uint256 tokenId = abi.decode(data, (uint256));
-                emit RaffleNFTWinnerEvent(cosmicWinner, roundNum - 1, tokenId, winnerIndex);
+                emit RaffleNFTWinnerEvent(cosmicWinner, roundNum, tokenId, winnerIndex);
                 winnerIndex += 1;
             }
         }
@@ -283,7 +281,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             _updateEntropy();
             address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
             (success, ) =
-                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_, roundNum - 1));
+                address(raffleWallet).call{value: raffleAmount_}(abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_));
             require(success, "Raffle deposit failed.");
         }
         
@@ -291,7 +289,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
         numRaffleParticipants = 0;
         _initializeBidPrice();
 
-        emit PrizeClaimEvent(roundNum - 1, winner, prizeAmount_);
+        emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
+        roundNum += 1;
     }
 
     // Donate some ETH to the game.
@@ -520,7 +519,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         numRaffleParticipants += 1;
 
         (bool mintSuccess, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder,TOKEN_REWARD));
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, TOKEN_REWARD));
 		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
 
         _pushBackPrizeTime();
