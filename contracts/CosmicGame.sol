@@ -7,6 +7,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
+import { StakingWallet } from "./StakingWallet.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
@@ -60,6 +61,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public rafflePercentage = 5;
 
+    uint256 public stakingPercentage = 10;
+
     uint256 public numRaffleWinnersPerRound = 3;
 
     uint256 public numRaffleNFTWinnersPerRound = 5;
@@ -84,6 +87,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public numRaffleParticipants;
     RaffleWallet public raffleWallet;
 
+    StakingWallet public stakingWallet;
+
     mapping (uint256 => DonatedNFT) public donatedNFTs;
     uint256 public numDonatedNFTs;
 
@@ -103,12 +108,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event CharityPercentageChanged(uint256 newCharityPercentage);
 	event PrizePercentageChanged(uint256 newPrizePercentage);
 	event RafflePercentageChanged(uint256 newRafflePercentage);
+	event StakingPercentageChanged(uint256 newStakingPercentage);
 	event NumRaffleWinnersPerRoundChanged(uint256 newNumRaffleWinnersPerRound);
 	event NumRaffleNFTWinnersPerRoundChanged(uint256 newNumRaffleNFTWinnersPerRound);
 	event NumHolderNFTWinnersPerRoundChanged(uint256 newNumHolderNFTWinnersPerRound);
 	event CharityAddressChanged(address newCharity);
 	event RandomWalkAddressChanged(address newRandomWalk);
 	event RaffleWalletAddressChanged(address newRaffleWallet);
+    event StakingWalletAddressChanged(address newStakingWallet);
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 	event TimeIncreaseChanged(uint256 newTimeIncrease);
@@ -200,6 +207,20 @@ contract CosmicGame is Ownable, IERC721Receiver {
         address winner = _msgSender();
         winners[roundNum] = winner;
 
+        uint256 rwalkSupply = randomWalk.totalSupply();
+        uint256 cosmicSupply = nft.totalSupply();
+
+        uint256 prizeAmount_ = prizeAmount();
+        uint256 charityAmount_ = charityAmount();
+        uint256 raffleAmount_ = raffleAmount();
+        uint256 stakingAmount_ = stakingAmount();
+
+        if (cosmicSupply > 0) {
+            (bool success, ) =
+                address(stakingWallet).call{value: stakingAmount_}(abi.encodeWithSelector(StakingWallet.deposit.selector, roundNum));
+            require(success, "Staking deposit failed.");
+        }
+
         roundNum += 1;
 
         // Give the NFT to the winner.
@@ -219,9 +240,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             emit RaffleNFTWinnerEvent(raffleWinner_, roundNum - 1, tokenId, winnerIndex);
             winnerIndex += 1;
         }
-
-        uint256 rwalkSupply = randomWalk.totalSupply();
-        uint256 cosmicSupply = nft.totalSupply();
 
         // Give some Cosmic NFTs to random RandomWalkNFT and Cosmic NFT holders.
         // The winnerIndex variable is just here in order to emit a correct event.
@@ -250,11 +268,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
                 winnerIndex += 1;
             }
         }
-
-        // Give ETH to the right parties in this section
-        uint256 prizeAmount_ = prizeAmount();
-        uint256 charityAmount_ = charityAmount();
-        uint256 raffleAmount_ = raffleAmount();
 
         // Give ETH to the winner.
         (bool success, ) = winner.call{value: prizeAmount_}("");
@@ -330,6 +343,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit RaffleWalletAddressChanged(addr);
     }
 
+    function setStakingWallet(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
+        stakingWallet = StakingWallet(addr);
+		emit StakingWalletAddressChanged(addr);
+    }
+
     function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) external onlyOwner {
         numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
 		emit NumRaffleWinnersPerRoundChanged(numRaffleWinnersPerRound);
@@ -347,20 +366,26 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function updatePrizePercentage(uint256 newPrizePercentage) external onlyOwner {
         prizePercentage = newPrizePercentage;
-		require(prizePercentage + charityPercentage + rafflePercentage < 100, "Percentage value overflow, must be lower than 100.");
+		require(prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100, "Percentage value overflow, must be lower than 100.");
 		emit PrizePercentageChanged(prizePercentage);
     }
 
     function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
         charityPercentage = newCharityPercentage;
-		require(prizePercentage + charityPercentage + rafflePercentage < 100, "Percentage value overflow, must be lower than 100.");
+		require(prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100, "Percentage value overflow, must be lower than 100.");
 	    emit CharityPercentageChanged(charityPercentage);
     }
 
     function setRafflePercentage(uint256 newRafflePercentage) external onlyOwner {
         rafflePercentage = newRafflePercentage;
-		require(prizePercentage + charityPercentage + rafflePercentage < 100, "Percentage value overflow, must be lower than 100.");
+		require(prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100, "Percentage value overflow, must be lower than 100.");
 		emit RafflePercentageChanged(rafflePercentage);
+    }
+
+    function setStakingPercentage(uint256 newStakingPercentage) external onlyOwner {
+        stakingPercentage = newStakingPercentage;
+		require(prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100, "Percentage value overflow, must be lower than 100.");
+		emit StakingPercentageChanged(stakingPercentage);
     }
 
     function setTokenContract(address addr) external onlyOwner {
@@ -442,6 +467,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function raffleAmount() public view returns (uint256) {
         return address(this).balance * rafflePercentage / 100;
+    }
+
+    function stakingAmount() public view returns (uint256) {
+        return address(this).balance * stakingPercentage / 100;
     }
 
 
