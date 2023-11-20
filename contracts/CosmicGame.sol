@@ -215,8 +215,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 raffleAmount_ = raffleAmount();
         uint256 stakingAmount_ = stakingAmount();
 
+        bool success;
         if (cosmicSupply > 0) {
-            (bool success, ) =
+            (success, ) =
                 address(stakingWallet).call{value: stakingAmount_}(abi.encodeWithSelector(StakingWallet.deposit.selector, roundNum));
             require(success, "Staking deposit failed.");
         }
@@ -270,7 +271,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         }
 
         // Give ETH to the winner.
-        (bool success, ) = winner.call{value: prizeAmount_}("");
+        (success, ) = winner.call{value: prizeAmount_}("");
         require(success, "Transfer to the winner failed.");
 
         // Give ETH to the charity.
