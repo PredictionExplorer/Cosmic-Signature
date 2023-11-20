@@ -82,6 +82,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 
+    uint256 public lastCSTBidTime;
+    uint256 public lastTotalCSTBalance;
+
     // Entropy for the raffle.
     bytes32 public raffleEntropy;
 
@@ -101,7 +104,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
     // randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
-    event BidEvent(address indexed lastBidder, uint256 indexed round, uint256 bidPrice, int256 randomWalkNFTId, uint256 prizeTime, string message);
+    event BidEvent(address indexed lastBidder, uint256 indexed round, int256 bidPrice, int256 randomWalkNFTId, int256 numCSTTokens, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 indexed tokenId, uint256 winnerIndex);
@@ -169,7 +172,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
             require(success, "Refund transfer failed.");
         }
-        emit BidEvent(lastBidder, roundNum, bidPrice, -1, prizeTime, message);
+        emit BidEvent(lastBidder, roundNum, int256(bidPrice), -1, -1, prizeTime, message);
     }
 
     function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
@@ -181,8 +184,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         _bidCommon(message);
 
-        emit BidEvent(lastBidder, roundNum, 0, int256(randomWalkNFTId), prizeTime, message);
+        emit BidEvent(lastBidder, roundNum, -1, int256(randomWalkNFTId), -1, prizeTime, message);
     }
+
+    function bidWithCST(string memory message) external {
+        uint256 price = currentCSTPrice();
+        token.burn(msg.sender, price);
+        _bidCommon(message);
+        emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
+    }
+
+    // We are doing a dutch auction that lasts 24 hours.
+    function currentCSTPrice() public view returns (uint256) {
+        uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
+        uint256 AUCTION_DURATION = 24 * 3600;
+        if (secondsElapsed >= AUCTION_DURATION) {
+            return 0;
+        }
+        uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / AUCTION_DURATION);
+        return (fraction * lastTotalCSTBalance) / 1e6;
+    }
+
 
     function claimPrize() external {
         // In this function we give:

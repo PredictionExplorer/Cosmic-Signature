@@ -17,6 +17,10 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes {
         _mint(to, amount);
     }
 
+    function burn(address account, uint256 amount) public {
+        _burn(account, amount);
+    }
+
     // The following functions are overrides required by Solidity.
 
     function _afterTokenTransfer(address from, address to, uint256 amount)
