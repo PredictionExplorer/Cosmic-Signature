@@ -11,9 +11,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
     mapping(uint256 => string) public tokenNames;
 
-    // Keep track of in which round each NFT was minted.
-    mapping(uint256 => uint256) public roundMinted;
-
     bytes32 public entropy;
 
     uint256 public numTokens = 0;
@@ -64,7 +61,6 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
         uint256 tokenId = numTokens;
         numTokens += 1;
-        roundMinted[tokenId] = roundNum;
 
         entropy = keccak256(abi.encode(
             entropy,
