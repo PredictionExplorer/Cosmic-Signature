@@ -7,7 +7,9 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 
 contract StakingWallet is Ownable {
 
-    mapping(uint256 => uint256) public valueInRound;
+    mapping(uint256 => uint256) public amountInRound;
+    uint256 public previousRoundReminder = 0;
+
     // round -> NFT number -> paid or not
     mapping(uint256 => mapping(uint256 => bool)) public isPaid;
 
@@ -15,7 +17,7 @@ contract StakingWallet is Ownable {
     CosmicSignature public nft;
     CosmicGame public game;
 
-    event RaffleDepositEvent(uint256 indexed round, uint256 amount);
+    event StakingDepositEvent(uint256 indexed round, uint256 depositedAmount, uint256 prevRoundReminder, uint256 amountPerHolder);
 
     constructor(CosmicSignature nft_, CosmicGame game_) {
         nft = nft_;
@@ -23,11 +25,13 @@ contract StakingWallet is Ownable {
     }
 
     function deposit(uint256 roundNum) external payable {
-        require(msg.value > 0, "No ETH has been sent.");
         require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
+		uint256 reminder = previousRoundReminder;
+		uint256 totalAmount = msg.value + reminder;
         numWinnersInRound[roundNum] = nft.totalSupply();
-        valueInRound[roundNum] = msg.value / numWinnersInRound[roundNum];
-        emit RaffleDepositEvent(roundNum, msg.value);
+        amountInRound[roundNum] = totalAmount/ numWinnersInRound[roundNum];
+		previousRoundReminder = totalAmount % numWinnersInRound[roundNum];
+        emit StakingDepositEvent(roundNum, msg.value, reminder, amountInRound[roundNum]);
     }
 
     function withdraw(uint256 roundNum, uint256 tokenId) external {
@@ -35,7 +39,7 @@ contract StakingWallet is Ownable {
         require(tokenId < numWinnersInRound[roundNum]);
         require(!isPaid[roundNum][tokenId]);
         isPaid[roundNum][tokenId] = true;
-        (bool success, ) = nft.ownerOf(tokenId).call{value: tokenId}("");
+        (bool success, ) = nft.ownerOf(tokenId).call{value: amountInRound[roundNum]}("");
         require(success, "Withdrawal failed.");
     }
 }
