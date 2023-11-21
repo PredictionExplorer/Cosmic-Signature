@@ -16,39 +16,7 @@ describe("Security", function () {
   }
     it("Vulnerability to claimPrize() multiple times", async function () {
 
-    const CosmicGame = await hre.ethers.getContractFactory("CosmicGame");
-    const cosmicGame = await CosmicGame.deploy();
-    await cosmicGame.deployed();
-
-    const CosmicToken = await hre.ethers.getContractFactory("CosmicToken");
-    const cosmicToken = await CosmicToken.deploy();
-    cosmicToken.deployed();
-    await cosmicToken.transferOwnership(cosmicGame.address);
-
-    const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
-    const cosmicSignature = await CosmicSignature.deploy(cosmicGame.address);
-    cosmicSignature.deployed();
-
-    const CosmicDAO = await hre.ethers.getContractFactory("CosmicDAO");
-    const cosmicDAO = await CosmicDAO.deploy(cosmicToken.address);
-    await cosmicDAO.deployed();
-
-    const CharityWallet = await hre.ethers.getContractFactory("CharityWallet");
-    const charityWallet = await CharityWallet.deploy();
-    charityWallet.deployed();
-    await charityWallet.transferOwnership(cosmicDAO.address);
-
-    const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-    const raffleWallet = await RaffleWallet.deploy();
-    raffleWallet.deployed();
-
-    const RandomWalkNFT = await hre.ethers.getContractFactory("RandomWalkNFT");
-    const randomWalkNFT = await RandomWalkNFT.deploy();
-    randomWalkNFT.deployed();
-
-    const RandomWalkNFT2 = await hre.ethers.getContractFactory("RandomWalkNFT");
-    const randomWalkNFT2 = await RandomWalkNFT2.deploy();
-    randomWalkNFT2.deployed();
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet,randomWalkNFT} = await loadFixture(deployCosmic);
 
     await cosmicGame.setTokenContract(cosmicToken.address);
     await cosmicGame.setNftContract(cosmicSignature.address);
