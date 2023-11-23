@@ -332,10 +332,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // Claiming donated NFTs
 
     function claimDonatedNFT(uint256 num) public {
-       require(roundNum > 0, "Round is not over yet.");
-       require(donatedNFTs[num].round < roundNum, "Round is not over yet.");
        require(num < numDonatedNFTs, "The donated NFT does not exist.");
        address winner = winners[donatedNFTs[num].round];
+       require(winner != address(0),"Non-existent winner for the round.");
        require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
        donatedNFTs[num].claimed = true;
        donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
