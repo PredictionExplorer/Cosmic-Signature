@@ -15,9 +15,9 @@ describe("Cosmic", function () {
   async function deployCosmic(deployerAcct) {
 	  let contractDeployerAcct;
       [contractDeployerAcct] = await ethers.getSigners();
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,"",0,"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",true);
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWallet,marketingWallet} = await basicDeployment(contractDeployerAcct,"",0,"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",true);
 
-    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
+    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet, stakingWallet, marketingWallet};
   }
 
   describe("Deployment", function () {
@@ -541,6 +541,58 @@ describe("Cosmic", function () {
 
       let new_charity_addr = await charityWallet.charityAddress();
       expect(new_charity_addr.toString()).to.equal(addr1.address.toString());
-	})
+	});
+    it("StakingWallet is properly distributing prize amount()", async function () {
+      [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWallet} = await loadFixture(deployCosmic);
+
+      let bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr1).bid("", {value:bidPrice});
+      let prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+      await cosmicGame.connect(addr1).claimPrize();
+
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr2).bid("", {value:bidPrice});
+      prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+      await cosmicGame.connect(addr2).claimPrize();
+
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr3).bid("", {value:bidPrice});
+      prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+      await cosmicGame.connect(addr3).claimPrize();
+
+      // at this point we have initial data with 3 token holders (holding 1 or more
+      // CS tokens. Now we are ready to test staking
+		
+
+      bidPrice = await cosmicGame.getBidPrice();
+      await cosmicGame.connect(addr3).bid("", {value:bidPrice});
+      prizeTime = await cosmicGame.timeUntilPrize();
+      await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+
+	  let previousReminder = await stakingWallet.previousRoundReminder();
+      let previousStakingAmount = await cosmicGame.stakingAmount();
+      let csTotalSupply = await cosmicSignature.totalSupply();
+      let roundNum = await cosmicGame.roundNum();
+      let tx = await cosmicGame.connect(addr3).claimPrize();
+      let receipt = await tx.wait();
+      let topic_sig = stakingWallet.interface.getEventTopic("StakingDepositEvent");
+      let log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+      let parsed_log = stakingWallet.interface.parseLog(log);
+      expect(parsed_log.args.prevRoundReminder.toString()).to.equal(previousReminder);
+      let amountInRound = await stakingWallet.amountInRound(roundNum);
+      let newReminderRemote = await stakingWallet.previousRoundReminder();
+	  let totalAmount = previousStakingAmount.add(previousReminder);
+      let q = totalAmount.div(csTotalSupply);
+      let r = totalAmount.mod(csTotalSupply);
+      expect(parsed_log.args.depositedAmount).to.equal(previousStakingAmount);
+      expect(parsed_log.args.prevRoundReminder).to.equal(previousReminder);
+      expect(parsed_log.args.amountPerHolder).to.equal(q);
+	  let currentReminder = await stakingWallet.previousRoundReminder();
+	  expect(currentReminder).to.equal(r);
+	});
   });
 })
