@@ -36,8 +36,8 @@ contract StakingWallet is Ownable {
 
     function withdraw(uint256 roundNum, uint256 tokenId) external {
         // Check if the NFT number is eligible
-        require(tokenId < numWinnersInRound[roundNum]);
-        require(!isPaid[roundNum][tokenId]);
+        require(tokenId < numWinnersInRound[roundNum],"tokenId out of allowed range.");
+        require(!isPaid[roundNum][tokenId],"The amount was already paid.");
         isPaid[roundNum][tokenId] = true;
         (bool success, ) = nft.ownerOf(tokenId).call{value: amountInRound[roundNum]}("");
         require(success, "Withdrawal failed.");
