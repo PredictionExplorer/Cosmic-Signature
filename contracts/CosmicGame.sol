@@ -193,6 +193,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function bidWithCST(string memory message) external {
         uint256 price = currentCSTPrice();
         startingBidPriceCST = _max(100e18, price) * 2;
+        lastCSTBidTime = block.timestamp;
         token.burn(msg.sender, price);
         _bidCommon(message);
         emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
