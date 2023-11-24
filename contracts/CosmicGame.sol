@@ -71,6 +71,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public numHolderNFTWinnersPerRound = 2;
 
+    uint256 public CSTAuctionLength = 24;
+
     // when the money can be taken out
     uint256 public prizeTime;
 
@@ -82,8 +84,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 
-    uint256 public lastCSTBidTime;
-    uint256 public lastTotalCSTBalance;
+    uint256 public lastCSTBidTime = activationTime;
+    uint256 public startingBidPriceCST = 100e18;
 
     // Entropy for the raffle.
     bytes32 public raffleEntropy;
@@ -132,6 +134,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
+    event CSTAuctionLengthChanged(uint newCSTAuctionLength);
 
     constructor() {
         raffleEntropy = keccak256(abi.encode(
@@ -189,6 +192,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function bidWithCST(string memory message) external {
         uint256 price = currentCSTPrice();
+        startingBidPriceCST = _max(100e18, price) * 2;
         token.burn(msg.sender, price);
         _bidCommon(message);
         emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
@@ -197,14 +201,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // We are doing a dutch auction that lasts 24 hours.
     function currentCSTPrice() public view returns (uint256) {
         uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-        uint256 AUCTION_DURATION = 24 * 3600;
-        if (secondsElapsed >= AUCTION_DURATION) {
+        uint256 auction_duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
+        if (secondsElapsed >= auction_duration) {
             return 0;
         }
-        uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / AUCTION_DURATION);
-        return (fraction * lastTotalCSTBalance) / 1e6;
+        uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
+        return (fraction * startingBidPriceCST) / 1e6;
     }
-
 
     function claimPrize() external {
         // In this function we give:
@@ -463,6 +466,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function setActivationTime(uint256 newActivationTime) external onlyOwner {
         activationTime = newActivationTime;
 		emit ActivationTimeChanged(activationTime);
+    }
+    function setCSTAuctionLength(uint256 newCSTAuctionLength) external onlyOwner {
+        CSTAuctionLength = newCSTAuctionLength;
+		emit CSTAuctionLengthChanged(CSTAuctionLength);
     }
 
 
