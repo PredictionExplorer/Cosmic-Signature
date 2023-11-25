@@ -71,7 +71,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public numHolderNFTWinnersPerRound = 2;
 
-    uint256 public CSTAuctionLength = 24;
+    uint256 public CSTAuctionLength = 10 * 3600;
+    uint256 public numCSTBids = 0;
+    uint256 public numETHBids = 0;
+    uint256 public ETHToCSTBidRatio = 10;
+    uint256 public startingBidPriceCST = 100e18;
 
     // when the money can be taken out
     uint256 public prizeTime;
@@ -85,7 +89,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 
     uint256 public lastCSTBidTime = activationTime;
-    uint256 public startingBidPriceCST = 100e18;
 
     // Entropy for the raffle.
     bytes32 public raffleEntropy;
@@ -134,7 +137,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
-    event CSTAuctionLengthChanged(uint newCSTAuctionLength);
+    event ETHToCSTBidRatioChanged(uint newETHToCSTBidRatio);
 
     constructor() {
         raffleEntropy = keccak256(abi.encode(
@@ -167,6 +170,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             "The value submitted with this transaction is too low."
         );
         bidPrice = newBidPrice;
+        numETHBids += 1;
 
         _bidCommon(message);
 
@@ -194,6 +198,15 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 price = currentCSTPrice();
         startingBidPriceCST = _max(100e18, price) * 2;
         lastCSTBidTime = block.timestamp;
+        numCSTBids += 1;
+        // We want to there to be mainly ETH bids, not CST bids.
+        // In order to achieve this, we will adjust the auction length depending on the ratio.
+        if (numETHBids < ETHToCSTBidRatio * numCSTBids) {
+            // We are adding 3600 seconds in case the length somehow became zero.
+            CSTAuctionLength = CSTAuctionLength * 2 + 3600;
+        } else {
+            CSTAuctionLength /= 2;
+        }
         token.burn(msg.sender, price);
         _bidCommon(message);
         emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
@@ -468,9 +481,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         activationTime = newActivationTime;
 		emit ActivationTimeChanged(activationTime);
     }
-    function setCSTAuctionLength(uint256 newCSTAuctionLength) external onlyOwner {
-        CSTAuctionLength = newCSTAuctionLength;
-		emit CSTAuctionLengthChanged(CSTAuctionLength);
+
+    function setETHToCSTBidRatio(uint256 newETHToCSTBidRatio) external onlyOwner {
+        ETHToCSTBidRatio = newETHToCSTBidRatio;
+		emit ETHToCSTBidRatioChanged(ETHToCSTBidRatio);
     }
 
 
