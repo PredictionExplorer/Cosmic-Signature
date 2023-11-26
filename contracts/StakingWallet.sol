@@ -7,39 +7,80 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 
 contract StakingWallet is Ownable {
 
-    mapping(uint256 => uint256) public amountInRound;
-    uint256 public previousRoundReminder = 0;
+    struct stakedNFT {
+        uint256 tokenId;
+        address owner;
+        uint256 stakeTime;
+        uint256 unstakeTime;
+        uint256 unstakeEligibleTime;
+        mapping(uint256 => bool) depositClaimed;
+    }
 
-    // round -> NFT number -> paid or not
-    mapping(uint256 => mapping(uint256 => bool)) public isPaid;
+    struct ETHDeposit {
+        uint256 depositTime;
+        uint256 depositAmount;
+        uint256 numStaked;
+    }
 
-    mapping(uint256 => uint256) public numWinnersInRound;
+    mapping(uint256 => stakedNFT) public stakedNFTs;
+    uint256 public numStakeActions;
+
+    mapping(uint256 => ETHDeposit) public ETHDeposits;
+    uint256 public numETHDeposits;
+
+    uint256 numStakedNFTs;
+    // TODO: figure out the invariant that is always true that includes the modulo.
+    //       It would be useful for testing.
+    uint256 modulo;
+
     CosmicSignature public nft;
     CosmicGame public game;
-
-    event StakingDepositEvent(uint256 indexed round, uint256 depositedAmount, uint256 prevRoundReminder, uint256 amountPerHolder);
 
     constructor(CosmicSignature nft_, CosmicGame game_) {
         nft = nft_;
         game = game_;
     }
 
-    function deposit(uint256 roundNum) external payable {
+    function deposit(uint256 timestamp) external payable {
         require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
-		uint256 reminder = previousRoundReminder;
-		uint256 totalAmount = msg.value + reminder;
-        numWinnersInRound[roundNum] = nft.totalSupply();
-        amountInRound[roundNum] = totalAmount/ numWinnersInRound[roundNum];
-		previousRoundReminder = totalAmount % numWinnersInRound[roundNum];
-        emit StakingDepositEvent(roundNum, msg.value, reminder, amountInRound[roundNum]);
+        ETHDeposits[numETHDeposits].depositTime = timestamp;
+        ETHDeposits[numETHDeposits].depositAmount = msg.value;
+        numETHDeposits += 1;
+        // TODO: This is the amount that would be frozen forever. Verify that this is true.
+        modulo += msg.value % numStakedNFTs;
     }
 
-    function withdraw(uint256 roundNum, uint256 tokenId) external {
-        // Check if the NFT number is eligible
-        require(tokenId < numWinnersInRound[roundNum],"tokenId out of allowed range.");
-        require(!isPaid[roundNum][tokenId],"The amount was already paid.");
-        isPaid[roundNum][tokenId] = true;
-        (bool success, ) = nft.ownerOf(tokenId).call{value: amountInRound[roundNum]}("");
-        require(success, "Withdrawal failed.");
+    function stake(uint256 _tokenId) external {
+        nft.safeTransferFrom(msg.sender, address(this), _tokenId);
+        stakedNFTs[numStakeActions].tokenId = _tokenId;
+        stakedNFTs[numStakeActions].owner = msg.sender;
+        stakedNFTs[numStakeActions].stakeTime = block.timestamp;
+        // stakedNFTs[numStakedNFTs].unstakeTime = 0;
+        stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + 3600;
+        numStakeActions += 1;
+        numStakedNFTs += 1;
+    }
+
+    function unstake(uint256 stakeActionId) external {
+        require (stakedNFTs[stakeActionId].unstakeTime == 0, "Token has already been unstaked");
+        require (stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can unstake");
+        require (stakedNFTs[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet");
+        nft.safeTransferFrom(address(this), msg.sender, stakedNFTs[numStakeActions].tokenId);
+        stakedNFTs[stakeActionId].unstakeTime = block.timestamp;
+        numStakedNFTs -= 1;
+    }
+
+    function claimReward(uint256 stakeActionId, uint256 ETHDepositId) external {
+        require (stakedNFTs[stakeActionId].unstakeTime > 0, "Token has not been unstaked");
+        require (!stakedNFTs[stakeActionId].depositClaimed[ETHDepositId], "Token has not been unstaked");
+        require (stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can claim reward");
+        // We are checking less than here, but there is a potential issue that the deposit and stake happen at the exact same time
+        // Need to think about this some more.
+        require (stakedNFTs[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime, "You were not staked yet.");
+        require (stakedNFTs[stakeActionId].unstakeTime > ETHDeposits[ETHDepositId].depositTime, "You were already unstaked.");
+        stakedNFTs[stakeActionId].depositClaimed[ETHDepositId] = true;
+        uint256 amount = ETHDeposits[ETHDepositId].depositAmount / ETHDeposits[ETHDepositId].numStaked;
+        (bool success, ) = stakedNFTs[stakeActionId].owner.call{value: amount}("");
+        require(success, "Reward transfer failed.");
     }
 }
