@@ -22,18 +22,20 @@ contract BidderContract is IERC721Receiver {
 	receive() external payable { }
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
-		cosmicGame.bid{value:price}("contract bid");
+		cosmicGame.bid{value:price}("contract bid", -1);
 	}
+    /*
 	function doBidRWalk(uint256 tokenId) external {
     	cosmicGame.bidWithRWLK(tokenId,"contract bid rwalk");
 	}
+    */
 	function doBidAndDonate(address nftAddress,uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame),true);
 		uint256 donatedTokenNum = cosmicGame.numDonatedNFTs();
 		myDonatedNFTs.push(donatedTokenNum);
 		numMyDonatedNFTs++;
 		uint256 price = cosmicGame.getBidPrice();
-		cosmicGame.bidAndDonateNFT{value:price}("contract bid with donation",IERC721(nftAddress),tokenId);
+		cosmicGame.bidAndDonateNFT{value:price}("contract bid with donation", -1, IERC721(nftAddress),tokenId);
 	}
     function doClaim() external {
         cosmicGame.claimPrize();
@@ -86,7 +88,7 @@ contract BidCNonRecv {	// Bidder Contract but not ERC721 receiver
 	receive() external payable { }
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
-		cosmicGame.bid{value:price}("non-erc721 receiver bid");
+		cosmicGame.bid{value:price}("non-erc721 receiver bid", -1);
 	}
     function doClaim() external {
         cosmicGame.claimPrize();

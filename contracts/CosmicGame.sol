@@ -41,7 +41,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
     // contract would break if it's zero and someone bids before a donation is made
     uint256 public bidPrice = 10**15;
 
+    enum BidType {
+        ETH,
+        RandomWalk,
+        CST
+    }
+
     address public lastBidder = address(0);
+    BidType public lastBidType;
 
     // Some money will go to charity
     address public charity;
@@ -57,6 +64,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public constant MARKETING_REWARD = 15 * 1e18;
 
     uint256 public prizePercentage = 25;
+
+    uint256 public rwalkPrizePercentage = 30;
 
     // 10% of the prize pool goes to the charity
     uint256 public charityPercentage = 10;
@@ -118,6 +127,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	/// Admin events
 	event CharityPercentageChanged(uint256 newCharityPercentage);
 	event PrizePercentageChanged(uint256 newPrizePercentage);
+	event RwalkPrizePercentageChanged(uint256 newRwalkPrizePercentage);
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 	event StakingPercentageChanged(uint256 newStakingPercentage);
 	event NumRaffleWinnersPerRoundChanged(uint256 newNumRaffleWinnersPerRound);
@@ -147,32 +157,34 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     receive() external payable {
-        bid("");
+        bid("", -1);
     }
 
     // Bidding
 
-    function bidAndDonateNFT(string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
-        bid(message);
+    function bidAndDonateNFT(string memory message, int256 randomWalkNFTId, IERC721 nftAddress, uint256 tokenId) external payable {
+        bid(message, randomWalkNFTId);
         _donateNFT(nftAddress, tokenId);
     }
 
-    function bidWithRWLKAndDonateNFT(uint256 randomWalkNFTId, string memory message, IERC721 nftAddress, uint256 tokenId) external payable {
-        bidWithRWLK(randomWalkNFTId, message);
-        _donateNFT(nftAddress, tokenId);
-    }
+    function bid(string memory message, int256 randomWalkNFTId) public payable {
+        if (randomWalkNFTId != -1) {
+            require(!usedRandomWalkNFTs[uint256(randomWalkNFTId)], "This RandomWalkNFT has already been used for bidding.");
+            require(randomWalk.ownerOf(uint256(randomWalkNFTId)) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
+            usedRandomWalkNFTs[uint256(randomWalkNFTId)] = true;
+        }
 
-    function bid(string memory message) public payable {
         uint256 newBidPrice = getBidPrice();
 
         require(
             msg.value >= newBidPrice,
             "The value submitted with this transaction is too low."
         );
+
         bidPrice = newBidPrice;
         numETHBids += 1;
 
-        _bidCommon(message);
+        _bidCommon(message, randomWalkNFTId == -1);
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
@@ -180,22 +192,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
             require(success, "Refund transfer failed.");
         }
         emit BidEvent(lastBidder, roundNum, int256(bidPrice), -1, -1, prizeTime, message);
-    }
-
-    function bidWithRWLK(uint256 randomWalkNFTId, string memory message) public {
-
-        require(!usedRandomWalkNFTs[randomWalkNFTId], "This RandomWalkNFT has already been used for bidding.");
-        require(randomWalk.ownerOf(randomWalkNFTId) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
-
-        usedRandomWalkNFTs[randomWalkNFTId] = true;
-
-        bid(message);
-
-        (bool mintSuccess, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, TOKEN_REWARD * 2));
-		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
-
-        emit BidEvent(lastBidder, roundNum, -1, int256(randomWalkNFTId), -1, prizeTime, message);
     }
 
     function bidWithCST(string memory message) external {
@@ -212,7 +208,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             CSTAuctionLength /= 2;
         }
         token.burn(msg.sender, price);
-        _bidCommon(message);
+        _bidCommon(message, false);
         emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
     }
 
@@ -257,7 +253,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 rwalkSupply = randomWalk.totalSupply();
         uint256 cosmicSupply = nft.totalSupply();
 
-        uint256 prizeAmount_ = prizeAmount();
+        uint256 prizeAmount_ = lastBidType == BidType.ETH ? prizeAmount() : rwalkAmount();
         uint256 charityAmount_ = charityAmount();
         uint256 raffleAmount_ = raffleAmount();
         uint256 stakingAmount_ = stakingAmount();
@@ -415,10 +411,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit NumHolderNFTWinnersPerRoundChanged(numHolderNFTWinnersPerRound);
     }
 
-    function updatePrizePercentage(uint256 newPrizePercentage) external onlyOwner {
+    function setPrizePercentage(uint256 newPrizePercentage) external onlyOwner {
         prizePercentage = newPrizePercentage;
 		require(prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100, "Percentage value overflow, must be lower than 100.");
 		emit PrizePercentageChanged(prizePercentage);
+    }
+
+    function setRwalkPrizePercentage(uint256 newRwalkPrizePercentage) external onlyOwner {
+        rwalkPrizePercentage = newRwalkPrizePercentage;
+		require(rwalkPrizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100, "Percentage value overflow, must be lower than 100.");
+		emit RwalkPrizePercentageChanged(rwalkPrizePercentage);
     }
 
     function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
@@ -491,7 +493,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit ETHToCSTBidRatioChanged(ETHToCSTBidRatio);
     }
 
-
     // Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns(bytes4) {
         return this.onERC721Received.selector;
@@ -517,6 +518,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return address(this).balance * prizePercentage / 100;
     }
 
+    function rwalkAmount() public view returns (uint256) {
+        return address(this).balance * rwalkPrizePercentage / 100;
+    }
+
     function charityAmount() public view returns (uint256) {
         return address(this).balance * charityPercentage / 100;
     }
@@ -529,9 +534,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         return address(this).balance * stakingPercentage / 100;
     }
 
-
     // Internal functions
-
 
     function _initializeBidPrice() internal {
         bidPrice = address(this).balance / initialBidAmountFraction;
@@ -557,7 +560,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
     }
 
-    function _bidCommon(string memory message) internal {
+    function _bidCommon(string memory message, bool isRwalkBid) internal {
         require(
             block.timestamp >= activationTime,
             "Not active yet."
@@ -570,6 +573,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         }
 
         lastBidder = _msgSender();
+        lastBidType = isRwalkBid ? BidType.RandomWalk : BidType.ETH;
 
         raffleParticipants[numRaffleParticipants] = lastBidder;
         numRaffleParticipants += 1;
