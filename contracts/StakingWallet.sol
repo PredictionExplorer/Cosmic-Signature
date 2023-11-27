@@ -50,6 +50,7 @@ contract StakingWallet is Ownable {
             // Forward the money to the charity
             (bool success, ) = charity.call{value: msg.value}("");
             require(success, "Transfer to charity contract failed.");
+			return;
         }
         ETHDeposits[numETHDeposits].depositTime = timestamp;
         ETHDeposits[numETHDeposits].depositAmount = msg.value;
