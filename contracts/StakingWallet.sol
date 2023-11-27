@@ -29,6 +29,8 @@ contract StakingWallet is Ownable {
     uint256 public numETHDeposits;
 
     uint256 numStakedNFTs;
+
+    address charity;
     // TODO: figure out the invariant that is always true that includes the modulo.
     //       It would be useful for testing.
     uint256 modulo;
@@ -36,13 +38,19 @@ contract StakingWallet is Ownable {
     CosmicSignature public nft;
     CosmicGame public game;
 
-    constructor(CosmicSignature nft_, CosmicGame game_) {
+    constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
         nft = nft_;
         game = game_;
+        charity = charity_;
     }
 
     function deposit(uint256 timestamp) external payable {
         require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
+        if (numStakedNFTs == 0) {
+            // Forward the money to the charity
+            (bool success, ) = charity.call{value: msg.value}("");
+            require(success, "Transfer to charity contract failed.");
+        }
         ETHDeposits[numETHDeposits].depositTime = timestamp;
         ETHDeposits[numETHDeposits].depositAmount = msg.value;
         numETHDeposits += 1;
@@ -55,8 +63,9 @@ contract StakingWallet is Ownable {
         stakedNFTs[numStakeActions].tokenId = _tokenId;
         stakedNFTs[numStakeActions].owner = msg.sender;
         stakedNFTs[numStakeActions].stakeTime = block.timestamp;
-        // stakedNFTs[numStakedNFTs].unstakeTime = 0;
-        stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + 3600;
+        uint256 fractionStaked = (1e6 * numStakedNFTs) / nft.totalSupply();
+        uint256 extraTime = fractionStaked * fractionStaked / 1500 + 2600000;
+        stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + extraTime;
         numStakeActions += 1;
         numStakedNFTs += 1;
     }
