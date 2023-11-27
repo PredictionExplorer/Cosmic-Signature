@@ -189,7 +189,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
         usedRandomWalkNFTs[randomWalkNFTId] = true;
 
-        _bidCommon(message);
+        bid(message);
+
+        (bool mintSuccess, ) =
+            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, TOKEN_REWARD * 2));
+		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
 
         emit BidEvent(lastBidder, roundNum, -1, int256(randomWalkNFTId), -1, prizeTime, message);
     }
