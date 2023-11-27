@@ -54,6 +54,7 @@ contract StakingWallet is Ownable {
         }
         ETHDeposits[numETHDeposits].depositTime = timestamp;
         ETHDeposits[numETHDeposits].depositAmount = msg.value;
+		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
         numETHDeposits += 1;
         // TODO: This is the amount that would be frozen forever. Verify that this is true.
         modulo += msg.value % numStakedNFTs;
