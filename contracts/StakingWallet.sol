@@ -42,6 +42,7 @@ contract StakingWallet is Ownable {
 	event UnstakeActionEvent(uint256 indexed actionId ,uint256 indexed tokenId,uint256 totalNFTs,address taker);
 	event ClaimRewardEvent(uint256 indexed actionId,uint256 indexed depositId,uint256 reward, address staker);
 	event EthDepositEvent(uint256 indexed depositTime,uint256 depositNum, uint256 numStakedNFTs,uint256 amount,uint256 modulo); 
+	event CharityUpdatedEvent(address indexed newCharityAddress);
     constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
         nft = nft_;
         game = game_;
@@ -102,4 +103,10 @@ contract StakingWallet is Ownable {
         require(success, "Reward transfer failed.");
 		emit ClaimRewardEvent(stakeActionId,ETHDepositId,amount,msg.sender);
     }
+	function setCharity(address newCharityAddress) external onlyOwner {
+        require(newCharityAddress != address(0), "Zero-address was given.");
+        charity = newCharityAddress;
+        emit CharityUpdatedEvent(charity);
+    }
+
 }
