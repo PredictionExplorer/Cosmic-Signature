@@ -28,12 +28,12 @@ contract StakingWallet is Ownable {
     mapping(uint256 => ETHDeposit) public ETHDeposits;
     uint256 public numETHDeposits;
 
-    uint256 numStakedNFTs;
+    uint256 public numStakedNFTs;
 
-    address charity;
+    address public charity;
     // TODO: figure out the invariant that is always true that includes the modulo.
     //       It would be useful for testing.
-    uint256 modulo;
+    uint256 public modulo;
 
     CosmicSignature public nft;
     CosmicGame public game;
