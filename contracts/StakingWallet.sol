@@ -67,7 +67,7 @@ contract StakingWallet is Ownable {
     }
 
     function stake(uint256 _tokenId) external {
-        nft.safeTransferFrom(msg.sender, address(this), _tokenId);
+        nft.transferFrom(msg.sender, address(this), _tokenId);
         stakedNFTs[numStakeActions].tokenId = _tokenId;
         stakedNFTs[numStakeActions].owner = msg.sender;
         stakedNFTs[numStakeActions].stakeTime = block.timestamp;
@@ -83,7 +83,7 @@ contract StakingWallet is Ownable {
         require (stakedNFTs[stakeActionId].unstakeTime == 0, "Token has already been unstaked");
         require (stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can unstake");
         require (stakedNFTs[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet");
-        nft.safeTransferFrom(address(this), msg.sender, stakedNFTs[numStakeActions].tokenId);
+        nft.transferFrom(address(this), msg.sender, stakedNFTs[numStakeActions].tokenId);
         stakedNFTs[stakeActionId].unstakeTime = block.timestamp;
         numStakedNFTs -= 1;
 		emit UnstakeActionEvent(stakeActionId,stakedNFTs[stakeActionId].tokenId,numStakedNFTs,msg.sender);
