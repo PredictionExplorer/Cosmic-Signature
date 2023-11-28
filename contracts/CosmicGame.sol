@@ -182,9 +182,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
         );
 
         bidPrice = newBidPrice;
-        numETHBids += 1;
 
         BidType bidType = randomWalkNFTId == -1 ? BidType.ETH : BidType.RandomWalk;
+		if (bidType == BidType.ETH) {
+	        numETHBids += 1;
+		}
         _bidCommon(message, bidType);
 
         if (msg.value > bidPrice) {
