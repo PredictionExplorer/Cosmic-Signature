@@ -38,6 +38,11 @@ contract StakingWallet is Ownable {
     CosmicSignature public nft;
     CosmicGame public game;
 
+	event StakeActionEvent(uint256 indexed actionId, uint256 indexed tokenId,uint256 totalNFTs,uint256 unstakeTime,address staker);
+	event UnstakeActionEvent(uint256 indexed actionId ,uint256 indexed tokenId,uint256 totalNFTs,address taker);
+	event ClaimRewardEvent(uint256 indexed actionId,uint256 indexed depositId,uint256 reward, address staker);
+	event EthDepositEvent(uint256 indexed depositTime,uint256 depositNum, uint256 numStakedNFTs,uint256 amount,uint256 modulo); 
+	event CharityUpdatedEvent(address indexed newCharityAddress);
     constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
         nft = nft_;
         game = game_;
@@ -50,12 +55,15 @@ contract StakingWallet is Ownable {
             // Forward the money to the charity
             (bool success, ) = charity.call{value: msg.value}("");
             require(success, "Transfer to charity contract failed.");
+			return;
         }
         ETHDeposits[numETHDeposits].depositTime = timestamp;
         ETHDeposits[numETHDeposits].depositAmount = msg.value;
+		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
         numETHDeposits += 1;
         // TODO: This is the amount that would be frozen forever. Verify that this is true.
         modulo += msg.value % numStakedNFTs;
+		emit EthDepositEvent(timestamp,numETHDeposits-1,numStakedNFTs,msg.value,modulo);
     }
 
     function stake(uint256 _tokenId) external {
@@ -68,6 +76,7 @@ contract StakingWallet is Ownable {
         stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + extraTime;
         numStakeActions += 1;
         numStakedNFTs += 1;
+		emit StakeActionEvent(numStakeActions-1,_tokenId,numStakedNFTs,stakedNFTs[numStakeActions].unstakeEligibleTime,msg.sender);
     }
 
     function unstake(uint256 stakeActionId) external {
@@ -77,6 +86,7 @@ contract StakingWallet is Ownable {
         nft.safeTransferFrom(address(this), msg.sender, stakedNFTs[numStakeActions].tokenId);
         stakedNFTs[stakeActionId].unstakeTime = block.timestamp;
         numStakedNFTs -= 1;
+		emit UnstakeActionEvent(stakeActionId,stakedNFTs[stakeActionId].tokenId,numStakedNFTs,msg.sender);
     }
 
     function claimReward(uint256 stakeActionId, uint256 ETHDepositId) external {
@@ -91,5 +101,12 @@ contract StakingWallet is Ownable {
         uint256 amount = ETHDeposits[ETHDepositId].depositAmount / ETHDeposits[ETHDepositId].numStaked;
         (bool success, ) = stakedNFTs[stakeActionId].owner.call{value: amount}("");
         require(success, "Reward transfer failed.");
+		emit ClaimRewardEvent(stakeActionId,ETHDepositId,amount,msg.sender);
     }
+	function setCharity(address newCharityAddress) external onlyOwner {
+        require(newCharityAddress != address(0), "Zero-address was given.");
+        charity = newCharityAddress;
+        emit CharityUpdatedEvent(charity);
+    }
+
 }

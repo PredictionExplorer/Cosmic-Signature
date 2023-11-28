@@ -182,9 +182,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
         );
 
         bidPrice = newBidPrice;
-        numETHBids += 1;
 
-        _bidCommon(message, randomWalkNFTId == -1);
+        BidType bidType = randomWalkNFTId == -1 ? BidType.ETH : BidType.RandomWalk;
+		if (bidType == BidType.ETH) {
+	        numETHBids += 1;
+		}
+        _bidCommon(message, bidType);
 
         if (msg.value > bidPrice) {
             // Return the extra money to the bidder.
@@ -208,7 +211,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             CSTAuctionLength /= 2;
         }
         token.burn(msg.sender, price);
-        _bidCommon(message, false);
+        _bidCommon(message, BidType.CST);
         emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
     }
 
@@ -253,7 +256,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 rwalkSupply = randomWalk.totalSupply();
         uint256 cosmicSupply = nft.totalSupply();
 
-        uint256 prizeAmount_ = lastBidType == BidType.ETH ? prizeAmount() : rwalkAmount();
+        uint256 prizeAmount_ = prizeAmount();
+		if (lastBidType == BidType.RandomWalk) {
+			prizeAmount_ = rwalkAmount();
+		}
         uint256 charityAmount_ = charityAmount();
         uint256 raffleAmount_ = raffleAmount();
         uint256 stakingAmount_ = stakingAmount();
@@ -560,7 +566,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
     }
 
-    function _bidCommon(string memory message, bool isRwalkBid) internal {
+    function _bidCommon(string memory message, BidType bidType) internal {
         require(
             block.timestamp >= activationTime,
             "Not active yet."
@@ -573,7 +579,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         }
 
         lastBidder = _msgSender();
-        lastBidType = isRwalkBid ? BidType.RandomWalk : BidType.ETH;
+		lastBidType = bidType;
 
         raffleParticipants[numRaffleParticipants] = lastBidder;
         numRaffleParticipants += 1;
