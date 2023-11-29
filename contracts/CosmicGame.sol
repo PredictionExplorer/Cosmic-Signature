@@ -194,7 +194,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
             (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
             require(success, "Refund transfer failed.");
         }
-        emit BidEvent(lastBidder, roundNum, int256(bidPrice), -1, -1, prizeTime, message);
+        emit BidEvent(lastBidder, roundNum, int256(bidPrice), randomWalkNFTId, -1, prizeTime, message);
     }
 
     function bidWithCST(string memory message) external {
