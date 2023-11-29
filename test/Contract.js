@@ -26,11 +26,11 @@ describe("Contract", function () {
 
     let bidPrice;
 	bidPrice = await cosmicGame.getBidPrice();
-	await cosmicGame.connect(owner).bid("owner bids", {value: bidPrice});
+	await cosmicGame.connect(owner).bid("owner bids",ethers.BigNumber.from("-1"), {value: bidPrice});
     bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr1).bid("addr1 bids", {value: bidPrice});
+    await cosmicGame.connect(addr1).bid("addr1 bids",ethers.BigNumber.from("-1"), {value: bidPrice});
     bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr2).bid("addr2 bids", {value: bidPrice});
+    await cosmicGame.connect(addr2).bid("addr2 bids",ethers.BigNumber.from("-1"), {value: bidPrice});
 
     let randomWalkAddr = await cosmicGame.randomWalk();
     let randomWalk = await ethers.getContractAt("RandomWalkNFT",randomWalkAddr);
@@ -58,7 +58,8 @@ describe("Contract", function () {
     parsed_log = randomWalk.interface.parseLog(log);
     let rwalk_token_id = parsed_log.args.tokenId;
     await randomWalk.connect(owner).transferFrom(owner.address,bidderContract.address,rwalk_token_id)
-    await bidderContract.connect(owner).doBidRWalk(rwalk_token_id);
+    bidPrice = await cosmicGame.getBidPrice();
+    await bidderContract.connect(owner).doBidRWalk(rwalk_token_id,{value:bidPrice});
     let prizeTime = await cosmicGame.timeUntilPrize();
     await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
     tx = await bidderContract.connect(owner).doClaim();
@@ -91,7 +92,7 @@ describe("Contract", function () {
 
       let bidPrice;
       bidPrice = await cosmicGame.getBidPrice();
-      await cosmicGame.connect(owner).bid("owner bids", {value: bidPrice});
+      await cosmicGame.connect(owner).bid("owner bids",ethers.BigNumber.from("-1"), {value: bidPrice});
       bidPrice = await cosmicGame.getBidPrice();
       await bnonrec.connect(owner).doBid({value:bidPrice});
 

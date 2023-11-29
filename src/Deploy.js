@@ -38,7 +38,7 @@ const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTim
 	await raffleWallet.deployed();
 
     const StakingWallet = await hre.ethers.getContractFactory("StakingWallet");
-    stakingWallet = await StakingWallet.connect(deployerAcct).deploy(cosmicSignature.address,cosmicGame.address);
+    stakingWallet = await StakingWallet.connect(deployerAcct).deploy(cosmicSignature.address,cosmicGame.address,charityAddr);
 	await stakingWallet.deployed();
 
     const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
