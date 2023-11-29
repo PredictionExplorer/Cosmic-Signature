@@ -24,11 +24,10 @@ contract BidderContract is IERC721Receiver {
 		uint256 price = cosmicGame.getBidPrice();
 		cosmicGame.bid{value:price}("contract bid", -1);
 	}
-    /*
-	function doBidRWalk(uint256 tokenId) external {
-    	cosmicGame.bidWithRWLK(tokenId,"contract bid rwalk");
+	function doBidRWalk(int256 tokenId) external payable {
+		uint256 price = cosmicGame.getBidPrice();
+    	cosmicGame.bid{value:price}("contract bid rwalk",tokenId);
 	}
-    */
 	function doBidAndDonate(address nftAddress,uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame),true);
 		uint256 donatedTokenNum = cosmicGame.numDonatedNFTs();
