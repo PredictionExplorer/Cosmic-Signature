@@ -25,7 +25,7 @@ describe("Security", function () {
     await cosmicGame.setRandomWalk(randomWalkNFT.address);
 	await cosmicGame.setActivationTime(0);
 	let prizePercentage = "10";
-	await cosmicGame.updatePrizePercentage(ethers.BigNumber.from(prizePercentage));
+	await cosmicGame.setPrizePercentage(ethers.BigNumber.from(prizePercentage));
 
     const ReClaim = await ethers.getContractFactory("ReClaim");
     const reclaim = await ReClaim.deploy(cosmicGame.address);
@@ -36,7 +36,7 @@ describe("Security", function () {
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     let bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr3).bid("", {value: bidPrice}); // this works
+    await cosmicGame.connect(addr3).bid("",ethers.BigNumber.from("-1"), {value: bidPrice}); // this works
     let prizeTime = await cosmicGame.timeUntilPrize();
     await ethers.provider.send("evm_increaseTime", [prizeTime.add(24 * 3600).toNumber()]);
     await ethers.provider.send("evm_mine");
@@ -48,6 +48,7 @@ describe("Security", function () {
   });
   it("Is possible to take prize before activation", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
+      [owner, addr1, ...addrs] = await ethers.getSigners();
       let donationAmount = ethers.utils.parseEther('10');
       await cosmicGame.donate({value: donationAmount});
 	  await ethers.provider.send("evm_mine"); // begin
@@ -55,7 +56,7 @@ describe("Security", function () {
 	  await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
 	  await ethers.provider.send("evm_mine");
 	  let prizeAmount = await cosmicGame.prizeAmount();
-	  let balance_before =(await addr3.getBalance());
-	  await expect(cosmicGame.connect(addr3).claimPrize()).to.be.revertedWith("There is no last bidder.");
+	  let balance_before =(await addr1.getBalance());
+	  await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("There is no last bidder.");
   });
 })
