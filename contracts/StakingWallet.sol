@@ -38,9 +38,9 @@ contract StakingWallet is Ownable {
     CosmicSignature public nft;
     CosmicGame public game;
 
-	event StakeActionEvent(uint256 indexed actionId, uint256 indexed tokenId,uint256 totalNFTs,uint256 unstakeTime,address staker);
-	event UnstakeActionEvent(uint256 indexed actionId ,uint256 indexed tokenId,uint256 totalNFTs,address staker);
-	event ClaimRewardEvent(uint256 indexed actionId,uint256 indexed depositId,uint256 reward, address staker);
+	event StakeActionEvent(uint256 indexed actionId, uint256 indexed tokenId,uint256 totalNFTs,uint256 unstakeTime,address indexed staker);
+	event UnstakeActionEvent(uint256 indexed actionId ,uint256 indexed tokenId,uint256 totalNFTs,address indexed staker);
+	event ClaimRewardEvent(uint256 indexed actionId,uint256 indexed depositId,uint256 reward, address indexed staker);
 	event EthDepositEvent(uint256 indexed depositTime,uint256 depositNum, uint256 numStakedNFTs,uint256 amount,uint256 modulo); 
 	event CharityUpdatedEvent(address indexed newCharityAddress);
     constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
