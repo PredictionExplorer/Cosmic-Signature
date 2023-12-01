@@ -491,6 +491,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function setActivationTime(uint256 newActivationTime) external onlyOwner {
         activationTime = newActivationTime;
+        lastCSTBidTime = activationTime;		
 		emit ActivationTimeChanged(activationTime);
     }
 
