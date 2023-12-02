@@ -267,7 +267,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         bool success;
         if (cosmicSupply > 0) {
             (success, ) =
-                address(stakingWallet).call{value: stakingAmount_}(abi.encodeWithSelector(StakingWallet.deposit.selector, roundNum));
+                address(stakingWallet).call{value: stakingAmount_}(abi.encodeWithSelector(StakingWallet.deposit.selector, block.timestamp));
             require(success, "Staking deposit failed.");
         }
 
@@ -491,6 +491,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function setActivationTime(uint256 newActivationTime) external onlyOwner {
         activationTime = newActivationTime;
+        lastCSTBidTime = activationTime;		
 		emit ActivationTimeChanged(activationTime);
     }
 
