@@ -76,7 +76,7 @@ contract StakingWallet is Ownable {
         stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + extraTime;
         numStakeActions += 1;
         numStakedNFTs += 1;
-		emit StakeActionEvent(numStakeActions-1,_tokenId,numStakedNFTs,stakedNFTs[numStakeActions].unstakeEligibleTime,msg.sender);
+		emit StakeActionEvent(numStakeActions-1,_tokenId,numStakedNFTs,stakedNFTs[numStakeActions-1].unstakeEligibleTime,msg.sender);
     }
 
 	function stakeMany(uint256[] memory ids) external {
