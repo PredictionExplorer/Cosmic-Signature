@@ -10,6 +10,7 @@ contract MarketingWallet is Ownable {
     CosmicToken public token;
 
     event RewardSentEvent(address indexed marketer, uint256 amount);
+	event CosmicTokenAddressChanged(address newCosmicToken);
 
     constructor(CosmicToken token_) {
         token = token_;
@@ -19,5 +20,11 @@ contract MarketingWallet is Ownable {
         (bool success, ) = address(token).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
         require(success, "Transfer failed.");
         emit RewardSentEvent(to, amount);
+    }
+
+    function setTokenContract(address addr) external onlyOwner {
+        require(addr != address(0), "Zero-address was given.");
+        token = CosmicToken(addr);
+		emit CosmicTokenAddressChanged(addr);
     }
 }
