@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { CosmicGameConstants } from "./Constants.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { StakingWallet } from "./StakingWallet.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { BidBusinessLogic } from "./BidBusinessLogic.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
 
@@ -19,49 +21,49 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 round;
         bool claimed;
     }
-
-    uint256 public constant MILLION = 10**6;
-    uint256 public constant MAX_MESSAGE_LENGTH = 280;
+	// BEGINNING OF		shared variables between business logic contracts and main contract
+    BidBusinessLogic.BidType public lastBidType;
+    mapping(uint256 => bool) public usedRandomWalkNFTs;
+    RandomWalkNFT public randomWalk;
+    // we need to set the bidPrice to anything higher than 0 because the
+    // contract would break if it's zero and someone bids before a donation is made
+    uint256 public bidPrice = 10**15;
+    uint256 public numETHBids = 0;
+    address public lastBidder = address(0);
+    uint256 public roundNum = 0;
+    // when the money can be taken out
+    uint256 public prizeTime;
+    uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
+    // After a prize was claimed, start off the clock with this much time.
+    uint256 public initialSecondsUntilPrize = 24 * 3600;
+    mapping(uint256 => address) public raffleParticipants;
+    uint256 public numRaffleParticipants;
+    CosmicToken public token;
+    MarketingWallet public marketingWallet;
+    uint256 public startingBidPriceCST = 100e18;
+    uint256 public lastCSTBidTime = activationTime;
+    uint256 public numCSTBids = 0;
+    uint256 public ETHToCSTBidRatio = 10;
+    uint256 public CSTAuctionLength = 10 * 3600;
+    // how much the deadline is pushed after every bid
+    uint256 public nanoSecondsExtra = 3600 * 10**9;
+    // how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
+    // 1.0001
+    uint256 public timeIncrease = 1000100;
+	// END OF		shared variables between business logic contracts and main contract
 
     // how much the currentBid increases after every bid
     // we want 1%?
     uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
 
-    // how much the deadline is pushed after every bid
-    uint256 public nanoSecondsExtra = 3600 * 10**9;
-
-    // how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
-    // 1.0001
-    uint256 public timeIncrease = 1000100;
-
 	// timeout for the winner to claim prize (seconds)
 	uint256 public timeoutClaimPrize = 24 * 3600;	
-
-    // we need to set the bidPrice to anything higher than 0 because the
-    // contract would break if it's zero and someone bids before a donation is made
-    uint256 public bidPrice = 10**15;
-
-    enum BidType {
-        ETH,
-        RandomWalk,
-        CST
-    }
-
-    address public lastBidder = address(0);
-    BidType public lastBidType;
 
     // Some money will go to charity
     address public charity;
 
-    // After a prize was claimed, start off the clock with this much time.
-    uint256 public initialSecondsUntilPrize = 24 * 3600;
-
     // The bid size will be 1000 times smaller than the prize amount initially
     uint256 public initialBidAmountFraction = 200;
-
-    // You get 100 tokens when you bid
-    uint256 public constant TOKEN_REWARD = 100 * 1e18;
-    uint256 public constant MARKETING_REWARD = 15 * 1e18;
 
     uint256 public prizePercentage = 25;
 
@@ -80,45 +82,30 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     uint256 public numHolderNFTWinnersPerRound = 2;
 
-    uint256 public CSTAuctionLength = 10 * 3600;
-    uint256 public numCSTBids = 0;
-    uint256 public numETHBids = 0;
-    uint256 public ETHToCSTBidRatio = 10;
-    uint256 public startingBidPriceCST = 100e18;
 
-    // when the money can be taken out
-    uint256 public prizeTime;
 
-    uint256 public roundNum = 0;
 
-    mapping(uint256 => bool) public usedRandomWalkNFTs;
 
     mapping(uint256 => address) public winners;
 
-    uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 
-    uint256 public lastCSTBidTime = activationTime;
 
     // Entropy for the raffle.
     bytes32 public raffleEntropy;
 
-    mapping(uint256 => address) public raffleParticipants;
-    uint256 public numRaffleParticipants;
     RaffleWallet public raffleWallet;
 
     StakingWallet public stakingWallet;
-    MarketingWallet public marketingWallet;
 
     mapping (uint256 => DonatedNFT) public donatedNFTs;
     uint256 public numDonatedNFTs;
 
-    CosmicToken public token;
     CosmicSignature public nft;
-    RandomWalkNFT public randomWalk;
+	BidBusinessLogic public bidLogic;
 
     event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
     // randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
-    event BidEvent(address indexed lastBidder, uint256 indexed round, int256 bidPrice, int256 randomWalkNFTId, int256 numCSTTokens, uint256 prizeTime, string message);
+ //   event BidEvent(address indexed lastBidder, uint256 indexed round, int256 bidPrice, int256 randomWalkNFTId, int256 numCSTTokens, uint256 prizeTime, string message);
     event DonationEvent(address indexed donor, uint256 amount);
     event NFTDonationEvent(address indexed donor, IERC721 indexed nftAddress, uint256 indexed round, uint256 tokenId, uint256 index);
     event RaffleNFTWinnerEvent(address indexed winner, uint256 indexed round, uint256 indexed tokenId, uint256 winnerIndex);
@@ -157,75 +144,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     receive() external payable {
-        bid("", -1);
+		BidBusinessLogic.BidParams memory defaultParams;
+		defaultParams.message = "";
+		defaultParams.randomWalkNFTId = -1;
+        bidLogic.bid(defaultParams);
     }
 
     // Bidding
 
-    function bidAndDonateNFT(string memory message, int256 randomWalkNFTId, IERC721 nftAddress, uint256 tokenId) external payable {
-        bid(message, randomWalkNFTId);
+    function bidAndDonateNFT(BidBusinessLogic.BidParams memory params, IERC721 nftAddress, uint256 tokenId) external payable {
+        (bool success, ) = address(bidLogic).delegatecall(abi.encodeWithSelector(BidBusinessLogic.bid.selector,params));
+         require(success, "Call to bid logic failed.");
         _donateNFT(nftAddress, tokenId);
     }
 
-    function bid(string memory message, int256 randomWalkNFTId) public payable {
-        if (randomWalkNFTId != -1) {
-            require(!usedRandomWalkNFTs[uint256(randomWalkNFTId)], "This RandomWalkNFT has already been used for bidding.");
-            require(randomWalk.ownerOf(uint256(randomWalkNFTId)) == _msgSender(),"You must be the owner of the RandomWalkNFT.");
-            usedRandomWalkNFTs[uint256(randomWalkNFTId)] = true;
-        }
-
-        uint256 newBidPrice = getBidPrice();
-
-        require(
-            msg.value >= newBidPrice,
-            "The value submitted with this transaction is too low."
-        );
-
-        bidPrice = newBidPrice;
-
-        BidType bidType = randomWalkNFTId == -1 ? BidType.ETH : BidType.RandomWalk;
-		if (bidType == BidType.ETH) {
-	        numETHBids += 1;
-		}
-        _bidCommon(message, bidType);
-
-        if (msg.value > bidPrice) {
-            // Return the extra money to the bidder.
-            (bool success, ) = lastBidder.call{value: msg.value - bidPrice}("");
-            require(success, "Refund transfer failed.");
-        }
-        emit BidEvent(lastBidder, roundNum, int256(bidPrice), randomWalkNFTId, -1, prizeTime, message);
+    function bid(BidBusinessLogic.BidParams calldata _data) public payable {
+        (bool success, ) = address(bidLogic).delegatecall(abi.encodeWithSelector(BidBusinessLogic.bid.selector,_data));
+         require(success, "Call to bid logic failed.");
     }
-
     function bidWithCST(string memory message) external {
-        uint256 price = currentCSTPrice();
-        startingBidPriceCST = _max(100e18, price) * 2;
-        lastCSTBidTime = block.timestamp;
-        numCSTBids += 1;
-        // We want to there to be mainly ETH bids, not CST bids.
-        // In order to achieve this, we will adjust the auction length depending on the ratio.
-        if (numETHBids < ETHToCSTBidRatio * numCSTBids) {
-            // We are adding 3600 seconds in case the length somehow became zero.
-            CSTAuctionLength = CSTAuctionLength * 2 + 3600;
-        } else {
-            CSTAuctionLength /= 2;
-        }
-        token.burn(msg.sender, price);
-        _bidCommon(message, BidType.CST);
-        emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
+        bidLogic.bidWithCST(message);
     }
-
-    // We are doing a dutch auction that lasts 24 hours.
-    function currentCSTPrice() public view returns (uint256) {
-        uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-        uint256 auction_duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
-        if (secondsElapsed >= auction_duration) {
-            return 0;
-        }
-        uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
-        return (fraction * startingBidPriceCST) / 1e6;
-    }
-
     function claimPrize() external {
         // In this function we give:
         // - 10 Cosmic NFTs:
@@ -257,7 +196,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
         uint256 cosmicSupply = nft.totalSupply();
 
         uint256 prizeAmount_ = prizeAmount();
-		if (lastBidType == BidType.RandomWalk) {
+		if (lastBidType == BidBusinessLogic.BidType.RandomWalk) {
 			prizeAmount_ = rwalkAmount();
 		}
         uint256 charityAmount_ = charityAmount();
@@ -518,7 +457,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     function getBidPrice() public view returns (uint256) {
-        return (bidPrice * priceIncrease) / MILLION;
+        return (bidPrice * priceIncrease) / CosmicGameConstants.MILLION;
     }
 
     function prizeAmount() public view returns (uint256) {
@@ -546,13 +485,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
     function _initializeBidPrice() internal {
         bidPrice = address(this).balance / initialBidAmountFraction;
     }
-
-    function _pushBackPrizeTime() internal {
-        uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
-        prizeTime = _max(prizeTime, block.timestamp) + secondsAdded;
-        nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / MILLION;
-    }
-
     function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
         // If you are a creator you can donate some NFT to the winner of the
         // current round (which might get you featured on the front page of the website).
@@ -566,36 +498,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
         numDonatedNFTs += 1;
         emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
     }
-
-    function _bidCommon(string memory message, BidType bidType) internal {
-        require(
-            block.timestamp >= activationTime,
-            "Not active yet."
-        );
-        require(bytes(message).length <= MAX_MESSAGE_LENGTH, "Message is too long.");
-
-        if (lastBidder == address(0)) {
-            // someone just claimed a prize and we are starting from scratch
-            prizeTime = block.timestamp + initialSecondsUntilPrize;
-        }
-
-        lastBidder = _msgSender();
-		lastBidType = bidType;
-
-        raffleParticipants[numRaffleParticipants] = lastBidder;
-        numRaffleParticipants += 1;
-
-        (bool mintSuccess, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, TOKEN_REWARD));
-		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
-
-        (mintSuccess, ) =
-            address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, MARKETING_REWARD));
-		require(mintSuccess, "CosmicToken mint() failed to mint reward tokens.");
-
-        _pushBackPrizeTime();
-    }
-
     function _updateEntropy() internal {
         raffleEntropy = keccak256(abi.encode(
             raffleEntropy,
