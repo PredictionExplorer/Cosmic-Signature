@@ -36,7 +36,7 @@ describe("Security", function () {
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     let bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr3).bid("",ethers.BigNumber.from("-1"), {value: bidPrice}); // this works
+    await cosmicGame.connect(addr3).bid(["",ethers.BigNumber.from("-1")], {value: bidPrice}); // this works
     let prizeTime = await cosmicGame.timeUntilPrize();
     await ethers.provider.send("evm_increaseTime", [prizeTime.add(24 * 3600).toNumber()]);
     await ethers.provider.send("evm_mine");

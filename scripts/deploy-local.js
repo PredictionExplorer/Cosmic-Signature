@@ -9,7 +9,7 @@ async function main() {
 	  process.exit(1)
   }
   let deployerAcct = new hre.ethers.Wallet(privKey,hre.ethers.provider);
-  const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT    } = await basicDeployment(deployerAcct,"",0,'0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5',true);
+  const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT,bidLogic    } = await basicDeployment(deployerAcct,"",0,'0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5',true);
   [owner, addr1] = await ethers.getSigners();
   let etherStr = "10";
   let donationAmount = hre.ethers.utils.parseEther(etherStr);
@@ -21,6 +21,7 @@ async function main() {
   console.log("CosmicDAO address", cosmicDAO.address);
   console.log("RaffleWallet address:", raffleWallet.address);
   console.log("randomWalkNFT address:", randomWalkNFT.address);
+  console.log("BidBusinessLogic address:", bidLogic.address);
   console.log("Donation of "+etherStr+" ETH complete");
 }
 
