@@ -6,14 +6,14 @@ const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-network-helpers");
 
-describe("CosmicAI", function () {
+describe("Events", function () {
   let INITIAL_AMOUNT = ethers.utils.parseEther('10');
   async function deployCosmic() {
 	  let contractDeployerAcct;
       [contractDeployerAcct] = await ethers.getSigners();
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT,bidLogic} = await basicDeployment(contractDeployerAcct,"",0,"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",true);
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT,stakingWallet,marketingWallet,bidLogic} = await basicDeployment(contractDeployerAcct,"",0,"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",true);
 
-    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet,bidLogic};
+    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet,stakingWallet,marketingWallet,bidLogic};
   }
   it("should emit the correct events in the CosmicSignature contract", async function () {
     const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT,raffleWallet} = await loadFixture(deployCosmic);
@@ -198,16 +198,16 @@ describe("CosmicAI", function () {
 		  return true;
 	  }
 	  await ethers.provider.send("evm_setNextBlockTimestamp", [2000000000])
-      await expect(cosmicGame.connect(addr1).bid(["simple text",ethers.BigNumber.from("-1")], {value:bidPrice}))
+      expect(await cosmicGame.connect(addr1).bid(["simple text",ethers.BigNumber.from("-1")], {value:bidPrice}))
 	     .to.emit(bidLogic,"BidEvent")
 	     .withArgs(addr1.address,0,bidPrice,-1,-1,2000090000,"simple text");
 	 await ethers.provider.send("evm_setNextBlockTimestamp", [2100000000])
      var mintPrice = await randomWalkNFT.getMintPrice();
      bidPrice = await cosmicGame.getBidPrice();
      await randomWalkNFT.connect(addr1).mint({value: mintPrice});
-     await expect(cosmicGame.connect(addr1).bid(["random walk",ethers.BigNumber.from("0")],{value:bidPrice}))
-	     .to.emit(bidLogic,"BidEvent")
-	     .withArgs(addr1.address,0,1020100000000000,0,-1,2100003601,"random walk");
+     expect(await cosmicGame.connect(addr1).bid(["random walk",ethers.BigNumber.from("0")],{value:bidPrice})).
+		  to.emit(bidLogic,"BidEvent").
+		  withArgs(addr1.address,0,1020100000000000,0,-1,2100003601,"random walk");
   });
   it("DonatedNFTClaimedEvent is correctly emitted", async function () {
 

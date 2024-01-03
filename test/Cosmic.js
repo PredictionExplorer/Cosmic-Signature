@@ -510,13 +510,13 @@ describe("Cosmic", function () {
       await cosmicGame.donate({value: donationAmount});
 
       bidPrice = await cosmicGame.getBidPrice();
-      await cosmicGame.connect(owner).bid("",ethers.BigNumber.from("-1"), {value:bidPrice});
+      await cosmicGame.connect(owner).bid(["",ethers.BigNumber.from("-1")], {value:bidPrice});
       bidPrice = await cosmicGame.getBidPrice();
-      await cosmicGame.connect(addr1).bid("",ethers.BigNumber.from("-1"), {value:bidPrice});
+      await cosmicGame.connect(addr1).bid(["",ethers.BigNumber.from("-1")], {value:bidPrice});
       bidPrice = await cosmicGame.getBidPrice();
-      await cosmicGame.connect(addr2).bid("",ethers.BigNumber.from("-1"), {value:bidPrice});
+      await cosmicGame.connect(addr2).bid(["",ethers.BigNumber.from("-1")], {value:bidPrice});
       bidPrice = await cosmicGame.getBidPrice();
-      await cosmicGame.connect(addr3).bid("",ethers.BigNumber.from("-1"), {value:bidPrice});
+      await cosmicGame.connect(addr3).bid(["",ethers.BigNumber.from("-1")], {value:bidPrice});
 
       let voting_delay = await cosmicDAO.votingDelay();
       let voting_period = await cosmicDAO.votingPeriod();
