@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameConstants } from "./Constants.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
@@ -13,7 +14,7 @@ import { RaffleWallet } from "./RaffleWallet.sol";
 import { StakingWallet } from "./StakingWallet.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 
-contract BidBusinessLogic is Context {
+contract BidBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
     CosmicGameConstants.BidType public lastBidType;
     mapping(uint256 => bool) public usedRandomWalkNFTs;
