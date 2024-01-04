@@ -5,7 +5,7 @@ const {
 const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
-const SKIP_LONG_TESTS = "1";
+const SKIP_LONG_TESTS = "";
 const {basicDeployment} = require("../src//Deploy.js");
 
 describe("Cosmic", function () {
@@ -56,22 +56,21 @@ describe("Cosmic", function () {
       await cosmicGame.connect(addr1).bid(["",ethers.BigNumber.from("-1")], {value: bidPrice});
       prizeTime = await cosmicGame.timeUntilPrize();
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).mul(3).add(24 * 3600 - 2)); // not super clear why we are subtracting 2 here and 1 above
-
-      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
+      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
       bidPrice = await cosmicGame.getBidPrice();
       await cosmicGame.connect(addr2).bid(["",ethers.BigNumber.from("-1")], {value: bidPrice});
-      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
+      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
       prizeTime = await cosmicGame.timeUntilPrize();
       await ethers.provider.send("evm_increaseTime", [prizeTime.sub(100).toNumber()]);
       await ethers.provider.send("evm_mine");
-      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
+      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
       await ethers.provider.send("evm_increaseTime", [100]);
       await ethers.provider.send("evm_mine");
 
-      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 24 hours.");
+      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
 
       let prizeAmount = await cosmicGame.prizeAmount();
@@ -85,11 +84,11 @@ describe("Cosmic", function () {
 
       // after the prize has been claimed, let's bid again!
 
-      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("There is no last bidder.");
+      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
       bidPrice = await cosmicGame.getBidPrice();
       await cosmicGame.connect(addr1).bid(["",ethers.BigNumber.from("-1")], {value: bidPrice});
-      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Not enough time has elapsed.");
+      await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
       prizeTime = await cosmicGame.timeUntilPrize();
       expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).add(24 * 3600));
@@ -111,7 +110,7 @@ describe("Cosmic", function () {
       await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
       await ethers.provider.send("evm_mine");
 
-      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Only the last bidder can claim the prize during the first 24 hours.");
+      await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
 
       await ethers.provider.send("evm_increaseTime", [3600 * 24]);
       await ethers.provider.send("evm_mine");

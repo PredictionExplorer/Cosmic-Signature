@@ -57,16 +57,21 @@ const basicDeployment = async function(deployerAcct,randomWalkAddr,activationTim
     bidLogic = await BidBusinessLogic.connect(deployerAcct).deploy();
 	await bidLogic.deployed();
 
+    const ClaimPrizeBusinessLogic  = await ethers.getContractFactory("ClaimPrizeBusinessLogic");
+    prizeLogic = await ClaimPrizeBusinessLogic.connect(deployerAcct).deploy();
+	await prizeLogic.deployed();
+
     await cosmicGame.connect(deployerAcct).setTokenContract(cosmicToken.address);
     await cosmicGame.connect(deployerAcct).setNftContract(cosmicSignature.address);
     await cosmicGame.connect(deployerAcct).setCharity(charityWallet.address);
     await cosmicGame.connect(deployerAcct).setBidBusinessLogicContract(bidLogic.address);
+    await cosmicGame.connect(deployerAcct).setClaimPrizeBusinessLogicContract(prizeLogic.address);
     await cosmicGame.connect(deployerAcct).setRandomWalk(randomWalkNFT.address);
     await cosmicGame.connect(deployerAcct).setRaffleWallet(raffleWallet.address);
 	await cosmicGame.connect(deployerAcct).setStakingWallet(stakingWallet.address);
 	await cosmicGame.connect(deployerAcct).setMarketingWallet(marketingWallet.address);
     await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
 
-    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWallet,marketingWallet,bidLogic};
+    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWallet,marketingWallet,bidLogic,prizeLogic};
 };
 module.exports = {basicDeployment};

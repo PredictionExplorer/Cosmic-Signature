@@ -11,6 +11,13 @@ module.exports = {
         enabled: true,
         runs: 20000,
       },
+      outputSelection: {
+          "*":{
+              "*":[
+                   "storageLayout"
+              ],
+         },
+	  },
     },
   },
   mocha: {

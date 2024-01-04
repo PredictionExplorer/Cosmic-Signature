@@ -13,6 +13,8 @@ import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { StakingWallet } from "./StakingWallet.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
+import { BidBusinessLogic } from "./BidBusinessLogic.sol";
+import { ClaimPrizeBusinessLogic } from "./ClaimPrizeBusinessLogic.sol";
 
 contract BidBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
@@ -57,7 +59,8 @@ contract BidBusinessLogic is Context, Ownable {
     uint256 public numDonatedNFTs;
     CosmicSignature public nft;
 	BidBusinessLogic public bidLogic;
-    mapping (uint256 => uint256) public bidLogicStorage;
+	ClaimPrizeBusinessLogic public prizeLogic;
+    mapping (uint256 => uint256) public extraStorage;
 
     event BidEvent(address indexed lastBidder, uint256 indexed round, int256 bidPrice, int256 randomWalkNFTId, int256 numCSTTokens, uint256 prizeTime, string message);
 
