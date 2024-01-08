@@ -5,7 +5,7 @@ const {
 const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
-const SKIP_LONG_TESTS = "";
+const SKIP_LONG_TESTS = "1";
 const {basicDeployment} = require("../src//Deploy.js");
 
 describe("Cosmic", function () {

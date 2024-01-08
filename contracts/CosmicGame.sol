@@ -11,8 +11,7 @@ import { RaffleWallet } from "./RaffleWallet.sol";
 import { StakingWallet } from "./StakingWallet.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { BidBusinessLogic } from "./BidBusinessLogic.sol";
-import { ClaimPrizeBusinessLogic } from "./ClaimPrizeBusinessLogic.sol";
+import { BusinessLogic } from "./BusinessLogic.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
 
@@ -88,8 +87,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     uint256 public numDonatedNFTs;
 
     CosmicSignature public nft;
-	BidBusinessLogic public bidLogic;
-	ClaimPrizeBusinessLogic public prizeLogic;
+	BusinessLogic public bLogic;
     mapping (uint256 => uint256) public extraStorage;	// place to store child contract's data (variable size)
 
 
@@ -117,7 +115,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
     event MarketingWalletAddressChanged(address newMarketingWallet);
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
-	event BidBusinessLogicAddressChanged(address newContractAddress);
+	event BusinessLogicAddressChanged(address newContractAddress);
 	event ClaimPrizeBusinessLogicAddressChanged(address newContractAddress);
 	event TimeIncreaseChanged(uint256 newTimeIncrease);
 	event TimeoutClaimPrizeChanged(uint256 newTimeout);
@@ -136,27 +134,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
     }
 
     receive() external payable {
-		BidBusinessLogic.BidParams memory defaultParams;
+		BusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
-        (bool success, ) = address(bidLogic).delegatecall(abi.encodeWithSelector(BidBusinessLogic.bid.selector,defaultParams));
+        (bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector,defaultParams));
          require(success, "Call to bid logic failed.");
     }
 
     // Bidding
 
-    function bidAndDonateNFT(BidBusinessLogic.BidParams memory params, IERC721 nftAddress, uint256 tokenId) external payable {
-        (bool success, ) = address(bidLogic).delegatecall(abi.encodeWithSelector(BidBusinessLogic.bid.selector,params));
+    function bidAndDonateNFT(BusinessLogic.BidParams memory params, IERC721 nftAddress, uint256 tokenId) external payable {
+        (bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector,params));
          require(success, "Call to bid logic failed.");
         _donateNFT(nftAddress, tokenId);
     }
 
-    function bid(BidBusinessLogic.BidParams calldata _data) public payable {
-        (bool success, ) = address(bidLogic).delegatecall(abi.encodeWithSelector(BidBusinessLogic.bid.selector,_data));
+    function bid(BusinessLogic.BidParams calldata _data) public payable {
+        (bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector,_data));
          require(success, "Call to bid logic failed.");
     }
     function bidWithCST(string memory message) external {
-        (bool success, ) = address(bidLogic).delegatecall(abi.encodeWithSelector(BidBusinessLogic.bidWithCST.selector,message));
+        (bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bidWithCST.selector,message));
          require(success, "Call to bid logic failed.");
     }
     // We are doing a dutch auction that lasts 24 hours.
@@ -172,7 +170,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
     function claimPrize() external {
 
-        (bool success, ) = address(prizeLogic).delegatecall(abi.encodeWithSelector(ClaimPrizeBusinessLogic.claimPrize.selector));
+        (bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimPrize.selector));
          require(success, "Call to claim prize logic failed.");
 	}
 
@@ -293,16 +291,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit CosmicSignatureAddressChanged(addr);
     }
 
-    function setBidBusinessLogicContract(address addr) external onlyOwner {
+    function setBusinessLogicContract(address addr) external onlyOwner {
         require(addr != address(0), "Zero-address was given.");
-        bidLogic = BidBusinessLogic(addr);
-		emit BidBusinessLogicAddressChanged(addr);
-    }
-
-    function setClaimPrizeBusinessLogicContract(address addr) external onlyOwner {
-        require(addr != address(0), "Zero-address was given.");
-        prizeLogic = ClaimPrizeBusinessLogic(addr);
-		emit ClaimPrizeBusinessLogicAddressChanged(addr);
+        bLogic = BusinessLogic(addr);
+		emit BusinessLogicAddressChanged(addr);
     }
 
     function setTimeIncrease(uint256 newTimeIncrease) external onlyOwner {

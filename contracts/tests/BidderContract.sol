@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
-import { BidBusinessLogic } from "../BidBusinessLogic.sol";
+import { BusinessLogic } from "../BusinessLogic.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -23,14 +23,14 @@ contract BidderContract is IERC721Receiver {
 	receive() external payable { }
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
-		BidBusinessLogic.BidParams memory defaultParams;
+		BusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "contract bid";
 		defaultParams.randomWalkNFTId = -1;
         cosmicGame.bid{value:price}(defaultParams);
 	}
 	function doBidRWalk(int256 tokenId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
-		BidBusinessLogic.BidParams memory params;
+		BusinessLogic.BidParams memory params;
 		params.message = "contract bid rwalk";
 		params.randomWalkNFTId = tokenId;
     	cosmicGame.bid{value:price}(params);
@@ -41,7 +41,7 @@ contract BidderContract is IERC721Receiver {
 		myDonatedNFTs.push(donatedTokenNum);
 		numMyDonatedNFTs++;
 		uint256 price = cosmicGame.getBidPrice();
-		BidBusinessLogic.BidParams memory params;
+		BusinessLogic.BidParams memory params;
 		params.message = "contract bid with donation";
 		params.randomWalkNFTId = -1;
 		cosmicGame.bidAndDonateNFT{value:price}(params, IERC721(nftAddress),tokenId);
@@ -97,7 +97,7 @@ contract BidCNonRecv {	// Bidder Contract but not ERC721 receiver
 	receive() external payable { }
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
-		BidBusinessLogic.BidParams memory params;
+		BusinessLogic.BidParams memory params;
 		params.message = "non-erc721 receiver bid";
 		params.randomWalkNFTId = -1;
 		cosmicGame.bid{value:price}(params);
