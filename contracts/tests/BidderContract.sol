@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
+import { BusinessLogic } from "../BusinessLogic.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -22,11 +23,17 @@ contract BidderContract is IERC721Receiver {
 	receive() external payable { }
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
-		cosmicGame.bid{value:price}("contract bid", -1);
+		BusinessLogic.BidParams memory defaultParams;
+		defaultParams.message = "contract bid";
+		defaultParams.randomWalkNFTId = -1;
+        cosmicGame.bid{value:price}(defaultParams);
 	}
 	function doBidRWalk(int256 tokenId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
-    	cosmicGame.bid{value:price}("contract bid rwalk",tokenId);
+		BusinessLogic.BidParams memory params;
+		params.message = "contract bid rwalk";
+		params.randomWalkNFTId = tokenId;
+    	cosmicGame.bid{value:price}(params);
 	}
 	function doBidAndDonate(address nftAddress,uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame),true);
@@ -34,7 +41,10 @@ contract BidderContract is IERC721Receiver {
 		myDonatedNFTs.push(donatedTokenNum);
 		numMyDonatedNFTs++;
 		uint256 price = cosmicGame.getBidPrice();
-		cosmicGame.bidAndDonateNFT{value:price}("contract bid with donation", -1, IERC721(nftAddress),tokenId);
+		BusinessLogic.BidParams memory params;
+		params.message = "contract bid with donation";
+		params.randomWalkNFTId = -1;
+		cosmicGame.bidAndDonateNFT{value:price}(params, IERC721(nftAddress),tokenId);
 	}
     function doClaim() external {
         cosmicGame.claimPrize();
@@ -87,7 +97,10 @@ contract BidCNonRecv {	// Bidder Contract but not ERC721 receiver
 	receive() external payable { }
 	function doBid() external payable  {
 		uint256 price = cosmicGame.getBidPrice();
-		cosmicGame.bid{value:price}("non-erc721 receiver bid", -1);
+		BusinessLogic.BidParams memory params;
+		params.message = "non-erc721 receiver bid";
+		params.randomWalkNFTId = -1;
+		cosmicGame.bid{value:price}(params);
 	}
     function doClaim() external {
         cosmicGame.claimPrize();

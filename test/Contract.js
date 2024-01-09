@@ -10,9 +10,9 @@ describe("Contract", function () {
   async function deployCosmic(deployerAcct) {
 	  let contractDeployerAcct;
       [contractDeployerAcct] = await ethers.getSigners();
-      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT} = await basicDeployment(contractDeployerAcct,"",0,"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",true);
+      const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT,stakingWallet,marketingWallet,bidLogic} = await basicDeployment(contractDeployerAcct,"",0,"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",true);
 
-    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet};
+    return {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet, stakingWallet,marketingWallet,bidLogic};
   }
     it("Contract can win prize", async function () {
 
@@ -26,11 +26,11 @@ describe("Contract", function () {
 
     let bidPrice;
 	bidPrice = await cosmicGame.getBidPrice();
-	await cosmicGame.connect(owner).bid("owner bids",ethers.BigNumber.from("-1"), {value: bidPrice});
+	await cosmicGame.connect(owner).bid(["owner bids",ethers.BigNumber.from("-1")], {value: bidPrice});
     bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr1).bid("addr1 bids",ethers.BigNumber.from("-1"), {value: bidPrice});
+    await cosmicGame.connect(addr1).bid(["addr1 bids",ethers.BigNumber.from("-1")], {value: bidPrice});
     bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr2).bid("addr2 bids",ethers.BigNumber.from("-1"), {value: bidPrice});
+    await cosmicGame.connect(addr2).bid(["addr2 bids",ethers.BigNumber.from("-1")], {value: bidPrice});
 
     let randomWalkAddr = await cosmicGame.randomWalk();
     let randomWalk = await ethers.getContractAt("RandomWalkNFT",randomWalkAddr);
@@ -92,7 +92,7 @@ describe("Contract", function () {
 
       let bidPrice;
       bidPrice = await cosmicGame.getBidPrice();
-      await cosmicGame.connect(owner).bid("owner bids",ethers.BigNumber.from("-1"), {value: bidPrice});
+      await cosmicGame.connect(owner).bid(["owner bids",ethers.BigNumber.from("-1")], {value: bidPrice});
       bidPrice = await cosmicGame.getBidPrice();
       await bnonrec.connect(owner).doBid({value:bidPrice});
 

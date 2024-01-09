@@ -36,7 +36,7 @@ describe("Security", function () {
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     let bidPrice = await cosmicGame.getBidPrice();
-    await cosmicGame.connect(addr3).bid("",ethers.BigNumber.from("-1"), {value: bidPrice}); // this works
+    await cosmicGame.connect(addr3).bid(["",ethers.BigNumber.from("-1")], {value: bidPrice}); // this works
     let prizeTime = await cosmicGame.timeUntilPrize();
     await ethers.provider.send("evm_increaseTime", [prizeTime.add(24 * 3600).toNumber()]);
     await ethers.provider.send("evm_mine");
@@ -44,7 +44,7 @@ describe("Security", function () {
     let prizeAmount = await cosmicGame.prizeAmount();
     let reclaim_bal_before = await ethers.provider.getBalance(reclaim.address);
     // Make sure there is no re-entrancy
-    await expect(reclaim.connect(addr3).claimAndReset(ethers.BigNumber.from("1"))).to.be.revertedWith("Transfer to the winner failed.");
+    await expect(reclaim.connect(addr3).claimAndReset(ethers.BigNumber.from("1"))).to.be.revertedWith("Call to claim prize logic failed.");
   });
   it("Is possible to take prize before activation", async function () {
       const {cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT} = await loadFixture(deployCosmic);
@@ -57,6 +57,6 @@ describe("Security", function () {
 	  await ethers.provider.send("evm_mine");
 	  let prizeAmount = await cosmicGame.prizeAmount();
 	  let balance_before =(await addr1.getBalance());
-	  await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("There is no last bidder.");
+	  await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
   });
 })
