@@ -7,36 +7,36 @@ import { BusinessLogic } from "../BusinessLogic.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import { ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BidderContract is IERC721Receiver {
-    CosmicGame public cosmicGame;
+	CosmicGame public cosmicGame;
 	address public creator;
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNFTs;
 	uint256 public numMyDonatedNFTs;
-    constructor(address payable _cosmicGame) {
-        cosmicGame= CosmicGame(_cosmicGame);
+	constructor(address payable _cosmicGame) {
+		cosmicGame = CosmicGame(_cosmicGame);
 		creator = msg.sender;
-    } 
-	receive() external payable { }
-	function doBid() external payable  {
+	}
+	receive() external payable {}
+	function doBid() external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		BusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "contract bid";
 		defaultParams.randomWalkNFTId = -1;
-        cosmicGame.bid{value:price}(defaultParams);
+		cosmicGame.bid{ value: price }(defaultParams);
 	}
 	function doBidRWalk(int256 tokenId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		BusinessLogic.BidParams memory params;
 		params.message = "contract bid rwalk";
 		params.randomWalkNFTId = tokenId;
-    	cosmicGame.bid{value:price}(params);
+		cosmicGame.bid{ value: price }(params);
 	}
-	function doBidAndDonate(address nftAddress,uint256 tokenId) external payable {
-		IERC721(nftAddress).setApprovalForAll(address(cosmicGame),true);
+	function doBidAndDonate(address nftAddress, uint256 tokenId) external payable {
+		IERC721(nftAddress).setApprovalForAll(address(cosmicGame), true);
 		uint256 donatedTokenNum = cosmicGame.numDonatedNFTs();
 		myDonatedNFTs.push(donatedTokenNum);
 		numMyDonatedNFTs++;
@@ -44,67 +44,66 @@ contract BidderContract is IERC721Receiver {
 		BusinessLogic.BidParams memory params;
 		params.message = "contract bid with donation";
 		params.randomWalkNFTId = -1;
-		cosmicGame.bidAndDonateNFT{value:price}(params, IERC721(nftAddress),tokenId);
+		cosmicGame.bidAndDonateNFT{ value: price }(params, IERC721(nftAddress), tokenId);
 	}
-    function doClaim() external {
-        cosmicGame.claimPrize();
-    }   
+	function doClaim() external {
+		cosmicGame.claimPrize();
+	}
 	function withdrawAll() external {
 		RaffleWallet raffleWallet = cosmicGame.raffleWallet();
 		uint bal = raffleWallet.balances(address(this));
 		if (bal > 0) {
 			raffleWallet.withdraw();
-		}       
+		}
 		CosmicSignature nft = cosmicGame.nft();
-		(bool success,) = creator.call{value:address(this).balance}("");
+		(bool success, ) = creator.call{ value: address(this).balance }("");
 		success = false;
-        uint256 totalSupply = nft.totalSupply();
+		uint256 totalSupply = nft.totalSupply();
 		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 			address tokenOwner = nft.ownerOf(i);
-			if ( tokenOwner == address(this) ) {
-				nft.safeTransferFrom(address(this),creator,i);
+			if (tokenOwner == address(this)) {
+				nft.safeTransferFrom(address(this), creator, i);
 			}
-		}                                 
-	  	if ( totalSupply > 0 ) {	
+		}
+		if (totalSupply > 0) {
 			lastTokenIdChecked = totalSupply - 1;
 		}
 		CosmicToken token = cosmicGame.token();
 		uint ctokenBalance = token.balanceOf(address(this));
-		if ( ctokenBalance > 0 ) {
-			token.transfer(creator,ctokenBalance);
+		if (ctokenBalance > 0) {
+			token.transfer(creator, ctokenBalance);
 		}
-		for (uint256 i = 0; i< numMyDonatedNFTs; i++) {
+		for (uint256 i = 0; i < numMyDonatedNFTs; i++) {
 			uint256 num = myDonatedNFTs[i];
 			cosmicGame.claimDonatedNFT(num);
-			(IERC721  tokenAddr,uint256 tokenId,,) = cosmicGame.donatedNFTs(num);
-		   
-			tokenAddr.safeTransferFrom(address(this),creator,tokenId);
+			(IERC721 tokenAddr, uint256 tokenId, , ) = cosmicGame.donatedNFTs(num);
+
+			tokenAddr.safeTransferFrom(address(this), creator, tokenId);
 		}
 		delete myDonatedNFTs;
 		numMyDonatedNFTs = 0;
 	}
-    function onERC721Received(address , address , uint256 , bytes calldata) external pure returns(bytes4) {
-        return this.onERC721Received.selector;
-    }
+	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+		return this.onERC721Received.selector;
+	}
 }
-contract BidCNonRecv {	// Bidder Contract but not ERC721 receiver
-    CosmicGame public cosmicGame;
+contract BidCNonRecv {
+	// Bidder Contract but not ERC721 receiver
+	CosmicGame public cosmicGame;
 	address public creator;
-    constructor(address payable _cosmicGame) {
-        cosmicGame= CosmicGame(_cosmicGame);
+	constructor(address payable _cosmicGame) {
+		cosmicGame = CosmicGame(_cosmicGame);
 		creator = msg.sender;
-    } 
-	receive() external payable { }
-	function doBid() external payable  {
+	}
+	receive() external payable {}
+	function doBid() external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		BusinessLogic.BidParams memory params;
 		params.message = "non-erc721 receiver bid";
 		params.randomWalkNFTId = -1;
-		cosmicGame.bid{value:price}(params);
+		cosmicGame.bid{ value: price }(params);
 	}
-    function doClaim() external {
-        cosmicGame.claimPrize();
-    }   
+	function doClaim() external {
+		cosmicGame.claimPrize();
+	}
 }
-
-
