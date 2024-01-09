@@ -5,22 +5,21 @@
 // (note: only for unclaimed tokens)
 const hre = require("hardhat");
 const { expect } = require("chai");
-const {getCosmicGameContract} = require("./helper.js");
+const { getCosmicGameContract } = require("./helper.js");
 
 async function get_unclaimed_donated_nfts(cosmicGame) {
-
 	let numDonatedNFTs = await cosmicGame.numDonatedNFTs();
 	let numNFTs = numDonatedNFTs.toNumber();
 	let prizeData = [];
-	for (let i=0; i < numNFTs; i++) {
+	for (let i = 0; i < numNFTs; i++) {
 		let record_orig = await cosmicGame.donatedNFTs(i);
-		let record = Object.assign({},record_orig);
-		Object.defineProperty(record,'index',{value:i,writable:true});
+		let record = Object.assign({}, record_orig);
+		Object.defineProperty(record, "index", { value: i, writable: true });
 		if (record.claimed) {
 			continue;
 		}
 		let prizeArr = prizeData[record.round];
-		if (typeof prizeArr === 'undefined') {
+		if (typeof prizeArr === "undefined") {
 			prizeArr = new Array();
 		}
 		prizeArr.push(record);
@@ -31,27 +30,33 @@ async function get_unclaimed_donated_nfts(cosmicGame) {
 async function list_donated_nfts(nfts) {
 	//console.log(nfts);
 	let numElts = nfts.length;
-	for (let i = 0; i<numElts; i++ ) {
+	for (let i = 0; i < numElts; i++) {
 		let roundNFTs = nfts[i];
-		console.log("Round "+i);
-		if ((typeof roundNFTs === 'undefined') || (roundNFTs.length == 0)) {
+		console.log("Round " + i);
+		if (typeof roundNFTs === "undefined" || roundNFTs.length == 0) {
 			console.log("\t(no claimable tokens)");
 			continue;
 		}
-		for (let j = 0; j<roundNFTs.length; j++) {
+		for (let j = 0; j < roundNFTs.length; j++) {
 			let record = roundNFTs[j];
-			console.log("\t"+record.nftAddress.toString()+": tokenId = "+record.tokenId.toString()+ ", num="+record.index);
+			console.log(
+				"\t" +
+					record.nftAddress.toString() +
+					": tokenId = " +
+					record.tokenId.toString() +
+					", num=" +
+					record.index,
+			);
 		}
 	}
 }
 function build_parameter_list(token_list) {
-
 	let output = [];
-	for (let i = 0; i<token_list.length; i++) {
+	for (let i = 0; i < token_list.length; i++) {
 		let rec = token_list[i];
 		let bigN = hre.ethers.BigNumber.from(rec.index.toString());
 		output.push(bigN);
-		if (i>1) break;
+		if (i > 1) break;
 	}
 	return output;
 }
@@ -63,30 +68,30 @@ async function main() {
 	let nfts = await get_unclaimed_donated_nfts(cosmicGame);
 	if (nfts.length == 0) {
 		console.log("Map of donated unclaimed tokens is empty, no claiming is possible");
-		return
+		return;
 	}
-	if ((typeof privKey === 'undefined') || (privKey.length == 0) )  {
+	if (typeof privKey === "undefined" || privKey.length == 0) {
 		console.log("Fetching tokens, please wait ...");
 		await list_donated_nfts(nfts);
-		return
+		return;
 	} else {
-		testingAcct = new hre.ethers.Wallet(privKey,hre.ethers.provider);
+		testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	}
 	let roundNumStr = process.env.ROUND_NUM;
-	if ((typeof roundNumStr === 'undefined') || (roundNumStr.length == 0) )  {
-		console.log("Please provide ROUND_NUM environment variable to claim tokens")
+	if (typeof roundNumStr === "undefined" || roundNumStr.length == 0) {
+		console.log("Please provide ROUND_NUM environment variable to claim tokens");
 		process.exit(1);
 	}
-	let roundToClaim = parseInt(roundNumStr,10);
+	let roundToClaim = parseInt(roundNumStr, 10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
 	let prizeWinner = await cosmicGame.winners(roundToClaim);
 	if (prizeWinner.toString() != testingAcct.address.toString()) {
-		console.log("You aren't the winner of prize "+roundToClaim+", winner is "+prizeWinner.toString());
+		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + prizeWinner.toString());
 		process.exit(1);
 	}
 
 	if (privKey.length > 0) {
-		if (paramList.length > 0 ) {
+		if (paramList.length > 0) {
 			console.log("Sending claimMany transaction");
 			await cosmicGame.connect(testingAcct).claimManyDonatedNFTs(paramList);
 		}
@@ -94,8 +99,7 @@ async function main() {
 }
 main()
 	.then(() => process.exit(0))
-	.catch((error) => {
+	.catch(error => {
 		console.error(error);
 		process.exit(1);
 	});
-
