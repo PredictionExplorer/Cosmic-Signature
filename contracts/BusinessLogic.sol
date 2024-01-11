@@ -198,9 +198,6 @@ contract BusinessLogic is Context, Ownable {
 		uint256 cosmicSupply = nft.totalSupply();
 
 		uint256 prizeAmount_ = game.prizeAmount();
-		if (lastBidType == CosmicGameConstants.BidType.RandomWalk) {
-			prizeAmount_ = game.rwalkAmount();
-		}
 		uint256 charityAmount_ = game.charityAmount();
 		uint256 raffleAmount_ = game.raffleAmount();
 		uint256 stakingAmount_ = game.stakingAmount();
