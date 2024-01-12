@@ -95,51 +95,48 @@ contract BLTest is BusinessLogic {
 		prizePercentage = DEFAULT_VALUE;
 	}
 	function f26() external {
-		rwalkPrizePercentage = DEFAULT_VALUE;
-	}
-	function f27() external {
 		charityPercentage = DEFAULT_VALUE;
 	}
-	function f28() external {
+	function f27() external {
 		rafflePercentage = DEFAULT_VALUE;
 	}
-	function f29() external {
+	function f28() external {
 		stakingPercentage = DEFAULT_VALUE;
 	}
-	function f30() external {
+	function f29() external {
 		numRaffleWinnersPerRound = DEFAULT_VALUE;
 	}
-	function f31() external {
+	function f30() external {
 		numRaffleNFTWinnersPerRound = DEFAULT_VALUE;
 	}
-	function f32() external {
+	function f31() external {
 		numHolderNFTWinnersPerRound = DEFAULT_VALUE;
 	}
-	function f33() external {
+	function f32() external {
 		winners[DEFAULT_INDEX] = DEFAULT_ADDRESS;
 	}
-	function f34() external {
+	function f33() external {
 		raffleEntropy = bytes32(bytes20(DEFAULT_ADDRESS));
 	}
-	function f35() external {
+	function f34() external {
 		raffleWallet = RaffleWallet(DEFAULT_ADDRESS);
 	}
-	function f36() external {
+	function f35() external {
 		stakingWallet = StakingWallet(DEFAULT_ADDRESS);
 	}
-	function f37() external {
+	function f36() external {
 		donatedNFTs[DEFAULT_INDEX].round = DEFAULT_VALUE;
 	}
-	function f38() external {
+	function f37() external {
 		numDonatedNFTs = DEFAULT_VALUE;
 	}
-	function f39() external {
+	function f38() external {
 		nft = CosmicSignature(DEFAULT_ADDRESS);
 	}
-	function f40() external {
+	function f39() external {
 		bLogic = BusinessLogic(DEFAULT_ADDRESS);
 	}
-	function f41() external {
+	function f40() external {
 		extraStorage[DEFAULT_INDEX] = DEFAULT_VALUE;
 	}
 }
@@ -307,10 +304,6 @@ contract CGTest is CosmicGame {
 	}
 	function f40() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f40.selector));
-		require(success, "Delegate call execution failed.");
-	}
-	function f41() external {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f41.selector));
 		require(success, "Delegate call execution failed.");
 	}
 }

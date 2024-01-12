@@ -203,7 +203,7 @@ describe("Events", function () {
 		await ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await ethers.provider.send("evm_mine");
 
-		prizeAmountBeforeClaim = await cosmicGame.rwalkAmount();
+		prizeAmountBeforeClaim = await cosmicGame.prizeAmount();
 		await expect(cosmicGame.connect(donor).claimPrize())
 			.to.emit(cosmicGame, "PrizeClaimEvent")
 			.withArgs(1, donor.address, prizeAmountBeforeClaim);
@@ -229,9 +229,6 @@ describe("Events", function () {
 
 		let bidPrice = await cosmicGame.getBidPrice();
 
-		function isAnything(x) {
-			return true;
-		}
 		await ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
 		expect(await cosmicGame.connect(addr1).bid(["simple text", ethers.BigNumber.from("-1")], { value: bidPrice }))
 			.to.emit(bidLogic, "BidEvent")
@@ -243,6 +240,28 @@ describe("Events", function () {
 		expect(await cosmicGame.connect(addr1).bid(["random walk", ethers.BigNumber.from("0")], { value: bidPrice }))
 			.to.emit(bidLogic, "BidEvent")
 			.withArgs(addr1.address, 0, 1020100000000000, 0, -1, 2100003601, "random walk");
+	});
+	it("bidPrice for RandomWalk is 50% lower", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let rwalkBidPrice = bidPrice.div(ethers.BigNumber.from("2"));
+		var mintPrice = await randomWalkNFT.getMintPrice();
+		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
+		await ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
+		await expect(cosmicGame.connect(addr1).bid(["random walk", ethers.BigNumber.from("0")], { value: bidPrice }))
+			.to.emit(cosmicGame, "BidEvent")
+			.withArgs(addr1.address, 0, rwalkBidPrice, 0, -1, 2000090000, "random walk");
 	});
 	it("DonatedNFTClaimedEvent is correctly emitted", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =

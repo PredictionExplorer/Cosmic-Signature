@@ -42,7 +42,6 @@ contract BusinessLogic is Context, Ownable {
 	address public charity;
 	uint256 public initialBidAmountFraction;
 	uint256 public prizePercentage;
-	uint256 public rwalkPrizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
 	uint256 public stakingPercentage;
@@ -96,26 +95,35 @@ contract BusinessLogic is Context, Ownable {
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
 		}
 
-		uint256 newBidPrice = game.getBidPrice();
-
-		require(msg.value >= newBidPrice, "The value submitted with this transaction is too low.");
-
-		bidPrice = newBidPrice;
-
 		CosmicGameConstants.BidType bidType = params.randomWalkNFTId == -1
 			? CosmicGameConstants.BidType.ETH
 			: CosmicGameConstants.BidType.RandomWalk;
 		if (bidType == CosmicGameConstants.BidType.ETH) {
 			numETHBids += 1;
 		}
+
+		uint256 newBidPrice = game.getBidPrice();
+		uint256 rwalkBidPrice = newBidPrice / 2;
+		uint256 paidBidPrice;
+
+		if (bidType == CosmicGameConstants.BidType.RandomWalk) {
+			require(msg.value >= rwalkBidPrice, "The value submitted for this transaction with RandomWalk is too low.");
+			paidBidPrice = rwalkBidPrice;
+		} else {
+			require(msg.value >= newBidPrice, "The value submitted for this transaction is too low.");
+			paidBidPrice = newBidPrice;
+		}
+
+		bidPrice = newBidPrice;
+
 		_bidCommon(params.message, bidType);
 
-		if (msg.value > bidPrice) {
+		if (msg.value > paidBidPrice) {
 			// Return the extra money to the bidder.
-			(bool success, ) = lastBidder.call{ value: msg.value - bidPrice }("");
+			(bool success, ) = lastBidder.call{ value: msg.value - paidBidPrice }("");
 			require(success, "Refund transfer failed.");
 		}
-		emit BidEvent(lastBidder, roundNum, int256(bidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
+		emit BidEvent(lastBidder, roundNum, int256(paidBidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
 	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
 		require(block.timestamp >= activationTime, "Not active yet.");
