@@ -307,3 +307,24 @@ contract CGTest is CosmicGame {
 		require(success, "Delegate call execution failed.");
 	}
 }
+contract LogicVers1 is BusinessLogic {
+	// contract for testing upgradability of business logi
+	function write() external {
+		roundNum = 10001;	
+		extraStorage[10001] = 10001;
+	}
+}
+contract LogicVers2 is BusinessLogic {
+	// contract for testing upgradability of business logic
+	function write() external {
+		roundNum = 10002;	
+		extraStorage[10002] = 10002;
+	}
+}
+contract CGVersions is CosmicGame {
+	// contract for testing upgradability of business logic
+	function write() external {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(LogicVers1.write.selector));
+		require(success, "Delegate call execution failed.");
+	}
+}
