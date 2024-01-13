@@ -180,93 +180,87 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.prizePercentage();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
-	it("rwalkPrizePercentage", async function () {
-		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f26();
-		let value = await cgtest.rwalkPrizePercentage();
-		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
-	});
 	it("charityPercentage", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f27();
+		await cgtest.f26();
 		let value = await cgtest.charityPercentage();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("rafflePercentage", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f28();
+		await cgtest.f27();
 		let value = await cgtest.rafflePercentage();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("stakingPercentage", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f29();
+		await cgtest.f28();
 		let value = await cgtest.stakingPercentage();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("numRaffleWinnersPerRound", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f30();
+		await cgtest.f29();
 		let value = await cgtest.numRaffleWinnersPerRound();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("numRaffleNFTWinnersPerRound", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f31();
+		await cgtest.f30();
 		let value = await cgtest.numRaffleNFTWinnersPerRound();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("numHolderNFTWinnersPerRound", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f32();
+		await cgtest.f31();
 		let value = await cgtest.numHolderNFTWinnersPerRound();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("winners", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f33();
+		await cgtest.f32();
 		let value = await cgtest.winners(ethers.BigNumber.from(DEFAULT_INDEX));
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("raffleEntropy", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f34();
+		await cgtest.f33();
 		let value = await cgtest.raffleEntropy();
 		expect(await value).to.equal("0x1111111111111111111111111111111111111111000000000000000000000000");
 	});
 	it("raffleWallet", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f35();
+		await cgtest.f34();
 		let value = await cgtest.raffleWallet();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("stakingWallet", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f36();
+		await cgtest.f35();
 		let value = await cgtest.stakingWallet();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("donatedNFTs", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f37();
+		await cgtest.f36();
 		let value = await cgtest.donatedNFTs(ethers.BigNumber.from(DEFAULT_INDEX));
 		expect(value.round).to.equal(DEFAULT_VALUE);
 	});
 	it("numDonatedNFTs", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f38();
+		await cgtest.f37();
 		let value = await cgtest.numDonatedNFTs();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("nft", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f39();
+		await cgtest.f38();
 		let value = await cgtest.nft();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("bLogic", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f40();
+		await cgtest.f39();
 		let value = await cgtest.bLogic();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});

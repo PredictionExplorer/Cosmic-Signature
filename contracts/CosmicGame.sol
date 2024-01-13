@@ -58,8 +58,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	uint256 public prizePercentage = 25;
 
-	uint256 public rwalkPrizePercentage = 30;
-
 	// 10% of the prize pool goes to the charity
 	uint256 public charityPercentage = 10;
 
@@ -125,7 +123,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	/// Admin events
 	event CharityPercentageChanged(uint256 newCharityPercentage);
 	event PrizePercentageChanged(uint256 newPrizePercentage);
-	event RwalkPrizePercentageChanged(uint256 newRwalkPrizePercentage);
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 	event StakingPercentageChanged(uint256 newStakingPercentage);
 	event NumRaffleWinnersPerRoundChanged(uint256 newNumRaffleWinnersPerRound);
@@ -292,15 +289,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit PrizePercentageChanged(prizePercentage);
 	}
 
-	function setRwalkPrizePercentage(uint256 newRwalkPrizePercentage) external onlyOwner {
-		rwalkPrizePercentage = newRwalkPrizePercentage;
-		require(
-			rwalkPrizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100,
-			"Percentage value overflow, must be lower than 100."
-		);
-		emit RwalkPrizePercentageChanged(rwalkPrizePercentage);
-	}
-
 	function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
 		charityPercentage = newCharityPercentage;
 		require(
@@ -410,10 +398,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	function prizeAmount() public view returns (uint256) {
 		return (address(this).balance * prizePercentage) / 100;
-	}
-
-	function rwalkAmount() public view returns (uint256) {
-		return (address(this).balance * rwalkPrizePercentage) / 100;
 	}
 
 	function charityAmount() public view returns (uint256) {
