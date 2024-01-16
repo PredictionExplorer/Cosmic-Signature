@@ -4,6 +4,14 @@ const { expect } = require("chai");
 const { basicDeployment } = require("../src/Deploy.js");
 
 describe("Contract", function () {
+	const bidParamsEncoding = {
+						type: 'tuple(string,int256)',
+						name: 'bidparams',
+						components: [
+							{name: 'msg', type: 'string'},
+							{name: 'rwalk',type: 'int256'},
+						]
+	};
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
 		[contractDeployerAcct] = await ethers.getSigners();
@@ -44,11 +52,17 @@ describe("Contract", function () {
 
 		let bidPrice;
 		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(owner).bid(["owner bids", ethers.BigNumber.from("-1")], { value: bidPrice });
+		let bidParams = {msg:'owner bids',rwalk:-1};
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		await cosmicGame.connect(owner).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr1).bid(["addr1 bids", ethers.BigNumber.from("-1")], { value: bidPrice });
+		bidParams = {msg:'addr1 bids',rwalk:-1};
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr2).bid(["addr2 bids", ethers.BigNumber.from("-1")], { value: bidPrice });
+		bidParams = {msg:'addr2 bids',rwalk:-1};
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
 
 		let randomWalkAddr = await cosmicGame.randomWalk();
 		let randomWalk = await ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
@@ -109,7 +123,9 @@ describe("Contract", function () {
 
 		let bidPrice;
 		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(owner).bid(["owner bids", ethers.BigNumber.from("-1")], { value: bidPrice });
+		let bidParams = {msg:'owner bids',rwalk:-1};
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		await cosmicGame.connect(owner).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGame.getBidPrice();
 		await bnonrec.connect(owner).doBid({ value: bidPrice });
 

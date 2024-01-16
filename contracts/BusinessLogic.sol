@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.19;
+pragma abicoder v2;
 
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -81,7 +82,8 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	constructor() {}
-	function bid(BidParams calldata params) public payable {
+	function bid(bytes calldata _param_data) public payable {
+		BidParams memory params = abi.decode(_param_data,(BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
 			require(

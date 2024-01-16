@@ -155,8 +155,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		BusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
 		(bool success, ) = address(bLogic).delegatecall(
-			abi.encodeWithSelector(BusinessLogic.bid.selector, defaultParams)
+			abi.encodeWithSelector(BusinessLogic.bid.selector, param_data)
 		);
 		require(success, "Call to bid logic failed.");
 	}
@@ -164,16 +166,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// Bidding
 
 	function bidAndDonateNFT(
-		BusinessLogic.BidParams memory params,
+		bytes calldata _param_data,
 		IERC721 nftAddress,
 		uint256 tokenId
 	) external payable {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, params));
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _param_data));
 		require(success, "Call to bid logic failed.");
 		_donateNFT(nftAddress, tokenId);
 	}
 
-	function bid(BusinessLogic.BidParams calldata _data) public payable {
+	function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
 		require(success, "Call to bid logic failed.");
 	}
