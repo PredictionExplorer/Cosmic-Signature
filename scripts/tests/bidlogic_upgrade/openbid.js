@@ -1,10 +1,11 @@
 const hre = require("hardhat");
 const bidParamsEncoding = { 
-	type: 'tuple(string,int256)',
+	type: 'tuple(string,int256,bool)',
 	name: 'bidparams',
 	components: [
 		{name: 'msg', type: 'string'},
 		{name: 'rwalk',type: 'int256'},
+		{name: 'openbid',type: 'bool'},
 	]
 }; 
 async function getCosmicGameContract() {
@@ -27,8 +28,8 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGame = await getCosmicGameContract();
-	let bidParams = {msg:'bid test',rwalk:-1};
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+	let bidParams = {msg:'bid test',rwalk:-1,'openbid':true};
+	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicGame.getBidPrice();
 	await cosmicGame.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
 }
