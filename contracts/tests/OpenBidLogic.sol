@@ -59,7 +59,7 @@ contract OpenBusinessLogic is Context, Ownable {
 	CosmicSignature public nft;
 	OpenBusinessLogic public bLogic;
 	mapping(uint256 => uint256) public extraStorage;
-	uint256 timesBidPrice = 10; // multiples of bid price that open bid has to be
+	uint256 timesBidPrice; // multiples of bid price that open bid has to be
 
 	event BidEvent(
 		address indexed lastBidder,
@@ -86,6 +86,7 @@ contract OpenBusinessLogic is Context, Ownable {
 	}
 
 	constructor() {}
+
 	function bid(bytes calldata _param_data) public payable {
 		BidParams memory params = abi.decode(_param_data,(BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
@@ -315,8 +316,12 @@ contract OpenBusinessLogic is Context, Ownable {
 	function _updateEntropy() internal {
 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
 	}
-	function setTimesBidPrice(uint256 newTimesBidPrice) external onlyOwner {
+	function setTimesBidPrice(bytes calldata _param_data) external onlyOwner { //cbe6b0e8
+		uint256 newTimesBidPrice = abi.decode(_param_data,(uint256));
 		timesBidPrice = newTimesBidPrice;
 		emit TimesBidPriceChangedEvent(newTimesBidPrice);
+	}
+	function getTimesBidPrice() external view returns (uint256) { //2e629c7a
+		return timesBidPrice;
 	}
 }

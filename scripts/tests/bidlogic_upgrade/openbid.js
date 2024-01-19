@@ -28,10 +28,20 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGame = await getCosmicGameContract();
+
+	let input = cosmicGame.interface.encodeFunctionData("proxyCall",['0x2e629c7a',0]);
+	let message = await cosmicGame.provider.call({
+		to: cosmicGame.address,
+		data: input
+	});
+	let res = cosmicGame.interface.decodeFunctionResult("proxyCall",message);
+	let multiplier = ethers.utils.defaultAbiCoder.decode(["uint256"], res[0]);
+	multiplier = ethers.BigNumber.from(multiplier + "");
+
 	let bidParams = {msg:'bid test',rwalk:-1,'openbid':true};
 	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicGame.getBidPrice();
-	await cosmicGame.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
+	await cosmicGame.connect(testingAcct).bid(params, { value: bidPrice.mul(multiplier), gasLimit: 30000000 });
 }
 main()
 	.then(() => process.exit(0))

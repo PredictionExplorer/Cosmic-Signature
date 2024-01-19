@@ -1,5 +1,4 @@
 const hre = require("hardhat");
-
 async function getCosmicGameContract() {
 	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
@@ -20,14 +19,8 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGame = await getCosmicGameContract();
-	const OpenBusinessLogic = await ethers.getContractFactory("OpenBusinessLogic");
-	let newLogic = await OpenBusinessLogic .deploy();
-	await cosmicGame.setBusinessLogicContract(newLogic.address);
-
 	let params = ethers.utils.defaultAbiCoder.encode(['uint256'],[ethers.BigNumber.from("3")]);
 	await cosmicGame.connect(testingAcct).proxyExec('0x57a23952',params, {gasLimit: 30000000 });
-
-	console.log("OpenBidLogic Address : "+newLogic.address);
 }
 main()
 	.then(() => process.exit(0))

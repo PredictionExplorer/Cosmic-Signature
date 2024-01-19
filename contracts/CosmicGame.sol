@@ -85,7 +85,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	CosmicSignature public nft;
 	BusinessLogic public bLogic;
-	mapping(uint256 => uint256) public extraStorage; // place to store child contract's data (variable size)
+	mapping(uint256 => uint256) public extraStorage; // additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
 
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	// randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
@@ -211,6 +211,18 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit DonationEvent(_msgSender(), msg.value);
 	}
 
+	// Use this function to read state variables in BusinessLogic contract
+	function proxyCall(bytes4 _sig,bytes calldata _encoded_params) external returns (bytes memory) {
+		(bool success, bytes memory retval) = address(bLogic).delegatecall(abi.encodeWithSelector(_sig, _encoded_params));
+		require(success, "ProxyCall call to business logic contract failed.");
+		return retval;
+	}
+
+	// Use this funciton to store state variables in BusinessLogic contract
+	function proxyExec(bytes4 _sig,bytes calldata _encoded_params) external payable {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(_sig, _encoded_params));
+		require(success, "ProxyExec call to business logic contract failed.");
+	}
 	// Claiming donated NFTs
 
 	function claimDonatedNFT(uint256 num) public {
