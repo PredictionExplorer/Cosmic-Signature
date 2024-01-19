@@ -107,7 +107,7 @@ describe("Cosmic", function () {
 					.add(24 * 3600 - 2),
 			); // not super clear why we are subtracting 2 here and 1 above
 			await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			bidPrice = await cosmicGame.getBidPrice();
@@ -115,21 +115,21 @@ describe("Cosmic", function () {
 			params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
 			await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
 			await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			prizeTime = await cosmicGame.timeUntilPrize();
 			await ethers.provider.send("evm_increaseTime", [prizeTime.sub(100).toNumber()]);
 			await ethers.provider.send("evm_mine");
 			await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			await ethers.provider.send("evm_increaseTime", [100]);
 			await ethers.provider.send("evm_mine");
 
 			await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			let prizeAmount = await cosmicGame.prizeAmount();
@@ -144,7 +144,7 @@ describe("Cosmic", function () {
 			// after the prize has been claimed, let's bid again!
 
 			await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			bidPrice = await cosmicGame.getBidPrice();
@@ -152,7 +152,7 @@ describe("Cosmic", function () {
 			params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
 			await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 			await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			prizeTime = await cosmicGame.timeUntilPrize();
@@ -178,7 +178,7 @@ describe("Cosmic", function () {
 			await ethers.provider.send("evm_mine");
 
 			await expect(cosmicGame.connect(addr2).claimPrize()).to.be.revertedWith(
-				"Call to claim prize logic failed.",
+				"Call to business logic failed.",
 			);
 
 			await ethers.provider.send("evm_increaseTime", [3600 * 24]);
@@ -279,7 +279,7 @@ describe("Cosmic", function () {
 				await loadFixture(deployCosmic);
 			[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 			await expect(cosmicGame.connect(addr1).donate()).to.be.revertedWith(
-				"Donation amount must be greater than 0.",
+				"Call to business logic failed.",
 			);
 		});
 		it("Raffle deposits sent should match raffle deposits received", async function () {

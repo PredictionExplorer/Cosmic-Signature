@@ -185,7 +185,7 @@ describe("Events", function () {
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 
 		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith(
-			"Non-existent winner for the round.",
+			"Call to business logic contract failed.",
 		);
 		await ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await ethers.provider.send("evm_mine");
@@ -205,12 +205,12 @@ describe("Events", function () {
 		expect(prizeAmountAfterClaim).to.equal(expectedPrizeAmount);
 
 		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith(
-			"The donated NFT does not exist.",
+			"Call to business logic contract failed.",
 		);
 
 		await cosmicGame.connect(bidder1).claimDonatedNFT(0);
 		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith(
-			"The NFT has already been claimed.",
+			"Call to business logic contract failed.",
 		);
 
 		mintPrice = await randomWalkNFT.getMintPrice();

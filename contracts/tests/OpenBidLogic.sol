@@ -174,7 +174,7 @@ contract OpenBusinessLogic is Context, Ownable {
 	}
 	function bidWithCST(string memory message) external {
 		CosmicGame game = CosmicGame(payable(address(this)));
-		uint256 price = game.currentCSTPrice();
+		uint256 price = abi.decode(game.currentCSTPrice(),(uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		numCSTBids += 1;
