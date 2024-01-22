@@ -15,7 +15,6 @@ import { RaffleWallet } from "../RaffleWallet.sol";
 import { StakingWallet } from "../StakingWallet.sol";
 import { MarketingWallet } from "../MarketingWallet.sol";
 
-
 contract OpenBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
 	CosmicGameConstants.BidType public lastBidType;
@@ -70,12 +69,27 @@ contract OpenBusinessLogic is Context, Ownable {
 		uint256 prizeTime,
 		string message
 	);
+	event DonationEvent(address indexed donor, uint256 amount);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
 		uint256 indexed tokenId,
 		uint256 winnerIndex
+	);
+	event NFTDonationEvent(
+		address indexed donor,
+		IERC721 indexed nftAddress,
+		uint256 indexed round,
+		uint256 tokenId,
+		uint256 index
+	);
+	event DonatedNFTClaimedEvent(
+		uint256 indexed round,
+		uint256 index,
+		address winner,
+		address nftAddressdonatedNFTs,
+		uint256 tokenId
 	);
 	event TimesBidPriceChangedEvent(uint256 newTimesBidPrice);
 
@@ -87,7 +101,7 @@ contract OpenBusinessLogic is Context, Ownable {
 
 	constructor() {}
 
-	function bid(bytes calldata _param_data) public payable {
+	function bid(bytes memory _param_data) public payable {
 		BidParams memory params = abi.decode(_param_data,(BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
@@ -145,6 +159,15 @@ contract OpenBusinessLogic is Context, Ownable {
 		}
 		emit BidEvent(lastBidder, roundNum, int256(paidBidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
 	}
+	function bidAndDonateNFT(
+		bytes calldata _param_data,
+		IERC721 nftAddress,
+		uint256 tokenId
+	) external payable {
+
+		bid(_param_data);
+		_donateNFT(nftAddress, tokenId);
+	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
 		require(block.timestamp >= activationTime, "Not active yet.");
 		require(bytes(message).length <= CosmicGameConstants.MAX_MESSAGE_LENGTH, "Message is too long.");
@@ -173,8 +196,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		_pushBackPrizeTime();
 	}
 	function bidWithCST(string memory message) external {
-		CosmicGame game = CosmicGame(payable(address(this)));
-		uint256 price = abi.decode(game.currentCSTPrice(),(uint256));
+		uint256 price = abi.decode(currentCSTPrice(),(uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		numCSTBids += 1;
@@ -315,6 +337,71 @@ contract OpenBusinessLogic is Context, Ownable {
 	}
 	function _updateEntropy() internal {
 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
+	}
+	// We are doing a dutch auction that lasts 24 hours.
+	function currentCSTPrice() public view returns (bytes memory) {
+		//Note: we return bytes instead of uint256 because delegatecall doesn't support other types than bytes
+		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
+		uint256 auction_duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
+		if (secondsElapsed >= auction_duration) {
+			uint256 zero = 0;
+			return abi.encode(zero);
+		}
+		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
+		uint256 output = (fraction * startingBidPriceCST) / 1e6;
+		return abi.encode(output);
+
+	}
+	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
+		// If you are a creator you can donate some NFT to the winner of the
+		// current round (which might get you featured on the front page of the website).
+		_nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
+		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
+			nftAddress: _nftAddress,
+			tokenId: _tokenId,
+			round: roundNum,
+			claimed: false
+		});
+		numDonatedNFTs += 1;
+		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
+	}
+	// Claiming donated NFTs
+	function claimDonatedNFT(uint256 num) public {
+		require(num < numDonatedNFTs, "The donated NFT does not exist.");
+		address winner = winners[donatedNFTs[num].round];
+		require(winner != address(0), "Non-existent winner for the round.");
+		require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
+		donatedNFTs[num].claimed = true;
+		donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
+		emit DonatedNFTClaimedEvent(
+			donatedNFTs[num].round,
+			num,
+			winner,
+			address(donatedNFTs[num].nftAddress),
+			donatedNFTs[num].tokenId
+		);
+	}
+
+	function claimManyDonatedNFTs(uint256[] memory tokens) external {
+		for (uint256 i = 0; i < tokens.length; i++) {
+			claimDonatedNFT(tokens[i]);
+		}
+	}
+	function receiveEther() external payable {
+		BidParams memory defaultParams;
+		defaultParams.message = "";
+		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
+		bid(param_data);
+	}
+	function donate() external payable {
+		require(msg.value > 0, "Donation amount must be greater than 0.");
+		if (block.timestamp < activationTime) {
+			// Set the initial bid prize only if the game has not started yet.
+			bidPrice = address(this).balance / initialBidAmountFraction;
+		}
+		emit DonationEvent(_msgSender(), msg.value);
 	}
 	function setTimesBidPrice(bytes calldata _param_data) external onlyOwner { //cbe6b0e8
 		uint256 newTimesBidPrice = abi.decode(_param_data,(uint256));
