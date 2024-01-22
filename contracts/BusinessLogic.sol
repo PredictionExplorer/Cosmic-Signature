@@ -350,7 +350,6 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	// Claiming donated NFTs
-
 	function claimDonatedNFT(uint256 num) public {
 		require(num < numDonatedNFTs, "The donated NFT does not exist.");
 		address winner = winners[donatedNFTs[num].round];

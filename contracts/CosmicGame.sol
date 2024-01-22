@@ -155,7 +155,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		(bool success, ) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(BusinessLogic.receiveEther.selector)
 		);
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 
 	// Bidding
@@ -166,23 +166,23 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 tokenId
 	) external payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bidAndDonateNFT.selector, _param_data,nftAddress,tokenId));
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 
 	function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 	function bidWithCST(string memory message) external {
 		(bool success, ) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(BusinessLogic.bidWithCST.selector, message)
 		);
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() external returns (bytes memory) {
 		(bool success, bytes memory price) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.currentCSTPrice.selector));
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 		return price;
 	}
 

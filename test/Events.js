@@ -338,14 +338,14 @@ describe("Events", function () {
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
 		await expect(
 			cosmicGame.connect(bidder1).bid(params, { value: bidPrice }),
-		).to.be.revertedWith("Call to bid logic failed.");
+		).to.be.revertedWith("Call to business logic failed.");
 
 		await expect(
 			bidder2.sendTransaction({
 				to: cosmicGame.address,
 				value: bidPrice,
 			}),
-		).to.be.revertedWith("Call to bid logic failed.");
+		).to.be.revertedWith("Call to business logic failed.");
 
 		await ethers.provider.send("evm_increaseTime", [100]);
 		await ethers.provider.send("evm_mine");

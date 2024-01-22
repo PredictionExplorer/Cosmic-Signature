@@ -62,13 +62,13 @@ describe("Cosmic", function () {
 			let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
 			await expect(
 				cosmicGame.connect(addr1).bid(params, { value: 1 }),
-			).to.be.revertedWith("Call to bid logic failed.");
+			).to.be.revertedWith("Call to business logic failed.");
 			let bidPrice = await cosmicGame.getBidPrice();
 			bidParams = {msg:'',rwalk:-1};
 			params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
 			expect(
 				cosmicGame.connect(addr1).bid(params, { value: bidPrice.sub(1) }),
-			).to.be.revertedWith("Call to bid logic failed.");
+			).to.be.revertedWith("Call to business logic failed.");
 
 			let prizeTime = await cosmicGame.timeUntilPrize();
 			expect(prizeTime).to.equal(0);
@@ -200,7 +200,7 @@ describe("Cosmic", function () {
 			let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
 			await expect(
 				cosmicGame.connect(owner).bid(params, { value: bidPrice }),
-			).to.be.revertedWith("Call to bid logic failed."); //tokenId=0
+			).to.be.revertedWith("Call to business logic failed."); //tokenId=0
 			await expect(
 				cosmicGame.connect(addr1).bid(params, { value: bidPrice }),
 			) //tokenId=0
@@ -221,7 +221,7 @@ describe("Cosmic", function () {
 			bidPrice = await cosmicGame.getBidPrice();
 			await expect(
 				cosmicGame.connect(owner).bid(params, { value: bidPrice }),
-			).to.be.revertedWith("Call to bid logic failed."); //tokenId=0
+			).to.be.revertedWith("Call to business logic failed."); //tokenId=0
 		});
 		it("Should not be possible to mint CosmicSignature token by anyone", async function () {
 			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
