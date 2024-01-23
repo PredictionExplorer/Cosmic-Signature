@@ -6,16 +6,16 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameConstants } from "./Constants.sol";
-import { CosmicGame } from "./CosmicGame.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
-import { CosmicToken } from "./CosmicToken.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { RaffleWallet } from "./RaffleWallet.sol";
-import { StakingWallet } from "./StakingWallet.sol";
-import { MarketingWallet } from "./MarketingWallet.sol";
+import { CosmicGameConstants } from "../Constants.sol";
+import { CosmicGame } from "../CosmicGame.sol";
+import { CosmicSignature } from "../CosmicSignature.sol";
+import { CosmicToken } from "../CosmicToken.sol";
+import { RandomWalkNFT } from "../RandomWalkNFT.sol";
+import { RaffleWallet } from "../RaffleWallet.sol";
+import { StakingWallet } from "../StakingWallet.sol";
+import { MarketingWallet } from "../MarketingWallet.sol";
 
-contract BusinessLogic is Context, Ownable {
+contract OpenBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
 	CosmicGameConstants.BidType public lastBidType;
 	mapping(uint256 => bool) public usedRandomWalkNFTs;
@@ -56,8 +56,9 @@ contract BusinessLogic is Context, Ownable {
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
 	CosmicSignature public nft;
-	BusinessLogic public bLogic;
+	OpenBusinessLogic public bLogic;
 	mapping(uint256 => uint256) public extraStorage;
+	uint256 timesBidPrice; // multiples of bid price that open bid has to be
 
 	event BidEvent(
 		address indexed lastBidder,
@@ -90,13 +91,16 @@ contract BusinessLogic is Context, Ownable {
 		address nftAddressdonatedNFTs,
 		uint256 tokenId
 	);
+	event TimesBidPriceChangedEvent(uint256 newTimesBidPrice);
 
 	struct BidParams {
 		string message;
 		int256 randomWalkNFTId;
+		bool openBid;		// true if the value sent with the TX is the amount of bid
 	}
 
 	constructor() {}
+
 	function bid(bytes memory _param_data) public payable {
 		BidParams memory params = abi.decode(_param_data,(BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
@@ -127,18 +131,31 @@ contract BusinessLogic is Context, Ownable {
 			require(msg.value >= rwalkBidPrice, "The value submitted for this transaction with RandomWalk is too low.");
 			paidBidPrice = rwalkBidPrice;
 		} else {
-			require(msg.value >= newBidPrice, "The value submitted for this transaction is too low.");
-			paidBidPrice = newBidPrice;
+			if (params.openBid) {
+				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
+				require(msg.value >= minPriceOpenBid,"The value submitted for open bid is too low.");
+				paidBidPrice = msg.value;
+			} else {
+				require(msg.value >= newBidPrice, "The value submitted for this transaction is too low.");
+				paidBidPrice = newBidPrice;
+			}
 		}
-
-		bidPrice = newBidPrice;
+		if (params.openBid) {
+			bidPrice = msg.value;
+		} else {
+			bidPrice = newBidPrice;
+		}
 
 		_bidCommon(params.message, bidType);
 
-		if (msg.value > paidBidPrice) {
-			// Return the extra money to the bidder.
-			(bool success, ) = lastBidder.call{ value: msg.value - paidBidPrice }("");
-			require(success, "Refund transfer failed.");
+		if (params.openBid) {
+			// on open bids full msg.value is consumed
+		} else {
+			if (msg.value > paidBidPrice) {
+				// Return the extra money to the bidder.
+				(bool success, ) = lastBidder.call{ value: msg.value - paidBidPrice }("");
+				require(success, "Refund transfer failed.");
+			}
 		}
 		emit BidEvent(lastBidder, roundNum, int256(paidBidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
 	}
@@ -348,7 +365,6 @@ contract BusinessLogic is Context, Ownable {
 		numDonatedNFTs += 1;
 		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
 	}
-
 	// Claiming donated NFTs
 	function claimDonatedNFT(uint256 num) public {
 		require(num < numDonatedNFTs, "The donated NFT does not exist.");
@@ -372,7 +388,7 @@ contract BusinessLogic is Context, Ownable {
 		}
 	}
 	function receiveEther() external payable {
-		BusinessLogic.BidParams memory defaultParams;
+		BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data;
@@ -386,5 +402,13 @@ contract BusinessLogic is Context, Ownable {
 			bidPrice = address(this).balance / initialBidAmountFraction;
 		}
 		emit DonationEvent(_msgSender(), msg.value);
+	}
+	function setTimesBidPrice(bytes calldata _param_data) external onlyOwner { //cbe6b0e8
+		uint256 newTimesBidPrice = abi.decode(_param_data,(uint256));
+		timesBidPrice = newTimesBidPrice;
+		emit TimesBidPriceChangedEvent(newTimesBidPrice);
+	}
+	function getTimesBidPrice() external view returns (uint256) { //2e629c7a
+		return timesBidPrice;
 	}
 }

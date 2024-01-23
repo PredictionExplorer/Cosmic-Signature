@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.19;
+pragma abicoder v2;
+
 import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
@@ -26,14 +28,18 @@ contract BidderContract is IERC721Receiver {
 		BusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "contract bid";
 		defaultParams.randomWalkNFTId = -1;
-		cosmicGame.bid{ value: price }(defaultParams);
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
+		cosmicGame.bid{ value: price }(param_data);
 	}
 	function doBidRWalk(int256 tokenId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		BusinessLogic.BidParams memory params;
 		params.message = "contract bid rwalk";
 		params.randomWalkNFTId = tokenId;
-		cosmicGame.bid{ value: price }(params);
+		bytes memory param_data;
+		param_data = abi.encode(params);
+		cosmicGame.bid{ value: price }(param_data);
 	}
 	function doBidAndDonate(address nftAddress, uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame), true);
@@ -44,7 +50,9 @@ contract BidderContract is IERC721Receiver {
 		BusinessLogic.BidParams memory params;
 		params.message = "contract bid with donation";
 		params.randomWalkNFTId = -1;
-		cosmicGame.bidAndDonateNFT{ value: price }(params, IERC721(nftAddress), tokenId);
+		bytes memory param_data;
+		param_data = abi.encode(params);
+		cosmicGame.bidAndDonateNFT{ value: price }(param_data, IERC721(nftAddress), tokenId);
 	}
 	function doClaim() external {
 		cosmicGame.claimPrize();
@@ -101,7 +109,9 @@ contract BidCNonRecv {
 		BusinessLogic.BidParams memory params;
 		params.message = "non-erc721 receiver bid";
 		params.randomWalkNFTId = -1;
-		cosmicGame.bid{ value: price }(params);
+		bytes memory param_data;
+		param_data = abi.encode(params);
+		cosmicGame.bid{ value: price }(param_data);
 	}
 	function doClaim() external {
 		cosmicGame.claimPrize();

@@ -85,7 +85,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	CosmicSignature public nft;
 	BusinessLogic public bLogic;
-	mapping(uint256 => uint256) public extraStorage; // place to store child contract's data (variable size)
+	mapping(uint256 => uint256) public extraStorage; // additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
 
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	// randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
@@ -152,87 +152,72 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	receive() external payable {
-		BusinessLogic.BidParams memory defaultParams;
-		defaultParams.message = "";
-		defaultParams.randomWalkNFTId = -1;
 		(bool success, ) = address(bLogic).delegatecall(
-			abi.encodeWithSelector(BusinessLogic.bid.selector, defaultParams)
+			abi.encodeWithSelector(BusinessLogic.receiveEther.selector)
 		);
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 
 	// Bidding
 
 	function bidAndDonateNFT(
-		BusinessLogic.BidParams memory params,
+		bytes calldata _param_data,
 		IERC721 nftAddress,
 		uint256 tokenId
 	) external payable {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, params));
-		require(success, "Call to bid logic failed.");
-		_donateNFT(nftAddress, tokenId);
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bidAndDonateNFT.selector, _param_data,nftAddress,tokenId));
+		require(success, "Call to business logic failed.");
 	}
 
-	function bid(BusinessLogic.BidParams calldata _data) public payable {
+	function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 	function bidWithCST(string memory message) external {
 		(bool success, ) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(BusinessLogic.bidWithCST.selector, message)
 		);
-		require(success, "Call to bid logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 	// We are doing a dutch auction that lasts 24 hours.
-	function currentCSTPrice() public view returns (uint256) {
-		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-		uint256 auction_duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
-		if (secondsElapsed >= auction_duration) {
-			return 0;
-		}
-		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
-		return (fraction * startingBidPriceCST) / 1e6;
+	function currentCSTPrice() external returns (bytes memory) {
+		(bool success, bytes memory price) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.currentCSTPrice.selector));
+		require(success, "Call to business logic failed.");
+		return price;
 	}
 
 	function claimPrize() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimPrize.selector));
-		require(success, "Call to claim prize logic failed.");
+		require(success, "Call to business logic failed.");
 	}
 
 	// Donate some ETH to the game.
 	function donate() external payable {
-		require(msg.value > 0, "Donation amount must be greater than 0.");
-		if (block.timestamp < activationTime) {
-			// Set the initial bid prize only if the game has not started yet.
-			bidPrice = address(this).balance / initialBidAmountFraction;
-		}
-		emit DonationEvent(_msgSender(), msg.value);
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.donate.selector));
+		require(success, "Call to business logic failed.");
 	}
 
-	// Claiming donated NFTs
+	// Use this function to read state variables in BusinessLogic contract
+	function proxyCall(bytes4 _sig,bytes calldata _encoded_params) external returns (bytes memory) {
+		(bool success, bytes memory retval) = address(bLogic).delegatecall(abi.encodeWithSelector(_sig, _encoded_params));
+		require(success, "ProxyCall call to business logic contract failed.");
+		return retval;
+	}
+
+	// Use this funciton to store state variables in BusinessLogic contract
+	function proxyExec(bytes4 _sig,bytes calldata _encoded_params) external payable {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(_sig, _encoded_params));
+		require(success, "ProxyExec call to business logic contract failed.");
+	}
 
 	function claimDonatedNFT(uint256 num) public {
-		require(num < numDonatedNFTs, "The donated NFT does not exist.");
-		address winner = winners[donatedNFTs[num].round];
-		require(winner != address(0), "Non-existent winner for the round.");
-		require(!donatedNFTs[num].claimed, "The NFT has already been claimed.");
-		donatedNFTs[num].claimed = true;
-		donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
-		emit DonatedNFTClaimedEvent(
-			donatedNFTs[num].round,
-			num,
-			winner,
-			address(donatedNFTs[num].nftAddress),
-			donatedNFTs[num].tokenId
-		);
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimDonatedNFT.selector, num));
+		require(success, "Call to business logic contract failed.");
 	}
-
 	function claimManyDonatedNFTs(uint256[] memory tokens) external {
-		for (uint256 i = 0; i < tokens.length; i++) {
-			claimDonatedNFT(tokens[i]);
-		}
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimManyDonatedNFTs.selector, tokens));
+		require(success, "Call to business logic contract failed.");
 	}
-
 	// Set different parameters (only owner is allowed). A few weeks after the project launches the owner will be set to address 0 forever. //
 
 	function setCharity(address addr) external onlyOwner {
@@ -413,20 +398,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	// Internal functions
-
-	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
-		// If you are a creator you can donate some NFT to the winner of the
-		// current round (which might get you featured on the front page of the website).
-		_nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
-		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
-			nftAddress: _nftAddress,
-			tokenId: _tokenId,
-			round: roundNum,
-			claimed: false
-		});
-		numDonatedNFTs += 1;
-		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
-	}
 
 	function _max(uint256 a, uint256 b) internal pure returns (uint256) {
 		return a >= b ? a : b;

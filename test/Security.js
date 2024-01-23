@@ -4,6 +4,14 @@ const { expect } = require("chai");
 const { basicDeployment } = require("../src/Deploy.js");
 
 describe("Security", function () {
+	const bidParamsEncoding = {
+						type: 'tuple(string,int256)',
+						name: 'bidparams',
+						components: [
+							{name: 'msg', type: 'string'},
+							{name: 'rwalk',type: 'int256'},
+						]
+	};
 	async function deployCosmic() {
 		let contractDeployerAcct;
 		[contractDeployerAcct] = await ethers.getSigners();
@@ -34,7 +42,9 @@ describe("Security", function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
 		let bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr3).bid(["", ethers.BigNumber.from("-1")], { value: bidPrice }); // this works
+		var bidParams = {msg:'',rwalk:-1};
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		await cosmicGame.connect(addr3).bid(params, { value: bidPrice }); // this works
 		let prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.add(24 * 3600).toNumber()]);
 		await ethers.provider.send("evm_mine");
@@ -43,7 +53,7 @@ describe("Security", function () {
 		let reclaim_bal_before = await ethers.provider.getBalance(reclaim.address);
 		// Make sure there is no re-entrancy
 		await expect(reclaim.connect(addr3).claimAndReset(ethers.BigNumber.from("1"))).to.be.revertedWith(
-			"Call to claim prize logic failed.",
+			"Call to business logic failed.",
 		);
 	});
 	it("Is possible to take prize before activation", async function () {
@@ -58,6 +68,6 @@ describe("Security", function () {
 		await ethers.provider.send("evm_mine");
 		let prizeAmount = await cosmicGame.prizeAmount();
 		let balance_before = await addr1.getBalance();
-		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Call to claim prize logic failed.");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Call to business logic failed.");
 	});
 });

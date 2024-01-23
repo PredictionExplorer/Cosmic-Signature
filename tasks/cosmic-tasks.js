@@ -25,7 +25,9 @@ task("deploy-local", "Deploys contracts to local network", async (args, hre) => 
 		cosmicDAO,
 		raffleWallet,
 		randomWalkNFT,
-		bidLogic,
+		stakingWallet,
+		marketingWallet,
+		bLogic,
 	} = await basicDeployment(
 		deployerAcct,
 		config_params.randomWalkAddr,
@@ -42,7 +44,7 @@ task("deploy-local", "Deploys contracts to local network", async (args, hre) => 
 	console.log("CharityWallet address:", charityWallet.address);
 	console.log("CosmicDAO address", cosmicDAO.address);
 	console.log("RaffleWallet address:", raffleWallet.address);
-	console.log("BidLogic address:", bidLogic.address);
+	console.log("BidLogic address:", bLogic.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
 	console.log("Donation of " + etherStr + " ETH complete");
 }).addParam("deployconfig", "Config file (JSON)");
