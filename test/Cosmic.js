@@ -796,5 +796,76 @@ describe("Cosmic", function () {
 			expect(parsed_log.args.amount).to.equal(previousStakingAmount);
 			expect(parsed_log.args.modulo).to.equal(moduloInRound);
 		});
+		it("Bidding with CST works", async function () {
+			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+				await loadFixture(deployCosmic);
+			[owner, addr1, addr2, addr3,...addrs] = await ethers.getSigners();
+
+			let bidPrice = await cosmicGame.getBidPrice();
+			let bidParams = {msg:'',rwalk:-1};
+			let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+			await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+			let prizeTime = await cosmicGame.timeUntilPrize();
+			await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+			await cosmicGame.connect(addr1).claimPrize();
+
+			await cosmicGame.connect(addr1).bidWithCST("cst bid");
+
+			let input = cosmicGame.interface.encodeFunctionData("currentCSTPrice",[]);
+			let message = await cosmicGame.provider.call({
+				to: cosmicGame.address,
+				data: input
+		    });
+			let res = cosmicGame.interface.decodeFunctionResult("currentCSTPrice",message);
+			let priceBytes = res[0].slice(130,194);
+			let cstPrice = ethers.utils.defaultAbiCoder.decode(["uint256"],'0x'+priceBytes);
+			expect(cstPrice.toString()).to.equal(ethers.utils.parseEther("200").toString());
+
+
+			let tx = await cosmicGame.connect(addr1).bidWithCST("cst bid");
+			let receipt = await tx.wait()
+			let topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
+			let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+			let parsed_log = cosmicGame.interface.parseLog(log);
+			expect(cstPrice.toString()).to.equal(parsed_log.args.numCSTTokens.toString());
+			expect(parsed_log.args.bidPrice.toNumber()).to.equal(-1);
+			expect(parsed_log.args.lastBidder).to.equal(addr1.address);
+			expect(parsed_log.args.message).to.equal("cst bid");
+		});
+		it("ProxyCall() method works", async function () {
+			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+				await loadFixture(deployCosmic);
+			[owner, addr1, addr2, addr3,...addrs] = await ethers.getSigners();
+			// we will use nanoSecondsExtra value for verification purposes
+			let nsec = await cosmicGame.nanoSecondsExtra();
+			let input = cosmicGame.interface.encodeFunctionData("proxyCall",['0x9136d6d9',0]);
+			let message = await cosmicGame.provider.call({
+				to: cosmicGame.address,
+				data: input
+			});
+			let res = cosmicGame.interface.decodeFunctionResult("proxyCall",message);
+			let value = ethers.utils.defaultAbiCoder.decode(["uint256"], res[0]);
+			expect(value.toString()).to.equal(nsec.toString());
+		});
+		it("ProxyExec() method works", async function () {
+			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+				await loadFixture(deployCosmic);
+			[owner, addr1, addr2, addr3,...addrs] = await ethers.getSigners();
+			let donationAmount = ethers.utils.parseEther("7");
+			await cosmicGame.donate({ value: donationAmount });
+			// we will use donate() method to verify the functioning of ProxyExec()
+			let balanceBefore = await ethers.provider.getBalance(cosmicGame.address);
+			let params = ethers.utils.defaultAbiCoder.encode(['bytes'],['0x']) // this value will be ignored since donate() doesn't take any arguments, however proxyExec() requires two arguments
+			let tx = await cosmicGame.connect(owner).proxyExec('0xed88c68e',params,{value:donationAmount});
+			let receipt = await tx.wait();
+			let balanceAfter = await ethers.provider.getBalance(cosmicGame.address);
+			expect(balanceAfter.toString()).to.equal(balanceBefore.add(ethers.utils.parseEther("7")));
+		});
 	});
 });
