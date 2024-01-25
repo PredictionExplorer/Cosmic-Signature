@@ -155,7 +155,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		(bool success, ) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(BusinessLogic.receiveEther.selector)
 		);
-		require(success, "Call to business logic failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 
 	// Bidding
@@ -166,18 +173,39 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 tokenId
 	) external payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bidAndDonateNFT.selector, _param_data,nftAddress,tokenId));
-		require(success, "Call to business logic failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 
 	function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
-		require(success, "Call to business logic failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 	function bidWithCST(string memory message) external {
 		(bool success, ) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(BusinessLogic.bidWithCST.selector, message)
 		);
-		require(success, "Call to business logic failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() external returns (bytes memory) {
@@ -188,13 +216,27 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	function claimPrize() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimPrize.selector));
-		require(success, "Call to business logic failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 
 	// Donate some ETH to the game.
 	function donate() external payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.donate.selector));
-		require(success, "Call to business logic failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 
 	// Use this function to read state variables in BusinessLogic contract
@@ -212,11 +254,25 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	function claimDonatedNFT(uint256 num) public {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimDonatedNFT.selector, num));
-		require(success, "Call to business logic contract failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 	function claimManyDonatedNFTs(uint256[] memory tokens) external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.claimManyDonatedNFTs.selector, tokens));
-		require(success, "Call to business logic contract failed.");
+		if (!success) {
+		    assembly {
+    		    let ptr := mload(0x40)
+	        	let size := returndatasize()
+		        returndatacopy(ptr, 0, size)
+        		revert(ptr, size)
+	    	}
+		}
 	}
 	// Set different parameters (only owner is allowed). A few weeks after the project launches the owner will be set to address 0 forever. //
 
