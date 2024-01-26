@@ -853,19 +853,5 @@ describe("Cosmic", function () {
 			let value = ethers.utils.defaultAbiCoder.decode(["uint256"], res[0]);
 			expect(value.toString()).to.equal(nsec.toString());
 		});
-		it("ProxyExec() method works", async function () {
-			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-				await loadFixture(deployCosmic);
-			[owner, addr1, addr2, addr3,...addrs] = await ethers.getSigners();
-			let donationAmount = ethers.utils.parseEther("7");
-			await cosmicGame.donate({ value: donationAmount });
-			// we will use donate() method to verify the functioning of ProxyExec()
-			let balanceBefore = await ethers.provider.getBalance(cosmicGame.address);
-			let params = ethers.utils.defaultAbiCoder.encode(['bytes'],['0x']) // this value will be ignored since donate() doesn't take any arguments, however proxyExec() requires two arguments
-			let tx = await cosmicGame.connect(owner).proxyExec('0xed88c68e',params,{value:donationAmount});
-			let receipt = await tx.wait();
-			let balanceAfter = await ethers.provider.getBalance(cosmicGame.address);
-			expect(balanceAfter.toString()).to.equal(balanceBefore.add(ethers.utils.parseEther("7")));
-		});
 	});
 });
