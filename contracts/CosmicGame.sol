@@ -239,17 +239,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		}
 	}
 
-	// Use this function to read state variables in BusinessLogic contract
+	// Use this function to read/write state variables in BusinessLogic contract
 	function proxyCall(bytes4 _sig,bytes calldata _encoded_params) external returns (bytes memory) {
 		(bool success, bytes memory retval) = address(bLogic).delegatecall(abi.encodeWithSelector(_sig, _encoded_params));
 		require(success, "ProxyCall call to business logic contract failed.");
 		return retval;
-	}
-
-	// Use this funciton to store state variables in BusinessLogic contract
-	function proxyExec(bytes4 _sig,bytes calldata _encoded_params) external payable {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(_sig, _encoded_params));
-		require(success, "ProxyExec call to business logic contract failed.");
 	}
 
 	function claimDonatedNFT(uint256 num) public {
