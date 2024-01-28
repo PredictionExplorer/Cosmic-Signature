@@ -25,7 +25,7 @@ async function main() {
 	await cosmicGame.setBusinessLogicContract(newLogic.address);
 
 	let params = ethers.utils.defaultAbiCoder.encode(['uint256'],[ethers.BigNumber.from("3")]);
-	await cosmicGame.connect(testingAcct).proxyExec('0x57a23952',params, {gasLimit: 30000000 });
+	await cosmicGame.connect(testingAcct).proxyCall('0x57a23952',params, {gasLimit: 30000000 });
 
 	console.log("OpenBidLogic Address : "+newLogic.address);
 }
