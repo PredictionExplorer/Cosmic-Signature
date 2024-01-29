@@ -207,6 +207,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	    	}
 		}
 	}
+	function auctionDuration() external returns (bytes memory) {
+		(bool success, bytes memory output) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.auctionDuration.selector));
+		require(success, "Call to business logic failed.");
+		return output;
+	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() external returns (bytes memory) {
 		(bool success, bytes memory price) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.currentCSTPrice.selector));

@@ -321,16 +321,21 @@ contract BusinessLogic is Context, Ownable {
 	function _updateEntropy() internal {
 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
 	}
+	function auctionDuration() public view returns (bytes memory) {
+		//Note: we are returning byte array instead of a tuple because delegatecall only supports byte arrays as return value type
+		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
+		uint256 duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
+		return abi.encode(secondsElapsed,duration);
+	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() public view returns (bytes memory) {
 		//Note: we return bytes instead of uint256 because delegatecall doesn't support other types than bytes
-		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-		uint256 auction_duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
-		if (secondsElapsed >= auction_duration) {
+		(uint256 secondsElapsed,uint256 duration) = abi.decode(auctionDuration(),(uint256,uint256));
+		if (secondsElapsed >= duration) {
 			uint256 zero = 0;
 			return abi.encode(zero);
 		}
-		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
+		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / duration);
 		uint256 output = (fraction * startingBidPriceCST) / 1e6;
 		return abi.encode(output);
 

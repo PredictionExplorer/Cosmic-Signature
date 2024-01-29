@@ -853,5 +853,32 @@ describe("Cosmic", function () {
 			let value = ethers.utils.defaultAbiCoder.decode(["uint256"], res[0]);
 			expect(value.toString()).to.equal(nsec.toString());
 		});
+		it("auctionDuration() method works", async function () {
+			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } = await loadFixture(deployCosmic);
+			[owner, addr1, addr2, addr3,...addrs] = await ethers.getSigners();
+			let input = cosmicGame.interface.encodeFunctionData("auctionDuration",[]);
+			let message = await cosmicGame.provider.call({
+				to: cosmicGame.address,
+				data: input,
+			});
+			let res = cosmicGame.interface.decodeFunctionResult("auctionDuration",message);
+			let bytes = res[0].slice(130,258);
+			let values = ethers.utils.defaultAbiCoder.decode(["uint256","uint256"], '0x'+bytes);
+			let secondsElapsed = values[0]; 
+			let duration = values[1];
+			await cosmicGame.connect(addr1).bidWithCST("cst bid");
+
+			input = cosmicGame.interface.encodeFunctionData("auctionDuration",[]);
+			message = await cosmicGame.provider.call({
+				to: cosmicGame.address,
+				data: input,
+			});
+			res = cosmicGame.interface.decodeFunctionResult("auctionDuration",message);
+			bytes = res[0].slice(130,258);
+			values = ethers.utils.defaultAbiCoder.decode(["uint256","uint256"], '0x'+bytes);
+			secondsElapsed = values[0]; 
+			duration = values[1];
+			expect(secondsElapsed).to.equal(0);
+		});
 	});
 });
