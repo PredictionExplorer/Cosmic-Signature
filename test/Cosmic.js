@@ -837,6 +837,10 @@ describe("Cosmic", function () {
 			let res = cosmicGame.interface.decodeFunctionResult("proxyCall", message);
 			let value = ethers.utils.defaultAbiCoder.decode(["uint256"], res[0]);
 			expect(value.toString()).to.equal(nsec.toString());
+
+			// now lets test if revert string is properly returned, we will use donate() method
+			let params = ethers.utils.defaultAbiCoder.encode(['uint256'],[ethers.BigNumber.from("0")]);
+			await expect(cosmicGame.proxyCall('0xed88c68e',params, {gasLimit: 30000000 })).to.be.revertedWith("Donation amount must be greater than 0.");
 		});
 		it("auctionDuration() method works", async function () {
 			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =

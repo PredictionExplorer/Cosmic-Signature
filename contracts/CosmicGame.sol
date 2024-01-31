@@ -249,7 +249,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		(bool success, bytes memory retval) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(_sig, _encoded_params)
 		);
-		require(success, "ProxyCall call to business logic contract failed.");
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
 		return retval;
 	}
 
