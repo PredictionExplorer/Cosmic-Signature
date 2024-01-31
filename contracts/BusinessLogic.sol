@@ -98,7 +98,7 @@ contract BusinessLogic is Context, Ownable {
 
 	constructor() {}
 	function bid(bytes memory _param_data) public payable {
-		BidParams memory params = abi.decode(_param_data,(BidParams));
+		BidParams memory params = abi.decode(_param_data, (BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -140,14 +140,17 @@ contract BusinessLogic is Context, Ownable {
 			(bool success, ) = lastBidder.call{ value: msg.value - paidBidPrice }("");
 			require(success, "Refund transfer failed.");
 		}
-		emit BidEvent(lastBidder, roundNum, int256(paidBidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
+		emit BidEvent(
+			lastBidder,
+			roundNum,
+			int256(paidBidPrice),
+			params.randomWalkNFTId,
+			-1,
+			prizeTime,
+			params.message
+		);
 	}
-	function bidAndDonateNFT(
-		bytes calldata _param_data,
-		IERC721 nftAddress,
-		uint256 tokenId
-	) external payable {
-
+	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
@@ -179,7 +182,7 @@ contract BusinessLogic is Context, Ownable {
 		_pushBackPrizeTime();
 	}
 	function bidWithCST(string memory message) external {
-		uint256 price = abi.decode(currentCSTPrice(),(uint256));
+		uint256 price = abi.decode(currentCSTPrice(), (uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		numCSTBids += 1;
@@ -325,12 +328,12 @@ contract BusinessLogic is Context, Ownable {
 		//Note: we are returning byte array instead of a tuple because delegatecall only supports byte arrays as return value type
 		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
 		uint256 duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
-		return abi.encode(secondsElapsed,duration);
+		return abi.encode(secondsElapsed, duration);
 	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() public view returns (bytes memory) {
 		//Note: we return bytes instead of uint256 because delegatecall doesn't support other types than bytes
-		(uint256 secondsElapsed,uint256 duration) = abi.decode(auctionDuration(),(uint256,uint256));
+		(uint256 secondsElapsed, uint256 duration) = abi.decode(auctionDuration(), (uint256, uint256));
 		if (secondsElapsed >= duration) {
 			uint256 zero = 0;
 			return abi.encode(zero);
@@ -338,7 +341,6 @@ contract BusinessLogic is Context, Ownable {
 		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / duration);
 		uint256 output = (fraction * startingBidPriceCST) / 1e6;
 		return abi.encode(output);
-
 	}
 	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
 		// If you are a creator you can donate some NFT to the winner of the

@@ -5,12 +5,12 @@ const { basicDeployment } = require("../src//Deploy.js");
 
 describe("BusinessLogic", function () {
 	const bidParamsEncoding = {
-						type: 'tuple(string,int256)',
-						name: 'bidparams',
-						components: [
-							{name: 'msg', type: 'string'},
-							{name: 'rwalk',type: 'int256'},
-						]
+		type: "tuple(string,int256)",
+		name: "bidparams",
+		components: [
+			{ name: "msg", type: "string" },
+			{ name: "rwalk", type: "int256" },
+		],
 	};
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
@@ -50,7 +50,7 @@ describe("BusinessLogic", function () {
 		await logic1.deployed();
 		await cosmicGame.setBusinessLogicContract(logic1.address);
 
-		await cosmicGame.write();	// write() in version1
+		await cosmicGame.write(); // write() in version1
 		let value1 = await cosmicGame.roundNum();
 		expect(value1).to.equal(10001);
 		let value2 = await cosmicGame.extraStorage(10001);
@@ -75,24 +75,45 @@ describe("BusinessLogic", function () {
 
 		// now back to first logic
 		await cosmicGame.setBusinessLogicContract(logic1.address);
-		await cosmicGame.write();	// write() in version1
+		await cosmicGame.write(); // write() in version1
 		value1 = await cosmicGame.roundNum();
 		expect(value1).to.equal(10001);
 		value2 = await cosmicGame.extraStorage(10001);
 		expect(value2).to.equal(10001);
 		addr1 = await cosmicGame.bLogic();
 		expect(addr1).to.equal(logic1.address);
-
 	});
 	it("Simple CALL to BusinessLogic does't have access to CosmicGame", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT,stakingWallet,marketingWallet,bLogic } = await loadFixture(deployCosmic);
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+			bLogic,
+		} = await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGame.getBidPrice();
-		var bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
-		await expect(bLogic.bid(params, { value: bidPrice,gasLimit:10000000 })).to.be.reverted;
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await expect(bLogic.bid(params, { value: bidPrice, gasLimit: 10000000 })).to.be.reverted;
 	});
 	it("Fallback function is executing bid", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT,stakingWallet,marketingWallet,bLogic } = await loadFixture(deployCosmic);
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+			bLogic,
+		} = await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGame.getBidPrice();
 		let numETHBids = await cosmicGame.numETHBids();
 		const [owner, otherAccount] = await ethers.getSigners();
@@ -103,5 +124,4 @@ describe("BusinessLogic", function () {
 		let newNumETHBids = await cosmicGame.numETHBids();
 		expect(newNumETHBids).to.equal(numETHBids.add(1));
 	});
-	
 });

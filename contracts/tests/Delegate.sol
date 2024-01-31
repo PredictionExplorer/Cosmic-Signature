@@ -310,14 +310,14 @@ contract CGTest is CosmicGame {
 contract LogicVers1 is BusinessLogic {
 	// contract for testing upgradability of business logi
 	function write() external {
-		roundNum = 10001;	
+		roundNum = 10001;
 		extraStorage[10001] = 10001;
 	}
 }
 contract LogicVers2 is BusinessLogic {
 	// contract for testing upgradability of business logic
 	function write() external {
-		roundNum = 10002;	
+		roundNum = 10002;
 		extraStorage[10002] = 10002;
 	}
 }

@@ -35,20 +35,20 @@ describe("Events", function () {
 		};
 	}
 	const bidParamsEncoding = {
-						type: 'tuple(string,int256)',
-						name: 'bidparams',
-						components: [
-							{name: 'msg', type: 'string'},
-							{name: 'rwalk',type: 'int256'},
-						]
+		type: "tuple(string,int256)",
+		name: "bidparams",
+		components: [
+			{ name: "msg", type: "string" },
+			{ name: "rwalk", type: "int256" },
+		],
 	};
 	it("should emit the correct events in the CosmicSignature contract", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
 		[owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
 		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 		await ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await ethers.provider.send("evm_mine");
@@ -64,8 +64,8 @@ describe("Events", function () {
 			await basicDeployment(owner, "", 0, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", false);
 		// DonationReceivedEvent
 		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 		let charityAmount = await cosmicGame.charityAmount();
 		await ethers.provider.send("evm_increaseTime", [26 * 3600]);
@@ -117,8 +117,8 @@ describe("Events", function () {
 
 		// we need to creat CosmicToken holders prior to our test
 		let p = await cosmicGame.getBidPrice();
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(addr1).bid(params, { value: p });
 		let ptime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [ptime.toNumber()]);
@@ -131,16 +131,16 @@ describe("Events", function () {
 		await randomWalkNFT.connect(addr2).mint({ value: rwalkTokenPrice });
 		let tx, receipt, log, parsed_log, bidPrice, winner;
 		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = {msg:'',rwalk:-1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = {msg:'',rwalk:-1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = {msg:'',rwalk:-1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
 
 		let prizeTime = await cosmicGame.timeUntilPrize();
@@ -173,15 +173,13 @@ describe("Events", function () {
 
 		await randomWalkNFT.connect(donor).setApprovalForAll(cosmicGame.address, true);
 
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
-		await cosmicGame
-			.connect(donor)
-			.bidAndDonateNFT(params, randomWalkNFT.address, 0, { value: bidPrice });
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(donor).bidAndDonateNFT(params, randomWalkNFT.address, 0, { value: bidPrice });
 
 		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = {msg:'',rwalk:-1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 
 		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith(
@@ -219,13 +217,13 @@ describe("Events", function () {
 		await randomWalkNFT.connect(donor).mint({ value: mintPrice });
 
 		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = {msg:'',rwalk:-1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 
 		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = {msg:'hello',rwalk:1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "hello", rwalk: 1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(donor).bidAndDonateNFT(params, randomWalkNFT.address, 2, { value: bidPrice });
 
 		await ethers.provider.send("evm_increaseTime", [26 * 3600]);
@@ -258,8 +256,8 @@ describe("Events", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 
 		await ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
-		let bidParams = {msg:'simple text',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "simple text", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		expect(await cosmicGame.connect(addr1).bid(params, { value: bidPrice }))
 			.to.emit(bidLogic, "BidEvent")
 			.withArgs(addr1.address, 0, bidPrice, -1, -1, 2000090000, "simple text");
@@ -267,8 +265,8 @@ describe("Events", function () {
 		var mintPrice = await randomWalkNFT.getMintPrice();
 		bidPrice = await cosmicGame.getBidPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
-		bidParams = {msg:'random walk',rwalk:0};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "random walk", rwalk: 0 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		expect(await cosmicGame.connect(addr1).bid(params, { value: bidPrice }))
 			.to.emit(bidLogic, "BidEvent")
 			.withArgs(addr1.address, 0, 1020100000000000, 0, -1, 2100003601, "random walk");
@@ -291,8 +289,8 @@ describe("Events", function () {
 		var mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
-		let bidParams = {msg:'random walk',rwalk:0};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "random walk", rwalk: 0 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGame.connect(addr1).bid(params, { value: bidPrice }))
 			.to.emit(cosmicGame, "BidEvent")
 			.withArgs(addr1.address, 0, rwalkBidPrice, 0, -1, 2000090000, "random walk");
@@ -302,14 +300,12 @@ describe("Events", function () {
 			await loadFixture(deployCosmic);
 		[owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
 		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(bidder1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(bidder1).setApprovalForAll(cosmicGame.address, true);
-		await cosmicGame
-			.connect(bidder1)
-			.bidAndDonateNFT(params, randomWalkNFT.address, 0, { value: bidPrice });
+		await cosmicGame.connect(bidder1).bidAndDonateNFT(params, randomWalkNFT.address, 0, { value: bidPrice });
 
 		let prizeTimeInc = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTimeInc.toNumber()]);
@@ -334,11 +330,11 @@ describe("Events", function () {
 		await cosmicGame.connect(owner).setActivationTime(timestampBefore + 100);
 
 		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
-		await expect(
-			cosmicGame.connect(bidder1).bid(params, { value: bidPrice }),
-		).to.be.revertedWith("Not active yet.");
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await expect(cosmicGame.connect(bidder1).bid(params, { value: bidPrice })).to.be.revertedWith(
+			"Not active yet.",
+		);
 
 		await expect(
 			bidder2.sendTransaction({
@@ -350,8 +346,8 @@ describe("Events", function () {
 		await ethers.provider.send("evm_increaseTime", [100]);
 		await ethers.provider.send("evm_mine");
 
-		bidParams = {msg:'',rwalk:-1};
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 		expect((await cosmicGame.getBidPrice()) > bidPrice);
 	});
@@ -361,8 +357,8 @@ describe("Events", function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 		expect((await cosmicGame.getBidPrice()) > bidPrice);
 
