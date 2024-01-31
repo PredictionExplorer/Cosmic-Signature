@@ -47,6 +47,27 @@ task("deploy-local", "Deploys contracts to local network", async (args, hre) => 
 	console.log("BidLogic address:", bLogic.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
 	console.log("Donation of " + etherStr + " ETH complete");
+	console.log(
+		"INSERT INTO cg_contracts VALUES('" +
+			cosmicGame.address +
+			"','" +
+			cosmicSignature.address +
+			"','" +
+			cosmicToken.address +
+			"','" +
+			cosmicDAO.address +
+			"','" +
+			charityWallet.address +
+			"','" +
+			raffleWallet.address +
+			"','" +
+			randomWalkNFT.address +
+			"','" +
+			stakingWallet.address +
+			"','" +
+			marketingWallet.address +
+			"')",
+	);
 }).addParam("deployconfig", "Config file (JSON)");
 task("deploy-arbitrum", "Deploys contracts Arbitrum network", async (args, hre) => {
 	// same script as for local, but without donate() step
@@ -66,14 +87,24 @@ task("deploy-arbitrum", "Deploys contracts Arbitrum network", async (args, hre) 
 	}
 	console.log("Using file: " + configFile);
 	let deployerAcct = new hre.ethers.Wallet(config_params.privKey, hre.ethers.provider);
-	const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-		await basicDeployment(
-			deployerAcct,
-			config_params.randomWalkAddr,
-			config_params.activationTime,
-			config_params.charityAddr,
-			config_params.transferOwnership,
-		);
+	const {
+		cosmicGame,
+		cosmicToken,
+		cosmicSignature,
+		charityWallet,
+		cosmicDAO,
+		raffleWallet,
+		randomWalkNFT,
+		stakingWallet,
+		marketingWallet,
+		bLogic,
+	} = await basicDeployment(
+		deployerAcct,
+		config_params.randomWalkAddr,
+		config_params.activationTime,
+		config_params.charityAddr,
+		config_params.transferOwnership,
+	);
 	console.log("CosmicGame address:", cosmicGame.address);
 	console.log("CosmicToken address:", cosmicToken.address);
 	console.log("CosmicSignature address:", cosmicSignature.address);
@@ -81,4 +112,25 @@ task("deploy-arbitrum", "Deploys contracts Arbitrum network", async (args, hre) 
 	console.log("CosmicDAO address", cosmicDAO.address);
 	console.log("RaffleWallet address:", raffleWallet.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
+	console.log(
+		"INSERT INTO cg_contracts VALUES('" +
+			cosmicGame.address +
+			"','" +
+			cosmicSignature.address +
+			"','" +
+			cosmicToken.address +
+			"','" +
+			cosmicDAO.address +
+			"','" +
+			charityWallet.address +
+			"','" +
+			raffleWallet.address +
+			"','" +
+			randomWalkNFT.address +
+			"','" +
+			stakingWallet.address +
+			"','" +
+			marketingWallet.address +
+			"')",
+	);
 }).addParam("deployconfig", "Config file (JSON)");
