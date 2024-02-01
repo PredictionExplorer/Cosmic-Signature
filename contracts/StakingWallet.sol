@@ -125,7 +125,7 @@ contract StakingWallet is Ownable {
 
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
 		require(stakedNFTs[stakeActionId].unstakeTime > 0, "Token has not been unstaked");
-		require(!stakedNFTs[stakeActionId].depositClaimed[ETHDepositId], "Token has not been unstaked");
+		require(!stakedNFTs[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already");
 		require(stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can claim reward");
 		// We are checking less than here, but there is a potential issue that the deposit and stake happen at the exact same time
 		// Need to think about this some more.
