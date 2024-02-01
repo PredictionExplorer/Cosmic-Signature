@@ -18,11 +18,14 @@ contract BidderContract is IERC721Receiver {
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNFTs;
 	uint256 public numMyDonatedNFTs;
+	bool blockDeposits = false;
 	constructor(address payable _cosmicGame) {
 		cosmicGame = CosmicGame(_cosmicGame);
 		creator = msg.sender;
 	}
-	receive() external payable {}
+	receive() external payable {
+		require(!blockDeposits,"I am not accepting deposits");
+	}
 	function doBid() external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		BusinessLogic.BidParams memory defaultParams;
@@ -90,6 +93,20 @@ contract BidderContract is IERC721Receiver {
 		}
 		delete myDonatedNFTs;
 		numMyDonatedNFTs = 0;
+	}
+	function doFailedBid() external payable {
+		uint256 price = msg.value;
+		BusinessLogic.BidParams memory defaultParams;
+		defaultParams.message = "contract bid";
+		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
+		blockDeposits = true;
+		cosmicGame.bid{ value: price }(param_data);
+		blockDeposits = false;
+	}
+	function startBlockingDeposits() external {
+		blockDeposits = true;
 	}
 	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
 		return this.onERC721Received.selector;

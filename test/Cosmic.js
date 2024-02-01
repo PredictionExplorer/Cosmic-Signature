@@ -203,6 +203,9 @@ describe("Cosmic", function () {
 			bidPrice = await cosmicGame.getBidPrice();
 			bidParams = { msg: "", rwalk: token_id.toNumber() };
 			params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+			await expect(cosmicGame.connect(owner).bid(params, { value: 0 })).to.be.revertedWith(
+				"The value submitted for this transaction with RandomWalk is too low.",
+			);
 			await cosmicGame.connect(owner).bid(params, { value: bidPrice });
 
 			// try to mint again using the same tokenId
@@ -210,6 +213,36 @@ describe("Cosmic", function () {
 			await expect(cosmicGame.connect(owner).bid(params, { value: bidPrice })).to.be.revertedWith(
 				"This RandomWalkNFT has already been used for bidding.",
 			); //tokenId=0
+		});
+		it("Shouldn't be possible to bid if bidder doesn't accept refunds on oversized bid() calls", async function () {
+			[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+				await loadFixture(deployCosmic);
+			let donationAmount = ethers.utils.parseEther("10");
+			await cosmicGame.donate({ value: donationAmount });
+
+			const BidderContract = await ethers.getContractFactory("BidderContract");
+			let cBidder = await BidderContract.deploy(cosmicGame.address);
+			await cBidder.deployed();
+
+			await expect(cBidder.doFailedBid({ value: donationAmount })).to.be.revertedWith("Refund transfer failed.");
+		});
+		it("Shouldn't be possible to bid using very long message", async function () {
+			[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+				await loadFixture(deployCosmic);
+			let donationAmount = ethers.utils.parseEther("10");
+			await cosmicGame.donate({ value: donationAmount });
+			let longMsg = "";
+			for (let i = 0; i < 280 + 1; i++) {
+				longMsg = longMsg + "a";
+			}
+			let bidPrice = await cosmicGame.getBidPrice();
+			var bidParams = { msg: longMsg, rwalk: -1 };
+			let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+			await expect(cosmicGame.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWith(
+				"Message is too long.",
+			);
 		});
 		it("Should not be possible to mint CosmicSignature token by anyone", async function () {
 			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -839,8 +872,10 @@ describe("Cosmic", function () {
 			expect(value.toString()).to.equal(nsec.toString());
 
 			// now lets test if revert string is properly returned, we will use donate() method
-			let params = ethers.utils.defaultAbiCoder.encode(['uint256'],[ethers.BigNumber.from("0")]);
-			await expect(cosmicGame.proxyCall('0xed88c68e',params, {gasLimit: 30000000 })).to.be.revertedWith("Donation amount must be greater than 0.");
+			let params = ethers.utils.defaultAbiCoder.encode(["uint256"], [ethers.BigNumber.from("0")]);
+			await expect(cosmicGame.proxyCall("0xed88c68e", params, { gasLimit: 30000000 })).to.be.revertedWith(
+				"Donation amount must be greater than 0.",
+			);
 		});
 		it("auctionDuration() method works", async function () {
 			const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
