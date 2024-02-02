@@ -286,4 +286,86 @@ describe("Staking tests", function () {
 		expect(await newStakingWallet.claimReward(0,0));
 		await expect(newStakingWallet.claimReward(0,0)).to.be.revertedWith("This deposit was claimed already");
 	});
+	it("Shouldn't be possible to claim deposit by a user different from the owner", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		let cBidder = await BidderContract.deploy(cosmicGame.address);
+		await cBidder.deployed();
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.mint(owner.address, 0);
+
+		const StakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		await newStakingWallet.deployed();
+		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
+
+		let tx = await newStakingWallet.stake(0);
+		let receipt = await tx.wait();
+		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
+		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = stakingWallet.interface.parseLog(deposit_logs[0]);
+		let unstakeTime = log.args.unstakeTime;
+		await ethers.provider.send("evm_increaseTime", [unstakeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+
+		expect(await newStakingWallet.deposit(unstakeTime,{value:ethers.utils.parseEther("2")}));
+		expect(await newStakingWallet.unstake(0));
+		await expect(newStakingWallet.connect(addr1).claimReward(0,0)).to.be.revertedWith("Only the owner can claim reward");
+	});
+	it("Shouldn't be possible to claim deposits earlier than stakeDate", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		let cBidder = await BidderContract.deploy(cosmicGame.address);
+		await cBidder.deployed();
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.mint(owner.address, 0);
+
+		const StakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		await newStakingWallet.deployed();
+		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
+
+		let tx = await newStakingWallet.stake(0);
+		let receipt = await tx.wait();
+		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
+		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = stakingWallet.interface.parseLog(deposit_logs[0]);
+		let unstakeTime = log.args.unstakeTime;
+		await ethers.provider.send("evm_increaseTime", [unstakeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+
+		expect(await newStakingWallet.deposit(1,{value:ethers.utils.parseEther("2")}));
+		expect(await newStakingWallet.unstake(0));
+		await expect(newStakingWallet.claimReward(0,0)).to.be.revertedWith("You were not staked yet.");
+	});
 });
