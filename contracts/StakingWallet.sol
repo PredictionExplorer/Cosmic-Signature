@@ -60,6 +60,9 @@ contract StakingWallet is Ownable {
 	);
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
+		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
+		require(address(game_)!= address(0), "Zero-address was given for the game.");
+		require(charity_!= address(0), "Zero-address was given for charity.");
 		nft = nft_;
 		game = game_;
 		charity = charity_;
@@ -124,6 +127,8 @@ contract StakingWallet is Ownable {
 	}
 
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
+		require(stakeActionId<numStakeActions,"Invalid stakeActionId.");
+		require(ETHDepositId<numETHDeposits,"Invalid ETHDepositId.");
 		require(stakedNFTs[stakeActionId].unstakeTime > 0, "Token has not been unstaked");
 		require(!stakedNFTs[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already");
 		require(stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can claim reward");
