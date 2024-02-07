@@ -58,6 +58,7 @@ contract StakingWallet is Ownable {
 		uint256 amount,
 		uint256 modulo
 	);
+	event CharityDepositEvent(uint256 amount,address charityAddress); // emitted when numStakedNFTs = 0
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
 		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
@@ -71,9 +72,12 @@ contract StakingWallet is Ownable {
 	function deposit(uint256 timestamp) external payable {
 		require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
 		if (numStakedNFTs == 0) {
-			// Forward the money to the charity
+			// Forward the money to the charity. This execution path will happen at least once because
+			//	at round=0 nobody has CS tokens and therefore nobody can't stake, while there will be a
+			//	deposit at claimPrize()
 			(bool success, ) = charity.call{ value: msg.value }("");
 			require(success, "Transfer to charity contract failed.");
+			emit CharityDepositEvent(msg.value,charity);
 			return;
 		}
 		ETHDeposits[numETHDeposits].depositTime = timestamp;
