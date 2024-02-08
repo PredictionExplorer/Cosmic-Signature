@@ -124,4 +124,119 @@ describe("BusinessLogic", function () {
 		let newNumETHBids = await cosmicGame.numETHBids();
 		expect(newNumETHBids).to.equal(numETHBids.add(1));
 	});
+	it("Shouldn't be possible to claim prize if StakingWallet fails to receive deposit", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		let cBidder = await BidderContract.deploy(cosmicGame.address);
+		await cBidder.deployed();
+		await cBidder.startBlockingDeposits();
+
+		const StakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await StakingWallet.deploy(cBidder.address, owner.address, cBidder.address);
+		await newStakingWallet.deployed();
+		await cosmicGame.setStakingWallet(newStakingWallet.address);
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+
+		prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await cosmicGame.connect(addr1).claimPrize();
+
+		bidPrice = await cosmicGame.getBidPrice();
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+
+		prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Staking deposit failed.");
+	});
+	it("Shouldn't be possible to claim prize if CosmicSignature NFT fails to mint()", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		let cBidder = await BidderContract.deploy(cosmicGame.address);
+		await cBidder.deployed();
+		await cBidder.startBlockingDeposits();
+
+		const BrokenToken = await ethers.getContractFactory("BrokenToken");
+		let newCosmicSignature = await BrokenToken.deploy();
+		await newCosmicSignature.deployed();
+		await cosmicGame.setNftContract(newCosmicSignature.address);
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+
+		let prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("CosmicSignature mint() failed to mint NFT.");
+	});
+	it("Shouldn't be possible to claim prize if deposit to charity fails", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		let cBidder = await BidderContract.deploy(cosmicGame.address);
+		await cBidder.deployed();
+		await cBidder.startBlockingDeposits();
+
+		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
+		let newCharity= await BrokenCharity.deploy();
+		await newCharity.deployed();
+		await cosmicGame.setCharity(newCharity.address);
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+
+		let prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Transfer to charity contract failed.");
+	});
 });
