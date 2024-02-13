@@ -983,4 +983,27 @@ describe("Cosmic", function () {
 
 		await expect(cosmicGame.claimPrize()).to.be.revertedWith("Raffle deposit failed.");
     });
+	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		var transferOwnership = false;
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
+
+		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
+		let brokenCharity = await BrokenCharity.deploy();
+		await brokenCharity.deployed();
+
+		await owner.sendTransaction({ to: charityWallet.address, value: ethers.utils.parseEther("3")});
+		await charityWallet.setCharity(brokenCharity.address);
+		await expect(charityWallet.send()).to.be.revertedWith("Transfer failed.");
+    });
 });

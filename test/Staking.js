@@ -510,7 +510,7 @@ describe("Staking tests", function () {
 		await ethers.provider.send("evm_setNextBlockTimestamp", [stakeRecord.unstakeEligibleTime.add(1).toNumber()]);
 
 		await newStakingWallet.unstake(0);
-		tx = await newStakingWallet.deposit(stakeTime+100,{value:ethers.utils.parseEther("2")});
+		tx = await newStakingWallet.deposit(stakeTime.toNumber()+100,{value:ethers.utils.parseEther("2")});
 		receipt = await tx.wait();
 		topic_sig = newStakingWallet.interface.getEventTopic("EthDepositEvent");
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -520,4 +520,56 @@ describe("Staking tests", function () {
 		await expect(newStakingWallet.claimReward(numActions.toNumber(),0)).to.be.revertedWith("Invalid stakeActionId.");
 		await expect(newStakingWallet.claimReward(0,numDeposits.toNumber())).to.be.revertedWith("Invalid ETHDepositId.");
 	});
+	it("It is not possible to claim reward from StakingWallet if deposit to sender address fails", async function () {
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+		} = await loadFixture(deployCosmic);
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		const StakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, addr1.address);
+		await newStakingWallet.deployed();
+		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
+		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
+
+		const BrokenStaker = await ethers.getContractFactory("BrokenStaker");
+		let brokenStaker = await BrokenStaker.deploy(newStakingWallet.address,newCosmicSignature.address);
+		await brokenStaker.deployed();
+		await newCosmicSignature.setApprovalForAll(stakingWallet.address, true);
+
+		await newCosmicSignature.mint(brokenStaker.address, 0);
+		await newCosmicSignature.mint(addr1.address, 0);
+
+		let tx = await brokenStaker.doStake(0);
+		let receipt = await tx.wait();
+		let topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
+		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = newStakingWallet.interface.parseLog(receipt_logs[0]);
+		let unstakeTime = log.args.unstakeTime;
+		let stakeRecord = await newStakingWallet.stakedNFTs(0);
+		let stakeTime = stakeRecord.stakeTime;
+		await newStakingWallet.connect(addr1).stake(1); // we need to stake, otherwise charity will get the deposit
+		await ethers.provider.send("evm_setNextBlockTimestamp", [stakeRecord.unstakeEligibleTime.add(1).toNumber()]);
+
+		tx = await newStakingWallet.deposit(stakeTime.toNumber()+1,{value:ethers.utils.parseEther("2")});
+		receipt = await tx.wait();
+		topic_sig = newStakingWallet.interface.getEventTopic("EthDepositEvent");
+		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		log = newStakingWallet.interface.parseLog(receipt_logs[0]);
+
+		await brokenStaker.doUnstake(0);
+		await brokenStaker.startBlockingDeposits();
+
+		await expect(brokenStaker.doClaimReward(0,0)).to.be.revertedWith("Reward transfer failed.");
+
+    });
 });
