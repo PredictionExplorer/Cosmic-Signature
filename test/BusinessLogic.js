@@ -239,4 +239,30 @@ describe("BusinessLogic", function () {
 		await ethers.provider.send("evm_mine");
 		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Transfer to charity contract failed.");
 	});
+	it("Shouldn't be possible to bid if minting of cosmic tokens (ERC20) fails", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		const BrokenToken = await ethers.getContractFactory("BrokenERC20");
+		let newToken= await BrokenToken.deploy();
+		await newToken.deployed();
+		await cosmicGame.setTokenContract(newToken.address);
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await expect(cosmicGame.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWith("CosmicToken mint() failed to mint reward tokens.");
+
+	});
 });

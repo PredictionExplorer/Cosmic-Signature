@@ -7,6 +7,7 @@ import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { BusinessLogic } from "../BusinessLogic.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
+import { RandomWalkNFT } from "../RandomWalkNFT.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -35,6 +36,14 @@ contract BidderContract is IERC721Receiver {
 		param_data = abi.encode(defaultParams);
 		cosmicGame.bid{ value: price }(param_data);
 	}
+	function doBid2() external payable {
+		BusinessLogic.BidParams memory defaultParams;
+		defaultParams.message = "contract bid";
+		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
+		cosmicGame.bid{ value: msg.value}(param_data);
+	}
 	function doBidRWalk(int256 tokenId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		BusinessLogic.BidParams memory params;
@@ -43,6 +52,17 @@ contract BidderContract is IERC721Receiver {
 		bytes memory param_data;
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: price }(param_data);
+	}
+	function doBidRWalk2(int256 tokenId) external payable {
+		RandomWalkNFT rwalk = cosmicGame.randomWalk();
+		rwalk.setApprovalForAll(address(cosmicGame), true);
+		rwalk.transferFrom( msg.sender,address(this), uint256(tokenId));
+		BusinessLogic.BidParams memory params;
+		params.message = "contract bid rwalk";
+		params.randomWalkNFTId = tokenId;
+		bytes memory param_data;
+		param_data = abi.encode(params);
+		cosmicGame.bid{ value: msg.value}(param_data);
 	}
 	function doBidAndDonate(address nftAddress, uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame), true);

@@ -14,6 +14,13 @@ contract BrokenToken {
 		return 1;
 	}
 }
+contract BrokenERC20 {
+	// used to test revert() statements in BusinessLogic contract
+	uint256 counter;
+	function mint(address, uint256) external pure {
+		require(false,"Test mint() (ERC20) failed");
+	}
+}
 contract BrokenCharity {
 	// used to test revert() statements for charity deposits
 	uint256 counter;
