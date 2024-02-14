@@ -36,7 +36,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public lastCSTBidTime = activationTime;
 	uint256 public numCSTBids = 0;
 	uint256 public ETHToCSTBidRatio = 10;
-	uint256 public CSTAuctionLength = 10 * 3600;
+	uint256 public CSTAuctionLength = CosmicGameConstants.INITIAL_AUCTION_LENGTH;
 	// how much the deadline is pushed after every bid
 	uint256 public nanoSecondsExtra = 3600 * 10 ** 9;
 	// how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)

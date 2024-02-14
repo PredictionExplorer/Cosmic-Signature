@@ -154,6 +154,17 @@ contract BusinessLogic is Context, Ownable {
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
+	function _roundEndResets() internal {
+		// everything that needs to be reset after round ends
+		lastCSTBidTime = block.timestamp;
+		lastBidType = CosmicGameConstants.BidType.ETH;
+		numETHBids = 0;
+		numCSTBids = 0;
+		CSTAuctionLength = CosmicGameConstants.INITIAL_AUCTION_LENGTH;
+		numRaffleParticipants = 0;
+		bidPrice = address(this).balance / initialBidAmountFraction;
+		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
+	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
 		require(block.timestamp >= activationTime, "Not active yet.");
 		require(bytes(message).length <= CosmicGameConstants.MAX_MESSAGE_LENGTH, "Message is too long.");
@@ -314,10 +325,7 @@ contract BusinessLogic is Context, Ownable {
 			require(success, "Raffle deposit failed.");
 		}
 
-		// Initialize the next round
-		numRaffleParticipants = 0;
-		bidPrice = address(this).balance / initialBidAmountFraction;
-
+		_roundEndResets();
 		emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
 		roundNum += 1;
 	}
