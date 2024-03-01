@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 import { StakingWallet } from "../StakingWallet.sol";
+import { CosmicGame } from "../CosmicGame.sol";
+import { CosmicGameConstants } from "../Constants.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {
@@ -51,4 +53,30 @@ contract BrokenStaker {
 	function startBlockingDeposits() external {
 		blockDeposits = true;
     }
+}
+contract SelfdestructibleCosmicGame is CosmicGame {
+	// This contract will return all the assets before selfdestruct transaction, 
+	// required for testing on the MainNet (Arbitrum) (prior to launch)
+
+	constructor() CosmicGame() {}
+
+	function finalizeTesting() external onlyOwner {
+		// returns all the assets to the creator of the contract and self-destroys
+
+		// CosmicSignature tokens
+		uint256 cosmicSupply = nft.totalSupply();
+		for (uint256 i = 0; i < cosmicSupply ; i++) {
+			address owner = nft.ownerOf(i);
+			if (owner == address(this)) {
+				nft.transferFrom(address(this), this.owner(), i);
+			}
+		}
+		cosmicSupply = token.balanceOf(address(this));
+		token.transfer(this.owner(),cosmicSupply);
+		for (uint256 i = 0; i < numDonatedNFTs; i++) {
+			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
+			IERC721(dnft.nftAddress).transferFrom(address(this),this.owner(),dnft.tokenId);
+        }
+		selfdestruct(payable(this.owner()));
+	}
 }

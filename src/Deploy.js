@@ -1,9 +1,10 @@
-//const { ethers } = require("hardhat");
-
 const basicDeployment = async function (deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership) {
+	return basicDeploymentAdvanced("CosmicGame",deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership);
+};
+const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership) {
 	let cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
 
-	const CosmicGame = await ethers.getContractFactory("CosmicGame");
+	const CosmicGame = await ethers.getContractFactory(cgName);
 	cosmicGame = await CosmicGame.connect(deployerAcct).deploy();
 	await cosmicGame.deployed();
 
@@ -83,4 +84,4 @@ const basicDeployment = async function (deployerAcct, randomWalkAddr, activation
 		bLogic,
 	};
 };
-module.exports = { basicDeployment };
+module.exports = { basicDeployment,basicDeploymentAdvanced };

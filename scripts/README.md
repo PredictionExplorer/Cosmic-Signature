@@ -35,7 +35,7 @@ After contracts were deployed, copy the CosmicGame contract address and run test
 
 ##### To mint Random Walk tokens
 
-     RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name]
+     RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
 
 ##### Display the tokens to make sure they were minted
 

@@ -1,5 +1,5 @@
 const hre = require("hardhat");
-const { basicDeployment } = require("../src/Deploy.js");
+const { basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
@@ -10,8 +10,19 @@ async function main() {
 		process.exit(1);
 	}
 	let deployerAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-		await basicDeployment(deployerAcct, "", 0, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
+	const {
+        cosmicGame,
+        cosmicToken,
+        cosmicSignature,
+        charityWallet,
+        cosmicDAO,
+        raffleWallet,
+        randomWalkNFT,
+        stakingWallet,
+        marketingWallet,
+        bLogic,
+	} =
+		await basicDeploymentAdvanced("SelfdestructibleCosmicGame",deployerAcct, "", 0, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
 	console.log("CosmicGame address:", cosmicGame.address);
 	console.log("CosmicToken address:", cosmicToken.address);
 	console.log("CosmicSignature address:", cosmicSignature.address);
@@ -19,6 +30,9 @@ async function main() {
 	console.log("CosmicDAO address", cosmicDAO.address);
 	console.log("RaffleWallet address:", raffleWallet.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
+	console.log("stakingWallet address: ",stakingWallet.address);
+	console.log("marketingWallet address: ",marketingWallet.address);
+	console.log("businessLogic address: ",bLogic.adress);
 }
 
 main()
