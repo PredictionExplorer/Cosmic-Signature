@@ -1,22 +1,16 @@
+// Confirms that deployed contracts are fully operational
 const hre = require("hardhat");
-const bidParamsEncoding = {
-	type: "tuple(string,int256)",
-	name: "bidparams",
-	components: [
-		{ name: "msg", type: "string" },
-		{ name: "rwalk", type: "int256" },
-	],
-};
-async function getCosmicGameContract() {
+const { expect } = require("chai");
+
+async function getSelfdestructibleCosmicGameContract() {
 	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
 		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGame = await ethers.getContractAt("CosmicGame", cosmicGameAddr);
+	let cosmicGame = await ethers.getContractAt("SelfdestructibleCosmicGame", cosmicGameAddr);
 	return cosmicGame;
 }
-
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (typeof privKey === "undefined" || privKey.length == 0) {
@@ -26,11 +20,8 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGame = await getCosmicGameContract();
-	let bidParams = { msg: "bid test", rwalk: -1 };
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-	let bidPrice = await cosmicGame.getBidPrice();
-	await cosmicGame.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
+	let cosmicGame = await getSelfdestructibleCosmicGameContract();
+	await cosmicGame.finalizeTesting();
 }
 main()
 	.then(() => process.exit(0))

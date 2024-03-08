@@ -2,9 +2,19 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameContract } = require("./helper.js");
+const bidParamsEncoding = {
+	type: "tuple(string,int256)",
+	name: "bidparams",
+	components: [
+		{ name: "msg", type: "string" },
+		{ name: "rwalk", type: "int256" },
+	],
+};
 async function bid_simple(testingAcct, cosmicGame) {
 	let bidPrice = await cosmicGame.getBidPrice();
-	let tx = await cosmicGame.connect(testingAcct).bid("test bid", { value: bidPrice });
+	let bidParams = { msg: "test bid", rwalk: -1 };
+	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+	let tx = await cosmicGame.connect(testingAcct).bid(params, { value: bidPrice });
 	let receipt = await tx.wait();
 	let topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -14,9 +24,12 @@ async function bid_simple(testingAcct, cosmicGame) {
 	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
 }
 async function bid_randomwalk(testingAcct, cosmicGame, tokenId) {
+	let bidPrice = await cosmicGame.getBidPrice();
 	let rwalkAddr = await cosmicGame.randomWalk();
 	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
-	tx = await cosmicGame.connect(testingAcct).bidWithRWLK(tokenId, "rwalk bid");
+	let bidParams = { msg: "rwalk bid", rwalk: tokenId };
+	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+	tx = await cosmicGame.connect(testingAcct).bid(params,{value:bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -32,9 +45,11 @@ async function bid_and_donate(testingAcct, cosmicGame, donatedTokenId) {
 	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	await randomWalk.connect(testingAcct).setApprovalForAll(cosmicGame.address, true);
 
+	let bidParams = { msg: "donate bid", rwalk: -1 };
+	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGame
 		.connect(testingAcct)
-		.bidAndDonateNFT("donate bid", randomWalk.address, donatedTokenId, { value: bidPrice });
+		.bidAndDonateNFT(params, randomWalk.address, donatedTokenId, { value: bidPrice });
 	receipt = await tx.wait();
 	topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -57,9 +72,11 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGame, donatedTokenId
 	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	await randomWalk.connect(testingAcct).setApprovalForAll(cosmicGame.address, true);
 
+	let bidParams = { msg: "donate nft rwalk bid", rwalk: tokenIdBidding };
+	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGame
 		.connect(testingAcct)
-		.bidWithRWLKAndDonateNFT(tokenIdBidding, "donate nft rwalk bid", randomWalk.address, donatedTokenId);
+		.bidAndDonateNFT(params, randomWalk.address, donatedTokenId,{value:bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

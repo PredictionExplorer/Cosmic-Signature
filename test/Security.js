@@ -5,12 +5,12 @@ const { basicDeployment } = require("../src/Deploy.js");
 
 describe("Security", function () {
 	const bidParamsEncoding = {
-						type: 'tuple(string,int256)',
-						name: 'bidparams',
-						components: [
-							{name: 'msg', type: 'string'},
-							{name: 'rwalk',type: 'int256'},
-						]
+		type: "tuple(string,int256)",
+		name: "bidparams",
+		components: [
+			{ name: "msg", type: "string" },
+			{ name: "rwalk", type: "int256" },
+		],
 	};
 	async function deployCosmic() {
 		let contractDeployerAcct;
@@ -42,8 +42,8 @@ describe("Security", function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
 		let bidPrice = await cosmicGame.getBidPrice();
-		var bidParams = {msg:'',rwalk:-1};
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams])
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice }); // this works
 		let prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.add(24 * 3600).toNumber()]);
@@ -57,8 +57,9 @@ describe("Security", function () {
 		);
 	});
 	it("Is possible to take prize before activation", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } =
-			await loadFixture(deployCosmic);
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } = await loadFixture(
+			deployCosmic,
+		);
 		[owner, addr1, ...addrs] = await ethers.getSigners();
 		let donationAmount = ethers.utils.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });

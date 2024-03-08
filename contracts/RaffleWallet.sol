@@ -11,6 +11,7 @@ contract RaffleWallet is Ownable {
 	event RaffleWithdrawalEvent(address indexed destination, uint256 amount);
 
 	constructor(CosmicGame game_) {
+		require(address(game_)!= address(0), "Zero-address was given.");
 		game = game_;
 	}
 

@@ -98,7 +98,7 @@ contract BusinessLogic is Context, Ownable {
 
 	constructor() {}
 	function bid(bytes memory _param_data) public payable {
-		BidParams memory params = abi.decode(_param_data,(BidParams));
+		BidParams memory params = abi.decode(_param_data, (BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -140,16 +140,30 @@ contract BusinessLogic is Context, Ownable {
 			(bool success, ) = lastBidder.call{ value: msg.value - paidBidPrice }("");
 			require(success, "Refund transfer failed.");
 		}
-		emit BidEvent(lastBidder, roundNum, int256(paidBidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
+		emit BidEvent(
+			lastBidder,
+			roundNum,
+			int256(paidBidPrice),
+			params.randomWalkNFTId,
+			-1,
+			prizeTime,
+			params.message
+		);
 	}
-	function bidAndDonateNFT(
-		bytes calldata _param_data,
-		IERC721 nftAddress,
-		uint256 tokenId
-	) external payable {
-
+	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
+	}
+	function _roundEndResets() internal {
+		// everything that needs to be reset after round ends
+		lastCSTBidTime = block.timestamp;
+		lastBidType = CosmicGameConstants.BidType.ETH;
+		numETHBids = 0;
+		numCSTBids = 0;
+		CSTAuctionLength = CosmicGameConstants.INITIAL_AUCTION_LENGTH;
+		numRaffleParticipants = 0;
+		bidPrice = address(this).balance / initialBidAmountFraction;
+		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
 		require(block.timestamp >= activationTime, "Not active yet.");
@@ -179,7 +193,7 @@ contract BusinessLogic is Context, Ownable {
 		_pushBackPrizeTime();
 	}
 	function bidWithCST(string memory message) external {
-		uint256 price = abi.decode(currentCSTPrice(),(uint256));
+		uint256 price = abi.decode(currentCSTPrice(), (uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		numCSTBids += 1;
@@ -311,29 +325,30 @@ contract BusinessLogic is Context, Ownable {
 			require(success, "Raffle deposit failed.");
 		}
 
-		// Initialize the next round
-		numRaffleParticipants = 0;
-		bidPrice = address(this).balance / initialBidAmountFraction;
-
+		_roundEndResets();
 		emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
 		roundNum += 1;
 	}
 	function _updateEntropy() internal {
 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
 	}
+	function auctionDuration() public view returns (bytes memory) {
+		//Note: we are returning byte array instead of a tuple because delegatecall only supports byte arrays as return value type
+		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
+		uint256 duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
+		return abi.encode(secondsElapsed, duration);
+	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() public view returns (bytes memory) {
 		//Note: we return bytes instead of uint256 because delegatecall doesn't support other types than bytes
-		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-		uint256 auction_duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
-		if (secondsElapsed >= auction_duration) {
+		(uint256 secondsElapsed, uint256 duration) = abi.decode(auctionDuration(), (uint256, uint256));
+		if (secondsElapsed >= duration) {
 			uint256 zero = 0;
 			return abi.encode(zero);
 		}
-		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
+		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / duration);
 		uint256 output = (fraction * startingBidPriceCST) / 1e6;
 		return abi.encode(output);
-
 	}
 	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
 		// If you are a creator you can donate some NFT to the winner of the

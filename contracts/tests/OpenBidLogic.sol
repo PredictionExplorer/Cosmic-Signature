@@ -96,13 +96,13 @@ contract OpenBusinessLogic is Context, Ownable {
 	struct BidParams {
 		string message;
 		int256 randomWalkNFTId;
-		bool openBid;		// true if the value sent with the TX is the amount of bid
+		bool openBid; // true if the value sent with the TX is the amount of bid
 	}
 
 	constructor() {}
 
 	function bid(bytes memory _param_data) public payable {
-		BidParams memory params = abi.decode(_param_data,(BidParams));
+		BidParams memory params = abi.decode(_param_data, (BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -133,7 +133,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		} else {
 			if (params.openBid) {
 				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
-				require(msg.value >= minPriceOpenBid,"The value submitted for open bid is too low.");
+				require(msg.value >= minPriceOpenBid, "The value submitted for open bid is too low.");
 				paidBidPrice = msg.value;
 			} else {
 				require(msg.value >= newBidPrice, "The value submitted for this transaction is too low.");
@@ -157,14 +157,17 @@ contract OpenBusinessLogic is Context, Ownable {
 				require(success, "Refund transfer failed.");
 			}
 		}
-		emit BidEvent(lastBidder, roundNum, int256(paidBidPrice), params.randomWalkNFTId, -1, prizeTime, params.message);
+		emit BidEvent(
+			lastBidder,
+			roundNum,
+			int256(paidBidPrice),
+			params.randomWalkNFTId,
+			-1,
+			prizeTime,
+			params.message
+		);
 	}
-	function bidAndDonateNFT(
-		bytes calldata _param_data,
-		IERC721 nftAddress,
-		uint256 tokenId
-	) external payable {
-
+	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
@@ -196,7 +199,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		_pushBackPrizeTime();
 	}
 	function bidWithCST(string memory message) external {
-		uint256 price = abi.decode(currentCSTPrice(),(uint256));
+		uint256 price = abi.decode(currentCSTPrice(), (uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		numCSTBids += 1;
@@ -350,7 +353,6 @@ contract OpenBusinessLogic is Context, Ownable {
 		uint256 fraction = 1e6 - ((1e6 * secondsElapsed) / auction_duration);
 		uint256 output = (fraction * startingBidPriceCST) / 1e6;
 		return abi.encode(output);
-
 	}
 	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
 		// If you are a creator you can donate some NFT to the winner of the
@@ -403,12 +405,14 @@ contract OpenBusinessLogic is Context, Ownable {
 		}
 		emit DonationEvent(_msgSender(), msg.value);
 	}
-	function setTimesBidPrice(bytes calldata _param_data) external onlyOwner { //cbe6b0e8
-		uint256 newTimesBidPrice = abi.decode(_param_data,(uint256));
+	function setTimesBidPrice(bytes calldata _param_data) external onlyOwner {
+		//cbe6b0e8
+		uint256 newTimesBidPrice = abi.decode(_param_data, (uint256));
 		timesBidPrice = newTimesBidPrice;
 		emit TimesBidPriceChangedEvent(newTimesBidPrice);
 	}
-	function getTimesBidPrice() external view returns (uint256) { //2e629c7a
+	function getTimesBidPrice() external view returns (uint256) {
+		//2e629c7a
 		return timesBidPrice;
 	}
 }
