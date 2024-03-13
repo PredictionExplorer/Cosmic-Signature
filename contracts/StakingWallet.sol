@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
+import { CosmicGameConstants } from "./Constants.sol";
 
 contract StakingWallet is Ownable {
 	struct stakedNFT {
@@ -33,6 +34,7 @@ contract StakingWallet is Ownable {
 	// TODO: figure out the invariant that is always true that includes the modulo.
 	//       It would be useful for testing.
 	uint256 public modulo;
+	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	CosmicSignature public nft;
 	CosmicGame public game;
@@ -60,6 +62,8 @@ contract StakingWallet is Ownable {
 	);
 	event CharityDepositEvent(uint256 amount,address charityAddress); // emitted when numStakedNFTs = 0
 	event CharityUpdatedEvent(address indexed newCharityAddress);
+	event MinStakePeriodChanged(uint256 newPeriod);
+
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
 		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
 		require(address(game_)!= address(0), "Zero-address was given for the game.");
@@ -94,9 +98,7 @@ contract StakingWallet is Ownable {
 		stakedNFTs[numStakeActions].tokenId = _tokenId;
 		stakedNFTs[numStakeActions].owner = msg.sender;
 		stakedNFTs[numStakeActions].stakeTime = block.timestamp;
-		uint256 fractionStaked = (1e6 * numStakedNFTs) / nft.totalSupply();
-		uint256 extraTime = (fractionStaked * fractionStaked) / 1500 + 2600000;
-		stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + extraTime;
+		stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + minStakePeriod;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
@@ -164,5 +166,10 @@ contract StakingWallet is Ownable {
 		require(newCharityAddress != address(0), "Zero-address was given.");
 		charity = newCharityAddress;
 		emit CharityUpdatedEvent(charity);
+	}
+
+	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
+		minStakePeriod = newStakePeriod;
+		emit MinStakePeriodChanged(newStakePeriod);
 	}
 }
