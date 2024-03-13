@@ -36,7 +36,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public lastCSTBidTime = activationTime;
 	uint256 public numCSTBids = 0;
 	uint256 public ETHToCSTBidRatio = 10;
-	uint256 public CSTAuctionLength = CosmicGameConstants.INITIAL_AUCTION_LENGTH;
+	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// how much the deadline is pushed after every bid
 	uint256 public nanoSecondsExtra = 3600 * 10 ** 9;
 	// how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
@@ -145,6 +146,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
 	event ETHToCSTBidRatioChanged(uint newETHToCSTBidRatio);
+	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
 
 	constructor() {
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
@@ -427,6 +429,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		ETHToCSTBidRatio = newETHToCSTBidRatio;
 		emit ETHToCSTBidRatioChanged(ETHToCSTBidRatio);
 	}
+
+	function setRoundStartCSTAuctionLength(uint256 newAuctionLength) external onlyOwner {
+		RoundStartCSTAuctionLength = newAuctionLength;
+		emit RoundStartCSTAuctionLengthChanged(newAuctionLength);
+	}
+
 
 	// Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
 	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {

@@ -36,6 +36,7 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public numCSTBids;
 	uint256 public ETHToCSTBidRatio;
 	uint256 public CSTAuctionLength;
+	uint256 public RoundStartCSTAuctionLength;
 	uint256 public nanoSecondsExtra;
 	uint256 public timeIncrease;
 	uint256 public priceIncrease;
@@ -160,7 +161,7 @@ contract BusinessLogic is Context, Ownable {
 		lastBidType = CosmicGameConstants.BidType.ETH;
 		numETHBids = 0;
 		numCSTBids = 0;
-		CSTAuctionLength = CosmicGameConstants.INITIAL_AUCTION_LENGTH;
+		CSTAuctionLength = RoundStartCSTAuctionLength;
 		numRaffleParticipants = 0;
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
