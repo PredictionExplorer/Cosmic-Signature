@@ -336,8 +336,7 @@ contract BusinessLogic is Context, Ownable {
 	function auctionDuration() public view returns (bytes memory) {
 		//Note: we are returning byte array instead of a tuple because delegatecall only supports byte arrays as return value type
 		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-		uint256 duration = (nanoSecondsExtra * CSTAuctionLength) / 1e9;
-		return abi.encode(secondsElapsed, duration);
+		return abi.encode(secondsElapsed, CSTAuctionLength);
 	}
 	// We are doing a dutch auction that lasts 24 hours.
 	function currentCSTPrice() public view returns (bytes memory) {
