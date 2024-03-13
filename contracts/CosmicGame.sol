@@ -86,6 +86,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	CosmicSignature public nft;
 	BusinessLogic public bLogic;
+	uint256	systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 	mapping(uint256 => uint256) public extraStorage; // additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
 
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
@@ -147,6 +148,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event ActivationTimeChanged(uint256 newActivationTime);
 	event ETHToCSTBidRatioChanged(uint newETHToCSTBidRatio);
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
+	event SystemModeChanged(uint256 newSystemMode);
 
 	constructor() {
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
@@ -248,6 +250,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	// Use this function to read/write state variables in BusinessLogic contract
 	function proxyCall(bytes4 _sig, bytes calldata _encoded_params) external returns (bytes memory) {
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		(bool success, bytes memory retval) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(_sig, _encoded_params)
 		);
@@ -291,51 +294,60 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// Set different parameters (only owner is allowed). A few weeks after the project launches the owner will be set to address 0 forever. //
 
 	function setCharity(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		charity = addr;
 		emit CharityAddressChanged(charity);
 	}
 
 	function setRandomWalk(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		randomWalk = RandomWalkNFT(addr);
 		emit RandomWalkAddressChanged(addr);
 	}
 
 	function setRaffleWallet(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		raffleWallet = RaffleWallet(addr);
 		emit RaffleWalletAddressChanged(addr);
 	}
 
 	function setStakingWallet(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		stakingWallet = StakingWallet(addr);
 		emit StakingWalletAddressChanged(addr);
 	}
 
 	function setMarketingWallet(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		marketingWallet = MarketingWallet(addr);
 		emit MarketingWalletAddressChanged(addr);
 	}
 
 	function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
 		emit NumRaffleWinnersPerRoundChanged(numRaffleWinnersPerRound);
 	}
 
 	function setNumRaffleNFTWinnersPerRound(uint256 newNumRaffleNFTWinnersPerRound) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		numRaffleNFTWinnersPerRound = newNumRaffleNFTWinnersPerRound;
 		emit NumRaffleNFTWinnersPerRoundChanged(numRaffleNFTWinnersPerRound);
 	}
 
 	function setNumHolderNFTWinnersPerRound(uint256 newNumHolderNFTWinnersPerRound) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		numHolderNFTWinnersPerRound = newNumHolderNFTWinnersPerRound;
 		emit NumHolderNFTWinnersPerRoundChanged(numHolderNFTWinnersPerRound);
 	}
 
 	function setPrizePercentage(uint256 newPrizePercentage) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		prizePercentage = newPrizePercentage;
 		require(
 			prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100,
@@ -345,6 +357,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		charityPercentage = newCharityPercentage;
 		require(
 			prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100,
@@ -354,6 +367,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	function setRafflePercentage(uint256 newRafflePercentage) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		rafflePercentage = newRafflePercentage;
 		require(
 			prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100,
@@ -363,6 +377,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	function setStakingPercentage(uint256 newStakingPercentage) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		stakingPercentage = newStakingPercentage;
 		require(
 			prizePercentage + charityPercentage + rafflePercentage + stakingPercentage < 100,
@@ -372,69 +387,92 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	function setTokenContract(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		token = CosmicToken(addr);
 		emit CosmicTokenAddressChanged(addr);
 	}
 
 	function setNftContract(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		nft = CosmicSignature(addr);
 		emit CosmicSignatureAddressChanged(addr);
 	}
 
 	function setBusinessLogicContract(address addr) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
 		bLogic = BusinessLogic(addr);
 		emit BusinessLogicAddressChanged(addr);
 	}
 
 	function setTimeIncrease(uint256 newTimeIncrease) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		timeIncrease = newTimeIncrease;
 		emit TimeIncreaseChanged(timeIncrease);
 	}
 
 	function setTimeoutClaimPrize(uint256 newTimeout) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		timeoutClaimPrize = newTimeout;
 		emit TimeoutClaimPrizeChanged(timeoutClaimPrize);
 	}
 
 	function setPriceIncrease(uint256 newPriceIncrease) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		priceIncrease = newPriceIncrease;
 		emit PriceIncreaseChanged(priceIncrease);
 	}
 
 	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		nanoSecondsExtra = newNanoSecondsExtra;
 		emit NanoSecondsExtraChanged(nanoSecondsExtra);
 	}
 
 	function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		initialSecondsUntilPrize = newInitialSecondsUntilPrize;
 		emit InitialSecondsUntilPrizeChanged(initialSecondsUntilPrize);
 	}
 
 	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		initialBidAmountFraction = newInitialBidAmountFraction;
 		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
 	}
 
 	function setActivationTime(uint256 newActivationTime) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
 		emit ActivationTimeChanged(activationTime);
 	}
 
 	function setETHToCSTBidRatio(uint256 newETHToCSTBidRatio) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		ETHToCSTBidRatio = newETHToCSTBidRatio;
 		emit ETHToCSTBidRatioChanged(ETHToCSTBidRatio);
 	}
 
 	function setRoundStartCSTAuctionLength(uint256 newAuctionLength) external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		RoundStartCSTAuctionLength = newAuctionLength;
 		emit RoundStartCSTAuctionLengthChanged(newAuctionLength);
 	}
 
+	function prepareMaintenance() external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_RUNTIME,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
+		systemMode = CosmicGameConstants.MODE_PREPARE_MAINTENANCE;
+		emit SystemModeChanged(systemMode);
+	}
+
+	function setRuntimeMode() external onlyOwner {
+		require (systemMode == CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
+		systemMode = CosmicGameConstants.MODE_RUNTIME;
+		emit SystemModeChanged(systemMode);
+	}
 
 	// Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
 	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {

@@ -70,6 +70,7 @@ const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalk
 	await cosmicGame.connect(deployerAcct).setStakingWallet(stakingWallet.address);
 	await cosmicGame.connect(deployerAcct).setMarketingWallet(marketingWallet.address);
 	await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+	await cosmicGame.connect(deployerAcct).setRuntimeMode();
 
 	return {
 		cosmicGame,

@@ -11,6 +11,12 @@ library CosmicGameConstants {
 	uint256 public constant TOKEN_REWARD = 100 * 1e18;
 	uint256 public constant MARKETING_REWARD = 15 * 1e18;
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 2 * 3600;
+	uint256 public constant MODE_RUNTIME = 0;
+	uint256 public constant MODE_PREPARE_MAINTENANCE = 1 ;
+	uint256 public constant MODE_MAINTENANCE = 2;
+
+	string public constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE";
+	string public constant ERR_STR_MODE_RUNTIME = "System in maintenance mode";
 
 	struct DonatedNFT {
 		IERC721 nftAddress;
