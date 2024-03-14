@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 import { StakingWallet } from "../StakingWallet.sol";
+import { RaffleWallet } from "../RaffleWallet.sol";
 import { CosmicGame } from "../CosmicGame.sol";
+import { CosmicSignature } from "../CosmicSignature.sol";
+import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../Constants.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -78,5 +81,29 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 			IERC721(dnft.nftAddress).transferFrom(address(this),this.owner(),dnft.tokenId);
         }
 		selfdestruct(payable(this.owner()));
+	}
+}
+contract SpecialCosmicGame is CosmicGame {
+	// special CosmicGame contract to be used in unit tests to create special test setups
+
+	constructor() CosmicGame() {}
+	function setCharityRaw(address addr) external {
+        charity = addr;
+    }
+	function setRaffleWalletRaw(address addr) external {
+		raffleWallet = RaffleWallet(addr);
+	}
+	function setStakingWalletRaw(address addr) external {
+		stakingWallet = StakingWallet(addr);
+	}
+	function setNftContractRaw(address addr) external {
+		nft = CosmicSignature(addr);
+	}
+	function setTokenContractRaw(address addr) external {
+		token = CosmicToken(addr);
+	}
+	function setActivationTimeRaw(uint256 newActivationTime) external {
+        activationTime = newActivationTime;
+        lastCSTBidTime = activationTime;
 	}
 }
