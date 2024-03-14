@@ -1,8 +1,12 @@
-const basicDeployment = async function (deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership) {
-	return basicDeploymentAdvanced("CosmicGame",deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership);
+const basicDeployment = async function (deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime = true) {
+	return basicDeploymentAdvanced("CosmicGame",deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime);
 };
-const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership) {
+const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime) {
 	let cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
+	if (switchToRuntime === undefined) {
+		console.error("switchToRuntime is not set");
+		process.exit(1);
+	}
 
 	const CosmicGame = await ethers.getContractFactory(cgName);
 	cosmicGame = await CosmicGame.connect(deployerAcct).deploy();
@@ -70,6 +74,9 @@ const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalk
 	await cosmicGame.connect(deployerAcct).setStakingWallet(stakingWallet.address);
 	await cosmicGame.connect(deployerAcct).setMarketingWallet(marketingWallet.address);
 	await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+	if (switchToRuntime) {
+		await cosmicGame.connect(deployerAcct).setRuntimeMode();
+	}
 
 	return {
 		cosmicGame,

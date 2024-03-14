@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { basicDeployment } = require("../src/Deploy.js");
+const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Events", function () {
@@ -316,18 +316,27 @@ describe("Events", function () {
 			.to.emit(cosmicGame, "DonatedNFTClaimedEvent")
 			.withArgs(0, 0, bidder1.address, randomWalkNFT.address, 0);
 	});
-
 	it("should not be possible to bid before activation", async function () {
 		[owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
-			await loadFixture(deployCosmic);
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+
 		const sevenDays = 7 * 24 * 60 * 60;
 
 		const blockNumBefore = await ethers.provider.getBlockNumber();
 		const blockBefore = await ethers.provider.getBlock(blockNumBefore);
 		const timestampBefore = blockBefore.timestamp;
 
-		await cosmicGame.connect(owner).setActivationTime(timestampBefore + 100);
+		await cosmicGame.connect(owner).setActivationTimeRaw(timestampBefore + 100);
 
 		let bidPrice = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
@@ -351,7 +360,6 @@ describe("Events", function () {
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 		expect((await cosmicGame.getBidPrice()) > bidPrice);
 	});
-
 	it("should be possible to bid by sending to the contract", async function () {
 		[owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
@@ -371,8 +379,18 @@ describe("Events", function () {
 	});
 
 	it("Admin events should work", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
-			await loadFixture(deployCosmic);
+		[owner] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 
 		[owner, testAcct] = await ethers.getSigners();
 		var percentage = ethers.BigNumber.from("11");

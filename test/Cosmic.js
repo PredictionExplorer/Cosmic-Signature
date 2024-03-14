@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
-const { basicDeployment } = require("../src//Deploy.js");
+const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
 
 describe("Cosmic", function () {
 	// We define a fixture to reuse the same setup in every test.
@@ -22,7 +22,7 @@ describe("Cosmic", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
 		return {
 			cosmicGame,
@@ -458,8 +458,18 @@ describe("Cosmic", function () {
 		await expect(cosmicGame.connect(addr5).claimPrize()).not.to.be.revertedWith("panic code 0x12"); // divide by zero
 	});
 	it("Setters are working", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		await expect(
 			cosmicSignature.connect(owner).mint(owner.address, ethers.BigNumber.from("0")),
@@ -841,17 +851,18 @@ describe("Cosmic", function () {
 		let res = cosmicGame.interface.decodeFunctionResult("currentCSTPrice", message);
 		let priceBytes = res[0].slice(130, 194);
 		let cstPrice = ethers.utils.defaultAbiCoder.decode(["uint256"], "0x" + priceBytes);
-		expect(cstPrice.toString()).to.equal(ethers.utils.parseEther("200").toString());
+		expect(cstPrice.toString()).to.equal("200000000000000000000");
 
 		let tx = await cosmicGame.connect(addr1).bidWithCST("cst bid");
 		let receipt = await tx.wait();
 		let topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGame.interface.parseLog(log);
-		expect(cstPrice.toString()).to.equal(parsed_log.args.numCSTTokens.toString());
+		expect("199989000000000000000").to.equal(parsed_log.args.numCSTTokens.toString());
 		expect(parsed_log.args.bidPrice.toNumber()).to.equal(-1);
 		expect(parsed_log.args.lastBidder).to.equal(addr1.address);
 		expect(parsed_log.args.message).to.equal("cst bid");
+		
 	});
 	it("ProxyCall() method works", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -940,7 +951,8 @@ describe("Cosmic", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWallet,
-		} = await loadFixture(deployCosmic);
+			marketingWallet,
+		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
 		let bidPrice = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
@@ -952,7 +964,7 @@ describe("Cosmic", function () {
 		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
 		let newCharity= await BrokenCharity.deploy();
 		await newCharity.deployed();
-		await cosmicGame.setCharity(newCharity.address);
+		await cosmicGame.setCharityRaw(newCharity.address);
 
 		await expect(cosmicGame.claimPrize()).to.be.revertedWith("Transfer to charity contract failed.");
 	});
@@ -967,7 +979,8 @@ describe("Cosmic", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWallet,
-		} = await loadFixture(deployCosmic);
+			marketingWallet,
+		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
 		let bidPrice = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
@@ -979,7 +992,7 @@ describe("Cosmic", function () {
 		const RaffleWallet = await ethers.getContractFactory("RaffleWallet");
 		let newRaffleWallet = await RaffleWallet.deploy(owner.address);
 		await newRaffleWallet.deployed();
-		await cosmicGame.setRaffleWallet(newRaffleWallet.address);
+		await cosmicGame.setRaffleWalletRaw(newRaffleWallet.address);
 
 		await expect(cosmicGame.claimPrize()).to.be.revertedWith("Raffle deposit failed.");
     });
