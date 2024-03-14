@@ -86,7 +86,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	CosmicSignature public nft;
 	BusinessLogic public bLogic;
-	uint256	systemMode = CosmicGameConstants.MODE_MAINTENANCE;
+	uint256	public systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 	mapping(uint256 => uint256) public extraStorage; // additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
 
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
