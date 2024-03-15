@@ -58,7 +58,7 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public numDonatedNFTs;
 	CosmicSignature public nft;
 	BusinessLogic public bLogic;
-	uint256 systemMode;
+	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
 
 	event BidEvent(
