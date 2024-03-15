@@ -21,8 +21,18 @@ describe("Security", function () {
 		return { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet };
 	}
 	it("Vulnerability to claimPrize() multiple times", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 
 		await cosmicGame.setTokenContract(cosmicToken.address);
 		await cosmicGame.setNftContract(cosmicSignature.address);
@@ -32,6 +42,7 @@ describe("Security", function () {
 		await cosmicGame.setActivationTime(0);
 		let prizePercentage = "10";
 		await cosmicGame.setPrizePercentage(ethers.BigNumber.from(prizePercentage));
+		await cosmicGame.setRuntimeMode();
 
 		const ReClaim = await ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(cosmicGame.address);
