@@ -458,6 +458,7 @@ describe("Cosmic", function () {
 		await expect(cosmicGame.connect(addr5).claimPrize()).not.to.be.revertedWith("panic code 0x12"); // divide by zero
 	});
 	it("Setters are working", async function () {
+		let runtimeMode = false;
 		[contractDeployerAcct] = await ethers.getSigners();
 		const {
 			cosmicGame,
@@ -469,11 +470,14 @@ describe("Cosmic", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,runtimeMode);
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		await expect(
 			cosmicSignature.connect(owner).mint(owner.address, ethers.BigNumber.from("0")),
 		).to.be.revertedWith("Only the CosmicGame contract can mint.");
+
+		let sysMode = await cosmicGame.systemMode();
+		expect(sysMode.toString()).to.equal("2");
 
 		var testAcct;
 		testAcct = ethers.Wallet.createRandom();
@@ -488,6 +492,10 @@ describe("Cosmic", function () {
 		await cosmicGame.connect(owner).setRaffleWallet(testAcct.address);
 		expect(await cosmicGame.raffleWallet()).to.equal(testAcct.address);
 
+		testAcct = ethers.Wallet.createRandom();
+		await cosmicGame.connect(owner).setStakingWallet(testAcct.address);
+		expect(await cosmicGame.stakingWallet()).to.equal(testAcct.address);
+
 		await cosmicGame.connect(owner).setNumRaffleWinnersPerRound(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.numRaffleWinnersPerRound()).to.equal(ethers.BigNumber.from("99"));
 
@@ -500,6 +508,9 @@ describe("Cosmic", function () {
 		await cosmicGame.connect(owner).setRafflePercentage(ethers.BigNumber.from("6"));
 		expect(await cosmicGame.rafflePercentage()).to.equal(ethers.BigNumber.from("6"));
 
+		await cosmicGame.connect(owner).setStakingPercentage(ethers.BigNumber.from("6"));
+		expect(await cosmicGame.stakingPercentage()).to.equal(ethers.BigNumber.from("6"));
+
 		testAcct = ethers.Wallet.createRandom();
 		await cosmicGame.connect(owner).setTokenContract(testAcct.address);
 		expect(await cosmicGame.token()).to.equal(testAcct.address);
@@ -508,8 +519,15 @@ describe("Cosmic", function () {
 		await cosmicGame.connect(owner).setNftContract(testAcct.address);
 		expect(await cosmicGame.nft()).to.equal(testAcct.address);
 
+		testAcct = ethers.Wallet.createRandom();
+		await cosmicGame.connect(owner).setBusinessLogicContract(testAcct.address);
+		expect(await cosmicGame.bLogic()).to.equal(testAcct.address);
+
 		await cosmicGame.connect(owner).setTimeIncrease(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.timeIncrease()).to.equal(ethers.BigNumber.from("99"));
+
+		await cosmicGame.connect(owner).setTimeoutClaimPrize(ethers.BigNumber.from("99"));
+		expect(await cosmicGame.timeoutClaimPrize()).to.equal(ethers.BigNumber.from("99"));
 
 		await cosmicGame.connect(owner).setPriceIncrease(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.priceIncrease()).to.equal(ethers.BigNumber.from("99"));
@@ -529,6 +547,15 @@ describe("Cosmic", function () {
 		await cosmicGame.connect(owner).setActivationTime(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.activationTime()).to.equal(ethers.BigNumber.from("99"));
 
+		await cosmicGame.connect(owner).setETHToCSTBidRatio(ethers.BigNumber.from("99"));
+		expect(await cosmicGame.ETHToCSTBidRatio()).to.equal(ethers.BigNumber.from("99"));
+
+		await cosmicGame.connect(owner).setRoundStartCSTAuctionLength(ethers.BigNumber.from("3600"));
+		expect(await cosmicGame.RoundStartCSTAuctionLength()).to.equal(ethers.BigNumber.from("3600"));
+
+		await expect(cosmicGame.connect(owner).prepareMaintenance()).to.be.revertedWith("System must be in MODE_MAINTENANCE");
+		await cosmicGame.setRuntimeMode();
+
 		await cosmicGame.connect(owner).transferOwnership(addr2.address);
 		expect((await cosmicGame.owner()).toString()).to.equal(addr2.address.toString());
 		await cosmicGame.connect(addr2).transferOwnership(owner.address);
@@ -536,6 +563,53 @@ describe("Cosmic", function () {
 
 		await cosmicSignature.connect(owner).setTokenGenerationScriptURL("url://");
 		expect(await cosmicSignature.tokenGenerationScriptURL()).to.equal("url://");
+	});
+	it("Setters are not available in run-time mode", async function () {
+		let runtimeMode = true;
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,runtimeMode);
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
+		let sysMode = await cosmicGame.systemMode();
+		expect(sysMode.toString()).to.equal("0");
+		var testAcct;
+		testAcct = ethers.Wallet.createRandom();
+
+		let revertStr = "System must be in MODE_MAINTENANCE";
+		await expect(cosmicGame.connect(owner).setCharity(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setRandomWalk(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setRaffleWallet(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setStakingWallet(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setNumRaffleWinnersPerRound(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersPerRound(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setCharityPercentage(ethers.BigNumber.from("11"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setRafflePercentage(ethers.BigNumber.from("6"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setStakingPercentage(ethers.BigNumber.from("6"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setTokenContract(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setNftContract(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setBusinessLogicContract(testAcct.address)).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setTimeIncrease(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setTimeoutClaimPrize(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setPriceIncrease(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setNanoSecondsExtra(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setInitialSecondsUntilPrize(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setPrizePercentage(ethers.BigNumber.from("26"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).updateInitialBidAmountFraction(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setActivationTime(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setETHToCSTBidRatio(ethers.BigNumber.from("10"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setRoundStartCSTAuctionLength(ethers.BigNumber.from("3600"))).to.be.revertedWith(revertStr);
+		await expect(cosmicGame.connect(owner).setRuntimeMode()).to.be.revertedWith(revertStr);
+		await cosmicGame.connect(owner).prepareMaintenance();
 	});
 	it("BaseURI/TokenURI works", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -1113,4 +1187,42 @@ describe("Cosmic", function () {
 		let expectedBalanceAfter = amountSent.sub(discountedBidPrice);
 		expect(expectedBalanceAfter).to.equal(balanceAfter);
 	});
+	it("Maintenance mode works as expected", async function () {
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		let donationAmount = ethers.utils.parseEther("10");
+		await cosmicGame.donate({ value: donationAmount });
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+
+		let sysMode = await cosmicGame.systemMode();
+		expect(sysMode.toString()).to.equal("0");
+
+		await cosmicGame.connect(owner).prepareMaintenance();
+		await expect(cosmicGame.connect(addr1).prepareMaintenance()).to.be.revertedWith("Ownable: caller is not the owner");
+
+		sysMode = await cosmicGame.systemMode();
+		expect(sysMode.toString()).to.equal("1");
+
+		prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await cosmicGame.connect(addr1).claimPrize();
+
+		sysMode = await cosmicGame.systemMode();
+		expect(sysMode.toString()).to.equal("2");
+
+		await cosmicGame.setRuntimeMode();
+		sysMode = await cosmicGame.systemMode();
+		expect(sysMode.toString()).to.equal("0");
+
+		// make another bid just to make sure runtime mode is enabled
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+	})
 });

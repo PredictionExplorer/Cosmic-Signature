@@ -572,4 +572,64 @@ describe("Staking tests", function () {
 		await expect(brokenStaker.doClaimReward(0,0)).to.be.revertedWith("Reward transfer failed.");
 
     });
+	it("Changing charity address works", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		await stakingWallet.setCharity(addr1.address);
+		let charityAddr = await stakingWallet.charity();
+		expect(charityAddr).to.equal(addr1.address);
+		await expect(stakingWallet.connect(addr1).setCharity(addr2.address)).to.be.revertedWith("Ownable: caller is not the owner");
+	});
+	it("Settimg niminal stake period works", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		await stakingWallet.setMinStakePeriod(ethers.BigNumber.from("3600"));
+		let minStakePeriod = await stakingWallet.minStakePeriod();
+		expect(minStakePeriod.toString()).to.equal("3600");
+		await expect(stakingWallet.connect(addr1).setMinStakePeriod(ethers.BigNumber.from("7200"))).to.be.revertedWith("Ownable: caller is not the owner");
+	});
+	it("Unstake date is correctly set", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWallet,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+
+		await stakingWallet.setMinStakePeriod(ethers.BigNumber.from("3600"));
+		let minStakePeriod = await stakingWallet.minStakePeriod();
+		expect(minStakePeriod.toString()).to.equal("3600");
+		await expect(stakingWallet.connect(addr1).setMinStakePeriod(ethers.BigNumber.from("7200"))).to.be.revertedWith("Ownable: caller is not the owner");
+	});
 });
