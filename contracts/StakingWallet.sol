@@ -24,6 +24,9 @@ contract StakingWallet is Ownable {
 
 	mapping(uint256 => stakedNFT) public stakedNFTs;
 	uint256 public numStakeActions;
+	address[] public uniqueStakers; 
+	mapping(address => uint256) stakerIndices;
+	mapping(address => uint256) tokensPerStaker;
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
 	uint256 public numETHDeposits;
@@ -94,6 +97,13 @@ contract StakingWallet is Ownable {
 	}
 
 	function stake(uint256 _tokenId) public {
+
+		uint256 numToks = tokensPerStaker[msg.sender];
+		numToks += 1;
+		tokensPerStaker[msg.sender] = numToks;
+		if (!isStaker(msg.sender)) {
+			_insertStaker(msg.sender);
+		}
 		nft.transferFrom(msg.sender, address(this), _tokenId);
 		stakedNFTs[numStakeActions].tokenId = _tokenId;
 		stakedNFTs[numStakeActions].owner = msg.sender;
@@ -123,6 +133,14 @@ contract StakingWallet is Ownable {
 		nft.transferFrom(address(this), msg.sender, stakedNFTs[stakeActionId].tokenId);
 		stakedNFTs[stakeActionId].unstakeTime = block.timestamp;
 		numStakedNFTs -= 1;
+		uint256 numToks = tokensPerStaker[msg.sender];
+		require((numToks - 1)<numToks,"Overflow in subtraction operation");
+		numToks -= 1;
+		tokensPerStaker[msg.sender] = numToks;
+		if (numToks == 0 ) {
+			_removeStaker(msg.sender);
+			delete tokensPerStaker[msg.sender];
+		}
 		emit UnstakeActionEvent(stakeActionId, stakedNFTs[stakeActionId].tokenId, numStakedNFTs, msg.sender);
 	}
 
@@ -171,5 +189,36 @@ contract StakingWallet is Ownable {
 	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
 		minStakePeriod = newStakePeriod;
 		emit MinStakePeriodChanged(newStakePeriod);
+	}
+
+	function isStaker(address staker) public view returns (bool) {
+		return stakerIndices[staker] != 0;
+	}
+
+	function numStakers() public view returns (uint256) {
+		return uniqueStakers.length;
+	}
+
+	function stakerByIndex(uint256 index) public view returns (address) {
+		require(index<uniqueStakers.length,"stakerByIndex(): index overflow");
+		return uniqueStakers[index];
+	}
+
+	function _insertStaker(address staker) internal {
+		require (!isStaker(staker),"Staker already in the list");
+		if (stakerIndices[staker] == 0) {
+			uniqueStakers.push(staker);
+			stakerIndices[staker] = uniqueStakers.length;
+		}
+	}
+
+	function _removeStaker(address staker) internal {
+		require (isStaker(staker),"Staker is not in the list");
+		uint256 index = stakerIndices[staker];
+		address lastStaker = uniqueStakers[uniqueStakers.length - 1];
+		uniqueStakers[index - 1] = lastStaker; // dev note: our indices do not start from 0
+		stakerIndices[lastStaker] = index;
+		delete stakerIndices[staker];
+		uniqueStakers.pop();
 	}
 }
