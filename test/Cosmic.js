@@ -1225,4 +1225,76 @@ describe("Cosmic", function () {
 		bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 	})
+	it("Bidding a lot ", async function () {
+		[owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		let donationAmount = ethers.utils.parseEther("100");
+		await cosmicGame.donate({ value: donationAmount });
+	
+		let bidParams,params,prizeTime;
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		for (let i=0;i<30;i++) {
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr4).bid(params, { value: bidPrice });
+			prizeTime = await cosmicGame.timeUntilPrize();
+			await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+			await ethers.provider.send("evm_mine");
+			await cosmicGame.connect(addr4).claimPrize();
+		}
+		let tx,receipt,log,parsed_log;
+		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
+		let max_ts = 0;
+		let ts = await cosmicSignature.totalSupply();
+		let rn = await cosmicGame.roundNum();
+		for (let i =0; i<ts.toNumber(); i++) {
+		    let ownr = await cosmicSignature.ownerOf(i)
+		    let owner_signer = cosmicGame.provider.getSigner(ownr);
+		    await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
+		    tx = await stakingWallet.connect(owner_signer).stake(i);
+		    receipt = await tx.wait();
+		    log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
+		    parsed_log = stakingWallet.interface.parseLog(log);
+		    if (max_ts < parsed_log.args.unstakeTime.toNumber()) {
+		        max_ts = parsed_log.args.unstakeTime.toNumber();
+		    }   
+		}
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr4).bid(params, { value: bidPrice });
+		prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		prizeTime = await cosmicGame.timeoutClaimPrize();	// we need another time increase to claim as addr5 (addr5 has no bids, won't get raffle NFTs)
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		tx = await cosmicGame.connect(addr5).claimPrize();
+		receipt = await tx.wait();
+		topic_sig = cosmicGame.interface.getEventTopic("RaffleNFTWinnerEvent");
+		let raffle_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		// all Raffle NFTs must belong to stakers, and we will verify this is true
+		for (let i=0; i<raffle_logs.length; i++) {
+			let rlog = cosmicGame.interface.parseLog(raffle_logs[i]);
+			let winner = rlog.args.winner;
+			let owner = await cosmicSignature.ownerOf(rlog.args.tokenId);
+			let isStaker = await stakingWallet.isStaker(owner);
+			if (!stakingWallet.isStaker(owner)) {
+				if (owner != addr5.address) {
+					throw new Error("not all Raffle NFT winners are stakers");
+				}
+			}
+		}
+	})
 });
