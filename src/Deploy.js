@@ -1,5 +1,5 @@
 const basicDeployment = async function (deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime = true) {
-	return basicDeploymentAdvanced("CosmicGame",deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime);
+	return await basicDeploymentAdvanced("CosmicGame",deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime);
 };
 const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalkAddr, activationTime, charityAddr, transferOwnership,switchToRuntime) {
 	let cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;

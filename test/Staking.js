@@ -632,4 +632,59 @@ describe("Staking tests", function () {
 		expect(minStakePeriod.toString()).to.equal("3600");
 		await expect(stakingWallet.connect(addr1).setMinStakePeriod(ethers.BigNumber.from("7200"))).to.be.revertedWith("Ownable: caller is not the owner");
 	});
+	it("Internal staker state variablesa for checking uniquness are correctly set", async function () {
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+			bLogic,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+
+		const NewStakingWallet = await ethers.getContractFactory("TestStakingWallet");
+		let newStakingWallet = await NewStakingWallet.deploy(cosmicSignature.address,cosmicGame.address,charityWallet.address);
+        await newStakingWallet.deployed();
+		await cosmicGame.setStakingWallet(newStakingWallet.address);
+		await cosmicGame.setRuntimeMode();
+
+		await newStakingWallet.insertStaker(owner.address);
+		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
+		let stakerAddr = await newStakingWallet.stakerByIndex(0);
+		expect(stakerAddr).to.equal(owner.address);
+		let numStakers = await newStakingWallet.numStakers();
+		expect(numStakers).to.equal(1);
+		let isStaker = await newStakingWallet.isStaker(owner.address);
+		expect(isStaker).to.equal(true);
+
+		await newStakingWallet.removeStaker(owner.address);
+		await expect(newStakingWallet.removeStaker(owner.address)).to.be.revertedWith("Staker is not in the list");
+		
+		let bidPrice = await cosmicGame.getBidPrice();
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await expect(cosmicGame.bid(params, { value: bidPrice }));
+		
+		let prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+
+		await cosmicGame.claimPrize();
+
+		await cosmicSignature.setApprovalForAll(newStakingWallet.address, true);
+		await newStakingWallet.stake(0);
+		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
+
+		await ethers.provider.send("evm_increaseTime", [86400*60]);
+		await ethers.provider.send("evm_mine");
+
+		await newStakingWallet.unstake(0);
+		await expect(newStakingWallet.removeStaker(owner.address)).to.be.revertedWith("Staker is not in the list");
+
+	});
 });
