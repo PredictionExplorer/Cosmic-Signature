@@ -204,6 +204,10 @@ contract StakingWallet is Ownable {
 		return uniqueStakers[index];
 	}
 
+	function numTokensByStaker(address staker) public view returns (uint256) {
+		return tokensPerStaker[staker];
+	}
+
 	function _insertStaker(address staker) internal {
 		require (!isStaker(staker),"Staker already in the list");
 		if (stakerIndices[staker] == 0) {
