@@ -80,9 +80,6 @@ contract StakingWallet is Ownable {
 	function deposit() external payable {
 		require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
 		if (numStakedNFTs == 0) {
-			// Forward the money to the charity. This execution path will happen at least once because
-			//	at round=0 nobody has CS tokens and therefore nobody can't stake, while there will be a
-			//	deposit at claimPrize()
 			(bool success, ) = charity.call{ value: msg.value }("");
 			require(success, "Transfer to charity contract failed.");
 			emit CharityDepositEvent(msg.value,charity);
