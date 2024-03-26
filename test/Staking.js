@@ -632,7 +632,7 @@ describe("Staking tests", function () {
 		expect(minStakePeriod.toString()).to.equal("3600");
 		await expect(stakingWallet.connect(addr1).setMinStakePeriod(ethers.BigNumber.from("7200"))).to.be.revertedWith("Ownable: caller is not the owner");
 	});
-	it("Internal staker state variablesa for checking uniquness are correctly set", async function () {
+	it("Internal staker state variables for checking uniquness are correctly set", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const {
 			cosmicGame,
@@ -653,13 +653,15 @@ describe("Staking tests", function () {
 		await cosmicGame.setStakingWallet(newStakingWallet.address);
 		await cosmicGame.setRuntimeMode();
 
+		let isStaker = await newStakingWallet.isStaker(owner.address);
+		expect(isStaker).to.equal(false);
 		await newStakingWallet.insertStaker(owner.address);
 		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
 		let stakerAddr = await newStakingWallet.stakerByIndex(0);
 		expect(stakerAddr).to.equal(owner.address);
 		let numStakers = await newStakingWallet.numStakers();
 		expect(numStakers).to.equal(1);
-		let isStaker = await newStakingWallet.isStaker(owner.address);
+		isStaker = await newStakingWallet.isStaker(owner.address);
 		expect(isStaker).to.equal(true);
 
 		await newStakingWallet.removeStaker(owner.address);

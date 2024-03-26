@@ -247,5 +247,29 @@ describe("Cosmic Set2", function () {
 				}
 			}
 		}
+		await ethers.provider.send("evm_increaseTime", [3600*24*60]);
+		await ethers.provider.send("evm_mine");
+		let num_actions;
+		num_actions = await stakingWallet.numStakeActions();
+		for (let i = 0; i < num_actions.toNumber(); i++) {
+			let action_rec = await stakingWallet.stakeActions(i);
+			let ownr = action_rec.owner;
+			let owner_signer = cosmicGame.provider.getSigner(ownr);
+			await stakingWallet.connect(owner_signer).unstake(i);
+		}
+		num_actions  = await stakingWallet.numStakeActions();
+		for (let i =0; i<num_actions.toNumber(); i++) {
+			let action_rec = await stakingWallet.stakeActions(i);
+			let ownr = action_rec.owner;
+			let num_deposits = await stakingWallet.numETHDeposits();
+			let owner_signer = stakingWallet.provider.getSigner(ownr);
+			for (let j = 0; j < num_deposits.toNumber(); j++) {
+				let deposit_rec = await stakingWallet.ETHDeposits(j);
+				await stakingWallet.connect(owner_signer).claimReward(i,j);
+			}
+		}
+		let contractBalance = await ethers.provider.getBalance(stakingWallet.address);
+		let m = await stakingWallet.modulo();
+		expect(m).to.equal(contractBalance);
 	})
 });
