@@ -264,7 +264,7 @@ contract BusinessLogic is Context, Ownable {
 		bool success;
 		if (cosmicSupply > 0) {
 			(success, ) = address(stakingWallet).call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWallet.deposit.selector, block.timestamp)
+				abi.encodeWithSelector(StakingWallet.deposit.selector)
 			);
 			require(success, "Staking deposit failed.");
 		}

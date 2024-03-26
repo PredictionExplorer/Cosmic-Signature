@@ -77,7 +77,7 @@ contract StakingWallet is Ownable {
 		charity = charity_;
 	}
 
-	function deposit(uint256 timestamp) external payable {
+	function deposit() external payable {
 		require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
 		if (numStakedNFTs == 0) {
 			// Forward the money to the charity. This execution path will happen at least once because
@@ -88,13 +88,13 @@ contract StakingWallet is Ownable {
 			emit CharityDepositEvent(msg.value,charity);
 			return;
 		}
-		ETHDeposits[numETHDeposits].depositTime = timestamp;
+		ETHDeposits[numETHDeposits].depositTime = block.timestamp;
 		ETHDeposits[numETHDeposits].depositAmount = msg.value;
 		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
 		numETHDeposits += 1;
 		// TODO: This is the amount that would be frozen forever. Verify that this is true.
 		modulo += msg.value % numStakedNFTs;
-		emit EthDepositEvent(timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
+		emit EthDepositEvent(block.timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
 	}
 
 	function stake(uint256 _tokenId) public {
