@@ -26,7 +26,7 @@ contract StakingWallet is Ownable {
 	uint256 public numStakeActions;
 	address[] public uniqueStakers; 
 	mapping(address => uint256) stakerIndices;
-	mapping(address => uint256) tokensPerStaker;
+	mapping(address => uint256) tokenCountPerStaker;
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
 	uint256 public numETHDeposits;
@@ -98,9 +98,9 @@ contract StakingWallet is Ownable {
 
 	function stake(uint256 _tokenId) public {
 
-		uint256 numToks = tokensPerStaker[msg.sender];
+		uint256 numToks = tokenCountPerStaker[msg.sender];
 		numToks += 1;
-		tokensPerStaker[msg.sender] = numToks;
+		tokenCountPerStaker[msg.sender] = numToks;
 		if (!isStaker(msg.sender)) {
 			_insertStaker(msg.sender);
 		}
@@ -133,13 +133,13 @@ contract StakingWallet is Ownable {
 		nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
 		stakeActions[stakeActionId].unstakeTime = block.timestamp;
 		numStakedNFTs -= 1;
-		uint256 numToks = tokensPerStaker[msg.sender];
+		uint256 numToks = tokenCountPerStaker[msg.sender];
 		require((numToks - 1)<numToks,"Overflow in subtraction operation");
 		numToks -= 1;
-		tokensPerStaker[msg.sender] = numToks;
+		tokenCountPerStaker[msg.sender] = numToks;
 		if (numToks == 0 ) {
 			_removeStaker(msg.sender);
-			delete tokensPerStaker[msg.sender];
+			delete tokenCountPerStaker[msg.sender];
 		}
 		emit UnstakeActionEvent(stakeActionId, stakeActions[stakeActionId].tokenId, numStakedNFTs, msg.sender);
 	}
@@ -205,7 +205,7 @@ contract StakingWallet is Ownable {
 	}
 
 	function numTokensByStaker(address staker) public view returns (uint256) {
-		return tokensPerStaker[staker];
+		return tokenCountPerStaker[staker];
 	}
 
 	function _insertStaker(address staker) internal {
