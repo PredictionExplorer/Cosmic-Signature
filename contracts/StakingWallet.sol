@@ -66,6 +66,7 @@ contract StakingWallet is Ownable {
 	event CharityDepositEvent(uint256 amount,address charityAddress); // emitted when numStakedNFTs = 0
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 	event MinStakePeriodChanged(uint256 newPeriod);
+	event ModuloSentEvent(uint256 amount);
 
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
 		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
@@ -189,6 +190,17 @@ contract StakingWallet is Ownable {
 	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
 		minStakePeriod = newStakePeriod;
 		emit MinStakePeriodChanged(newStakePeriod);
+	}
+
+	function moduloToCharity() external onlyOwner {
+
+		uint256 amount;
+		amount = modulo;
+		require(amount>0,"Modulo is zero.");
+		modulo = 0;
+		(bool success, ) = charity.call{ value: amount}("");
+		require(success, "Transfer to charity failed.");
+		emit ModuloSentEvent(amount);
 	}
 
 	function isStaker(address staker) public view returns (bool) {
