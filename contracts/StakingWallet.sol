@@ -231,4 +231,30 @@ contract StakingWallet is Ownable {
 		delete stakerIndices[staker];
 		uniqueStakers.pop();
 	}
+
+	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public  {
+		// executes 3 actions in a single pass
+		//		1:		unstakes token using action [stakeActionId]
+		//		2:		claims reward corresponding to the deposit [ETHDepositId]
+		//		3:		stakes back the token
+		unstake(stakeActionId);
+		claimReward(stakeActionId,ETHDepositId);
+		stake(stakeActions[stakeActionId].tokenId);
+	}
+
+	function unstakeClaimRestakeMany(uint256[] memory actions, uint256[] memory deposits) external {
+		require(actions.length>0,"Empty actions array");
+		require(deposits.length>0,"Empty deposits array");
+		for (uint256 i = 0; i < actions.length; i++) {
+			unstake(actions[i]);
+		}
+		for (uint256 i = 0; i < actions.length; i++) {
+			for (uint256 j = 0; j < deposits.length; j++) {
+				claimReward(actions[i],deposits[j]);
+			}
+		}
+		for (uint256 i = 0; i < actions.length; i++) {
+			stake(stakeActions[actions[i]].tokenId);
+		}
+	}
 }
