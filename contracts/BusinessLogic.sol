@@ -264,7 +264,7 @@ contract BusinessLogic is Context, Ownable {
 		bool success;
 		if (cosmicSupply > 0) {
 			(success, ) = address(stakingWallet).call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWallet.deposit.selector, block.timestamp)
+				abi.encodeWithSelector(StakingWallet.deposit.selector)
 			);
 			require(success, "Staking deposit failed.");
 		}
@@ -289,11 +289,9 @@ contract BusinessLogic is Context, Ownable {
 			winnerIndex += 1;
 		}
 
-		// Give some Cosmic NFTs to random RandomWalkNFT and Cosmic NFT holders.
-		// The winnerIndex variable is just here in order to emit a correct event.
-		for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
-			// Give some Cosmic NFTs to some random RandomWalkNFT holders.
-			if (rwalkSupply > 0) {
+		// Give rafle tokens to random RandomWalkNFT holders
+		if (rwalkSupply > 0) {
+			for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
 				_updateEntropy();
 				uint256 rwalkWinnerNFTnum = uint256(raffleEntropy) % rwalkSupply;
 				address rwalkWinner = randomWalk.ownerOf(rwalkWinnerNFTnum);
@@ -304,12 +302,19 @@ contract BusinessLogic is Context, Ownable {
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex);
 				winnerIndex += 1;
 			}
-
-			// Give some Cosmic NFTs to random Cosmic NFT holders.
-			if (cosmicSupply > 0) {
+		}
+		// Give raffle tokens to random CosmicSignature NFT holders
+		if (cosmicSupply > 0) {
+			uint numStakers = stakingWallet.numStakers();
+			for (uint256 i = 0; i < numHolderNFTWinnersPerRound;i++) {
 				_updateEntropy();
 				uint256 cosmicNFTnum = uint256(raffleEntropy) % cosmicSupply;
 				address cosmicWinner = nft.ownerOf(cosmicNFTnum);
+				if (cosmicWinner == address(stakingWallet)) {
+					if (numStakers == 0) { continue ;}
+					uint256 luckyStakerIndex = uint256(raffleEntropy) % numStakers;
+					cosmicWinner = stakingWallet.stakerByIndex(luckyStakerIndex);
+				}
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, address(cosmicWinner), roundNum)
 				);

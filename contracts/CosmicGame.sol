@@ -138,7 +138,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 	event BusinessLogicAddressChanged(address newContractAddress);
-	event ClaimPrizeBusinessLogicAddressChanged(address newContractAddress);
 	event TimeIncreaseChanged(uint256 newTimeIncrease);
 	event TimeoutClaimPrizeChanged(uint256 newTimeout);
 	event PriceIncreaseChanged(uint256 newPriceIncrease);

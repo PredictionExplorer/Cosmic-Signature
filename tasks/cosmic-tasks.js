@@ -66,6 +66,8 @@ task("deploy-local", "Deploys contracts to local network", async (args, hre) => 
 			stakingWallet.address +
 			"','" +
 			marketingWallet.address +
+			"','" +
+			bLogic.address+
 			"')",
 	);
 }).addParam("deployconfig", "Config file (JSON)");
@@ -131,6 +133,8 @@ task("deploy-arbitrum", "Deploys contracts Arbitrum network", async (args, hre) 
 			stakingWallet.address +
 			"','" +
 			marketingWallet.address +
+			"','" +
+			bLogic.address+
 			"')",
 	);
 }).addParam("deployconfig", "Config file (JSON)");

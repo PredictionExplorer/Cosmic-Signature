@@ -7,7 +7,7 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./Constants.sol";
 
 contract StakingWallet is Ownable {
-	struct stakedNFT {
+	struct StakeAction {
 		uint256 tokenId;
 		address owner;
 		uint256 stakeTime;
@@ -22,8 +22,11 @@ contract StakingWallet is Ownable {
 		uint256 numStaked;
 	}
 
-	mapping(uint256 => stakedNFT) public stakedNFTs;
+	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
+	address[] public uniqueStakers; 
+	mapping(address => uint256) stakerIndices;
+	mapping(address => uint256) tokenCountPerStaker;
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
 	uint256 public numETHDeposits;
@@ -63,6 +66,7 @@ contract StakingWallet is Ownable {
 	event CharityDepositEvent(uint256 amount,address charityAddress); // emitted when numStakedNFTs = 0
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 	event MinStakePeriodChanged(uint256 newPeriod);
+	event ModuloSentEvent(uint256 amount);
 
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
 		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
@@ -73,39 +77,42 @@ contract StakingWallet is Ownable {
 		charity = charity_;
 	}
 
-	function deposit(uint256 timestamp) external payable {
+	function deposit() external payable {
 		require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
 		if (numStakedNFTs == 0) {
-			// Forward the money to the charity. This execution path will happen at least once because
-			//	at round=0 nobody has CS tokens and therefore nobody can't stake, while there will be a
-			//	deposit at claimPrize()
 			(bool success, ) = charity.call{ value: msg.value }("");
 			require(success, "Transfer to charity contract failed.");
 			emit CharityDepositEvent(msg.value,charity);
 			return;
 		}
-		ETHDeposits[numETHDeposits].depositTime = timestamp;
+		ETHDeposits[numETHDeposits].depositTime = block.timestamp;
 		ETHDeposits[numETHDeposits].depositAmount = msg.value;
 		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
 		numETHDeposits += 1;
-		// TODO: This is the amount that would be frozen forever. Verify that this is true.
 		modulo += msg.value % numStakedNFTs;
-		emit EthDepositEvent(timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
+		emit EthDepositEvent(block.timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
 	}
 
 	function stake(uint256 _tokenId) public {
+
+		uint256 numToks = tokenCountPerStaker[msg.sender];
+		numToks += 1;
+		tokenCountPerStaker[msg.sender] = numToks;
+		if (!isStaker(msg.sender)) {
+			_insertStaker(msg.sender);
+		}
 		nft.transferFrom(msg.sender, address(this), _tokenId);
-		stakedNFTs[numStakeActions].tokenId = _tokenId;
-		stakedNFTs[numStakeActions].owner = msg.sender;
-		stakedNFTs[numStakeActions].stakeTime = block.timestamp;
-		stakedNFTs[numStakeActions].unstakeEligibleTime = block.timestamp + minStakePeriod;
+		stakeActions[numStakeActions].tokenId = _tokenId;
+		stakeActions[numStakeActions].owner = msg.sender;
+		stakeActions[numStakeActions].stakeTime = block.timestamp;
+		stakeActions[numStakeActions].unstakeEligibleTime = block.timestamp + minStakePeriod;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
 			numStakeActions - 1,
 			_tokenId,
 			numStakedNFTs,
-			stakedNFTs[numStakeActions - 1].unstakeEligibleTime,
+			stakeActions[numStakeActions - 1].unstakeEligibleTime,
 			msg.sender
 		);
 	}
@@ -117,13 +124,21 @@ contract StakingWallet is Ownable {
 	}
 
 	function unstake(uint256 stakeActionId) public {
-		require(stakedNFTs[stakeActionId].unstakeTime == 0, "Token has already been unstaked");
-		require(stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can unstake");
-		require(stakedNFTs[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet");
-		nft.transferFrom(address(this), msg.sender, stakedNFTs[stakeActionId].tokenId);
-		stakedNFTs[stakeActionId].unstakeTime = block.timestamp;
+		require(stakeActions[stakeActionId].unstakeTime == 0, "Token has already been unstaked");
+		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can unstake");
+		require(stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet");
+		nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
+		stakeActions[stakeActionId].unstakeTime = block.timestamp;
 		numStakedNFTs -= 1;
-		emit UnstakeActionEvent(stakeActionId, stakedNFTs[stakeActionId].tokenId, numStakedNFTs, msg.sender);
+		uint256 numToks = tokenCountPerStaker[msg.sender];
+		require((numToks - 1)<numToks,"Overflow in subtraction operation");
+		numToks -= 1;
+		tokenCountPerStaker[msg.sender] = numToks;
+		if (numToks == 0 ) {
+			_removeStaker(msg.sender);
+			delete tokenCountPerStaker[msg.sender];
+		}
+		emit UnstakeActionEvent(stakeActionId, stakeActions[stakeActionId].tokenId, numStakedNFTs, msg.sender);
 	}
 
 	function unstakeMany(uint256[] memory ids) external {
@@ -135,22 +150,20 @@ contract StakingWallet is Ownable {
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
 		require(stakeActionId<numStakeActions,"Invalid stakeActionId.");
 		require(ETHDepositId<numETHDeposits,"Invalid ETHDepositId.");
-		require(stakedNFTs[stakeActionId].unstakeTime > 0, "Token has not been unstaked");
-		require(!stakedNFTs[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already");
-		require(stakedNFTs[stakeActionId].owner == msg.sender, "Only the owner can claim reward");
-		// We are checking less than here, but there is a potential issue that the deposit and stake happen at the exact same time
-		// Need to think about this some more.
+		require(stakeActions[stakeActionId].unstakeTime > 0, "Token has not been unstaked");
+		require(!stakeActions[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already");
+		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can claim reward");
 		require(
-			stakedNFTs[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime,
+			stakeActions[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime,
 			"You were not staked yet."
 		);
 		require(
-			stakedNFTs[stakeActionId].unstakeTime > ETHDeposits[ETHDepositId].depositTime,
+			stakeActions[stakeActionId].unstakeTime > ETHDeposits[ETHDepositId].depositTime,
 			"You were already unstaked."
 		);
-		stakedNFTs[stakeActionId].depositClaimed[ETHDepositId] = true;
+		stakeActions[stakeActionId].depositClaimed[ETHDepositId] = true;
 		uint256 amount = ETHDeposits[ETHDepositId].depositAmount / ETHDeposits[ETHDepositId].numStaked;
-		(bool success, ) = stakedNFTs[stakeActionId].owner.call{ value: amount }("");
+		(bool success, ) = stakeActions[stakeActionId].owner.call{ value: amount }("");
 		require(success, "Reward transfer failed.");
 		emit ClaimRewardEvent(stakeActionId, ETHDepositId, amount, msg.sender);
 	}
@@ -171,5 +184,74 @@ contract StakingWallet is Ownable {
 	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
 		minStakePeriod = newStakePeriod;
 		emit MinStakePeriodChanged(newStakePeriod);
+	}
+
+	function moduloToCharity() external onlyOwner {
+
+		uint256 amount;
+		amount = modulo;
+		require(amount>0,"Modulo is zero.");
+		modulo = 0;
+		(bool success, ) = charity.call{ value: amount}("");
+		require(success, "Transfer to charity failed.");
+		emit ModuloSentEvent(amount);
+	}
+
+	function isStaker(address staker) public view returns (bool) {
+		return stakerIndices[staker] != 0;
+	}
+
+	function numStakers() public view returns (uint256) {
+		return uniqueStakers.length;
+	}
+
+	function stakerByIndex(uint256 index) public view returns (address) {
+		require(index<uniqueStakers.length,"stakerByIndex(): index overflow");
+		return uniqueStakers[index];
+	}
+
+	function numTokensByStaker(address staker) public view returns (uint256) {
+		return tokenCountPerStaker[staker];
+	}
+
+	function _insertStaker(address staker) internal {
+		require (!isStaker(staker),"Staker already in the list");
+		if (stakerIndices[staker] == 0) {
+			uniqueStakers.push(staker);
+			stakerIndices[staker] = uniqueStakers.length;
+		}
+	}
+
+	function _removeStaker(address staker) internal {
+		require (isStaker(staker),"Staker is not in the list");
+		uint256 index = stakerIndices[staker];
+		address lastStaker = uniqueStakers[uniqueStakers.length - 1];
+		uniqueStakers[index - 1] = lastStaker; // dev note: our indices do not start from 0
+		stakerIndices[lastStaker] = index;
+		delete stakerIndices[staker];
+		uniqueStakers.pop();
+	}
+
+	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public  {
+		// executes 3 actions in a single pass
+		//		1:		unstakes token using action [stakeActionId]
+		//		2:		claims reward corresponding to the deposit [ETHDepositId]
+		//		3:		stakes back the token
+		unstake(stakeActionId);
+		claimReward(stakeActionId,ETHDepositId);
+		stake(stakeActions[stakeActionId].tokenId);
+	}
+
+	function unstakeClaimRestakeMany(uint256[] memory unstake_actions, uint256[] memory stake_actions,uint256[] memory claim_actions, uint256[] memory claim_deposits) external {
+		for (uint256 i = 0; i < unstake_actions.length; i++) {
+			unstake(unstake_actions[i]);
+		}
+		require(claim_actions.length == claim_deposits.length, "Claim array arguments must be of the same length.");
+		for (uint256 i = 0; i < claim_actions.length; i++) {
+				claimReward(claim_actions[i],claim_deposits[i]);
+		}
+		for (uint256 i = 0; i < stake_actions.length; i++) {
+			stake(stakeActions[stake_actions[i]].tokenId);
+		}
 	}
 }
