@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
 const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
 
-describe("Cosmic", function () {
+describe("Cosmic Set1", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
@@ -1014,7 +1014,7 @@ describe("Cosmic", function () {
 		await cBidder.startBlockingDeposits();
 		await expect(cBidder.doClaim()).to.be.revertedWith("Transfer to the winner failed.");
 	});
-	it("It is not possible to claim the prize if the deposit to CharityWallet fails", async function () {
+	it("It is not possible to claim the prize if the deposit to CharityWallet fails",async function() {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const {
 			cosmicGame,
@@ -1093,136 +1093,4 @@ describe("Cosmic", function () {
 		await charityWallet.setCharity(brokenCharity.address);
 		await expect(charityWallet.send()).to.be.revertedWith("Transfer failed.");
     });
-	it("After bid() , bid-related counters have correct values", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
-		let donationAmount = ethers.utils.parseEther("10");
-		await cosmicGame.donate({ value: donationAmount });
-		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.bid(params, { value: bidPrice });
-
-		let numETHBids = await cosmicGame.numETHBids();
-		expect(numETHBids).to.equal(1);
-		let numCSTBids = await cosmicGame.numCSTBids();
-		expect(numCSTBids).to.equal(0);
-		let lastBidType = await cosmicGame.lastBidType();
-		expect(lastBidType).to.equal(0);
-
-		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice }); // tokenId=0
-
-		bidPrice = await cosmicGame.getBidPrice();
-		bidParams = { msg: "rwalk bid", rwalk: 0 };
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await cosmicGame.bid(params, { value: bidPrice });
-
-		numETHBids = await cosmicGame.numETHBids();
-		expect(numETHBids).to.equal(1);
-		numCSTBids = await cosmicGame.numCSTBids();
-		expect(numCSTBids).to.equal(0);
-		lastBidType = await cosmicGame.lastBidType();
-		expect(lastBidType).to.equal(1);
-
-		await cosmicGame.bidWithCST("cst bid");
-
-		numETHBids = await cosmicGame.numETHBids();
-		expect(numETHBids).to.equal(1);
-		numCSTBids = await cosmicGame.numCSTBids();
-		expect(numCSTBids).to.equal(1);
-		lastBidType = await cosmicGame.lastBidType();
-		expect(lastBidType).to.equal(2);
-
-	});
-	it("Bidder is receiving correct refund amount when using larger bidPrice than required", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
-		let donationAmount = ethers.utils.parseEther("1");
-		await cosmicGame.donate({ value: donationAmount });
-
-		// we are using BidderContract for this test because there won't be any subtraction
-		// for paying gas price since it is accounted on the EOA that sends the TX,
-		// and this will guarantee clean calculations
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(cosmicGame.address);
-		await cBidder.deployed();
-		let balanceBefore = await ethers.provider.getBalance(cBidder.address);
-		let amountSent = ethers.utils.parseEther("2");
-
-		let bidPrice = await cosmicGame.getBidPrice();
-		await cBidder.doBid2({value: amountSent});
-
-		let balanceAfter = await ethers.provider.getBalance(cBidder.address);
-		let expectedBalanceAfter = amountSent.sub(bidPrice);
-		expect(expectedBalanceAfter).to.equal(balanceAfter);
-	});
-	it("Bidder is receiving correct refund amount when using larger bidPrice than required using RandomWalk", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
-		let donationAmount = ethers.utils.parseEther("1");
-		await cosmicGame.donate({ value: donationAmount });
-
-		// we are using BidderContract for this test because there won't be any subtraction
-		// for paying gas price since it is accounted on the EOA that sends the TX,
-		// and this will guarantee clean calculations
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(cosmicGame.address);
-		await cBidder.deployed();
-		let balanceBefore = await ethers.provider.getBalance(cBidder.address);
-		let amountSent = ethers.utils.parseEther("2");
-
-		await randomWalkNFT.setApprovalForAll(cosmicGame.address, true);
-		await randomWalkNFT.setApprovalForAll(cBidder.address, true);
-		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice }); // tokenId=0
-		bidPrice = await cosmicGame.getBidPrice();
-		await cBidder.doBidRWalk2(0,{ value: amountSent});
-
-		let balanceAfter = await ethers.provider.getBalance(cBidder.address);
-		let discountedBidPrice = bidPrice.div(2);
-		let expectedBalanceAfter = amountSent.sub(discountedBidPrice);
-		expect(expectedBalanceAfter).to.equal(balanceAfter);
-	});
-	it("Maintenance mode works as expected", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
-		let donationAmount = ethers.utils.parseEther("10");
-		await cosmicGame.donate({ value: donationAmount });
-		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-
-		let sysMode = await cosmicGame.systemMode();
-		expect(sysMode.toString()).to.equal("0");
-
-		await cosmicGame.connect(owner).prepareMaintenance();
-		await expect(cosmicGame.connect(addr1).prepareMaintenance()).to.be.revertedWith("Ownable: caller is not the owner");
-
-		sysMode = await cosmicGame.systemMode();
-		expect(sysMode.toString()).to.equal("1");
-
-		prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
-		await ethers.provider.send("evm_mine");
-		await cosmicGame.connect(addr1).claimPrize();
-
-		sysMode = await cosmicGame.systemMode();
-		expect(sysMode.toString()).to.equal("2");
-
-		await cosmicGame.setRuntimeMode();
-		sysMode = await cosmicGame.systemMode();
-		expect(sysMode.toString()).to.equal("0");
-
-		// make another bid just to make sure runtime mode is enabled
-		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-	})
 });

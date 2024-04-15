@@ -107,3 +107,26 @@ contract SpecialCosmicGame is CosmicGame {
         lastCSTBidTime = activationTime;
 	}
 }
+contract TestStakingWallet is StakingWallet {
+
+	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWallet(nft_, game_, charity_) {}
+	
+	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
+	function insertStaker(address staker) external {
+		require (!isStaker(staker),"Staker already in the list");
+		if (stakerIndices[staker] == 0) {
+			uniqueStakers.push(staker);
+			stakerIndices[staker] = uniqueStakers.length;
+		}
+	}
+
+	function removeStaker(address staker) external {
+		require (isStaker(staker),"Staker is not in the list");
+		uint256 index = stakerIndices[staker];
+		address lastStaker = uniqueStakers[uniqueStakers.length - 1];
+		uniqueStakers[index - 1] = lastStaker; // dev note: our indices do not start from 0
+		stakerIndices[lastStaker] = index;
+		delete stakerIndices[staker];
+		uniqueStakers.pop();
+	}
+}
