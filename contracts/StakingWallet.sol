@@ -10,9 +10,9 @@ contract StakingWallet is Ownable {
 	struct StakeAction {
 		uint256 tokenId;
 		address owner;
-		uint256 stakeTime;
-		uint256 unstakeTime;
-		uint256 unstakeEligibleTime;
+		uint32 stakeTime;
+		uint32 unstakeTime;
+		uint32 unstakeEligibleTime;
 		mapping(uint256 => bool) depositClaimed;
 	}
 
@@ -37,7 +37,7 @@ contract StakingWallet is Ownable {
 	// TODO: figure out the invariant that is always true that includes the modulo.
 	//       It would be useful for testing.
 	uint256 public modulo;
-	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
+	uint32 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	CosmicSignature public nft;
 	CosmicGame public game;
@@ -104,8 +104,8 @@ contract StakingWallet is Ownable {
 		nft.transferFrom(msg.sender, address(this), _tokenId);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
-		stakeActions[numStakeActions].stakeTime = block.timestamp;
-		stakeActions[numStakeActions].unstakeEligibleTime = block.timestamp + minStakePeriod;
+		stakeActions[numStakeActions].stakeTime = uint32(block.timestamp);
+		stakeActions[numStakeActions].unstakeEligibleTime = uint32(block.timestamp) + minStakePeriod;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
@@ -128,7 +128,7 @@ contract StakingWallet is Ownable {
 		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can unstake");
 		require(stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet");
 		nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
-		stakeActions[stakeActionId].unstakeTime = block.timestamp;
+		stakeActions[stakeActionId].unstakeTime = uint32(block.timestamp);
 		numStakedNFTs -= 1;
 		uint256 numToks = tokenCountPerStaker[msg.sender];
 		require((numToks - 1)<numToks,"Overflow in subtraction operation");
@@ -181,7 +181,7 @@ contract StakingWallet is Ownable {
 		emit CharityUpdatedEvent(charity);
 	}
 
-	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
+	function setMinStakePeriod(uint32 newStakePeriod) external onlyOwner {
 		minStakePeriod = newStakePeriod;
 		emit MinStakePeriodChanged(newStakePeriod);
 	}
