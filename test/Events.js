@@ -152,7 +152,7 @@ describe("Events", function () {
 
 		let num_raffle_nft_winners = await cosmicGame.numRaffleNFTWinnersPerRound();
 		let num_holder_nft_winners = await cosmicGame.numHolderNFTWinnersPerRound();
-		let total_nft_winners = num_raffle_nft_winners.toNumber() + num_holder_nft_winners.toNumber() * 2;
+		let total_nft_winners = num_raffle_nft_winners.toNumber() + num_holder_nft_winners.toNumber();
 		let topic_sig = cosmicGame.interface.getEventTopic("RaffleNFTWinnerEvent");
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(total_nft_winners).to.equal(deposit_logs.length);

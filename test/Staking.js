@@ -121,7 +121,7 @@ describe("Staking tests", function () {
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -161,7 +161,7 @@ describe("Staking tests", function () {
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -200,7 +200,7 @@ describe("Staking tests", function () {
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 
 		await expect(newStakingWallet.unstake(0)).to.be.revertedWith("Not allowed to unstake yet");
@@ -233,7 +233,7 @@ describe("Staking tests", function () {
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -273,7 +273,7 @@ describe("Staking tests", function () {
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -315,7 +315,7 @@ describe("Staking tests", function () {
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -358,18 +358,18 @@ describe("Staking tests", function () {
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
 
-		await newStakingWallet.connect(addr1).stake(1);
+		await newStakingWallet.connect(addr1).stake(1,false);
 		await newStakingWallet.deposit({value:ethers.utils.parseEther("2")});
 		await ethers.provider.send("evm_mine");
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWallet.interface.parseLog(receipt_logs[0]);
-		let unstakeEligibleTime = log.args.unstakeTime;
+		let unstakeEligibleTime = log.args.unstakeTime.toNumber();
 		let block = await stakingWallet.provider.getBlock(receipt.blockNumber);
 		let stakeTimestamp = block.timestamp;
-		await ethers.provider.send("evm_setNextBlockTimestamp", [unstakeEligibleTime.toNumber()]);
+		await ethers.provider.send("evm_setNextBlockTimestamp", [unstakeEligibleTime]);
 		await ethers.provider.send("evm_mine");
 		let depositTimestamp = stakeTimestamp - 1;
 		await newStakingWallet.unstake(1);
@@ -405,7 +405,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -414,8 +414,8 @@ describe("Staking tests", function () {
 		let stakeRecord = await newStakingWallet.stakeActions(0);
 		let numStakeActions = await newStakingWallet.numStakeActions();
 		let stakeTime = stakeRecord.stakeTime;
-		await newStakingWallet.connect(addr1).stake(1); // we need to stake, otherwise charity will get the deposit
-		let nextTimestamp = stakeRecord.unstakeEligibleTime.add(1).toNumber();
+		await newStakingWallet.connect(addr1).stake(1,false); // we need to stake, otherwise charity will get the deposit
+		let nextTimestamp = stakeRecord.unstakeEligibleTime+1;
 		await ethers.provider.send("evm_setNextBlockTimestamp", [nextTimestamp]);
 
 		await newStakingWallet.unstake(0);
@@ -458,7 +458,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
 
-		let tx = await newStakingWallet.stake(0);
+		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -467,8 +467,8 @@ describe("Staking tests", function () {
 		let stakeRecord = await newStakingWallet.stakeActions(0);
 		let numStakeActions = await newStakingWallet.numStakeActions();
 		let stakeTime = stakeRecord.stakeTime;
-		await newStakingWallet.connect(addr1).stake(1); // we need to stake, otherwise charity will get the deposit
-		await ethers.provider.send("evm_setNextBlockTimestamp", [stakeRecord.unstakeEligibleTime.add(1).toNumber()]);
+		await newStakingWallet.connect(addr1).stake(1,false); // we need to stake, otherwise charity will get the deposit
+		await ethers.provider.send("evm_setNextBlockTimestamp", [stakeRecord.unstakeEligibleTime+1]);
 
 		await newStakingWallet.unstake(0);
 		tx = await newStakingWallet.deposit({value:ethers.utils.parseEther("2")});
@@ -510,7 +510,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(brokenStaker.address, 0);
 		await newCosmicSignature.mint(addr1.address, 0);
 
-		let tx = await brokenStaker.doStake(0);
+		let tx = await brokenStaker.doStake(0,false);
 		let receipt = await tx.wait();
 		let topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -518,8 +518,8 @@ describe("Staking tests", function () {
 		let unstakeTime = log.args.unstakeTime;
 		let stakeRecord = await newStakingWallet.stakeActions(0);
 		let stakeTime = stakeRecord.stakeTime;
-		await newStakingWallet.connect(addr1).stake(1); // we need to stake, otherwise charity will get the deposit
-		await ethers.provider.send("evm_setNextBlockTimestamp", [stakeRecord.unstakeEligibleTime.add(1).toNumber()]);
+		await newStakingWallet.connect(addr1).stake(1,false); // we need to stake, otherwise charity will get the deposit
+		await ethers.provider.send("evm_setNextBlockTimestamp", [stakeRecord.unstakeEligibleTime + 1]);
 
 		tx = await newStakingWallet.deposit({value:ethers.utils.parseEther("2")});
 		receipt = await tx.wait();
@@ -640,7 +640,7 @@ describe("Staking tests", function () {
 		await cosmicGame.claimPrize();
 
 		await cosmicSignature.setApprovalForAll(newStakingWallet.address, true);
-		await newStakingWallet.stake(0);
+		await newStakingWallet.stake(0,false);
 		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
 		let numStakerToks = await newStakingWallet.numTokensByStaker(owner.address);
 		expect(numStakerToks).to.equal(1);
@@ -651,13 +651,15 @@ describe("Staking tests", function () {
 		expect(numStakerToks).to.equal(0);
 		await expect(newStakingWallet.removeStaker(owner.address)).to.be.revertedWith("Staker is not in the list");
 
-		let tokenList = [];
+		let tokenList = []; 
+		let flagList = []
 		let totSup = await cosmicSignature.totalSupply();
 		for (let i=0;i<totSup.toNumber(); i++) {
 			tokenList.push(i);
+			flagList.push(false);
 		}
 		// check 'many' type calls
-		tx = await newStakingWallet.stakeMany(tokenList);
+		tx = await newStakingWallet.stakeMany(tokenList,flagList);
 		receipt = await tx.wait();
 		topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -677,7 +679,7 @@ describe("Staking tests", function () {
 		
 		// repeat the process again, and expect 0 tokens staked at the end
 		// check 'many'
-		tx = await newStakingWallet.stakeMany(tokenList);
+		tx = await newStakingWallet.stakeMany(tokenList,flagList);
 		receipt = await tx.wait();
 		topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

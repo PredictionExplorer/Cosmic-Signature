@@ -868,7 +868,7 @@ describe("Cosmic Set1", function () {
 		for (let i = 0; i < CSTtotalSupply.toNumber(); i++) {
 			let o = await cosmicSignature.ownerOf(i);
 			let ownerSigner = cosmicSignature.provider.getSigner(o);
-			await stakingWallet.connect(ownerSigner).stake(i);
+			await stakingWallet.connect(ownerSigner).stake(i,false);
 		}
 
 		// at this point we have initial data with 3 token holders (holding 1 or more

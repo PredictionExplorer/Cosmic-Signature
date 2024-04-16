@@ -209,7 +209,7 @@ describe("Cosmic Set2", function () {
 		    let ownr = await cosmicSignature.ownerOf(i)
 		    let owner_signer = cosmicGame.provider.getSigner(ownr);
 		    await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
-		    tx = await stakingWallet.connect(owner_signer).stake(i);
+		    tx = await stakingWallet.connect(owner_signer).stake(i,false);
 		    receipt = await tx.wait();
 		    log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
 		    parsed_log = stakingWallet.interface.parseLog(log);
