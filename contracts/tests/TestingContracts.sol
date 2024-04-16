@@ -44,8 +44,8 @@ contract BrokenStaker {
 	receive() external payable {
 		require(!blockDeposits,"I am not accepting deposits");
     }
-	function doStake(uint256 tokenId) external {
-		stakingWallet.stake(tokenId);
+	function doStake(uint256 tokenId,bool isRWalk) external {
+		stakingWallet.stake(tokenId,isRWalk);
 	}
 	function doUnstake(uint256 actionId) external {
 		stakingWallet.unstake(actionId);

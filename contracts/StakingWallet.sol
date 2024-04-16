@@ -5,6 +5,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./Constants.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
 contract StakingWallet is Ownable {
 	struct StakeAction {
@@ -13,6 +14,7 @@ contract StakingWallet is Ownable {
 		uint32 stakeTime;
 		uint32 unstakeTime;
 		uint32 unstakeEligibleTime;
+		bool isRandomWalk;
 		mapping(uint256 => bool) depositClaimed;
 	}
 
@@ -40,6 +42,7 @@ contract StakingWallet is Ownable {
 	uint32 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	CosmicSignature public nft;
+	RandomWalkNFT public randomWalk;
 	CosmicGame public game;
 
 	event StakeActionEvent(
@@ -47,7 +50,8 @@ contract StakingWallet is Ownable {
 		uint256 indexed tokenId,
 		uint256 totalNFTs,
 		uint256 unstakeTime,
-		address indexed staker
+		address indexed staker,
+		bool isRandomWalkToken
 	);
 	event UnstakeActionEvent(
 		uint256 indexed actionId,
@@ -93,7 +97,7 @@ contract StakingWallet is Ownable {
 		emit EthDepositEvent(block.timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
 	}
 
-	function stake(uint256 _tokenId) public {
+	function stake(uint256 _tokenId,bool isRWalk) public {
 
 		uint256 numToks = tokenCountPerStaker[msg.sender];
 		numToks += 1;
@@ -101,7 +105,12 @@ contract StakingWallet is Ownable {
 		if (!isStaker(msg.sender)) {
 			_insertStaker(msg.sender);
 		}
-		nft.transferFrom(msg.sender, address(this), _tokenId);
+		if (isRWalk) {
+			randomWalk.transferFrom(msg.sender, address(this), _tokenId);
+		} else {
+			nft.transferFrom(msg.sender, address(this), _tokenId);
+		}
+		stakeActions[numStakeActions].isRandomWalk = isRWalk;
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = uint32(block.timestamp);
@@ -113,13 +122,14 @@ contract StakingWallet is Ownable {
 			_tokenId,
 			numStakedNFTs,
 			stakeActions[numStakeActions - 1].unstakeEligibleTime,
-			msg.sender
+			msg.sender,
+			isRWalk
 		);
 	}
 
-	function stakeMany(uint256[] memory ids) external {
+	function stakeMany(uint256[] memory ids,bool[] memory areRandomWalk) external {
 		for (uint256 i = 0; i < ids.length; i++) {
-			stake(ids[i]);
+			stake(ids[i],areRandomWalk[i]);
 		}
 	}
 
@@ -127,7 +137,11 @@ contract StakingWallet is Ownable {
 		require(stakeActions[stakeActionId].unstakeTime == 0, "Token has already been unstaked");
 		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can unstake");
 		require(stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet");
-		nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
+		if (stakeActions[stakeActionId].isRandomWalk) {
+			randomWalk.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
+		} else {
+			nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
+		}
 		stakeActions[stakeActionId].unstakeTime = uint32(block.timestamp);
 		numStakedNFTs -= 1;
 		uint256 numToks = tokenCountPerStaker[msg.sender];
@@ -232,17 +246,17 @@ contract StakingWallet is Ownable {
 		uniqueStakers.pop();
 	}
 
-	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public  {
+	function unstakeClaimRestake(uint256 stakeActionId, bool isRWalk, uint256 ETHDepositId) public  {
 		// executes 3 actions in a single pass
 		//		1:		unstakes token using action [stakeActionId]
 		//		2:		claims reward corresponding to the deposit [ETHDepositId]
 		//		3:		stakes back the token
 		unstake(stakeActionId);
 		claimReward(stakeActionId,ETHDepositId);
-		stake(stakeActions[stakeActionId].tokenId);
+		stake(stakeActions[stakeActionId].tokenId,isRWalk);
 	}
 
-	function unstakeClaimRestakeMany(uint256[] memory unstake_actions, uint256[] memory stake_actions,uint256[] memory claim_actions, uint256[] memory claim_deposits) external {
+	function unstakeClaimRestakeMany(uint256[] memory unstake_actions, uint256[] memory stake_actions,bool[] memory areRandomWalk,uint256[] memory claim_actions, uint256[] memory claim_deposits) external {
 		for (uint256 i = 0; i < unstake_actions.length; i++) {
 			unstake(unstake_actions[i]);
 		}
@@ -251,7 +265,7 @@ contract StakingWallet is Ownable {
 				claimReward(claim_actions[i],claim_deposits[i]);
 		}
 		for (uint256 i = 0; i < stake_actions.length; i++) {
-			stake(stakeActions[stake_actions[i]].tokenId);
+			stake(stakeActions[stake_actions[i]].tokenId,areRandomWalk[i]);
 		}
 	}
 }
