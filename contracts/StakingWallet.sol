@@ -26,9 +26,9 @@ contract StakingWallet is Ownable {
 
 	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
-	address[] public uniqueStakers; 
-	mapping(address => uint256) stakerIndices;
-	mapping(address => uint256) tokenCountPerStaker;
+	uint256[] public tokensStaked;
+	mapping(uint256 => uint256) tokenIndices;
+	mapping(uint256 => int256) lastActionIds;
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
 	uint256 public numETHDeposits;
@@ -99,12 +99,7 @@ contract StakingWallet is Ownable {
 
 	function stake(uint256 _tokenId,bool isRWalk) public {
 
-		uint256 numToks = tokenCountPerStaker[msg.sender];
-		numToks += 1;
-		tokenCountPerStaker[msg.sender] = numToks;
-		if (!isStaker(msg.sender)) {
-			_insertStaker(msg.sender);
-		}
+		_insertToken(_tokenId,numStakeActions);
 		if (isRWalk) {
 			randomWalk.transferFrom(msg.sender, address(this), _tokenId);
 		} else {
@@ -144,15 +139,9 @@ contract StakingWallet is Ownable {
 		}
 		stakeActions[stakeActionId].unstakeTime = uint32(block.timestamp);
 		numStakedNFTs -= 1;
-		uint256 numToks = tokenCountPerStaker[msg.sender];
-		require((numToks - 1)<numToks,"Overflow in subtraction operation");
-		numToks -= 1;
-		tokenCountPerStaker[msg.sender] = numToks;
-		if (numToks == 0 ) {
-			_removeStaker(msg.sender);
-			delete tokenCountPerStaker[msg.sender];
-		}
-		emit UnstakeActionEvent(stakeActionId, stakeActions[stakeActionId].tokenId, numStakedNFTs, msg.sender);
+		uint256 tokenId = stakeActions[stakeActionId].tokenId;
+		_removeToken(tokenId);
+		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
 	}
 
 	function unstakeMany(uint256[] memory ids) external {
@@ -211,39 +200,43 @@ contract StakingWallet is Ownable {
 		emit ModuloSentEvent(amount);
 	}
 
-	function isStaker(address staker) public view returns (bool) {
-		return stakerIndices[staker] != 0;
+	function tokenStaked(uint256 tokenId) public view returns (bool) {
+		return tokenIndices[tokenId] != 0;
 	}
 
-	function numStakers() public view returns (uint256) {
-		return uniqueStakers.length;
+	function numTokensStaked() public view returns (uint256) {
+		return tokensStaked.length;
 	}
 
-	function stakerByIndex(uint256 index) public view returns (address) {
-		require(index<uniqueStakers.length,"stakerByIndex(): index overflow");
-		return uniqueStakers[index];
+	function stakerByTokenIndex(uint256 tokenIndex) public view returns (address) {
+		require(tokenIndex < tokensStaked.length,"stakerOfToken(): index overflow");
+		uint256 tokenId = tokensStaked[tokenIndex];
+		int256 actionId = lastActionIds[tokenId];
+		if (actionId == -1) {
+			return address(0);
+		}
+		address staker = stakeActions[uint256(actionId)].owner;
+		return staker;
 	}
 
-	function numTokensByStaker(address staker) public view returns (uint256) {
-		return tokenCountPerStaker[staker];
-	}
-
-	function _insertStaker(address staker) internal {
-		require (!isStaker(staker),"Staker already in the list");
-		if (stakerIndices[staker] == 0) {
-			uniqueStakers.push(staker);
-			stakerIndices[staker] = uniqueStakers.length;
+	function _insertToken(uint256 tokenId,uint256 actionId) internal {
+		require(!tokenStaked(tokenId),"Token already in the list");
+		if (tokenIndices[tokenId] == 0) {
+			tokensStaked.push(tokenId);
+			tokenIndices[tokenId] = tokensStaked.length;
+			lastActionIds[tokenId] = int256(actionId);
 		}
 	}
 
-	function _removeStaker(address staker) internal {
-		require (isStaker(staker),"Staker is not in the list");
-		uint256 index = stakerIndices[staker];
-		address lastStaker = uniqueStakers[uniqueStakers.length - 1];
-		uniqueStakers[index - 1] = lastStaker; // dev note: our indices do not start from 0
-		stakerIndices[lastStaker] = index;
-		delete stakerIndices[staker];
-		uniqueStakers.pop();
+	function _removeToken(uint256 tokenId) internal {
+		require(tokenStaked(tokenId),"Token is not in the list");
+		uint256 index = tokenIndices[tokenId];
+		uint256 lastTokenId = tokensStaked[tokensStaked.length - 1];
+		tokensStaked[index -1] = lastTokenId;
+		tokenIndices[lastTokenId] = index;
+		delete tokenIndices[tokenId];
+		tokensStaked.pop();
+		lastActionIds[tokenId] = -1;
 	}
 
 	function unstakeClaimRestake(uint256 stakeActionId, bool isRWalk, uint256 ETHDepositId) public  {

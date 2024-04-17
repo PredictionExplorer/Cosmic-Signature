@@ -304,17 +304,12 @@ contract BusinessLogic is Context, Ownable {
 			}
 		}
 		// Give raffle tokens to random CosmicSignature NFT holders
-		if (cosmicSupply > 0) {
-			uint numStakers = stakingWallet.numStakers();
+		uint numStakedTokens = stakingWallet.numTokensStaked();
+		if (numStakedTokens> 0) {
 			for (uint256 i = 0; i < numHolderNFTWinnersPerRound;i++) {
 				_updateEntropy();
-				uint256 cosmicNFTnum = uint256(raffleEntropy) % cosmicSupply;
-				address cosmicWinner = nft.ownerOf(cosmicNFTnum);
-				if (cosmicWinner == address(stakingWallet)) {
-					if (numStakers == 0) { continue ;}
-					uint256 luckyStakerIndex = uint256(raffleEntropy) % numStakers;
-					cosmicWinner = stakingWallet.stakerByIndex(luckyStakerIndex);
-				}
+				uint256 luckyStakerIndex = uint256(raffleEntropy) % numStakedTokens;
+				address cosmicWinner = stakingWallet.stakerByTokenIndex(luckyStakerIndex);
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, address(cosmicWinner), roundNum)
 				);

@@ -112,21 +112,21 @@ contract TestStakingWallet is StakingWallet {
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWallet(nft_, game_, charity_) {}
 	
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
-	function insertStaker(address staker) external {
-		require (!isStaker(staker),"Staker already in the list");
-		if (stakerIndices[staker] == 0) {
-			uniqueStakers.push(staker);
-			stakerIndices[staker] = uniqueStakers.length;
+	function insertToken(uint256 tokenId) external {
+		require(!tokenStaked(tokenId),"Token already in the list");
+		if (tokenIndices[tokenId] == 0) {
+			tokensStaked.push(tokenId);
+			tokenIndices[tokenId] = tokensStaked.length;
 		}
 	}
 
-	function removeStaker(address staker) external {
-		require (isStaker(staker),"Staker is not in the list");
-		uint256 index = stakerIndices[staker];
-		address lastStaker = uniqueStakers[uniqueStakers.length - 1];
-		uniqueStakers[index - 1] = lastStaker; // dev note: our indices do not start from 0
-		stakerIndices[lastStaker] = index;
-		delete stakerIndices[staker];
-		uniqueStakers.pop();
+	function removeToken(uint256 tokenId) external {
+		require(tokenStaked(tokenId),"Token is not in the list");
+		uint256 index = tokenIndices[tokenId];
+		uint256 lastTokenId = tokensStaked[tokensStaked.length - 1];
+		tokensStaked[index -1] = lastTokenId;
+		tokenIndices[lastTokenId] = index;
+		delete tokenIndices[tokenId];
+		tokensStaked.pop();
 	}
 }
