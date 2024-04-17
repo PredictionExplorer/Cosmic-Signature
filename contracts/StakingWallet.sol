@@ -27,8 +27,8 @@ contract StakingWallet is Ownable {
 	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
 	uint256[] public tokensStaked;
-	mapping(uint256 => uint256) tokenIndices;
-	mapping(uint256 => int256) lastActionIds;
+	mapping(uint256 => uint256) public tokenIndices;	// tokenId -> tokenIndex
+	mapping(uint256 => int256) public lastActionIds;	// tokenId -> actionId
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
 	uint256 public numETHDeposits;
