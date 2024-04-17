@@ -221,11 +221,9 @@ contract StakingWallet is Ownable {
 
 	function _insertToken(uint256 tokenId,uint256 actionId) internal {
 		require(!tokenStaked(tokenId),"Token already in the list");
-		if (tokenIndices[tokenId] == 0) {
-			tokensStaked.push(tokenId);
-			tokenIndices[tokenId] = tokensStaked.length;
-			lastActionIds[tokenId] = int256(actionId);
-		}
+		tokensStaked.push(tokenId);
+		tokenIndices[tokenId] = tokensStaked.length;
+		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function _removeToken(uint256 tokenId) internal {
