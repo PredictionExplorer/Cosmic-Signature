@@ -614,20 +614,21 @@ describe("Staking tests", function () {
 		await cosmicGame.setStakingWallet(newStakingWallet.address);
 		await cosmicGame.setRuntimeMode();
 
-		let isStaker = await newStakingWallet.isStaker(owner.address);
-		expect(isStaker).to.equal(false);
-		await newStakingWallet.insertStaker(owner.address);
-		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
-		let stakerAddr = await newStakingWallet.stakerByIndex(0);
-		expect(stakerAddr).to.equal(owner.address);
-		let numStakers = await newStakingWallet.numStakers();
-		expect(numStakers).to.equal(1);
-		isStaker = await newStakingWallet.isStaker(owner.address);
-		expect(isStaker).to.equal(true);
+		let sampleTokenId = 33;
+		let tokenStaked = await newStakingWallet.isTokenStaked(sampleTokenId);
+		expect(tokenStaked).to.equal(false);
+		await newStakingWallet.insertToken(sampleTokenId,0);
+		let tokenIndexCheck = await newStakingWallet.tokenIndices(sampleTokenId);
+		expect(tokenIndexCheck).to.equal(1);
+		let tokenIdCheck = await newStakingWallet.stakedTokens(tokenIndexCheck-1);
+		expect(tokenIdCheck).to.equal(sampleTokenId);
+		await expect(newStakingWallet.insertToken(sampleTokenId,0)).to.be.revertedWith("Token already in the list");
 
-		await newStakingWallet.removeStaker(owner.address);
-		await expect(newStakingWallet.removeStaker(owner.address)).to.be.revertedWith("Staker is not in the list");
-		
+		let numTokens = await newStakingWallet.numTokensStaked();
+		expect(numTokens).to.equal(1);
+
+		await newStakingWallet.removeToken(sampleTokenId);
+		await expect(newStakingWallet.removeToken(owner.address)).to.be.revertedWith("Token is not in the list");
 		let bidPrice = await cosmicGame.getBidPrice();
 		var bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
@@ -638,18 +639,17 @@ describe("Staking tests", function () {
 		await ethers.provider.send("evm_mine");
 
 		await cosmicGame.claimPrize();
-
 		await cosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newStakingWallet.stake(0,false);
-		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
-		let numStakerToks = await newStakingWallet.numTokensByStaker(owner.address);
-		expect(numStakerToks).to.equal(1);
+		await expect(newStakingWallet.insertToken(0,0)).to.be.revertedWith("Token already in the list");
+		numTokens = await newStakingWallet.numTokensStaked();
+		expect(numTokens).to.equal(1);
 		await ethers.provider.send("evm_increaseTime", [86400*60]);
 		await ethers.provider.send("evm_mine");
 		await expect(newStakingWallet.unstake(0)).not.to.be.reverted;
-		numStakerToks = await newStakingWallet.numTokensByStaker(owner.address);
-		expect(numStakerToks).to.equal(0);
-		await expect(newStakingWallet.removeStaker(owner.address)).to.be.revertedWith("Staker is not in the list");
+		numTokens = await newStakingWallet.numTokensStaked();
+		expect(numTokens).to.equal(0);
+		await expect(newStakingWallet.removeToken(0)).to.be.revertedWith("Token is not in the list");
 
 		let tokenList = []; 
 		let flagList = []
@@ -664,19 +664,21 @@ describe("Staking tests", function () {
 		topic_sig = newStakingWallet.interface.getEventTopic("StakeActionEvent");
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let actions = [];
+		let tokenId = 0;
 		for (let i=0; i<receipt_logs.length; i++) {
 			let evt = newStakingWallet.interface.parseLog(receipt_logs[i]);
 			actions.push(evt.args.actionId);
+			tokenId = evt.args.tokenId;
 		}
-		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
+		await expect(newStakingWallet.insertToken(tokenId,0)).to.be.revertedWith("Token already in the list");
 		await ethers.provider.send("evm_increaseTime", [86400*60]);
 		await ethers.provider.send("evm_mine");
-		let numStakerToksBefore = await newStakingWallet.numTokensByStaker(owner.address);
+		let numToksBefore = await newStakingWallet.numTokensStaked();
 		await expect(newStakingWallet.unstakeMany(actions)).not.to.be.reverted;
-		numStakerToks = await newStakingWallet.numTokensByStaker(owner.address);
-		expect(numStakerToks).to.equal(0);
+		numToksAfter = await newStakingWallet.numTokensStaked();
+		expect(numToksAfter).to.equal(0);
 		// end of check
-		
+	
 		// repeat the process again, and expect 0 tokens staked at the end
 		// check 'many'
 		tx = await newStakingWallet.stakeMany(tokenList,flagList);
@@ -688,18 +690,16 @@ describe("Staking tests", function () {
 			let evt = newStakingWallet.interface.parseLog(receipt_logs[i]);
 			actions.push(evt.args.actionId);
 		}
-		await expect(newStakingWallet.insertStaker(owner.address)).to.be.revertedWith("Staker already in the list");
 		await ethers.provider.send("evm_increaseTime", [86400*60]);
 		await ethers.provider.send("evm_mine");
-		numStakerToksBefore = await newStakingWallet.numTokensByStaker(owner.address);
+		numStakerToksBefore = await newStakingWallet.numTokensStaked();
 		await expect(newStakingWallet.unstakeMany(actions)).not.to.be.reverted;
-		numStakerToks = await newStakingWallet.numTokensByStaker(owner.address);
-		expect(numStakerToks).to.equal(0);
+		numToksAfter= await newStakingWallet.numTokensStaked();
+		expect(numToksAfter).to.equal(0);
 		// end of check
 		
 		let contractBalance = await ethers.provider.getBalance(stakingWallet.address);
         let m = await stakingWallet.modulo();
         expect(m).to.equal(contractBalance);
-
 	});
 });

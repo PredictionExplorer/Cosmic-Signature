@@ -44,6 +44,7 @@ describe("Cosmic Set2", function () {
 			{ name: "rwalk", type: "int256" },
 		],
 	};
+
 	it("After bid() , bid-related counters have correct values", async function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -176,7 +177,7 @@ describe("Cosmic Set2", function () {
 		bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 	})
-	it("Bidding a lot ", async function () {
+	it("Bidding a lot & staking a lot works correctly ", async function () {
 		[owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
@@ -215,7 +216,7 @@ describe("Cosmic Set2", function () {
 		    parsed_log = stakingWallet.interface.parseLog(log);
 		    if (max_ts < parsed_log.args.unstakeTime.toNumber()) {
 		        max_ts = parsed_log.args.unstakeTime.toNumber();
-		    }   
+		    }
 		}
 		bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
@@ -235,17 +236,25 @@ describe("Cosmic Set2", function () {
 		receipt = await tx.wait();
 		topic_sig = cosmicGame.interface.getEventTopic("RaffleNFTWinnerEvent");
 		let raffle_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		// all Raffle NFTs must belong to stakers, and we will verify this is true
+		// all Raffle NFTs must have zero address because they are not staked, verify it
 		for (let i=0; i<raffle_logs.length; i++) {
 			let rlog = cosmicGame.interface.parseLog(raffle_logs[i]);
 			let winner = rlog.args.winner;
 			let owner = await cosmicSignature.ownerOf(rlog.args.tokenId);
-			let isStaker = await stakingWallet.isStaker(owner);
-			if (!isStaker) {
-				if (owner != addr5.address) {
-					throw new Error("not all Raffle NFT winners are stakers");
-				}
+			let stakerAddr = await stakingWallet.stakerByTokenId(rlog.args.tokenId);
+			expect(stakerAddr).to.equal("0x0000000000000000000000000000000000000000");
+		}
+		// all the remaining NFTs must have stakerByTokenId() equal to the addr who staked it
+		// also check the correctness of lastActionId map
+		ts = await cosmicSignature.totalSupply();
+		for (let i =0; i<ts.toNumber(); i++) {
+			let stakerAddr = await stakingWallet.stakerByTokenId(i);
+			if (stakerAddr == "0x0000000000000000000000000000000000000000") {
+				continue;
 			}
+			let lastActionId = stakingWallet.lastActionIdByTokenId(i);
+			let stakeActionRecord = await stakingWallet.stakeActions(lastActionId);
+			expect(stakeActionRecord.owner).to.equal(stakerAddr);
 		}
 		await ethers.provider.send("evm_increaseTime", [3600*24*60]);
 		await ethers.provider.send("evm_mine");
