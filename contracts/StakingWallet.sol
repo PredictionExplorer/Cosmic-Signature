@@ -26,7 +26,7 @@ contract StakingWallet is Ownable {
 
 	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
-	uint256[] public tokensStaked;
+	uint256[] public stakedTokens;
 	mapping(uint256 => uint256) public tokenIndices;	// tokenId -> tokenIndex
 	mapping(uint256 => int256) public lastActionIds;	// tokenId -> actionId
 
@@ -200,17 +200,31 @@ contract StakingWallet is Ownable {
 		emit ModuloSentEvent(amount);
 	}
 
-	function tokenStaked(uint256 tokenId) public view returns (bool) {
+	function isTokenStaked(uint256 tokenId) public view returns (bool) {
 		return tokenIndices[tokenId] != 0;
 	}
 
 	function numTokensStaked() public view returns (uint256) {
-		return tokensStaked.length;
+		return stakedTokens.length;
 	}
 
-	function stakerByTokenIndex(uint256 tokenIndex) public view returns (address) {
-		require(tokenIndex < tokensStaked.length,"stakerOfToken(): index overflow");
-		uint256 tokenId = tokensStaked[tokenIndex];
+	function tokenByIndex(uint256 tokenIndex) public view returns (uint256) {
+		require(tokenIndex > 0,"Zero was given, token indices start from 1");
+		return tokenIndices[tokenIndex];
+	}
+
+	function lastActionIdByTokenId(uint256 tokenId) public view returns (int256) {
+		uint256 tokenIndex = tokenIndices[tokenId];
+		if (tokenIndex == 0) {
+			return -2;
+		}
+		int256 lastActionId = lastActionIds[tokenId];
+		return lastActionId;	// will return -1 if token is not staked, > -1 if there is an ID
+	}
+
+	function stakerByTokenIndexZeroOffset(uint256 tokenIndex) public view returns (address) {
+		require(tokenIndex < stakedTokens.length,"stakerByTokenIndex(): index overflow");
+		uint256 tokenId = stakedTokens[tokenIndex];
 		int256 actionId = lastActionIds[tokenId];
 		if (actionId == -1) {
 			return address(0);
@@ -218,22 +232,40 @@ contract StakingWallet is Ownable {
 		address staker = stakeActions[uint256(actionId)].owner;
 		return staker;
 	}
+	
+	function stakerByTokenIndex(uint256 tokenIndex) public view returns (address) {
+		require(tokenIndex > 0,"Token indices start from 1");
+		uint256 zeroOffsetTokenIndex = tokenIndices[tokenIndex];
+		if (zeroOffsetTokenIndex == 0) {
+			return address(0);
+		}
+		return stakerByTokenIndexZeroOffset(zeroOffsetTokenIndex - 1);
+	}
+
+	function stakerByTokenId(uint256 tokenId) public view returns (address) {
+		int256 actionId = lastActionIdByTokenId(tokenId);
+		if (actionId < 0) {
+			return address(0);
+		}
+		address staker = stakeActions[uint256(actionId)].owner;
+		return staker;
+	}
 
 	function _insertToken(uint256 tokenId,uint256 actionId) internal {
-		require(!tokenStaked(tokenId),"Token already in the list");
-		tokensStaked.push(tokenId);
-		tokenIndices[tokenId] = tokensStaked.length;
+		require(!isTokenStaked(tokenId),"Token already in the list");
+		stakedTokens.push(tokenId);
+		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function _removeToken(uint256 tokenId) internal {
-		require(tokenStaked(tokenId),"Token is not in the list");
+		require(isTokenStaked(tokenId),"Token is not in the list");
 		uint256 index = tokenIndices[tokenId];
-		uint256 lastTokenId = tokensStaked[tokensStaked.length - 1];
-		tokensStaked[index -1] = lastTokenId;
+		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		stakedTokens[index -1] = lastTokenId;
 		tokenIndices[lastTokenId] = index;
 		delete tokenIndices[tokenId];
-		tokensStaked.pop();
+		stakedTokens.pop();
 		lastActionIds[tokenId] = -1;
 	}
 

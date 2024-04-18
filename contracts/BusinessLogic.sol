@@ -309,7 +309,7 @@ contract BusinessLogic is Context, Ownable {
 			for (uint256 i = 0; i < numHolderNFTWinnersPerRound;i++) {
 				_updateEntropy();
 				uint256 luckyStakerIndex = uint256(raffleEntropy) % numStakedTokens;
-				address cosmicWinner = stakingWallet.stakerByTokenIndex(luckyStakerIndex);
+				address cosmicWinner = stakingWallet.stakerByTokenIndexZeroOffset(luckyStakerIndex);
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, address(cosmicWinner), roundNum)
 				);
