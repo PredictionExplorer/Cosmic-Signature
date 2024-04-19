@@ -113,21 +113,39 @@ contract TestStakingWallet is StakingWallet {
 	constructor(CosmicSignature nft_, RandomWalkNFT rwalk_,CosmicGame game_, address charity_) StakingWallet(nft_,rwalk_, game_, charity_) {}
 	
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
-	function insertToken(uint256 tokenId,uint256 actionId) external {
-		require(!isTokenStaked(tokenId),"Token already in the list");
-		stakedTokens.push(tokenId);
-		tokenIndices[tokenId] = stakedTokens.length;
-		lastActionIds[tokenId] = int256(actionId);
+	function insertTokenCST(uint256 tokenId,uint256 actionId) external {
+		require(!isTokenStakedCST(tokenId),"Token already in the list.");
+		stakedTokensCST.push(tokenId);
+		tokenIndicesCST[tokenId] = stakedTokensCST.length;
+		lastActionIdsCST[tokenId] = int256(actionId);
 	}
 
-	function removeToken(uint256 tokenId) external {
-		require(isTokenStaked(tokenId),"Token is not in the list");
-		uint256 index = tokenIndices[tokenId];
-		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		stakedTokens[index -1] = lastTokenId;
-		tokenIndices[lastTokenId] = index;
-		delete tokenIndices[tokenId];
-		stakedTokens.pop();
-		lastActionIds[tokenId] = -1;
+	function removeTokenCST(uint256 tokenId) external {
+		require(isTokenStakedCST(tokenId),"Token is not in the list.");
+		uint256 index = tokenIndicesCST[tokenId];
+		uint256 lastTokenId = stakedTokensCST[stakedTokensCST.length - 1];
+		stakedTokensCST[index -1] = lastTokenId;
+		tokenIndicesCST[lastTokenId] = index;
+		delete tokenIndicesCST[tokenId];
+		stakedTokensCST.pop();
+		lastActionIdsCST[tokenId] = -1;
+	}
+
+	function insertTokenRWalk(uint256 tokenId,uint256 actionId) external {
+		require(!isTokenStakedRWalk(tokenId),"Token already in the list.");
+		stakedTokensRWalk.push(tokenId);
+		tokenIndicesRWalk[tokenId] = stakedTokensRWalk.length;
+		lastActionIdsRWalk[tokenId] = int256(actionId);
+	}
+
+	function removeTokenRWalk(uint256 tokenId) external {
+		require(isTokenStakedRWalk(tokenId),"Token is not in the list.");
+		uint256 index = tokenIndicesRWalk[tokenId];
+		uint256 lastTokenId = stakedTokensRWalk[stakedTokensRWalk.length - 1];
+		stakedTokensRWalk[index -1] = lastTokenId;
+		tokenIndicesRWalk[lastTokenId] = index;
+		delete tokenIndicesRWalk[tokenId];
+		stakedTokensRWalk.pop();
+		lastActionIdsRWalk[tokenId] = -1;
 	}
 }
