@@ -6,6 +6,7 @@ import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../Constants.sol";
+import { RandomWalkNFT } from "../RandomWalkNFT.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {
@@ -109,7 +110,7 @@ contract SpecialCosmicGame is CosmicGame {
 }
 contract TestStakingWallet is StakingWallet {
 
-	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWallet(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, RandomWalkNFT rwalk_,CosmicGame game_, address charity_) StakingWallet(nft_,rwalk_, game_, charity_) {}
 	
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId,uint256 actionId) external {

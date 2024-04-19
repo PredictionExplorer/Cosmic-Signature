@@ -41,14 +41,6 @@ const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalk
 	raffleWallet = await RaffleWallet.connect(deployerAcct).deploy(cosmicGame.address);
 	await raffleWallet.deployed();
 
-	const StakingWallet = await hre.ethers.getContractFactory("StakingWallet");
-	stakingWallet = await StakingWallet.connect(deployerAcct).deploy(
-		cosmicSignature.address,
-		cosmicGame.address,
-		charityAddr,
-	);
-	await stakingWallet.deployed();
-
 	const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
 	marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicToken.address);
 	await marketingWallet.deployed();
@@ -56,10 +48,20 @@ const basicDeploymentAdvanced = async function (cgName, deployerAcct, randomWalk
 	const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
 	if (randomWalkAddr.length === 0) {
 		randomWalkNFT = await RandomWalkNFT.connect(deployerAcct).deploy();
+		randomWalkAddr = randomWalkNFT.address;
 		await randomWalkNFT.deployed();
 	} else {
 		randomWalkNFT = await ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
 	}
+
+	const StakingWallet = await hre.ethers.getContractFactory("StakingWallet");
+	stakingWallet = await StakingWallet.connect(deployerAcct).deploy(
+		cosmicSignature.address,
+		randomWalkAddr,
+		cosmicGame.address,
+		charityAddr,
+	);
+	await stakingWallet.deployed();
 
 	const BusinessLogic = await ethers.getContractFactory("BusinessLogic");
 	bLogic = await BusinessLogic.connect(deployerAcct).deploy();

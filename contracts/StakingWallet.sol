@@ -72,11 +72,13 @@ contract StakingWallet is Ownable {
 	event MinStakePeriodChanged(uint256 newPeriod);
 	event ModuloSentEvent(uint256 amount);
 
-	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
+	constructor(CosmicSignature nft_, RandomWalkNFT rwalk_, CosmicGame game_, address charity_) {
 		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
+		require(address(rwalk_)!= address(0), "Zero-address was given for the RandomWalk token.");
 		require(address(game_)!= address(0), "Zero-address was given for the game.");
 		require(charity_!= address(0), "Zero-address was given for charity.");
 		nft = nft_;
+		randomWalk = rwalk_;
 		game = game_;
 		charity = charity_;
 	}
