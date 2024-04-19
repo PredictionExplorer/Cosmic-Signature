@@ -44,7 +44,6 @@ describe("Cosmic Set2", function () {
 			{ name: "rwalk", type: "int256" },
 		],
 	};
-
 	it("After bid() , bid-related counters have correct values", async function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -206,8 +205,15 @@ describe("Cosmic Set2", function () {
 		let max_ts = 0;
 		let ts = await cosmicSignature.totalSupply();
 		let rn = await cosmicGame.roundNum();
+		let tokensByStaker = {};
 		for (let i =0; i<ts.toNumber(); i++) {
 		    let ownr = await cosmicSignature.ownerOf(i)
+			let userTokens = tokensByStaker[ownr];
+			if (userTokens === undefined) {
+				userTokens = [];
+			}
+			userTokens.push(i);
+			tokensByStaker[ownr] = userTokens;
 		    let owner_signer = cosmicGame.provider.getSigner(ownr);
 		    await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
 		    tx = await stakingWallet.connect(owner_signer).stake(i,false);
@@ -232,6 +238,7 @@ describe("Cosmic Set2", function () {
 		prizeTime = await cosmicGame.timeoutClaimPrize();	// we need another time increase to claim as addr5 (addr5 has no bids, won't get raffle NFTs)
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
+		let totSupBefore = await cosmicSignature.totalSupply();
 		tx = await cosmicGame.connect(addr5).claimPrize();
 		receipt = await tx.wait();
 		topic_sig = cosmicGame.interface.getEventTopic("RaffleNFTWinnerEvent");
@@ -250,7 +257,16 @@ describe("Cosmic Set2", function () {
 		for (let i =0; i<ts.toNumber(); i++) {
 			let stakerAddr = await stakingWallet.stakerByTokenId(i);
 			if (stakerAddr == "0x0000000000000000000000000000000000000000") {
-				continue;
+				let ownr = await cosmicSignature.ownerOf(i);
+				let userTokens = tokensByStaker[ownr];
+				if (userTokens === undefined) {
+					userTokens = [];
+				}
+				userTokens.push(i);
+				tokensByStaker[ownr] = userTokens;
+				if (i >= totSupBefore) {	// this is new token, it is unstaked
+					continue;
+				}
 			}
 			let lastActionId = stakingWallet.lastActionIdByTokenId(i);
 			let stakeActionRecord = await stakingWallet.stakeActions(lastActionId);
@@ -266,6 +282,7 @@ describe("Cosmic Set2", function () {
 			let owner_signer = cosmicGame.provider.getSigner(ownr);
 			await stakingWallet.connect(owner_signer).unstake(i);
 		}
+		// at this point, all tokens were unstaked
 		num_actions  = await stakingWallet.numStakeActions();
 		for (let i =0; i<num_actions.toNumber(); i++) {
 			let action_rec = await stakingWallet.stakeActions(i);
@@ -280,5 +297,14 @@ describe("Cosmic Set2", function () {
 		let contractBalance = await ethers.provider.getBalance(stakingWallet.address);
 		let m = await stakingWallet.modulo();
 		expect(m).to.equal(contractBalance);
+		
+        // check that every staker has its own tokens back
+		for (user in tokensByStaker) {
+			let userTokens = tokensByStaker[user];
+			for (let i = 0; i < userTokens.length; i++ ) {
+				let o = await cosmicSignature.ownerOf(userTokens[i]);
+				expect(o).to.equal(user);
+			}
+		}
 	})
 });
