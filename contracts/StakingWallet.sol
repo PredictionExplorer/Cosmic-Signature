@@ -253,6 +253,20 @@ contract StakingWallet is Ownable {
 		return lastActionId;	// will return -1 if token is not staked, > -1 if there is an ID
 	}
 
+	function stakerByTokenId(uint256 tokenId,bool isRandomWalk) public view returns (address) {
+		int256 actionId;
+	   	if (isRandomWalk) {
+			actionId = lastActionIdByTokenIdRWalk(tokenId);
+		} else {
+			actionId = lastActionIdByTokenIdCST(tokenId);
+		}
+		if (actionId < 0) {
+			return address(0);
+		}
+		address staker = stakeActions[uint256(actionId)].owner;
+		return staker;
+	}
+
 	function pickRandomStakerCST(bytes32 entropy) public view returns (address) {
 		require(stakedTokensCST.length>0,"There are no CST tokens staked.");
 		uint256 luckyTokenId = stakedTokensCST[uint256(entropy) % stakedTokensCST.length];
