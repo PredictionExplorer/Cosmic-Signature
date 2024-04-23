@@ -111,7 +111,7 @@ contract StakingWallet is Ownable {
 			_insertTokenRWalk(_tokenId,numStakeActions);
 		} else {
 			nft.transferFrom(msg.sender, address(this), _tokenId);
-			_insertTokenRWalk(_tokenId,numStakeActions);
+			_insertTokenCST(_tokenId,numStakeActions);
 		}
 		stakeActions[numStakeActions].isRandomWalk = isRWalk;
 		stakeActions[numStakeActions].tokenId = _tokenId;
