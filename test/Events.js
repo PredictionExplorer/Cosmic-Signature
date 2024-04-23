@@ -115,7 +115,7 @@ describe("Events", function () {
 		tokenPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr3).mint({ value: tokenPrice });
 
-		// we need to creat CosmicToken holders prior to our test
+		// we need to create CosmicToken holders prior to our test
 		let p = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
@@ -123,6 +123,23 @@ describe("Events", function () {
 		let ptime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [ptime.toNumber()]);
 		await cosmicGame.connect(addr1).claimPrize();
+
+		// we need to stake tokens to have holder owners to earn raffle tokens
+        let ts = await cosmicSignature.totalSupply();
+        for (let i = 0; i<ts.toNumber(); i++) {
+            let ownr = await cosmicSignature.ownerOf(i)
+            let owner_signer = cosmicGame.provider.getSigner(ownr);
+            await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
+            //await stakingWallet.connect(owner_signer).stake(i,false);
+        }
+        ts = await randomWalkNFT.totalSupply();
+        for (let i = 0; i<ts.toNumber(); i++) {
+            let ownr = await randomWalkNFT.ownerOf(i)
+            let owner_signer = randomWalkNFT.provider.getSigner(ownr);
+            await randomWalkNFT.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
+			//await stakingWallet.connect(owner_signer).stake(i,true);
+        }
+
 
 		// test begins here
 		let rwalkTokenPrice = await randomWalkNFT.getMintPrice();
@@ -152,7 +169,7 @@ describe("Events", function () {
 
 		let num_raffle_nft_winners = await cosmicGame.numRaffleNFTWinnersPerRound();
 		let num_holder_nft_winners = await cosmicGame.numHolderNFTWinnersPerRound();
-		let total_nft_winners = num_raffle_nft_winners.toNumber() + num_holder_nft_winners.toNumber();
+		let total_nft_winners = num_raffle_nft_winners.toNumber() + num_holder_nft_winners.toNumber() * 2;
 		let topic_sig = cosmicGame.interface.getEventTopic("RaffleNFTWinnerEvent");
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(total_nft_winners).to.equal(deposit_logs.length);

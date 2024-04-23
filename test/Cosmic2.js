@@ -248,14 +248,14 @@ describe("Cosmic Set2", function () {
 			let rlog = cosmicGame.interface.parseLog(raffle_logs[i]);
 			let winner = rlog.args.winner;
 			let owner = await cosmicSignature.ownerOf(rlog.args.tokenId);
-			let stakerAddr = await stakingWallet.stakerByTokenId(rlog.args.tokenId);
+			let stakerAddr = await stakingWallet.stakerByTokenId(rlog.args.tokenId,false);
 			expect(stakerAddr).to.equal("0x0000000000000000000000000000000000000000");
 		}
 		// all the remaining NFTs must have stakerByTokenId() equal to the addr who staked it
 		// also check the correctness of lastActionId map
 		ts = await cosmicSignature.totalSupply();
 		for (let i =0; i<ts.toNumber(); i++) {
-			let stakerAddr = await stakingWallet.stakerByTokenId(i);
+			let stakerAddr = await stakingWallet.stakerByTokenId(i,false);
 			if (stakerAddr == "0x0000000000000000000000000000000000000000") {
 				let ownr = await cosmicSignature.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
@@ -264,11 +264,17 @@ describe("Cosmic Set2", function () {
 				}
 				userTokens.push(i);
 				tokensByStaker[ownr] = userTokens;
-				if (i >= totSupBefore) {	// this is new token, it is unstaked
+				if (i >= totSupBefore.toNumber()) {	// this is new token, it is not staked yet
 					continue;
 				}
 			}
-			let lastActionId = stakingWallet.lastActionIdByTokenId(i);
+			let isStaked = await stakingWallet.isTokenStakedCST(i);
+			expect(isStaked).to.equal(true);
+			let lastActionId = await stakingWallet.lastActionIdByTokenIdCST(i);
+			lastActionId = lastActionId.toNumber();
+			if (lastActionId < 0) {
+				throw "Invalid action id" + lastActionId;
+			}
 			let stakeActionRecord = await stakingWallet.stakeActions(lastActionId);
 			expect(stakeActionRecord.owner).to.equal(stakerAddr);
 		}

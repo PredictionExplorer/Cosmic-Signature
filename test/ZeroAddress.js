@@ -83,9 +83,9 @@ describe("Zero-address checking", function () {
 		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		await expect(StakingWallet.deploy(zaddr,addr1.address, addr2.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the nft.");
-		await expect(StakingWallet.deploy(owner.address,zaddr, addr2.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the game.");
-		await expect(StakingWallet.deploy(addr1.address,addr2.address,zaddr,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for charity.");
+		await expect(StakingWallet.deploy(zaddr,addr1.address, addr3.address, addr2.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the nft.");
+		await expect(StakingWallet.deploy(owner.address,zaddr, addr3.address, addr2.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the game.");
+		await expect(StakingWallet.deploy(addr1.address,addr3.addrss, addr2.address,zaddr,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for charity.");
 	});
 	it("Shouldn't be possible to deploy CosmicSignature with zero-address-ed parameters", async function () {
 		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");

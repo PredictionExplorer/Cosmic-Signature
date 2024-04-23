@@ -86,7 +86,7 @@ describe("Staking tests", function () {
 		await cBidder.startBlockingDeposits();
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(cBidder.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(cBidder.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 
 		await expect(newStakingWallet.deposit({value:ethers.utils.parseEther("2")})).to.be.revertedWith(
@@ -117,7 +117,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
@@ -131,7 +131,7 @@ describe("Staking tests", function () {
 		await ethers.provider.send("evm_mine");
 		await newStakingWallet.unstake(0);
 
-		await expect(newStakingWallet.unstake(0)).to.be.revertedWith("Token has already been unstaked");
+		await expect(newStakingWallet.unstake(0)).to.be.revertedWith("Token has already been unstaked.");
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
@@ -157,7 +157,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
@@ -170,7 +170,7 @@ describe("Staking tests", function () {
 		await ethers.provider.send("evm_increaseTime", [unstakeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
 
-		await expect(newStakingWallet.connect(addr1).unstake(0)).to.be.revertedWith("Only the owner can unstake");
+		await expect(newStakingWallet.connect(addr1).unstake(0)).to.be.revertedWith("Only the owner can unstake.");
 	});
 	it("Shouldn't be possible to unstake before unstake date", async function () {
 		const {
@@ -196,14 +196,14 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
 		let tx = await newStakingWallet.stake(0,false);
 		let receipt = await tx.wait();
 
-		await expect(newStakingWallet.unstake(0)).to.be.revertedWith("Not allowed to unstake yet");
+		await expect(newStakingWallet.unstake(0)).to.be.revertedWith("Not allowed to unstake yet.");
 	});
 	it("Shouldn't be possible to claim reward without executing unstake()", async function () {
 		const {
@@ -229,7 +229,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
@@ -243,7 +243,7 @@ describe("Staking tests", function () {
 		await ethers.provider.send("evm_mine");
 		await newStakingWallet.deposit({value:ethers.utils.parseEther("2")});
 
-		await expect(newStakingWallet.claimReward(0,0)).to.be.revertedWith("Token has not been unstaked");
+		await expect(newStakingWallet.claimReward(0,0)).to.be.revertedWith("Token has not been unstaked.");
 	});
 	it("Shouldn't be possible to claim deposit more than once", async function () {
 		const {
@@ -269,7 +269,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
@@ -285,7 +285,7 @@ describe("Staking tests", function () {
 		expect(await newStakingWallet.deposit({value:ethers.utils.parseEther("2")}));
 		expect(await newStakingWallet.unstake(0));
 		expect(await newStakingWallet.claimReward(0,0));
-		await expect(newStakingWallet.claimReward(0,0)).to.be.revertedWith("This deposit was claimed already");
+		await expect(newStakingWallet.claimReward(0,0)).to.be.revertedWith("This deposit was claimed already.");
 	});
 	it("Shouldn't be possible to claim deposit by a user different from the owner", async function () {
 		const {
@@ -311,7 +311,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 
@@ -326,7 +326,7 @@ describe("Staking tests", function () {
 
 		expect(await newStakingWallet.deposit({value:ethers.utils.parseEther("2")}));
 		expect(await newStakingWallet.unstake(0));
-		await expect(newStakingWallet.connect(addr1).claimReward(0,0)).to.be.revertedWith("Only the owner can claim reward");
+		await expect(newStakingWallet.connect(addr1).claimReward(0,0)).to.be.revertedWith("Only the owner can claim reward.");
 	});
 	it("Shouldn't be possible to claim deposits made earlier than stakeDate", async function () {
 		const {
@@ -353,7 +353,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(addr1.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
@@ -400,7 +400,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(addr1.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, addr1.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, addr1.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
@@ -453,7 +453,7 @@ describe("Staking tests", function () {
 		await newCosmicSignature.mint(addr1.address, 0);
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, addr1.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, addr1.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
@@ -497,7 +497,7 @@ describe("Staking tests", function () {
 		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, owner.address, addr1.address);
+		let newStakingWallet = await StakingWallet.deploy(newCosmicSignature.address, randomWalkNFT.address, owner.address, addr1.address);
 		await newStakingWallet.deployed();
 		await newCosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(newStakingWallet.address, true);
@@ -609,26 +609,26 @@ describe("Staking tests", function () {
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
 
 		const NewStakingWallet = await ethers.getContractFactory("TestStakingWallet");
-		let newStakingWallet = await NewStakingWallet.deploy(cosmicSignature.address,cosmicGame.address,charityWallet.address);
+		let newStakingWallet = await NewStakingWallet.deploy(cosmicSignature.address,cosmicSignature.address, cosmicGame.address,charityWallet.address);
         await newStakingWallet.deployed();
 		await cosmicGame.setStakingWallet(newStakingWallet.address);
 		await cosmicGame.setRuntimeMode();
 
 		let sampleTokenId = 33;
-		let tokenStaked = await newStakingWallet.isTokenStaked(sampleTokenId);
+		let tokenStaked = await newStakingWallet.isTokenStakedCST(sampleTokenId);
 		expect(tokenStaked).to.equal(false);
-		await newStakingWallet.insertToken(sampleTokenId,0);
-		let tokenIndexCheck = await newStakingWallet.tokenIndices(sampleTokenId);
+		await newStakingWallet.insertTokenCST(sampleTokenId,0);
+		let tokenIndexCheck = await newStakingWallet.tokenIndicesCST(sampleTokenId);
 		expect(tokenIndexCheck).to.equal(1);
-		let tokenIdCheck = await newStakingWallet.stakedTokens(tokenIndexCheck-1);
+		let tokenIdCheck = await newStakingWallet.stakedTokensCST(tokenIndexCheck-1);
 		expect(tokenIdCheck).to.equal(sampleTokenId);
-		await expect(newStakingWallet.insertToken(sampleTokenId,0)).to.be.revertedWith("Token already in the list");
+		await expect(newStakingWallet.insertTokenCST(sampleTokenId,0)).to.be.revertedWith("Token already in the list.");
 
-		let numTokens = await newStakingWallet.numTokensStaked();
+		let numTokens = await newStakingWallet.numTokensStakedCST();
 		expect(numTokens).to.equal(1);
 
-		await newStakingWallet.removeToken(sampleTokenId);
-		await expect(newStakingWallet.removeToken(owner.address)).to.be.revertedWith("Token is not in the list");
+		await newStakingWallet.removeTokenCST(sampleTokenId);
+		await expect(newStakingWallet.removeTokenCST(owner.address)).to.be.revertedWith("Token is not in the list.");
 		let bidPrice = await cosmicGame.getBidPrice();
 		var bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
@@ -641,15 +641,15 @@ describe("Staking tests", function () {
 		await cosmicGame.claimPrize();
 		await cosmicSignature.setApprovalForAll(newStakingWallet.address, true);
 		await newStakingWallet.stake(0,false);
-		await expect(newStakingWallet.insertToken(0,0)).to.be.revertedWith("Token already in the list");
-		numTokens = await newStakingWallet.numTokensStaked();
+		await expect(newStakingWallet.insertTokenCST(0,0)).to.be.revertedWith("Token already in the list.");
+		numTokens = await newStakingWallet.numTokensStakedCST();
 		expect(numTokens).to.equal(1);
 		await ethers.provider.send("evm_increaseTime", [86400*60]);
 		await ethers.provider.send("evm_mine");
 		await expect(newStakingWallet.unstake(0)).not.to.be.reverted;
-		numTokens = await newStakingWallet.numTokensStaked();
+		numTokens = await newStakingWallet.numTokensStakedCST();
 		expect(numTokens).to.equal(0);
-		await expect(newStakingWallet.removeToken(0)).to.be.revertedWith("Token is not in the list");
+		await expect(newStakingWallet.removeTokenCST(0)).to.be.revertedWith("Token is not in the list.");
 
 		let tokenList = []; 
 		let flagList = []
@@ -670,12 +670,12 @@ describe("Staking tests", function () {
 			actions.push(evt.args.actionId);
 			tokenId = evt.args.tokenId;
 		}
-		await expect(newStakingWallet.insertToken(tokenId,0)).to.be.revertedWith("Token already in the list");
+		await expect(newStakingWallet.insertTokenCST(tokenId,0)).to.be.revertedWith("Token already in the list.");
 		await ethers.provider.send("evm_increaseTime", [86400*60]);
 		await ethers.provider.send("evm_mine");
-		let numToksBefore = await newStakingWallet.numTokensStaked();
+		let numToksBefore = await newStakingWallet.numTokensStakedCST();
 		await expect(newStakingWallet.unstakeMany(actions)).not.to.be.reverted;
-		numToksAfter = await newStakingWallet.numTokensStaked();
+		numToksAfter = await newStakingWallet.numTokensStakedCST();
 		expect(numToksAfter).to.equal(0);
 		// end of check
 	
@@ -692,9 +692,9 @@ describe("Staking tests", function () {
 		}
 		await ethers.provider.send("evm_increaseTime", [86400*60]);
 		await ethers.provider.send("evm_mine");
-		numStakerToksBefore = await newStakingWallet.numTokensStaked();
+		numStakerToksBefore = await newStakingWallet.numTokensStakedCST();
 		await expect(newStakingWallet.unstakeMany(actions)).not.to.be.reverted;
-		numToksAfter= await newStakingWallet.numTokensStaked();
+		numToksAfter= await newStakingWallet.numTokensStakedCST();
 		expect(numToksAfter).to.equal(0);
 		// end of check
 		
