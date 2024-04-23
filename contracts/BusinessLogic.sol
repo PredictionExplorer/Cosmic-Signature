@@ -277,6 +277,19 @@ contract BusinessLogic is Context, Ownable {
 
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
+
+		// Give NFTs to the NFT raffle winners.
+		for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
+			_updateEntropy();
+			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			emit RaffleNFTWinnerEvent(raffleWinner_, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
+		}
+
 		// Give rafle tokens to random RandomWalkNFT stakers
 		uint numStakedTokensRWalk = stakingWallet.numTokensStakedRWalk();
 		if (numStakedTokensRWalk > 0) {
