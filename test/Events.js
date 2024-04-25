@@ -101,7 +101,6 @@ describe("Events", function () {
 		const contractBalance = await ethers.provider.getBalance(cosmicGame.address);
 		expect(contractBalance).to.equal(donationAmount.add(INITIAL_AMOUNT));
 	});
-	/*
 	it("should emit PrizeClaimEvent and update winner on successful prize claim", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
@@ -441,5 +440,4 @@ describe("Events", function () {
 			.withArgs(activationtime);
 		expect((await cosmicGame.activationTime()).toString()).to.equal(activationtime.toString());
 	});
-	*/
 });
