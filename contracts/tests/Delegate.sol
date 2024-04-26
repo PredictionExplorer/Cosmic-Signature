@@ -139,6 +139,9 @@ contract BLTest is BusinessLogic {
 	function f40() external {
 		extraStorage[DEFAULT_INDEX] = DEFAULT_VALUE;
 	}
+	function f41() external {
+		systemMode = DEFAULT_VALUE;
+	}
 }
 
 contract CGTest is CosmicGame {
@@ -304,6 +307,10 @@ contract CGTest is CosmicGame {
 	}
 	function f40() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f40.selector));
+		require(success, "Delegate call execution failed.");
+	}
+	function f41() external {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f41.selector));
 		require(success, "Delegate call execution failed.");
 	}
 }
