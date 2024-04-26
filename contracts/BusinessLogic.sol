@@ -253,7 +253,6 @@ contract BusinessLogic is Context, Ownable {
 		address winner = _msgSender();
 		winners[roundNum] = winner;
 
-		uint256 rwalkSupply = randomWalk.totalSupply();
 		uint256 cosmicSupply = nft.totalSupply();
 
 		uint256 prizeAmount_ = game.prizeAmount();

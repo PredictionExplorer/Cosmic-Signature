@@ -117,7 +117,9 @@ contract StakingWallet is Ownable {
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = uint32(block.timestamp);
-		stakeActions[numStakeActions].unstakeEligibleTime = uint32(block.timestamp) + minStakePeriod;
+		uint32 unstakeTime = uint32(block.timestamp) + minStakePeriod;
+		require(unstakeTime > block.timestamp,"Unstake time should be bigger than block timestamp");
+		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
