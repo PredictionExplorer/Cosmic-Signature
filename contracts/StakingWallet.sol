@@ -167,6 +167,8 @@ contract StakingWallet is Ownable {
 		require(stakeActions[stakeActionId].unstakeTime > 0, "Token has not been unstaked.");
 		require(!stakeActions[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already.");
 		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can claim reward.");
+		// depositTime is compared without '=' operator to prevent frontrunning (sending stake
+		// operation within the same block as claimPrize transaction)
 		require(
 			stakeActions[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime,
 			"You were not staked yet."
