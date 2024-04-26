@@ -264,4 +264,16 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.bLogic();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
+	it("extraStorage", async function () {
+		const { cgtest, bltest } = await loadFixture(deployCosmic);
+		await cgtest.f40();
+		let value = await cgtest.extraStorage(DEFAULT_INDEX);
+		expect(await value).to.equal(DEFAULT_VALUE);
+	});
+	it("systemMode", async function () {
+		const { cgtest, bltest } = await loadFixture(deployCosmic);
+		await cgtest.f41();
+		let value = await cgtest.systemMode();
+		expect(await value).to.equal(DEFAULT_VALUE);
+	});
 });
