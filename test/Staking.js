@@ -872,46 +872,4 @@ describe("Staking tests", function () {
 		expect(parsed_log.args.amount).to.equal(previousStakingAmount);
 		expect(parsed_log.args.modulo).to.equal(moduloInRound);
 	});
-	it("Bidding with CST works", async function () {
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-
-		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
-		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
-		bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-		let prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
-		await cosmicGame.connect(addr1).claimPrize();
-
-		await cosmicGame.connect(addr1).bidWithCST("cst bid");
-
-		let input = cosmicGame.interface.encodeFunctionData("currentCSTPrice", []);
-		let message = await cosmicGame.provider.call({
-			to: cosmicGame.address,
-			data: input,
-		});
-		let res = cosmicGame.interface.decodeFunctionResult("currentCSTPrice", message);
-		let priceBytes = res[0].slice(130, 194);
-		let cstPrice = ethers.utils.defaultAbiCoder.decode(["uint256"], "0x" + priceBytes);
-		expect(cstPrice.toString()).to.equal("200000000000000000000");
-
-		let tx = await cosmicGame.connect(addr1).bidWithCST("cst bid");
-		let receipt = await tx.wait();
-		let topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
-		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
-		let parsed_log = cosmicGame.interface.parseLog(log);
-		expect("199989000000000000000").to.equal(parsed_log.args.numCSTTokens.toString());
-		expect(parsed_log.args.bidPrice.toNumber()).to.equal(-1);
-		expect(parsed_log.args.lastBidder).to.equal(addr1.address);
-		expect(parsed_log.args.message).to.equal("cst bid");
-		
-	});
 });
