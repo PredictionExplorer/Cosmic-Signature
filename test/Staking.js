@@ -872,4 +872,110 @@ describe("Staking tests", function () {
 		expect(parsed_log.args.amount).to.equal(previousStakingAmount);
 		expect(parsed_log.args.modulo).to.equal(moduloInRound);
 	});
+	it("unstakeClaimRestake() works as intended", async function () {
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+			bLogic,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.deployed();
+
+		const NewStakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await NewStakingWallet.deploy(newCosmicSignature.address,randomWalkNFT.address, owner.address,charityWallet.address);
+        await newStakingWallet.deployed();
+
+		let own = await cosmicSignature.owner();
+		await newCosmicSignature.connect(owner).setApprovalForAll(newStakingWallet.address, true);
+		await newCosmicSignature.connect(owner).mint(owner.address, 0);
+		await newCosmicSignature.connect(owner).mint(owner.address, 0);
+		await newStakingWallet.connect(owner).stake(0,false);
+		await newStakingWallet.connect(owner).stake(1,false);
+
+		await ethers.provider.send("evm_increaseTime", [60]);
+		await ethers.provider.send("evm_mine");
+
+		await newStakingWallet.connect(owner).deposit({value:ethers.utils.parseEther("3")});
+		await ethers.provider.send("evm_increaseTime", [50*60*60*24]);
+		await ethers.provider.send("evm_mine");
+
+		let balanceBefore = await ethers.provider.getBalance(owner.address);
+		await newStakingWallet.connect(owner).unstakeClaimRestake(0,0);
+		await newStakingWallet.connect(owner).unstakeClaimRestake(1,0);
+		// test success is validated by token ownership, if owner is StakingWallet
+		// then restake operation has been successsful
+		let o = await newCosmicSignature.ownerOf(0);
+		expect(o).to.equal(newStakingWallet.address);
+		o = await newCosmicSignature.ownerOf(1);
+		expect(o).to.equal(newStakingWallet.address);
+		// we also make another validation, balance of owner should be at least 1 ETH bigger
+		// then before unstake (because the deposit is for 3 ETH)
+		let balanceAfter = await ethers.provider.getBalance(owner.address);
+		let balDiff = balanceAfter.sub(balanceBefore);
+		let twoEth = ethers.utils.parseEther("2");
+		expect(balDiff.gt(twoEth)).to.equal(true);
+	});
+	it("unstakeClaimRestakeMany() works as intended", async function () {
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+			bLogic,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.deployed();
+
+		const NewStakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await NewStakingWallet.deploy(newCosmicSignature.address,randomWalkNFT.address, owner.address,charityWallet.address);
+        await newStakingWallet.deployed();
+
+		let own = await cosmicSignature.owner();
+		await newCosmicSignature.connect(owner).setApprovalForAll(newStakingWallet.address, true);
+		await newCosmicSignature.connect(owner).mint(owner.address, 0);
+		await newCosmicSignature.connect(owner).mint(owner.address, 0);
+		await newStakingWallet.connect(owner).stake(0,false);
+		await newStakingWallet.connect(owner).stake(1,false);
+
+		await ethers.provider.send("evm_increaseTime", [60]);
+		await ethers.provider.send("evm_mine");
+
+		await newStakingWallet.connect(owner).deposit({value:ethers.utils.parseEther("3")});
+		await ethers.provider.send("evm_increaseTime", [50*60*60*24]);
+		await ethers.provider.send("evm_mine");
+
+
+		let balanceBefore = await ethers.provider.getBalance(owner.address);
+		await newStakingWallet.connect(owner).unstakeClaimRestakeMany([0,1],[0,1],[0,1],[0,0]);
+		// test success is validated by token ownership, if owner is StakingWallet
+		// then restake operation has been successsful
+		let o = await newCosmicSignature.ownerOf(0);
+		expect(o).to.equal(newStakingWallet.address);
+		o = await newCosmicSignature.ownerOf(1);
+		expect(o).to.equal(newStakingWallet.address);
+		// we also make another validation, balance of owner should be at least 1 ETH bigger
+		// then before unstake (because the deposit is for 3 ETH)
+		let balanceAfter = await ethers.provider.getBalance(owner.address);
+		let balDiff = balanceAfter.sub(balanceBefore);
+		let twoEth = ethers.utils.parseEther("1");
+		expect(balDiff.gt(twoEth)).to.equal(true);
+	});
 });
