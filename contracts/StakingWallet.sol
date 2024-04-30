@@ -321,17 +321,18 @@ contract StakingWallet is Ownable {
 		lastActionIdsRWalk[tokenId] = -1;
 	}
 
-	function unstakeClaimRestake(uint256 stakeActionId, bool isRWalk, uint256 ETHDepositId) public  {
+	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public  {
 		// executes 3 actions in a single pass
 		//		1:		unstakes token using action [stakeActionId]
 		//		2:		claims reward corresponding to the deposit [ETHDepositId]
 		//		3:		stakes back the token
 		unstake(stakeActionId);
 		claimReward(stakeActionId,ETHDepositId);
-		stake(stakeActions[stakeActionId].tokenId,isRWalk);
+		bool isRandomWalk = stakeActions[stakeActionId].isRandomWalk;
+		stake(stakeActions[stakeActionId].tokenId,isRandomWalk);
 	}
 
-	function unstakeClaimRestakeMany(uint256[] memory unstake_actions, uint256[] memory stake_actions,bool[] memory areRandomWalk,uint256[] memory claim_actions, uint256[] memory claim_deposits) external {
+	function unstakeClaimRestakeMany(uint256[] memory unstake_actions, uint256[] memory stake_actions,uint256[] memory claim_actions, uint256[] memory claim_deposits) external {
 		for (uint256 i = 0; i < unstake_actions.length; i++) {
 			unstake(unstake_actions[i]);
 		}
@@ -340,7 +341,8 @@ contract StakingWallet is Ownable {
 				claimReward(claim_actions[i],claim_deposits[i]);
 		}
 		for (uint256 i = 0; i < stake_actions.length; i++) {
-			stake(stakeActions[stake_actions[i]].tokenId,areRandomWalk[i]);
+			bool isRandomWalk = stakeActions[stake_actions[i]].isRandomWalk;
+			stake(stakeActions[stake_actions[i]].tokenId,isRandomWalk);
 		}
 	}
 }
