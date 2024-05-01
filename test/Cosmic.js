@@ -611,6 +611,46 @@ describe("Cosmic Set1", function () {
 		await expect(cosmicGame.connect(owner).setRuntimeMode()).to.be.revertedWith(revertStr);
 		await cosmicGame.connect(owner).prepareMaintenance();
 	});
+	it("In maintenance mode, runtime-mode funtions are not available", async function () {
+		let runtimeMode = false;
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,runtimeMode);
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
+		let revertStr="System in maintenance mode";
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await expect(cosmicGame.bid(params, { value: bidPrice })).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.bidAndDonateNFT(params,owner.address,0, { value: bidPrice })).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.bidWithCST("")).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.claimPrize()).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.claimDonatedNFT(0)).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.claimManyDonatedNFTs([0])).to.be.revertedWith(revertStr);
+
+		await expect(owner.sendTransaction({ to: cosmicGame.address, value: bidPrice})).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.donate({value: bidPrice})).to.be.revertedWith(revertStr);
+
+		await expect(cosmicGame.proxyCall('0x11223344',[0])).to.be.revertedWith(revertStr);
+
+	});
 	it("BaseURI/TokenURI works", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
