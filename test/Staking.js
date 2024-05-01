@@ -895,7 +895,6 @@ describe("Staking tests", function () {
 		let newStakingWallet = await NewStakingWallet.deploy(newCosmicSignature.address,randomWalkNFT.address, owner.address,charityWallet.address);
         await newStakingWallet.deployed();
 
-		let own = await cosmicSignature.owner();
 		await newCosmicSignature.connect(owner).setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(owner).mint(owner.address, 0);
 		await newCosmicSignature.connect(owner).mint(owner.address, 0);
@@ -948,7 +947,6 @@ describe("Staking tests", function () {
 		let newStakingWallet = await NewStakingWallet.deploy(newCosmicSignature.address,randomWalkNFT.address, owner.address,charityWallet.address);
         await newStakingWallet.deployed();
 
-		let own = await cosmicSignature.owner();
 		await newCosmicSignature.connect(owner).setApprovalForAll(newStakingWallet.address, true);
 		await newCosmicSignature.connect(owner).mint(owner.address, 0);
 		await newCosmicSignature.connect(owner).mint(owner.address, 0);
@@ -978,4 +976,114 @@ describe("Staking tests", function () {
 		let twoEth = ethers.utils.parseEther("1");
 		expect(balDiff.gt(twoEth)).to.equal(true);
 	});
+	it("The random picking of winner from StakingWallet is really random", async function () {
+		let signers = await ethers.getSigners();
+		let owner = signers[0];
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+			bLogic,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.deployed();
+
+		const NewStakingWallet = await ethers.getContractFactory("StakingWallet");
+		let newStakingWallet = await NewStakingWallet.deploy(newCosmicSignature.address,randomWalkNFT.address, owner.address,charityWallet.address);
+        await newStakingWallet.deployed();
+
+		let numSigners = 20;
+		let numLoops = 20;
+		let randomSeed = 11235813; // fib
+		for (let i=0; i<numSigners; i++) {
+			let signer = signers[i];
+			await newCosmicSignature.connect(signer).setApprovalForAll(newStakingWallet.address, true);
+			await randomWalkNFT.connect(signer).setApprovalForAll(newStakingWallet.address, true);
+		}
+		for (let i=0; i<numSigners; i++) {
+			let signer = signers[i];
+			for (let j=0; j<numLoops; j++) {
+				await newCosmicSignature.connect(owner).mint(signer.address, 0);
+				let tokenId = i*numLoops+ j;
+				await newStakingWallet.connect(signer).stake(tokenId,false);
+			}
+		}
+		for (let i=0; i<numSigners; i++) {
+			let signer = signers[i];
+			for (let j=0; j<numLoops; j++) {
+				let mintPrice = await randomWalkNFT.getMintPrice();
+				await randomWalkNFT.connect(signer).mint({ value: mintPrice });
+				let tokenId = i*numLoops+ j;
+				await newStakingWallet.connect(signer).stake(tokenId,true);
+			}
+		}
+		// verification algorithm is simple: if from 400 staked tokens at least
+		// 1 staker is chosen (i.e. all stakers win at least 1 token)
+		// then we consider randomness works. Sample size is 100 (25% of the population)
+		{
+			let luckyStakers = {};
+			let numSamples = 100;
+			for (let i=0; i<numSamples; i++) {
+				let rand = randomSeed + i;
+				let bn = ethers.BigNumber.from(rand);
+				let hex = bn.toHexString(bn);
+				let hash = ethers.utils.keccak256(hex);
+				let luckyAddr = await newStakingWallet.pickRandomStakerCST(hash);
+				let numToks = luckyStakers[luckyAddr];
+				if (numToks === undefined) {
+					numToks = 0;
+				}
+				numToks = numToks + 1;
+				luckyStakers[luckyAddr] = numToks;
+			}
+			for (let i=0; i<numSigners; i++) {
+				let signer = signers[i];
+				let numToks = luckyStakers[signer.address];
+				let msg = "The raffle algorithm for holders is not random, staker "+signer.address;
+				if (numToks === undefined) {
+					throw msg;
+				}
+				if (numToks == 0) {
+					throw msg;
+				}
+			}
+		}
+		// Now the same process for RandomWalk verification
+		{
+			let luckyStakers = {};
+			let numSamples = 100;
+			for (let i=0; i<numSamples; i++) {
+				let rand = randomSeed + i;
+				let bn = ethers.BigNumber.from(rand);
+				let hex = bn.toHexString(bn);
+				let hash = ethers.utils.keccak256(hex);
+				let luckyAddr = await newStakingWallet.pickRandomStakerRWalk(hash);
+				let numToks = luckyStakers[luckyAddr];
+				if (numToks === undefined) {
+					numToks = 0;
+				}
+				numToks = numToks + 1;
+				luckyStakers[luckyAddr] = numToks;
+			}
+			for (let i=0; i<numSigners; i++) {
+				let signer = signers[i];
+				let numToks = luckyStakers[signer.address];
+				let msg = "The raffle algorithm for holders is not random, staker "+signer.address;
+				if (numToks === undefined) {
+					throw msg;
+				}
+				if (numToks == 0) {
+					throw msg;
+				}
+			}
+		}
+	})
 });
