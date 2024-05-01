@@ -34,10 +34,8 @@ task("deploy-local", "Deploys contracts to local network", async (args, hre) => 
 		config_params.activationTime,
 		config_params.charityAddr,
 		config_params.transferOwnership,
+		config_params.switchToRuntime,
 	);
-	let etherStr = "10";
-	let donationAmount = hre.ethers.utils.parseEther(etherStr);
-	await cosmicGame.connect(deployerAcct).donate({ value: donationAmount });
 	console.log("CosmicGame address:", cosmicGame.address);
 	console.log("CosmicToken address:", cosmicToken.address);
 	console.log("CosmicSignature address:", cosmicSignature.address);
@@ -46,7 +44,6 @@ task("deploy-local", "Deploys contracts to local network", async (args, hre) => 
 	console.log("RaffleWallet address:", raffleWallet.address);
 	console.log("BidLogic address:", bLogic.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
-	console.log("Donation of " + etherStr + " ETH complete");
 	console.log(
 		"INSERT INTO cg_contracts VALUES('" +
 			cosmicGame.address +
@@ -106,6 +103,7 @@ task("deploy-arbitrum", "Deploys contracts Arbitrum network", async (args, hre) 
 		config_params.activationTime,
 		config_params.charityAddr,
 		config_params.transferOwnership,
+		config_params.switchToRuntime,
 	);
 	console.log("CosmicGame address:", cosmicGame.address);
 	console.log("CosmicToken address:", cosmicToken.address);
