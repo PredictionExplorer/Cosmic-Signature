@@ -1,0 +1,9 @@
+
+Execute the following commands:
+
+	npx hardhat node
+	npx hardhat deploy-local --deployconfig deploy-config.json --network localhost
+	COSMIC_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./deploy-newlogic.js --network localhost
+	COSMIC_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./bid.js --network localhost
+
+Validation: bid operation should not fail (i.e. revert)

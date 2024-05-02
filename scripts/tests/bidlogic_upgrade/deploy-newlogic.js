@@ -21,11 +21,9 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGame = await getCosmicGameContract();
 	const OpenBusinessLogic = await ethers.getContractFactory("OpenBusinessLogic");
-	let newLogic = await OpenBusinessLogic .deploy();
+	let newLogic = await OpenBusinessLogic.deploy();
 	await cosmicGame.setBusinessLogicContract(newLogic.address);
-
-	let params = ethers.utils.defaultAbiCoder.encode(['uint256'],[ethers.BigNumber.from("3")]);
-	await cosmicGame.connect(testingAcct).proxyCall('0x57a23952',params, {gasLimit: 30000000 });
+	await cosmicGame.setRuntimeMode();
 
 	console.log("OpenBidLogic Address : "+newLogic.address);
 }
