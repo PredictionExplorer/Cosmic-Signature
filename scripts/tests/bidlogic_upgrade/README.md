@@ -26,3 +26,8 @@ In this example the `multiplier` variable is the `timesBidPrice` state variable 
 ### Configuration of `timesBidPrice` state variable
 
 Here the business logic upgrade occurs after the deployment of CosmicGame contract, therefore CosmicGame has no knowledge of new state variables declared in OpenBidLogic.sol contract. But because we have methods to update state variables via delegate call, this is possible to do. For more info check script files `gettimesbidprice.js` and `settimesbidprice.js` which are used to get/set this variable through CosmicGame contract.
+
+
+### Sample test case
+
+Check instructions in run-test.txt file to run a demo of BusinesLogic upgrade process

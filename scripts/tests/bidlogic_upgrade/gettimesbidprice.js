@@ -19,8 +19,7 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGame = await getCosmicGameContract();
-	//let times = await cosmicGame.proxyCall('0x2e629c7a',0);
-	let input = cosmicGame.interface.encodeFunctionData("proxyCall",['0x2e629c7a',0]);
+	let input = cosmicGame.interface.encodeFunctionData("proxyCall",['0xffc81d97',0]);
 	let message = await cosmicGame.provider.call({
 		to: cosmicGame.address,
 		data: input
