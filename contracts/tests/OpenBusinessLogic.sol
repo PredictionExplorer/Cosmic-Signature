@@ -62,7 +62,7 @@ contract OpenBusinessLogic is Context, Ownable {
 	OpenBusinessLogic public bLogic;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
-	uint256 timesBidPrice = 10; // multiples of bid price that open bid has to be
+	uint256 public timesBidPrice = 10; // multiples of bid price that open bid has to be
 
 	event BidEvent(
 		address indexed lastBidder,
@@ -433,8 +433,9 @@ contract OpenBusinessLogic is Context, Ownable {
 		}
 		emit DonationEvent(_msgSender(), msg.value);
 	}
-	function setTimesBidPrice(uint256 newTimesBidPrice) external onlyOwner {
-		timesBidPrice = newTimesBidPrice;
-		emit TimesBidPriceChangedEvent(newTimesBidPrice);
+	function setTimesBidPrice(bytes memory _data) external onlyOwner {
+		uint256 value = abi.decode(_data, (uint256));
+		timesBidPrice = value;
+		emit TimesBidPriceChangedEvent(value);
 	}
 }
