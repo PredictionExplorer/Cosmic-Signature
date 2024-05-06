@@ -6,6 +6,7 @@ import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../Constants.sol";
+import { RandomWalkNFT } from "../RandomWalkNFT.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {
@@ -44,8 +45,8 @@ contract BrokenStaker {
 	receive() external payable {
 		require(!blockDeposits,"I am not accepting deposits");
     }
-	function doStake(uint256 tokenId) external {
-		stakingWallet.stake(tokenId);
+	function doStake(uint256 tokenId,bool isRWalk) external {
+		stakingWallet.stake(tokenId,isRWalk);
 	}
 	function doUnstake(uint256 actionId) external {
 		stakingWallet.unstake(actionId);
@@ -109,24 +110,42 @@ contract SpecialCosmicGame is CosmicGame {
 }
 contract TestStakingWallet is StakingWallet {
 
-	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWallet(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, RandomWalkNFT rwalk_,CosmicGame game_, address charity_) StakingWallet(nft_,rwalk_, game_, charity_) {}
 	
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
-	function insertStaker(address staker) external {
-		require (!isStaker(staker),"Staker already in the list");
-		if (stakerIndices[staker] == 0) {
-			uniqueStakers.push(staker);
-			stakerIndices[staker] = uniqueStakers.length;
-		}
+	function insertTokenCST(uint256 tokenId,uint256 actionId) external {
+		require(!isTokenStakedCST(tokenId),"Token already in the list.");
+		stakedTokensCST.push(tokenId);
+		tokenIndicesCST[tokenId] = stakedTokensCST.length;
+		lastActionIdsCST[tokenId] = int256(actionId);
 	}
 
-	function removeStaker(address staker) external {
-		require (isStaker(staker),"Staker is not in the list");
-		uint256 index = stakerIndices[staker];
-		address lastStaker = uniqueStakers[uniqueStakers.length - 1];
-		uniqueStakers[index - 1] = lastStaker; // dev note: our indices do not start from 0
-		stakerIndices[lastStaker] = index;
-		delete stakerIndices[staker];
-		uniqueStakers.pop();
+	function removeTokenCST(uint256 tokenId) external {
+		require(isTokenStakedCST(tokenId),"Token is not in the list.");
+		uint256 index = tokenIndicesCST[tokenId];
+		uint256 lastTokenId = stakedTokensCST[stakedTokensCST.length - 1];
+		stakedTokensCST[index -1] = lastTokenId;
+		tokenIndicesCST[lastTokenId] = index;
+		delete tokenIndicesCST[tokenId];
+		stakedTokensCST.pop();
+		lastActionIdsCST[tokenId] = -1;
+	}
+
+	function insertTokenRWalk(uint256 tokenId,uint256 actionId) external {
+		require(!isTokenStakedRWalk(tokenId),"Token already in the list.");
+		stakedTokensRWalk.push(tokenId);
+		tokenIndicesRWalk[tokenId] = stakedTokensRWalk.length;
+		lastActionIdsRWalk[tokenId] = int256(actionId);
+	}
+
+	function removeTokenRWalk(uint256 tokenId) external {
+		require(isTokenStakedRWalk(tokenId),"Token is not in the list.");
+		uint256 index = tokenIndicesRWalk[tokenId];
+		uint256 lastTokenId = stakedTokensRWalk[stakedTokensRWalk.length - 1];
+		stakedTokensRWalk[index -1] = lastTokenId;
+		tokenIndicesRWalk[lastTokenId] = index;
+		delete tokenIndicesRWalk[tokenId];
+		stakedTokensRWalk.pop();
+		lastActionIdsRWalk[tokenId] = -1;
 	}
 }
