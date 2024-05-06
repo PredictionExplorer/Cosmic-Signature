@@ -145,7 +145,7 @@ describe("BusinessLogic", function () {
 		await cBidder.startBlockingDeposits();
 
 		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(cBidder.address, owner.address, cBidder.address);
+		let newStakingWallet = await StakingWallet.deploy(cBidder.address, randomWalkNFT.address, owner.address, cBidder.address);
 		await newStakingWallet.deployed();
 		await cosmicGame.setStakingWalletRaw(newStakingWallet.address);
 

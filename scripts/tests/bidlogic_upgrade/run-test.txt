@@ -1,0 +1,23 @@
+
+Execute the following commands:
+
+	cd [to this directory]
+	
+	#in another terminal run:
+	npx hardhat node
+
+	#in another terminal run all the remaining commands:
+	npx hardhat deploy-local --deployconfig deploy-config.json --network localhost
+
+	#deploy new BusinesLogic contract
+	COSMIC_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./deploy-newlogic.js --network localhost
+
+	#the new BusinessLogic contract uses new state variable, timesBidPrice, the default value is 0 (uninitialized) , we need to set it:
+	COSMIC_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./settimesbidprice.js --network localhost
+
+	#now we can use new biding way (bid can be as high as you want but bigger than current bidPrice * timesBidPrice
+	COSMIC_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./openbid.js --network localhost
+
+Validation: bid operation should not fail (i.e. revert) , in etl/cmd/cosmicgme/scripts run ./cginfo script to dump state variables and check the bid price
+
+Notes: if problems arrise, check the selectors (4 byte signatures) invoked by ProxyCall() method, they must be hardcoded within scripts (must be updated on very change in the contract because storage slots can move)
