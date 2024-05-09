@@ -11,9 +11,9 @@ contract StakingWallet is Ownable {
 	struct StakeAction {
 		uint256 tokenId;
 		address owner;
-		uint32 stakeTime;
-		uint32 unstakeTime;
-		uint32 unstakeEligibleTime;
+		uint256 stakeTime;
+		uint256 unstakeTime;
+		uint256 unstakeEligibleTime;
 		bool isRandomWalk;
 		mapping(uint256 => bool) depositClaimed;
 	}
@@ -44,7 +44,7 @@ contract StakingWallet is Ownable {
 	// TODO: figure out the invariant that is always true that includes the modulo.
 	//       It would be useful for testing.
 	uint256 public modulo;
-	uint32 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
+	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	CosmicSignature public nft;
 	RandomWalkNFT public randomWalk;
@@ -115,8 +115,8 @@ contract StakingWallet is Ownable {
 		stakeActions[numStakeActions].isRandomWalk = isRWalk;
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
-		stakeActions[numStakeActions].stakeTime = uint32(block.timestamp);
-		uint32 unstakeTime = uint32(block.timestamp) + minStakePeriod;
+		stakeActions[numStakeActions].stakeTime = block.timestamp;
+		uint256 unstakeTime = block.timestamp + minStakePeriod;
 		require(unstakeTime > block.timestamp, "Unstake time should be bigger than block timestamp");
 		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
 		numStakeActions += 1;
@@ -149,7 +149,7 @@ contract StakingWallet is Ownable {
 			_removeTokenCST(tokenId);
 			nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
 		}
-		stakeActions[stakeActionId].unstakeTime = uint32(block.timestamp);
+		stakeActions[stakeActionId].unstakeTime = block.timestamp;
 		numStakedNFTs -= 1;
 		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
 	}
@@ -196,7 +196,7 @@ contract StakingWallet is Ownable {
 		emit CharityUpdatedEvent(charity);
 	}
 
-	function setMinStakePeriod(uint32 newStakePeriod) external onlyOwner {
+	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
 		minStakePeriod = newStakePeriod;
 		emit MinStakePeriodChanged(newStakePeriod);
 	}
