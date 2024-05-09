@@ -29,10 +29,10 @@ contract StakingWallet is Ownable {
 
 	// Variables to manage uniquneness of tokens and pick random winner
 	uint256[] public stakedTokensCST;
-	mapping(uint256 => uint256) public tokenIndicesCST;	// tokenId -> tokenIndex
-	mapping(uint256 => int256) public lastActionIdsCST;	// tokenId -> actionId
+	mapping(uint256 => uint256) public tokenIndicesCST; // tokenId -> tokenIndex
+	mapping(uint256 => int256) public lastActionIdsCST; // tokenId -> actionId
 	uint256[] public stakedTokensRWalk;
-	mapping(uint256 => uint256) public tokenIndicesRWalk; // tokenId -> tokenIndex 
+	mapping(uint256 => uint256) public tokenIndicesRWalk; // tokenId -> tokenIndex
 	mapping(uint256 => int256) public lastActionIdsRWalk; // tokenId -> actionId
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
@@ -72,16 +72,16 @@ contract StakingWallet is Ownable {
 		uint256 amount,
 		uint256 modulo
 	);
-	event CharityDepositEvent(uint256 amount,address charityAddress); // emitted when numStakedNFTs = 0
+	event CharityDepositEvent(uint256 amount, address charityAddress); // emitted when numStakedNFTs = 0
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 	event MinStakePeriodChanged(uint256 newPeriod);
 	event ModuloSentEvent(uint256 amount);
 
 	constructor(CosmicSignature nft_, RandomWalkNFT rwalk_, CosmicGame game_, address charity_) {
-		require(address(nft_)!= address(0), "Zero-address was given for the nft.");
-		require(address(rwalk_)!= address(0), "Zero-address was given for the RandomWalk token.");
-		require(address(game_)!= address(0), "Zero-address was given for the game.");
-		require(charity_!= address(0), "Zero-address was given for charity.");
+		require(address(nft_) != address(0), "Zero-address was given for the nft.");
+		require(address(rwalk_) != address(0), "Zero-address was given for the RandomWalk token.");
+		require(address(game_) != address(0), "Zero-address was given for the game.");
+		require(charity_ != address(0), "Zero-address was given for charity.");
 		nft = nft_;
 		randomWalk = rwalk_;
 		game = game_;
@@ -93,7 +93,7 @@ contract StakingWallet is Ownable {
 		if (numStakedNFTs == 0) {
 			(bool success, ) = charity.call{ value: msg.value }("");
 			require(success, "Transfer to charity contract failed.");
-			emit CharityDepositEvent(msg.value,charity);
+			emit CharityDepositEvent(msg.value, charity);
 			return;
 		}
 		ETHDeposits[numETHDeposits].depositTime = block.timestamp;
@@ -104,21 +104,20 @@ contract StakingWallet is Ownable {
 		emit EthDepositEvent(block.timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
 	}
 
-	function stake(uint256 _tokenId,bool isRWalk) public {
-
+	function stake(uint256 _tokenId, bool isRWalk) public {
 		if (isRWalk) {
 			randomWalk.transferFrom(msg.sender, address(this), _tokenId);
-			_insertTokenRWalk(_tokenId,numStakeActions);
+			_insertTokenRWalk(_tokenId, numStakeActions);
 		} else {
 			nft.transferFrom(msg.sender, address(this), _tokenId);
-			_insertTokenCST(_tokenId,numStakeActions);
+			_insertTokenCST(_tokenId, numStakeActions);
 		}
 		stakeActions[numStakeActions].isRandomWalk = isRWalk;
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = uint32(block.timestamp);
 		uint32 unstakeTime = uint32(block.timestamp) + minStakePeriod;
-		require(unstakeTime > block.timestamp,"Unstake time should be bigger than block timestamp");
+		require(unstakeTime > block.timestamp, "Unstake time should be bigger than block timestamp");
 		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
@@ -132,9 +131,9 @@ contract StakingWallet is Ownable {
 		);
 	}
 
-	function stakeMany(uint256[] memory ids,bool[] memory areRandomWalk) external {
+	function stakeMany(uint256[] memory ids, bool[] memory areRandomWalk) external {
 		for (uint256 i = 0; i < ids.length; i++) {
-			stake(ids[i],areRandomWalk[i]);
+			stake(ids[i], areRandomWalk[i]);
 		}
 	}
 
@@ -162,8 +161,8 @@ contract StakingWallet is Ownable {
 	}
 
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
-		require(stakeActionId<numStakeActions,"Invalid stakeActionId.");
-		require(ETHDepositId<numETHDeposits,"Invalid ETHDepositId.");
+		require(stakeActionId < numStakeActions, "Invalid stakeActionId.");
+		require(ETHDepositId < numETHDeposits, "Invalid ETHDepositId.");
 		require(stakeActions[stakeActionId].unstakeTime > 0, "Token has not been unstaked.");
 		require(!stakeActions[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already.");
 		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can claim reward.");
@@ -203,12 +202,11 @@ contract StakingWallet is Ownable {
 	}
 
 	function moduloToCharity() external onlyOwner {
-
 		uint256 amount;
 		amount = modulo;
-		require(amount>0,"Modulo is zero.");
+		require(amount > 0, "Modulo is zero.");
 		modulo = 0;
-		(bool success, ) = charity.call{ value: amount}("");
+		(bool success, ) = charity.call{ value: amount }("");
 		require(success, "Transfer to charity failed.");
 		emit ModuloSentEvent(amount);
 	}
@@ -230,12 +228,12 @@ contract StakingWallet is Ownable {
 	}
 
 	function tokenByIndexCST(uint256 tokenIndex) public view returns (uint256) {
-		require(tokenIndex > 0,"Zero was given, token indices start from 1");
+		require(tokenIndex > 0, "Zero was given, token indices start from 1");
 		return tokenIndicesCST[tokenIndex];
 	}
 
 	function tokenByIndexRWalk(uint256 tokenIndex) public view returns (uint256) {
-		require(tokenIndex > 0,"Zero was given, token indices start from 1");
+		require(tokenIndex > 0, "Zero was given, token indices start from 1");
 		return tokenIndicesRWalk[tokenIndex];
 	}
 
@@ -245,7 +243,7 @@ contract StakingWallet is Ownable {
 			return -2;
 		}
 		int256 lastActionId = lastActionIdsCST[tokenId];
-		return lastActionId;	// will return -1 if token is not staked, > -1 if there is an ID
+		return lastActionId; // will return -1 if token is not staked, > -1 if there is an ID
 	}
 
 	function lastActionIdByTokenIdRWalk(uint256 tokenId) public view returns (int256) {
@@ -254,12 +252,12 @@ contract StakingWallet is Ownable {
 			return -2;
 		}
 		int256 lastActionId = lastActionIdsRWalk[tokenId];
-		return lastActionId;	// will return -1 if token is not staked, > -1 if there is an ID
+		return lastActionId; // will return -1 if token is not staked, > -1 if there is an ID
 	}
 
-	function stakerByTokenId(uint256 tokenId,bool isRandomWalk) public view returns (address) {
+	function stakerByTokenId(uint256 tokenId, bool isRandomWalk) public view returns (address) {
 		int256 actionId;
-	   	if (isRandomWalk) {
+		if (isRandomWalk) {
 			actionId = lastActionIdByTokenIdRWalk(tokenId);
 		} else {
 			actionId = lastActionIdByTokenIdCST(tokenId);
@@ -272,77 +270,82 @@ contract StakingWallet is Ownable {
 	}
 
 	function pickRandomStakerCST(bytes32 entropy) public view returns (address) {
-		require(stakedTokensCST.length>0,"There are no CST tokens staked.");
+		require(stakedTokensCST.length > 0, "There are no CST tokens staked.");
 		uint256 luckyTokenId = stakedTokensCST[uint256(entropy) % stakedTokensCST.length];
 		int256 actionId = lastActionIdsCST[luckyTokenId];
 		return stakeActions[uint256(actionId)].owner;
 	}
 
 	function pickRandomStakerRWalk(bytes32 entropy) public view returns (address) {
-		require(stakedTokensRWalk.length>0,"There are no RandomWalk tokens staked.");
+		require(stakedTokensRWalk.length > 0, "There are no RandomWalk tokens staked.");
 		uint256 luckyTokenId = stakedTokensRWalk[uint256(entropy) % stakedTokensRWalk.length];
 		int256 actionId = lastActionIdsRWalk[luckyTokenId];
 		return stakeActions[uint256(actionId)].owner;
 	}
 
-	function _insertTokenCST(uint256 tokenId,uint256 actionId) internal {
-		require(!isTokenStakedCST(tokenId),"Token already in the list.");
+	function _insertTokenCST(uint256 tokenId, uint256 actionId) internal {
+		require(!isTokenStakedCST(tokenId), "Token already in the list.");
 		stakedTokensCST.push(tokenId);
 		tokenIndicesCST[tokenId] = stakedTokensCST.length;
 		lastActionIdsCST[tokenId] = int256(actionId);
 	}
 
 	function _removeTokenCST(uint256 tokenId) internal {
-		require(isTokenStakedCST(tokenId),"Token is not in the list.");
+		require(isTokenStakedCST(tokenId), "Token is not in the list.");
 		uint256 index = tokenIndicesCST[tokenId];
 		uint256 lastTokenId = stakedTokensCST[stakedTokensCST.length - 1];
-		stakedTokensCST[index -1] = lastTokenId;
+		stakedTokensCST[index - 1] = lastTokenId;
 		tokenIndicesCST[lastTokenId] = index;
 		delete tokenIndicesCST[tokenId];
 		stakedTokensCST.pop();
 		lastActionIdsCST[tokenId] = -1;
 	}
 
-	function _insertTokenRWalk(uint256 tokenId,uint256 actionId) internal {
-		require(!isTokenStakedRWalk(tokenId),"Token already in the list.");
+	function _insertTokenRWalk(uint256 tokenId, uint256 actionId) internal {
+		require(!isTokenStakedRWalk(tokenId), "Token already in the list.");
 		stakedTokensRWalk.push(tokenId);
 		tokenIndicesRWalk[tokenId] = stakedTokensRWalk.length;
 		lastActionIdsRWalk[tokenId] = int256(actionId);
 	}
 
 	function _removeTokenRWalk(uint256 tokenId) internal {
-		require(isTokenStakedRWalk(tokenId),"Token is not in the list.");
+		require(isTokenStakedRWalk(tokenId), "Token is not in the list.");
 		uint256 index = tokenIndicesRWalk[tokenId];
 		uint256 lastTokenId = stakedTokensRWalk[stakedTokensRWalk.length - 1];
-		stakedTokensRWalk[index -1] = lastTokenId;
+		stakedTokensRWalk[index - 1] = lastTokenId;
 		tokenIndicesRWalk[lastTokenId] = index;
 		delete tokenIndicesRWalk[tokenId];
 		stakedTokensRWalk.pop();
 		lastActionIdsRWalk[tokenId] = -1;
 	}
 
-	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public  {
+	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public {
 		// executes 3 actions in a single pass
 		//		1:		unstakes token using action [stakeActionId]
 		//		2:		claims reward corresponding to the deposit [ETHDepositId]
 		//		3:		stakes back the token
 		unstake(stakeActionId);
-		claimReward(stakeActionId,ETHDepositId);
+		claimReward(stakeActionId, ETHDepositId);
 		bool isRandomWalk = stakeActions[stakeActionId].isRandomWalk;
-		stake(stakeActions[stakeActionId].tokenId,isRandomWalk);
+		stake(stakeActions[stakeActionId].tokenId, isRandomWalk);
 	}
 
-	function unstakeClaimRestakeMany(uint256[] memory unstake_actions, uint256[] memory stake_actions,uint256[] memory claim_actions, uint256[] memory claim_deposits) external {
+	function unstakeClaimRestakeMany(
+		uint256[] memory unstake_actions,
+		uint256[] memory stake_actions,
+		uint256[] memory claim_actions,
+		uint256[] memory claim_deposits
+	) external {
 		for (uint256 i = 0; i < unstake_actions.length; i++) {
 			unstake(unstake_actions[i]);
 		}
 		require(claim_actions.length == claim_deposits.length, "Claim array arguments must be of the same length.");
 		for (uint256 i = 0; i < claim_actions.length; i++) {
-				claimReward(claim_actions[i],claim_deposits[i]);
+			claimReward(claim_actions[i], claim_deposits[i]);
 		}
 		for (uint256 i = 0; i < stake_actions.length; i++) {
 			bool isRandomWalk = stakeActions[stake_actions[i]].isRandomWalk;
-			stake(stakeActions[stake_actions[i]].tokenId,isRandomWalk);
+			stake(stakeActions[stake_actions[i]].tokenId, isRandomWalk);
 		}
 	}
 }

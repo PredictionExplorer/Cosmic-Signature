@@ -13,7 +13,7 @@ library CosmicGameConstants {
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 2 * 3600;
 	uint32 public constant DEFAULT_MIN_STAKE_PERIOD = 3600 * 24 * 30; // 30 days
 	uint256 public constant MODE_RUNTIME = 0;
-	uint256 public constant MODE_PREPARE_MAINTENANCE = 1 ;
+	uint256 public constant MODE_PREPARE_MAINTENANCE = 1;
 	uint256 public constant MODE_MAINTENANCE = 2;
 
 	string public constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE";

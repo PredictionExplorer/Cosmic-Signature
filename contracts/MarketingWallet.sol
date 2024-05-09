@@ -12,7 +12,7 @@ contract MarketingWallet is Ownable {
 	event CosmicTokenAddressChanged(address newCosmicToken);
 
 	constructor(CosmicToken token_) {
-		require(address(token_)!= address(0), "Zero-address was given.");
+		require(address(token_) != address(0), "Zero-address was given.");
 		token = token_;
 	}
 
