@@ -6,7 +6,8 @@ import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
-import { StakingWallet } from "../StakingWallet.sol";
+import { StakingWalletCST } from "../StakingWalletCST.sol";
+import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
 import { MarketingWallet } from "../MarketingWallet.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
 import { BusinessLogic } from "../BusinessLogic.sol";
@@ -104,13 +105,13 @@ contract BLTest is BusinessLogic {
 		stakingPercentage = DEFAULT_VALUE;
 	}
 	function f29() external {
-		numRaffleWinnersPerRound = DEFAULT_VALUE;
+		numRaffleETHWinnersBidding = DEFAULT_VALUE;
 	}
 	function f30() external {
-		numRaffleNFTWinnersPerRound = DEFAULT_VALUE;
+		numRaffleNFTWinnersBidding= DEFAULT_VALUE;
 	}
 	function f31() external {
-		numHolderNFTWinnersPerRound = DEFAULT_VALUE;
+		numRaffleNFTWinnersStakingCST = DEFAULT_VALUE;
 	}
 	function f32() external {
 		winners[DEFAULT_INDEX] = DEFAULT_ADDRESS;
@@ -122,7 +123,7 @@ contract BLTest is BusinessLogic {
 		raffleWallet = RaffleWallet(DEFAULT_ADDRESS);
 	}
 	function f35() external {
-		stakingWallet = StakingWallet(DEFAULT_ADDRESS);
+		stakingWalletCST = StakingWalletCST(DEFAULT_ADDRESS);
 	}
 	function f36() external {
 		donatedNFTs[DEFAULT_INDEX].round = DEFAULT_VALUE;
@@ -141,6 +142,12 @@ contract BLTest is BusinessLogic {
 	}
 	function f41() external {
 		systemMode = DEFAULT_VALUE;
+	}
+	function f42() external {
+		stakingWalletRWalk = StakingWalletRWalk(DEFAULT_ADDRESS);
+	}
+	function f43() external {
+		numRaffleNFTWinnersStakingRWalk = DEFAULT_VALUE;
 	}
 }
 
@@ -311,6 +318,14 @@ contract CGTest is CosmicGame {
 	}
 	function f41() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f41.selector));
+		require(success, "Delegate call execution failed.");
+	}
+	function f42() external {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f42.selector));
+		require(success, "Delegate call execution failed.");
+	}
+	function f43() external {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f43.selector));
 		require(success, "Delegate call execution failed.");
 	}
 }

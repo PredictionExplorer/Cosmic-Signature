@@ -8,7 +8,8 @@ import { CosmicGameConstants } from "./Constants.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
-import { StakingWallet } from "./StakingWallet.sol";
+import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { BusinessLogic } from "./BusinessLogic.sol";
@@ -66,11 +67,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	uint256 public stakingPercentage = 10;
 
-	uint256 public numRaffleWinnersPerRound = 3;
-
-	uint256 public numRaffleNFTWinnersPerRound = 5;
-
-	uint256 public numHolderNFTWinnersPerRound = 2;
+	uint256 public numRaffleETHWinnersBidding = 3;
+	uint256 public numRaffleNFTWinnersBidding = 5;
+	uint256 public numRaffleNFTWinnersStakingCST = 2 ;
+	uint256 public numRaffleNFTWinnersStakingRWalk = 2;
 
 	mapping(uint256 => address) public winners;
 
@@ -79,7 +79,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	RaffleWallet public raffleWallet;
 
-	StakingWallet public stakingWallet;
+	StakingWalletRWalk public stakingWalletRWalk;
+	StakingWalletCST public stakingWalletCST;
 
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
@@ -108,11 +109,18 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 tokenId,
 		uint256 index
 	);
+	event RaffleETHWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 winnerIndex
+	);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
 		uint256 indexed tokenId,
-		uint256 winnerIndex
+		uint256 winnerIndex,
+		bool isStaker,
+		bool isRWalk
 	);
 	event DonatedNFTClaimedEvent(
 		uint256 indexed round,
@@ -127,13 +135,15 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event PrizePercentageChanged(uint256 newPrizePercentage);
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 	event StakingPercentageChanged(uint256 newStakingPercentage);
-	event NumRaffleWinnersPerRoundChanged(uint256 newNumRaffleWinnersPerRound);
-	event NumRaffleNFTWinnersPerRoundChanged(uint256 newNumRaffleNFTWinnersPerRound);
-	event NumHolderNFTWinnersPerRoundChanged(uint256 newNumHolderNFTWinnersPerRound);
+	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
+	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
+	event NumRaffleNFTWinnersStakingCSTChanged(uint256 newNumRaffleNFTWinnersStakingCST);
+	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
 	event CharityAddressChanged(address newCharity);
 	event RandomWalkAddressChanged(address newRandomWalk);
 	event RaffleWalletAddressChanged(address newRaffleWallet);
-	event StakingWalletAddressChanged(address newStakingWallet);
+	event StakingWalletCSTAddressChanged(address newStakingWalletCST);
+	event StakingWalletRWalkAddressChanged(address newStakingWalletRWalk);
 	event MarketingWalletAddressChanged(address newMarketingWallet);
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
@@ -313,11 +323,18 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit RaffleWalletAddressChanged(addr);
 	}
 
-	function setStakingWallet(address addr) external onlyOwner {
+	function setStakingWalletCST(address addr) external onlyOwner {
 		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		require(addr != address(0), "Zero-address was given.");
-		stakingWallet = StakingWallet(addr);
-		emit StakingWalletAddressChanged(addr);
+		stakingWalletCST = StakingWalletCST(addr);
+		emit StakingWalletCSTAddressChanged(addr);
+	}
+
+	function setStakingWalletRWalk(address addr) external onlyOwner {
+		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
+		require(addr != address(0), "Zero-address was given.");
+		stakingWalletRWalk = StakingWalletRWalk(addr);
+		emit StakingWalletRWalkAddressChanged(addr);
 	}
 
 	function setMarketingWallet(address addr) external onlyOwner {
@@ -327,22 +344,28 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit MarketingWalletAddressChanged(addr);
 	}
 
-	function setNumRaffleWinnersPerRound(uint256 newNumRaffleWinnersPerRound) external onlyOwner {
+	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external onlyOwner {
 		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
-		numRaffleWinnersPerRound = newNumRaffleWinnersPerRound;
-		emit NumRaffleWinnersPerRoundChanged(numRaffleWinnersPerRound);
+		numRaffleETHWinnersBidding = newNumRaffleETHWinnersBidding;
+		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
 	}
 
-	function setNumRaffleNFTWinnersPerRound(uint256 newNumRaffleNFTWinnersPerRound) external onlyOwner {
+	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external onlyOwner {
 		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
-		numRaffleNFTWinnersPerRound = newNumRaffleNFTWinnersPerRound;
-		emit NumRaffleNFTWinnersPerRoundChanged(numRaffleNFTWinnersPerRound);
+		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
+		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
 	}
 
-	function setNumHolderNFTWinnersPerRound(uint256 newNumHolderNFTWinnersPerRound) external onlyOwner {
+	function setNumRaffleNFTWinnersStakingCST(uint256 newNumRaffleNFTWinnersStakingCST) external onlyOwner {
 		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
-		numHolderNFTWinnersPerRound = newNumHolderNFTWinnersPerRound;
-		emit NumHolderNFTWinnersPerRoundChanged(numHolderNFTWinnersPerRound);
+		numRaffleNFTWinnersStakingCST = newNumRaffleNFTWinnersStakingCST;
+		emit NumRaffleNFTWinnersStakingCSTChanged(numRaffleNFTWinnersStakingCST);
+	}
+
+	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external onlyOwner {
+		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
+		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
+		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
 	}
 
 	function setPrizePercentage(uint256 newPrizePercentage) external onlyOwner {

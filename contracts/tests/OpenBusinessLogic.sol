@@ -12,7 +12,8 @@ import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
-import { StakingWallet } from "../StakingWallet.sol";
+import { StakingWalletCST } from "../StakingWalletCST.sol";
+import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
 import { MarketingWallet } from "../MarketingWallet.sol";
 
 // This is a sample upgrade contract for a hypothetical case where users
@@ -49,13 +50,16 @@ contract OpenBusinessLogic is Context, Ownable {
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
 	uint256 public stakingPercentage;
-	uint256 public numRaffleWinnersPerRound;
-	uint256 public numRaffleNFTWinnersPerRound;
-	uint256 public numHolderNFTWinnersPerRound;
+	uint256 public numRaffleETHWinnersBidding;
+	uint256 public numRaffleNFTWinnersBidding;
+	uint256 public numRaffleNFTWinnersStakingCST;
+	uint256 public numRaffleNFTWinnersStakingRWalk;
+
 	mapping(uint256 => address) public winners;
 	bytes32 public raffleEntropy;
 	RaffleWallet public raffleWallet;
-	StakingWallet public stakingWallet;
+	StakingWalletCST public stakingWalletCST;
+	StakingWalletRWalk public stakingWalletRWalk;
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
 	CosmicSignature public nft;
@@ -75,11 +79,18 @@ contract OpenBusinessLogic is Context, Ownable {
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
+	event RaffleETHWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 winnerIndex
+	);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
 		uint256 indexed tokenId,
-		uint256 winnerIndex
+		uint256 winnerIndex,
+		bool isStaker,
+		bool isRWalk
 	);
 	event NFTDonationEvent(
 		address indexed donor,
@@ -101,12 +112,12 @@ contract OpenBusinessLogic is Context, Ownable {
 	struct BidParams {
 		string message;
 		int256 randomWalkNFTId;
-		bool openBid;		// true if the value sent with the TX is the amount of bid
+		bool openBid; // true if the value sent with the TX is the amount of bid
 	}
 
 	constructor() {}
 	function bid(bytes memory _param_data) public payable {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		BidParams memory params = abi.decode(_param_data, (BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
@@ -134,7 +145,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		if (bidType == CosmicGameConstants.BidType.RandomWalk) {
 			if (params.openBid) {
 				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
-				require(msg.value >= minPriceOpenBid,"The value submitted for open bid is too low.");
+				require(msg.value >= minPriceOpenBid, "The value submitted for open bid is too low.");
 				paidBidPrice = msg.value;
 			} else {
 				require(msg.value >= newBidPrice, "The value submitted for this transaction is too low.");
@@ -148,7 +159,7 @@ contract OpenBusinessLogic is Context, Ownable {
 			bidPrice = msg.value;
 		} else {
 			bidPrice = newBidPrice;
- 		}
+		}
 
 		_bidCommon(params.message, bidType);
 
@@ -172,7 +183,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		);
 	}
 	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
@@ -220,7 +231,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		_pushBackPrizeTime();
 	}
 	function bidWithCST(string memory message) external {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		uint256 price = abi.decode(currentCSTPrice(), (uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
@@ -254,7 +265,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		//     - 10% to the charity
 		//     - 15% to the raffle winner
 
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		CosmicGame game = CosmicGame(payable(address(this)));
 		require(prizeTime <= block.timestamp, "Not enough time has elapsed.");
 		require(lastBidder != address(0), "There is no last bidder.");
@@ -279,8 +290,8 @@ contract OpenBusinessLogic is Context, Ownable {
 
 		bool success;
 		if (cosmicSupply > 0) {
-			(success, ) = address(stakingWallet).call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWallet.deposit.selector)
+			(success, ) = address(stakingWalletCST).call{ value: stakingAmount_ }(
+				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
 			);
 			require(success, "Staking deposit failed.");
 		}
@@ -294,43 +305,50 @@ contract OpenBusinessLogic is Context, Ownable {
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
 
-		// Give NFTs to the NFT raffle winners.
-		for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
+		// List of rewards (summary) for those who didn't win the main prize:
+		//	- Group deposit (equal to stakingPercentage) for all Stakers of CST tokens
+		//	- [numRaffleEthWinnersForBidding] ETH deposits for random bidder
+		//	- [numRaffleNFTWinnersForBidding] NFT mints for random bidder
+		//	- [numRaffleNFTWinnersForStakingCST] NFT mints for random staker of CST token
+		//	- [numRaffleNFTWinnersForStakingRWalk] NFT mints for random staker or RandomWalk token
+
+		// Give NFTs to bidders
+		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
-			emit RaffleNFTWinnerEvent(raffleWinner_, roundNum, tokenId, winnerIndex);
+			emit RaffleNFTWinnerEvent(raffleWinner_, roundNum, tokenId, winnerIndex, false, false);
 			winnerIndex += 1;
 		}
 
-		// Give rafle tokens to random RandomWalkNFT stakers
-		uint numStakedTokensRWalk = stakingWallet.numTokensStakedRWalk();
+		// Give NFTs to random RandomWalkNFT stakers
+		uint numStakedTokensRWalk = stakingWalletRWalk.numTokensStaked();
 		if (numStakedTokensRWalk > 0) {
-			for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
+			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateEntropy();
-				address rwalkWinner = stakingWallet.pickRandomStakerRWalk(raffleEntropy);
+				address rwalkWinner = stakingWalletRWalk.pickRandomStaker(raffleEntropy);
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, rwalkWinner, roundNum)
 				);
 				uint256 tokenId = abi.decode(data, (uint256));
-				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex);
+				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex, true, true);
 				winnerIndex += 1;
 			}
 		}
 		// Give raffle tokens to random CosmicSignature NFT stakers
-		uint numStakedTokensCST  = stakingWallet.numTokensStakedCST();
+		uint numStakedTokensCST = stakingWalletCST.numTokensStaked();
 		if (numStakedTokensCST > 0) {
-			for (uint256 i = 0; i < numHolderNFTWinnersPerRound;i++) {
+			for (uint256 i = 0; i < numRaffleNFTWinnersStakingCST; i++) {
 				_updateEntropy();
-				address cosmicWinner = stakingWallet.pickRandomStakerCST(raffleEntropy);
+				address cosmicWinner = stakingWalletCST.pickRandomStaker(raffleEntropy);
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, cosmicWinner, roundNum)
 				);
 				uint256 tokenId = abi.decode(data, (uint256));
-				emit RaffleNFTWinnerEvent(cosmicWinner, roundNum, tokenId, winnerIndex);
+				emit RaffleNFTWinnerEvent(cosmicWinner, roundNum, tokenId, winnerIndex, true, false);
 				winnerIndex += 1;
 			}
 		}
@@ -344,13 +362,14 @@ contract OpenBusinessLogic is Context, Ownable {
 		require(success, "Transfer to charity contract failed.");
 
 		// Give ETH to the ETH raffle winners.
-		for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
+		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
 			(success, ) = address(raffleWallet).call{ value: raffleAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
 			);
 			require(success, "Raffle deposit failed.");
+			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex);
 		}
 
 		_roundEndResets();
@@ -393,7 +412,7 @@ contract OpenBusinessLogic is Context, Ownable {
 
 	// Claiming donated NFTs
 	function claimDonatedNFT(uint256 num) public {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		require(num < numDonatedNFTs, "The donated NFT does not exist.");
 		address winner = winners[donatedNFTs[num].round];
 		require(winner != address(0), "Non-existent winner for the round.");
@@ -410,13 +429,13 @@ contract OpenBusinessLogic is Context, Ownable {
 	}
 
 	function claimManyDonatedNFTs(uint256[] memory tokens) external {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		for (uint256 i = 0; i < tokens.length; i++) {
 			claimDonatedNFT(tokens[i]);
 		}
 	}
 	function receiveEther() external payable {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		OpenBusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
@@ -425,7 +444,7 @@ contract OpenBusinessLogic is Context, Ownable {
 		bid(param_data);
 	}
 	function donate() external payable {
-		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE,CosmicGameConstants.ERR_STR_MODE_RUNTIME);
+		require(systemMode < CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_RUNTIME);
 		require(msg.value > 0, "Donation amount must be greater than 0.");
 		if (block.timestamp < activationTime) {
 			// Set the initial bid prize only if the game has not started yet.
