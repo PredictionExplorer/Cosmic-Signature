@@ -25,7 +25,7 @@ contract BidderContract is IERC721Receiver {
 		creator = msg.sender;
 	}
 	receive() external payable {
-		require(!blockDeposits,"I am not accepting deposits");
+		require(!blockDeposits, "I am not accepting deposits");
 	}
 	function doBid() external payable {
 		uint256 price = cosmicGame.getBidPrice();
@@ -42,7 +42,7 @@ contract BidderContract is IERC721Receiver {
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
-		cosmicGame.bid{ value: msg.value}(param_data);
+		cosmicGame.bid{ value: msg.value }(param_data);
 	}
 	function doBidRWalk(int256 tokenId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
@@ -56,13 +56,13 @@ contract BidderContract is IERC721Receiver {
 	function doBidRWalk2(int256 tokenId) external payable {
 		RandomWalkNFT rwalk = cosmicGame.randomWalk();
 		rwalk.setApprovalForAll(address(cosmicGame), true);
-		rwalk.transferFrom( msg.sender,address(this), uint256(tokenId));
+		rwalk.transferFrom(msg.sender, address(this), uint256(tokenId));
 		BusinessLogic.BidParams memory params;
 		params.message = "contract bid rwalk";
 		params.randomWalkNFTId = tokenId;
 		bytes memory param_data;
 		param_data = abi.encode(params);
-		cosmicGame.bid{ value: msg.value}(param_data);
+		cosmicGame.bid{ value: msg.value }(param_data);
 	}
 	function doBidAndDonate(address nftAddress, uint256 tokenId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame), true);

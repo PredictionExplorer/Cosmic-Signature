@@ -5,16 +5,14 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./Constants.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
-contract StakingWallet is Ownable {
+contract StakingWalletCST is Ownable {
 	struct StakeAction {
 		uint256 tokenId;
 		address owner;
 		uint256 stakeTime;
 		uint256 unstakeTime;
 		uint256 unstakeEligibleTime;
-		bool isRandomWalk;
 		mapping(uint256 => bool) depositClaimed;
 	}
 
@@ -28,12 +26,9 @@ contract StakingWallet is Ownable {
 	uint256 public numStakeActions;
 
 	// Variables to manage uniquneness of tokens and pick random winner
-	uint256[] public stakedTokensCST;
-	mapping(uint256 => uint256) public tokenIndicesCST; // tokenId -> tokenIndex
-	mapping(uint256 => int256) public lastActionIdsCST; // tokenId -> actionId
-	uint256[] public stakedTokensRWalk;
-	mapping(uint256 => uint256) public tokenIndicesRWalk; // tokenId -> tokenIndex
-	mapping(uint256 => int256) public lastActionIdsRWalk; // tokenId -> actionId
+	uint256[] public stakedTokens;
+	mapping(uint256 => uint256) public tokenIndices; // tokenId -> tokenIndex
+	mapping(uint256 => int256) public lastActionIds; // tokenId -> actionId
 
 	mapping(uint256 => ETHDeposit) public ETHDeposits;
 	uint256 public numETHDeposits;
@@ -47,7 +42,6 @@ contract StakingWallet is Ownable {
 	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	CosmicSignature public nft;
-	RandomWalkNFT public randomWalk;
 	CosmicGame public game;
 
 	event StakeActionEvent(
@@ -55,8 +49,7 @@ contract StakingWallet is Ownable {
 		uint256 indexed tokenId,
 		uint256 totalNFTs,
 		uint256 unstakeTime,
-		address indexed staker,
-		bool isRandomWalkToken
+		address indexed staker
 	);
 	event UnstakeActionEvent(
 		uint256 indexed actionId,
@@ -77,13 +70,11 @@ contract StakingWallet is Ownable {
 	event MinStakePeriodChanged(uint256 newPeriod);
 	event ModuloSentEvent(uint256 amount);
 
-	constructor(CosmicSignature nft_, RandomWalkNFT rwalk_, CosmicGame game_, address charity_) {
+	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
 		require(address(nft_) != address(0), "Zero-address was given for the nft.");
-		require(address(rwalk_) != address(0), "Zero-address was given for the RandomWalk token.");
 		require(address(game_) != address(0), "Zero-address was given for the game.");
 		require(charity_ != address(0), "Zero-address was given for charity.");
 		nft = nft_;
-		randomWalk = rwalk_;
 		game = game_;
 		charity = charity_;
 	}
@@ -104,15 +95,9 @@ contract StakingWallet is Ownable {
 		emit EthDepositEvent(block.timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
 	}
 
-	function stake(uint256 _tokenId, bool isRWalk) public {
-		if (isRWalk) {
-			randomWalk.transferFrom(msg.sender, address(this), _tokenId);
-			_insertTokenRWalk(_tokenId, numStakeActions);
-		} else {
-			nft.transferFrom(msg.sender, address(this), _tokenId);
-			_insertTokenCST(_tokenId, numStakeActions);
-		}
-		stakeActions[numStakeActions].isRandomWalk = isRWalk;
+	function stake(uint256 _tokenId) public {
+		nft.transferFrom(msg.sender, address(this), _tokenId);
+		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
@@ -126,14 +111,13 @@ contract StakingWallet is Ownable {
 			_tokenId,
 			numStakedNFTs,
 			stakeActions[numStakeActions - 1].unstakeEligibleTime,
-			msg.sender,
-			isRWalk
+			msg.sender
 		);
 	}
 
-	function stakeMany(uint256[] memory ids, bool[] memory areRandomWalk) external {
+	function stakeMany(uint256[] memory ids) external {
 		for (uint256 i = 0; i < ids.length; i++) {
-			stake(ids[i], areRandomWalk[i]);
+			stake(ids[i]);
 		}
 	}
 
@@ -142,13 +126,8 @@ contract StakingWallet is Ownable {
 		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can unstake.");
 		require(stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet.");
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
-		if (stakeActions[stakeActionId].isRandomWalk) {
-			_removeTokenRWalk(tokenId);
-			randomWalk.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
-		} else {
-			_removeTokenCST(tokenId);
-			nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
-		}
+		_removeToken(tokenId);
+		nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
 		stakeActions[stakeActionId].unstakeTime = block.timestamp;
 		numStakedNFTs -= 1;
 		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
@@ -211,57 +190,31 @@ contract StakingWallet is Ownable {
 		emit ModuloSentEvent(amount);
 	}
 
-	function isTokenStakedCST(uint256 tokenId) public view returns (bool) {
-		return tokenIndicesCST[tokenId] != 0;
+	function isTokenStaked(uint256 tokenId) public view returns (bool) {
+		return tokenIndices[tokenId] != 0;
 	}
 
-	function isTokenStakedRWalk(uint256 tokenId) public view returns (bool) {
-		return tokenIndicesRWalk[tokenId] != 0;
+	function numTokensStaked() public view returns (uint256) {
+		return stakedTokens.length;
 	}
 
-	function numTokensStakedCST() public view returns (uint256) {
-		return stakedTokensCST.length;
-	}
-
-	function numTokensStakedRWalk() public view returns (uint256) {
-		return stakedTokensRWalk.length;
-	}
-
-	function tokenByIndexCST(uint256 tokenIndex) public view returns (uint256) {
+	function tokenByIndex(uint256 tokenIndex) public view returns (uint256) {
 		require(tokenIndex > 0, "Zero was given, token indices start from 1");
-		return tokenIndicesCST[tokenIndex];
+		return tokenIndices[tokenIndex];
 	}
 
-	function tokenByIndexRWalk(uint256 tokenIndex) public view returns (uint256) {
-		require(tokenIndex > 0, "Zero was given, token indices start from 1");
-		return tokenIndicesRWalk[tokenIndex];
-	}
-
-	function lastActionIdByTokenIdCST(uint256 tokenId) public view returns (int256) {
-		uint256 tokenIndex = tokenIndicesCST[tokenId];
+	function lastActionIdByTokenId(uint256 tokenId) public view returns (int256) {
+		uint256 tokenIndex = tokenIndices[tokenId];
 		if (tokenIndex == 0) {
 			return -2;
 		}
-		int256 lastActionId = lastActionIdsCST[tokenId];
+		int256 lastActionId = lastActionIds[tokenId];
 		return lastActionId; // will return -1 if token is not staked, > -1 if there is an ID
 	}
 
-	function lastActionIdByTokenIdRWalk(uint256 tokenId) public view returns (int256) {
-		uint256 tokenIndex = tokenIndicesRWalk[tokenId];
-		if (tokenIndex == 0) {
-			return -2;
-		}
-		int256 lastActionId = lastActionIdsRWalk[tokenId];
-		return lastActionId; // will return -1 if token is not staked, > -1 if there is an ID
-	}
-
-	function stakerByTokenId(uint256 tokenId, bool isRandomWalk) public view returns (address) {
+	function stakerByTokenId(uint256 tokenId) public view returns (address) {
 		int256 actionId;
-		if (isRandomWalk) {
-			actionId = lastActionIdByTokenIdRWalk(tokenId);
-		} else {
-			actionId = lastActionIdByTokenIdCST(tokenId);
-		}
+		actionId = lastActionIdByTokenId(tokenId);
 		if (actionId < 0) {
 			return address(0);
 		}
@@ -269,54 +222,29 @@ contract StakingWallet is Ownable {
 		return staker;
 	}
 
-	function pickRandomStakerCST(bytes32 entropy) public view returns (address) {
-		require(stakedTokensCST.length > 0, "There are no CST tokens staked.");
-		uint256 luckyTokenId = stakedTokensCST[uint256(entropy) % stakedTokensCST.length];
-		int256 actionId = lastActionIdsCST[luckyTokenId];
+	function pickRandomStaker(bytes32 entropy) public view returns (address) {
+		require(stakedTokens.length > 0, "There are no CST tokens staked.");
+		uint256 luckyTokenId = stakedTokens[uint256(entropy) % stakedTokens.length];
+		int256 actionId = lastActionIds[luckyTokenId];
 		return stakeActions[uint256(actionId)].owner;
 	}
 
-	function pickRandomStakerRWalk(bytes32 entropy) public view returns (address) {
-		require(stakedTokensRWalk.length > 0, "There are no RandomWalk tokens staked.");
-		uint256 luckyTokenId = stakedTokensRWalk[uint256(entropy) % stakedTokensRWalk.length];
-		int256 actionId = lastActionIdsRWalk[luckyTokenId];
-		return stakeActions[uint256(actionId)].owner;
+	function _insertToken(uint256 tokenId, uint256 actionId) internal {
+		require(!isTokenStaked(tokenId), "Token already in the list.");
+		stakedTokens.push(tokenId);
+		tokenIndices[tokenId] = stakedTokens.length;
+		lastActionIds[tokenId] = int256(actionId);
 	}
 
-	function _insertTokenCST(uint256 tokenId, uint256 actionId) internal {
-		require(!isTokenStakedCST(tokenId), "Token already in the list.");
-		stakedTokensCST.push(tokenId);
-		tokenIndicesCST[tokenId] = stakedTokensCST.length;
-		lastActionIdsCST[tokenId] = int256(actionId);
-	}
-
-	function _removeTokenCST(uint256 tokenId) internal {
-		require(isTokenStakedCST(tokenId), "Token is not in the list.");
-		uint256 index = tokenIndicesCST[tokenId];
-		uint256 lastTokenId = stakedTokensCST[stakedTokensCST.length - 1];
-		stakedTokensCST[index - 1] = lastTokenId;
-		tokenIndicesCST[lastTokenId] = index;
-		delete tokenIndicesCST[tokenId];
-		stakedTokensCST.pop();
-		lastActionIdsCST[tokenId] = -1;
-	}
-
-	function _insertTokenRWalk(uint256 tokenId, uint256 actionId) internal {
-		require(!isTokenStakedRWalk(tokenId), "Token already in the list.");
-		stakedTokensRWalk.push(tokenId);
-		tokenIndicesRWalk[tokenId] = stakedTokensRWalk.length;
-		lastActionIdsRWalk[tokenId] = int256(actionId);
-	}
-
-	function _removeTokenRWalk(uint256 tokenId) internal {
-		require(isTokenStakedRWalk(tokenId), "Token is not in the list.");
-		uint256 index = tokenIndicesRWalk[tokenId];
-		uint256 lastTokenId = stakedTokensRWalk[stakedTokensRWalk.length - 1];
-		stakedTokensRWalk[index - 1] = lastTokenId;
-		tokenIndicesRWalk[lastTokenId] = index;
-		delete tokenIndicesRWalk[tokenId];
-		stakedTokensRWalk.pop();
-		lastActionIdsRWalk[tokenId] = -1;
+	function _removeToken(uint256 tokenId) internal {
+		require(isTokenStaked(tokenId), "Token is not in the list.");
+		uint256 index = tokenIndices[tokenId];
+		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		stakedTokens[index - 1] = lastTokenId;
+		tokenIndices[lastTokenId] = index;
+		delete tokenIndices[tokenId];
+		stakedTokens.pop();
+		lastActionIds[tokenId] = -1;
 	}
 
 	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public {
@@ -326,8 +254,7 @@ contract StakingWallet is Ownable {
 		//		3:		stakes back the token
 		unstake(stakeActionId);
 		claimReward(stakeActionId, ETHDepositId);
-		bool isRandomWalk = stakeActions[stakeActionId].isRandomWalk;
-		stake(stakeActions[stakeActionId].tokenId, isRandomWalk);
+		stake(stakeActions[stakeActionId].tokenId);
 	}
 
 	function unstakeClaimRestakeMany(
@@ -344,8 +271,7 @@ contract StakingWallet is Ownable {
 			claimReward(claim_actions[i], claim_deposits[i]);
 		}
 		for (uint256 i = 0; i < stake_actions.length; i++) {
-			bool isRandomWalk = stakeActions[stake_actions[i]].isRandomWalk;
-			stake(stakeActions[stake_actions[i]].tokenId, isRandomWalk);
+			stake(stakeActions[stake_actions[i]].tokenId);
 		}
 	}
 }

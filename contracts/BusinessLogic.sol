@@ -12,7 +12,8 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
-import { StakingWallet } from "./StakingWallet.sol";
+import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 
 contract BusinessLogic is Context, Ownable {
@@ -47,13 +48,15 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
 	uint256 public stakingPercentage;
-	uint256 public numRaffleWinnersPerRound;
-	uint256 public numRaffleNFTWinnersPerRound;
-	uint256 public numHolderNFTWinnersPerRound;
+	uint256 public numRaffleETHWinnersBidding;
+	uint256 public numRaffleNFTWinnersBidding;
+	uint256 public numRaffleNFTWinnersStakingCST;
+	uint256 public numRaffleNFTWinnersStakingRWalk;
 	mapping(uint256 => address) public winners;
 	bytes32 public raffleEntropy;
 	RaffleWallet public raffleWallet;
-	StakingWallet public stakingWallet;
+	StakingWalletRWalk public stakingWalletRWalk;
+	StakingWalletCST public stakingWalletCST;
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
 	CosmicSignature public nft;
@@ -72,11 +75,18 @@ contract BusinessLogic is Context, Ownable {
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
+	event RaffleETHWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 winnerIndex
+	);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
 		uint256 indexed tokenId,
-		uint256 winnerIndex
+		uint256 winnerIndex,
+		bool isStaker,
+		bool isRWalk
 	);
 	event NFTDonationEvent(
 		address indexed donor,
@@ -262,8 +272,8 @@ contract BusinessLogic is Context, Ownable {
 
 		bool success;
 		if (cosmicSupply > 0) {
-			(success, ) = address(stakingWallet).call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWallet.deposit.selector)
+			(success, ) = address(stakingWalletCST).call{ value: stakingAmount_ }(
+				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
 			);
 			require(success, "Staking deposit failed.");
 		}
@@ -277,43 +287,50 @@ contract BusinessLogic is Context, Ownable {
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
 
-		// Give NFTs to the NFT raffle winners.
-		for (uint256 i = 0; i < numRaffleNFTWinnersPerRound; i++) {
+		// List of rewards (summary) for those who didn't win the main prize:
+		//	- Group deposit (equal to stakingPercentage) for all Stakers of CST tokens
+		//	- [numRaffleEthWinnersForBidding] ETH deposits for random bidder
+		//	- [numRaffleNFTWinnersForBidding] NFT mints for random bidder
+		//	- [numRaffleNFTWinnersForStakingCST] NFT mints for random staker of CST token
+		//	- [numRaffleNFTWinnersForStakingRWalk] NFT mints for random staker or RandomWalk token
+
+		// Give NFTs to bidders
+		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
-			emit RaffleNFTWinnerEvent(raffleWinner_, roundNum, tokenId, winnerIndex);
+			emit RaffleNFTWinnerEvent(raffleWinner_, roundNum, tokenId, winnerIndex, false, false);
 			winnerIndex += 1;
 		}
 
-		// Give rafle tokens to random RandomWalkNFT stakers
-		uint numStakedTokensRWalk = stakingWallet.numTokensStakedRWalk();
+		// Give NFTs to random RandomWalkNFT stakers
+		uint numStakedTokensRWalk = stakingWalletRWalk.numTokensStaked();
 		if (numStakedTokensRWalk > 0) {
-			for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
+			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateEntropy();
-				address rwalkWinner = stakingWallet.pickRandomStakerRWalk(raffleEntropy);
+				address rwalkWinner = stakingWalletRWalk.pickRandomStaker(raffleEntropy);
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, rwalkWinner, roundNum)
 				);
 				uint256 tokenId = abi.decode(data, (uint256));
-				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex);
+				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex, true, true);
 				winnerIndex += 1;
 			}
 		}
 		// Give raffle tokens to random CosmicSignature NFT stakers
-		uint numStakedTokensCST = stakingWallet.numTokensStakedCST();
+		uint numStakedTokensCST = stakingWalletCST.numTokensStaked();
 		if (numStakedTokensCST > 0) {
-			for (uint256 i = 0; i < numHolderNFTWinnersPerRound; i++) {
+			for (uint256 i = 0; i < numRaffleNFTWinnersStakingCST; i++) {
 				_updateEntropy();
-				address cosmicWinner = stakingWallet.pickRandomStakerCST(raffleEntropy);
+				address cosmicWinner = stakingWalletCST.pickRandomStaker(raffleEntropy);
 				(, bytes memory data) = address(nft).call(
 					abi.encodeWithSelector(CosmicSignature.mint.selector, cosmicWinner, roundNum)
 				);
 				uint256 tokenId = abi.decode(data, (uint256));
-				emit RaffleNFTWinnerEvent(cosmicWinner, roundNum, tokenId, winnerIndex);
+				emit RaffleNFTWinnerEvent(cosmicWinner, roundNum, tokenId, winnerIndex, true, false);
 				winnerIndex += 1;
 			}
 		}
@@ -327,13 +344,14 @@ contract BusinessLogic is Context, Ownable {
 		require(success, "Transfer to charity contract failed.");
 
 		// Give ETH to the ETH raffle winners.
-		for (uint256 i = 0; i < numRaffleWinnersPerRound; i++) {
+		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
 			(success, ) = address(raffleWallet).call{ value: raffleAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
 			);
 			require(success, "Raffle deposit failed.");
+			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex);
 		}
 
 		_roundEndResets();
