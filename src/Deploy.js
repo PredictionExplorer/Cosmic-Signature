@@ -86,10 +86,7 @@ const basicDeploymentAdvanced = async function (
 	await stakingWalletCST.deployed();
 
 	const StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
-	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(
-		randomWalkAddr,
-		cosmicGame.address,
-	);
+	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(	randomWalkAddr);
 	await stakingWalletRWalk.deployed();
 
 	const BusinessLogic = await ethers.getContractFactory("BusinessLogic");

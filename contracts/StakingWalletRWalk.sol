@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./Constants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
@@ -39,7 +38,6 @@ contract StakingWalletRWalk is Ownable {
 	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	RandomWalkNFT public randomWalk;
-	CosmicGame public game;
 
 	event StakeActionEvent(
 		uint256 indexed actionId,
@@ -56,11 +54,9 @@ contract StakingWalletRWalk is Ownable {
 	);
 	event MinStakePeriodChanged(uint256 newPeriod);
 
-	constructor(RandomWalkNFT rwalk_, CosmicGame game_) {
+	constructor(RandomWalkNFT rwalk_) {
 		require(address(rwalk_) != address(0), "Zero-address was given for the RandomWalk token.");
-		require(address(game_) != address(0), "Zero-address was given for the game.");
 		randomWalk = rwalk_;
-		game = game_;
 	}
 
 	function stake(uint256 _tokenId) public {
