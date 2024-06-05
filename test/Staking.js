@@ -1021,7 +1021,7 @@ describe("Staking tests", function () {
         await newStakingWalletCST.deployed();
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(owner.address,charityWallet.address);
+		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address);
         await newStakingWalletRWalk.deployed();
 
 		let numSigners = 20;
@@ -1030,7 +1030,7 @@ describe("Staking tests", function () {
 		for (let i=0; i<numSigners; i++) {
 			let signer = signers[i];
 			await newCosmicSignature.connect(signer).setApprovalForAll(newStakingWalletCST.address, true);
-			await randomWalkNFT.connect(signer).setApprovalForAll(newStakingWalletCST.address, true);
+			await randomWalkNFT.connect(signer).setApprovalForAll(newStakingWalletRWalk.address, true);
 		}
 		for (let i=0; i<numSigners; i++) {
 			let signer = signers[i];

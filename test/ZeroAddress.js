@@ -19,7 +19,8 @@ describe("Zero-address checking", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bLogic,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
@@ -32,7 +33,8 @@ describe("Zero-address checking", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bLogic,
 		};
@@ -54,7 +56,8 @@ describe("Zero-address checking", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
@@ -71,7 +74,8 @@ describe("Zero-address checking", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
@@ -82,11 +86,10 @@ describe("Zero-address checking", function () {
 	it("Shouldn't be possible to deploy StakingWallet with zero-address-ed parameters", async function () {
 		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		await expect(StakingWallet.deploy(zaddr,addr1.address, addr2.address, addr3.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the nft.");
-		await expect(StakingWallet.deploy(owner.address,zaddr,addr2.address, addr3.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the RandomWalk token.");
-		await expect(StakingWallet.deploy(owner.address,addr2.address,zaddr, addr3.address,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the game.");
-		await expect(StakingWallet.deploy(addr1.address,addr3.address, addr2.address,zaddr,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for charity.");
+		const StakingWalletCST = await ethers.getContractFactory("StakingWalletCST");
+		await expect(StakingWalletCST.deploy(zaddr,addr1.address, addr2.address, {gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the nft.");
+		await expect(StakingWalletCST.deploy(owner.address,zaddr, addr2.address, {gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the game.");
+		await expect(StakingWalletCST.deploy(addr1.address, addr2.address,zaddr,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for charity.");
 	});
 	it("Shouldn't be possible to deploy CosmicSignature with zero-address-ed parameters", async function () {
 		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");

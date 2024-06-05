@@ -761,13 +761,16 @@ describe("Cosmic Set1", function () {
 			"Ownable: caller is not the owner",
 		);
 		await expect(
-			cosmicGame.connect(addr1).setNumRaffleWinnersPerRound(ethers.BigNumber.from("1")),
+			cosmicGame.connect(addr1).setNumRaffleETHWinnersBidding(ethers.BigNumber.from("1")),
 		).to.be.revertedWith("Ownable: caller is not the owner");
 		await expect(
-			cosmicGame.connect(addr1).setNumRaffleNFTWinnersPerRound(ethers.BigNumber.from("1")),
+			cosmicGame.connect(addr1).setNumRaffleNFTWinnersBidding(ethers.BigNumber.from("1")),
 		).to.be.revertedWith("Ownable: caller is not the owner");
 		await expect(
-			cosmicGame.connect(addr1).setNumHolderNFTWinnersPerRound(ethers.BigNumber.from("1")),
+			cosmicGame.connect(addr1).setNumRaffleNFTWinnersStakingCST(ethers.BigNumber.from("1")),
+		).to.be.revertedWith("Ownable: caller is not the owner");
+		await expect(
+			cosmicGame.connect(addr1).setNumRaffleNFTWinnersStakingRWalk(ethers.BigNumber.from("1")),
 		).to.be.revertedWith("Ownable: caller is not the owner");
 		await expect(cosmicGame.connect(addr1).setPrizePercentage(ethers.BigNumber.from("1"))).to.be.revertedWith(
 			"Ownable: caller is not the owner",

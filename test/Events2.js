@@ -16,7 +16,8 @@ describe("Events2", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
@@ -29,7 +30,8 @@ describe("Events2", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
 		};
@@ -69,15 +71,15 @@ describe("Events2", function () {
         for (let i = 0; i<ts.toNumber(); i++) {
             let ownr = await cosmicSignature.ownerOf(i)
             let owner_signer = cosmicGame.provider.getSigner(ownr);
-            await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
-            await stakingWallet.connect(owner_signer).stake(i,false);
+            await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWalletCST.address, true);
+            await stakingWalletCST.connect(owner_signer).stake(i);
         }
         ts = await randomWalkNFT.totalSupply();
         for (let i = 0; i<ts.toNumber(); i++) {
             let ownr = await randomWalkNFT.ownerOf(i)
             let owner_signer = randomWalkNFT.provider.getSigner(ownr);
-            await randomWalkNFT.connect(owner_signer).setApprovalForAll(stakingWallet.address, true);
-			await stakingWallet.connect(owner_signer).stake(i,true);
+            await randomWalkNFT.connect(owner_signer).setApprovalForAll(stakingWalletRWalk.address, true);
+			await stakingWalletRWalk.connect(owner_signer).stake(i);
         }
 
 
@@ -107,14 +109,17 @@ describe("Events2", function () {
 		tx = await cosmicGame.connect(addr3).claimPrize();
 		receipt = await tx.wait();
 
-		let num_raffle_nft_winners = await cosmicGame.numRaffleNFTWinnersPerRound();
-		let num_holder_nft_winners = await cosmicGame.numHolderNFTWinnersPerRound();
-		let total_nft_winners = num_raffle_nft_winners.toNumber() + num_holder_nft_winners.toNumber() * 2;
+		let num_raffle_nft_winners_bidding = await cosmicGame.numRaffleNFTWinnersBidding();
+		let num_raffle_nft_winners_staking_cst = await cosmicGame.numRaffleNFTWinnersStakingCST();
+		let num_raffle_nft_winners_staking_rwalk = await cosmicGame.numRaffleNFTWinnersStakingRWalk();
+		let total_nft_winners = num_raffle_nft_winners_bidding.toNumber() + 
+								num_raffle_nft_winners_staking_cst.toNumber() +
+								num_raffle_nft_winners_staking_rwalk.toNumber();
 		let topic_sig = cosmicGame.interface.getEventTopic("RaffleNFTWinnerEvent");
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(total_nft_winners).to.equal(deposit_logs.length);
 
-		let num_eth_winners = await cosmicGame.numRaffleWinnersPerRound();
+		let num_eth_winners = await cosmicGame.numRaffleETHWinnersBidding();
 		topic_sig = raffleWallet.interface.getEventTopic("RaffleDepositEvent");
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(num_eth_winners).to.equal(deposit_logs.length);
