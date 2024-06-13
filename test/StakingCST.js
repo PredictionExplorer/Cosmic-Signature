@@ -5,10 +5,7 @@ const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
 const { basicDeployment } = require("../src//Deploy.js");
 
-describe("Staking tests", function () {
-	// We define a fixture to reuse the same setup in every test.
-	// We use loadFixture to run this setup once, snapshot that state,
-	// and reset Hardhat Network to that snapshot in every test.
+describe("Staking CST tests", function () {
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
 		[contractDeployerAcct] = await ethers.getSigners();
@@ -68,7 +65,7 @@ describe("Staking tests", function () {
 			"Only the CosmicGame contract can deposit.",
 		);
 	});
-	it("Shouldn't be possible to deposit to StakingWallet transfer to CharityWallet fails", async function () {
+	it("Shouldn't be possible to deposit to StakingWallet if the transfer to CharityWallet fails", async function () {
 		const {
 			cosmicGame,
 			cosmicToken,
@@ -625,7 +622,7 @@ describe("Staking tests", function () {
 			bLogic,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
 
-		const NewStakingWalletCST = await ethers.getContractFactory("TestStakingWallet");
+		const NewStakingWalletCST = await ethers.getContractFactory("TestStakingWalletCST");
 		let newStakingWalletCST = await NewStakingWalletCST.deploy(cosmicSignature.address,cosmicGame.address,charityWallet.address);
         await newStakingWalletCST.deployed();
 		await cosmicGame.setStakingWalletCST(newStakingWalletCST.address);
@@ -717,52 +714,6 @@ describe("Staking tests", function () {
         let m = await stakingWalletCST.modulo();
         expect(m).to.equal(contractBalance);
 	});
-	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			raffleWallet,
-			randomWalkNFT,
-			stakingWalletCST,
-			stakingWalletRWalk,
-			marketingWallet,
-			bLogic,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,true);
-
-		for(let i=0; i < 10 ;i++) {
-			let tokenPrice = await randomWalkNFT.getMintPrice();
-			await randomWalkNFT.mint({ value: tokenPrice })
-		}
-		for (let i=0; i < 10; i++) {
-			await randomWalkNFT.setApprovalForAll(stakingWalletRWalk.address, true);
-			let tx = await stakingWalletRWalk.stake(i);
-		}
-
-		let bidPrice = await cosmicGame.getBidPrice();
-		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await cosmicGame.bid(params, { value: bidPrice });
-
-		let prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
-		await ethers.provider.send("evm_mine");
-		await cosmicGame.claimPrize();
-
-		// forward timestamp se we can unstake
-		await ethers.provider.send("evm_increaseTime", [prizeTime.add(60*3600*24).toNumber()]);
-		await ethers.provider.send("evm_mine");
-
-		for (let i=0; i < 10; i++) {
-			await stakingWalletRWalk.unstake(i);
-			let o = await randomWalkNFT.ownerOf(i);
-			expect(o).to.equal(owner.address);
-		}
-
-	})
 	it("User stakes his 10 CosmicSignature tokens and gets all 10 tokens back after claim", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const {
