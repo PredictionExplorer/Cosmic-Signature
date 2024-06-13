@@ -109,12 +109,36 @@ contract SpecialCosmicGame is CosmicGame {
 		lastCSTBidTime = activationTime;
 	}
 }
-contract TestStakingWallet is StakingWalletCST {
+contract TestStakingWalletCST is StakingWalletCST {
 	constructor(
 		CosmicSignature nft_,
 		CosmicGame game_,
 		address charity_
 	) StakingWalletCST(nft_, game_, charity_) {}
+
+	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
+	function insertToken(uint256 tokenId, uint256 actionId) external {
+		require(!isTokenStaked(tokenId), "Token already in the list.");
+		stakedTokens.push(tokenId);
+		tokenIndices[tokenId] = stakedTokens.length;
+		lastActionIds[tokenId] = int256(actionId);
+	}
+
+	function removeToken(uint256 tokenId) external {
+		require(isTokenStaked(tokenId), "Token is not in the list.");
+		uint256 index = tokenIndices[tokenId];
+		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		stakedTokens[index - 1] = lastTokenId;
+		tokenIndices[lastTokenId] = index;
+		delete tokenIndices[tokenId];
+		stakedTokens.pop();
+		lastActionIds[tokenId] = -1;
+	}
+}
+contract TestStakingWalletRWalk is StakingWalletRWalk {
+	constructor(
+		RandomWalkNFT nft_
+	) StakingWalletRWalk(nft_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
