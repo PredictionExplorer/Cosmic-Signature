@@ -226,7 +226,6 @@ describe("Staking RandomWalk tests", function () {
         await newStakingWalletRWalk.deployed();
 		await cosmicGame.setStakingWalletRWalk(newStakingWalletRWalk.address);
 		await cosmicGame.setRuntimeMode();
-
 		let sampleTokenId = 33;
 		let tokenStaked = await newStakingWalletRWalk.isTokenStaked(sampleTokenId);
 		expect(tokenStaked).to.equal(false);
@@ -242,6 +241,41 @@ describe("Staking RandomWalk tests", function () {
 
 		await newStakingWalletRWalk.removeToken(sampleTokenId);
 		await expect(newStakingWalletRWalk.removeToken(owner.address)).to.be.revertedWith("Token is not in the list.");
+		await newStakingWalletRWalk.setMinStakePeriod(1);
+		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
+		async function mint_rwalk(a) {
+			let tokenPrice = await randomWalkNFT.getMintPrice();
+			let tx = await randomWalkNFT.connect(a).mint({ value: tokenPrice });
+			let receipt = await tx.wait();
+			let topic_sig = randomWalkNFT.interface.getEventTopic("MintEvent");
+			let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+			let parsed_log = randomWalkNFT.interface.parseLog(log);
+			let token_id = parsed_log.args[0];
+			return token_id;
+		}
+		let r1 = await mint_rwalk(owner);
+		let r2 = await mint_rwalk(owner);
+		let r3 = await mint_rwalk(owner);
+		await newStakingWalletRWalk.stakeMany([r1,r2,r3]);
+		numTokens = await newStakingWalletRWalk.numTokensStaked();
+		expect(numTokens).to.equal(3);
+		let isStaked = await newStakingWalletRWalk.isTokenStaked(r1);
+		expect(isStaked).to.equal(true);
+		isStaked = await newStakingWalletRWalk.isTokenStaked(r2);
+		expect(isStaked).to.equal(true);
+		isStaked = await newStakingWalletRWalk.isTokenStaked(r3);
+		expect(isStaked).to.equal(true);
+		let tIdx = await newStakingWalletRWalk.tokenByIndex(0);
+		expect(tIdx).to.equal(r1);
+		tIdx = await newStakingWalletRWalk.tokenByIndex(1);
+		expect(tIdx).to.equal(r2);
+		tIdx = await newStakingWalletRWalk.tokenByIndex(2);
+		expect(tIdx).to.equal(r3);
+
+		await ethers.provider.send("evm_increaseTime", [2]);
+		await newStakingWalletRWalk.unstakeMany([r1,r2,r3]);
+		numTokens = await newStakingWalletRWalk.numTokensStaked();
+		expect(numTokens).to.equal(0);
 	});
 	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
