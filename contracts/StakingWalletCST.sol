@@ -199,8 +199,7 @@ contract StakingWalletCST is Ownable {
 	}
 
 	function tokenByIndex(uint256 tokenIndex) public view returns (uint256) {
-		require(tokenIndex > 0, "Zero was given, token indices start from 1");
-		return tokenIndices[tokenIndex];
+		return stakedTokens[tokenIndex];
 	}
 
 	function lastActionIdByTokenId(uint256 tokenId) public view returns (int256) {
