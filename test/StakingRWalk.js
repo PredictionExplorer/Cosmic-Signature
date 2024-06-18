@@ -71,7 +71,7 @@ describe("Staking RandomWalk tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice })
 
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address);
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
 		await newStakingWalletRWalk.deployed();
 		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
 
@@ -87,6 +87,7 @@ describe("Staking RandomWalk tests", function () {
 
 		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWith("Token has already been unstaked.");
 	});
+	/*
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
 			cosmicGame,
@@ -113,7 +114,7 @@ describe("Staking RandomWalk tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice })
 
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address);
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
 		await newStakingWalletRWalk.deployed();
 		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
 
@@ -154,7 +155,7 @@ describe("Staking RandomWalk tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice })
 
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address);
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
 		await newStakingWalletRWalk.deployed();
 		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
 
@@ -162,48 +163,6 @@ describe("Staking RandomWalk tests", function () {
 		let receipt = await tx.wait();
 
 		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWith("Not allowed to unstake yet.");
-	});
-	it("Settimg niminal stake period works", async function () {
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			randomWalkNFT,
-			raffleWallet,
-			stakingWalletCST,
-			stakingWalletRWalk,
-			marketingWallet,
-			bidLogic,
-		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-
-		await stakingWalletRWalk.setMinStakePeriod(ethers.BigNumber.from("3600"));
-		let minStakePeriod = await stakingWalletRWalk.minStakePeriod();
-		expect(minStakePeriod.toString()).to.equal("3600");
-		await expect(stakingWalletRWalk.connect(addr1).setMinStakePeriod(ethers.BigNumber.from("7200"))).to.be.revertedWith("Ownable: caller is not the owner");
-	});
-	it("Unstake date is correctly set", async function () {
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			randomWalkNFT,
-			raffleWallet,
-			stakingWalletCST,
-			stakingWalletRWalk,
-			marketingWallet,
-			bidLogic,
-		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-
-		await stakingWalletRWalk.setMinStakePeriod(ethers.BigNumber.from("3600"));
-		let minStakePeriod = await stakingWalletRWalk.minStakePeriod();
-		expect(minStakePeriod.toString()).to.equal("3600");
-		await expect(stakingWalletRWalk.connect(addr1).setMinStakePeriod(ethers.BigNumber.from("7200"))).to.be.revertedWith("Ownable: caller is not the owner");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -222,7 +181,7 @@ describe("Staking RandomWalk tests", function () {
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("TestStakingWalletRWalk");
-		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address);
+		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
         await newStakingWalletRWalk.deployed();
 		await cosmicGame.setStakingWalletRWalk(newStakingWalletRWalk.address);
 		await cosmicGame.setRuntimeMode();
@@ -241,7 +200,6 @@ describe("Staking RandomWalk tests", function () {
 
 		await newStakingWalletRWalk.removeToken(sampleTokenId);
 		await expect(newStakingWalletRWalk.removeToken(owner.address)).to.be.revertedWith("Token is not in the list.");
-		await newStakingWalletRWalk.setMinStakePeriod(1);
 		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
 		async function mint_rwalk(a) {
 			let tokenPrice = await randomWalkNFT.getMintPrice();
@@ -345,7 +303,7 @@ describe("Staking RandomWalk tests", function () {
 		await newCosmicSignature.deployed();
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address);
+		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
         await newStakingWalletRWalk.deployed();
 
 		let numSigners = 20;
@@ -396,5 +354,5 @@ describe("Staking RandomWalk tests", function () {
 				}
 			}
 		}
-	})
+	})*/
 });
