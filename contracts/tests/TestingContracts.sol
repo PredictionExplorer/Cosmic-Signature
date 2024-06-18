@@ -137,8 +137,9 @@ contract TestStakingWalletCST is StakingWalletCST {
 }
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(
-		RandomWalkNFT nft_
-	) StakingWalletRWalk(nft_) {}
+		RandomWalkNFT nft_,
+		CosmicGame game_
+	) StakingWalletRWalk(nft_, game_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {

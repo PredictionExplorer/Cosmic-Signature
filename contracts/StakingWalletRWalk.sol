@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
+import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicGameConstants } from "./Constants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
@@ -35,9 +35,8 @@ contract StakingWalletRWalk is Ownable {
 
 	uint256 public numStakedNFTs;
 
-	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
-
 	RandomWalkNFT public randomWalk;
+	CosmicGame public game;
 
 	event StakeActionEvent(
 		uint256 indexed actionId,
@@ -52,20 +51,25 @@ contract StakingWalletRWalk is Ownable {
 		uint256 totalNFTs,
 		address indexed staker
 	);
-	event MinStakePeriodChanged(uint256 newPeriod);
 
-	constructor(RandomWalkNFT rwalk_) {
+	constructor(RandomWalkNFT rwalk_,CosmicGame game_) {
 		require(address(rwalk_) != address(0), "Zero-address was given for the RandomWalk token.");
+		require(address(game_) != address(0), "Zero-address was given for the game.");
 		randomWalk = rwalk_;
+		game = game_;
 	}
 
 	function stake(uint256 _tokenId) public {
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
+		uint256 activationTime = game.activationTime();
+		uint256	unstakeTime = block.timestamp + (block.timestamp - activationTime);
+		if (unstakeTime < block.timestamp) {	// overflow check (safety against invalid values)
+			unstakeTime = block.timestamp + 60 * 60 * 24 * 30 ; // 30 days, default, will trigger if activationTime = 0
+		}
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
-		uint256 unstakeTime = block.timestamp + minStakePeriod;
 		require(unstakeTime > block.timestamp, "Unstake time should be bigger than block timestamp");
 		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
 		numStakeActions += 1;
@@ -101,11 +105,6 @@ contract StakingWalletRWalk is Ownable {
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
 		}
-	}
-
-	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
-		minStakePeriod = newStakePeriod;
-		emit MinStakePeriodChanged(newStakePeriod);
 	}
 
 	function isTokenStaked(uint256 tokenId) public view returns (bool) {
