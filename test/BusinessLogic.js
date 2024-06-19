@@ -137,17 +137,18 @@ describe("BusinessLogic", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
 		await cBidder.deployed();
 		await cBidder.startBlockingDeposits();
 
-		const StakingWallet = await ethers.getContractFactory("StakingWallet");
-		let newStakingWallet = await StakingWallet.deploy(cBidder.address, randomWalkNFT.address, owner.address, cBidder.address);
-		await newStakingWallet.deployed();
-		await cosmicGame.setStakingWalletRaw(newStakingWallet.address);
+		let StakingWalletCST = await ethers.getContractFactory("StakingWalletCST");
+		let newStakingWalletCST = await StakingWalletCST.deploy(cBidder.address, owner.address, cBidder.address);
+		await newStakingWalletCST.deployed();
+		await cosmicGame.setStakingWalletCST(newStakingWalletCST.address);
+		await cosmicGame.setRuntimeMode();
 
 		let bidPrice = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };

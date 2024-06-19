@@ -16,7 +16,8 @@ describe("Events", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
@@ -29,7 +30,8 @@ describe("Events", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
 		};
@@ -265,7 +267,8 @@ describe("Events", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
@@ -327,7 +330,8 @@ describe("Events", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 
@@ -351,22 +355,28 @@ describe("Events", function () {
 		expect((await cosmicGame.rafflePercentage()).toString()).to.equal(percentage.toString());
 
 		var num_winners = ethers.BigNumber.from("11");
-		await expect(cosmicGame.connect(owner).setNumRaffleWinnersPerRound(num_winners))
-			.to.emit(cosmicGame, "NumRaffleWinnersPerRoundChanged")
+		await expect(cosmicGame.connect(owner).setNumRaffleETHWinnersBidding(num_winners))
+			.to.emit(cosmicGame, "NumRaffleETHWinnersBiddingChanged")
 			.withArgs(num_winners);
-		expect((await cosmicGame.numRaffleWinnersPerRound()).toString()).to.equal(num_winners.toString());
+		expect((await cosmicGame.numRaffleETHWinnersBidding()).toString()).to.equal(num_winners.toString());
 
-		var num_winners = ethers.BigNumber.from("12");
-		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersPerRound(num_winners))
-			.to.emit(cosmicGame, "NumRaffleNFTWinnersPerRoundChanged")
+		num_winners = ethers.BigNumber.from("12");
+		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersBidding(num_winners))
+			.to.emit(cosmicGame, "NumRaffleNFTWinnersBiddingChanged")
 			.withArgs(num_winners);
-		expect((await cosmicGame.numRaffleNFTWinnersPerRound()).toString()).to.equal(num_winners.toString());
+		expect((await cosmicGame.numRaffleNFTWinnersBidding()).toString()).to.equal(num_winners.toString());
 
-		var num_winners = ethers.BigNumber.from("13");
-		await expect(cosmicGame.connect(owner).setNumHolderNFTWinnersPerRound(num_winners))
-			.to.emit(cosmicGame, "NumHolderNFTWinnersPerRoundChanged")
+		num_winners = ethers.BigNumber.from("13");
+		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingCST(num_winners))
+			.to.emit(cosmicGame, "NumRaffleNFTWinnersStakingCSTChanged")
 			.withArgs(num_winners);
-		expect((await cosmicGame.numHolderNFTWinnersPerRound()).toString()).to.equal(num_winners.toString());
+		expect((await cosmicGame.numRaffleNFTWinnersStakingCST()).toString()).to.equal(num_winners.toString());
+
+		num_winners = ethers.BigNumber.from("14");
+		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingRWalk(num_winners))
+			.to.emit(cosmicGame, "NumRaffleNFTWinnersStakingRWalkChanged")
+			.withArgs(num_winners);
+		expect((await cosmicGame.numRaffleNFTWinnersStakingRWalk()).toString()).to.equal(num_winners.toString());
 
 		testAcct = ethers.Wallet.createRandom();
 		await expect(cosmicGame.connect(owner).setCharity(testAcct.address))

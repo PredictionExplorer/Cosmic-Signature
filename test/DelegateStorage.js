@@ -198,22 +198,22 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.stakingPercentage();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
-	it("numRaffleWinnersPerRound", async function () {
+	it("numRaffleETHWinnersBidding", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f29();
-		let value = await cgtest.numRaffleWinnersPerRound();
+		let value = await cgtest.numRaffleETHWinnersBidding();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
-	it("numRaffleNFTWinnersPerRound", async function () {
+	it("numRaffleNFTWinnersBidding", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f30();
-		let value = await cgtest.numRaffleNFTWinnersPerRound();
+		let value = await cgtest.numRaffleNFTWinnersBidding();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
-	it("numHolderNFTWinnersPerRound", async function () {
+	it("numRaffleNFTWinnersStakingCST", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f31();
-		let value = await cgtest.numHolderNFTWinnersPerRound();
+		let value = await cgtest.numRaffleNFTWinnersStakingCST();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("winners", async function () {
@@ -234,10 +234,10 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.raffleWallet();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
-	it("stakingWallet", async function () {
+	it("stakingWalletCST", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f35();
-		let value = await cgtest.stakingWallet();
+		let value = await cgtest.stakingWalletCST();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("donatedNFTs", async function () {
@@ -274,6 +274,18 @@ describe("DelegateCallStorage", function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f41();
 		let value = await cgtest.systemMode();
+		expect(await value).to.equal(DEFAULT_VALUE);
+	});
+	it("stakingWalletRWalk", async function () {
+		const { cgtest, bltest } = await loadFixture(deployCosmic);
+		await cgtest.f42();
+		let value = await cgtest.stakingWalletRWalk();
+		expect(await value).to.equal(DEFAULT_ADDRESS);
+	});
+	it("numRaffleNFTWinnersStakingRWalk", async function () {
+		const { cgtest, bltest } = await loadFixture(deployCosmic);
+		await cgtest.f43();
+		let value = await cgtest.numRaffleNFTWinnersStakingRWalk();
 		expect(await value).to.equal(DEFAULT_VALUE);
 	});
 });
