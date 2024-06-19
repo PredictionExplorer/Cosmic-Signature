@@ -108,6 +108,20 @@ contract SpecialCosmicGame is CosmicGame {
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
 	}
+	function depositStakingCST() payable external {
+
+		(bool success, ) = address(stakingWalletCST).call{value:msg.value}(
+			abi.encodeWithSelector(StakingWalletCST.deposit.selector)
+		);
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
 	constructor(
