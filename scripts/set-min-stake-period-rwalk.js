@@ -27,15 +27,15 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGame = await getCosmicGameContract();
-	let stakingWalletAddr = await cosmicGame.stakingWallet();
-	let stakingWallet = await ethers.getContractAt("StakingWallet",stakingWalletAddr);
+	let stakingWalletAddr = await cosmicGame.stakingWalletRWalk();
+	let stakingWalletRWalk = await ethers.getContractAt("StakingWalletRWalk",stakingWalletAddr);
 	console.log("staking wallet");console.log(stakingWalletAddr);
 	try {
-		await stakingWallet.connect(testingAcct).setMinStakePeriod(period);
+		await stakingWalletRWalk.connect(testingAcct).setMinStakePeriod(period);
 	} catch(e) {
 		console.log(e);
 	}
-	period = await stakingWallet.minStakePeriod();
+	period = await stakingWalletRWalk.minStakePeriod();
 	console.log("Period value: "+period.toNumber()+" seconds");
 }
 main()

@@ -86,10 +86,7 @@ const basicDeploymentAdvanced = async function (
 	await stakingWalletCST.deployed();
 
 	const StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
-	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(
-		randomWalkAddr,
-		cosmicGame.address,
-	);
+	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(randomWalkAddr,cosmicGame.address);
 	await stakingWalletRWalk.deployed();
 
 	const BusinessLogic = await ethers.getContractFactory("BusinessLogic");
@@ -105,7 +102,12 @@ const basicDeploymentAdvanced = async function (
 	await cosmicGame.connect(deployerAcct).setStakingWalletCST(stakingWalletCST.address);
 	await cosmicGame.connect(deployerAcct).setStakingWalletRWalk(stakingWalletRWalk.address);
 	await cosmicGame.connect(deployerAcct).setMarketingWallet(marketingWallet.address);
-	await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+	if (activationTime == 0) {
+		let latestBlock = await hre.ethers.provider.getBlock("latest");
+		await cosmicGame.connect(deployerAcct).setActivationTime(latestBlock.timestamp);
+	} else {
+		await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+	}
 	if (switchToRuntime) {
 		await cosmicGame.connect(deployerAcct).setRuntimeMode();
 	}

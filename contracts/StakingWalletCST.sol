@@ -39,7 +39,6 @@ contract StakingWalletCST is Ownable {
 	// TODO: figure out the invariant that is always true that includes the modulo.
 	//       It would be useful for testing.
 	uint256 public modulo;
-	uint256 public minStakePeriod = CosmicGameConstants.DEFAULT_MIN_STAKE_PERIOD;
 
 	CosmicSignature public nft;
 	CosmicGame public game;
@@ -67,7 +66,6 @@ contract StakingWalletCST is Ownable {
 	);
 	event CharityDepositEvent(uint256 amount, address charityAddress); // emitted when numStakedNFTs = 0
 	event CharityUpdatedEvent(address indexed newCharityAddress);
-	event MinStakePeriodChanged(uint256 newPeriod);
 	event ModuloSentEvent(uint256 amount);
 
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
@@ -97,12 +95,15 @@ contract StakingWalletCST is Ownable {
 
 	function stake(uint256 _tokenId) public {
 		nft.transferFrom(msg.sender, address(this), _tokenId);
+		uint256 activationTime = game.activationTime();
+		uint256	unstakeTime = block.timestamp + (block.timestamp - activationTime);
+		if (unstakeTime < block.timestamp) {	// overflow check (safety against invalid values)
+			unstakeTime = block.timestamp + 60 * 60 * 24 * 30 ; // 30 days, default, will trigger if activationTime = 0
+		}
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
-		uint256 unstakeTime = block.timestamp + minStakePeriod;
-		require(unstakeTime > block.timestamp, "Unstake time should be bigger than block timestamp");
 		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
@@ -175,11 +176,6 @@ contract StakingWalletCST is Ownable {
 		emit CharityUpdatedEvent(charity);
 	}
 
-	function setMinStakePeriod(uint256 newStakePeriod) external onlyOwner {
-		minStakePeriod = newStakePeriod;
-		emit MinStakePeriodChanged(newStakePeriod);
-	}
-
 	function moduloToCharity() external onlyOwner {
 		uint256 amount;
 		amount = modulo;
@@ -199,8 +195,7 @@ contract StakingWalletCST is Ownable {
 	}
 
 	function tokenByIndex(uint256 tokenIndex) public view returns (uint256) {
-		require(tokenIndex > 0, "Zero was given, token indices start from 1");
-		return tokenIndices[tokenIndex];
+		return stakedTokens[tokenIndex];
 	}
 
 	function lastActionIdByTokenId(uint256 tokenId) public view returns (int256) {

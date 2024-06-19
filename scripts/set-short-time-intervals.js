@@ -6,9 +6,9 @@ const { getCosmicGameContract } = require("./helper.js");
 async function set_parameters(testingAcct, cosmicGame) {
 	let nanoseconds = ethers.BigNumber.from("180000000000");
 	await cosmicGame.connect(testingAcct).setNanoSecondsExtra(nanoseconds);
-	let initialseconds = ethers.BigNumber.from("180");
+	let initialseconds = ethers.BigNumber.from("60");
 	await cosmicGame.connect(testingAcct).setInitialSecondsUntilPrize(initialseconds);
-	let timeout = ethers.BigNumber.from("300");
+	let timeout = ethers.BigNumber.from("90");
 	await cosmicGame.connect(testingAcct).setTimeoutClaimPrize(timeout);
 	console.log("Nanoseconds extra = " + nanoseconds);
 	console.log("Initial seconds = " + initialseconds);

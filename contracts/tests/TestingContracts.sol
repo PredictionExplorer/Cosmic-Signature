@@ -108,13 +108,52 @@ contract SpecialCosmicGame is CosmicGame {
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
 	}
+	function depositStakingCST() payable external {
+
+		(bool success, ) = address(stakingWalletCST).call{value:msg.value}(
+			abi.encodeWithSelector(StakingWalletCST.deposit.selector)
+		);
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
 }
-contract TestStakingWallet is StakingWalletCST {
+contract TestStakingWalletCST is StakingWalletCST {
 	constructor(
 		CosmicSignature nft_,
 		CosmicGame game_,
 		address charity_
 	) StakingWalletCST(nft_, game_, charity_) {}
+
+	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
+	function insertToken(uint256 tokenId, uint256 actionId) external {
+		require(!isTokenStaked(tokenId), "Token already in the list.");
+		stakedTokens.push(tokenId);
+		tokenIndices[tokenId] = stakedTokens.length;
+		lastActionIds[tokenId] = int256(actionId);
+	}
+
+	function removeToken(uint256 tokenId) external {
+		require(isTokenStaked(tokenId), "Token is not in the list.");
+		uint256 index = tokenIndices[tokenId];
+		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		stakedTokens[index - 1] = lastTokenId;
+		tokenIndices[lastTokenId] = index;
+		delete tokenIndices[tokenId];
+		stakedTokens.pop();
+		lastActionIds[tokenId] = -1;
+	}
+}
+contract TestStakingWalletRWalk is StakingWalletRWalk {
+	constructor(
+		RandomWalkNFT nft_,
+		CosmicGame game_
+	) StakingWalletRWalk(nft_, game_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
