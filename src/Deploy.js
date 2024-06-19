@@ -102,7 +102,12 @@ const basicDeploymentAdvanced = async function (
 	await cosmicGame.connect(deployerAcct).setStakingWalletCST(stakingWalletCST.address);
 	await cosmicGame.connect(deployerAcct).setStakingWalletRWalk(stakingWalletRWalk.address);
 	await cosmicGame.connect(deployerAcct).setMarketingWallet(marketingWallet.address);
-	await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+	if (activationTime == 0) {
+		let latestBlock = await hre.ethers.provider.getBlock("latest");
+		await cosmicGame.connect(deployerAcct).setActivationTime(latestBlock.timestamp);
+	} else {
+		await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+	}
 	if (switchToRuntime) {
 		await cosmicGame.connect(deployerAcct).setRuntimeMode();
 	}
