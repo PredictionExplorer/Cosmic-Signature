@@ -83,13 +83,20 @@ describe("Zero-address checking", function () {
 		let addr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
 		await expect(marketingWallet.setTokenContract(addr)).to.be.revertedWith("Zero-address was given.");
 	});
-	it("Shouldn't be possible to deploy StakingWallet with zero-address-ed parameters", async function () {
+	it("Shouldn't be possible to deploy StakingWalletCST with zero-address-ed parameters", async function () {
 		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const StakingWalletCST = await ethers.getContractFactory("StakingWalletCST");
 		await expect(StakingWalletCST.deploy(zaddr,addr1.address, addr2.address, {gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the nft.");
 		await expect(StakingWalletCST.deploy(owner.address,zaddr, addr2.address, {gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the game.");
 		await expect(StakingWalletCST.deploy(addr1.address, addr2.address,zaddr,{gasLimit:3000000})).to.be.revertedWith("Zero-address was given for charity.");
+	});
+	it("Shouldn't be possible to deploy StakingWalletRWalk with zero-address-ed parameters", async function () {
+		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
+		await expect(StakingWalletRWalk.deploy(zaddr,addr1.address, {gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the RandomWalk token.");
+		await expect(StakingWalletRWalk.deploy(owner.address,zaddr, {gasLimit:3000000})).to.be.revertedWith("Zero-address was given for the game.");
 	});
 	it("Shouldn't be possible to deploy CosmicSignature with zero-address-ed parameters", async function () {
 		let zaddr = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");

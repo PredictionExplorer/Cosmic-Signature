@@ -903,6 +903,12 @@ describe("Cosmic Set1", function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+
 		let input = cosmicGame.interface.encodeFunctionData("auctionDuration", []);
 		let message = await cosmicGame.provider.call({
 			to: cosmicGame.address,

@@ -288,6 +288,11 @@ describe("Cosmic Set2", function () {
 			let action_rec = await stakingWalletCST.stakeActions(i);
 			let ownr = action_rec.owner;
 			let owner_signer = cosmicGame.provider.getSigner(ownr);
+			let uts = action_rec.unstakeEligibleTime.toNumber()+1;
+			let lts = (await ethers.provider.getBlock("latest")).timestamp;
+			if (lts < uts) {
+				await ethers.provider.send("evm_setNextBlockTimestamp", [uts]);
+			}
 			await stakingWalletCST.connect(owner_signer).unstake(i);
 		}
 		// at this point, all tokens were unstaked
