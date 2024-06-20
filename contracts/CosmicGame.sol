@@ -69,8 +69,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	uint256 public numRaffleETHWinnersBidding = 3;
 	uint256 public numRaffleNFTWinnersBidding = 5;
-	uint256 public numRaffleNFTWinnersStakingCST = 2;
-	uint256 public numRaffleNFTWinnersStakingRWalk = 2;
+	uint256 public numRaffleNFTWinnersStakingRWalk = 4;
 
 	mapping(uint256 => address) public winners;
 
@@ -133,7 +132,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event StakingPercentageChanged(uint256 newStakingPercentage);
 	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
 	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
-	event NumRaffleNFTWinnersStakingCSTChanged(uint256 newNumRaffleNFTWinnersStakingCST);
 	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
 	event CharityAddressChanged(address newCharity);
 	event RandomWalkAddressChanged(address newRandomWalk);
@@ -350,12 +348,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
 		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
 		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
-	}
-
-	function setNumRaffleNFTWinnersStakingCST(uint256 newNumRaffleNFTWinnersStakingCST) external onlyOwner {
-		require(systemMode == CosmicGameConstants.MODE_MAINTENANCE, CosmicGameConstants.ERR_STR_MODE_MAINTENANCE);
-		numRaffleNFTWinnersStakingCST = newNumRaffleNFTWinnersStakingCST;
-		emit NumRaffleNFTWinnersStakingCSTChanged(numRaffleNFTWinnersStakingCST);
 	}
 
 	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external onlyOwner {

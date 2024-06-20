@@ -50,7 +50,6 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public stakingPercentage;
 	uint256 public numRaffleETHWinnersBidding;
 	uint256 public numRaffleNFTWinnersBidding;
-	uint256 public numRaffleNFTWinnersStakingCST;
 	uint256 public numRaffleNFTWinnersStakingRWalk;
 	mapping(uint256 => address) public winners;
 	bytes32 public raffleEntropy;
@@ -267,6 +266,8 @@ contract BusinessLogic is Context, Ownable {
 		uint256 stakingAmount_ = game.stakingAmount();
 
 		bool success;
+		// If the project just launched, we do not send anything to the staking wallet because
+		// nothing could be staked at this point.
 		if (cosmicSupply > 0) {
 			(success, ) = address(stakingWalletCST).call{ value: stakingAmount_ }(
 				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
@@ -290,7 +291,7 @@ contract BusinessLogic is Context, Ownable {
 		//	- [numRaffleNFTWinnersForStakingCST] NFT mints for random staker of CST token
 		//	- [numRaffleNFTWinnersForStakingRWalk] NFT mints for random staker or RandomWalk token
 
-		// Give NFTs to bidders
+		// Mint reffle NFTs to bidders
 		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
@@ -302,7 +303,7 @@ contract BusinessLogic is Context, Ownable {
 			winnerIndex += 1;
 		}
 
-		// Give NFTs to random RandomWalkNFT stakers
+		// Mint NFTs to random RandomWalkNFT stakers
 		uint numStakedTokensRWalk = stakingWalletRWalk.numTokensStaked();
 		if (numStakedTokensRWalk > 0) {
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
@@ -313,20 +314,6 @@ contract BusinessLogic is Context, Ownable {
 				);
 				uint256 tokenId = abi.decode(data, (uint256));
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex, true, true);
-				winnerIndex += 1;
-			}
-		}
-		// Give raffle tokens to random CosmicSignature NFT stakers
-		uint numStakedTokensCST = stakingWalletCST.numTokensStaked();
-		if (numStakedTokensCST > 0) {
-			for (uint256 i = 0; i < numRaffleNFTWinnersStakingCST; i++) {
-				_updateEntropy();
-				address cosmicWinner = stakingWalletCST.pickRandomStaker(raffleEntropy);
-				(, bytes memory data) = address(nft).call(
-					abi.encodeWithSelector(CosmicSignature.mint.selector, cosmicWinner, roundNum)
-				);
-				uint256 tokenId = abi.decode(data, (uint256));
-				emit RaffleNFTWinnerEvent(cosmicWinner, roundNum, tokenId, winnerIndex, true, false);
 				winnerIndex += 1;
 			}
 		}
