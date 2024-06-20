@@ -218,13 +218,6 @@ contract StakingWalletCST is Ownable {
 		return staker;
 	}
 
-	function pickRandomStaker(bytes32 entropy) public view returns (address) {
-		require(stakedTokens.length > 0, "There are no CST tokens staked.");
-		uint256 luckyTokenId = stakedTokens[uint256(entropy) % stakedTokens.length];
-		int256 actionId = lastActionIds[luckyTokenId];
-		return stakeActions[uint256(actionId)].owner;
-	}
-
 	function _insertToken(uint256 tokenId, uint256 actionId) internal {
 		require(!isTokenStaked(tokenId), "Token already in the list.");
 		stakedTokens.push(tokenId);

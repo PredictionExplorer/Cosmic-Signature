@@ -61,18 +61,11 @@ contract StakingWalletRWalk is Ownable {
 
 	function stake(uint256 _tokenId) public {
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
-		uint256 activationTime = game.activationTime();
-		uint256 unstakeTime = block.timestamp + (block.timestamp - activationTime);
-		if (unstakeTime < block.timestamp) {
-			// overflow check (safety against invalid values)
-			unstakeTime = block.timestamp + 60 * 60 * 24 * 30; // 30 days, default, will trigger if activationTime = 0
-		}
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
-		require(unstakeTime > block.timestamp, "Unstake time should be bigger than block timestamp");
-		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
+		stakeActions[numStakeActions].unstakeEligibleTime = block.timestamp + 3600 * 24; // 24 hour minimum staking time;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
