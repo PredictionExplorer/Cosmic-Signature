@@ -52,7 +52,7 @@ contract StakingWalletRWalk is Ownable {
 		address indexed staker
 	);
 
-	constructor(RandomWalkNFT rwalk_,CosmicGame game_) {
+	constructor(RandomWalkNFT rwalk_, CosmicGame game_) {
 		require(address(rwalk_) != address(0), "Zero-address was given for the RandomWalk token.");
 		require(address(game_) != address(0), "Zero-address was given for the game.");
 		randomWalk = rwalk_;
@@ -62,9 +62,10 @@ contract StakingWalletRWalk is Ownable {
 	function stake(uint256 _tokenId) public {
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
 		uint256 activationTime = game.activationTime();
-		uint256	unstakeTime = block.timestamp + (block.timestamp - activationTime);
-		if (unstakeTime < block.timestamp) {	// overflow check (safety against invalid values)
-			unstakeTime = block.timestamp + 60 * 60 * 24 * 30 ; // 30 days, default, will trigger if activationTime = 0
+		uint256 unstakeTime = block.timestamp + (block.timestamp - activationTime);
+		if (unstakeTime < block.timestamp) {
+			// overflow check (safety against invalid values)
+			unstakeTime = block.timestamp + 60 * 60 * 24 * 30; // 30 days, default, will trigger if activationTime = 0
 		}
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;

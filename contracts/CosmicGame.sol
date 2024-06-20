@@ -69,7 +69,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	uint256 public numRaffleETHWinnersBidding = 3;
 	uint256 public numRaffleNFTWinnersBidding = 5;
-	uint256 public numRaffleNFTWinnersStakingCST = 2 ;
+	uint256 public numRaffleNFTWinnersStakingCST = 2;
 	uint256 public numRaffleNFTWinnersStakingRWalk = 2;
 
 	mapping(uint256 => address) public winners;
@@ -109,11 +109,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 tokenId,
 		uint256 index
 	);
-	event RaffleETHWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 winnerIndex
-	);
+	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
