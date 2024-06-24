@@ -366,12 +366,6 @@ describe("Events", function () {
 			.withArgs(num_winners);
 		expect((await cosmicGame.numRaffleNFTWinnersBidding()).toString()).to.equal(num_winners.toString());
 
-		num_winners = ethers.BigNumber.from("13");
-		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingCST(num_winners))
-			.to.emit(cosmicGame, "NumRaffleNFTWinnersStakingCSTChanged")
-			.withArgs(num_winners);
-		expect((await cosmicGame.numRaffleNFTWinnersStakingCST()).toString()).to.equal(num_winners.toString());
-
 		num_winners = ethers.BigNumber.from("14");
 		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingRWalk(num_winners))
 			.to.emit(cosmicGame, "NumRaffleNFTWinnersStakingRWalkChanged")

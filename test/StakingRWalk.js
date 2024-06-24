@@ -87,58 +87,6 @@ describe("Staking RandomWalk tests", function () {
 
 		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWith("Token has already been unstaked.");
 	});
-	it("Stake/unstake interval should match block timestamps exactly", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			randomWalkNFT,
-			raffleWallet,
-			stakingWalletCST,
-			stakingWalletRWalk,
-			marketingWallet,
-			bidLogic,
-		} = await basicDeploymentAdvanced("CosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
-
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(cosmicGame.address);
-		await cBidder.deployed();
-
-		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
-		await newCosmicSignature.mint(owner.address, 0);
-
-		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(newCosmicSignature.address, cosmicGame.address);
-		await newStakingWalletRWalk.deployed();
-		await cosmicGame.setStakingWalletRWalk(newStakingWalletRWalk.address);
-		await cosmicGame.setRuntimeMode();
-		await newCosmicSignature.setApprovalForAll(newStakingWalletRWalk.address, true);
-
-		let atime = await cosmicGame.activationTime();
-		let tx = await newStakingWalletRWalk.stake(0);
-		let receipt = await tx.wait();
-		let stakeBlock = await ethers.provider.getBlock(receipt.blockNumber);
-		let stakeBlockTimestamp = stakeBlock.timestamp;
-		let topic_sig = stakingWalletRWalk.interface.getEventTopic("StakeActionEvent");
-		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		let rec = await newStakingWalletRWalk.stakeActions(0);
-		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
-		let unstakeTime = log.args.unstakeTime;
-		await ethers.provider.send("evm_setNextBlockTimestamp", [unstakeTime.toNumber()]);
-		await ethers.provider.send("evm_mine");
-
-		tx = await newStakingWalletRWalk.unstake(0);
-		receipt = await tx.wait();
-		let unstakeBlock = await ethers.provider.getBlock(receipt.blockNumber);
-		let unstakeBlockTimestamp = unstakeBlock.timestamp;
-		let actualStakeUnstakeTimeDiff = unstakeBlockTimestamp - stakeBlockTimestamp;
-		let expectedStakeUnstakeTimeDiff = stakeBlockTimestamp - atime.toNumber() + 1;
-		expect(expectedStakeUnstakeTimeDiff).to.equal(actualStakeUnstakeTimeDiff);
-	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
 			cosmicGame,

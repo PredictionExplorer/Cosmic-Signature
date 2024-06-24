@@ -363,9 +363,8 @@ describe("Cosmic Set1", function () {
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let num_eth_winners_bidders= await cosmicGame.numRaffleETHWinnersBidding();
 		let num_raffle_nft_winners_bidding = await cosmicGame.numRaffleNFTWinnersBidding();
-		let num_raffle_nft_winners_staking_cst = await cosmicGame.numRaffleNFTWinnersStakingCST();
 		let num_raffle_nft_winners_staking_rwalk = await cosmicGame.numRaffleNFTWinnersStakingRWalk();
-		let sum_winners = num_raffle_nft_winners_bidding.toNumber() + num_raffle_nft_winners_staking_cst.toNumber() + num_raffle_nft_winners_staking_rwalk.toNumber();
+		let sum_winners = num_raffle_nft_winners_bidding.toNumber() + num_raffle_nft_winners_staking_rwalk.toNumber();
 		expect(num_eth_winners_bidders.toNumber()).to.equal(deposit_logs.length);
 		let prize_winner_mints = 1;
 		let expected_total_supply = totalSupplyBefore + prize_winner_mints + sum_winners;
@@ -506,9 +505,6 @@ describe("Cosmic Set1", function () {
 		await cosmicGame.connect(owner).setNumRaffleNFTWinnersBidding(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.numRaffleNFTWinnersBidding()).to.equal(ethers.BigNumber.from("99"));
 
-		await cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingCST(ethers.BigNumber.from("99"));
-		expect(await cosmicGame.numRaffleNFTWinnersStakingCST()).to.equal(ethers.BigNumber.from("99"));
-
 		await cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingRWalk(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.numRaffleNFTWinnersStakingRWalk()).to.equal(ethers.BigNumber.from("99"));
 
@@ -603,7 +599,6 @@ describe("Cosmic Set1", function () {
 		await expect(cosmicGame.connect(owner).setStakingWalletRWalk(testAcct.address)).to.be.revertedWith(revertStr);
 		await expect(cosmicGame.connect(owner).setNumRaffleETHWinnersBidding(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
 		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersBidding(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
-		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingCST(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
 		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingRWalk(ethers.BigNumber.from("99"))).to.be.revertedWith(revertStr);
 		await expect(cosmicGame.connect(owner).setCharityPercentage(ethers.BigNumber.from("11"))).to.be.revertedWith(revertStr);
 		await expect(cosmicGame.connect(owner).setRafflePercentage(ethers.BigNumber.from("6"))).to.be.revertedWith(revertStr);
@@ -765,9 +760,6 @@ describe("Cosmic Set1", function () {
 		).to.be.revertedWith("Ownable: caller is not the owner");
 		await expect(
 			cosmicGame.connect(addr1).setNumRaffleNFTWinnersBidding(ethers.BigNumber.from("1")),
-		).to.be.revertedWith("Ownable: caller is not the owner");
-		await expect(
-			cosmicGame.connect(addr1).setNumRaffleNFTWinnersStakingCST(ethers.BigNumber.from("1")),
 		).to.be.revertedWith("Ownable: caller is not the owner");
 		await expect(
 			cosmicGame.connect(addr1).setNumRaffleNFTWinnersStakingRWalk(ethers.BigNumber.from("1")),
