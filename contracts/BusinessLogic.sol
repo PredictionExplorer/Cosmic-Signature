@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.26;
 pragma abicoder v2;
 
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";

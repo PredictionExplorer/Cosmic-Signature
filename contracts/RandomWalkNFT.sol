@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.26;
 
 contract RandomWalkNFT is ERC721Enumerable, Ownable {
 	uint256 public saleTime = 1636675200; // November 11 2021 19:00 New York Time

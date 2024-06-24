@@ -5,7 +5,7 @@ require("hardhat-tracer");
 require("./tasks/cosmic-tasks.js");
 module.exports = {
   solidity: {
-    version: "0.8.19",
+    version: "0.8.26",
     settings: {
       optimizer: {
         enabled: true,
