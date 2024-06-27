@@ -138,6 +138,7 @@ describe("BusinessLogic", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
@@ -168,7 +169,7 @@ describe("BusinessLogic", function () {
 		prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
-		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Staking deposit failed.");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 	});
 	it("Shouldn't be possible to claim prize if CosmicSignature NFT fails to mint()", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -183,6 +184,7 @@ describe("BusinessLogic", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
@@ -202,7 +204,7 @@ describe("BusinessLogic", function () {
 		let prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
-		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("CosmicSignature mint() failed to mint NFT.");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"ERC721Mint");
 	});
 	it("Shouldn't be possible to claim prize if deposit to charity fails", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -217,6 +219,7 @@ describe("BusinessLogic", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
@@ -236,7 +239,7 @@ describe("BusinessLogic", function () {
 		let prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
-		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("Transfer to charity contract failed.");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 	});
 	it("Shouldn't be possible to bid if minting of cosmic tokens (ERC20) fails", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -251,6 +254,7 @@ describe("BusinessLogic", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BrokenToken = await ethers.getContractFactory("BrokenERC20");
 		let newToken= await BrokenToken.deploy();
@@ -260,8 +264,7 @@ describe("BusinessLogic", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await expect(cosmicGame.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWith("CosmicToken mint() failed to mint reward tokens.");
-
+		await expect(cosmicGame.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"ERC20Mint");
 	});
 	it("Long term bidding with CST doesn't produce irregularities", async function () {
 		async function getCSTPrice() {
