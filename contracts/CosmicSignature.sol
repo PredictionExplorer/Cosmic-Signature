@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { CosmicGameErrors } from "./Errors.sol";
 
 contract CosmicSignature is ERC721Enumerable, Ownable {
 	mapping(uint256 => bytes32) public seeds;
@@ -27,7 +28,10 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	event BaseURIEvent(string newURI);
 
 	constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
-		require(_cosmicGameContract != address(0), "Zero-address was given.");
+		require(
+			_cosmicGameContract != address(0),
+			CosmicGameErrors.ZeroAddress("Zero-address was given.")
+		);
 		entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
 		cosmicGameContract = _cosmicGameContract;
 	}
@@ -43,15 +47,33 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) external {
-		require(_isApprovedOrOwner(_msgSender(), tokenId), "setTokenName caller is not owner nor approved.");
-		require(bytes(name).length <= 32, "Token name is too long.");
+		require(
+			_isApprovedOrOwner(_msgSender(), tokenId),
+		   	CosmicGameErrors.OwnershipError(
+				"setTokenName caller is not owner nor approved.",
+				tokenId
+			)
+		);
+		require(
+			bytes(name).length <= 32,
+		   	CosmicGameErrors.TokenNameLength("Token name is too long.",bytes(name).length)
+		);
 		tokenNames[tokenId] = name;
 		emit TokenNameEvent(tokenId, name);
 	}
 
 	function mint(address owner, uint256 roundNum) external returns (uint256) {
-		require(owner != address(0), "Zero-address was given.");
-		require(_msgSender() == cosmicGameContract, "Only the CosmicGame contract can mint.");
+		require(
+			owner != address(0),
+			CosmicGameErrors.ZeroAddress("Zero-address was given.")
+		);
+		require(
+			_msgSender() == cosmicGameContract,
+		  	CosmicGameErrors.NoMintPrivileges(
+			   "Only the CosmicGame contract can mint.",
+			   msg.sender
+			)
+		);
 
 		uint256 tokenId = numTokens;
 		numTokens += 1;

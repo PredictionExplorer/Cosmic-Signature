@@ -5,6 +5,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicGameConstants } from "./Constants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { CosmicGameErrors } from "./Errors.sol";
 
 contract StakingWalletRWalk is Ownable {
 	struct StakeAction {
@@ -53,8 +54,14 @@ contract StakingWalletRWalk is Ownable {
 	);
 
 	constructor(RandomWalkNFT rwalk_, CosmicGame game_) {
-		require(address(rwalk_) != address(0), "Zero-address was given for the RandomWalk token.");
-		require(address(game_) != address(0), "Zero-address was given for the game.");
+		require(
+			address(rwalk_) != address(0),
+			CosmicGameErrors.ZeroAddress("Zero-address was given for the RandomWalk token.")
+		);
+		require(
+			address(game_) != address(0),
+		   	CosmicGameErrors.ZeroAddress("Zero-address was given for the game.")
+		);
 		randomWalk = rwalk_;
 		game = game_;
 	}
@@ -84,9 +91,30 @@ contract StakingWalletRWalk is Ownable {
 	}
 
 	function unstake(uint256 stakeActionId) public {
-		require(stakeActions[stakeActionId].unstakeTime == 0, "Token has already been unstaked.");
-		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can unstake.");
-		require(stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet.");
+		require(
+			stakeActions[stakeActionId].unstakeTime == 0,
+			CosmicGameErrors.TokenAlreadyUnstaked(
+				"Token has already been unstaked.",
+				stakeActionId
+			)
+		);
+		require(
+			stakeActions[stakeActionId].owner == msg.sender,
+		   	CosmicGameErrors.AccessError(
+				"Only the owner can unstake.",
+				stakeActionId,
+				msg.sender
+			)
+		);
+		require(
+			stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp,
+			CosmicGameErrors.EarlyUnstake(
+				"Not allowed to unstake yet.",
+				stakeActionId,
+				stakeActions[stakeActionId].unstakeEligibleTime,
+				block.timestamp
+			)
+		);
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
 		_removeToken(tokenId);
 		randomWalk.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
@@ -133,21 +161,37 @@ contract StakingWalletRWalk is Ownable {
 	}
 
 	function pickRandomStaker(bytes32 entropy) public view returns (address) {
-		require(stakedTokens.length > 0, "There are no RandomWalk tokens staked.");
+		require(
+			stakedTokens.length > 0,
+		   	CosmicGameErrors.NoTokensStaked("There are no RandomWalk tokens staked.")
+		);
 		uint256 luckyTokenId = stakedTokens[uint256(entropy) % stakedTokens.length];
 		int256 actionId = lastActionIds[luckyTokenId];
 		return stakeActions[uint256(actionId)].owner;
 	}
 
 	function _insertToken(uint256 tokenId, uint256 actionId) internal {
-		require(!isTokenStaked(tokenId), "Token already in the list.");
+		require(
+			!isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyInserted(
+				"Token already in the list.",
+				tokenId,
+				actionId
+			)
+		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function _removeToken(uint256 tokenId) internal {
-		require(isTokenStaked(tokenId), "Token is not in the list.");
+		require(
+			isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyDeleted(
+				"Token is not in the list.",
+				tokenId
+			)
+		);
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;

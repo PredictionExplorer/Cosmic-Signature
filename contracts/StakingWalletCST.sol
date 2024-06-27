@@ -5,6 +5,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./Constants.sol";
+import { CosmicGameErrors } from "./Errors.sol";
 
 contract StakingWalletCST is Ownable {
 	struct StakeAction {
@@ -69,19 +70,41 @@ contract StakingWalletCST is Ownable {
 	event ModuloSentEvent(uint256 amount);
 
 	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) {
-		require(address(nft_) != address(0), "Zero-address was given for the nft.");
-		require(address(game_) != address(0), "Zero-address was given for the game.");
-		require(charity_ != address(0), "Zero-address was given for charity.");
+		require(
+			address(nft_) != address(0),
+			CosmicGameErrors.ZeroAddress("Zero-address was given for the nft.")
+		);
+		require(
+			address(game_) != address(0),
+			CosmicGameErrors.ZeroAddress("Zero-address was given for the game.")
+		);
+		require(
+			charity_ != address(0),
+			CosmicGameErrors.ZeroAddress("Zero-address was given for charity.")
+		);
 		nft = nft_;
 		game = game_;
 		charity = charity_;
 	}
 
 	function deposit() external payable {
-		require(msg.sender == address(game), "Only the CosmicGame contract can deposit.");
+		require(
+			msg.sender == address(game),
+			CosmicGameErrors.DepositFromUnauthorizedSender(
+				"Only the CosmicGame contract can deposit.",
+				msg.sender
+			)
+		);
 		if (numStakedNFTs == 0) {
 			(bool success, ) = charity.call{ value: msg.value }("");
-			require(success, "Transfer to charity contract failed.");
+			require(
+				success,
+				CosmicGameErrors.FundTransferFailed(
+					"Transfer to charity contract failed.",
+					msg.value,
+					charity
+				)
+			);
 			emit CharityDepositEvent(msg.value, charity);
 			return;
 		}
@@ -124,9 +147,30 @@ contract StakingWalletCST is Ownable {
 	}
 
 	function unstake(uint256 stakeActionId) public {
-		require(stakeActions[stakeActionId].unstakeTime == 0, "Token has already been unstaked.");
-		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can unstake.");
-		require(stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp, "Not allowed to unstake yet.");
+		require(
+			stakeActions[stakeActionId].unstakeTime == 0,
+			CosmicGameErrors.TokenAlreadyUnstaked(
+				"Token has already been unstaked.",
+				stakeActionId
+			)
+		);
+		require(
+			stakeActions[stakeActionId].owner == msg.sender,
+			CosmicGameErrors.AccessError(
+				"Only the owner can unstake.",
+				stakeActionId,
+				msg.sender
+			)
+		);
+		require(
+			stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp,
+		   	CosmicGameErrors.EarlyUnstake(
+				"Not allowed to unstake yet.",
+				stakeActionId,
+				stakeActions[stakeActionId].unstakeEligibleTime,
+				block.timestamp
+			)
+		);
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
 		_removeToken(tokenId);
 		nft.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
@@ -142,37 +186,102 @@ contract StakingWalletCST is Ownable {
 	}
 
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
-		require(stakeActionId < numStakeActions, "Invalid stakeActionId.");
-		require(ETHDepositId < numETHDeposits, "Invalid ETHDepositId.");
-		require(stakeActions[stakeActionId].unstakeTime > 0, "Token has not been unstaked.");
-		require(!stakeActions[stakeActionId].depositClaimed[ETHDepositId], "This deposit was claimed already.");
-		require(stakeActions[stakeActionId].owner == msg.sender, "Only the owner can claim reward.");
+		require(
+			stakeActionId < numStakeActions,
+			CosmicGameErrors.InvalidActionId(
+				"Invalid stakeActionId.",
+				stakeActionId
+			)
+		);
+		require(
+			ETHDepositId < numETHDeposits,
+		    CosmicGameErrors.InvalidDepositId(
+				"Invalid ETHDepositId.",
+				ETHDepositId
+			)
+		);
+		require(
+			stakeActions[stakeActionId].unstakeTime > 0,
+			CosmicGameErrors.TokenNotUnstaked(
+				"Token has not been unstaked.",
+				stakeActionId
+			)
+		);
+		require(
+			!stakeActions[stakeActionId].depositClaimed[ETHDepositId],
+			CosmicGameErrors.DepositAlreadyClaimed(
+				"This deposit was claimed already.",
+				stakeActionId,
+				ETHDepositId
+			)
+		);
+		require(
+			stakeActions[stakeActionId].owner == msg.sender,
+			CosmicGameErrors.AccessError(
+				"Only the owner can claim reward.",
+				stakeActionId,
+				msg.sender
+			)
+		);
 		// depositTime is compared without '=' operator to prevent frontrunning (sending stake
 		// operation within the same block as claimPrize transaction)
 		require(
 			stakeActions[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime,
-			"You were not staked yet."
+			CosmicGameErrors.DepositOutsideStakingWindow(
+				"You were not staked yet.",
+				stakeActionId,
+				ETHDepositId,
+				stakeActions[stakeActionId].unstakeTime,
+				stakeActions[stakeActionId].stakeTime,
+				ETHDeposits[ETHDepositId].depositTime
+			)
 		);
 		require(
 			stakeActions[stakeActionId].unstakeTime > ETHDeposits[ETHDepositId].depositTime,
-			"You were already unstaked."
+			CosmicGameErrors.DepositOutsideStakingWindow(
+				"You were already unstaked.",
+				stakeActionId,
+				ETHDepositId,
+				stakeActions[stakeActionId].unstakeTime,
+				stakeActions[stakeActionId].stakeTime,
+				ETHDeposits[ETHDepositId].depositTime
+			)
 		);
 		stakeActions[stakeActionId].depositClaimed[ETHDepositId] = true;
 		uint256 amount = ETHDeposits[ETHDepositId].depositAmount / ETHDeposits[ETHDepositId].numStaked;
 		(bool success, ) = stakeActions[stakeActionId].owner.call{ value: amount }("");
-		require(success, "Reward transfer failed.");
+		require(
+			success,
+			CosmicGameErrors.FundTransferFailed(
+				"Reward transfer failed.",
+				amount,
+				msg.sender
+			)
+		);
 		emit ClaimRewardEvent(stakeActionId, ETHDepositId, amount, msg.sender);
 	}
 
 	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external {
-		require(actions.length == deposits.length, "Array arguments must be of the same length.");
+		require(
+			actions.length == deposits.length,
+			CosmicGameErrors.IncorrectArrayArguments(
+				"Array arguments must be of the same length.",
+				actions.length,
+				deposits.length
+			)
+		);
 		for (uint256 i = 0; i < actions.length; i++) {
 			claimReward(actions[i], deposits[i]);
 		}
 	}
 
 	function setCharity(address newCharityAddress) external onlyOwner {
-		require(newCharityAddress != address(0), "Zero-address was given.");
+		require(
+			newCharityAddress != address(0),
+			CosmicGameErrors.ZeroAddress(
+				"Zero-address was given."
+			)
+		);
 		charity = newCharityAddress;
 		emit CharityUpdatedEvent(charity);
 	}
@@ -180,10 +289,22 @@ contract StakingWalletCST is Ownable {
 	function moduloToCharity() external onlyOwner {
 		uint256 amount;
 		amount = modulo;
-		require(amount > 0, "Modulo is zero.");
+		require(
+			amount > 0,
+			CosmicGameErrors.ModuloIsZero(
+				"Modulo is zero."
+			)
+		);
 		modulo = 0;
 		(bool success, ) = charity.call{ value: amount }("");
-		require(success, "Transfer to charity failed.");
+		require(
+			success,
+			CosmicGameErrors.FundTransferFailed(
+				"Transfer to charity failed.",
+				amount,
+				charity
+			)
+		);
 		emit ModuloSentEvent(amount);
 	}
 
@@ -219,14 +340,27 @@ contract StakingWalletCST is Ownable {
 	}
 
 	function _insertToken(uint256 tokenId, uint256 actionId) internal {
-		require(!isTokenStaked(tokenId), "Token already in the list.");
+		require(
+			!isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyInserted(
+				"Token already in the list.",
+				tokenId,
+				actionId
+			)
+		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function _removeToken(uint256 tokenId) internal {
-		require(isTokenStaked(tokenId), "Token is not in the list.");
+		require(
+			isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyDeleted(
+				"Token is not in the list.",
+				tokenId
+			)
+		);
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;
@@ -255,7 +389,14 @@ contract StakingWalletCST is Ownable {
 		for (uint256 i = 0; i < unstake_actions.length; i++) {
 			unstake(unstake_actions[i]);
 		}
-		require(claim_actions.length == claim_deposits.length, "Claim array arguments must be of the same length.");
+		require(
+			claim_actions.length == claim_deposits.length,
+			CosmicGameErrors.IncorrectArrayArguments(
+				"Claim array arguments must be of the same length.",
+				claim_actions.length,
+				claim_deposits.length
+			)
+		);
 		for (uint256 i = 0; i < claim_actions.length; i++) {
 			claimReward(claim_actions[i], claim_deposits[i]);
 		}

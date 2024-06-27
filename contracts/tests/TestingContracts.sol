@@ -8,6 +8,7 @@ import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../Constants.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
+import { CosmicGameErrors } from "../Errors.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {
@@ -132,14 +133,27 @@ contract TestStakingWalletCST is StakingWalletCST {
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
-		require(!isTokenStaked(tokenId), "Token already in the list.");
+		require(
+			!isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyInserted(
+				"Token already in the list.",
+				tokenId,
+				actionId
+			)
+		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function removeToken(uint256 tokenId) external {
-		require(isTokenStaked(tokenId), "Token is not in the list.");
+		require(
+			isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyDeleted(
+				"Token is not in the list.",
+				tokenId
+			)
+		);
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;
@@ -157,14 +171,27 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
-		require(!isTokenStaked(tokenId), "Token already in the list.");
+		require(
+			!isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyInserted(
+				"Token already in the list.",
+				tokenId,
+				actionId
+			)
+		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function removeToken(uint256 tokenId) external {
-		require(isTokenStaked(tokenId), "Token is not in the list.");
+		require(
+			isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyDeleted(
+				"Token is not in the list.",
+				tokenId
+			)
+		);
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;
