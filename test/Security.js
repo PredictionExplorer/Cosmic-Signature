@@ -33,6 +33,7 @@ describe("Security", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		await cosmicGame.setTokenContract(cosmicToken.address);
 		await cosmicGame.setNftContract(cosmicSignature.address);
@@ -63,15 +64,14 @@ describe("Security", function () {
 		let prizeAmount = await cosmicGame.prizeAmount();
 		let reclaim_bal_before = await ethers.provider.getBalance(reclaim.address);
 		// Make sure there is no re-entrancy
-		await expect(reclaim.connect(addr3).claimAndReset(ethers.BigNumber.from("1"))).to.be.revertedWith(
-			"Transfer to the winner failed.",
-		);
+		await expect(reclaim.connect(addr3).claimAndReset(ethers.BigNumber.from("1"))).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 	});
 	it("Is possible to take prize before activation", async function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } = await loadFixture(
 			deployCosmic,
 		);
 		[owner, addr1, ...addrs] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = ethers.utils.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
 		await ethers.provider.send("evm_mine"); // begin
@@ -80,6 +80,6 @@ describe("Security", function () {
 		await ethers.provider.send("evm_mine");
 		let prizeAmount = await cosmicGame.prizeAmount();
 		let balance_before = await addr1.getBalance();
-		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWith("There is no last bidder.");
+		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"NoLastBidder");
 	});
 });
