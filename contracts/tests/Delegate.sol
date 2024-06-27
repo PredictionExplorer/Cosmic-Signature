@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.26;
 
 import { CosmicGameConstants } from "../Constants.sol";
 import { CosmicGame } from "../CosmicGame.sol";
@@ -109,9 +109,6 @@ contract BLTest is BusinessLogic {
 	}
 	function f30() external {
 		numRaffleNFTWinnersBidding= DEFAULT_VALUE;
-	}
-	function f31() external {
-		numRaffleNFTWinnersStakingCST = DEFAULT_VALUE;
 	}
 	function f32() external {
 		winners[DEFAULT_INDEX] = DEFAULT_ADDRESS;
@@ -274,10 +271,6 @@ contract CGTest is CosmicGame {
 	}
 	function f30() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f30.selector));
-		require(success, "Delegate call execution failed.");
-	}
-	function f31() external {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f31.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f32() external {
