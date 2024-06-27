@@ -210,12 +210,6 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.numRaffleNFTWinnersBidding();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
-	it("numRaffleNFTWinnersStakingCST", async function () {
-		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f31();
-		let value = await cgtest.numRaffleNFTWinnersStakingCST();
-		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
-	});
 	it("winners", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f32();

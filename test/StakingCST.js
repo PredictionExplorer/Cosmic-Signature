@@ -1070,35 +1070,6 @@ describe("Staking CST tests", function () {
 				let bn = ethers.BigNumber.from(rand);
 				let hex = bn.toHexString(bn);
 				let hash = ethers.utils.keccak256(hex);
-				let luckyAddr = await newStakingWalletCST.pickRandomStaker(hash);
-				let numToks = luckyStakers[luckyAddr];
-				if (numToks === undefined) {
-					numToks = 0;
-				}
-				numToks = numToks + 1;
-				luckyStakers[luckyAddr] = numToks;
-			}
-			for (let i=0; i<numSigners; i++) {
-				let signer = signers[i];
-				let numToks = luckyStakers[signer.address];
-				let msg = "The raffle algorithm for holders is not random, staker "+signer.address;
-				if (numToks === undefined) {
-					throw msg;
-				}
-				if (numToks == 0) {
-					throw msg;
-				}
-			}
-		}
-		// Now the same process for RandomWalk verification
-		{
-			let luckyStakers = {};
-			let numSamples = 100;
-			for (let i=0; i<numSamples; i++) {
-				let rand = randomSeed + i;
-				let bn = ethers.BigNumber.from(rand);
-				let hex = bn.toHexString(bn);
-				let hash = ethers.utils.keccak256(hex);
 				let luckyAddr = await newStakingWalletRWalk.pickRandomStaker(hash);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {

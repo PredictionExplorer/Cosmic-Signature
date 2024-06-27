@@ -107,6 +107,7 @@ describe("Events", function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
 		[owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let bidPrice = await cosmicGame.getBidPrice();
 
 		let mintPrice = await randomWalkNFT.getMintPrice();
@@ -123,9 +124,8 @@ describe("Events", function () {
 		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.connect(bidder1).bid(params, { value: bidPrice });
 
-		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith(
-			"Non-existent winner for the round.",
-		);
+		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWithCustomError(contractErrors,"NonExistentWinner");
+
 		await ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await ethers.provider.send("evm_mine");
 
@@ -143,14 +143,10 @@ describe("Events", function () {
 		expectedPrizeAmount = balance.mul(25).div(100);
 		expect(prizeAmountAfterClaim).to.equal(expectedPrizeAmount);
 
-		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWith(
-			"The donated NFT does not exist.",
-		);
+		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWithCustomError(contractErrors,"NonExistentDonatedNFT");
 
 		await cosmicGame.connect(bidder1).claimDonatedNFT(0);
-		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWith(
-			"The NFT has already been claimed.",
-		);
+		await expect(cosmicGame.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWithCustomError(contractErrors,"NFTAlreadyClaimed");
 
 		mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(donor).mint({ value: mintPrice });
@@ -272,6 +268,8 @@ describe("Events", function () {
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+
 		const sevenDays = 7 * 24 * 60 * 60;
 
 		const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -283,16 +281,14 @@ describe("Events", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await expect(cosmicGame.connect(bidder1).bid(params, { value: bidPrice })).to.be.revertedWith(
-			"Not active yet.",
-		);
+		await expect(cosmicGame.connect(bidder1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"ActivationTime");
 
 		await expect(
 			bidder2.sendTransaction({
 				to: cosmicGame.address,
 				value: bidPrice,
 			}),
-		).to.be.revertedWith("Not active yet.");
+		).to.be.revertedWithCustomError(contractErrors,"ActivationTime");
 
 		await ethers.provider.send("evm_increaseTime", [100]);
 		await ethers.provider.send("evm_mine");
@@ -365,12 +361,6 @@ describe("Events", function () {
 			.to.emit(cosmicGame, "NumRaffleNFTWinnersBiddingChanged")
 			.withArgs(num_winners);
 		expect((await cosmicGame.numRaffleNFTWinnersBidding()).toString()).to.equal(num_winners.toString());
-
-		num_winners = ethers.BigNumber.from("13");
-		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingCST(num_winners))
-			.to.emit(cosmicGame, "NumRaffleNFTWinnersStakingCSTChanged")
-			.withArgs(num_winners);
-		expect((await cosmicGame.numRaffleNFTWinnersStakingCST()).toString()).to.equal(num_winners.toString());
 
 		num_winners = ethers.BigNumber.from("14");
 		await expect(cosmicGame.connect(owner).setNumRaffleNFTWinnersStakingRWalk(num_winners))
