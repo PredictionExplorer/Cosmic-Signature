@@ -60,6 +60,7 @@ describe("Staking RandomWalk tests", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
@@ -85,7 +86,7 @@ describe("Staking RandomWalk tests", function () {
 		await ethers.provider.send("evm_mine");
 		await newStakingWalletRWalk.unstake(0);
 
-		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWith("Token has already been unstaked.");
+		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyUnstaked");
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
@@ -102,6 +103,7 @@ describe("Staking RandomWalk tests", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
@@ -126,7 +128,7 @@ describe("Staking RandomWalk tests", function () {
 		await ethers.provider.send("evm_increaseTime", [unstakeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
 
-		await expect(newStakingWalletRWalk.connect(addr1).unstake(0)).to.be.revertedWith("Only the owner can unstake.");
+		await expect(newStakingWalletRWalk.connect(addr1).unstake(0)).to.be.revertedWithCustomError(contractErrors,"AccessError");
 	});
 	it("Shouldn't be possible to unstake before unstake date", async function () {
 		const {
@@ -143,6 +145,7 @@ describe("Staking RandomWalk tests", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(cosmicGame.address);
@@ -161,7 +164,7 @@ describe("Staking RandomWalk tests", function () {
 		let tx = await newStakingWalletRWalk.stake(0);
 		let receipt = await tx.wait();
 
-		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWith("Not allowed to unstake yet.");
+		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWithCustomError(contractErrors,"EarlyUnstake");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -178,6 +181,7 @@ describe("Staking RandomWalk tests", function () {
 			marketingWallet,
 			bLogic,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("TestStakingWalletRWalk");
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
@@ -192,13 +196,13 @@ describe("Staking RandomWalk tests", function () {
 		expect(tokenIndexCheck).to.equal(1);
 		let tokenIdCheck = await newStakingWalletRWalk.stakedTokens(tokenIndexCheck-1);
 		expect(tokenIdCheck).to.equal(sampleTokenId);
-		await expect(newStakingWalletRWalk.insertToken(sampleTokenId,0)).to.be.revertedWith("Token already in the list.");
+		await expect(newStakingWalletRWalk.insertToken(sampleTokenId,0)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyInserted");
 
 		let numTokens = await newStakingWalletRWalk.numTokensStaked();
 		expect(numTokens).to.equal(1);
 
 		await newStakingWalletRWalk.removeToken(sampleTokenId);
-		await expect(newStakingWalletRWalk.removeToken(owner.address)).to.be.revertedWith("Token is not in the list.");
+		await expect(newStakingWalletRWalk.removeToken(owner.address)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyDeleted");
 		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
 		async function mint_rwalk(a) {
 			let tokenPrice = await randomWalkNFT.getMintPrice();
