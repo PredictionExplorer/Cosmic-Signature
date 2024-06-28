@@ -48,12 +48,6 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.bidPrice();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
-	it("numETHBids", async function () {
-		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f4();
-		let value = await cgtest.numETHBids();
-		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
-	});
 	it("lastBidder", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f5();
@@ -118,18 +112,6 @@ describe("DelegateCallStorage", function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f15();
 		let value = await cgtest.lastCSTBidTime();
-		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
-	});
-	it("numCSTBids", async function () {
-		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f16();
-		let value = await cgtest.numCSTBids();
-		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
-	});
-	it("ETHToCSTBidRatio", async function () {
-		const { cgtest, bltest } = await loadFixture(deployCosmic);
-		await cgtest.f17();
-		let value = await cgtest.ETHToCSTBidRatio();
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("CSTAuctionLength", async function () {

@@ -545,9 +545,6 @@ describe("Cosmic Set1", function () {
 		await cosmicGame.connect(owner).setActivationTime(ethers.BigNumber.from("99"));
 		expect(await cosmicGame.activationTime()).to.equal(ethers.BigNumber.from("99"));
 
-		await cosmicGame.connect(owner).setETHToCSTBidRatio(ethers.BigNumber.from("99"));
-		expect(await cosmicGame.ETHToCSTBidRatio()).to.equal(ethers.BigNumber.from("99"));
-
 		await cosmicGame.connect(owner).setRoundStartCSTAuctionLength(ethers.BigNumber.from("3600"));
 		expect(await cosmicGame.RoundStartCSTAuctionLength()).to.equal(ethers.BigNumber.from("3600"));
 
@@ -606,7 +603,6 @@ describe("Cosmic Set1", function () {
 		await expect(cosmicGame.connect(owner).setPrizePercentage(ethers.BigNumber.from("26"))).to.be.revertedWithCustomError(cosmicGame,"SystemMode").withArgs(revertStr,ethers.BigNumber.from("0"));
 		await expect(cosmicGame.connect(owner).updateInitialBidAmountFraction(ethers.BigNumber.from("99"))).to.be.revertedWithCustomError(cosmicGame,"SystemMode").withArgs(revertStr,ethers.BigNumber.from("0"));
 		await expect(cosmicGame.connect(owner).setActivationTime(ethers.BigNumber.from("99"))).to.be.revertedWithCustomError(cosmicGame,"SystemMode").withArgs(revertStr,ethers.BigNumber.from("0"));
-		await expect(cosmicGame.connect(owner).setETHToCSTBidRatio(ethers.BigNumber.from("10"))).to.be.revertedWithCustomError(cosmicGame,"SystemMode").withArgs(revertStr,ethers.BigNumber.from("0"));
 		await expect(cosmicGame.connect(owner).setRoundStartCSTAuctionLength(ethers.BigNumber.from("3600"))).to.be.revertedWithCustomError(cosmicGame,"SystemMode").withArgs(revertStr,ethers.BigNumber.from("0"));
 		await expect(cosmicGame.connect(owner).setRuntimeMode()).to.be.revertedWithCustomError(cosmicGame,"SystemMode").withArgs(revertStr,ethers.BigNumber.from("0"));
 		await cosmicGame.connect(owner).prepareMaintenance();
