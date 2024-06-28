@@ -116,14 +116,13 @@ describe("BusinessLogic", function () {
 			bLogic,
 		} = await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGame.getBidPrice();
-		let numETHBids = await cosmicGame.numETHBids();
 		const [owner, otherAccount] = await ethers.getSigners();
 		await owner.sendTransaction({
 			to: cosmicGame.address,
 			value: bidPrice,
 		});
-		let newNumETHBids = await cosmicGame.numETHBids();
-		expect(newNumETHBids).to.equal(numETHBids.add(1));
+		let bidPriceAfter = await cosmicGame.getBidPrice();
+		expect(bidPriceAfter).not.to.equal(bidPrice);
 	});
 	it("Shouldn't be possible to claim prize if StakingWallet fails to receive deposit", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -305,7 +304,6 @@ describe("BusinessLogic", function () {
 				}
 				j++;
 				if (j>= numIterationsSecondary) {
-					console.log("Breaking due to overflow in number of iterations in the inner loop");
 					break;
 				}
 			}
@@ -315,17 +313,11 @@ describe("BusinessLogic", function () {
 				console.log(e);
 				let balanceEth = await ethers.provider.getBalance(owner.address);
 				let tb = await cosmicToken.balanceOf(owner.address);
-				console.log("Ending ETH balance: "+balanceEth.toString());
-				console.log("Ending CST balance: "+tb.toString());
-				console.log("Ending BidPrice: "+bidPrice.toString());
 				process.exit(1);
 			}
 			await ethers.provider.send("evm_increaseTime", [timeBump]);
 			await ethers.provider.send("evm_mine");
-			let numCSTBids = await cosmicGame.numCSTBids();
-			let numETHBids = await cosmicGame.numETHBids();
 			let CSTAuctionLength = await cosmicGame.CSTAuctionLength();
-			console.log("numCSTBids="+numCSTBids.toNumber()+", numETHBids="+numETHBids.toNumber()+",CSTAuctionLength="+CSTAuctionLength.toNumber());
 		}
 	})
 });

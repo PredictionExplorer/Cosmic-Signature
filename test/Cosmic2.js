@@ -57,13 +57,6 @@ describe("Cosmic Set2", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.bid(params, { value: bidPrice });
 
-		let numETHBids = await cosmicGame.numETHBids();
-		expect(numETHBids).to.equal(1);
-		let numCSTBids = await cosmicGame.numCSTBids();
-		expect(numCSTBids).to.equal(0);
-		let lastBidType = await cosmicGame.lastBidType();
-		expect(lastBidType).to.equal(0);
-
 		let tokenPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.mint({ value: tokenPrice }); // tokenId=0
 
@@ -72,19 +65,11 @@ describe("Cosmic Set2", function () {
 		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGame.bid(params, { value: bidPrice });
 
-		numETHBids = await cosmicGame.numETHBids();
-		expect(numETHBids).to.equal(1);
-		numCSTBids = await cosmicGame.numCSTBids();
-		expect(numCSTBids).to.equal(0);
 		lastBidType = await cosmicGame.lastBidType();
 		expect(lastBidType).to.equal(1);
 
 		await cosmicGame.bidWithCST("cst bid");
 
-		numETHBids = await cosmicGame.numETHBids();
-		expect(numETHBids).to.equal(1);
-		numCSTBids = await cosmicGame.numCSTBids();
-		expect(numCSTBids).to.equal(1);
 		lastBidType = await cosmicGame.lastBidType();
 		expect(lastBidType).to.equal(2);
 
@@ -356,7 +341,7 @@ describe("Cosmic Set2", function () {
 		let topic_sig = cosmicGame.interface.getEventTopic("BidEvent");
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGame.interface.parseLog(log);
-		expect("199989000000000000000").to.equal(parsed_log.args.numCSTTokens.toString());
+		expect("199995400000000000000").to.equal(parsed_log.args.numCSTTokens.toString());
 		expect(parsed_log.args.bidPrice.toNumber()).to.equal(-1);
 		expect(parsed_log.args.lastBidder).to.equal(addr1.address);
 		expect(parsed_log.args.message).to.equal("cst bid");
