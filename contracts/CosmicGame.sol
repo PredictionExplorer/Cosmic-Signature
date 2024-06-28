@@ -22,7 +22,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// we need to set the bidPrice to anything higher than 0 because the
 	// contract would break if it's zero and someone bids before a donation is made
 	uint256 public bidPrice = 10 ** 15;
-	uint256 public numETHBids = 0;
 	address public lastBidder = address(0);
 	uint256 public roundNum = 0;
 	// when the money can be taken out
@@ -36,8 +35,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	MarketingWallet public marketingWallet;
 	uint256 public startingBidPriceCST = 100e18;
 	uint256 public lastCSTBidTime = activationTime;
-	uint256 public numCSTBids = 0;
-	uint256 public ETHToCSTBidRatio = 10;
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// how much the deadline is pushed after every bid
@@ -150,7 +147,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
-	event ETHToCSTBidRatioChanged(uint newETHToCSTBidRatio);
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
 	event SystemModeChanged(uint256 newSystemMode);
 
@@ -677,29 +673,17 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit ActivationTimeChanged(activationTime);
 	}
 
-	function setETHToCSTBidRatio(uint256 newETHToCSTBidRatio) external onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
-		);
-		ETHToCSTBidRatio = newETHToCSTBidRatio;
-		emit ETHToCSTBidRatioChanged(ETHToCSTBidRatio);
-	}
-
 	function setRoundStartCSTAuctionLength(uint256 newAuctionLength) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				CosmicGameErrors.SystemMode(
+				CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
 				systemMode
 			)
 		);
 		RoundStartCSTAuctionLength = newAuctionLength;
 		emit RoundStartCSTAuctionLengthChanged(newAuctionLength);
-	}
+    }
 
 	function prepareMaintenance() external onlyOwner {
 		require(
