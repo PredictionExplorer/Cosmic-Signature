@@ -29,9 +29,6 @@ contract BLTest is BusinessLogic {
 	function f3() external {
 		bidPrice = DEFAULT_VALUE;
 	}
-	function f4() external {
-		numETHBids = DEFAULT_VALUE;
-	}
 	function f5() external {
 		lastBidder = DEFAULT_ADDRESS;
 	}
@@ -64,12 +61,6 @@ contract BLTest is BusinessLogic {
 	}
 	function f15() external {
 		lastCSTBidTime = DEFAULT_VALUE;
-	}
-	function f16() external {
-		numCSTBids = DEFAULT_VALUE;
-	}
-	function f17() external {
-		ETHToCSTBidRatio = DEFAULT_VALUE;
 	}
 	function f18() external {
 		CSTAuctionLength = DEFAULT_VALUE;
@@ -165,10 +156,6 @@ contract CGTest is CosmicGame {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f3.selector));
 		require(success, "Delegate call execution failed.");
 	}
-	function f4() external {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f4.selector));
-		require(success, "Delegate call execution failed.");
-	}
 	function f5() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f5.selector));
 		require(success, "Delegate call execution failed.");
@@ -211,14 +198,6 @@ contract CGTest is CosmicGame {
 	}
 	function f15() external {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f15.selector));
-		require(success, "Delegate call execution failed.");
-	}
-	function f16() external {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f16.selector));
-		require(success, "Delegate call execution failed.");
-	}
-	function f17() external {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BLTest.f17.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f18() external {

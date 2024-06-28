@@ -23,7 +23,6 @@ contract BusinessLogic is Context, Ownable {
 	mapping(uint256 => bool) public usedRandomWalkNFTs;
 	RandomWalkNFT public randomWalk;
 	uint256 public bidPrice;
-	uint256 public numETHBids;
 	address public lastBidder;
 	uint256 public roundNum;
 	uint256 public prizeTime;
@@ -35,8 +34,6 @@ contract BusinessLogic is Context, Ownable {
 	MarketingWallet public marketingWallet;
 	uint256 public startingBidPriceCST;
 	uint256 public lastCSTBidTime;
-	uint256 public numCSTBids;
-	uint256 public ETHToCSTBidRatio;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
 	uint256 public nanoSecondsExtra;
@@ -136,9 +133,6 @@ contract BusinessLogic is Context, Ownable {
 		CosmicGameConstants.BidType bidType = params.randomWalkNFTId == -1
 			? CosmicGameConstants.BidType.ETH
 			: CosmicGameConstants.BidType.RandomWalk;
-		if (bidType == CosmicGameConstants.BidType.ETH) {
-			numETHBids += 1;
-		}
 
 		uint256 newBidPrice = game.getBidPrice();
 		uint256 rwalkBidPrice = newBidPrice / 2;
@@ -205,8 +199,6 @@ contract BusinessLogic is Context, Ownable {
 		// everything that needs to be reset after round ends
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
-		numETHBids = 0;
-		numCSTBids = 0;
 		CSTAuctionLength = RoundStartCSTAuctionLength;
 		numRaffleParticipants = 0;
 		bidPrice = address(this).balance / initialBidAmountFraction;
@@ -279,15 +271,8 @@ contract BusinessLogic is Context, Ownable {
 		uint256 price = abi.decode(currentCSTPrice(), (uint256));
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
-		numCSTBids += 1;
 		// We want to there to be mainly ETH bids, not CST bids.
 		// In order to achieve this, we will adjust the auction length depending on the ratio.
-		if (numETHBids < ETHToCSTBidRatio * numCSTBids) {
-			// We are adding 3600 seconds in case the length somehow became zero.
-			CSTAuctionLength = CSTAuctionLength * 2 + 3600;
-		} else {
-			CSTAuctionLength /= 2;
-		}
 		token.burn(msg.sender, price);
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
