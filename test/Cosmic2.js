@@ -56,6 +56,11 @@ describe("Cosmic Set2", function () {
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+
+		let aLen = await cosmicGame.CSTAuctionLength();
+		await ethers.provider.send("evm_increaseTime", [aLen.toNumber()]);	// make CST price drop to 0
+		await ethers.provider.send("evm_mine");
 
 		let tokenPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.mint({ value: tokenPrice }); // tokenId=0
@@ -324,6 +329,8 @@ describe("Cosmic Set2", function () {
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await cosmicGame.connect(addr1).claimPrize();
 
+		await ethers.provider.send("evm_increaseTime", [20000]);	// make CST bid price cheaper
+		await ethers.provider.send("evm_mine");
 		await cosmicGame.connect(addr1).bidWithCST("cst bid");
 
 		let input = cosmicGame.interface.encodeFunctionData("currentCSTPrice", []);

@@ -548,6 +548,15 @@ describe("Cosmic Set1", function () {
 		await cosmicGame.connect(owner).setRoundStartCSTAuctionLength(ethers.BigNumber.from("3600"));
 		expect(await cosmicGame.RoundStartCSTAuctionLength()).to.equal(ethers.BigNumber.from("3600"));
 
+		await cosmicGame.connect(owner).setTokenReward(ethers.BigNumber.from("1234567890"));
+		expect(await cosmicGame.tokenReward()).to.equal(ethers.BigNumber.from("1234567890"));
+
+		await cosmicGame.connect(owner).setMarketingReward(ethers.BigNumber.from("1234567890"));
+		expect(await cosmicGame.marketingReward()).to.equal(ethers.BigNumber.from("1234567890"));
+
+		await cosmicGame.connect(owner).setMaxMessageLength(ethers.BigNumber.from("1234567890"));
+		expect(await cosmicGame.maxMessageLength()).to.equal(ethers.BigNumber.from("1234567890"));
+
 		await expect(cosmicGame.connect(owner).prepareMaintenance()).to.be.revertedWithCustomError(cosmicGame,"SystemMode");
 		await cosmicGame.setRuntimeMode();
 
