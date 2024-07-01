@@ -289,6 +289,28 @@ function bid(bytes calldata _data) public payable {
 		return retval;
 	}
 
+	// Use this function to read/write state variables in BusinessLogic contract in systemMode = MODE_MAINTENANCE only
+	// Useful to change those state variables that were created after CosmicGame.sol was deployed and has no knowledge about them\
+	// Also suitable to call any method in BusinessLogic.sol contract during maintenance window
+	function maintenanceProxyCall(bytes4 _sig, bytes calldata _encoded_params) external returns (bytes memory) {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+		);
+		(bool success, bytes memory retval) = address(bLogic).delegatecall(
+			abi.encodeWithSelector(_sig, _encoded_params)
+		);
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+		return retval;
+	}
+
 	function claimDonatedNFT(uint256 num) public {
 		(bool success, ) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(BusinessLogic.claimDonatedNFT.selector, num)
