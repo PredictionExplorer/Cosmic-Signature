@@ -10,6 +10,7 @@ library CosmicGameErrors {
 	error BidPrice(string errStr,uint256 amountRequired, uint256 amountSent);
 	error BidMessageLengthOverflow(string errStr,uint256 msgLength);
 	error UsedRandomWalkNFT(string errStr,uint256 randomWalkTokenId);
+	error InsufficientCSTBalance(string errStr,uint256 requiredAmount, uint256 senderBalance);
 
 	// Claim prize errors
 	error EarlyClaim(string errStr,uint256 claimTime, uint256 blockTimestamp);

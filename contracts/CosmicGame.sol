@@ -69,6 +69,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public numRaffleNFTWinnersBidding = 5;
 	uint256 public numRaffleNFTWinnersStakingRWalk = 4;
 
+	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
+	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
+	uint256 public maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
+
 	mapping(uint256 => address) public winners;
 
 	// Entropy for the raffle.
@@ -148,6 +152,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
 	event ActivationTimeChanged(uint256 newActivationTime);
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
+	event TokenRewardChanged(uint256 newReward);
+	event MarketingRewardChanged(uint256 newReward);
+	event MaxMessageLengthChanged(uint256 newMessageLength);
 	event SystemModeChanged(uint256 newSystemMode);
 
 	constructor() {
@@ -181,9 +188,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 				revert(ptr, size)
 			}
 		}
-	}
+}
 
-	function bid(bytes calldata _data) public payable {
+function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
 		if (!success) {
 			assembly {
@@ -684,6 +691,42 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		RoundStartCSTAuctionLength = newAuctionLength;
 		emit RoundStartCSTAuctionLengthChanged(newAuctionLength);
     }
+
+	function setTokenReward(uint256 newTokenReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(
+			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				systemMode
+			)
+		);
+		tokenReward = newTokenReward;
+		emit TokenRewardChanged(tokenReward);
+	}
+
+	function setMarketingReward(uint256 newMarketingReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(
+			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				systemMode
+			)
+		);
+		marketingReward = newMarketingReward;
+		emit MarketingRewardChanged(marketingReward);
+	}
+
+	function setMaxMessageLength(uint256 newMaxMessageLength) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(
+			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				systemMode
+			)
+		);
+		maxMessageLength = newMaxMessageLength;
+		emit MaxMessageLengthChanged(maxMessageLength);
+	}
 
 	function prepareMaintenance() external onlyOwner {
 		require(

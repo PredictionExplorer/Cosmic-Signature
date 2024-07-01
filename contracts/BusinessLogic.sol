@@ -49,6 +49,9 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public numRaffleETHWinnersBidding;
 	uint256 public numRaffleNFTWinnersBidding;
 	uint256 public numRaffleNFTWinnersStakingRWalk;
+	uint256 public tokenReward;
+	uint256 public marketingReward;
+	uint256 public maxMessageLength;
 	mapping(uint256 => address) public winners;
 	bytes32 public raffleEntropy;
 	RaffleWallet public raffleWallet;
@@ -219,7 +222,7 @@ contract BusinessLogic is Context, Ownable {
 			)
 		);
 		require(
-			bytes(message).length <= CosmicGameConstants.MAX_MESSAGE_LENGTH,
+			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow(
 			   	"Message is too long.",
 				bytes(message).length
@@ -238,26 +241,26 @@ contract BusinessLogic is Context, Ownable {
 		numRaffleParticipants += 1;
 
 		(bool mintSuccess, ) = address(token).call(
-			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, CosmicGameConstants.TOKEN_REWARD)
+			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
 		);
 		require(
 			mintSuccess,
 			CosmicGameErrors.ERC20Mint(
 				"CosmicToken mint() failed to mint reward tokens for the bidder.",
 				lastBidder,
-				CosmicGameConstants.TOKEN_REWARD
+				tokenReward
 			)
 		);
 
 		(mintSuccess, ) = address(token).call(
-			abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, CosmicGameConstants.MARKETING_REWARD)
+			abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, marketingReward)
 		);
 		require(
 			mintSuccess,
 			CosmicGameErrors.ERC20Mint(
 				"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
 				address(marketingWallet),
-				CosmicGameConstants.MARKETING_REWARD
+				marketingReward
 			)
 		);
 
@@ -268,7 +271,16 @@ contract BusinessLogic is Context, Ownable {
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
 		);
+		uint256 userBalance = token.balanceOf(msg.sender);
 		uint256 price = abi.decode(currentCSTPrice(), (uint256));
+		require(
+			userBalance >= price,
+			CosmicGameErrors.InsufficientCSTBalance(
+				"Insufficient CST token balance to make a bid with CST",
+				price,
+				userBalance
+			)
+		);
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		// We want to there to be mainly ETH bids, not CST bids.
