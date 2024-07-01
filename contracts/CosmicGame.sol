@@ -128,13 +128,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	);
 
 	/// Admin events
+	// Percentage values
 	event CharityPercentageChanged(uint256 newCharityPercentage);
 	event PrizePercentageChanged(uint256 newPrizePercentage);
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 	event StakingPercentageChanged(uint256 newStakingPercentage);
-	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
-	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
-	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
+	// Contract address values
 	event CharityAddressChanged(address newCharity);
 	event RandomWalkAddressChanged(address newRandomWalk);
 	event RaffleWalletAddressChanged(address newRaffleWallet);
@@ -144,17 +143,26 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 	event BusinessLogicAddressChanged(address newContractAddress);
-	event TimeIncreaseChanged(uint256 newTimeIncrease);
-	event TimeoutClaimPrizeChanged(uint256 newTimeout);
-	event PriceIncreaseChanged(uint256 newPriceIncrease);
-	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
+	// Raffles
+	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
+	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
+	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
+	// Bidding
 	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
-	event ActivationTimeChanged(uint256 newActivationTime);
+	event TimeIncreaseChanged(uint256 newTimeIncrease);
+	event PriceIncreaseChanged(uint256 newPriceIncrease);
+	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
+	event MaxMessageLengthChanged(uint256 newMessageLength);
+	// Prize claim
+	event TimeoutClaimPrizeChanged(uint256 newTimeout);
+	// Dutch auction (CST)
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
+	// Token rewards
 	event TokenRewardChanged(uint256 newReward);
 	event MarketingRewardChanged(uint256 newReward);
-	event MaxMessageLengthChanged(uint256 newMessageLength);
+	// System
+	event ActivationTimeChanged(uint256 newActivationTime);
 	event SystemModeChanged(uint256 newSystemMode);
 
 	constructor() {
