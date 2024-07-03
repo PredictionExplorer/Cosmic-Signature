@@ -19,50 +19,51 @@ import { MarketingWallet } from "./MarketingWallet.sol";
 
 contract BusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
-	CosmicGameConstants.BidType public lastBidType;
-	mapping(uint256 => bool) public usedRandomWalkNFTs;
 	RandomWalkNFT public randomWalk;
-	uint256 public bidPrice;
-	address public lastBidder;
-	uint256 public roundNum;
-	uint256 public prizeTime;
-	uint256 public activationTime;
-	uint256 public initialSecondsUntilPrize;
-	mapping(uint256 => address) public raffleParticipants;
-	uint256 public numRaffleParticipants;
+	CosmicSignature public nft;
 	CosmicToken public token;
+	BusinessLogic public bLogic;
+	RaffleWallet public raffleWallet;
+	StakingWalletCST public stakingWalletCST;
+	StakingWalletRWalk public stakingWalletRWalk;
 	MarketingWallet public marketingWallet;
+	address public charity;
+	uint256 public roundNum;
+	uint256 public bidPrice;
 	uint256 public startingBidPriceCST;
-	uint256 public lastCSTBidTime;
-	uint256 public CSTAuctionLength;
-	uint256 public RoundStartCSTAuctionLength;
 	uint256 public nanoSecondsExtra;
 	uint256 public timeIncrease;
 	uint256 public priceIncrease;
-	uint256 public timeoutClaimPrize;
-	address public charity;
 	uint256 public initialBidAmountFraction;
+	address public lastBidder;
+	CosmicGameConstants.BidType public lastBidType;
+	mapping(uint256 => bool) public usedRandomWalkNFTs;
+	uint256 public initialSecondsUntilPrize;
+	uint256 public prizeTime;
+	uint256 public timeoutClaimPrize;
+	mapping(uint256 => address) public raffleParticipants;
+	uint256 public numRaffleParticipants;
+	uint256 public lastCSTBidTime;
+	uint256 public CSTAuctionLength;
+	uint256 public RoundStartCSTAuctionLength;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
 	uint256 public stakingPercentage;
+	mapping(uint256 => address) public winners; 
 	uint256 public numRaffleETHWinnersBidding;
 	uint256 public numRaffleNFTWinnersBidding;
 	uint256 public numRaffleNFTWinnersStakingRWalk;
+	bytes32 public raffleEntropy;
+	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
+	uint256 public numDonatedNFTs;
+	uint256 public activationTime;
 	uint256 public tokenReward;
 	uint256 public marketingReward;
 	uint256 public maxMessageLength;
-	mapping(uint256 => address) public winners;
-	bytes32 public raffleEntropy;
-	RaffleWallet public raffleWallet;
-	StakingWalletRWalk public stakingWalletRWalk;
-	StakingWalletCST public stakingWalletCST;
-	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
-	uint256 public numDonatedNFTs;
-	CosmicSignature public nft;
-	BusinessLogic public bLogic;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
+	// END OF copy of main contract variables
 
 	event BidEvent(
 		address indexed lastBidder,
