@@ -705,7 +705,7 @@ describe("Cosmic Set1", function () {
 		let prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.add(100).toNumber()]);
 		await ethers.provider.send("evm_mine");
-		await expect(cosmicGame.connect(addr1).claimPrize());
+		await expect(cosmicGame.connect(addr1).claimPrize()).not.to.be.reverted;
 
 		tx = await cosmicGame.connect(addr1).claimManyDonatedNFTs([0, 1]);
 		receipt = await tx.wait();
