@@ -76,7 +76,7 @@ contract BusinessLogic is Context, Ownable {
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
+	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
@@ -433,21 +433,23 @@ contract BusinessLogic is Context, Ownable {
 		);
 
 		// Give ETH to the ETH raffle winners.
+		uint256 perWinnerAmount_ = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
-			(success, ) = address(raffleWallet).call{ value: raffleAmount_ }(
+			(success, ) = address(raffleWallet).call{ value: perWinnerAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
 			);
 			require(
 				success,
 				CosmicGameErrors.FundTransferFailed(
 					"Raffle deposit failed.",
-					raffleAmount_,
+					perWinnerAmount_,
 					raffleWinner_
 				)
 			);
-			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex);
+			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex, perWinnerAmount_);
+			winnerIndex += 1;
 		}
 
 		_roundEndResets();
