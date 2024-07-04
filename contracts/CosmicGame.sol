@@ -16,76 +16,113 @@ import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { BusinessLogic } from "./BusinessLogic.sol";
 
 contract CosmicGame is Ownable, IERC721Receiver {
-	CosmicGameConstants.BidType public lastBidType;
-	mapping(uint256 => bool) public usedRandomWalkNFTs;
+	// State variables
+
+	// External contracts
+	// RandomWalk token (http://randomwalknft.com for more info)
 	RandomWalkNFT public randomWalk;
-	// we need to set the bidPrice to anything higher than 0 because the
-	// contract would break if it's zero and someone bids before a donation is made
-	uint256 public bidPrice = 10 ** 15;
-	address public lastBidder = address(0);
-	uint256 public roundNum = 0;
-	// when the money can be taken out
-	uint256 public prizeTime;
-	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
-	// After a prize was claimed, start off the clock with this much time.
-	uint256 public initialSecondsUntilPrize = 24 * 3600;
-	mapping(uint256 => address) public raffleParticipants;
-	uint256 public numRaffleParticipants;
+	// CosmicSignature token, the ERC721 token holding all minted NFTs, minted during claimPrize()
+	CosmicSignature public nft;
+	// CosmicToken (ERC20) , token given as reward for every bid
 	CosmicToken public token;
+	// Contract holding all the business logic of the game, methods are exeucted via DELEGATECALL mechanism
+	BusinessLogic public bLogic;
+	// Contract holding ETH rewards for all raffle winners
+	RaffleWallet public raffleWallet;
+	// Contract used to execute Staking operations, receive staking deposits and distribute prize funds
+	StakingWalletCST public stakingWalletCST;
+	// Contract used to stake RandomWalk tokens, used to pick random winner of raffle CST tokens
+	StakingWalletRWalk public stakingWalletRWalk;
+	// Contract holding rewards for marketing the project in social media
 	MarketingWallet public marketingWallet;
+	// Account receiving all charity deposits on each prize claim
+	address public charity;
+	// END OF external contracts
+
+	// Bidding and Prize stake variables
+	// Holds current round number, incremented on every claimPrize()
+	uint256 public roundNum = 0;
+	// current bid price in ETH, incremented on every bid
+	uint256 public bidPrice = 10 ** 15;
+	// initial bid price for bidding with CST (in Dutch auction)
 	uint256 public startingBidPriceCST = 100e18;
-	uint256 public lastCSTBidTime = activationTime;
-	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
-	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// how much the deadline is pushed after every bid
 	uint256 public nanoSecondsExtra = 3600 * 10 ** 9;
 	// how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
-	// 1.0001
 	uint256 public timeIncrease = 1000100;
-
-	// how much the currentBid increases after every bid
-	// we want 1%?
+	// how much the bid price is increased after every bid
 	uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
-
-	// timeout for the winner to claim prize (seconds)
-	uint256 public timeoutClaimPrize = 24 * 3600;
-
-	// Some money will go to charity
-	address public charity;
-
 	// The bid size will be 1000 times smaller than the prize amount initially
 	uint256 public initialBidAmountFraction = 200;
+	// stores the address of last bidder, used to pick the winner when bids are exhausted
+	address public lastBidder = address(0);
+	// keepts track of last bid type (ETH, RandomWalk or CST tokens) , updated on every bid()
+	CosmicGameConstants.BidType public lastBidType;
+	// stores Random Walk tokens used for bidding, enforcing unique bid per token
+	mapping(uint256 => bool) public usedRandomWalkNFTs;
+	// number of seconds prizeTime is moved forward at each round start
+	uint256 public initialSecondsUntilPrize = 24 * 3600;
+	// stores the timestamp when main prize can be claimed, incremented on every bid
+	uint256 public prizeTime;
+	// timeout for the winner to claim prize (seconds)
+	uint256 public timeoutClaimPrize = 24 * 3600;
+	// keeps the addresses of every bidder, used to pick random winner of ETH in raffles
+	mapping(uint256 => address) public raffleParticipants;
+	// stores the number of participants made a bid (same as counter for total number of bids)
+	uint256 public numRaffleParticipants;
+	// keeps track of last bid with CST tokens, used to calculate current CST bid price
+	uint256 public lastCSTBidTime = activationTime;
+	// stores the duration of Dutch auction, for bidding with CST tokens
+	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+	// stores default auction duration, and used to reset the duration at every round start
+	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+	// END OF Bidding and prize variables
 
+	// Percentages for fund distribution
+	// Main Prize percentage, the percentage of balance of the contract given in ETH to the last person to bid
 	uint256 public prizePercentage = 25;
-
-	// 10% of the prize pool goes to the charity
+	// percentage of funds that goes to charity
 	uint256 public charityPercentage = 10;
-
+	// percentage of funds that is distributed in ETH raffles (given only to bidders)
 	uint256 public rafflePercentage = 5;
-
+	// percentage of funds that id ditributed between stakers (CST stakers only)
 	uint256 public stakingPercentage = 10;
+	// END OF percentage variables
 
+	// Variables for the process of claiming prize
+	// stores the address of every winner by round
+	mapping(uint256 => address) public winners; // map of: [roundNum] -> [winnerAddress]
+	// how many bidders will participate in ETH raffles when someone claims prize
 	uint256 public numRaffleETHWinnersBidding = 3;
+	// how many bidders will earn an NFT token in raffle when someone claims prize
 	uint256 public numRaffleNFTWinnersBidding = 5;
+	// how many CST tokens will be minted for RandomWalk stakers when someone claims prize
 	uint256 public numRaffleNFTWinnersStakingRWalk = 4;
-
-	mapping(uint256 => address) public winners;
-
-	// Entropy for the raffle.
+	// entropy for the raffle
 	bytes32 public raffleEntropy;
-
-	RaffleWallet public raffleWallet;
-
-	StakingWalletRWalk public stakingWalletRWalk;
-	StakingWalletCST public stakingWalletCST;
-
+	// holds the record for every token donated to the game
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
+	// stores the number of donated tokens for all the games played
 	uint256 public numDonatedNFTs;
+	// END OF prize claim variables
 
-	CosmicSignature public nft;
-	BusinessLogic public bLogic;
+	// System variables (for managing the system)
+	// stores the timestamp for when project starts operating
+	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
+	// amount of CST tokens given as reward for every bid
+	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
+	// amount of CST tokens given as reward on every bid for marketing the project
+	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
+	// maximum length of message attached to bid() operation
+	uint256 public maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
+	// stores current system mode (Runtime , PrepareMaintenance , Maintenance)
 	uint256 public systemMode = CosmicGameConstants.MODE_MAINTENANCE;
-	mapping(uint256 => uint256) public extraStorage; // additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
+	// END OF system variables
+
+	// Variables for system expansion
+   	// additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
+	mapping(uint256 => uint256) public extraStorage;
+	// END OF State variables
 
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	// randomWalkNFTId is int256 (not uint256) because we use -1 to indicate that a Random Walk NFT was not used in this bid
@@ -106,7 +143,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 tokenId,
 		uint256 index
 	);
-	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
+	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
@@ -124,13 +161,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	);
 
 	/// Admin events
+	// Percentage values
 	event CharityPercentageChanged(uint256 newCharityPercentage);
 	event PrizePercentageChanged(uint256 newPrizePercentage);
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 	event StakingPercentageChanged(uint256 newStakingPercentage);
-	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
-	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
-	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
+	// Contract address values
 	event CharityAddressChanged(address newCharity);
 	event RandomWalkAddressChanged(address newRandomWalk);
 	event RaffleWalletAddressChanged(address newRaffleWallet);
@@ -140,14 +176,26 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event CosmicTokenAddressChanged(address newCosmicToken);
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 	event BusinessLogicAddressChanged(address newContractAddress);
-	event TimeIncreaseChanged(uint256 newTimeIncrease);
-	event TimeoutClaimPrizeChanged(uint256 newTimeout);
-	event PriceIncreaseChanged(uint256 newPriceIncrease);
-	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
+	// Raffles
+	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
+	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
+	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
+	// Bidding
 	event InitialSecondsUntilPrizeChanged(uint256 newInitialSecondsUntilPrize);
 	event InitialBidAmountFractionChanged(uint256 newInitialBidAmountFraction);
-	event ActivationTimeChanged(uint256 newActivationTime);
+	event TimeIncreaseChanged(uint256 newTimeIncrease);
+	event PriceIncreaseChanged(uint256 newPriceIncrease);
+	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
+	event MaxMessageLengthChanged(uint256 newMessageLength);
+	// Prize claim
+	event TimeoutClaimPrizeChanged(uint256 newTimeout);
+	// Dutch auction (CST)
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
+	// Token rewards
+	event TokenRewardChanged(uint256 newReward);
+	event MarketingRewardChanged(uint256 newReward);
+	// System
+	event ActivationTimeChanged(uint256 newActivationTime);
 	event SystemModeChanged(uint256 newSystemMode);
 
 	constructor() {
@@ -181,9 +229,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 				revert(ptr, size)
 			}
 		}
-	}
+}
 
-	function bid(bytes calldata _data) public payable {
+function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
 		if (!success) {
 			assembly {
@@ -266,6 +314,28 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	function proxyCall(bytes4 _sig, bytes calldata _encoded_params) external returns (bytes memory) {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+		);
+		(bool success, bytes memory retval) = address(bLogic).delegatecall(
+			abi.encodeWithSelector(_sig, _encoded_params)
+		);
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+		return retval;
+	}
+
+	// Use this function to read/write state variables in BusinessLogic contract in systemMode = MODE_MAINTENANCE only
+	// Useful to change those state variables that were created after CosmicGame.sol was deployed and has no knowledge about them\
+	// Also suitable to call any method in BusinessLogic.sol contract during maintenance window
+	function maintenanceProxyCall(bytes4 _sig, bytes calldata _encoded_params) external returns (bytes memory) {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
 		);
 		(bool success, bytes memory retval) = address(bLogic).delegatecall(
@@ -684,6 +754,42 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		RoundStartCSTAuctionLength = newAuctionLength;
 		emit RoundStartCSTAuctionLengthChanged(newAuctionLength);
     }
+
+	function setTokenReward(uint256 newTokenReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(
+			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				systemMode
+			)
+		);
+		tokenReward = newTokenReward;
+		emit TokenRewardChanged(tokenReward);
+	}
+
+	function setMarketingReward(uint256 newMarketingReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(
+			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				systemMode
+			)
+		);
+		marketingReward = newMarketingReward;
+		emit MarketingRewardChanged(marketingReward);
+	}
+
+	function setMaxMessageLength(uint256 newMaxMessageLength) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(
+			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
+				systemMode
+			)
+		);
+		maxMessageLength = newMaxMessageLength;
+		emit MaxMessageLengthChanged(maxMessageLength);
+	}
 
 	function prepareMaintenance() external onlyOwner {
 		require(

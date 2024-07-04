@@ -19,47 +19,51 @@ import { MarketingWallet } from "./MarketingWallet.sol";
 
 contract BusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
-	CosmicGameConstants.BidType public lastBidType;
-	mapping(uint256 => bool) public usedRandomWalkNFTs;
 	RandomWalkNFT public randomWalk;
-	uint256 public bidPrice;
-	address public lastBidder;
-	uint256 public roundNum;
-	uint256 public prizeTime;
-	uint256 public activationTime;
-	uint256 public initialSecondsUntilPrize;
-	mapping(uint256 => address) public raffleParticipants;
-	uint256 public numRaffleParticipants;
+	CosmicSignature public nft;
 	CosmicToken public token;
+	BusinessLogic public bLogic;
+	RaffleWallet public raffleWallet;
+	StakingWalletCST public stakingWalletCST;
+	StakingWalletRWalk public stakingWalletRWalk;
 	MarketingWallet public marketingWallet;
+	address public charity;
+	uint256 public roundNum;
+	uint256 public bidPrice;
 	uint256 public startingBidPriceCST;
-	uint256 public lastCSTBidTime;
-	uint256 public CSTAuctionLength;
-	uint256 public RoundStartCSTAuctionLength;
 	uint256 public nanoSecondsExtra;
 	uint256 public timeIncrease;
 	uint256 public priceIncrease;
-	uint256 public timeoutClaimPrize;
-	address public charity;
 	uint256 public initialBidAmountFraction;
+	address public lastBidder;
+	CosmicGameConstants.BidType public lastBidType;
+	mapping(uint256 => bool) public usedRandomWalkNFTs;
+	uint256 public initialSecondsUntilPrize;
+	uint256 public prizeTime;
+	uint256 public timeoutClaimPrize;
+	mapping(uint256 => address) public raffleParticipants;
+	uint256 public numRaffleParticipants;
+	uint256 public lastCSTBidTime;
+	uint256 public CSTAuctionLength;
+	uint256 public RoundStartCSTAuctionLength;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
 	uint256 public stakingPercentage;
+	mapping(uint256 => address) public winners; 
 	uint256 public numRaffleETHWinnersBidding;
 	uint256 public numRaffleNFTWinnersBidding;
 	uint256 public numRaffleNFTWinnersStakingRWalk;
-	mapping(uint256 => address) public winners;
 	bytes32 public raffleEntropy;
-	RaffleWallet public raffleWallet;
-	StakingWalletRWalk public stakingWalletRWalk;
-	StakingWalletCST public stakingWalletCST;
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
-	CosmicSignature public nft;
-	BusinessLogic public bLogic;
+	uint256 public activationTime;
+	uint256 public tokenReward;
+	uint256 public marketingReward;
+	uint256 public maxMessageLength;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
+	// END OF copy of main contract variables
 
 	event BidEvent(
 		address indexed lastBidder,
@@ -72,7 +76,7 @@ contract BusinessLogic is Context, Ownable {
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
+	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
@@ -219,7 +223,7 @@ contract BusinessLogic is Context, Ownable {
 			)
 		);
 		require(
-			bytes(message).length <= CosmicGameConstants.MAX_MESSAGE_LENGTH,
+			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow(
 			   	"Message is too long.",
 				bytes(message).length
@@ -238,26 +242,26 @@ contract BusinessLogic is Context, Ownable {
 		numRaffleParticipants += 1;
 
 		(bool mintSuccess, ) = address(token).call(
-			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, CosmicGameConstants.TOKEN_REWARD)
+			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
 		);
 		require(
 			mintSuccess,
 			CosmicGameErrors.ERC20Mint(
 				"CosmicToken mint() failed to mint reward tokens for the bidder.",
 				lastBidder,
-				CosmicGameConstants.TOKEN_REWARD
+				tokenReward
 			)
 		);
 
 		(mintSuccess, ) = address(token).call(
-			abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, CosmicGameConstants.MARKETING_REWARD)
+			abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, marketingReward)
 		);
 		require(
 			mintSuccess,
 			CosmicGameErrors.ERC20Mint(
 				"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
 				address(marketingWallet),
-				CosmicGameConstants.MARKETING_REWARD
+				marketingReward
 			)
 		);
 
@@ -268,7 +272,16 @@ contract BusinessLogic is Context, Ownable {
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
 		);
+		uint256 userBalance = token.balanceOf(msg.sender);
 		uint256 price = abi.decode(currentCSTPrice(), (uint256));
+		require(
+			userBalance >= price,
+			CosmicGameErrors.InsufficientCSTBalance(
+				"Insufficient CST token balance to make a bid with CST",
+				price,
+				userBalance
+			)
+		);
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 		// We want to there to be mainly ETH bids, not CST bids.
@@ -420,21 +433,23 @@ contract BusinessLogic is Context, Ownable {
 		);
 
 		// Give ETH to the ETH raffle winners.
+		uint256 perWinnerAmount_ = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
-			(success, ) = address(raffleWallet).call{ value: raffleAmount_ }(
+			(success, ) = address(raffleWallet).call{ value: perWinnerAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
 			);
 			require(
 				success,
 				CosmicGameErrors.FundTransferFailed(
 					"Raffle deposit failed.",
-					raffleAmount_,
+					perWinnerAmount_,
 					raffleWinner_
 				)
 			);
-			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex);
+			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex, perWinnerAmount_);
+			winnerIndex += 1;
 		}
 
 		_roundEndResets();
