@@ -123,6 +123,20 @@ contract SpecialCosmicGame is CosmicGame {
 			}
 		}
 	}
+	function mintCST(address to,uint256 roundNum) external {
+		
+		(bool success, ) = address(nft).call(
+			abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum)
+		);
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
 	constructor(
