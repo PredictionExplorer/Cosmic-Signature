@@ -2,160 +2,70 @@
 
 Cosmic Signature is an NFT project designed for those who love unique, engaging, and socially impactful experiences. Combining stunning generative art, a thrilling bidding game, and a commitment to charitable giving, Cosmic Signature offers an opportunity to collect one-of-a-kind NFTs while participating in a vibrant and dynamic community.
 
-- **What is Cosmic Signature?**  
-Cosmic Signature is an NFT project that combines generative art, an exciting bidding game, and social impact through charitable giving. It offers a unique, engaging, and socially impactful experience for the NFT community.
+## Key Features
 
-- **How does the bidding game work?**  
-Each round begins with a 24-hour countdown and a low initial bid price of around 0.01 ETH. Every new bid increases the price by 1% and adds an hour to the clock. If you're the last person to bid when the timer runs out, you win the main prize.
+- **Generative Art**: Cosmic Signature NFTs showcase mesmerizing patterns inspired by the three-body problem in physics, simulating planetary trajectories to create captivating cosmic visuals.
+- **Dynamic Bidding Game**: Compete in a high-stakes bidding game with a 24-hour countdown and an initial low bid price. Each bid increases the price by approximately 1% and adds an hour to the clock. Be the last bidder when the timer runs out to win the main prize!
+- **Raffle System**: Each bid doubles as a raffle ticket for a chance to win additional rewards. Each round includes three ETH raffle prizes (4% of the pot each) and five newly minted Cosmic Signature NFTs.
+- **Cosmic Tokens (CST) & DAO**: Earn Cosmic Tokens with every bid and use them to vote in the Cosmic DAO, helping to decide on charitable contributions and taking part in other governance decisions.
+- **Random Walk NFT Integration**: If you're a Random Walk NFT holder, enjoy a 50% discount on ETH bids in Cosmic Signature, adding more excitement and opportunities to win.
 
-- **What is the main prize?**  
-The main prize is a unique Cosmic Signature NFT, 25% of the ETH pot, and any donated NFTs from other projects.
+## How It Works
 
-- **What are Cosmic Tokens and the Cosmic DAO?**  
-Every bid also earns you Cosmic Tokens, which can be used to vote in the Cosmic DAO. The DAO helps decide which beneficiary receives 10% of the pot each round and may be used for other governance decisions in the future.
+### Bidding Game Mechanics
+- **Initial Bid Price**: Each round begins with a low initial bid price to encourage participation.
+- **Bidding Process**: Each new bid increases the price by approximately 1% and adds an hour to the countdown timer.
+- **Winning the Round**: The last person to bid when the timer runs out wins the main prize, which includes a unique Cosmic Signature NFT and 25% of the ETH pot, held in a special contract.
 
-- **How does the raffle work?**  
-Each bid doubles as a raffle ticket. There are eight raffle winners each round — three winning a portion of the pot and five receiving a newly minted Cosmic Signature NFT.
+### Rewards
+- **Main Prize**: The main prize winner receives a unique Cosmic Signature NFT and about 25% of the ETH pot.
+- **Raffle Prizes**: Each round includes three ETH raffle prizes (4% of the pot each) and five newly minted Cosmic Signature NFTs, distributed randomly among bidders.
+- **Total NFTs Minted Per Round**: Ten Cosmic Signature NFTs are minted per round—one for the main winner, five for the raffle winners, and four additional raffle winners.
 
-- **What is the connection with RandomWalkNFT?**  
-If you're a RandomWalkNFT holder, you can bid for free in Cosmic Signature, adding an extra layer of excitement and opportunity to the game.
+### Cosmic Tokens (CST) and DAO
+- **Earning CST**: Every bid earns 100 CST tokens for the bidder and 15 CST tokens for the marketing wallet.
+- **Marketing Wallet**: Controlled by the DAO, used for promotional activities and community rewards.
+- **Governance**: Use CST tokens to vote in the Cosmic DAO, influencing charitable contributions and other project decisions.
 
-- **How are the NFT images created?**  
-The images for the Cosmic Signature NFTs are generated based on the three-body problem in physics. We simulate the movement of three planets in space and draw the trajectories of each planet, creating beautiful and unique patterns.
+### Random Walk NFT Integration
+- **Discounted Bidding**: Random Walk NFT holders can bid at a 50% discount in ETH. Once used, a Random Walk NFT cannot be reused for bidding.
 
-- **How can I get involved?**  
-You can participate by bidding in a round or by donating an NFT from your project. We look forward to seeing you in the Cosmic Signature community!
+## Community and Governance
+- **Cosmic DAO**: A decentralized autonomous organization where 1 CST token equals 1 vote. The DAO decides on charitable contributions and marketing strategies.
+- **Charitable Contributions**: A portion of the pot is allocated to charity, as decided by the DAO.
 
-- **How does the price increase with each bid?**  
-Each bid increases the current price by 1%. This exponential growth adds an exciting strategic element to the bidding game.
+## Staking
+- **Cosmic Signature NFTs**: Stake your Cosmic Signature NFTs to earn a portion of the bidding fees. Approximately 10% of the prize pool is allocated to stakers each time there is a winner.
+- **Increasing Minimum Staking Period**: The minimum staking period for Cosmic Signature NFTs increases over time, equal to the time elapsed since the project’s launch.
+- **Reward Collection**: To collect your ETH rewards, you must unstake your NFTs. The new minimum staking period will be longer than before, based on the current time since the project launch.
+- **Random Walk NFTs**: Random Walk NFTs can be staked for a fixed minimum period of 30 days, with a chance to win additional Cosmic Signature NFTs.
 
-- **Who receives the 10% contribution from the pot?**  
-10% of the pot is allocated as a contribution to a beneficiary, decided by the Cosmic DAO. This could be a charitable organization, a research group, an open-source project, or even Ethereum client developers. This is our way of contributing to and supporting the wider community.
+## Security and Transparency
+- **Built on Ethereum**: Ensures robust security and transparency for all transactions.
+- **External Audits**: Smart contracts undergo thorough external audits to ensure fairness and security.
 
-- **What happens to the remaining ETH in the pot after each round?**  
-About half of the ETH pot is given to the winner of the round. The remaining half is carried over to the next round's pot, increasing the starting value for the next game.
+## Getting Started
+1. **Join Our Community**: Follow us on Twitter, join our Discord, and engage with our growing community.
+2. **Participate in Bidding**: Place your bids using ETH or CST and compete to win exclusive NFTs and rewards.
+3. **Earn and Use Cosmic Tokens**: Earn CST through bidding and participate in the Cosmic DAO to influence the project’s future.
+4. **Stake Your NFTs**: Stake your Cosmic Signature NFTs to earn additional rewards over time.
 
-- **Can I participate if I don't own any NFTs?**  
-Yes, anyone can participate in the Cosmic Signature game by placing a bid. You do not need to own an NFT to bid, but owning a RandomWalkNFT allows you to place a bid for free.
+## FAQs
 
-- **How can other NFT projects donate their NFTs to the game?**  
-Projects interested in donating their NFTs to the Cosmic Signature pot can get in touch with us through our website. Their NFTs will be displayed on the Cosmic Signature page for the duration of the round, providing visibility and marketing for their project.
+### How can I participate?
+Anyone can participate by placing a bid. You do not need to own an NFT to bid, but owning a Random Walk NFT allows you to bid at a 50% discount.
 
-- **How many Cosmic Signature NFTs are minted each round?**  
-Six Cosmic Signature NFTs are minted each round—one for the main prize winner and one for each of the five NFT raffle winners.
+### How are the NFT images created?
+The images for Cosmic Signature NFTs are generated based on the three-body problem in physics, creating beautiful and unique patterns.
 
-- **How can I trade or sell my Cosmic Signature NFTs or Cosmic Tokens?**  
-Cosmic Signature NFTs and Cosmic Tokens are compatible with any marketplace or exchange that supports ERC721 and ERC20 tokens, respectively. This includes popular platforms like OpenSea for NFTs and Uniswap for tokens.
+### How can other NFT projects donate their NFTs to the game?
+Projects interested in donating their NFTs can contact us through our website. Donated NFTs will be displayed on the Cosmic Signature page during the round.
 
-- **Can I place multiple bids during a round?**  
-Yes, you can place as many bids as you like during a round. Each bid increases your chances of winning and earns you more Cosmic Tokens.
+### How can I trade or sell my Cosmic Signature NFTs or Cosmic Tokens?
+Cosmic Signature NFTs and CST can be traded on any marketplace or exchange that supports ERC721 and ERC20 tokens, such as OpenSea and Uniswap.
 
-- **Can I participate in the Cosmic DAO without bidding in the game?**  
-Yes, you can purchase Cosmic Tokens on a supported exchange and use them to participate in the DAO. However, bidding in the game is the primary way to earn tokens.
+### Are there any fees involved in the game?
+Aside from the cost of your bids, the only additional fee is the transaction fee on the Arbitrum network.
 
-- **Can I donate to the pot without participating in the bidding?**  
-Yes, it is possible to donate directly to the pot. While this functionality is not directly accessible on the website, our smart contract includes a method that allows for ETH donations to the pot. Please reach out to our support team for guidance if you're interested in making a donation in this way.
-
-- **How can I ensure that my bid has been successfully placed?**  
-All successful bids will be confirmed on the blockchain. You can verify your transaction on the relevant Ethereum block explorer using your transaction hash.
-
-- **What happens if two bids are placed at the same time?**  
-Transactions on the Ethereum blockchain are processed in the order they are received. If two bids are received at the same time, the one that is confirmed by the blockchain first will be considered the valid bid.
-
-- **How long does each round last?**  
-Each round begins with a 24-hour countdown. However, because each bid adds an hour to the countdown, rounds may last longer than 24 hours.
-
-- **How is the security of the Cosmic Signature game ensured?**  
-Cosmic Signature is built on the Ethereum blockchain, which provides robust security for all transactions. The smart contracts for the game have been carefully designed to ensure fairness and transparency.
-
-- **How can I stay updated on Cosmic Signature news and updates?**  
-We recommend following our social media channels and joining our community chat for the latest news and updates.
-
-- **Are there any fees involved in the Cosmic Signature game?**  
-Aside from the cost of your bids, the only additional cost is the transaction fee on the Arbitrum network. This fee is for processing transactions and is not controlled by Cosmic Signature. Please be aware that network fees can vary.
-
-- **How can I get help if I encounter problems or have questions?**  
-Our community and support team are always ready to help. You can reach out to us via our community chat, social media channels, or support email.
-
-- **What is Arbitrum and why is Cosmic Signature deployed on it?**  
-Arbitrum is a layer 2 scaling solution for Ethereum that helps to speed up transactions and reduce fees. Cosmic Signature is deployed on Arbitrum to take advantage of these benefits, providing a better user experience with faster and cheaper transactions.
-
-- **How do I get ETH on Arbitrum?**  
-To get ETH on Arbitrum, you need to bridge it from the Ethereum mainnet. You can do this through the official Arbitrum bridge or other supported bridges. This involves sending your ETH to a special contract on Ethereum, which then mints an equivalent amount of ETH on Arbitrum. Please note that bridging assets requires gas fees on the Ethereum network and can take some time due to Ethereum block times.
-
-- **Can I use my existing Ethereum wallet on Arbitrum?**  
-Yes, you can use your existing Ethereum wallet on Arbitrum. The same private keys are valid on both networks. However, you will need to adjust your wallet's network settings to connect to Arbitrum. Instructions for this can vary by wallet, so please refer to your wallet's specific guidance on connecting to other networks.
-
-- **How do I view my Cosmic Tokens and NFTs on Arbitrum?**  
-You can view your Cosmic Tokens and NFTs directly on the Cosmic Signature website or in your wallet like any other ERC20 or ERC721 asset. However, to view them in your wallet, you will need to add the tokens' contract addresses manually. These addresses can be found on our website or by asking in our community chat. Always ensure that you're connected to the Arbitrum network in your wallet to view your assets correctly.
-
-- **Can I trade my Cosmic Tokens and NFTs on Arbitrum?**  
-Yes, Cosmic Tokens and NFTs can be traded on any marketplace or exchange that supports the Arbitrum network. This includes popular platforms like Uniswap for tokens and OpenSea for NFTs. Always make sure to verify that you are interacting with the correct contract addresses when trading.
-
-- **What controls does the team have over the Cosmic Signature game?**  
-Initially, the team behind Cosmic Signature will have the ability to adjust certain parameters of the game, such as the number of hours added after each bid or the percentage of the pot that goes to the raffle winners. This control is facilitated through the smart contract's "Ownable" feature, which assigns control to the address that deployed the contract.
-
-- **Will the team always have control over the game's parameters?**  
-No. Once the project is stable and functioning as intended, the developers will renounce their ownership of the contract, effectively giving up control over these parameters. This is done by calling the renounceOwnership() function in the contract.
-
-- **What does it mean to "renounce ownership"?**  
-Renouncing ownership is a feature of the "Ownable" smart contract. When the developers call the renounceOwnership() function, they are permanently transferring control from their address. Once this function is called, the parameters of the game become immutable and cannot be changed.
-
-- **Why would the team renounce ownership?**  
-The team's goal is to create a fair and decentralized game. Renouncing ownership ensures that the game's rules can't be changed arbitrarily once it's up and running, adding a layer of trust and transparency for the players.
-
-- **Does the time added per bid always stay the same?**  
-No, the time added after each bid starts at 1 hour, but it will gradually increase over time. This increment is designed to be very slow, approximately 10% to 20% per year (exponential growth).
-
-- **Why does the time added per bid increase over time?**  
-The primary reason for this mechanism is to control the total number of Cosmic Signature NFTs that are minted. By slowing down the game, we limit the number of new NFTs being created, maintaining their exclusivity and potential value over time.
-
-- **Does this mean that the number of Cosmic Signature NFTs is limited?**  
-Yes, due to the gradual increase in time added per bid, the pace of new NFT creation slows down over time. This effectively limits the total number of Cosmic Signature NFTs, making them a limited resource in the long run.
-
-- **How does the increase in time per bid affect the game?**  
-As the time added per bid increases, the game slows down, which means that rounds will last longer. This change is designed to be gradual and slow, ensuring a smooth game experience while also limiting the total number of Cosmic Signature NFTs.
-
-- **What impact does limiting the number of Cosmic Signature NFTs have?**  
-By limiting the total number of Cosmic Signature NFTs, we aim to maintain their exclusivity and potential value. As the time added per bid increases and the creation of new NFTs slows down, each Cosmic Signature NFT becomes a more exclusive asset. This limited supply could potentially make each NFT more valuable over time.
-
-- **Why was Cosmic Signature created?**  
-Cosmic Signature was born out of a fascination with chaos theory and the unsolvable nature of the three-body problem. The idea of creating unique, dynamic art inspired by these principles felt intriguing and exciting. Our project is a blend of art, science, and blockchain technology.
-
-- **Is there a game theory element in Cosmic Signature?**  
-Absolutely! We're eager to see how participants will compete with each other within the parameters of the game. It's not just about winning; it's about strategy, timing, and risk assessment. The social dynamics and game theory aspects of Cosmic Signature are some of its most interesting features.
-
-- **How does the Cosmic Signature team profit from this project?**  
-We want to be transparent about this: our team doesn't pocket any money directly from the project. All the funds go into an immutable smart contract not controlled by us. Our interest lies in the Random Walk NFTs that we own, as we believe the success of Cosmic Signature will increase their value. That's our business interest, but our primary motivations are curiosity, creativity, and contribution to the blockchain community.
-
-- **Why is Cosmic Signature deployed on Arbitrum and not Ethereum?**  
-Our choice to deploy on Arbitrum was strategic. We believe that in the long run, most activity on Ethereum will migrate to Layer 2 solutions like Arbitrum. This is due to the significantly lower gas fees on Arbitrum while maintaining the same level of security as Ethereum Layer 1.
-
-- **What makes Arbitrum as secure as Ethereum Layer 1?**  
-Arbitrum is not a sidechain; it's a Rollup. This means that it bundles or "rolls up" multiple transfers into a single transaction, reducing the cost of transactions. But importantly, all its data and operations are still recorded on the Ethereum mainnet. This means that the security of Arbitrum is rooted in the Ethereum network, making it just as secure as Ethereum Layer 1.
-
-- **What makes Cosmic Signature NFTs unique?**  
-Cosmic Signature NFTs are unique in that they are on-chain and self-sustaining. Each NFT is created with a randomly generated seed that's stored in the smart contract. The image and video of the NFT is produced from this seed using an open-source Rust program. The seed determines the starting positions and the number of planets displayed in the NFT, making every NFT unique and special.
-
-- **What is the significance of generating NFTs with a random seed?**  
-The seed-based creation process of Cosmic Signature NFTs ensures their long-lasting existence. Unlike other NFT projects where images are stored on centralized servers that can go down, making the NFT images unavailable, the seed for each Cosmic Signature NFT is stored on the blockchain. With our open-source Rust program, anyone can take the seed and generate the NFT image and video at any time.
-
-- **What if the team behind Cosmic Signature disappears?**  
-Should anything happen to the team, the project is designed to be self-sustaining. Since the seeds for each NFT are stored on-chain, anyone can recreate the NFT images and videos using our open-source Rust program. This ensures the longevity and continued existence of your Cosmic Signature NFTs, irrespective of the project team's status.
-
-- **Can I create a competing site with the Cosmic Signature NFTs?**  
-Absolutely! The open-source nature of our project allows anyone to generate the NFT images and videos based on the seeds. If you wish, you could create a competing site using the same mechanism. This open ecosystem encourages creativity and fosters a sense of community around the project.
-
-## Key Features:
-
-* Generative Art - Cosmic Signature NFTs showcase mesmerizing patterns inspired by the three-body problem in physics, simulating planetary trajectories to create captivating, cosmic visuals.
-* Bidding Game - Compete in a high-stakes bidding game with a 24-hour countdown and an initial bid price of 0.01 ETH. Each bid increases the price by 1% and adds an hour to the clock. Be the last bidder when the timer runs out to win the main prize!
-* Raffle System - Each bid doubles as a raffle ticket for a chance to win even more rewards. With eight raffle winners—three winning a portion of the pot and five receiving a newly minted Cosmic Signature NFT—your odds of winning are higher than ever!
-* Cosmic Tokens & DAO - Earn Cosmic Tokens with every bid and use them to vote in the Cosmic DAO, helping to decide which charity receives 10% of the pot and taking part in other governance decisions.
-* RandomWalkNFT Integration - If you're a RandomWalkNFT holder, enjoy the added benefit of bidding for free in Cosmic Signature, creating even more excitement and opportunities to win.
-
-```
-npx hardhat test
-npx hardhat export-abi
-npx hardhat run scripts/deploy.js --network arbigoerli
-```
+### How does staking work?
+You can stake your Cosmic Signature NFTs to earn a portion of the bidding fees. Approximately 10% of the prize pool is allocated to stakers each time there is a winner. The minimum staking period for Cosmic Signature NFTs increases over time, equal to the time elapsed since the project’s launch. To collect your ETH rewards, you must unstake your NFTs. Random Walk NFTs can be staked for a fixed minimum period of 30 days, with a chance to win additional Cosmic Signature NFTs.
