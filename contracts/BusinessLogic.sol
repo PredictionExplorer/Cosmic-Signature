@@ -196,7 +196,9 @@ contract BusinessLogic is Context, Ownable {
 		// everything that needs to be reset after round ends
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
-		CSTAuctionLength = RoundStartCSTAuctionLength;
+		// The auction should last 12 longer than the amount of time we add after every bid.
+		// Initially this is 12 hours, but will grow slowly over time.
+		CSTAuctionLength = (12 * nanoSecondsExtra) / 1_000_000_000;
 		numRaffleParticipants = 0;
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
@@ -276,11 +278,15 @@ contract BusinessLogic is Context, Ownable {
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
+
 	function _pushBackPrizeTime() internal {
+		// TODO: Explain what this function does and why it works this way. It's not intuitive.
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
+		// TODO: Explain why we are dividing by a million here.
 		nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / CosmicGameConstants.MILLION;
 	}
+
 	function claimPrize() external {
 		// In this function will distribute rewards according to current configuration
 
