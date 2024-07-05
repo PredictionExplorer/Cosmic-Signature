@@ -79,11 +79,7 @@ contract OpenBusinessLogic is Context, Ownable {
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-	event RaffleETHWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 winnerIndex
-	);
+	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex);
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,

@@ -13,31 +13,18 @@ contract MarketingWallet is Ownable {
 	event CosmicTokenAddressChanged(address newCosmicToken);
 
 	constructor(CosmicToken token_) {
-		require(
-			address(token_) != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
+		require(address(token_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		token = token_;
 	}
 
 	function send(uint256 amount, address to) external onlyOwner {
 		(bool success, ) = address(token).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
-		require(
-			success,
-			CosmicGameErrors.ERC20TransferFailed(
-				"Transfer failed.",
-				to,
-				amount
-			)
-		);
+		require(success, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount));
 		emit RewardSentEvent(to, amount);
 	}
 
 	function setTokenContract(address addr) external onlyOwner {
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		token = CosmicToken(addr);
 		emit CosmicTokenAddressChanged(addr);
 	}

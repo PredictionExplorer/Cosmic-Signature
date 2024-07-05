@@ -16,10 +16,7 @@ contract CharityWallet is Ownable {
 	}
 
 	function setCharity(address newCharityAddress) external onlyOwner {
-		require(
-			newCharityAddress != address(0),
-		    CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
+		require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		charityAddress = newCharityAddress;
 		emit CharityUpdatedEvent(charityAddress);
 	}
@@ -27,14 +24,7 @@ contract CharityWallet is Ownable {
 	function send() external {
 		uint256 amount = address(this).balance;
 		(bool success, ) = charityAddress.call{ value: amount }("");
-		require(
-			success,
-			CosmicGameErrors.FundTransferFailed(
-				"Transfer failed.",
-				amount,
-				charityAddress
-			)
-		);
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer failed.", amount, charityAddress));
 		emit DonationSentEvent(charityAddress, amount);
 	}
 }

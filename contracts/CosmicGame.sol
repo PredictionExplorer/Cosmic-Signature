@@ -5,7 +5,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicGameConstants } from "./Constants.sol";
-import { CosmicGameErrors} from "./Errors.sol";
+import { CosmicGameErrors } from "./Errors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
@@ -120,7 +120,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// END OF system variables
 
 	// Variables for system expansion
-   	// additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
+	// additional storage shared between BusinessLogic and CosmicGame, for possible future extension of bidding functionality
 	mapping(uint256 => uint256) public extraStorage;
 	// END OF State variables
 
@@ -229,9 +229,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 				revert(ptr, size)
 			}
 		}
-}
+	}
 
-function bid(bytes calldata _data) public payable {
+	function bid(bytes calldata _data) public payable {
 		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.bid.selector, _data));
 		if (!success) {
 			assembly {
@@ -260,7 +260,7 @@ function bid(bytes calldata _data) public payable {
 			abi.encodeWithSelector(BusinessLogic.auctionDuration.selector)
 		);
 		require(
-			success, 
+			success,
 			CosmicGameErrors.CallToBusinessLogicFailed(
 				"Call to business logic failed.",
 				address(bLogic),
@@ -276,7 +276,7 @@ function bid(bytes calldata _data) public payable {
 		);
 		require(
 			success,
-		   	CosmicGameErrors.CallToBusinessLogicFailed(
+			CosmicGameErrors.CallToBusinessLogicFailed(
 				"Call to business logic failed.",
 				address(bLogic),
 				BusinessLogic.currentCSTPrice.selector
@@ -314,7 +314,7 @@ function bid(bytes calldata _data) public payable {
 	function proxyCall(bytes4 _sig, bytes calldata _encoded_params) external returns (bytes memory) {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		(bool success, bytes memory retval) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(_sig, _encoded_params)
@@ -336,7 +336,7 @@ function bid(bytes calldata _data) public payable {
 	function maintenanceProxyCall(bytes4 _sig, bytes calldata _encoded_params) external returns (bytes memory) {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		(bool success, bytes memory retval) = address(bLogic).delegatecall(
 			abi.encodeWithSelector(_sig, _encoded_params)
@@ -383,17 +383,9 @@ function bid(bytes calldata _data) public payable {
 	function setCharity(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		charity = addr;
 		emit CharityAddressChanged(charity);
 	}
@@ -401,17 +393,9 @@ function bid(bytes calldata _data) public payable {
 	function setRandomWalk(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		randomWalk = RandomWalkNFT(addr);
 		emit RandomWalkAddressChanged(addr);
 	}
@@ -419,17 +403,9 @@ function bid(bytes calldata _data) public payable {
 	function setRaffleWallet(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		raffleWallet = RaffleWallet(addr);
 		emit RaffleWalletAddressChanged(addr);
 	}
@@ -437,17 +413,9 @@ function bid(bytes calldata _data) public payable {
 	function setStakingWalletCST(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		stakingWalletCST = StakingWalletCST(addr);
 		emit StakingWalletCSTAddressChanged(addr);
 	}
@@ -455,17 +423,9 @@ function bid(bytes calldata _data) public payable {
 	function setStakingWalletRWalk(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		stakingWalletRWalk = StakingWalletRWalk(addr);
 		emit StakingWalletRWalkAddressChanged(addr);
 	}
@@ -473,17 +433,9 @@ function bid(bytes calldata _data) public payable {
 	function setMarketingWallet(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		marketingWallet = MarketingWallet(addr);
 		emit MarketingWalletAddressChanged(addr);
 	}
@@ -491,10 +443,7 @@ function bid(bytes calldata _data) public payable {
 	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		numRaffleETHWinnersBidding = newNumRaffleETHWinnersBidding;
 		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
@@ -503,10 +452,7 @@ function bid(bytes calldata _data) public payable {
 	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
 		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
@@ -515,10 +461,7 @@ function bid(bytes calldata _data) public payable {
 	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
 		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
@@ -527,19 +470,13 @@ function bid(bytes calldata _data) public payable {
 	function setPrizePercentage(uint256 newPrizePercentage) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		prizePercentage = newPrizePercentage;
 		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
 		require(
 			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation(
-				"Percentage value overflow, must be lower than 100.",
-				percentageSum
-			)
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
 		);
 		emit PrizePercentageChanged(prizePercentage);
 	}
@@ -547,19 +484,13 @@ function bid(bytes calldata _data) public payable {
 	function setCharityPercentage(uint256 newCharityPercentage) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		charityPercentage = newCharityPercentage;
 		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
 		require(
 			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation(
-				"Percentage value overflow, must be lower than 100.",
-				percentageSum
-			)
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
 		);
 		emit CharityPercentageChanged(charityPercentage);
 	}
@@ -567,19 +498,13 @@ function bid(bytes calldata _data) public payable {
 	function setRafflePercentage(uint256 newRafflePercentage) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		rafflePercentage = newRafflePercentage;
 		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
 		require(
 			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation(
-				"Percentage value overflow, must be lower than 100.",
-				percentageSum
-			)
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
 		);
 		emit RafflePercentageChanged(rafflePercentage);
 	}
@@ -587,19 +512,13 @@ function bid(bytes calldata _data) public payable {
 	function setStakingPercentage(uint256 newStakingPercentage) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		stakingPercentage = newStakingPercentage;
 		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
 		require(
 			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation(
-				"Percentage value overflow, must be lower than 100.",
-				percentageSum
-			)
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
 		);
 		emit StakingPercentageChanged(stakingPercentage);
 	}
@@ -607,17 +526,9 @@ function bid(bytes calldata _data) public payable {
 	function setTokenContract(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		token = CosmicToken(addr);
 		emit CosmicTokenAddressChanged(addr);
 	}
@@ -625,17 +536,9 @@ function bid(bytes calldata _data) public payable {
 	function setNftContract(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		nft = CosmicSignature(addr);
 		emit CosmicSignatureAddressChanged(addr);
 	}
@@ -643,17 +546,9 @@ function bid(bytes calldata _data) public payable {
 	function setBusinessLogicContract(address addr) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(
-			addr != address(0),
-			CosmicGameErrors.ZeroAddress(
-				"Zero-address was given."
-			)
-		);
+		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		bLogic = BusinessLogic(addr);
 		emit BusinessLogicAddressChanged(addr);
 	}
@@ -661,10 +556,7 @@ function bid(bytes calldata _data) public payable {
 	function setTimeIncrease(uint256 newTimeIncrease) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		timeIncrease = newTimeIncrease;
 		emit TimeIncreaseChanged(timeIncrease);
@@ -673,10 +565,7 @@ function bid(bytes calldata _data) public payable {
 	function setTimeoutClaimPrize(uint256 newTimeout) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		timeoutClaimPrize = newTimeout;
 		emit TimeoutClaimPrizeChanged(timeoutClaimPrize);
@@ -685,10 +574,7 @@ function bid(bytes calldata _data) public payable {
 	function setPriceIncrease(uint256 newPriceIncrease) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		priceIncrease = newPriceIncrease;
 		emit PriceIncreaseChanged(priceIncrease);
@@ -697,10 +583,7 @@ function bid(bytes calldata _data) public payable {
 	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		nanoSecondsExtra = newNanoSecondsExtra;
 		emit NanoSecondsExtraChanged(nanoSecondsExtra);
@@ -709,10 +592,7 @@ function bid(bytes calldata _data) public payable {
 	function setInitialSecondsUntilPrize(uint256 newInitialSecondsUntilPrize) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		initialSecondsUntilPrize = newInitialSecondsUntilPrize;
 		emit InitialSecondsUntilPrizeChanged(initialSecondsUntilPrize);
@@ -721,10 +601,7 @@ function bid(bytes calldata _data) public payable {
 	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		initialBidAmountFraction = newInitialBidAmountFraction;
 		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
@@ -733,10 +610,7 @@ function bid(bytes calldata _data) public payable {
 	function setActivationTime(uint256 newActivationTime) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
@@ -746,22 +620,16 @@ function bid(bytes calldata _data) public payable {
 	function setRoundStartCSTAuctionLength(uint256 newAuctionLength) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-				CosmicGameErrors.SystemMode(
-				CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		RoundStartCSTAuctionLength = newAuctionLength;
 		emit RoundStartCSTAuctionLengthChanged(newAuctionLength);
-    }
+	}
 
 	function setTokenReward(uint256 newTokenReward) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		tokenReward = newTokenReward;
 		emit TokenRewardChanged(tokenReward);
@@ -770,10 +638,7 @@ function bid(bytes calldata _data) public payable {
 	function setMarketingReward(uint256 newMarketingReward) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		marketingReward = newMarketingReward;
 		emit MarketingRewardChanged(marketingReward);
@@ -782,10 +647,7 @@ function bid(bytes calldata _data) public payable {
 	function setMaxMessageLength(uint256 newMaxMessageLength) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		maxMessageLength = newMaxMessageLength;
 		emit MaxMessageLengthChanged(maxMessageLength);
@@ -794,10 +656,7 @@ function bid(bytes calldata _data) public payable {
 	function prepareMaintenance() external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_RUNTIME,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		systemMode = CosmicGameConstants.MODE_PREPARE_MAINTENANCE;
 		emit SystemModeChanged(systemMode);
@@ -806,10 +665,7 @@ function bid(bytes calldata _data) public payable {
 	function setRuntimeMode() external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(
-			   	CosmicGameConstants.ERR_STR_MODE_MAINTENANCE,
-				systemMode
-			)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
 		systemMode = CosmicGameConstants.MODE_RUNTIME;
 		emit SystemModeChanged(systemMode);

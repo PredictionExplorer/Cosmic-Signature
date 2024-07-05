@@ -99,7 +99,7 @@ contract BLTest is BusinessLogic {
 		numRaffleETHWinnersBidding = DEFAULT_VALUE;
 	}
 	function f30() external {
-		numRaffleNFTWinnersBidding= DEFAULT_VALUE;
+		numRaffleNFTWinnersBidding = DEFAULT_VALUE;
 	}
 	function f32() external {
 		winners[DEFAULT_INDEX] = DEFAULT_ADDRESS;

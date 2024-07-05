@@ -28,10 +28,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	event BaseURIEvent(string newURI);
 
 	constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
-		require(
-			_cosmicGameContract != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
+		require(_cosmicGameContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
 		cosmicGameContract = _cosmicGameContract;
 	}
@@ -49,30 +46,21 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	function setTokenName(uint256 tokenId, string memory name) external {
 		require(
 			_isApprovedOrOwner(_msgSender(), tokenId),
-		   	CosmicGameErrors.OwnershipError(
-				"setTokenName caller is not owner nor approved.",
-				tokenId
-			)
+			CosmicGameErrors.OwnershipError("setTokenName caller is not owner nor approved.", tokenId)
 		);
 		require(
 			bytes(name).length <= 32,
-		   	CosmicGameErrors.TokenNameLength("Token name is too long.",bytes(name).length)
+			CosmicGameErrors.TokenNameLength("Token name is too long.", bytes(name).length)
 		);
 		tokenNames[tokenId] = name;
 		emit TokenNameEvent(tokenId, name);
 	}
 
 	function mint(address owner, uint256 roundNum) external returns (uint256) {
-		require(
-			owner != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
+		require(owner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		require(
 			_msgSender() == cosmicGameContract,
-		  	CosmicGameErrors.NoMintPrivileges(
-			   "Only the CosmicGame contract can mint.",
-			   msg.sender
-			)
+			CosmicGameErrors.NoMintPrivileges("Only the CosmicGame contract can mint.", msg.sender)
 		);
 
 		uint256 tokenId = numTokens;

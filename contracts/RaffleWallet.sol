@@ -12,28 +12,16 @@ contract RaffleWallet is Ownable {
 	event RaffleWithdrawalEvent(address indexed destination, uint256 amount);
 
 	constructor(CosmicGame game_) {
-		require(
-			address(game_) != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
+		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		game = game_;
 	}
 
 	function deposit(address winner) external payable {
-		require(
-			winner != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given.")
-		);
-		require(
-			msg.value > 0,
-			CosmicGameErrors.NonZeroValueRequired("No ETH has been sent.")
-		);
+		require(winner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("No ETH has been sent."));
 		require(
 			msg.sender == address(game),
-			CosmicGameErrors.DepositFromUnauthorizedSender(
-				"Only CosmicGame is allowed to deposit.",
-				msg.sender
-			)
+			CosmicGameErrors.DepositFromUnauthorizedSender("Only CosmicGame is allowed to deposit.", msg.sender)
 		);
 		balances[winner] += msg.value;
 		emit RaffleDepositEvent(winner, msg.value);
@@ -41,16 +29,10 @@ contract RaffleWallet is Ownable {
 
 	function withdraw() external {
 		uint256 balance = balances[msg.sender];
-		require(
-			balance > 0,
-			CosmicGameErrors.ZeroBalance("Your balance is 0.")
-		);
+		require(balance > 0, CosmicGameErrors.ZeroBalance("Your balance is 0."));
 		balances[msg.sender] = 0;
 		(bool success, ) = msg.sender.call{ value: balance }("");
-		require(
-			success,
-			CosmicGameErrors.FundTransferFailed("Transfer failed.",balance,msg.sender)
-		);
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer failed.", balance, msg.sender));
 		emit RaffleWithdrawalEvent(msg.sender, balance);
 	}
 }

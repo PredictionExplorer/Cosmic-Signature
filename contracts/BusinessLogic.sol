@@ -7,7 +7,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameConstants } from "./Constants.sol";
-import { CosmicGameErrors} from "./Errors.sol";
+import { CosmicGameErrors } from "./Errors.sol";
 import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicToken } from "./CosmicToken.sol";
@@ -50,7 +50,7 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
 	uint256 public stakingPercentage;
-	mapping(uint256 => address) public winners; 
+	mapping(uint256 => address) public winners;
 	uint256 public numRaffleETHWinnersBidding;
 	uint256 public numRaffleNFTWinnersBidding;
 	uint256 public numRaffleNFTWinnersStakingRWalk;
@@ -110,7 +110,7 @@ contract BusinessLogic is Context, Ownable {
 	function bid(bytes memory _param_data) public payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		BidParams memory params = abi.decode(_param_data, (BidParams));
 		CosmicGame game = CosmicGame(payable(address(this)));
@@ -171,15 +171,8 @@ contract BusinessLogic is Context, Ownable {
 		if (msg.value > paidBidPrice) {
 			// Return the extra money to the bidder.
 			uint256 amountToSend = msg.value - paidBidPrice;
-			(bool success, ) = lastBidder.call{ value: amountToSend}("");
-			require(
-				success, 
-				CosmicGameErrors.FundTransferFailed(
-					"Refund transfer failed.",
-					amountToSend,
-					lastBidder
-				)
-			);
+			(bool success, ) = lastBidder.call{ value: amountToSend }("");
+			require(success, CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend, lastBidder));
 		}
 		emit BidEvent(
 			lastBidder,
@@ -194,7 +187,7 @@ contract BusinessLogic is Context, Ownable {
 	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
@@ -216,18 +209,11 @@ contract BusinessLogic is Context, Ownable {
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
 		require(
 			block.timestamp >= activationTime,
-			CosmicGameErrors.ActivationTime(
-				"Not active yet.",
-				activationTime,
-				block.timestamp
-			)
+			CosmicGameErrors.ActivationTime("Not active yet.", activationTime, block.timestamp)
 		);
 		require(
 			bytes(message).length <= maxMessageLength,
-			CosmicGameErrors.BidMessageLengthOverflow(
-			   	"Message is too long.",
-				bytes(message).length
-			)
+			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
 		);
 
 		if (lastBidder == address(0)) {
@@ -270,7 +256,7 @@ contract BusinessLogic is Context, Ownable {
 	function bidWithCST(string memory message) external {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		uint256 userBalance = token.balanceOf(msg.sender);
 		uint256 price = abi.decode(currentCSTPrice(), (uint256));
@@ -300,23 +286,14 @@ contract BusinessLogic is Context, Ownable {
 
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		CosmicGame game = CosmicGame(payable(address(this)));
 		require(
 			prizeTime <= block.timestamp,
-			CosmicGameErrors.EarlyClaim(
-			   	"Not enough time has elapsed.",
-				prizeTime,
-				block.timestamp
-			)
+			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
 		);
-		require(
-			lastBidder != address(0),
-			CosmicGameErrors.NoLastBidder(
-				"There is no last bidder."
-			)
-		);
+		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 		if (block.timestamp - prizeTime < timeoutClaimPrize) {
 			// The winner has [timeoutClaimPrize] to claim the prize.
 			// After the this interval have elapsed, then *anyone* is able to claim the prize!
@@ -328,7 +305,7 @@ contract BusinessLogic is Context, Ownable {
 					"Only the last bidder can claim the prize during the first 24 hours.",
 					lastBidder,
 					_msgSender()
-				 )
+				)
 			);
 		}
 
@@ -353,7 +330,7 @@ contract BusinessLogic is Context, Ownable {
 			require(
 				success,
 				CosmicGameErrors.FundTransferFailed(
-			   		"Staking deposit failed.",
+					"Staking deposit failed.",
 					stakingAmount_,
 					address(stakingWalletCST)
 				)
@@ -366,11 +343,7 @@ contract BusinessLogic is Context, Ownable {
 		);
 		require(
 			mintSuccess,
-			CosmicGameErrors.ERC721Mint(
-				"CosmicSignature mint() failed to mint NFT.",
-				winner,
-				roundNum
-			)
+			CosmicGameErrors.ERC721Mint("CosmicSignature mint() failed to mint NFT.", winner, roundNum)
 		);
 
 		// Winner index is used to emit the correct event.
@@ -412,14 +385,7 @@ contract BusinessLogic is Context, Ownable {
 
 		// Give ETH to the winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");
-		require(
-			success,
-			CosmicGameErrors.FundTransferFailed(
-				"Transfer to the winner failed.",
-				prizeAmount_,
-				winner
-			)
-		);
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, winner));
 
 		// Give ETH to the charity.
 		(success, ) = charity.call{ value: charityAmount_ }("");
@@ -442,11 +408,7 @@ contract BusinessLogic is Context, Ownable {
 			);
 			require(
 				success,
-				CosmicGameErrors.FundTransferFailed(
-					"Raffle deposit failed.",
-					perWinnerAmount_,
-					raffleWinner_
-				)
+				CosmicGameErrors.FundTransferFailed("Raffle deposit failed.", perWinnerAmount_, raffleWinner_)
 			);
 			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex, perWinnerAmount_);
 			winnerIndex += 1;
@@ -494,29 +456,14 @@ contract BusinessLogic is Context, Ownable {
 	function claimDonatedNFT(uint256 num) public {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
-		require(
-			num < numDonatedNFTs,
-			CosmicGameErrors.NonExistentDonatedNFT(
-			    "The donated NFT does not exist.",
-				num
-			)
-		);
+		require(num < numDonatedNFTs, CosmicGameErrors.NonExistentDonatedNFT("The donated NFT does not exist.", num));
 		address winner = winners[donatedNFTs[num].round];
-		require(
-			winner != address(0),
-			CosmicGameErrors.NonExistentWinner(
-				"Non-existent winner for the round.",
-				num
-			)
-		);
+		require(winner != address(0), CosmicGameErrors.NonExistentWinner("Non-existent winner for the round.", num));
 		require(
 			!donatedNFTs[num].claimed,
-			CosmicGameErrors.NFTAlreadyClaimed(
-				"The NFT has already been claimed.",
-				num
-			)
+			CosmicGameErrors.NFTAlreadyClaimed("The NFT has already been claimed.", num)
 		);
 		donatedNFTs[num].claimed = true;
 		donatedNFTs[num].nftAddress.safeTransferFrom(address(this), winner, donatedNFTs[num].tokenId);
@@ -532,7 +479,7 @@ contract BusinessLogic is Context, Ownable {
 	function claimManyDonatedNFTs(uint256[] memory tokens) external {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		for (uint256 i = 0; i < tokens.length; i++) {
 			claimDonatedNFT(tokens[i]);
@@ -541,7 +488,7 @@ contract BusinessLogic is Context, Ownable {
 	function receiveEther() external payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		BusinessLogic.BidParams memory defaultParams;
 		defaultParams.message = "";
@@ -553,14 +500,9 @@ contract BusinessLogic is Context, Ownable {
 	function donate() external payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME,systemMode)
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
-		require(
-			msg.value > 0, 
-			CosmicGameErrors.NonZeroValueRequired(
-				"Donation amount must be greater than 0."
-			)
-		);
+		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		if (block.timestamp < activationTime) {
 			// Set the initial bid prize only if the game has not started yet.
 			bidPrice = address(this).balance / initialBidAmountFraction;

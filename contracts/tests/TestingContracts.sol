@@ -109,9 +109,8 @@ contract SpecialCosmicGame is CosmicGame {
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
 	}
-	function depositStakingCST() payable external {
-
-		(bool success, ) = address(stakingWalletCST).call{value:msg.value}(
+	function depositStakingCST() external payable {
+		(bool success, ) = address(stakingWalletCST).call{ value: msg.value }(
 			abi.encodeWithSelector(StakingWalletCST.deposit.selector)
 		);
 		if (!success) {
@@ -123,11 +122,8 @@ contract SpecialCosmicGame is CosmicGame {
 			}
 		}
 	}
-	function mintCST(address to,uint256 roundNum) external {
-		
-		(bool success, ) = address(nft).call(
-			abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum)
-		);
+	function mintCST(address to, uint256 roundNum) external {
+		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
 		if (!success) {
 			assembly {
 				let ptr := mload(0x40)
@@ -139,21 +135,13 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
-	constructor(
-		CosmicSignature nft_,
-		CosmicGame game_,
-		address charity_
-	) StakingWalletCST(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
 		require(
 			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted(
-				"Token already in the list.",
-				tokenId,
-				actionId
-			)
+			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
 		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
@@ -161,13 +149,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 	}
 
 	function removeToken(uint256 tokenId) external {
-		require(
-			isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyDeleted(
-				"Token is not in the list.",
-				tokenId
-			)
-		);
+		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;
@@ -178,20 +160,13 @@ contract TestStakingWalletCST is StakingWalletCST {
 	}
 }
 contract TestStakingWalletRWalk is StakingWalletRWalk {
-	constructor(
-		RandomWalkNFT nft_,
-		CosmicGame game_
-	) StakingWalletRWalk(nft_, game_) {}
+	constructor(RandomWalkNFT nft_, CosmicGame game_) StakingWalletRWalk(nft_, game_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
 		require(
 			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted(
-				"Token already in the list.",
-				tokenId,
-				actionId
-			)
+			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
 		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
@@ -199,13 +174,7 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 	}
 
 	function removeToken(uint256 tokenId) external {
-		require(
-			isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyDeleted(
-				"Token is not in the list.",
-				tokenId
-			)
-		);
+		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;
