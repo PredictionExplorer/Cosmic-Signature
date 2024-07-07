@@ -31,6 +31,7 @@ class Simulation:
                 raffle = self.balance * self.raffle_percentage
                 staking = self.balance * self.staking_percentage
                 ratio = prize / self.bid
+                raffle_ratio = (raffle / 3) / self.bid
                 num_withdrawals += 1
                 total_num_nfts = num_withdrawals * self.num_new_nfts
                 days = hours / 24
@@ -45,6 +46,7 @@ class Simulation:
                       f"Bid Size:         {self.bid:.4f}\n"
                       f"Prize:            {prize:.2f}\n"
                       f"Ratio:            {ratio:.2f}\n"
+                      f"Raffle Ratio:     {raffle_ratio:.2f}\n"
                       f"Raffle:           {raffle:.2f}\n"
                       f"Staking:          {staking:.2f}\n"
                       f"Charity:          {charity:.2f}\n"
