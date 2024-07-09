@@ -10,12 +10,14 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	let config_params;
 	try {
 		config_params = JSON.parse(config_params_file);
-		console.log(config_params);
 	} catch (err) {
 		console.error("Error while parsing JSON data:", err);
 		return;
 	}
-	console.log("Using file: " + configFile);
+	let param_copy = JSON.parse(JSON.stringify(config_params));
+	param_copy.privKey = '*******';
+	console.log("Using file:");
+	console.log(param_copy);
 	let deployerAcct = new hre.ethers.Wallet(config_params.privKey, hre.ethers.provider);
 	const {
 		cosmicGame,
