@@ -66,10 +66,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public prizeTime;
 	// timeout for the winner to claim prize (seconds)
 	uint256 public timeoutClaimPrize = 24 * 3600;
-	// keeps the addresses of every bidder, used to pick random winner of ETH in raffles
-	mapping(uint256 => address) public raffleParticipants;
-	// stores the number of participants made a bid (same as counter for total number of bids)
-	uint256 public numRaffleParticipants;
+	// keeps the addresses of every bidder (in the map), used to pick random winner of ETH in raffles, one map per round
+	mapping(uint256 => mapping(uint256 => address)) public raffleParticipants; // roundNum => (bidNumber => address)
+	// stores the number of participants made a bid (same as counter for total number of bids), one value per round (in map)
+	mapping(uint256 => uint256) public numRaffleParticipants;	// roundNum => totalBids
 	// keeps track of last bid with CST tokens, used to calculate current CST bid price
 	uint256 public lastCSTBidTime = activationTime;
 	// stores the duration of Dutch auction, for bidding with CST tokens
@@ -216,6 +216,23 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	// Bidding
+
+	function bidderAddress(uint256 _round,uint256 _positionFromEnd) external returns (address) {
+		(bool success, bytes memory encodedAddr ) = address(bLogic).delegatecall(
+			abi.encodeWithSelector(BusinessLogic.bidderAddress.selector, _round,_positionFromEnd)
+		);
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		} else {
+			address addr = abi.decode(encodedAddr, (address));
+			return addr;
+		}
+	}
 
 	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
 		(bool success, ) = address(bLogic).delegatecall(

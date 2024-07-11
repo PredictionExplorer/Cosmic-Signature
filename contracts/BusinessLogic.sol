@@ -41,8 +41,8 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public initialSecondsUntilPrize;
 	uint256 public prizeTime;
 	uint256 public timeoutClaimPrize;
-	mapping(uint256 => address) public raffleParticipants;
-	uint256 public numRaffleParticipants;
+	mapping(uint256 => mapping(uint256 => address)) public raffleParticipants;
+	mapping(uint256 => uint256) public numRaffleParticipants;
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
@@ -107,6 +107,44 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	constructor() {}
+	function bidderAddress(uint256 _round,uint256 _positionFromEnd) public view returns (address){
+		uint256 numParticipants = numRaffleParticipants[_round];
+		require(
+			_round <= roundNum,
+			CosmicGameErrors.InvalidBidderQueryRound(
+				"Provided round number is larger than total number of rounds",
+				_round,
+				roundNum
+			)
+		);
+		require(
+			_positionFromEnd < numParticipants,
+			CosmicGameErrors.InvalidBidderQueryOffset(
+				"Provided index is larger than array length",
+				_round,
+				_positionFromEnd,
+				numParticipants
+			)
+		);
+		require(
+			numParticipants > 0,
+			CosmicGameErrors.BidderQueryNoBidsYet(
+				"No bids have been made in this round yet",
+				_round
+			)
+		);
+		uint256 offset = numParticipants - _positionFromEnd - 1;
+		require(
+			offset < numParticipants,
+			CosmicGameErrors.BidderQueryOffsetOverflow(
+				"Overflow in subtraction operation",
+				_positionFromEnd,
+				offset
+			)
+		);
+		address bidderAddr = raffleParticipants[_round][offset];
+		return bidderAddr;
+	}
 	function bid(bytes memory _param_data) public payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -199,7 +237,7 @@ contract BusinessLogic is Context, Ownable {
 		// The auction should last 12 longer than the amount of time we add after every bid.
 		// Initially this is 12 hours, but will grow slowly over time.
 		CSTAuctionLength = (12 * nanoSecondsExtra) / 1_000_000_000;
-		numRaffleParticipants = 0;
+		numRaffleParticipants[roundNum + 1] = 0;
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
@@ -226,8 +264,10 @@ contract BusinessLogic is Context, Ownable {
 		lastBidder = _msgSender();
 		lastBidType = bidType;
 
-		raffleParticipants[numRaffleParticipants] = lastBidder;
-		numRaffleParticipants += 1;
+		uint256 numParticipants = numRaffleParticipants[roundNum];
+		raffleParticipants[roundNum][numParticipants] = lastBidder;
+		numParticipants += 1;
+		numRaffleParticipants[roundNum] = numParticipants;
 
 		(bool mintSuccess, ) = address(token).call(
 			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
@@ -362,10 +402,11 @@ contract BusinessLogic is Context, Ownable {
 		//	- [numRaffleNFTWinnersForStakingCST] NFT mints for random staker of CST token
 		//	- [numRaffleNFTWinnersForStakingRWalk] NFT mints for random staker or RandomWalk token
 
+		uint256 numParticipants = numRaffleParticipants[roundNum];
 		// Mint reffle NFTs to bidders
 		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
-			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
+			address raffleWinner_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numParticipants];
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, address(raffleWinner_), roundNum)
 			);
@@ -408,7 +449,7 @@ contract BusinessLogic is Context, Ownable {
 		uint256 perWinnerAmount_ = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
-			address raffleWinner_ = raffleParticipants[uint256(raffleEntropy) % numRaffleParticipants];
+			address raffleWinner_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numParticipants];
 			(success, ) = address(raffleWallet).call{ value: perWinnerAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
 			);
