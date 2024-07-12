@@ -118,6 +118,13 @@ contract BusinessLogic is Context, Ownable {
 			)
 		);
 		require(
+			numParticipants > 0,
+			CosmicGameErrors.BidderQueryNoBidsYet(
+				"No bids have been made in this round yet",
+				_round
+			)
+		);
+		require(
 			_positionFromEnd < numParticipants,
 			CosmicGameErrors.InvalidBidderQueryOffset(
 				"Provided index is larger than array length",
@@ -126,22 +133,7 @@ contract BusinessLogic is Context, Ownable {
 				numParticipants
 			)
 		);
-		require(
-			numParticipants > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet(
-				"No bids have been made in this round yet",
-				_round
-			)
-		);
 		uint256 offset = numParticipants - _positionFromEnd - 1;
-		require(
-			offset < numParticipants,
-			CosmicGameErrors.BidderQueryOffsetOverflow(
-				"Overflow in subtraction operation",
-				_positionFromEnd,
-				offset
-			)
-		);
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
