@@ -7,6 +7,8 @@ Execute the following commands:
 	npx hardhat node
 
 	#in another terminal run all the remaining commands:
+	# (previously set switchToRuntime=false and donateToContract=false to get maintenance mode with no transactions)
+	npx hardhat deploy-cosmicgame --deployconfig deploy-local.json --network localhost
 	npx hardhat deploy-local --deployconfig deploy-config.json --network localhost
 
 	#deploy new BusinesLogic contract

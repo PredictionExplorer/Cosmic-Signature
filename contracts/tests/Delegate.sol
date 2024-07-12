@@ -45,10 +45,10 @@ contract BLTest is BusinessLogic {
 		initialSecondsUntilPrize = DEFAULT_VALUE;
 	}
 	function f10() external {
-		raffleParticipants[DEFAULT_INDEX] = DEFAULT_ADDRESS;
+		raffleParticipants[1][DEFAULT_INDEX] = DEFAULT_ADDRESS;
 	}
 	function f11() external {
-		numRaffleParticipants = DEFAULT_VALUE;
+		numRaffleParticipants[1] = DEFAULT_VALUE;
 	}
 	function f12() external {
 		token = CosmicToken(DEFAULT_ADDRESS);
