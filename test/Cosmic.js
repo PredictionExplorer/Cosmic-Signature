@@ -297,7 +297,8 @@ describe("Cosmic Set1", function () {
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await ethers.getSigners();
-
+	
+		let roundNum = 0;
 		// we need to mint Rwalk because our Rwalk contract is empty and doesn't have any holder
 		// but they are needed to test token distribution in claimPrize()
 		let rwalkTokenPrice = await randomWalkNFT.getMintPrice();
@@ -314,7 +315,9 @@ describe("Cosmic Set1", function () {
 		let prizeTime = await cosmicGame.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await cosmicGame.connect(addr1).claimPrize();
+		roundNum = roundNum + 1;
 		let totalSupplyBefore = (await cosmicSignature.totalSupply()).toNumber();
+
 
 		// at this point all required data was initialized, we can proceed with the test
 		let topic_sig = raffleWallet.interface.getEventTopic("RaffleDepositEvent");
@@ -340,6 +343,7 @@ describe("Cosmic Set1", function () {
 		let roundNumBefore = await cosmicGame.roundNum();
 
 		tx = await cosmicGame.connect(addr3).claimPrize();
+		roundNum = roundNum + 1;
 		receipt = await tx.wait();
 
 		// check tnat roundNum is incremented
@@ -383,11 +387,12 @@ describe("Cosmic Set1", function () {
 
 		let raffleAmount = await cosmicGame.raffleAmount();
 		tx = await cosmicGame.connect(addr3).claimPrize();
+		roundNum = roundNum + 1
 		receipt = await tx.wait();
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 
 		// make sure numRaffleParticipants have been reset
-		let numRaffleParticipants = await cosmicGame.numRaffleParticipants();
+		let numRaffleParticipants = await cosmicGame.numRaffleParticipants(roundNum);
 		expect(numRaffleParticipants.toNumber()).to.equal(0);
 
 		var unique_winners = [];

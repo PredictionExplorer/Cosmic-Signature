@@ -81,13 +81,13 @@ describe("DelegateCallStorage", function () {
 	it("raffleParticipants", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f10();
-		let value = await cgtest.raffleParticipants(ethers.BigNumber.from(DEFAULT_INDEX));
+		let value = await cgtest.raffleParticipants(1,ethers.BigNumber.from(DEFAULT_INDEX));
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("numRaffleParticipants", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f11();
-		let value = await cgtest.numRaffleParticipants();
+		let value = await cgtest.numRaffleParticipants(1);
 		expect(await value).to.equal(ethers.BigNumber.from(DEFAULT_VALUE));
 	});
 	it("token", async function () {

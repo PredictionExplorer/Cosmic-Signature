@@ -46,6 +46,15 @@ describe("Cosmic Set2", function () {
 			{ name: "rwalk", type: "int256" },
 		],
 	};
+	const InvalidBidderQueryRoundDef = {
+		type: "tuple(string,uint256,uint256)",
+		name: "InvalidBidderQueryRound",
+		components: [
+			{ name: "errStr", type: "string"},
+			{ name: "providedRound", type: "uint256"},
+			{ name:	"totalRounds", type: "uint256"},
+		],
+	};
 	it("After bid() , bid-related counters have correct values", async function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -441,5 +450,86 @@ describe("Cosmic Set2", function () {
 		expect(expectedBalanceCharityAfter).to.equal(balanceCharityAfter);
 		let expectedBalanceStakingAfter = balanceStakingBefore.add(stakingAmount);
 		expect(expectedBalanceStakingAfter).to.equal(balanceStakingAfter);
+	});
+	it("Function bidderAddress() works as expected", async function () {
+		[owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		 let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+
+		let input = cosmicGame.interface.encodeFunctionData("bidderAddress",[0,0]);
+		let message = await cosmicGame.provider.call({
+			to: cosmicGame.address,
+			data: input,
+		});
+		let res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
+		expect(res[0]).to.equal(addr3.address);
+
+		input = cosmicGame.interface.encodeFunctionData("bidderAddress",[0,1]);
+		message = await cosmicGame.provider.call({
+			to: cosmicGame.address,
+			data: input,
+		});
+		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
+		expect(res[0]).to.equal(addr2.address);
+
+		input = cosmicGame.interface.encodeFunctionData("bidderAddress",[0,2]);
+		message = await cosmicGame.provider.call({
+			to: cosmicGame.address,
+			data: input,
+		});
+		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
+		expect(res[0]).to.equal(addr1.address);
+
+		input = cosmicGame.interface.encodeFunctionData("bidderAddress",[1,2]);
+		await expect(cosmicGame.callStatic.bidderAddress(1,2)).to.be.revertedWithCustomError(contractErrors,"InvalidBidderQueryRound");
+		await expect(cosmicGame.callStatic.bidderAddress(0,3)).to.be.revertedWithCustomError(contractErrors,"InvalidBidderQueryOffset");
+		let prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await cosmicGame.connect(addr3).claimPrize();
+		await expect(cosmicGame.callStatic.bidderAddress(1,1)).to.be.revertedWithCustomError(contractErrors,"BidderQueryNoBidsYet");
+
+		// lets check roundNum > 0 now
+		
+		bidPrice = await cosmicGame.getBidPrice();
+		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+
+		input = cosmicGame.interface.encodeFunctionData("bidderAddress",[1,0]);
+		message = await cosmicGame.provider.call({
+			to: cosmicGame.address,
+			data: input,
+		});
+		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
+		expect(res[0]).to.equal(addr3.address);
+
+		input = cosmicGame.interface.encodeFunctionData("bidderAddress",[1,1]);
+		message = await cosmicGame.provider.call({
+			to: cosmicGame.address,
+			data: input,
+		});
+		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
+		expect(res[0]).to.equal(addr2.address);
+
+		input = cosmicGame.interface.encodeFunctionData("bidderAddress",[1,2]);
+		message = await cosmicGame.provider.call({
+			to: cosmicGame.address,
+			data: input,
+		});
+		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
+		expect(res[0]).to.equal(addr1.address);
 	});
 });
