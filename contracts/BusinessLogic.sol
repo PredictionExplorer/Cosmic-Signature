@@ -234,9 +234,6 @@ contract BusinessLogic is Context, Ownable {
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
-		longestBidderAddress = address(0);
-		prevBidderAddress = address(0);
-
 		longestBidderTime = 0;
 		longestBidderAddress = address(0);
 		prevBidderStartTime = 0;
