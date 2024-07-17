@@ -46,6 +46,10 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
+	uint256 public maxBidderTime;
+	address public maxBidderAddress;
+	uint256 public prevBidderStartTime;
+	address public prevBidderAddress;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -256,6 +260,29 @@ contract BusinessLogic is Context, Ownable {
 		lastBidder = _msgSender();
 		lastBidType = bidType;
 
+		if (maxBidderAddress == address(0)) {
+			// initial state, variable initialization
+			maxBidderAddress = lastBidder;
+			maxBidderTime = 0;
+			prevBidderStartTime = block.timestamp;
+			prevBidderAddress = lastBidder;
+		} else {
+			if (block.timestamp > prevBidderStartTime) { // two bid transaction can happen at the same time (so we drop the latter)
+				uint256 prevBidderTime = block.timestamp - prevBidderStartTime ;
+				if (maxBidderAddress == prevBidderAddress) { // max bidder makes consecutive bid, just add more time
+					maxBidderTime += prevBidderTime;
+				} else { // max bidder and prev bidder are different
+					if (maxBidderTime < prevBidderTime) {
+						maxBidderAddress = prevBidderAddress;
+						maxBidderTime = prevBidderTime;
+					} else {
+						// no change, maxBidder still has longer time
+					}
+				}
+				prevBidderAddress = lastBidder;
+				prevBidderStartTime = block.timestamp;
+			}
+		}
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
 		numParticipants += 1;
