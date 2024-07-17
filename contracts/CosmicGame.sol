@@ -69,7 +69,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// keeps the addresses of every bidder (in the map), used to pick random winner of ETH in raffles, one map per round
 	mapping(uint256 => mapping(uint256 => address)) public raffleParticipants; // roundNum => (bidNumber => address)
 	// stores the number of participants made a bid (same as counter for total number of bids), one value per round (in map)
-	mapping(uint256 => uint256) public numRaffleParticipants;	// roundNum => totalBids
+	mapping(uint256 => uint256) public numRaffleParticipants; // roundNum => totalBids
 	// keeps track of last bid with CST tokens, used to calculate current CST bid price
 	uint256 public lastCSTBidTime = activationTime;
 	// stores the duration of Dutch auction, for bidding with CST tokens
@@ -77,8 +77,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// stores default auction duration, and used to reset the duration at every round start
 	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// variables used to keep track of the bidder with longest bid time (accumulated)
-	uint256 public maxBidderTime = 0;
-	address public maxBidderAddress;
+	uint256 public longestBidderTime = 0;
+	address public longestBidderAddress = address(0);
 	uint256 public prevBidderStartTime = 0;
 	address public prevBidderAddress = address(0);
 	// END OF Bidding and prize variables
@@ -222,9 +222,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	// Bidding
 
-	function bidderAddress(uint256 _round,uint256 _positionFromEnd) external returns (address) {
-		(bool success, bytes memory encodedAddr ) = address(bLogic).delegatecall(
-			abi.encodeWithSelector(BusinessLogic.bidderAddress.selector, _round,_positionFromEnd)
+	function bidderAddress(uint256 _round, uint256 _positionFromEnd) external returns (address) {
+		(bool success, bytes memory encodedAddr) = address(bLogic).delegatecall(
+			abi.encodeWithSelector(BusinessLogic.bidderAddress.selector, _round, _positionFromEnd)
 		);
 		if (!success) {
 			assembly {

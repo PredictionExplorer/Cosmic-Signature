@@ -46,8 +46,8 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
-	uint256 public maxBidderTime;
-	address public maxBidderAddress;
+	uint256 public longestBidderTime;
+	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
 	address public prevBidderAddress;
 	uint256 public prizePercentage;
@@ -111,7 +111,7 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	constructor() {}
-	function bidderAddress(uint256 _round,uint256 _positionFromEnd) public view returns (address){
+	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view returns (address) {
 		uint256 numParticipants = numRaffleParticipants[_round];
 		require(
 			_round <= roundNum,
@@ -123,10 +123,7 @@ contract BusinessLogic is Context, Ownable {
 		);
 		require(
 			numParticipants > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet(
-				"No bids have been made in this round yet",
-				_round
-			)
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", _round)
 		);
 		require(
 			_positionFromEnd < numParticipants,
@@ -237,6 +234,14 @@ contract BusinessLogic is Context, Ownable {
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
+		longestBidderAddress = address(0);
+		prevBidderAddress = address(0);
+
+		longestBidderTime = 0;
+		longestBidderAddress = address(0);
+		prevBidderStartTime = 0;
+		prevBidderAddress = address(0);
+
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 			emit SystemModeChanged(systemMode);
@@ -260,29 +265,16 @@ contract BusinessLogic is Context, Ownable {
 		lastBidder = _msgSender();
 		lastBidType = bidType;
 
-		if (maxBidderAddress == address(0)) {
-			// initial state, variable initialization
-			maxBidderAddress = lastBidder;
-			maxBidderTime = 0;
-			prevBidderStartTime = block.timestamp;
-			prevBidderAddress = lastBidder;
-		} else {
-			if (block.timestamp > prevBidderStartTime) { // two bid transaction can happen at the same time (so we drop the latter)
-				uint256 prevBidderTime = block.timestamp - prevBidderStartTime ;
-				if (maxBidderAddress == prevBidderAddress) { // max bidder makes consecutive bid, just add more time
-					maxBidderTime += prevBidderTime;
-				} else { // max bidder and prev bidder are different
-					if (maxBidderTime < prevBidderTime) {
-						maxBidderAddress = prevBidderAddress;
-						maxBidderTime = prevBidderTime;
-					} else {
-						// no change, maxBidder still has longer time
-					}
-				}
-				prevBidderAddress = lastBidder;
-				prevBidderStartTime = block.timestamp;
+		if (prevBidderAddress != address(0)) {
+			uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
+			if (prevBidderTime > longestBidderTime) {
+				longestBidderAddress = prevBidderAddress;
+				longestBidderTime = prevBidderTime;
 			}
 		}
+		prevBidderAddress = lastBidder;
+		prevBidderStartTime = block.timestamp;
+
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
 		numParticipants += 1;
@@ -373,6 +365,13 @@ contract BusinessLogic is Context, Ownable {
 				)
 			);
 		}
+
+		uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
+		if (prevBidderTime > longestBidderTime) {
+			longestBidderAddress = prevBidderAddress;
+		}
+		// TODO: We might want to store the prevBidderTime in a map for every round
+		// TODO: We also want to send a reward to the longestBidderAddress: 1000 CST + a Cosmic Signature NFT
 
 		lastBidder = address(0);
 		address winner = _msgSender();
