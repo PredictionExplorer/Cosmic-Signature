@@ -73,9 +73,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
 	
 		console.log("\nafter bid1");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -87,9 +87,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
 		
 		console.log("\nafter bid2");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -101,9 +101,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid3 (addr1)
 				
 		console.log("\nafter bid3");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -115,9 +115,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
 
 		console.log("\nafter bid4");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -129,9 +129,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
 		console.log("\nafter bid5");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -164,9 +164,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
 	
 		console.log("\nafter bid1");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -178,9 +178,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
 		
 		console.log("\nafter bid2");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -192,9 +192,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid3 (addr3)
 				
 		console.log("\nafter bid3");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -206,9 +206,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
 
 		console.log("\nafter bid4");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -220,9 +220,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
 		console.log("\nafter bid5");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -234,9 +234,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid6 (addr2)
 		
 		console.log("\nafter bid6");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -248,9 +248,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid7 (addr3)
 		
 		console.log("\nafter bid7");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -262,9 +262,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid8 (addr2)
 		
 		console.log("\nafter bid7");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -276,9 +276,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid9 (addr1)
 		
 		console.log("\nafter bid9");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -290,9 +290,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid10 (addr2)
 		
 		console.log("\nafter bid10");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -304,9 +304,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid11 (addr3)
 		
 		console.log("\nafter bid11");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -318,9 +318,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid12(addr2)
 		
 		console.log("\nafter bid12");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
@@ -332,9 +332,9 @@ describe("Bid time accounting", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid13 (addr1)
 		
 		console.log("\nafter bid13");
-		maxbtime = await cosmicGame.maxBidderTime();
+		maxbtime = await cosmicGame.longestBidderTime();
 		console.log("max bidder time:");console.log(maxbtime);
-		maxbaddr = await cosmicGame.maxBidderAddress();
+		maxbaddr = await cosmicGame.longestBidderAddress();
 		console.log("max bidder addr:");console.log(maxbaddr);
 		prevbaddr = await cosmicGame.prevBidderAddress();
 		console.log("previous bidder addr:");console.log(prevbaddr);
