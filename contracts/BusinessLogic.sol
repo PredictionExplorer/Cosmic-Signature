@@ -46,6 +46,7 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
+	mapping(address => CosmicGameConstants.BidderStatRec) public bidStats;
 	uint256 public longestBidderTime;
 	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
@@ -197,6 +198,35 @@ contract BusinessLogic is Context, Ownable {
 
 		bidPrice = newBidPrice;
 
+		// beginning of Update Statistics
+		CosmicGameConstants.BidderStatRec memory bidderStatistics;
+		bidderStatistics = bidStats[lastBidder];
+		uint64 fixedPointPrice = uint64(paidBidPrice>> 15);
+		bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
+		bidderStatistics.bidCount += 1;
+
+		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
+		prevBidderStatistics = bidStats[prevBidderAddress];
+		uint32 prevBidTime = 0;
+	    if (block.timestamp > prevBidderStartTime) {
+			if (prevBidderStartTime > 0) {
+				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
+			}
+		}
+		prevBidderStatistics.bidTime += prevBidTime;
+		bidStats[prevBidderAddress] = prevBidderStatistics;
+
+		if (longestBidderAddress == address(0)) {
+			longestBidderAddress = msg.sender;
+			longestBidderTime = 0;
+		} else {
+			if (prevBidderStatistics.bidTime > longestBidderTime) {
+				longestBidderTime = prevBidderStatistics.bidTime;
+				longestBidderAddress = prevBidderAddress;
+			}
+		}
+		// end of Update Statistics
+
 		_bidCommon(params.message, bidType);
 
 		if (msg.value > paidBidPrice) {
@@ -262,13 +292,6 @@ contract BusinessLogic is Context, Ownable {
 		lastBidder = _msgSender();
 		lastBidType = bidType;
 
-		if (prevBidderAddress != address(0)) {
-			uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
-			if (prevBidderTime > longestBidderTime) {
-				longestBidderAddress = prevBidderAddress;
-				longestBidderTime = prevBidderTime;
-			}
-		}
 		prevBidderAddress = lastBidder;
 		prevBidderStartTime = block.timestamp;
 
@@ -323,6 +346,36 @@ contract BusinessLogic is Context, Ownable {
 		// We want to there to be mainly ETH bids, not CST bids.
 		// In order to achieve this, we will adjust the auction length depending on the ratio.
 		token.burn(msg.sender, price);
+
+		// beginning of Update Statistics
+		CosmicGameConstants.BidderStatRec memory bidderStatistics;
+		bidderStatistics = bidStats[lastBidder];
+		uint64 fixedPointPrice = uint64(price >> 15);
+		bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+		bidderStatistics.bidCount += 1;
+
+		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
+		prevBidderStatistics = bidStats[prevBidderAddress];
+		uint32 prevBidTime = 0;
+	    if (block.timestamp > prevBidderStartTime) {
+			if (prevBidderStartTime > 0) {
+				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
+			}
+		}
+		prevBidderStatistics.bidTime += prevBidTime;
+		bidStats[prevBidderAddress] = prevBidderStatistics;
+
+		if (longestBidderAddress == address(0)) {
+			longestBidderAddress = msg.sender;
+			longestBidderTime = 0;
+		} else {
+			if (prevBidderStatistics.bidTime > longestBidderTime) {
+				longestBidderTime = prevBidderStatistics.bidTime;
+				longestBidderAddress = prevBidderAddress;
+			}
+		}
+		// end of Update Statistics
+
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
@@ -363,10 +416,24 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
-		uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
-		if (prevBidderTime > longestBidderTime) {
+		// beginning of Update Statistics
+		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
+		prevBidderStatistics = bidStats[prevBidderAddress];
+		uint32 prevBidTime = 0;
+	    if (block.timestamp > prevBidderStartTime) {
+			if (prevBidderStartTime > 0) {
+				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
+			}
+		}
+		prevBidderStatistics.bidTime += prevBidTime;
+		bidStats[prevBidderAddress] = prevBidderStatistics;
+
+		if (prevBidderStatistics.bidTime > longestBidderTime) {
+			longestBidderTime = prevBidderStatistics.bidTime;
 			longestBidderAddress = prevBidderAddress;
 		}
+		// end of Update Statistics
+
 		// TODO: We might want to store the prevBidderTime in a map for every round
 		// TODO: We also want to send a reward to the longestBidderAddress: 1000 CST + a Cosmic Signature NFT
 

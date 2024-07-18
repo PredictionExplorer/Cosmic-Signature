@@ -76,6 +76,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// stores default auction duration, and used to reset the duration at every round start
 	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+	mapping(address => CosmicGameConstants.BidderStatRec) public bidStats; // bidderAddress => (bid stats record)
 	// variables used to keep track of the bidder with longest bid time (accumulated)
 	uint256 public longestBidderTime = 0;
 	address public longestBidderAddress = address(0);
