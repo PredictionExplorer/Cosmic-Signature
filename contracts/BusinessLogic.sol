@@ -51,6 +51,8 @@ contract BusinessLogic is Context, Ownable {
 	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
 	address public prevBidderAddress;
+	uint256 public topBidderNumBids;
+	address public topBidderAddress;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -66,6 +68,7 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public tokenReward;
 	uint256 public marketingReward;
 	uint256 public longestBidderTokenReward;
+	uint256 public topBidderTokenReward;
 	uint256 public maxMessageLength;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
@@ -92,6 +95,12 @@ contract BusinessLogic is Context, Ownable {
 		bool isRWalk
 	);
 	event EnduranceNFTWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 indexed tokenId,
+		uint256 winnerIndex
+	);
+	event TopBidderNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
 		uint256 indexed tokenId,
@@ -207,7 +216,7 @@ contract BusinessLogic is Context, Ownable {
 
 		// beginning of Update Statistics
 		CosmicGameConstants.BidderStatRec memory bidderStatistics;
-		bidderStatistics = bidStats[lastBidder];
+		bidderStatistics = bidStats[msg.sender];
 		uint64 fixedPointPrice = uint64(paidBidPrice>> 15);
 		bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
 		bidderStatistics.bidCount += 1;
@@ -231,6 +240,10 @@ contract BusinessLogic is Context, Ownable {
 				longestBidderTime = prevBidderStatistics.bidTime;
 				longestBidderAddress = prevBidderAddress;
 			}
+		}
+		if (bidderStatistics.bidCount > topBidderNumBids) {
+			topBidderNumBids = bidderStatistics.bidCount;
+			topBidderAddress = msg.sender;
 		}
 		// end of Update Statistics
 
@@ -364,7 +377,7 @@ contract BusinessLogic is Context, Ownable {
 
 		// beginning of Update Statistics
 		CosmicGameConstants.BidderStatRec memory bidderStatistics;
-		bidderStatistics = bidStats[lastBidder];
+		bidderStatistics = bidStats[msg.sender];
 		uint64 fixedPointPrice = uint64(price >> 15);
 		bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidCST + fixedPointPrice;
 		bidderStatistics.bidCount += 1;
@@ -388,6 +401,10 @@ contract BusinessLogic is Context, Ownable {
 				longestBidderTime = prevBidderStatistics.bidTime;
 				longestBidderAddress = prevBidderAddress;
 			}
+		}
+		if (bidderStatistics.bidCount > topBidderNumBids) {
+			topBidderNumBids = bidderStatistics.bidCount;
+			topBidderAddress = msg.sender;
 		}
 		// end of Update Statistics
 
@@ -537,6 +554,19 @@ contract BusinessLogic is Context, Ownable {
 			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
 			winnerIndex += 1;
 		}
+		// Prize for having highest number of bids
+		if (topBidderAddress != address(0)) {
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, topBidderAddress, roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, topBidderAddress, topBidderTokenReward)
+			);
+			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
+		}
+
 
 		// Give ETH to the winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");

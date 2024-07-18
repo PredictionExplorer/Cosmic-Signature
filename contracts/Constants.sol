@@ -11,6 +11,7 @@ library CosmicGameConstants {
 	// You get 100 tokens when you bid
 	uint256 public constant TOKEN_REWARD = 100 * 1e18;
 	uint256 public constant LONGEST_BIDDER_TOKEN_REWARD = 1000 * 1e18;
+	uint256 public constant TOP_BIDDER_TOKEN_REWARD = 1000 * 1e18;
 	uint256 public constant MARKETING_REWARD = 15 * 1e18;
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * 3600;
 	uint256 public constant MODE_RUNTIME = 0;
