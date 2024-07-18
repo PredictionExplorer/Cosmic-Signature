@@ -6,6 +6,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 library CosmicGameConstants {
 	uint256 public constant MILLION = 10 ** 6;
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
+	uint256 public constant FIRST_ROUND_BID_PRICE = 1e14; // 1 / 10,000 of ETH
 
 	// You get 100 tokens when you bid
 	uint256 public constant TOKEN_REWARD = 100 * 1e18;
