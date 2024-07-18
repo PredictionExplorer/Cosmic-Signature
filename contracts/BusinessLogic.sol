@@ -65,6 +65,7 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public activationTime;
 	uint256 public tokenReward;
 	uint256 public marketingReward;
+	uint256 public longestBidderTokenReward;
 	uint256 public maxMessageLength;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
@@ -89,6 +90,12 @@ contract BusinessLogic is Context, Ownable {
 		uint256 winnerIndex,
 		bool isStaker,
 		bool isRWalk
+	);
+	event EnduranceNFTWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 indexed tokenId,
+		uint256 winnerIndex
 	);
 	event NFTDonationEvent(
 		address indexed donor,
@@ -481,7 +488,6 @@ contract BusinessLogic is Context, Ownable {
 		//	- Group deposit (equal to stakingPercentage) for all Stakers of CST tokens
 		//	- [numRaffleEthWinnersForBidding] ETH deposits for random bidder
 		//	- [numRaffleNFTWinnersForBidding] NFT mints for random bidder
-		//	- [numRaffleNFTWinnersForStakingCST] NFT mints for random staker of CST token
 		//	- [numRaffleNFTWinnersForStakingRWalk] NFT mints for random staker or RandomWalk token
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
@@ -510,6 +516,18 @@ contract BusinessLogic is Context, Ownable {
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex, true, true);
 				winnerIndex += 1;
 			}
+		}
+		// Endurance Champion Prize
+		if (longestBidderAddress != address(0)) {
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, longestBidderTokenReward)
+			);
+			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
 		}
 
 		// Give ETH to the winner.

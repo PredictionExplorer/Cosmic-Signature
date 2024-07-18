@@ -117,6 +117,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
+	// amount of CST tokens given to the longest bidder
+	uint256 public longestBidderTokenReward = CosmicGameConstants.TOKEN_REWARD;
 	// amount of CST tokens given as reward on every bid for marketing the project
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
 	// maximum length of message attached to bid() operation
@@ -199,6 +201,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
 	// Token rewards
 	event TokenRewardChanged(uint256 newReward);
+	event LongestBidderTokenRewardChanged(uint256 newReward);
 	event MarketingRewardChanged(uint256 newReward);
 	// System
 	event ActivationTimeChanged(uint256 newActivationTime);
@@ -656,6 +659,15 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		);
 		tokenReward = newTokenReward;
 		emit TokenRewardChanged(tokenReward);
+	}
+
+	function setLongestBidderTokenReward(uint256 newTokenReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		longestBidderTokenReward = newTokenReward;
+		emit TokenRewardChanged(longestBidderTokenReward);
 	}
 
 	function setMarketingReward(uint256 newMarketingReward) external onlyOwner {

@@ -556,6 +556,9 @@ describe("Cosmic Set1", function () {
 		await cosmicGame.connect(owner).setTokenReward(ethers.BigNumber.from("1234567890"));
 		expect(await cosmicGame.tokenReward()).to.equal(ethers.BigNumber.from("1234567890"));
 
+		await cosmicGame.connect(owner).setLongestBidderTokenReward(ethers.BigNumber.from("1234567890"));
+		expect(await cosmicGame.longestBidderTokenReward()).to.equal(ethers.BigNumber.from("1234567890"));
+
 		await cosmicGame.connect(owner).setMarketingReward(ethers.BigNumber.from("1234567890"));
 		expect(await cosmicGame.marketingReward()).to.equal(ethers.BigNumber.from("1234567890"));
 
