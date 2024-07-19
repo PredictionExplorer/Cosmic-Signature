@@ -214,39 +214,7 @@ contract BusinessLogic is Context, Ownable {
 
 		bidPrice = newBidPrice;
 
-		// beginning of Update Statistics
-		CosmicGameConstants.BidderStatRec memory bidderStatistics;
-		bidderStatistics = bidStats[msg.sender];
-		uint64 fixedPointPrice = uint64(paidBidPrice>> 15);
-		bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
-		bidderStatistics.bidCount += 1;
-
-		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
-		prevBidderStatistics = bidStats[prevBidderAddress];
-		uint32 prevBidTime = 0;
-	    if (block.timestamp > prevBidderStartTime) {
-			if (prevBidderStartTime > 0) {
-				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
-			}
-		}
-		prevBidderStatistics.bidTime += prevBidTime;
-		bidStats[prevBidderAddress] = prevBidderStatistics;
-
-		if (longestBidderAddress == address(0)) {
-			longestBidderAddress = msg.sender;
-			longestBidderTime = 0;
-		} else {
-			if (prevBidderStatistics.bidTime > longestBidderTime) {
-				longestBidderTime = prevBidderStatistics.bidTime;
-				longestBidderAddress = prevBidderAddress;
-			}
-		}
-		if (bidderStatistics.bidCount > topBidderNumBids) {
-			topBidderNumBids = bidderStatistics.bidCount;
-			topBidderAddress = msg.sender;
-		}
-		// end of Update Statistics
-
+		_updateStatisticsAfterBid(bidPrice,false);
 		_bidCommon(params.message, bidType);
 
 		if (msg.value > paidBidPrice) {
@@ -300,6 +268,50 @@ contract BusinessLogic is Context, Ownable {
 			bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		} else {
 			bidPrice = address(this).balance / initialBidAmountFraction;
+		}
+	}
+	function _updatePreviousBidderStats() internal {
+		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
+		prevBidderStatistics = bidStats[prevBidderAddress];
+		uint32 prevBidTime = 0;
+	    if (block.timestamp > prevBidderStartTime) {
+			if (prevBidderStartTime > 0) {
+				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
+			}
+		}
+		prevBidderStatistics.bidTime += prevBidTime;
+		bidStats[prevBidderAddress] = prevBidderStatistics;
+
+		if (longestBidderAddress == address(0)) {
+			longestBidderAddress = msg.sender;
+			longestBidderTime = 0;
+		} else {
+			if (prevBidderStatistics.bidTime > longestBidderTime) {
+				longestBidderTime = prevBidderStatistics.bidTime;
+				longestBidderAddress = prevBidderAddress;
+			}
+		}
+	}
+	function _updateStatisticsAfterClaimPrize() internal {
+		_updatePreviousBidderStats();
+	}
+	function _updateStatisticsAfterBid(uint256 price,bool isCst) internal {
+
+		_updatePreviousBidderStats();
+
+		CosmicGameConstants.BidderStatRec memory bidderStatistics;
+		bidderStatistics = bidStats[msg.sender];
+		uint64 fixedPointPrice = uint64(price >> 15);
+		if (isCst) {
+			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+		} else {
+			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+		}
+		bidderStatistics.bidCount += 1;
+
+		if (bidderStatistics.bidCount > topBidderNumBids) {
+			topBidderNumBids = bidderStatistics.bidCount;
+			topBidderAddress = msg.sender;
 		}
 	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
@@ -375,39 +387,7 @@ contract BusinessLogic is Context, Ownable {
 		// In order to achieve this, we will adjust the auction length depending on the ratio.
 		token.burn(msg.sender, price);
 
-		// beginning of Update Statistics
-		CosmicGameConstants.BidderStatRec memory bidderStatistics;
-		bidderStatistics = bidStats[msg.sender];
-		uint64 fixedPointPrice = uint64(price >> 15);
-		bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidCST + fixedPointPrice;
-		bidderStatistics.bidCount += 1;
-
-		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
-		prevBidderStatistics = bidStats[prevBidderAddress];
-		uint32 prevBidTime = 0;
-	    if (block.timestamp > prevBidderStartTime) {
-			if (prevBidderStartTime > 0) {
-				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
-			}
-		}
-		prevBidderStatistics.bidTime += prevBidTime;
-		bidStats[prevBidderAddress] = prevBidderStatistics;
-
-		if (longestBidderAddress == address(0)) {
-			longestBidderAddress = msg.sender;
-			longestBidderTime = 0;
-		} else {
-			if (prevBidderStatistics.bidTime > longestBidderTime) {
-				longestBidderTime = prevBidderStatistics.bidTime;
-				longestBidderAddress = prevBidderAddress;
-			}
-		}
-		if (bidderStatistics.bidCount > topBidderNumBids) {
-			topBidderNumBids = bidderStatistics.bidCount;
-			topBidderAddress = msg.sender;
-		}
-		// end of Update Statistics
-
+		_updateStatisticsAfterBid(bidPrice,true);
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
@@ -448,24 +428,7 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
-		// beginning of Update Statistics
-		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
-		prevBidderStatistics = bidStats[prevBidderAddress];
-		uint32 prevBidTime = 0;
-	    if (block.timestamp > prevBidderStartTime) {
-			if (prevBidderStartTime > 0) {
-				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
-			}
-		}
-		prevBidderStatistics.bidTime += prevBidTime;
-		bidStats[prevBidderAddress] = prevBidderStatistics;
-
-		if (prevBidderStatistics.bidTime > longestBidderTime) {
-			longestBidderTime = prevBidderStatistics.bidTime;
-			longestBidderAddress = prevBidderAddress;
-		}
-		// end of Update Statistics
-
+		_updateStatisticsAfterClaimPrize();
 		// TODO: We might want to store the prevBidderTime in a map for every round
 		// TODO: We also want to send a reward to the longestBidderAddress: 1000 CST + a Cosmic Signature NFT
 
