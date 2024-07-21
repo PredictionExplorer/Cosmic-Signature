@@ -72,25 +72,76 @@ describe("Bid time accounting", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
+	
+		console.log("\nafter bid1");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800001000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
 		
+		console.log("\nafter bid2");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800006000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid3 (addr1)
-				
+		
+		console.log("\nafter bid3");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800007000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
 
+		console.log("\nafter bid4");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
-		
+
 		maxbtime = await cosmicGame.longestBidderTime();
 		maxbaddr = await cosmicGame.longestBidderAddress();
+
+		console.log("\nafter bid5");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		expect(maxbtime).to.equal(6000);
 		expect(maxbaddr).to.equal(addr2.address);
 	});
@@ -115,57 +166,188 @@ describe("Bid time accounting", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
+	
+		console.log("\nafter bid1");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800001000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
 		
+		console.log("\nafter bid2");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800002000]);
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid3 (addr3)
-				
+		
+		console.log("\nafter bid3");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800003000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
+
+		console.log("\nafter bid4");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800004000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
+		console.log("\nafter bid5");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800005000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid6 (addr2)
 		
+		console.log("\nafter bid6");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800006000]);
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid7 (addr3)
 		
+		console.log("\nafter bid7");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800007000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid8 (addr2)
 		
+		console.log("\nafter bid7");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid9 (addr1)
 		
+		console.log("\nafter bid9");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800009000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid10 (addr2)
 		
+		console.log("\nafter bid10");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800010000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid11 (addr3)
 		
+		console.log("\nafter bid11");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800011000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid12(addr2)
 		
+
+		console.log("\nafter bid12");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
+
+
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800012000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid13 (addr1)
 		
 		maxbtime = await cosmicGame.longestBidderTime();
 		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("\nafter bid13");
+		maxbtime = await cosmicGame.longestBidderTime();
+		console.log("max bidder time:");console.log(maxbtime);
+		maxbaddr = await cosmicGame.longestBidderAddress();
+		console.log("max bidder addr:");console.log(maxbaddr);
+		prevbaddr = await cosmicGame.prevBidderAddress();
+		console.log("previous bidder addr:");console.log(prevbaddr);
+		prevbst = await cosmicGame.prevBidderStartTime();
+		console.log("prevous bidder start time:");console.log(prevbst);
 
 		expect(maxbtime).to.equal(6000);
 		expect(maxbaddr).to.equal(addr2.address);
