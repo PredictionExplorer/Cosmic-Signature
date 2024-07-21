@@ -1,0 +1,60 @@
+# Maximum width of each line. The default is 100.
+max_width = 100
+
+# Use small heuristics for formatting.
+# The default is "Default". Options are "Default", "Max", "Off".
+use_small_heuristics = "Max"
+
+# Allow functions to be on a single line if they fit.
+# The default is false.
+fn_single_line = true
+
+# Allow struct literals to be on a single line if they fit.
+# The default is false.
+struct_lit_single_line = true
+
+# Use tabs for indentation. The default is false.
+hard_tabs = false
+
+# Indent size. The default is 4.
+tab_spaces = 4
+
+# How to format trailing commas. Options are "Always", "Never", "Preserve".
+# The default is "Preserve".
+trailing_comma = "Always"
+
+# Control the ordering of items in a module.
+# The default is "Preserve".
+reorder_impl_items = true
+
+# Merge imports of the same item.
+# The default is false.
+merge_imports = true
+
+# Enforce vertical alignment for struct fields.
+# The default is "Vertical".
+struct_field_align_threshold = 20
+
+# Enforce vertical alignment for enum variants.
+# The default is "Vertical".
+enum_discrim_align_threshold = 20
+
+# Enforce vertical alignment for where clauses.
+# The default is "Vertical".
+where_single_line = true
+
+# Place a newline between a comment and the item it annotates.
+# The default is true.
+comment_wrap = true
+
+# Whether to use spaces around range operators.
+# The default is true.
+space_in_paren = false
+
+# How to format imports.
+# The default is "Preserve".
+imports_granularity = "Crate"
+
+# Whether to reorder import groups.
+# The default is "Preserve".
+group_imports = "StdExternalCrate"
