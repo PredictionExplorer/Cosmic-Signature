@@ -469,7 +469,6 @@ fn create_video_from_frames_in_memory(
     }
 
     ffmpeg_stdin.flush().expect("Failed to flush ffmpeg stdin");
-    drop(ffmpeg_stdin); // Close stdin to signal EOF to ffmpeg
 
     let output = ffmpeg.wait_with_output().expect("Failed to wait on ffmpeg process");
 
