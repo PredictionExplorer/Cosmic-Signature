@@ -46,10 +46,13 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
+	mapping(address => CosmicGameConstants.BidderStatRec) public bidStats;
 	uint256 public longestBidderTime;
 	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
 	address public prevBidderAddress;
+	uint256 public topBidderNumBids;
+	address public topBidderAddress;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -64,6 +67,8 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public activationTime;
 	uint256 public tokenReward;
 	uint256 public marketingReward;
+	uint256 public longestBidderTokenReward;
+	uint256 public topBidderTokenReward;
 	uint256 public maxMessageLength;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
@@ -88,6 +93,18 @@ contract BusinessLogic is Context, Ownable {
 		uint256 winnerIndex,
 		bool isStaker,
 		bool isRWalk
+	);
+	event EnduranceNFTWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 indexed tokenId,
+		uint256 winnerIndex
+	);
+	event TopBidderNFTWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 indexed tokenId,
+		uint256 winnerIndex
 	);
 	event NFTDonationEvent(
 		address indexed donor,
@@ -197,6 +214,7 @@ contract BusinessLogic is Context, Ownable {
 
 		bidPrice = newBidPrice;
 
+		_updateStatisticsAfterBid(bidPrice,false);
 		_bidCommon(params.message, bidType);
 
 		if (msg.value > paidBidPrice) {
@@ -231,6 +249,7 @@ contract BusinessLogic is Context, Ownable {
 		// Initially this is 12 hours, but will grow slowly over time.
 		CSTAuctionLength = (12 * nanoSecondsExtra) / 1_000_000_000;
 		numRaffleParticipants[roundNum + 1] = 0;
+		_resetBidPrice();
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
@@ -242,6 +261,57 @@ contract BusinessLogic is Context, Ownable {
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 			emit SystemModeChanged(systemMode);
+		}
+	}
+	function _resetBidPrice() internal{
+		if (roundNum == 0) {
+			bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
+		} else {
+			bidPrice = address(this).balance / initialBidAmountFraction;
+		}
+	}
+	function _updatePreviousBidderStats() internal {
+		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
+		prevBidderStatistics = bidStats[prevBidderAddress];
+		uint32 prevBidTime = 0;
+	    if (block.timestamp > prevBidderStartTime) {
+			if (prevBidderStartTime > 0) {
+				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
+			}
+		}
+		prevBidderStatistics.bidTime += prevBidTime;
+		bidStats[prevBidderAddress] = prevBidderStatistics;
+
+		if (longestBidderAddress == address(0)) {
+			longestBidderAddress = msg.sender;
+			longestBidderTime = 0;
+		} else {
+			if (prevBidderStatistics.bidTime > longestBidderTime) {
+				longestBidderTime = prevBidderStatistics.bidTime;
+				longestBidderAddress = prevBidderAddress;
+			}
+		}
+	}
+	function _updateStatisticsAfterClaimPrize() internal {
+		_updatePreviousBidderStats();
+	}
+	function _updateStatisticsAfterBid(uint256 price,bool isCst) internal {
+
+		_updatePreviousBidderStats();
+
+		CosmicGameConstants.BidderStatRec memory bidderStatistics;
+		bidderStatistics = bidStats[msg.sender];
+		uint64 fixedPointPrice = uint64(price >> 15);
+		if (isCst) {
+			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+		} else {
+			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+		}
+		bidderStatistics.bidCount += 1;
+
+		if (bidderStatistics.bidCount > topBidderNumBids) {
+			topBidderNumBids = bidderStatistics.bidCount;
+			topBidderAddress = msg.sender;
 		}
 	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
@@ -262,13 +332,6 @@ contract BusinessLogic is Context, Ownable {
 		lastBidder = _msgSender();
 		lastBidType = bidType;
 
-		if (prevBidderAddress != address(0)) {
-			uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
-			if (prevBidderTime > longestBidderTime) {
-				longestBidderAddress = prevBidderAddress;
-				longestBidderTime = prevBidderTime;
-			}
-		}
 		prevBidderAddress = lastBidder;
 		prevBidderStartTime = block.timestamp;
 
@@ -323,6 +386,8 @@ contract BusinessLogic is Context, Ownable {
 		// We want to there to be mainly ETH bids, not CST bids.
 		// In order to achieve this, we will adjust the auction length depending on the ratio.
 		token.burn(msg.sender, price);
+
+		_updateStatisticsAfterBid(bidPrice,true);
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
@@ -363,10 +428,7 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
-		uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
-		if (prevBidderTime > longestBidderTime) {
-			longestBidderAddress = prevBidderAddress;
-		}
+		_updateStatisticsAfterClaimPrize();
 		// TODO: We might want to store the prevBidderTime in a map for every round
 		// TODO: We also want to send a reward to the longestBidderAddress: 1000 CST + a Cosmic Signature NFT
 
@@ -414,7 +476,6 @@ contract BusinessLogic is Context, Ownable {
 		//	- Group deposit (equal to stakingPercentage) for all Stakers of CST tokens
 		//	- [numRaffleEthWinnersForBidding] ETH deposits for random bidder
 		//	- [numRaffleNFTWinnersForBidding] NFT mints for random bidder
-		//	- [numRaffleNFTWinnersForStakingCST] NFT mints for random staker of CST token
 		//	- [numRaffleNFTWinnersForStakingRWalk] NFT mints for random staker or RandomWalk token
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
@@ -444,6 +505,31 @@ contract BusinessLogic is Context, Ownable {
 				winnerIndex += 1;
 			}
 		}
+		// Endurance Champion Prize
+		if (longestBidderAddress != address(0)) {
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, longestBidderTokenReward)
+			);
+			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
+		}
+		// Prize for having highest number of bids
+		if (topBidderAddress != address(0)) {
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, topBidderAddress, roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, topBidderAddress, topBidderTokenReward)
+			);
+			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
+		}
+
 
 		// Give ETH to the winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");
@@ -567,7 +653,7 @@ contract BusinessLogic is Context, Ownable {
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		if (block.timestamp < activationTime) {
 			// Set the initial bid prize only if the game has not started yet.
-			bidPrice = address(this).balance / initialBidAmountFraction;
+			_resetBidPrice();
 		}
 		emit DonationEvent(_msgSender(), msg.value);
 	}

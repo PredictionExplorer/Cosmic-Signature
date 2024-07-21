@@ -76,11 +76,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// stores default auction duration, and used to reset the duration at every round start
 	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+	mapping(address => CosmicGameConstants.BidderStatRec) public bidStats; // bidderAddress => (bid stats record)
 	// variables used to keep track of the bidder with longest bid time (accumulated)
 	uint256 public longestBidderTime = 0;
 	address public longestBidderAddress = address(0);
 	uint256 public prevBidderStartTime = 0;
 	address public prevBidderAddress = address(0);
+	uint256 public topBidderNumBids = 0;
+	address public topBidderAddress = address(0);
 	// END OF Bidding and prize variables
 
 	// Percentages for fund distribution
@@ -116,6 +119,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
+	// amount of CST tokens given to the longest bidder
+	uint256 public longestBidderTokenReward = CosmicGameConstants.LONGEST_BIDDER_TOKEN_REWARD;
+	// amount of CST tokens given to the top bidder (maximum number of bids)
+	uint256 public topBidderTokenReward = CosmicGameConstants.TOP_BIDDER_TOKEN_REWARD;
 	// amount of CST tokens given as reward on every bid for marketing the project
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
 	// maximum length of message attached to bid() operation
@@ -156,6 +163,18 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 winnerIndex,
 		bool isStaker,
 		bool isRWalk
+	);
+	event EnduranceNFTWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 indexed tokenId,
+		uint256 winnerIndex
+	);
+	event TopBidderNFTWinnerEvent(
+		address indexed winner,
+		uint256 indexed round,
+		uint256 indexed tokenId,
+		uint256 winnerIndex
 	);
 	event DonatedNFTClaimedEvent(
 		uint256 indexed round,
@@ -198,6 +217,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
 	// Token rewards
 	event TokenRewardChanged(uint256 newReward);
+	event LongestBidderTokenRewardChanged(uint256 newReward);
+	event TopBidderTokenRewardChanged(uint256 newReward);
 	event MarketingRewardChanged(uint256 newReward);
 	// System
 	event ActivationTimeChanged(uint256 newActivationTime);
@@ -655,6 +676,24 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		);
 		tokenReward = newTokenReward;
 		emit TokenRewardChanged(tokenReward);
+	}
+
+	function setLongestBidderTokenReward(uint256 newTokenReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		longestBidderTokenReward = newTokenReward;
+		emit LongestBidderTokenRewardChanged(longestBidderTokenReward);
+	}
+
+	function setTopBidderTokenReward(uint256 newTokenReward) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		topBidderTokenReward = newTokenReward;
+		emit TopBidderTokenRewardChanged(topBidderTokenReward);
 	}
 
 	function setMarketingReward(uint256 newMarketingReward) external onlyOwner {
