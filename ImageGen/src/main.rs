@@ -181,13 +181,15 @@ fn get_white_color_walk(len: usize) -> Vec<Rgb<u8>> {
     colors
 }
 
-fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Vec<Rgb<u8>>> {
+fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize, special: bool) -> Vec<Vec<Rgb<u8>>> {
     let mut colors = Vec::new();
-    for _ in 0..3 {
-        if rng.is_white() {
-            let c = get_white_color_walk(len);
-            colors.push(c);
-        } else {
+    if special {
+        let white_color = get_white_color_walk(len);
+        colors.push(white_color.clone());
+        colors.push(white_color.clone());
+        colors.push(white_color.clone());
+    } else {
+        for _ in 0..3 {
             let c = get_single_color_walk(rng, len);
             colors.push(c);
         }
@@ -626,6 +628,9 @@ struct Args {
 
     #[arg(long, default_value_t = false)]
     avoid_effects: bool,
+
+    #[arg(long, default_value_t = false)]
+    special: bool,
 }
 
 use hex;
@@ -647,43 +652,59 @@ fn main() {
         args.velocity,
     );
 
-    //let steps = byte_stream.gen_range(400_000.0, 500_000.0) as usize;
     let steps = args.num_steps;
     const NUM_TRIES: usize = 1_000;
-    let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    let hide = vec![false, hide_2, hide_3];
+
+    // Determine the hide vector based on the special flag
+    let hide = if args.special {
+        vec![false, true, true]
+    } else {
+        let random_val = byte_stream.gen_range(0.0, 1.0);
+        if random_val < 1.0 / 3.0 {
+            vec![false, false, false] // 1/3 chance to hide none
+        } else if random_val < 2.0 / 3.0 {
+            vec![false, false, true] // 1/3 chance to hide none
+        } else {
+            vec![false, true, true] // 1/3 chance to hide none
+        }
+    };
+
     let mut positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
-    let colors = get_3_colors(&mut byte_stream, steps);
+
+    let colors = get_3_colors(&mut byte_stream, steps, args.special);
+
     let s: &str = args.file_name.as_str();
     let file_name = format!("vids/{}.mp4", s);
     println!("done simulating");
 
-    //let snake_len = byte_stream.gen_range(0.2, 2.0);
-
-    //let snake_len = 0.5;
     let init_len: usize = 0;
-    //let hide_2 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-    //let hide_3 = byte_stream.gen_range(0.0, 1.0) < 0.5;
-
     const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
     const FRAME_SIZE: u32 = 1600;
-    let min_vid_len: f64 = 0.1;
-    let max_vid_len: f64 = 1.0;
-    let min_pic_len: f64 = 1.0;
-    let max_pic_len: f64 = 8.0;
-    let vid_snake_lens: [f64; 3] = [
-        byte_stream.gen_range(min_vid_len, max_vid_len),
-        byte_stream.gen_range(min_vid_len, max_vid_len),
-        byte_stream.gen_range(min_vid_len, max_vid_len),
-    ];
-    let pic_snake_lens: [f64; 3] = [
-        byte_stream.gen_range(min_pic_len, max_pic_len),
-        byte_stream.gen_range(min_pic_len, max_pic_len),
-        byte_stream.gen_range(min_pic_len, max_pic_len),
-    ];
+
+    let random_vid_snake_len = byte_stream.gen_range(0.1, 0.5);
+    let random_pic_snake_len = byte_stream.gen_range(4.0, 12.0);
+
+    let vid_snake_lens = if args.special {
+        [random_vid_snake_len, random_vid_snake_len, random_vid_snake_len]
+    } else {
+        [
+            byte_stream.gen_range(0.2, 2.0),
+            byte_stream.gen_range(0.2, 2.0),
+            byte_stream.gen_range(0.2, 2.0),
+        ]
+    };
+
+    let pic_snake_lens = if args.special {
+        [random_pic_snake_len, random_pic_snake_len, random_pic_snake_len]
+    } else {
+        [
+            byte_stream.gen_range(1.0, 8.0),
+            byte_stream.gen_range(1.0, 8.0),
+            byte_stream.gen_range(1.0, 8.0),
+        ]
+    };
 
     let pic_frames = plot_positions(
         &mut positions,
