@@ -285,11 +285,9 @@ contract BusinessLogic is Context, Ownable {
 		if (longestBidderAddress == address(0)) {
 			longestBidderAddress = msg.sender;
 			longestBidderTime = 0;
-		} else {
-			if (prevBidderStatistics.bidTime > longestBidderTime) {
-				longestBidderTime = prevBidderStatistics.bidTime;
-				longestBidderAddress = prevBidderAddress;
-			}
+		} else if (prevBidderStatistics.bidTime > longestBidderTime) {
+			longestBidderTime = prevBidderStatistics.bidTime;
+			longestBidderAddress = prevBidderAddress;
 		}
 	}
 	function _updateStatisticsAfterClaimPrize() internal {
@@ -471,7 +469,33 @@ contract BusinessLogic is Context, Ownable {
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
 
-		// List of rewards (summary) for those who didn't win the main prize:
+		// Endurance Champion Prize
+		if (longestBidderAddress != address(0)) {
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, longestBidderTokenReward)
+			);
+			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
+		}
+
+		// Prize for having highest number of bids
+		if (topBidderAddress != address(0)) {
+			(, bytes memory data) = address(nft).call(
+				abi.encodeWithSelector(CosmicSignature.mint.selector, topBidderAddress, roundNum)
+			);
+			uint256 tokenId = abi.decode(data, (uint256));
+			address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, topBidderAddress, topBidderTokenReward)
+			);
+			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
+			winnerIndex += 1;
+		}
+
+		// Summary of rewards for those who didn't win the main prize:
 		//	- Group deposit (equal to stakingPercentage) for all Stakers of CST tokens
 		//	- [numRaffleEthWinnersForBidding] ETH deposits for random bidder
 		//	- [numRaffleNFTWinnersForBidding] NFT mints for random bidder
@@ -503,30 +527,6 @@ contract BusinessLogic is Context, Ownable {
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, winnerIndex, true, true);
 				winnerIndex += 1;
 			}
-		}
-		// Endurance Champion Prize
-		if (longestBidderAddress != address(0)) {
-			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
-			);
-			uint256 tokenId = abi.decode(data, (uint256));
-			address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, longestBidderTokenReward)
-			);
-			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
-			winnerIndex += 1;
-		}
-		// Prize for having highest number of bids
-		if (topBidderAddress != address(0)) {
-			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, topBidderAddress, roundNum)
-			);
-			uint256 tokenId = abi.decode(data, (uint256));
-			address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, topBidderAddress, topBidderTokenReward)
-			);
-			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
-			winnerIndex += 1;
 		}
 
 		// Give ETH to the winner.

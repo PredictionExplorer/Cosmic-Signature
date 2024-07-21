@@ -22,11 +22,11 @@ library CosmicGameConstants {
 	string public constant ERR_STR_MODE_RUNTIME = "System in maintenance mode";
 
 	struct BidderStatRec {
-		// 192 bits in total, this layout fits single storage slot (256 bits)
+		// 256 bits in total, this layout fits single storage slot (256 bits)
 		uint64 bidPricePaidEth; //fixed-point decimal, precision = 3 (ETH) digits, formula: bidPricePaidEth = bidPrice >> 15; (price in Wei units)
 		uint64 bidPricePaidCST; //fixed-point decimal, precision = 3 (ETH) digits, formula: bidPricePaidCST = bidPriceCST >> 15; (price in Wei units)
-		uint32 bidCount;
-		uint32 bidTime; // duration of each bid, summarized
+		uint64 bidCount;
+		uint64 bidTime; // duration of each bid, summarized
 	}
 	struct DonatedNFT {
 		IERC721 nftAddress;
