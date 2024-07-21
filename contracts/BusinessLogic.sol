@@ -214,7 +214,7 @@ contract BusinessLogic is Context, Ownable {
 
 		bidPrice = newBidPrice;
 
-		_updateStatisticsAfterBid(bidPrice,false);
+		_updateStatisticsAfterBid(bidPrice, false);
 		_bidCommon(params.message, bidType);
 
 		if (msg.value > paidBidPrice) {
@@ -263,7 +263,7 @@ contract BusinessLogic is Context, Ownable {
 			emit SystemModeChanged(systemMode);
 		}
 	}
-	function _resetBidPrice() internal{
+	function _resetBidPrice() internal {
 		if (roundNum == 0) {
 			bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		} else {
@@ -274,7 +274,7 @@ contract BusinessLogic is Context, Ownable {
 		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
 		prevBidderStatistics = bidStats[prevBidderAddress];
 		uint32 prevBidTime = 0;
-	    if (block.timestamp > prevBidderStartTime) {
+		if (block.timestamp > prevBidderStartTime) {
 			if (prevBidderStartTime > 0) {
 				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
 			}
@@ -295,8 +295,7 @@ contract BusinessLogic is Context, Ownable {
 	function _updateStatisticsAfterClaimPrize() internal {
 		_updatePreviousBidderStats();
 	}
-	function _updateStatisticsAfterBid(uint256 price,bool isCst) internal {
-
+	function _updateStatisticsAfterBid(uint256 price, bool isCst) internal {
 		_updatePreviousBidderStats();
 
 		CosmicGameConstants.BidderStatRec memory bidderStatistics;
@@ -387,7 +386,7 @@ contract BusinessLogic is Context, Ownable {
 		// In order to achieve this, we will adjust the auction length depending on the ratio.
 		token.burn(msg.sender, price);
 
-		_updateStatisticsAfterBid(bidPrice,true);
+		_updateStatisticsAfterBid(bidPrice, true);
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
@@ -529,7 +528,6 @@ contract BusinessLogic is Context, Ownable {
 			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
 			winnerIndex += 1;
 		}
-
 
 		// Give ETH to the winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");

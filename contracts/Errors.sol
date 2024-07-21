@@ -10,11 +10,15 @@ library CosmicGameErrors {
 	error BidMessageLengthOverflow(string errStr, uint256 msgLength);
 	error UsedRandomWalkNFT(string errStr, uint256 randomWalkTokenId);
 	error InsufficientCSTBalance(string errStr, uint256 requiredAmount, uint256 senderBalance);
-	error InvalidBidderQueryOffset(string errStr, uint256 providedRound, uint256 providedOffset, uint256 numParticipants);
+	error InvalidBidderQueryOffset(
+		string errStr,
+		uint256 providedRound,
+		uint256 providedOffset,
+		uint256 numParticipants
+	);
 	error InvalidBidderQueryRound(string errStr, uint256 providedRound, uint256 totalRounds);
-	error BidderQueryOffsetOverflow(string errStr,uint256 providedOffset,uint256 offsetFromStart);
-	error BidderQueryNoBidsYet(string errStr,uint256 providedRound);
-
+	error BidderQueryOffsetOverflow(string errStr, uint256 providedOffset, uint256 offsetFromStart);
+	error BidderQueryNoBidsYet(string errStr, uint256 providedRound);
 
 	// Claim prize errors
 	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimestamp);

@@ -108,7 +108,7 @@ contract OpenBusinessLogic is Context, Ownable {
 	struct BidParams {
 		string message;
 		int256 randomWalkNFTId;
-		bool openBid;       // true if the value sent with the TX is the amount of bid
+		bool openBid; // true if the value sent with the TX is the amount of bid
 	}
 
 	constructor() {}
@@ -168,14 +168,10 @@ contract OpenBusinessLogic is Context, Ownable {
 			);
 			if (params.openBid) {
 				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
-				require(msg.value >= minPriceOpenBid,"The value submitted for open bid is too low.");
+				require(msg.value >= minPriceOpenBid, "The value submitted for open bid is too low.");
 				require(
 					msg.value >= minPriceOpenBid,
-					CosmicGameErrors.BidPrice(
-						"The value submitted for open bid too low.",
-						minPriceOpenBid,
-						msg.value
-					)
+					CosmicGameErrors.BidPrice("The value submitted for open bid too low.", minPriceOpenBid, msg.value)
 				);
 				paidBidPrice = msg.value;
 			} else {
@@ -199,11 +195,7 @@ contract OpenBusinessLogic is Context, Ownable {
 				(bool success, ) = lastBidder.call{ value: amountToSend }("");
 				require(
 					success,
-					CosmicGameErrors.FundTransferFailed(
-						"Refund transfer failed.",
-						amountToSend,
-						lastBidder	
-					)
+					CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend, lastBidder)
 				);
 			}
 		}
@@ -547,7 +539,7 @@ contract OpenBusinessLogic is Context, Ownable {
 			bidPrice = address(this).balance / initialBidAmountFraction;
 		}
 		emit DonationEvent(_msgSender(), msg.value);
-	} 
+	}
 	function setTimesBidPrice(bytes memory _data) external onlyOwner {
 		uint256 value = abi.decode(_data, (uint256));
 		timesBidPrice = value;
