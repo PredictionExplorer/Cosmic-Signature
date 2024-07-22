@@ -233,9 +233,7 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     range *= 1.1;
 
     min_x = x_center - (range / 2.0);
-    //max_x = x_center + (range / 2.0);
     min_y = y_center - (range / 2.0);
-    //max_y = y_center + (range / 2.0);
 
     for body_idx in 0..positions.len() {
         for step in 0..positions[body_idx].len() {
@@ -531,17 +529,17 @@ fn get_best(
         let body1 = Body::new(
             rng.random_mass(),
             Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(0.0, 0.0, rng.random_velocity()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
         );
         let body2 = Body::new(
             rng.random_mass(),
             Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(0.0, 0.0, rng.random_velocity()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
         );
         let body3 = Body::new(
             rng.random_mass(),
             Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(0.0, 0.0, rng.random_velocity()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
         );
 
         let bodies = vec![body1, body2, body3];
@@ -631,6 +629,9 @@ struct Args {
 
     #[arg(long, default_value_t = false)]
     special: bool,
+
+    #[arg(long, default_value_t = false)]
+    gen_video: bool,
 }
 
 use hex;
@@ -653,7 +654,7 @@ fn main() {
     );
 
     let steps = args.num_steps;
-    const NUM_TRIES: usize = 1_000;
+    const NUM_TRIES: usize = 10_000;
 
     // Determine the hide vector based on the special flag
     let hide = if args.special {
@@ -684,7 +685,7 @@ fn main() {
     const FRAME_SIZE: u32 = 1600;
 
     let random_vid_snake_len = byte_stream.gen_range(0.1, 0.5);
-    let random_pic_snake_len = byte_stream.gen_range(4.0, 12.0);
+    let random_pic_snake_len = 0.5;
 
     let vid_snake_lens = if args.special {
         [random_vid_snake_len, random_vid_snake_len, random_vid_snake_len]
@@ -724,18 +725,20 @@ fn main() {
         println!("Image saved successfully.");
     }
 
-    let frames = plot_positions(
-        &mut positions,
-        FRAME_SIZE,
-        vid_snake_lens,
-        init_len,
-        &hide,
-        &colors,
-        steps_per_frame,
-        args.avoid_effects,
-        false,
-    );
+    if args.gen_video {
+        let frames = plot_positions(
+            &mut positions,
+            FRAME_SIZE,
+            vid_snake_lens,
+            init_len,
+            &hide,
+            &colors,
+            steps_per_frame,
+            args.avoid_effects,
+            false,
+        );
 
-    create_video_from_frames_in_memory(&frames, &file_name, 60);
-    println!("done creating video");
+        create_video_from_frames_in_memory(&frames, &file_name, 60);
+        println!("done creating video");
+    }
 }
