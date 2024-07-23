@@ -327,4 +327,46 @@ describe("Staking RandomWalk tests", function () {
 			}
 		}
 	})
+	it("Shouldn't be possible to use a token twice for stake/unstake", async function () {
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+			bidLogic,
+		} = await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		let cBidder = await BidderContract.deploy(cosmicGame.address);
+		await cBidder.deployed();
+
+		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		let tokenPrice = await randomWalkNFT.getMintPrice();
+		await randomWalkNFT.mint({ value: tokenPrice })
+
+		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
+		await newStakingWalletRWalk.deployed();
+		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
+
+		let tx = await newStakingWalletRWalk.stake(0);
+		let receipt = await tx.wait();
+		let topic_sig = stakingWalletRWalk.interface.getEventTopic("StakeActionEvent");
+		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
+		await ethers.provider.send("evm_increaseTime", [6000]);
+		await ethers.provider.send("evm_mine");
+		await newStakingWalletRWalk.unstake(0);
+
+		await expect(newStakingWalletRWalk.stake(0)).to.be.revertedWithCustomError(contractErrors,"OneTimeStaking");
+	});
 });
