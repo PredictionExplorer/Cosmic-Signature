@@ -257,17 +257,13 @@ impl NebulaBackground {
     fn new(seed: u32) -> Self {
         let noise = Simplex::new(seed);
         let gradient = Gradient::new(vec![
-            Hsv::new(270.0, 0.8, 0.3), // Dark purple
-            Hsv::new(280.0, 0.9, 0.5), // Brighter purple
-            Hsv::new(290.0, 0.7, 0.7), // Pink
-            Hsv::new(200.0, 0.8, 0.8), // Light blue
+            Hsv::new(270.0, 0.9, 0.1),
+            Hsv::new(280.0, 0.8, 0.3),
+            Hsv::new(290.0, 0.7, 0.5),
+            Hsv::new(260.0, 0.8, 0.7),
+            Hsv::new(200.0, 0.7, 0.9),
         ]);
-        NebulaBackground {
-            noise,
-            gradient,
-            scale: 0.005,
-            disturbances: Vec::new(), // Initialize as an empty vector
-        }
+        NebulaBackground { noise, gradient, scale: 0.02, disturbances: Vec::new() }
     }
 
     fn update(&mut self, bodies: &[Body], _hide: &[bool]) {
@@ -290,38 +286,41 @@ impl NebulaBackground {
             let mut dy = y as f64;
             let dz = camera_position.z;
 
+            // Apply domain warping
+            let warp_x = self.noise.get([dx * 0.01, dy * 0.01, dz * 0.01]) * 20.0;
+            let warp_y = self.noise.get([dx * 0.01 + 40.0, dy * 0.01 + 40.0, dz * 0.01]) * 20.0;
+            dx += warp_x;
+            dy += warp_y;
+
+            // Apply disturbances
             let mut displacement = Vector3::new(0.0, 0.0, 0.0);
             let mut total_influence = 0.0;
-
-            // Apply local disturbances
             for (pos, radius, velocity) in &self.disturbances {
                 let dx_local = x as f64 - pos.x * width as f64;
                 let dy_local = y as f64 - pos.y * height as f64;
                 let distance = (dx_local * dx_local + dy_local * dy_local).sqrt();
                 if distance < *radius {
                     let factor = 1.0 - distance / radius;
-                    displacement += velocity * factor * 0.1; // Adjust 0.1 to control displacement strength
+                    displacement += velocity * factor * 0.1;
                     total_influence += factor;
                 }
             }
-
-            // Apply displacement to sampling coordinates
             dx += displacement.x;
             dy += displacement.y;
 
             let mut value = 0.0;
-            for i in 0..4 {
+            for i in 0..6 {
                 let frequency = 1.0 / 2.0f64.powi(i);
+                let amplitude = 0.5f64.powi(i);
                 value += self.noise.get([
                     dx * self.scale * frequency,
                     dy * self.scale * frequency,
                     (dz + displacement.z) * self.scale * frequency,
-                ]) / 2.0f64.powi(i as i32);
+                ]) * amplitude;
             }
 
-            // Apply color/brightness change
-            value += total_influence * 0.2; // Adjust 0.2 to control brightness change
-
+            value += total_influence * 0.2;
+            value = (value - 0.5) * 1.5 + 0.5;
             value = value.max(0.0).min(1.0);
 
             let color = self.gradient.get(value as f32);
