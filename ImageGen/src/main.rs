@@ -252,9 +252,8 @@ struct NebulaBackground {
     noise: Simplex,
     gradient: Gradient<Hsv>,
     scale: f64,
-    disturbances: Vec<(Vector3<f64>, f64, Vector3<f64>)>, // position, radius, effect_vector
     time: f64,
-    prev_displacement: Vec<Vec<Vector3<f64>>>,
+    last_noise_field: Vec<Vec<f64>>,
 }
 
 impl NebulaBackground {
@@ -267,38 +266,18 @@ impl NebulaBackground {
             Hsv::new(260.0, 0.8, 0.7), // Bright blue-purple
             Hsv::new(200.0, 0.7, 0.9), // Bright blue
         ]);
+
         NebulaBackground {
             noise,
             gradient,
-            scale: 2.0,
-            disturbances: Vec::new(),
+            scale: 4.0,
             time: 0.0,
-            prev_displacement: vec![
-                vec![Vector3::new(0.0, 0.0, 0.0); width as usize];
-                height as usize
-            ],
+            last_noise_field: vec![vec![0.0; width as usize]; height as usize],
         }
     }
 
-    fn update(&mut self, bodies: &[Body], time_step: f64) {
-        self.disturbances.clear();
-        for body in bodies.iter() {
-            debug_assert!(
-                body.position.x >= -1.0 && body.position.x <= 1.0,
-                "Body x-position out of range"
-            );
-            debug_assert!(
-                body.position.y >= -1.0 && body.position.y <= 1.0,
-                "Body y-position out of range"
-            );
-
-            let speed = body.velocity.magnitude();
-            let accel_magnitude = body.acceleration.magnitude();
-            let radius = (speed * 0.2 + accel_magnitude * 0.05).max(0.1);
-            let effect_vector = body.velocity + body.acceleration * 0.5;
-            self.disturbances.push((body.position, radius, effect_vector));
-        }
-        self.time += time_step * 0.1; // Slow down time evolution
+    fn update(&mut self, _bodies: &[Body], time_step: f64) {
+        self.time += time_step * 0.01; // Slow down time progression significantly
     }
 
     fn generate(&mut self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
@@ -306,57 +285,25 @@ impl NebulaBackground {
             let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
             let world_y = 1.0 - (y as f64 / height as f64) * 2.0;
 
-            debug_assert!(world_x >= -1.0 && world_x <= 1.0, "World x-coordinate out of range");
-            debug_assert!(world_y >= -1.0 && world_y <= 1.0, "World y-coordinate out of range");
-
-            let mut displacement = Vector3::new(0.0, 0.0, 0.0);
-            let mut total_influence = 0.0;
-
-            for (pos, radius, effect_vector) in &self.disturbances {
-                debug_assert!(pos.x >= -1.0 && pos.x <= 1.0, "Disturbance x-position out of range");
-                debug_assert!(pos.y >= -1.0 && pos.y <= 1.0, "Disturbance y-position out of range");
-                debug_assert!(*radius > 0.0, "Disturbance radius must be positive");
-
-                let dx = world_x - pos.x;
-                let dy = world_y - pos.y;
-                let distance = (dx * dx + dy * dy).sqrt();
-                if distance < *radius {
-                    let factor = (1.0 - distance / radius).powi(2);
-                    displacement += effect_vector * factor * 0.05; // Reduced effect strength
-                    total_influence += factor;
-                }
-            }
-
-            debug_assert!(
-                total_influence >= 0.0 && total_influence <= 1.0,
-                "Total influence out of range"
-            );
-
-            // Smooth out the displacement
-            let prev_disp = self.prev_displacement[y as usize][x as usize];
-            displacement = prev_disp * 0.9 + displacement * 0.1;
-            self.prev_displacement[y as usize][x as usize] = displacement;
-
-            let sample_x = (world_x + displacement.x) * self.scale;
-            let sample_y = (world_y + displacement.y) * self.scale;
-            let sample_z = self.time;
-
-            let mut value = 0.0;
-            for i in 0..6 {
+            let mut new_value = 0.0;
+            for i in 0..4 {
+                // Reduced octaves for simplicity
                 let frequency = 1.0 / 2.0f64.powi(i);
                 let amplitude = 0.5f64.powi(i);
-                value += self.noise.get([
-                    sample_x * frequency,
-                    sample_y * frequency,
-                    sample_z * frequency,
+                new_value += self.noise.get([
+                    world_x * self.scale * frequency,
+                    world_y * self.scale * frequency,
+                    self.time * frequency,
                 ]) * amplitude;
             }
+            new_value = (new_value + 1.0) / 2.0; // Normalize to [0, 1]
 
-            value = (value + 1.0) / 2.0;
-            value += total_influence * 0.3; // Reduced brightness effect
-            value = value.max(0.0).min(1.0);
+            // Interpolate between old and new noise values
+            let old_value = self.last_noise_field[y as usize][x as usize];
+            let interpolation_factor = 0.05; // Adjust this to control speed of change
+            let value = old_value * (1.0 - interpolation_factor) + new_value * interpolation_factor;
 
-            debug_assert!(value >= 0.0 && value <= 1.0, "Final value out of range");
+            self.last_noise_field[y as usize][x as usize] = value;
 
             let color = self.gradient.get(value as f32);
             let rgb = Srgb::from_color(color);
@@ -828,7 +775,7 @@ fn main() {
     const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
-    const FRAME_SIZE: u32 = 1600;
+    const FRAME_SIZE: u32 = 600;
 
     let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
