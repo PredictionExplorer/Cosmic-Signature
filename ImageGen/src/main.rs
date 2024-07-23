@@ -246,11 +246,13 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
 use noise::{NoiseFn, Simplex};
 use palette::{Gradient, Hsv};
 
+const TIME_PER_FRAME: f64 = 1.0 / 60.0; // Assuming 60 fps
+
 struct NebulaBackground {
     noise: Simplex,
     gradient: Gradient<Hsv>,
     scale: f64,
-    disturbances: Vec<(Vector3<f64>, f64, Vector3<f64>)>, // position, radius, velocity
+    disturbances: Vec<(Vector3<f64>, f64, Vector3<f64>)>, // position, radius, effect_vector
 }
 
 impl NebulaBackground {
@@ -263,60 +265,62 @@ impl NebulaBackground {
             Hsv::new(260.0, 0.8, 0.7), // Bright blue-purple
             Hsv::new(200.0, 0.7, 0.9), // Bright blue
         ]);
-        NebulaBackground { noise, gradient, scale: 0.01, disturbances: Vec::new() }
-    }
-
-    fn update(&mut self, bodies: &[Body], _hide: &[bool]) {
-        self.disturbances.clear();
-        for body in bodies.iter() {
-            let speed = body.velocity.magnitude();
-            let radius = speed * 100.0; // Increased radius for more noticeable effect
-            self.disturbances.push((body.position, radius, body.velocity));
+        NebulaBackground {
+            noise,
+            gradient,
+            scale: 2.0, // Adjust this to change the "zoom" of the noise
+            disturbances: Vec::new(),
         }
     }
 
-    fn generate(
-        &self,
-        width: u32,
-        height: u32,
-        camera_position: Vector3<f64>,
-    ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    fn update(&mut self, bodies: &[Body]) {
+        self.disturbances.clear();
+        for body in bodies.iter() {
+            let speed = body.velocity.magnitude();
+            let accel_magnitude = body.acceleration.magnitude();
+            let radius = speed * 0.2 + accel_magnitude * 0.05; // Adjust these factors as needed
+            let effect_vector = body.velocity + body.acceleration * 0.5; // Combine velocity and acceleration
+            self.disturbances.push((body.position, radius, effect_vector));
+        }
+    }
+
+    fn generate(&self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         ImageBuffer::from_fn(width, height, |x, y| {
-            let base_x = x as f64;
-            let base_y = y as f64;
-            let base_z = camera_position.z;
+            // Convert pixel coordinates to world coordinates (-1 to 1)
+            let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
+            let world_y = 1.0 - (y as f64 / height as f64) * 2.0; // Flip y-axis
 
             let mut displacement = Vector3::new(0.0, 0.0, 0.0);
             let mut total_influence = 0.0;
 
-            for (pos, radius, velocity) in &self.disturbances {
-                let dx = base_x - pos.x * width as f64;
-                let dy = base_y - pos.y * height as f64;
+            for (pos, radius, effect_vector) in &self.disturbances {
+                let dx = world_x - pos.x;
+                let dy = world_y - pos.y;
                 let distance = (dx * dx + dy * dy).sqrt();
                 if distance < *radius {
-                    let factor = (1.0 - distance / radius).powi(2); // Quadratic falloff
-                    displacement += velocity * factor * 0.5; // Increased strength
+                    let factor = (1.0 - distance / radius).powi(2);
+                    displacement += effect_vector * factor * 0.05; // Adjust this factor to change effect strength
                     total_influence += factor;
                 }
             }
 
-            let sample_x = base_x + displacement.x;
-            let sample_y = base_y + displacement.y;
-            let sample_z = base_z + displacement.z;
+            let sample_x = (world_x + displacement.x) * self.scale;
+            let sample_y = (world_y + displacement.y) * self.scale;
+            let sample_z = displacement.z * self.scale;
 
             let mut value = 0.0;
             for i in 0..6 {
                 let frequency = 1.0 / 2.0f64.powi(i);
                 let amplitude = 0.5f64.powi(i);
                 value += self.noise.get([
-                    sample_x * self.scale * frequency,
-                    sample_y * self.scale * frequency,
-                    sample_z * self.scale * frequency,
+                    sample_x * frequency,
+                    sample_y * frequency,
+                    sample_z * frequency,
                 ]) * amplitude;
             }
 
             value = (value + 1.0) / 2.0; // Normalize to [0, 1]
-            value += total_influence * 0.3; // Increased brightness near bodies
+            value += total_influence * 0.3; // Increase brightness near bodies
             value = value.max(0.0).min(1.0);
 
             let color = self.gradient.get(value as f32);
@@ -338,15 +342,17 @@ fn plot_positions(
     avoid_effects: bool,
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-    convert_positions(positions, hide);
-
     let mut frames = Vec::new();
-    let mut nebula = NebulaBackground::new(42); // Use a fixed seed or generate randomly
+    let mut nebula = NebulaBackground::new(42);
 
     let mut current_pos: usize = 0;
     let snake_length: usize = (snake_lens.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
         / frame_interval as f64) as usize;
     let _snake_end = if one_frame { positions[0].len() } else { snake_length };
+
+    // Calculate bounds once, at the beginning
+    let (min_pos, max_pos) = calculate_bounds(positions);
+    let pos_range = max_pos - min_pos;
 
     loop {
         // Update nebula based on bodies' positions and velocities
@@ -356,18 +362,32 @@ fn plot_positions(
             .map(|(_i, pos)| {
                 let current_pos_vec = pos[current_pos];
                 let prev_pos = if current_pos > 0 { pos[current_pos - 1] } else { current_pos_vec };
-                let velocity = (current_pos_vec - prev_pos) / frame_interval as f64;
-                Body::new(100.0, current_pos_vec, velocity)
+                let time_elapsed = frame_interval as f64 * TIME_PER_FRAME;
+                let velocity = (current_pos_vec - prev_pos) / time_elapsed;
+
+                let acceleration = if current_pos > 1 {
+                    let prev_prev_pos = pos[current_pos - 2];
+                    let prev_velocity = (prev_pos - prev_prev_pos) / time_elapsed;
+                    (velocity - prev_velocity) / time_elapsed
+                } else {
+                    Vector3::zeros()
+                };
+
+                // Normalize position to [-1, 1] range
+                let normalized_pos = normalize_position(current_pos_vec, &min_pos, &pos_range);
+
+                Body {
+                    mass: 100.0,
+                    position: normalized_pos,
+                    velocity: velocity,
+                    acceleration: acceleration,
+                }
             })
             .collect();
-        nebula.update(&bodies, hide);
-
-        // Calculate average z position for camera
-        let avg_z = bodies.iter().map(|b| b.position.z).sum::<f64>() / bodies.len() as f64;
-        let camera_position = Vector3::new(0.0, 0.0, avg_z);
+        nebula.update(&bodies);
 
         // Generate nebula background
-        let mut img = nebula.generate(frame_size, frame_size, camera_position);
+        let mut img = nebula.generate(frame_size, frame_size);
 
         // Draw bodies
         for body_idx in 0..positions.len() {
@@ -379,13 +399,17 @@ fn plot_positions(
             let start = current_pos.saturating_sub(snake_length);
 
             for i in start..idx {
-                let x = positions[body_idx][i].x;
-                let y = positions[body_idx][i].y;
+                let pos = positions[body_idx][i];
+                let normalized_pos = normalize_position(pos, &min_pos, &pos_range);
 
-                let xp = (x * frame_size as f64).round();
-                let yp = (y * frame_size as f64).round();
+                // Convert normalized coordinates to pixel coordinates
+                let px = ((normalized_pos.x + 1.0) / 2.0 * frame_size as f64).round() as i32;
+                let py = ((1.0 - normalized_pos.y) / 2.0 * frame_size as f64).round() as i32;
 
-                draw_filled_circle_mut(&mut img, (xp as i32, yp as i32), 6, colors[body_idx][i]);
+                // Ensure the point is within the image bounds
+                if px >= 0 && px < frame_size as i32 && py >= 0 && py < frame_size as i32 {
+                    draw_filled_circle_mut(&mut img, (px, py), 6, colors[body_idx][i]);
+                }
             }
         }
 
@@ -402,6 +426,26 @@ fn plot_positions(
     }
 
     frames
+}
+
+fn calculate_bounds(positions: &Vec<Vec<Vector3<f64>>>) -> (Vector3<f64>, Vector3<f64>) {
+    let mut min_pos = Vector3::new(f64::MAX, f64::MAX, f64::MAX);
+    let mut max_pos = Vector3::new(f64::MIN, f64::MIN, f64::MIN);
+    for pos_set in positions.iter() {
+        for pos in pos_set.iter() {
+            min_pos = min_pos.zip_map(pos, f64::min);
+            max_pos = max_pos.zip_map(pos, f64::max);
+        }
+    }
+    (min_pos, max_pos)
+}
+
+fn normalize_position(
+    pos: Vector3<f64>,
+    min_pos: &Vector3<f64>,
+    pos_range: &Vector3<f64>,
+) -> Vector3<f64> {
+    (pos - min_pos).component_div(pos_range) * 2.0 - Vector3::new(1.0, 1.0, 1.0)
 }
 
 extern crate rustfft;
