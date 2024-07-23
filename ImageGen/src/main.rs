@@ -254,6 +254,7 @@ struct NebulaBackground {
     scale: f64,
     time: f64,
     last_noise_field: Vec<Vec<f64>>,
+    displacement_field: Vec<Vec<Vector3<f64>>>,
 }
 
 impl NebulaBackground {
@@ -273,11 +274,45 @@ impl NebulaBackground {
             scale: 4.0,
             time: 0.0,
             last_noise_field: vec![vec![0.0; width as usize]; height as usize],
+            displacement_field: vec![
+                vec![Vector3::new(0.0, 0.0, 0.0); width as usize];
+                height as usize
+            ],
         }
     }
 
-    fn update(&mut self, _bodies: &[Body], time_step: f64) {
-        self.time += time_step * 0.01; // Slow down time progression significantly
+    fn update(&mut self, bodies: &[Body], time_step: f64, width: u32, height: u32) {
+        self.time += time_step * 0.0001; // Significantly slow down natural evolution
+
+        // Reset displacement field
+        for row in self.displacement_field.iter_mut() {
+            for displacement in row.iter_mut() {
+                *displacement *= 0.999; // Decay previous displacement
+            }
+        }
+
+        // Apply body influences
+        for body in bodies {
+            let influence_radius = 0.3; // Influence radius in normalized coordinates
+            let strength = 0.9; // Strength of influence
+
+            for y in 0..height {
+                for x in 0..width {
+                    let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
+                    let world_y = 1.0 - (y as f64 / height as f64) * 2.0;
+
+                    let dx = world_x - body.position.x;
+                    let dy = world_y - body.position.y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+
+                    if distance < influence_radius {
+                        let factor = (1.0 - distance / influence_radius).powi(2) * strength;
+                        let displacement = body.velocity * factor;
+                        self.displacement_field[y as usize][x as usize] += displacement;
+                    }
+                }
+            }
+        }
     }
 
     fn generate(&mut self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
@@ -285,14 +320,17 @@ impl NebulaBackground {
             let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
             let world_y = 1.0 - (y as f64 / height as f64) * 2.0;
 
+            let displacement = self.displacement_field[y as usize][x as usize];
+            let sample_x = world_x + displacement.x;
+            let sample_y = world_y + displacement.y;
+
             let mut new_value = 0.0;
             for i in 0..4 {
-                // Reduced octaves for simplicity
                 let frequency = 1.0 / 2.0f64.powi(i);
                 let amplitude = 0.5f64.powi(i);
                 new_value += self.noise.get([
-                    world_x * self.scale * frequency,
-                    world_y * self.scale * frequency,
+                    sample_x * self.scale * frequency,
+                    sample_y * self.scale * frequency,
                     self.time * frequency,
                 ]) * amplitude;
             }
@@ -300,7 +338,7 @@ impl NebulaBackground {
 
             // Interpolate between old and new noise values
             let old_value = self.last_noise_field[y as usize][x as usize];
-            let interpolation_factor = 0.05; // Adjust this to control speed of change
+            let interpolation_factor = 0.1; // Adjust this to control speed of change
             let value = old_value * (1.0 - interpolation_factor) + new_value * interpolation_factor;
 
             self.last_noise_field[y as usize][x as usize] = value;
@@ -366,7 +404,7 @@ fn plot_positions(
             })
             .collect();
 
-        nebula.update(&bodies, frame_interval as f64 * TIME_PER_FRAME);
+        nebula.update(&bodies, frame_interval as f64 * TIME_PER_FRAME, frame_size, frame_size);
         let mut img = nebula.generate(frame_size, frame_size);
 
         // Draw bodies
