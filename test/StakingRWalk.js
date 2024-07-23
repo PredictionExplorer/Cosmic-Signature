@@ -81,8 +81,7 @@ describe("Staking RandomWalk tests", function () {
 		let topic_sig = stakingWalletRWalk.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
-		let unstakeTime = log.args.unstakeTime;
-		await ethers.provider.send("evm_increaseTime", [unstakeTime.toNumber()]);
+		await ethers.provider.send("evm_increaseTime", [6000]);
 		await ethers.provider.send("evm_mine");
 		await newStakingWalletRWalk.unstake(0);
 
@@ -124,47 +123,10 @@ describe("Staking RandomWalk tests", function () {
 		let topic_sig = stakingWalletRWalk.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
-		let unstakeTime = log.args.unstakeTime;
-		await ethers.provider.send("evm_increaseTime", [unstakeTime.toNumber()]);
+		await ethers.provider.send("evm_increaseTime", [6000]);
 		await ethers.provider.send("evm_mine");
 
 		await expect(newStakingWalletRWalk.connect(addr1).unstake(0)).to.be.revertedWithCustomError(contractErrors,"AccessError");
-	});
-	it("Shouldn't be possible to unstake before unstake date", async function () {
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			randomWalkNFT,
-			raffleWallet,
-			stakingWalletCST,
-			stakingWalletRWalk,
-			marketingWallet,
-			bidLogic,
-		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(cosmicGame.address);
-		await cBidder.deployed();
-
-		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
-		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice })
-
-		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
-		await newStakingWalletRWalk.deployed();
-		await randomWalkNFT.setApprovalForAll(newStakingWalletRWalk.address, true);
-
-		let tx = await newStakingWalletRWalk.stake(0);
-		let receipt = await tx.wait();
-
-		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWithCustomError(contractErrors,"EarlyUnstake");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -221,10 +183,8 @@ describe("Staking RandomWalk tests", function () {
 		let receipt = await tx.wait();
 		let topic_sig = newStakingWalletRWalk.interface.getEventTopic("StakeActionEvent");
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		let unstakeTime;
 		for (let i=0; i<receipt_logs.length; i++) {
 			let evt = newStakingWalletRWalk.interface.parseLog(receipt_logs[i]);
-			unstakeTime = evt.args.unstakeTime.toNumber();
 		}
 
 		numTokens = await newStakingWalletRWalk.numTokensStaked();
@@ -242,7 +202,7 @@ describe("Staking RandomWalk tests", function () {
 		tIdx = await newStakingWalletRWalk.tokenByIndex(2);
 		expect(tIdx).to.equal(r3);
 
-		await ethers.provider.send("evm_setNextBlockTimestamp", [unstakeTime+1]);
+		await ethers.provider.send("evm_increaseTime", [600+1]);
 		await newStakingWalletRWalk.unstakeMany([r1,r2,r3]);
 		numTokens = await newStakingWalletRWalk.numTokensStaked();
 		expect(numTokens).to.equal(0);
