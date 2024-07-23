@@ -243,11 +243,86 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     }
 }
 
+use noise::{NoiseFn, Perlin};
+use palette::{Gradient, Hsv};
+
+struct NebulaBackground {
+    noise: Perlin,
+    gradient: Gradient<Hsv>,
+    scale: f64,
+    offset: [f64; 3],
+    velocity: [f64; 3],
+}
+
+impl NebulaBackground {
+    fn new(seed: u32) -> Self {
+        let noise = Perlin::new(seed);
+        let gradient = Gradient::new(vec![
+            Hsv::new(270.0, 0.8, 0.3), // Dark purple
+            Hsv::new(280.0, 0.9, 0.5), // Brighter purple
+            Hsv::new(290.0, 0.7, 0.7), // Pink
+            Hsv::new(200.0, 0.8, 0.8), // Light blue
+        ]);
+        NebulaBackground {
+            noise,
+            gradient,
+            scale: 0.005,
+            offset: [0.0, 0.0, 0.0],
+            velocity: [0.0, 0.0, 0.0],
+        }
+    }
+
+    fn update(&mut self, bodies: &[Body], time_step: f64) {
+        // Slowly evolve the nebula over time
+        self.offset[2] += time_step * 0.01;
+
+        // Calculate influence from bodies
+        let target_velocity = bodies
+            .iter()
+            .map(|body| {
+                let strength = body.mass * 0.000001;
+                [body.position[0] * strength, body.position[1] * strength, 0.0]
+            })
+            .fold([0.0; 3], |acc, val| [acc[0] + val[0], acc[1] + val[1], acc[2] + val[2]]);
+
+        // Smoothly interpolate current velocity towards target velocity
+        let interpolation_factor = 0.1;
+        for i in 0..3 {
+            self.velocity[i] += (target_velocity[i] - self.velocity[i]) * interpolation_factor;
+            self.offset[i] += self.velocity[i] * time_step;
+        }
+    }
+
+    fn generate(&self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+        ImageBuffer::from_fn(width, height, |x, y| {
+            let dx = x as f64 + self.offset[0];
+            let dy = y as f64 + self.offset[1];
+
+            let mut value = 0.0;
+            for i in 0..4 {
+                let frequency = 1.0 / 2.0f64.powi(i);
+                value += self.noise.get([
+                    dx * self.scale * frequency,
+                    dy * self.scale * frequency,
+                    self.offset[2] * frequency,
+                ]) / 2.0f64.powi(i as i32);
+            }
+
+            value = value.max(0.0).min(1.0);
+
+            let color = self.gradient.get(value as f32);
+            let rgb = Srgb::from_color(color);
+
+            Rgb([(rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8])
+        })
+    }
+}
+
 fn plot_positions(
     positions: &mut Vec<Vec<Vector3<f64>>>,
     frame_size: u32,
     snake_lens: [f64; 3],
-    init_len: usize,
+    _init_len: usize,
     hide: &Vec<bool>,
     colors: &Vec<Vec<Rgb<u8>>>,
     frame_interval: usize,
@@ -257,42 +332,45 @@ fn plot_positions(
     convert_positions(positions, hide);
 
     let mut frames = Vec::new();
+    let mut nebula = NebulaBackground::new(42); // Use a fixed seed or generate randomly
 
-    let mut snake_end: usize = if one_frame { positions[0].len() - 1 } else { frame_interval };
+    let mut current_pos: usize = 0;
+    let snake_length: usize = (snake_lens.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+        / frame_interval as f64) as usize;
+    let _snake_end = if one_frame { positions[0].len() } else { snake_length };
 
-    const BACKGROUND_COLOR: Rgb<u8> = Rgb([0u8, 0u8, 0u8]);
-    const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
     loop {
-        let mut img = ImageBuffer::from_fn(frame_size, frame_size, |_, _| BACKGROUND_COLOR);
+        // Update nebula based on bodies' positions
+        let bodies: Vec<Body> = positions
+            .iter()
+            .enumerate()
+            .filter(|&(i, _)| !hide[i])
+            .map(|(_, pos)| {
+                Body::new(
+                    100.0,
+                    Vector3::new(pos[current_pos][0], pos[current_pos][1], 0.0),
+                    Vector3::zeros(),
+                )
+            })
+            .collect();
+        nebula.update(&bodies, frame_interval as f64 * 0.01);
 
-        let mut snake_starts: [usize; 3] = [0, 0, 0];
+        // Generate nebula background
+        let mut img = nebula.generate(frame_size, frame_size);
 
+        // Draw bodies
         for body_idx in 0..positions.len() {
             if hide[body_idx] {
                 continue;
             }
 
-            let mut total_dist: f64 = 0.0;
-            let mut idx = snake_end;
-            loop {
-                if idx <= 1 || total_dist > snake_lens[body_idx] {
-                    break;
-                }
-                let x1 = positions[body_idx][idx][0];
-                let y1 = positions[body_idx][idx][1];
-                let x2 = positions[body_idx][idx - 1][0];
-                let y2 = positions[body_idx][idx - 1][1];
-                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt(); // TODO: use distance function in the struct
-                total_dist += dist;
-                idx -= 1;
-            }
-            snake_starts[body_idx] = idx;
+            let idx = (current_pos + 1).min(positions[body_idx].len());
+            let start = current_pos.saturating_sub(snake_length);
 
-            for i in snake_starts[body_idx]..snake_end {
+            for i in start..idx {
                 let x = positions[body_idx][i][0];
                 let y = positions[body_idx][i][1];
 
-                // Scale and shift positions to fit within the image dimensions
                 let xp = (x * frame_size as f64).round();
                 let yp = (y * frame_size as f64).round();
 
@@ -301,36 +379,18 @@ fn plot_positions(
         }
 
         if !avoid_effects {
-            img = imageproc::filter::gaussian_blur_f32(&img.clone(), 6.0);
-            //let mut blurred_img = img.clone();
-            for body_idx in 0..positions.len() {
-                if hide[body_idx] {
-                    continue;
-                }
-
-                for i in snake_starts[body_idx]..snake_end {
-                    let x = positions[body_idx][i][0];
-                    let y = positions[body_idx][i][1];
-
-                    // Scale and shift positions to fit within the image dimensions
-                    let xp = (x * frame_size as f64).round();
-                    let yp = (y * frame_size as f64).round();
-
-                    draw_filled_circle_mut(&mut img, (xp as i32, yp as i32), 1, WHITE_COLOR);
-                }
-            }
+            img = imageproc::filter::gaussian_blur_f32(&img, 1.0);
         }
 
-        if snake_end >= init_len {
-            frames.push(imageproc::filter::gaussian_blur_f32(&img, 1.0));
-        }
-        snake_end += frame_interval;
-        if snake_end >= positions[0].len() {
+        frames.push(img);
+
+        current_pos += frame_interval;
+        if current_pos >= positions[0].len() {
             break;
         }
     }
 
-    return frames;
+    frames
 }
 
 extern crate rustfft;

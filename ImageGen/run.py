@@ -17,7 +17,7 @@ def main():
     print("starting")
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
-    max_concurrent_executions = 4
+    max_concurrent_executions = 1
     N = 20
 
     # Specify the different parameters for each execution
@@ -31,7 +31,7 @@ def main():
     possible_max_mass = [300]
     possible_special = [True, False]
 
-    seed = '0x4450'
+    seed = '0x10' + ''.join(random.choice("0123456789abcdef") for _ in range(6))
 
     values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass, possible_special]
 
@@ -51,7 +51,6 @@ def main():
             cur.append('--num-steps')
             cur.append(str(num_steps))
 
-            # cur.append('--avoid-effects')
 
             cur.append('--location')
             cur.append(str(float(location)))
@@ -66,6 +65,9 @@ def main():
             cur.append(str(float(max_mass)))
 
             '''
+
+            cur.append('--avoid-effects')
+
             cur.append('--file-name')
             cur.append(file_name)
 
