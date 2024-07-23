@@ -250,8 +250,7 @@ struct NebulaBackground {
     noise: Simplex,
     gradient: Gradient<Hsv>,
     scale: f64,
-    offset: Vector3<f64>,
-    velocity: Vector3<f64>,
+    disturbances: Vec<(Vector3<f64>, f64, Vector3<f64>)>, // position, radius, velocity
 }
 
 impl NebulaBackground {
@@ -266,21 +265,18 @@ impl NebulaBackground {
         NebulaBackground {
             noise,
             gradient,
-            scale: 0.002, // Decreased from 0.005 for larger noise patterns
-            offset: Vector3::new(0.0, 0.0, 0.0),
-            velocity: Vector3::new(0.0, 0.0, 0.0),
+            scale: 0.005,
+            disturbances: Vec::new(), // Initialize as an empty vector
         }
     }
 
-    fn update(&mut self, bodies: &[Body], time_step: f64) {
-        let target_velocity = bodies.iter().fold(Vector3::new(0.0, 0.0, 0.0), |acc, body| {
-            let strength = body.mass * 0.00001; // Increased from 0.000001
-            acc + body.position * strength
-        });
-
-        let interpolation_factor = 0.2; // Increased from 0.1 for faster response
-        self.velocity += (target_velocity - self.velocity) * interpolation_factor;
-        self.offset += self.velocity * time_step;
+    fn update(&mut self, bodies: &[Body], _hide: &[bool]) {
+        self.disturbances.clear();
+        for body in bodies.iter() {
+            let speed = body.velocity.magnitude();
+            let radius = speed * 50.0; // Adjust this factor to change the area of effect
+            self.disturbances.push((body.position, radius, body.velocity));
+        }
     }
 
     fn generate(
@@ -290,9 +286,28 @@ impl NebulaBackground {
         camera_position: Vector3<f64>,
     ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         ImageBuffer::from_fn(width, height, |x, y| {
-            let dx = x as f64 + self.offset.x;
-            let dy = y as f64 + self.offset.y;
-            let dz = camera_position.z + self.offset.z;
+            let mut dx = x as f64;
+            let mut dy = y as f64;
+            let dz = camera_position.z;
+
+            let mut displacement = Vector3::new(0.0, 0.0, 0.0);
+            let mut total_influence = 0.0;
+
+            // Apply local disturbances
+            for (pos, radius, velocity) in &self.disturbances {
+                let dx_local = x as f64 - pos.x * width as f64;
+                let dy_local = y as f64 - pos.y * height as f64;
+                let distance = (dx_local * dx_local + dy_local * dy_local).sqrt();
+                if distance < *radius {
+                    let factor = 1.0 - distance / radius;
+                    displacement += velocity * factor * 0.1; // Adjust 0.1 to control displacement strength
+                    total_influence += factor;
+                }
+            }
+
+            // Apply displacement to sampling coordinates
+            dx += displacement.x;
+            dy += displacement.y;
 
             let mut value = 0.0;
             for i in 0..4 {
@@ -300,24 +315,17 @@ impl NebulaBackground {
                 value += self.noise.get([
                     dx * self.scale * frequency,
                     dy * self.scale * frequency,
-                    dz * self.scale * frequency,
+                    (dz + displacement.z) * self.scale * frequency,
                 ]) / 2.0f64.powi(i as i32);
             }
 
+            // Apply color/brightness change
+            value += total_influence * 0.2; // Adjust 0.2 to control brightness change
+
             value = value.max(0.0).min(1.0);
 
-            // Add a subtle color shift based on velocity
-            let velocity_factor = self.velocity.magnitude() * 10.0;
-            let hue_shift = (velocity_factor * 360.0) % 360.0;
-
-            let base_color = self.gradient.get(value as f32);
-            let shifted_color = Hsv::new(
-                ((base_color.hue.to_positive_degrees() as f64 + hue_shift) % 360.0) as f32,
-                base_color.saturation,
-                base_color.value,
-            );
-
-            let rgb = Srgb::from_color(shifted_color);
+            let color = self.gradient.get(value as f32);
+            let rgb = Srgb::from_color(color);
 
             Rgb([(rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8])
         })
@@ -346,14 +354,18 @@ fn plot_positions(
     let _snake_end = if one_frame { positions[0].len() } else { snake_length };
 
     loop {
-        // Update nebula based on bodies' positions
+        // Update nebula based on bodies' positions and velocities
         let bodies: Vec<Body> = positions
             .iter()
             .enumerate()
-            .filter(|&(i, _)| !hide[i])
-            .map(|(_, pos)| Body::new(100.0, pos[current_pos], Vector3::zeros()))
+            .map(|(_i, pos)| {
+                let current_pos_vec = pos[current_pos];
+                let prev_pos = if current_pos > 0 { pos[current_pos - 1] } else { current_pos_vec };
+                let velocity = (current_pos_vec - prev_pos) / frame_interval as f64;
+                Body::new(100.0, current_pos_vec, velocity)
+            })
             .collect();
-        nebula.update(&bodies, 0.1); // Use a fixed time step, adjust as needed
+        nebula.update(&bodies, hide);
 
         // Calculate average z position for camera
         let avg_z = bodies.iter().map(|b| b.position.z).sum::<f64>() / bodies.len() as f64;
