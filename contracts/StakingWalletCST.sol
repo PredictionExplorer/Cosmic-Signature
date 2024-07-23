@@ -107,13 +107,8 @@ contract StakingWalletCST is Ownable {
 				_tokenId
 			)
 		);
+		usedTokens[_tokenId] = true;
 		nft.transferFrom(msg.sender, address(this), _tokenId);
-		uint256 activationTime = game.activationTime();
-		uint256 unstakeTime = block.timestamp + (block.timestamp - activationTime);
-		if (unstakeTime < block.timestamp) {
-			// overflow check (safety against invalid values)
-			unstakeTime = block.timestamp + 60 * 60 * 24 * 30; // 30 days, default, will trigger if activationTime = 0
-		}
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;

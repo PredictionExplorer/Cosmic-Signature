@@ -70,6 +70,7 @@ contract StakingWalletRWalk is Ownable {
 				_tokenId
 			)
 		);
+		usedTokens[_tokenId] = true;
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
