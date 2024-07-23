@@ -257,20 +257,20 @@ impl NebulaBackground {
     fn new(seed: u32) -> Self {
         let noise = Simplex::new(seed);
         let gradient = Gradient::new(vec![
-            Hsv::new(270.0, 0.9, 0.1),
-            Hsv::new(280.0, 0.8, 0.3),
-            Hsv::new(290.0, 0.7, 0.5),
-            Hsv::new(260.0, 0.8, 0.7),
-            Hsv::new(200.0, 0.7, 0.9),
+            Hsv::new(270.0, 0.9, 0.1), // Dark purple
+            Hsv::new(280.0, 0.8, 0.3), // Medium purple
+            Hsv::new(290.0, 0.7, 0.5), // Light purple
+            Hsv::new(260.0, 0.8, 0.7), // Bright blue-purple
+            Hsv::new(200.0, 0.7, 0.9), // Bright blue
         ]);
-        NebulaBackground { noise, gradient, scale: 0.02, disturbances: Vec::new() }
+        NebulaBackground { noise, gradient, scale: 0.01, disturbances: Vec::new() }
     }
 
     fn update(&mut self, bodies: &[Body], _hide: &[bool]) {
         self.disturbances.clear();
         for body in bodies.iter() {
             let speed = body.velocity.magnitude();
-            let radius = speed * 50.0; // Adjust this factor to change the area of effect
+            let radius = speed * 100.0; // Increased radius for more noticeable effect
             self.disturbances.push((body.position, radius, body.velocity));
         }
     }
@@ -282,45 +282,41 @@ impl NebulaBackground {
         camera_position: Vector3<f64>,
     ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         ImageBuffer::from_fn(width, height, |x, y| {
-            let mut dx = x as f64;
-            let mut dy = y as f64;
-            let dz = camera_position.z;
+            let base_x = x as f64;
+            let base_y = y as f64;
+            let base_z = camera_position.z;
 
-            // Apply domain warping
-            let warp_x = self.noise.get([dx * 0.01, dy * 0.01, dz * 0.01]) * 20.0;
-            let warp_y = self.noise.get([dx * 0.01 + 40.0, dy * 0.01 + 40.0, dz * 0.01]) * 20.0;
-            dx += warp_x;
-            dy += warp_y;
-
-            // Apply disturbances
             let mut displacement = Vector3::new(0.0, 0.0, 0.0);
             let mut total_influence = 0.0;
+
             for (pos, radius, velocity) in &self.disturbances {
-                let dx_local = x as f64 - pos.x * width as f64;
-                let dy_local = y as f64 - pos.y * height as f64;
-                let distance = (dx_local * dx_local + dy_local * dy_local).sqrt();
+                let dx = base_x - pos.x * width as f64;
+                let dy = base_y - pos.y * height as f64;
+                let distance = (dx * dx + dy * dy).sqrt();
                 if distance < *radius {
-                    let factor = 1.0 - distance / radius;
-                    displacement += velocity * factor * 0.1;
+                    let factor = (1.0 - distance / radius).powi(2); // Quadratic falloff
+                    displacement += velocity * factor * 0.5; // Increased strength
                     total_influence += factor;
                 }
             }
-            dx += displacement.x;
-            dy += displacement.y;
+
+            let sample_x = base_x + displacement.x;
+            let sample_y = base_y + displacement.y;
+            let sample_z = base_z + displacement.z;
 
             let mut value = 0.0;
             for i in 0..6 {
                 let frequency = 1.0 / 2.0f64.powi(i);
                 let amplitude = 0.5f64.powi(i);
                 value += self.noise.get([
-                    dx * self.scale * frequency,
-                    dy * self.scale * frequency,
-                    (dz + displacement.z) * self.scale * frequency,
+                    sample_x * self.scale * frequency,
+                    sample_y * self.scale * frequency,
+                    sample_z * self.scale * frequency,
                 ]) * amplitude;
             }
 
-            value += total_influence * 0.2;
-            value = (value - 0.5) * 1.5 + 0.5;
+            value = (value + 1.0) / 2.0; // Normalize to [0, 1]
+            value += total_influence * 0.3; // Increased brightness near bodies
             value = value.max(0.0).min(1.0);
 
             let color = self.gradient.get(value as f32);
