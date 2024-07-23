@@ -529,17 +529,17 @@ fn get_best(
         let body1 = Body::new(
             rng.random_mass(),
             Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
+            Vector3::new(0.0, 0.0, rng.random_velocity()),
         );
         let body2 = Body::new(
             rng.random_mass(),
             Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
+            Vector3::new(0.0, 0.0, rng.random_velocity()),
         );
         let body3 = Body::new(
             rng.random_mass(),
             Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
+            Vector3::new(0.0, 0.0, rng.random_velocity()),
         );
 
         let bodies = vec![body1, body2, body3];
@@ -685,7 +685,7 @@ fn main() {
     const FRAME_SIZE: u32 = 1600;
 
     let random_vid_snake_len = byte_stream.gen_range(0.1, 0.5);
-    let random_pic_snake_len = 0.5;
+    let random_pic_snake_len = 5.0;
 
     let vid_snake_lens = if args.special {
         [random_vid_snake_len, random_vid_snake_len, random_vid_snake_len]
