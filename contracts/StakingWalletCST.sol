@@ -13,7 +13,6 @@ contract StakingWalletCST is Ownable {
 		address owner;
 		uint256 stakeTime;
 		uint256 unstakeTime;
-		uint256 unstakeEligibleTime;
 		mapping(uint256 => bool) depositClaimed;
 	}
 
@@ -25,6 +24,7 @@ contract StakingWalletCST is Ownable {
 
 	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
+	mapping(uint256 => bool) public usedTokens;	// tokens can be staked only once, and then they become 'used'
 
 	// Variables to manage uniquneness of tokens and pick random winner
 	uint256[] public stakedTokens;
@@ -48,7 +48,6 @@ contract StakingWalletCST is Ownable {
 		uint256 indexed actionId,
 		uint256 indexed tokenId,
 		uint256 totalNFTs,
-		uint256 unstakeTime,
 		address indexed staker
 	);
 	event UnstakeActionEvent(
@@ -101,6 +100,13 @@ contract StakingWalletCST is Ownable {
 	}
 
 	function stake(uint256 _tokenId) public {
+		require(
+			usedTokens[_tokenId]!=true,
+			CosmicGameErrors.OneTimeStaking(
+				"Staking/unstaking token is allowed only once",
+				_tokenId
+			)
+		);
 		nft.transferFrom(msg.sender, address(this), _tokenId);
 		uint256 activationTime = game.activationTime();
 		uint256 unstakeTime = block.timestamp + (block.timestamp - activationTime);
@@ -112,14 +118,12 @@ contract StakingWalletCST is Ownable {
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
-		stakeActions[numStakeActions].unstakeEligibleTime = unstakeTime;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
 			numStakeActions - 1,
 			_tokenId,
 			numStakedNFTs,
-			stakeActions[numStakeActions - 1].unstakeEligibleTime,
 			msg.sender
 		);
 	}
@@ -138,15 +142,6 @@ contract StakingWalletCST is Ownable {
 		require(
 			stakeActions[stakeActionId].owner == msg.sender,
 			CosmicGameErrors.AccessError("Only the owner can unstake.", stakeActionId, msg.sender)
-		);
-		require(
-			stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp,
-			CosmicGameErrors.EarlyUnstake(
-				"Not allowed to unstake yet.",
-				stakeActionId,
-				stakeActions[stakeActionId].unstakeEligibleTime,
-				block.timestamp
-			)
 		);
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
 		_removeToken(tokenId);
@@ -244,6 +239,10 @@ contract StakingWalletCST is Ownable {
 		emit ModuloSentEvent(amount);
 	}
 
+	function wasTokenUsed(uint256 _tokenId) public view returns (bool) {
+		return (usedTokens[_tokenId] == true);
+	}
+
 	function isTokenStaked(uint256 tokenId) public view returns (bool) {
 		return tokenIndices[tokenId] != 0;
 	}
@@ -296,38 +295,4 @@ contract StakingWalletCST is Ownable {
 		lastActionIds[tokenId] = -1;
 	}
 
-	function unstakeClaimRestake(uint256 stakeActionId, uint256 ETHDepositId) public {
-		// executes 3 actions in a single pass
-		//		1:		unstakes token using action [stakeActionId]
-		//		2:		claims reward corresponding to the deposit [ETHDepositId]
-		//		3:		stakes back the token
-		unstake(stakeActionId);
-		claimReward(stakeActionId, ETHDepositId);
-		stake(stakeActions[stakeActionId].tokenId);
-	}
-
-	function unstakeClaimRestakeMany(
-		uint256[] memory unstake_actions,
-		uint256[] memory stake_actions,
-		uint256[] memory claim_actions,
-		uint256[] memory claim_deposits
-	) external {
-		for (uint256 i = 0; i < unstake_actions.length; i++) {
-			unstake(unstake_actions[i]);
-		}
-		require(
-			claim_actions.length == claim_deposits.length,
-			CosmicGameErrors.IncorrectArrayArguments(
-				"Claim array arguments must be of the same length.",
-				claim_actions.length,
-				claim_deposits.length
-			)
-		);
-		for (uint256 i = 0; i < claim_actions.length; i++) {
-			claimReward(claim_actions[i], claim_deposits[i]);
-		}
-		for (uint256 i = 0; i < stake_actions.length; i++) {
-			stake(stakeActions[stake_actions[i]].tokenId);
-		}
-	}
 }

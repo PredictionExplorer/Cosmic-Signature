@@ -13,7 +13,6 @@ contract StakingWalletRWalk is Ownable {
 		address owner;
 		uint256 stakeTime;
 		uint256 unstakeTime;
-		uint256 unstakeEligibleTime;
 		mapping(uint256 => bool) depositClaimed;
 	}
 
@@ -25,6 +24,7 @@ contract StakingWalletRWalk is Ownable {
 
 	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
+	mapping(uint256 => bool) public usedTokens;	// tokens can be staked only once, and then they become 'used'
 
 	// Variables to manage uniquneness of tokens and pick random winner
 	uint256[] public stakedTokens;
@@ -43,7 +43,6 @@ contract StakingWalletRWalk is Ownable {
 		uint256 indexed actionId,
 		uint256 indexed tokenId,
 		uint256 totalNFTs,
-		uint256 unstakeTime,
 		address indexed staker
 	);
 	event UnstakeActionEvent(
@@ -64,19 +63,24 @@ contract StakingWalletRWalk is Ownable {
 	}
 
 	function stake(uint256 _tokenId) public {
+		require(
+			usedTokens[_tokenId]!=true,
+			CosmicGameErrors.OneTimeStaking(
+				"Staking/unstaking token is allowed only once",
+				_tokenId
+			)
+		);
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
-		stakeActions[numStakeActions].unstakeEligibleTime = block.timestamp + 3600 * 24; // 24 hour minimum staking time;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(
 			numStakeActions - 1,
 			_tokenId,
 			numStakedNFTs,
-			stakeActions[numStakeActions - 1].unstakeEligibleTime,
 			msg.sender
 		);
 	}
@@ -96,15 +100,6 @@ contract StakingWalletRWalk is Ownable {
 			stakeActions[stakeActionId].owner == msg.sender,
 			CosmicGameErrors.AccessError("Only the owner can unstake.", stakeActionId, msg.sender)
 		);
-		require(
-			stakeActions[stakeActionId].unstakeEligibleTime < block.timestamp,
-			CosmicGameErrors.EarlyUnstake(
-				"Not allowed to unstake yet.",
-				stakeActionId,
-				stakeActions[stakeActionId].unstakeEligibleTime,
-				block.timestamp
-			)
-		);
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
 		_removeToken(tokenId);
 		randomWalk.transferFrom(address(this), msg.sender, stakeActions[stakeActionId].tokenId);
@@ -117,6 +112,10 @@ contract StakingWalletRWalk is Ownable {
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
 		}
+	}
+
+	function wasTokenUsed(uint256 _tokenId) public view returns (bool) {
+		return (usedTokens[_tokenId] == true);
 	}
 
 	function isTokenStaked(uint256 tokenId) public view returns (bool) {
