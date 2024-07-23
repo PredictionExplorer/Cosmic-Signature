@@ -19,6 +19,8 @@ hex = "0.4"
 digest = "0.9"
 clap = { version = "4.2", features = ["derive"]}
 noise = "0.8"
+rand = "0.8.5"
+rand_chacha = "0.3"
 
 [profile.release]
 lto = true

@@ -1,9 +1,35 @@
+extern crate rustfft;
+use rustfft::num_complex::Complex;
+use rustfft::FftPlanner;
+
 extern crate nalgebra as na;
-use na::Vector3;
+use rand::Rng;
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
+use std::sync::Arc;
+
+use nalgebra::{Point2, Point3, Vector3};
+use noise::NoiseFn;
+use noise::Simplex;
+
+use image::{DynamicImage, ImageBuffer, Rgb};
+use palette::{rgb::Rgb as PaletteRgb, FromColor, Gradient, Hsv, Srgb};
 
 use rayon::prelude::*;
 
 use sha3::{Digest, Sha3_256};
+
+use std::f64::{INFINITY, NEG_INFINITY};
+
+use imageproc::drawing::draw_filled_circle_mut;
+
+use statrs::statistics::Statistics;
+
+use clap::Parser;
+use std::io::Write;
+use std::process::{Command, Stdio};
+
+use hex;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -86,7 +112,7 @@ impl Sha3RandomByteStream {
 #[derive(Clone)]
 struct Body {
     mass: f64,
-    position: Vector3<f64>,
+    position: Point3<f64>,
     velocity: Vector3<f64>,
     acceleration: Vector3<f64>,
 }
@@ -94,13 +120,13 @@ struct Body {
 const G: f64 = 9.8;
 
 impl Body {
-    fn new(mass: f64, position: Vector3<f64>, velocity: Vector3<f64>) -> Body {
+    fn new(mass: f64, position: Point3<f64>, velocity: Vector3<f64>) -> Body {
         Body { mass, position, velocity, acceleration: Vector3::zeros() }
     }
 
-    fn update_acceleration(&mut self, other_mass: f64, other_position: Vector3<f64>) {
+    fn update_acceleration(&mut self, other_mass: f64, other_position: Point3<f64>) {
         let dir: Vector3<f64> = self.position - other_position;
-        let mag = dir.norm();
+        let mag = dir.magnitude();
         self.acceleration += -G * other_mass * dir / (mag * mag * mag);
     }
 
@@ -137,13 +163,6 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-use std::f64::{INFINITY, NEG_INFINITY};
-
-use image::{ImageBuffer, Rgb};
-use imageproc::drawing::draw_filled_circle_mut;
-
-use palette::{FromColor, Hsl, Srgb};
-
 fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
     let mut hue = rng.gen_range(0.0, 360.0);
@@ -159,8 +178,8 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
         if hue > 360.0 {
             hue -= 360.0;
         }
-        let hsl = Hsl::new(hue, 1.0, 0.5);
-        let my_new_rgb = Srgb::from_color(hsl);
+        let hsv = Hsv::new(hue, 1.0, 0.5);
+        let my_new_rgb = PaletteRgb::from_color(hsv);
 
         let r = (my_new_rgb.red * 255.0) as u8;
         let g = (my_new_rgb.green * 255.0) as u8;
@@ -243,110 +262,177 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     }
 }
 
-use noise::{NoiseFn, Simplex};
-use palette::{Gradient, Hsv};
+const TIME_PER_FRAME: f64 = 1.0 / 60.0;
 
-const TIME_PER_FRAME: f64 = 1.0 / 60.0; // Assuming 60 fps
-
-struct NebulaBackground {
-    noise: Simplex,
-    gradient: Gradient<Hsv>,
-    scale: f64,
-    time: f64,
-    last_noise_field: Vec<Vec<f64>>,
-    displacement_field: Vec<Vec<Vector3<f64>>>,
+struct Camera {
+    position: Point3<f64>,
+    direction: Vector3<f64>,
+    up: Vector3<f64>,
+    fov: f64,
 }
 
-impl NebulaBackground {
-    fn new(seed: u32, width: u32, height: u32) -> Self {
-        let noise = Simplex::new(seed);
+impl Camera {
+    fn world_to_screen(&self, world_pos: Point3<f64>, width: u32, height: u32) -> Point2<f64> {
+        let to_camera = world_pos - self.position;
+        let right = self.direction.cross(&self.up).normalize();
+        let up = right.cross(&self.direction);
+
+        let forward = to_camera.dot(&self.direction);
+        let horizontal = to_camera.dot(&right);
+        let vertical = to_camera.dot(&up);
+
+        if forward <= 0.0 {
+            return Point2::new(-1.0, -1.0); // Behind the camera
+        }
+
+        let aspect_ratio = width as f64 / height as f64;
+        let tan_fov = (self.fov / 2.0).tan();
+
+        let screen_x = (horizontal / (forward * tan_fov * aspect_ratio) + 1.0) * 0.5 * width as f64;
+        let screen_y = (-vertical / (forward * tan_fov) + 1.0) * 0.5 * height as f64;
+
+        Point2::new(screen_x, screen_y)
+    }
+}
+
+struct Particle {
+    position: Point3<f64>,
+    velocity: Vector3<f64>,
+    color: PaletteRgb,
+}
+
+struct ParticleSystem {
+    particles: Vec<Particle>,
+    noise: Arc<Simplex>,
+    gradient: Gradient<Hsv>,
+}
+
+impl ParticleSystem {
+    fn new(num_particles: usize, bounds: (f64, f64, f64)) -> Self {
+        let noise = Arc::new(Simplex::new(rand::random()));
         let gradient = Gradient::new(vec![
-            Hsv::new(270.0, 0.9, 0.1), // Dark purple
-            Hsv::new(280.0, 0.8, 0.3), // Medium purple
-            Hsv::new(290.0, 0.7, 0.5), // Light purple
-            Hsv::new(260.0, 0.8, 0.7), // Bright blue-purple
-            Hsv::new(200.0, 0.7, 0.9), // Bright blue
+            Hsv::new(0.0, 0.0, 1.0),
+            Hsv::new(0.0, 0.0, 1.0),
+            Hsv::new(0.0, 0.0, 1.0),
         ]);
 
-        NebulaBackground {
-            noise,
-            gradient,
-            scale: 4.0,
-            time: 0.0,
-            last_noise_field: vec![vec![0.0; width as usize]; height as usize],
-            displacement_field: vec![
-                vec![Vector3::new(0.0, 0.0, 0.0); width as usize];
-                height as usize
-            ],
-        }
+        let particles: Vec<Particle> = (0..num_particles)
+            .into_par_iter()
+            .map_init(
+                || ChaCha8Rng::from_entropy(),
+                |rng, _| {
+                    let position = Point3::new(
+                        rng.gen_range(-bounds.0..bounds.0),
+                        rng.gen_range(-bounds.1..bounds.1),
+                        rng.gen_range(-bounds.2..bounds.2),
+                    );
+                    let color = PaletteRgb::from_color(gradient.get(rng.gen()));
+                    Particle {
+                        position,
+                        velocity: Vector3::new(
+                            rng.gen_range(-0.01..0.01),
+                            rng.gen_range(-0.01..0.01),
+                            rng.gen_range(-0.01..0.01),
+                        ),
+                        color,
+                    }
+                },
+            )
+            .collect();
+
+        ParticleSystem { particles, noise, gradient }
     }
 
-    fn update(&mut self, bodies: &[Body], time_step: f64, width: u32, height: u32) {
-        self.time += time_step * 0.0001; // Significantly slow down natural evolution
+    fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
+        let time = time_step as f32 * 0.1;
+        let noise = Arc::clone(&self.noise);
 
-        // Reset displacement field
-        for row in self.displacement_field.iter_mut() {
-            for displacement in row.iter_mut() {
-                *displacement *= 0.999; // Decay previous displacement
-            }
-        }
+        self.particles.par_iter_mut().for_each(|particle| {
+            // Apply noise-based movement
+            let noise_value = noise.get([
+                particle.position.x * 0.1,
+                particle.position.y * 0.1,
+                particle.position.z * 0.1 + time as f64,
+            ]) as f64;
 
-        // Apply body influences
-        for body in bodies {
-            let influence_radius = 0.3; // Influence radius in normalized coordinates
-            let strength = 0.9; // Strength of influence
+            let noise_velocity = Vector3::new(
+                (noise_value * 2.0 - 1.0) * 0.1,
+                (noise.get([
+                    particle.position.x * 0.1 + 100.0,
+                    particle.position.y * 0.1,
+                    time as f64,
+                ]) * 2.0
+                    - 1.0)
+                    * 0.1,
+                (noise.get([
+                    particle.position.x * 0.1,
+                    particle.position.y * 0.1 + 100.0,
+                    time as f64,
+                ]) * 2.0
+                    - 1.0)
+                    * 0.1,
+            );
 
-            for y in 0..height {
-                for x in 0..width {
-                    let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
-                    let world_y = 1.0 - (y as f64 / height as f64) * 2.0;
+            particle.velocity += noise_velocity;
 
-                    let dx = world_x - body.position.x;
-                    let dy = world_y - body.position.y;
-                    let distance = (dx * dx + dy * dy).sqrt();
-
-                    if distance < influence_radius {
-                        let factor = (1.0 - distance / influence_radius).powi(2) * strength;
-                        let displacement = body.velocity * factor;
-                        self.displacement_field[y as usize][x as usize] += displacement;
-                    }
+            // Apply influence from bodies
+            for body in bodies {
+                let body_pos = Vector3::new(body.position.x, body.position.y, body.position.z);
+                let particle_pos =
+                    Vector3::new(particle.position.x, particle.position.y, particle.position.z);
+                let to_body = body_pos - particle_pos;
+                let distance = to_body.magnitude();
+                if distance < 0.5 {
+                    // Influence radius
+                    let force = to_body.normalize() * (0.5 - distance) * 0.1 * body.mass; // Stronger force
+                    particle.velocity += force;
                 }
             }
-        }
+
+            // Update position
+            particle.position += particle.velocity * time_step;
+
+            // Boundary check and wrapping
+            particle.position.x = (particle.position.x + bounds.0) % (2.0 * bounds.0) - bounds.0;
+            particle.position.y = (particle.position.y + bounds.1) % (2.0 * bounds.1) - bounds.1;
+            particle.position.z = (particle.position.z + bounds.2) % (2.0 * bounds.2) - bounds.2;
+
+            // Damping
+            particle.velocity *= 0.99;
+        });
     }
 
-    fn generate(&mut self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+        let particles = &self.particles;
+
         ImageBuffer::from_fn(width, height, |x, y| {
-            let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
-            let world_y = 1.0 - (y as f64 / height as f64) * 2.0;
+            let mut color = Srgb::new(0.0, 0.0, 0.0);
 
-            let displacement = self.displacement_field[y as usize][x as usize];
-            let sample_x = world_x + displacement.x;
-            let sample_y = world_y + displacement.y;
-
-            let mut new_value = 0.0;
-            for i in 0..4 {
-                let frequency = 1.0 / 2.0f64.powi(i);
-                let amplitude = 0.5f64.powi(i);
-                new_value += self.noise.get([
-                    sample_x * self.scale * frequency,
-                    sample_y * self.scale * frequency,
-                    self.time * frequency,
-                ]) * amplitude;
+            for particle in particles {
+                let screen_pos = camera.world_to_screen(particle.position, width, height);
+                let dx = x as f64 - screen_pos.x;
+                let dy = y as f64 - screen_pos.y;
+                let distance_sq = dx * dx + dy * dy;
+                if distance_sq < 100.0 {
+                    // Increased particle size
+                    let intensity = (1.0 - distance_sq / 100.0).powi(2) as f32;
+                    let particle_color = Srgb::new(
+                        (particle.color.red * intensity).min(1.0),
+                        (particle.color.green * intensity).min(1.0),
+                        (particle.color.blue * intensity).min(1.0),
+                    );
+                    // Manually add colors
+                    color.red = (color.red + particle_color.red).min(1.0);
+                    color.green = (color.green + particle_color.green).min(1.0);
+                    color.blue = (color.blue + particle_color.blue).min(1.0);
+                }
             }
-            new_value = (new_value + 1.0) / 2.0; // Normalize to [0, 1]
 
-            // Interpolate between old and new noise values
-            let old_value = self.last_noise_field[y as usize][x as usize];
-            let interpolation_factor = 0.1; // Adjust this to control speed of change
-            let value = old_value * (1.0 - interpolation_factor) + new_value * interpolation_factor;
-
-            self.last_noise_field[y as usize][x as usize] = value;
-
-            let color = self.gradient.get(value as f32);
-            let rgb = Srgb::from_color(color);
-
-            Rgb([(rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8])
+            Rgb([
+                (color.red * 255.0) as u8,
+                (color.green * 255.0) as u8,
+                (color.blue * 255.0) as u8,
+            ])
         })
     }
 }
@@ -363,7 +449,13 @@ fn plot_positions(
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
-    let mut nebula = NebulaBackground::new(42, frame_size, frame_size);
+    let mut particle_system = ParticleSystem::new(1_000, (1.0, 1.0, 1.0)); // 10,000 particles in a 2x2x2 cube
+    let camera = Camera {
+        position: Point3::new(0.0, 0.0, -5.0), // Move camera back
+        direction: Vector3::new(0.0, 0.0, 1.0),
+        up: Vector3::new(0.0, 1.0, 0.0),
+        fov: 90.0f64.to_radians(), // Wider field of view
+    };
 
     let mut current_pos: usize = 0;
     let snake_length: usize = (snake_lens.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
@@ -394,18 +486,17 @@ fn plot_positions(
                 };
 
                 let normalized_pos = normalize_position(current_pos_vec, &min_pos, &pos_range);
-
                 Body {
                     mass: 100.0,
-                    position: normalized_pos,
+                    position: Point3::from(normalized_pos),
                     velocity: velocity,
                     acceleration: acceleration,
                 }
             })
             .collect();
 
-        nebula.update(&bodies, frame_interval as f64 * TIME_PER_FRAME, frame_size, frame_size);
-        let mut img = nebula.generate(frame_size, frame_size);
+        particle_system.update(&bodies, frame_interval as f64 * TIME_PER_FRAME, (1.0, 1.0, 1.0));
+        let mut img = particle_system.render(frame_size, frame_size, &camera);
 
         // Draw bodies
         for (body_idx, pos) in positions.iter().enumerate() {
@@ -418,8 +509,10 @@ fn plot_positions(
 
             for i in start..idx {
                 let normalized_pos = normalize_position(pos[i], &min_pos, &pos_range);
-                let px = ((normalized_pos.x + 1.0) / 2.0 * frame_size as f64).round() as i32;
-                let py = ((1.0 - normalized_pos.y) / 2.0 * frame_size as f64).round() as i32;
+                let screen_pos =
+                    camera.world_to_screen(Point3::from(normalized_pos), frame_size, frame_size);
+                let px = screen_pos.x as i32;
+                let py = screen_pos.y as i32;
 
                 if px >= 0 && px < frame_size as i32 && py >= 0 && py < frame_size as i32 {
                     draw_filled_circle_mut(&mut img, (px, py), 6, colors[body_idx][i]);
@@ -458,13 +551,9 @@ fn normalize_position(
     pos: Vector3<f64>,
     min_pos: &Vector3<f64>,
     pos_range: &Vector3<f64>,
-) -> Vector3<f64> {
-    (pos - min_pos).component_div(pos_range) * 2.0 - Vector3::new(1.0, 1.0, 1.0)
+) -> Point3<f64> {
+    Point3::from((pos - min_pos).component_div(pos_range) * 2.0 - Vector3::new(1.0, 1.0, 1.0))
 }
-
-extern crate rustfft;
-use rustfft::num_complex::Complex;
-use rustfft::FftPlanner;
 
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     let n = input.len();
@@ -482,8 +571,6 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
 
     complex_input
 }
-
-use statrs::statistics::Statistics;
 
 fn analyze_trajectories(
     m1: f64,
@@ -558,10 +645,6 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>
     (final_result1 + final_result2 + final_result3) / 3.0
 }
 
-use image::DynamicImage;
-use std::io::Write;
-use std::process::{Command, Stdio};
-
 fn create_video_from_frames_in_memory(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
@@ -613,7 +696,7 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
 
     for step in 0..num_steps {
         for (i, body) in bodies.iter().enumerate() {
-            positions[i][step] = body.position;
+            positions[i][step] = body.position.coords;
         }
         verlet_step(&mut bodies, dt);
     }
@@ -657,17 +740,17 @@ fn get_best(
     for _ in 0..num_iters {
         let body1 = Body::new(
             rng.random_mass(),
-            Vector3::new(rng.random_location(), rng.random_location(), 0.0),
+            Point3::new(rng.random_location(), rng.random_location(), 0.0),
             Vector3::new(0.0, 0.0, rng.random_velocity()),
         );
         let body2 = Body::new(
             rng.random_mass(),
-            Vector3::new(rng.random_location(), rng.random_location(), 0.0),
+            Point3::new(rng.random_location(), rng.random_location(), 0.0),
             Vector3::new(0.0, 0.0, rng.random_velocity()),
         );
         let body3 = Body::new(
             rng.random_mass(),
-            Vector3::new(rng.random_location(), rng.random_location(), 0.0),
+            Point3::new(rng.random_location(), rng.random_location(), 0.0),
             Vector3::new(0.0, 0.0, rng.random_velocity()),
         );
 
@@ -682,7 +765,7 @@ fn get_best(
             let m1 = bodies[0].mass;
             let m2 = bodies[1].mass;
             let m3 = bodies[2].mass;
-            let positions = get_positions(bodies.clone(), num_steps_sim);
+            let positions = get_positions(bodies.to_vec(), num_steps_sim);
             analyze_trajectories(m1, m2, m3, &positions)
         })
         .collect_into_vec(&mut results_par);
@@ -718,15 +801,13 @@ fn get_best(
         bodies[2].position[0],
         bodies[2].position[1]
     );
-    let result = get_positions(bodies.clone(), num_steps_video);
+    let result = get_positions(bodies.to_vec(), num_steps_video);
     let avg_area = results_par[best_idx].1;
     let total_distance = results_par[best_idx].2;
     println!("Area: {}", avg_area);
     println!("Dist: {}", total_distance);
     result
 }
-
-use clap::Parser;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -765,8 +846,6 @@ struct Args {
     #[arg(long, default_value_t = false)]
     no_video: bool,
 }
-
-use hex;
 
 fn main() {
     let args = Args::parse();
