@@ -266,21 +266,19 @@ impl NebulaBackground {
         NebulaBackground {
             noise,
             gradient,
-            scale: 0.005,
+            scale: 0.002, // Decreased from 0.005 for larger noise patterns
             offset: Vector3::new(0.0, 0.0, 0.0),
             velocity: Vector3::new(0.0, 0.0, 0.0),
         }
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64) {
-        // Calculate influence from bodies
         let target_velocity = bodies.iter().fold(Vector3::new(0.0, 0.0, 0.0), |acc, body| {
-            let strength = body.mass * 0.000001;
+            let strength = body.mass * 0.00001; // Increased from 0.000001
             acc + body.position * strength
         });
 
-        // Smoothly interpolate current velocity towards target velocity
-        let interpolation_factor = 0.1;
+        let interpolation_factor = 0.2; // Increased from 0.1 for faster response
         self.velocity += (target_velocity - self.velocity) * interpolation_factor;
         self.offset += self.velocity * time_step;
     }
@@ -308,8 +306,18 @@ impl NebulaBackground {
 
             value = value.max(0.0).min(1.0);
 
-            let color = self.gradient.get(value as f32);
-            let rgb = Srgb::from_color(color);
+            // Add a subtle color shift based on velocity
+            let velocity_factor = self.velocity.magnitude() * 10.0;
+            let hue_shift = (velocity_factor * 360.0) % 360.0;
+
+            let base_color = self.gradient.get(value as f32);
+            let shifted_color = Hsv::new(
+                ((base_color.hue.to_positive_degrees() as f64 + hue_shift) % 360.0) as f32,
+                base_color.saturation,
+                base_color.value,
+            );
+
+            let rgb = Srgb::from_color(shifted_color);
 
             Rgb([(rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8])
         })
@@ -345,7 +353,7 @@ fn plot_positions(
             .filter(|&(i, _)| !hide[i])
             .map(|(_, pos)| Body::new(100.0, pos[current_pos], Vector3::zeros()))
             .collect();
-        nebula.update(&bodies, frame_interval as f64 * 0.01);
+        nebula.update(&bodies, 0.1); // Use a fixed time step, adjust as needed
 
         // Calculate average z position for camera
         let avg_z = bodies.iter().map(|b| b.position.z).sum::<f64>() / bodies.len() as f64;
@@ -716,7 +724,7 @@ fn main() {
 
     // Determine the hide vector based on the special flag
     let hide = if args.special {
-        vec![false, true, true]
+        vec![false, false, false]
     } else {
         let random_val = byte_stream.gen_range(0.0, 1.0);
         if random_val < 1.0 / 3.0 {
