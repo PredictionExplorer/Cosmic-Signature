@@ -18,33 +18,36 @@ def main():
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
     max_concurrent_executions = 4
-    N = 8
+    N = 20
 
     # Specify the different parameters for each execution
     const_params = []
     parameters = []
 
-    possible_num_steps = [400000, 800000]
-    possible_locations = [100, 200, 400, 800]
-    possible_velocities = [1, 2, 4]
-    possible_min_mass = [100, 50]
-    possible_max_mass = [100, 200, 400, 800]
+    possible_num_steps = [1000000]
+    possible_locations = [250]
+    possible_velocities = [2]
+    possible_min_mass = [100]
+    possible_max_mass = [300]
     possible_special = [True, False]
+
+    seed = '0x4450'
 
     values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass, possible_special]
 
     for num_steps, location, velocity, min_mass, max_mass, special in itertools.product(*values):
 
         for i in range(N):
-            file_name = f'{num_steps:08}_{location:03}_{velocity:02}_{min_mass:03}_{max_mass:03}_0x3503{i:06}_{"sp" if special else "nm"}'
+            file_name = f'{num_steps:08}_{location:03}_{velocity:02}_{min_mass:03}_{max_mass:03}_{seed}{i:06}_{"sp" if special else "nm"}'
 
             if os.path.isfile(f'vids/{file_name}.mp4'):
                 continue
 
             cur = list(const_params)
             cur.append('--seed')
-            cur.append(f'0x3503{i:06}')
+            cur.append(f'{seed}{i:06}')
 
+            '''
             cur.append('--num-steps')
             cur.append(str(num_steps))
 
@@ -62,8 +65,12 @@ def main():
             cur.append('--max-mass')
             cur.append(str(float(max_mass)))
 
+            '''
             cur.append('--file-name')
             cur.append(file_name)
+
+            cur.append('--num-sims')
+            cur.append(str(1000))
 
             if special:
                 cur.append('--special')

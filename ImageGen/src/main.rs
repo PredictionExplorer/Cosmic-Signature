@@ -612,6 +612,9 @@ struct Args {
     #[arg(long, default_value_t = 1_000_000)]
     num_steps: usize,
 
+    #[arg(long, default_value_t = 10_000)]
+    num_sims: usize,
+
     #[arg(long, default_value_t = 250.0)]
     location: f64,
 
@@ -631,7 +634,7 @@ struct Args {
     special: bool,
 
     #[arg(long, default_value_t = false)]
-    gen_video: bool,
+    no_video: bool,
 }
 
 use hex;
@@ -654,7 +657,6 @@ fn main() {
     );
 
     let steps = args.num_steps;
-    const NUM_TRIES: usize = 10_000;
 
     // Determine the hide vector based on the special flag
     let hide = if args.special {
@@ -670,7 +672,7 @@ fn main() {
         }
     };
 
-    let mut positions = get_best(&mut byte_stream, NUM_TRIES, steps, steps);
+    let mut positions = get_best(&mut byte_stream, args.num_sims, steps, steps);
 
     let colors = get_3_colors(&mut byte_stream, steps, args.special);
 
@@ -684,7 +686,7 @@ fn main() {
     let steps_per_frame: usize = steps / target_length;
     const FRAME_SIZE: u32 = 1600;
 
-    let random_vid_snake_len = byte_stream.gen_range(0.1, 0.5);
+    let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
 
     let vid_snake_lens = if args.special {
@@ -725,7 +727,7 @@ fn main() {
         println!("Image saved successfully.");
     }
 
-    if args.gen_video {
+    if !args.no_video {
         let frames = plot_positions(
             &mut positions,
             FRAME_SIZE,
