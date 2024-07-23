@@ -253,6 +253,7 @@ struct NebulaBackground {
     gradient: Gradient<Hsv>,
     scale: f64,
     disturbances: Vec<(Vector3<f64>, f64, Vector3<f64>)>, // position, radius, effect_vector
+    time: f64,
 }
 
 impl NebulaBackground {
@@ -268,27 +269,28 @@ impl NebulaBackground {
         NebulaBackground {
             noise,
             gradient,
-            scale: 2.0, // Adjust this to change the "zoom" of the noise
+            scale: 4.0, // Increased for more visible noise
             disturbances: Vec::new(),
+            time: 0.0,
         }
     }
 
-    fn update(&mut self, bodies: &[Body]) {
+    fn update(&mut self, bodies: &[Body], time_step: f64) {
         self.disturbances.clear();
         for body in bodies.iter() {
             let speed = body.velocity.magnitude();
             let accel_magnitude = body.acceleration.magnitude();
-            let radius = speed * 0.2 + accel_magnitude * 0.05; // Adjust these factors as needed
-            let effect_vector = body.velocity + body.acceleration * 0.5; // Combine velocity and acceleration
+            let radius = (speed * 0.2 + accel_magnitude * 0.05).max(0.1); // Ensure a minimum radius
+            let effect_vector = body.velocity + body.acceleration * 0.5;
             self.disturbances.push((body.position, radius, effect_vector));
         }
+        self.time += time_step;
     }
 
     fn generate(&self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         ImageBuffer::from_fn(width, height, |x, y| {
-            // Convert pixel coordinates to world coordinates (-1 to 1)
             let world_x = (x as f64 / width as f64) * 2.0 - 1.0;
-            let world_y = 1.0 - (y as f64 / height as f64) * 2.0; // Flip y-axis
+            let world_y = 1.0 - (y as f64 / height as f64) * 2.0;
 
             let mut displacement = Vector3::new(0.0, 0.0, 0.0);
             let mut total_influence = 0.0;
@@ -299,14 +301,14 @@ impl NebulaBackground {
                 let distance = (dx * dx + dy * dy).sqrt();
                 if distance < *radius {
                     let factor = (1.0 - distance / radius).powi(2);
-                    displacement += effect_vector * factor * 0.05; // Adjust this factor to change effect strength
+                    displacement += effect_vector * factor * 0.1; // Increased effect strength
                     total_influence += factor;
                 }
             }
 
             let sample_x = (world_x + displacement.x) * self.scale;
             let sample_y = (world_y + displacement.y) * self.scale;
-            let sample_z = displacement.z * self.scale;
+            let sample_z = (self.time + displacement.z) * self.scale * 0.1; // Added time-based evolution
 
             let mut value = 0.0;
             for i in 0..6 {
@@ -319,8 +321,8 @@ impl NebulaBackground {
                 ]) * amplitude;
             }
 
-            value = (value + 1.0) / 2.0; // Normalize to [0, 1]
-            value += total_influence * 0.3; // Increase brightness near bodies
+            value = (value + 1.0) / 2.0;
+            value += total_influence * 0.5; // Increased brightness effect
             value = value.max(0.0).min(1.0);
 
             let color = self.gradient.get(value as f32);
@@ -355,10 +357,10 @@ fn plot_positions(
     let pos_range = max_pos - min_pos;
 
     loop {
-        // Update nebula based on bodies' positions and velocities
         let bodies: Vec<Body> = positions
             .iter()
             .enumerate()
+            .filter(|&(i, _)| !hide[i])
             .map(|(_i, pos)| {
                 let current_pos_vec = pos[current_pos];
                 let prev_pos = if current_pos > 0 { pos[current_pos - 1] } else { current_pos_vec };
@@ -373,7 +375,6 @@ fn plot_positions(
                     Vector3::zeros()
                 };
 
-                // Normalize position to [-1, 1] range
                 let normalized_pos = normalize_position(current_pos_vec, &min_pos, &pos_range);
 
                 Body {
@@ -384,29 +385,24 @@ fn plot_positions(
                 }
             })
             .collect();
-        nebula.update(&bodies);
 
-        // Generate nebula background
+        nebula.update(&bodies, frame_interval as f64 * TIME_PER_FRAME);
         let mut img = nebula.generate(frame_size, frame_size);
 
         // Draw bodies
-        for body_idx in 0..positions.len() {
+        for (body_idx, pos) in positions.iter().enumerate() {
             if hide[body_idx] {
                 continue;
             }
 
-            let idx = (current_pos + 1).min(positions[body_idx].len());
+            let idx = (current_pos + 1).min(pos.len());
             let start = current_pos.saturating_sub(snake_length);
 
             for i in start..idx {
-                let pos = positions[body_idx][i];
-                let normalized_pos = normalize_position(pos, &min_pos, &pos_range);
-
-                // Convert normalized coordinates to pixel coordinates
+                let normalized_pos = normalize_position(pos[i], &min_pos, &pos_range);
                 let px = ((normalized_pos.x + 1.0) / 2.0 * frame_size as f64).round() as i32;
                 let py = ((1.0 - normalized_pos.y) / 2.0 * frame_size as f64).round() as i32;
 
-                // Ensure the point is within the image bounds
                 if px >= 0 && px < frame_size as i32 && py >= 0 && py < frame_size as i32 {
                     draw_filled_circle_mut(&mut img, (px, py), 6, colors[body_idx][i]);
                 }
