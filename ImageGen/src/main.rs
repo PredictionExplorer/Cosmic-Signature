@@ -243,20 +243,20 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     }
 }
 
-use noise::{NoiseFn, Perlin};
+use noise::{NoiseFn, Simplex};
 use palette::{Gradient, Hsv};
 
 struct NebulaBackground {
-    noise: Perlin,
+    noise: Simplex,
     gradient: Gradient<Hsv>,
     scale: f64,
-    offset: [f64; 3],
-    velocity: [f64; 3],
+    offset: Vector3<f64>,
+    velocity: Vector3<f64>,
 }
 
 impl NebulaBackground {
     fn new(seed: u32) -> Self {
-        let noise = Perlin::new(seed);
+        let noise = Simplex::new(seed);
         let gradient = Gradient::new(vec![
             Hsv::new(270.0, 0.8, 0.3), // Dark purple
             Hsv::new(280.0, 0.9, 0.5), // Brighter purple
@@ -267,36 +267,34 @@ impl NebulaBackground {
             noise,
             gradient,
             scale: 0.005,
-            offset: [0.0, 0.0, 0.0],
-            velocity: [0.0, 0.0, 0.0],
+            offset: Vector3::new(0.0, 0.0, 0.0),
+            velocity: Vector3::new(0.0, 0.0, 0.0),
         }
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64) {
-        // Slowly evolve the nebula over time
-        self.offset[2] += time_step * 0.01;
-
         // Calculate influence from bodies
-        let target_velocity = bodies
-            .iter()
-            .map(|body| {
-                let strength = body.mass * 0.000001;
-                [body.position[0] * strength, body.position[1] * strength, 0.0]
-            })
-            .fold([0.0; 3], |acc, val| [acc[0] + val[0], acc[1] + val[1], acc[2] + val[2]]);
+        let target_velocity = bodies.iter().fold(Vector3::new(0.0, 0.0, 0.0), |acc, body| {
+            let strength = body.mass * 0.000001;
+            acc + body.position * strength
+        });
 
         // Smoothly interpolate current velocity towards target velocity
         let interpolation_factor = 0.1;
-        for i in 0..3 {
-            self.velocity[i] += (target_velocity[i] - self.velocity[i]) * interpolation_factor;
-            self.offset[i] += self.velocity[i] * time_step;
-        }
+        self.velocity += (target_velocity - self.velocity) * interpolation_factor;
+        self.offset += self.velocity * time_step;
     }
 
-    fn generate(&self, width: u32, height: u32) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    fn generate(
+        &self,
+        width: u32,
+        height: u32,
+        camera_position: Vector3<f64>,
+    ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         ImageBuffer::from_fn(width, height, |x, y| {
-            let dx = x as f64 + self.offset[0];
-            let dy = y as f64 + self.offset[1];
+            let dx = x as f64 + self.offset.x;
+            let dy = y as f64 + self.offset.y;
+            let dz = camera_position.z + self.offset.z;
 
             let mut value = 0.0;
             for i in 0..4 {
@@ -304,7 +302,7 @@ impl NebulaBackground {
                 value += self.noise.get([
                     dx * self.scale * frequency,
                     dy * self.scale * frequency,
-                    self.offset[2] * frequency,
+                    dz * self.scale * frequency,
                 ]) / 2.0f64.powi(i as i32);
             }
 
@@ -345,18 +343,16 @@ fn plot_positions(
             .iter()
             .enumerate()
             .filter(|&(i, _)| !hide[i])
-            .map(|(_, pos)| {
-                Body::new(
-                    100.0,
-                    Vector3::new(pos[current_pos][0], pos[current_pos][1], 0.0),
-                    Vector3::zeros(),
-                )
-            })
+            .map(|(_, pos)| Body::new(100.0, pos[current_pos], Vector3::zeros()))
             .collect();
         nebula.update(&bodies, frame_interval as f64 * 0.01);
 
+        // Calculate average z position for camera
+        let avg_z = bodies.iter().map(|b| b.position.z).sum::<f64>() / bodies.len() as f64;
+        let camera_position = Vector3::new(0.0, 0.0, avg_z);
+
         // Generate nebula background
-        let mut img = nebula.generate(frame_size, frame_size);
+        let mut img = nebula.generate(frame_size, frame_size, camera_position);
 
         // Draw bodies
         for body_idx in 0..positions.len() {
@@ -368,8 +364,8 @@ fn plot_positions(
             let start = current_pos.saturating_sub(snake_length);
 
             for i in start..idx {
-                let x = positions[body_idx][i][0];
-                let y = positions[body_idx][i][1];
+                let x = positions[body_idx][i].x;
+                let y = positions[body_idx][i].y;
 
                 let xp = (x * frame_size as f64).round();
                 let yp = (y * frame_size as f64).round();
