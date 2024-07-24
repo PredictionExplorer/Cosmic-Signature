@@ -524,4 +524,29 @@ describe("Cosmic Set2", function () {
 		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
 		expect(res[0]).to.equal(addr1.address);
 	});
+	it("Bid statistics are generating correct values for giving complementary prizes", async function () {
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		let donationAmount = ethers.utils.parseEther("9000");
+		await cosmicGame.donate({ value: donationAmount });
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		let prizeTime = await cosmicGame.timeUntilPrize();
+        await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+        await ethers.provider.send("evm_mine");
+        await cosmicGame.connect(addr1).claimPrize();	// we need to claim prize because we want updated bidPrice (larger value)
+
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		let bidPriceFixedPointCustom = bidPrice.toBigInt();
+		bidPriceFixedPointCustom = bidPriceFixedPointCustom >> 50n;
+		let maxBidderAddr = await cosmicGame.maxEthBidderAddress();
+		let maxEthBidderAmount = await cosmicGame.maxEthBidderAmount();
+
+		expect(maxBidderAddr).to.equal(addr1.address);
+		expect(maxEthBidderAmount).to.equal(bidPriceFixedPointCustom);
+	});
 });

@@ -51,8 +51,8 @@ contract BusinessLogic is Context, Ownable {
 	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
 	address public prevBidderAddress;
-	uint256 public topBidderNumBids;
-	address public topBidderAddress;
+	uint256 public maxEthBidderAmount;
+	address public maxEthBidderAddress;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -66,9 +66,8 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public numDonatedNFTs;
 	uint256 public activationTime;
 	uint256 public tokenReward;
+	uint256 public erc20RewardMultiplier;
 	uint256 public marketingReward;
-	uint256 public longestBidderTokenReward;
-	uint256 public topBidderTokenReward;
 	uint256 public maxMessageLength;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
@@ -94,16 +93,18 @@ contract BusinessLogic is Context, Ownable {
 		bool isStaker,
 		bool isRWalk
 	);
-	event EnduranceNFTWinnerEvent(
+	event EnduranceChampionWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
-		uint256 indexed tokenId,
+		uint256 indexed erc721TokenId,
+		uint256 erc20TokenAmount,
 		uint256 winnerIndex
 	);
-	event TopBidderNFTWinnerEvent(
+	event MaxEthBidderWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
-		uint256 indexed tokenId,
+		uint256 indexed erc721TokenId,
+		uint256 erc20TokenAmount,
 		uint256 winnerIndex
 	);
 	event NFTDonationEvent(
@@ -257,6 +258,8 @@ contract BusinessLogic is Context, Ownable {
 		longestBidderAddress = address(0);
 		prevBidderStartTime = 0;
 		prevBidderAddress = address(0);
+		maxEthBidderAmount = 0;
+		maxEthBidderAddress = address(0);
 
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
@@ -298,17 +301,17 @@ contract BusinessLogic is Context, Ownable {
 
 		CosmicGameConstants.BidderStatRec memory bidderStatistics;
 		bidderStatistics = bidStats[msg.sender];
-		uint64 fixedPointPrice = uint64(price >> 15);
+		uint64 fixedPointPrice = uint64(price >> 50); // we divide by 2^50 which gives us 1/1000 of ETH (approx) value
 		if (isCst) {
 			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
 		} else {
-			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+			bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
 		}
 		bidderStatistics.bidCount += 1;
 
-		if (bidderStatistics.bidCount > topBidderNumBids) {
-			topBidderNumBids = bidderStatistics.bidCount;
-			topBidderAddress = msg.sender;
+		if (bidderStatistics.bidPricePaidEth > maxEthBidderAmount ) {
+			maxEthBidderAmount = bidderStatistics.bidPricePaidEth;
+			maxEthBidderAddress = msg.sender;
 		}
 	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
@@ -475,23 +478,25 @@ contract BusinessLogic is Context, Ownable {
 				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
+			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, longestBidderTokenReward)
+				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, erc20TokenReward)
 			);
-			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
+			emit EnduranceChampionWinnerEvent(longestBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
 
-		// Prize for having highest number of bids
-		if (topBidderAddress != address(0)) {
+		// Prize for having (an accumulated) highest total amount of eth in his/her bids
+		if (maxEthBidderAddress != address(0)) {
 			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, topBidderAddress, roundNum)
+				abi.encodeWithSelector(CosmicSignature.mint.selector, maxEthBidderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
+			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, topBidderAddress, topBidderTokenReward)
+				abi.encodeWithSelector(CosmicToken.mint.selector, maxEthBidderAddress, erc20TokenReward)
 			);
-			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
+			emit MaxEthBidderWinnerEvent(maxEthBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
 
