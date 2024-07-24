@@ -2,11 +2,11 @@ class Simulation:
 
     def __init__(self):
         self.balance = 1
-        self.initialBidAmountFraction = 500
+        self.initialBidAmountFraction = 4000
         self.bid = self.balance / self.initialBidAmountFraction
         self.price_increase = 1.01
         self.time_extra = 1
-        self.time_increase = 1.0001
+        self.time_increase = 1.00003
         self.charity_percentage = 0.10
         self.raffle_percentage = 0.12
         self.prize_percentage = 0.25

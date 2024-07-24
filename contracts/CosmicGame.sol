@@ -49,7 +49,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// how much the deadline is pushed after every bid
 	uint256 public nanoSecondsExtra = 3600 * 10 ** 9;
 	// how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
-	uint256 public timeIncrease = 1000100;
+	uint256 public timeIncrease = 1000030;
 	// how much the bid price is increased after every bid
 	uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
 	// The bid size will be 4000 times smaller than what the contract contains
