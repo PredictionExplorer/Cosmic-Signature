@@ -469,8 +469,8 @@ contract BusinessLogic is Context, Ownable {
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
 
-		// Endurance Champion Prize
-		if (longestBidderAddress != address(0)) {
+		{
+			// Endurance Champion Prize
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
 			);
@@ -482,9 +482,8 @@ contract BusinessLogic is Context, Ownable {
 			emit EnduranceChampionWinnerEvent(longestBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
-
-		// Prize for having (an accumulated) highest total amount of eth in his/her bids
-		if (maxEthBidderAddress != address(0)) {
+		{
+			// MaxEthBidder Prize, for contributing the most ETH during the round (by bidding)
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, maxEthBidderAddress, roundNum)
 			);
