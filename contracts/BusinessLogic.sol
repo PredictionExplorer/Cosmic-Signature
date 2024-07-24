@@ -393,10 +393,9 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	function _pushBackPrizeTime() internal {
-		// TODO: Explain what this function does and why it works this way. It's not intuitive.
+		// nanosecondsExtra is an additional coefficient to make the time interval larger over months of playing the game
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
-		// TODO: Explain why we are dividing by a million here.
 		nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / CosmicGameConstants.MILLION;
 	}
 
@@ -429,8 +428,6 @@ contract BusinessLogic is Context, Ownable {
 		}
 
 		_updateStatisticsAfterClaimPrize();
-		// TODO: We might want to store the prevBidderTime in a map for every round
-		// TODO: We also want to send a reward to the longestBidderAddress: 1000 CST + a Cosmic Signature NFT
 
 		lastBidder = address(0);
 		address winner = _msgSender();
