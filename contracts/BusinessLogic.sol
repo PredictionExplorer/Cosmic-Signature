@@ -417,12 +417,14 @@ contract BusinessLogic is Context, Ownable {
 			// After the this interval have elapsed, then *anyone* is able to claim the prize!
 			// This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
 			// which would stop the creation of new Cosmic Signature NFTs.
+			uint256 timeToWait = prizeTime - block.timestamp;
 			require(
 				_msgSender() == lastBidder,
 				CosmicGameErrors.LastBidderOnly(
 					"Only the last bidder can claim the prize during the first 24 hours.",
 					lastBidder,
-					_msgSender()
+					_msgSender(),
+					timeToWait
 				)
 			);
 		}
@@ -444,27 +446,15 @@ contract BusinessLogic is Context, Ownable {
 		// If the project just launched, we do not send anything to the staking wallet because
 		// nothing could be staked at this point.
 		if (cosmicSupply > 0) {
-			(success, ) = address(stakingWalletCST).call{ value: stakingAmount_ }(
+			(address(stakingWalletCST).call{ value: stakingAmount_ }(
 				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-			);
-			require(
-				success,
-				CosmicGameErrors.FundTransferFailed(
-					"Staking deposit failed.",
-					stakingAmount_,
-					address(stakingWalletCST)
-				)
-			);
+			));
 		}
 
 		// Give the NFT to the winner.
-		(bool mintSuccess, ) = address(nft).call(
+		(address(nft).call(
 			abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum)
-		);
-		require(
-			mintSuccess,
-			CosmicGameErrors.ERC721Mint("CosmicSignature mint() failed to mint NFT.", winner, roundNum)
-		);
+		));
 
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
@@ -476,9 +466,9 @@ contract BusinessLogic is Context, Ownable {
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
 			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			address(token).call(
+			(address(token).call(
 				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, erc20TokenReward)
-			);
+			));
 			emit EnduranceChampionWinnerEvent(longestBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
@@ -489,9 +479,9 @@ contract BusinessLogic is Context, Ownable {
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
 			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			address(token).call(
+			(address(token).call(
 				abi.encodeWithSelector(CosmicToken.mint.selector, maxEthBidderAddress, erc20TokenReward)
-			);
+			));
 			emit MaxEthBidderWinnerEvent(maxEthBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
@@ -532,31 +522,21 @@ contract BusinessLogic is Context, Ownable {
 
 		// Give ETH to the winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");
+		// This is the only require() that we have when it comes to giving prizes,
+		// checks on external calls are omitted to ensure the winner gets main prize no matter what
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, winner));
 
 		// Give ETH to the charity.
-		(success, ) = charity.call{ value: charityAmount_ }("");
-		require(
-			success,
-			CosmicGameErrors.FundTransferFailed(
-				"Transfer to charity contract failed.",
-				charityAmount_,
-				address(charity)
-			)
-		);
+		(charity.call{ value: charityAmount_ }(""));
 
 		// Give ETH to the ETH raffle winners.
 		uint256 perWinnerAmount_ = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numParticipants];
-			(success, ) = address(raffleWallet).call{ value: perWinnerAmount_ }(
+			(address(raffleWallet).call{ value: perWinnerAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
-			);
-			require(
-				success,
-				CosmicGameErrors.FundTransferFailed("Raffle deposit failed.", perWinnerAmount_, raffleWinner_)
-			);
+			));
 			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex, perWinnerAmount_);
 			winnerIndex += 1;
 		}

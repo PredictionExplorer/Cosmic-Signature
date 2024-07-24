@@ -22,7 +22,7 @@ library CosmicGameErrors {
 
 	// Claim prize errors
 	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimestamp);
-	error LastBidderOnly(string errStr, address lastBidder, address bidder);
+	error LastBidderOnly(string errStr, address lastBidder, address bidder, uint256 timeToWait);
 	error NoLastBidder(string errStr);
 	error NonExistentDonatedNFT(string errStr, uint256 num);
 	error NonExistentWinner(string errStr, uint256 num);
