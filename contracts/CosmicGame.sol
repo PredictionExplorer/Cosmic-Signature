@@ -52,8 +52,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public timeIncrease = 1000100;
 	// how much the bid price is increased after every bid
 	uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
-	// The bid size will be 500 times smaller than what the contract contains
-	uint256 public initialBidAmountFraction = 500;
+	// The bid size will be 4000 times smaller than what the contract contains
+	uint256 public initialBidAmountFraction = 4000;
 	// stores the address of last bidder, used to pick the winner when bids are exhausted
 	address public lastBidder = address(0);
 	// keepts track of last bid type (ETH, RandomWalk or CST tokens) , updated on every bid()
