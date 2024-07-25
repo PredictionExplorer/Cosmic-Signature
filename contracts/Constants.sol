@@ -10,8 +10,7 @@ library CosmicGameConstants {
 
 	// You get 100 tokens when you bid
 	uint256 public constant TOKEN_REWARD = 100 * 1e18;
-	uint256 public constant LONGEST_BIDDER_TOKEN_REWARD = 1000 * 1e18;
-	uint256 public constant TOP_BIDDER_TOKEN_REWARD = 1000 * 1e18;
+	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
 	uint256 public constant MARKETING_REWARD = 15 * 1e18;
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * 3600;
 	uint256 public constant MODE_RUNTIME = 0;
@@ -33,6 +32,11 @@ library CosmicGameConstants {
 		uint256 tokenId;
 		uint256 round;
 		bool claimed;
+	}
+	struct DonationInfoRecord {
+		address donor;
+		uint256 amount;
+		string data;			// JSON-formatted string with data, defined by us (offchain)
 	}
 	enum BidType {
 		ETH,

@@ -22,7 +22,7 @@ library CosmicGameErrors {
 
 	// Claim prize errors
 	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimestamp);
-	error LastBidderOnly(string errStr, address lastBidder, address bidder);
+	error LastBidderOnly(string errStr, address lastBidder, address bidder, uint256 timeToWait);
 	error NoLastBidder(string errStr);
 	error NonExistentDonatedNFT(string errStr, uint256 num);
 	error NonExistentWinner(string errStr, uint256 num);
@@ -64,7 +64,6 @@ library CosmicGameErrors {
 		uint256 depositDate
 	);
 	error AccessError(string errStr, uint256 actionId, address requester);
-	error EarlyUnstake(string errStr, uint256 actionId, uint256 unstakeTiemstamp, uint256 blockTimestamp);
 	error InvalidActionId(string errStr, uint256 actionId);
 	error InvalidDepositId(string errStr, uint256 depositId);
 	error IncorrectArrayArguments(string errStr, uint256 actionsLen, uint256 depositsLen);
@@ -72,4 +71,5 @@ library CosmicGameErrors {
 	error TokenAlreadyInserted(string errStr, uint256 tokenId, uint256 actionId);
 	error TokenAlreadyDeleted(string errStr, uint256 tokenId);
 	error NoTokensStaked(string errStr);
+	error OneTimeStaking(string errStr, uint256 tokenId);
 }

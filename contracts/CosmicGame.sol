@@ -82,8 +82,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	address public longestBidderAddress = address(0);
 	uint256 public prevBidderStartTime = 0;
 	address public prevBidderAddress = address(0);
-	uint256 public topBidderNumBids = 0;
-	address public topBidderAddress = address(0);
+	uint256 public maxEthBidderAmount = 0;
+	address public maxEthBidderAddress = address(0);
 	// END OF Bidding and prize variables
 
 	// Percentages for fund distribution
@@ -115,14 +115,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// END OF prize claim variables
 
 	// System variables (for managing the system)
+	// counter for records with info about donations
+	uint256 public donateWithInfoNumRecords = 0;
+	// stores the info records about each donation (only those that want to have additional info)
+	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
 	// stores the timestamp for when project starts operating
 	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
-	// amount of CST tokens given to the longest bidder
-	uint256 public longestBidderTokenReward = CosmicGameConstants.LONGEST_BIDDER_TOKEN_REWARD;
-	// amount of CST tokens given to the top bidder (maximum number of bids)
-	uint256 public topBidderTokenReward = CosmicGameConstants.TOP_BIDDER_TOKEN_REWARD;
+	// Coefficient that is used to increase the amount of tokens top bidders (longest bidder and most eth bidder) get
+	uint256 public erc20RewardMultiplier;
 	// amount of CST tokens given as reward on every bid for marketing the project
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
 	// maximum length of message attached to bid() operation
@@ -148,6 +150,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		string message
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount,uint256 recordId);
 	event NFTDonationEvent(
 		address indexed donor,
 		IERC721 indexed nftAddress,
@@ -217,8 +220,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
 	// Token rewards
 	event TokenRewardChanged(uint256 newReward);
-	event LongestBidderTokenRewardChanged(uint256 newReward);
-	event TopBidderTokenRewardChanged(uint256 newReward);
+	event Erc20RewardMultiplierChanged(uint256 newMultiplier);
 	event MarketingRewardChanged(uint256 newReward);
 	// System
 	event ActivationTimeChanged(uint256 newActivationTime);
@@ -351,6 +353,22 @@ contract CosmicGame is Ownable, IERC721Receiver {
 				revert(ptr, size)
 			}
 		}
+	}
+
+	function donateWithInfo(string calldata _data) external payable {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.donateWithInfo.selector,_data));
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
+
+	function getDonationInfoRecord(uint256 recordId) public view returns (CosmicGameConstants.DonationInfoRecord memory) {
+		return donationInfoRecords[recordId];
 	}
 
 	// Use this function to read/write state variables in BusinessLogic contract
@@ -678,22 +696,13 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		emit TokenRewardChanged(tokenReward);
 	}
 
-	function setLongestBidderTokenReward(uint256 newTokenReward) external onlyOwner {
+	function setErc20RewardMultiplier(uint256 newMultiplier) external onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		longestBidderTokenReward = newTokenReward;
-		emit LongestBidderTokenRewardChanged(longestBidderTokenReward);
-	}
-
-	function setTopBidderTokenReward(uint256 newTokenReward) external onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
-		topBidderTokenReward = newTokenReward;
-		emit TopBidderTokenRewardChanged(topBidderTokenReward);
+		erc20RewardMultiplier= newMultiplier;
+		emit Erc20RewardMultiplierChanged(erc20RewardMultiplier);
 	}
 
 	function setMarketingReward(uint256 newMarketingReward) external onlyOwner {

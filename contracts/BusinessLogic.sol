@@ -51,8 +51,8 @@ contract BusinessLogic is Context, Ownable {
 	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
 	address public prevBidderAddress;
-	uint256 public topBidderNumBids;
-	address public topBidderAddress;
+	uint256 public maxEthBidderAmount;
+	address public maxEthBidderAddress;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -64,11 +64,12 @@ contract BusinessLogic is Context, Ownable {
 	bytes32 public raffleEntropy;
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
+	uint256 public donateWithInfoNumRecords;
+	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
 	uint256 public activationTime;
 	uint256 public tokenReward;
+	uint256 public erc20RewardMultiplier;
 	uint256 public marketingReward;
-	uint256 public longestBidderTokenReward;
-	uint256 public topBidderTokenReward;
 	uint256 public maxMessageLength;
 	uint256 public systemMode;
 	mapping(uint256 => uint256) public extraStorage;
@@ -84,6 +85,7 @@ contract BusinessLogic is Context, Ownable {
 		string message
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount,uint256 recordId);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
@@ -94,16 +96,18 @@ contract BusinessLogic is Context, Ownable {
 		bool isStaker,
 		bool isRWalk
 	);
-	event EnduranceNFTWinnerEvent(
+	event EnduranceChampionWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
-		uint256 indexed tokenId,
+		uint256 indexed erc721TokenId,
+		uint256 erc20TokenAmount,
 		uint256 winnerIndex
 	);
-	event TopBidderNFTWinnerEvent(
+	event MaxEthBidderWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
-		uint256 indexed tokenId,
+		uint256 indexed erc721TokenId,
+		uint256 erc20TokenAmount,
 		uint256 winnerIndex
 	);
 	event NFTDonationEvent(
@@ -257,6 +261,8 @@ contract BusinessLogic is Context, Ownable {
 		longestBidderAddress = address(0);
 		prevBidderStartTime = 0;
 		prevBidderAddress = address(0);
+		maxEthBidderAmount = 0;
+		maxEthBidderAddress = address(0);
 
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
@@ -298,17 +304,17 @@ contract BusinessLogic is Context, Ownable {
 
 		CosmicGameConstants.BidderStatRec memory bidderStatistics;
 		bidderStatistics = bidStats[msg.sender];
-		uint64 fixedPointPrice = uint64(price >> 15);
+		uint64 fixedPointPrice = uint64(price >> 50); // we divide by 2^50 which gives us 1/1000 of ETH (approx) value
 		if (isCst) {
 			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
 		} else {
-			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
+			bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
 		}
 		bidderStatistics.bidCount += 1;
 
-		if (bidderStatistics.bidCount > topBidderNumBids) {
-			topBidderNumBids = bidderStatistics.bidCount;
-			topBidderAddress = msg.sender;
+		if (bidderStatistics.bidPricePaidEth > maxEthBidderAmount ) {
+			maxEthBidderAmount = bidderStatistics.bidPricePaidEth;
+			maxEthBidderAddress = msg.sender;
 		}
 	}
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
@@ -390,10 +396,9 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	function _pushBackPrizeTime() internal {
-		// TODO: Explain what this function does and why it works this way. It's not intuitive.
+		// nanosecondsExtra is an additional coefficient to make the time interval larger over months of playing the game
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
-		// TODO: Explain why we are dividing by a million here.
 		nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / CosmicGameConstants.MILLION;
 	}
 
@@ -415,19 +420,22 @@ contract BusinessLogic is Context, Ownable {
 			// After the this interval have elapsed, then *anyone* is able to claim the prize!
 			// This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
 			// which would stop the creation of new Cosmic Signature NFTs.
+			uint256 timeToWait = 0;
+			if (prizeTime > block.timestamp) {
+				timeToWait = prizeTime - block.timestamp;
+			}
 			require(
 				_msgSender() == lastBidder,
 				CosmicGameErrors.LastBidderOnly(
 					"Only the last bidder can claim the prize during the first 24 hours.",
 					lastBidder,
-					_msgSender()
+					_msgSender(),
+					timeToWait
 				)
 			);
 		}
 
 		_updateStatisticsAfterClaimPrize();
-		// TODO: We might want to store the prevBidderTime in a map for every round
-		// TODO: We also want to send a reward to the longestBidderAddress: 1000 CST + a Cosmic Signature NFT
 
 		lastBidder = address(0);
 		address winner = _msgSender();
@@ -444,54 +452,43 @@ contract BusinessLogic is Context, Ownable {
 		// If the project just launched, we do not send anything to the staking wallet because
 		// nothing could be staked at this point.
 		if (cosmicSupply > 0) {
-			(success, ) = address(stakingWalletCST).call{ value: stakingAmount_ }(
+			(address(stakingWalletCST).call{ value: stakingAmount_ }(
 				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-			);
-			require(
-				success,
-				CosmicGameErrors.FundTransferFailed(
-					"Staking deposit failed.",
-					stakingAmount_,
-					address(stakingWalletCST)
-				)
-			);
+			));
 		}
 
 		// Give the NFT to the winner.
-		(bool mintSuccess, ) = address(nft).call(
+		(address(nft).call(
 			abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum)
-		);
-		require(
-			mintSuccess,
-			CosmicGameErrors.ERC721Mint("CosmicSignature mint() failed to mint NFT.", winner, roundNum)
-		);
+		));
 
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
 
-		// Endurance Champion Prize
-		if (longestBidderAddress != address(0)) {
+		{
+			// Endurance Champion Prize
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
-			address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, longestBidderTokenReward)
-			);
-			emit EnduranceNFTWinnerEvent(longestBidderAddress, roundNum, tokenId, winnerIndex);
+			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
+			(address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, erc20TokenReward)
+			));
+			emit EnduranceChampionWinnerEvent(longestBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
-
-		// Prize for having highest number of bids
-		if (topBidderAddress != address(0)) {
+		{
+			// MaxEthBidder Prize, for contributing the most ETH during the round (by bidding)
 			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, topBidderAddress, roundNum)
+				abi.encodeWithSelector(CosmicSignature.mint.selector, maxEthBidderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
-			address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, topBidderAddress, topBidderTokenReward)
-			);
-			emit TopBidderNFTWinnerEvent(topBidderAddress, roundNum, tokenId, winnerIndex);
+			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
+			(address(token).call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, maxEthBidderAddress, erc20TokenReward)
+			));
+			emit MaxEthBidderWinnerEvent(maxEthBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
 
@@ -531,31 +528,21 @@ contract BusinessLogic is Context, Ownable {
 
 		// Give ETH to the winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");
+		// This is the only require() that we have when it comes to giving prizes,
+		// checks on external calls are omitted to ensure the winner gets main prize no matter what
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, winner));
 
 		// Give ETH to the charity.
-		(success, ) = charity.call{ value: charityAmount_ }("");
-		require(
-			success,
-			CosmicGameErrors.FundTransferFailed(
-				"Transfer to charity contract failed.",
-				charityAmount_,
-				address(charity)
-			)
-		);
+		(charity.call{ value: charityAmount_ }(""));
 
 		// Give ETH to the ETH raffle winners.
 		uint256 perWinnerAmount_ = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numParticipants];
-			(success, ) = address(raffleWallet).call{ value: perWinnerAmount_ }(
+			(address(raffleWallet).call{ value: perWinnerAmount_ }(
 				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
-			);
-			require(
-				success,
-				CosmicGameErrors.FundTransferFailed("Raffle deposit failed.", perWinnerAmount_, raffleWinner_)
-			);
+			));
 			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex, perWinnerAmount_);
 			winnerIndex += 1;
 		}
@@ -654,5 +641,19 @@ contract BusinessLogic is Context, Ownable {
 			_resetBidPrice();
 		}
 		emit DonationEvent(_msgSender(), msg.value);
+	}
+	function donateWithInfo(string calldata _data) external payable {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
+		uint256 recordId = donateWithInfoNumRecords;
+		donateWithInfoNumRecords += 1;
+		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
+			donor: msg.sender,
+			amount: msg.value,
+			data: _data
+		});
+		emit DonationWithInfoEvent(_msgSender(), msg.value,recordId);
 	}
 }

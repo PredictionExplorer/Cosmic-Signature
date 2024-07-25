@@ -556,12 +556,6 @@ describe("Cosmic Set1", function () {
 		await cosmicGame.connect(owner).setTokenReward(ethers.BigNumber.from("1234567890"));
 		expect(await cosmicGame.tokenReward()).to.equal(ethers.BigNumber.from("1234567890"));
 
-		await cosmicGame.connect(owner).setLongestBidderTokenReward(ethers.BigNumber.from("1234567890"));
-		expect(await cosmicGame.longestBidderTokenReward()).to.equal(ethers.BigNumber.from("1234567890"));
-
-		await cosmicGame.connect(owner).setTopBidderTokenReward(ethers.BigNumber.from("1234567890"));
-		expect(await cosmicGame.topBidderTokenReward()).to.equal(ethers.BigNumber.from("1234567890"));
-
 		await cosmicGame.connect(owner).setMarketingReward(ethers.BigNumber.from("1234567890"));
 		expect(await cosmicGame.marketingReward()).to.equal(ethers.BigNumber.from("1234567890"));
 
@@ -923,94 +917,6 @@ describe("Cosmic Set1", function () {
 		duration = values[1];
 		expect(secondsElapsed).to.equal(0);
 	});
-	it("It is not possible to claim the prize if the deposit to the winner fails", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			raffleWallet,
-			randomWalkNFT,
-			stakingWallet,
-		} = await loadFixture(deployCosmic);
-
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(cosmicGame.address);
-		await cBidder.deployed();
-
-		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-		let prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()+24*60*60+1]);
-
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-		await cBidder.startBlockingDeposits();
-		await expect(cBidder.doClaim()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
-
-	//		to.be.revertedWith("Transfer to the winner failed.");
-	});
-	it("It is not possible to claim the prize if the deposit to CharityWallet fails",async function() {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			raffleWallet,
-			randomWalkNFT,
-			stakingWallet,
-			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-
-		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-		let prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()+24*60*60+1]);
-
-		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
-		let newCharity= await BrokenCharity.deploy();
-		await newCharity.deployed();
-		await cosmicGame.setCharityRaw(newCharity.address);
-
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-		await expect(cosmicGame.claimPrize()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
-	});
-	it("It is not possible to claim the prize if the deposit to RaffleWallet fails", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			raffleWallet,
-			randomWalkNFT,
-			stakingWallet,
-			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-
-		let bidPrice = await cosmicGame.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-		let prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()+24*60*60+1]);
-
-		const RaffleWallet = await ethers.getContractFactory("RaffleWallet");
-		let newRaffleWallet = await RaffleWallet.deploy(owner.address);
-		await newRaffleWallet.deployed();
-		await cosmicGame.setRaffleWalletRaw(newRaffleWallet.address);
-
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-		await expect(cosmicGame.claimPrize()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
-    });
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		var transferOwnership = false;

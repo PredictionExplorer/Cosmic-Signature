@@ -203,7 +203,6 @@ describe("Cosmic Set2", function () {
 		}
 		let tx,receipt,log,parsed_log;
 		let topic_sig = stakingWalletCST.interface.getEventTopic("StakeActionEvent");
-		let max_ts = 0;
 		let ts = await cosmicSignature.totalSupply();
 		let rn = await cosmicGame.roundNum();
 		let tokensByStaker = {};
@@ -221,9 +220,6 @@ describe("Cosmic Set2", function () {
 		    receipt = await tx.wait();
 		    log = receipt.logs.find(x=>x.topics.indexOf(topic_sig)>=0);
 		    parsed_log = stakingWalletCST.interface.parseLog(log);
-		    if (max_ts < parsed_log.args.unstakeTime.toNumber()) {
-		        max_ts = parsed_log.args.unstakeTime.toNumber();
-		    }
 		}
 		bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
@@ -287,11 +283,7 @@ describe("Cosmic Set2", function () {
 			let action_rec = await stakingWalletCST.stakeActions(i);
 			let ownr = action_rec.owner;
 			let owner_signer = cosmicGame.provider.getSigner(ownr);
-			let uts = action_rec.unstakeEligibleTime.toNumber()+1;
-			let lts = (await ethers.provider.getBlock("latest")).timestamp;
-			if (lts < uts) {
-				await ethers.provider.send("evm_setNextBlockTimestamp", [uts]);
-			}
+			await ethers.provider.send("evm_increaseTime", [100]);
 			await stakingWalletCST.connect(owner_signer).unstake(i);
 		}
 		// at this point, all tokens were unstaked
@@ -531,5 +523,30 @@ describe("Cosmic Set2", function () {
 		});
 		res = cosmicGame.interface.decodeFunctionResult("bidderAddress", message);
 		expect(res[0]).to.equal(addr1.address);
+	});
+	it("Bid statistics are generating correct values for giving complementary prizes", async function () {
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		let donationAmount = ethers.utils.parseEther("9000");
+		await cosmicGame.donate({ value: donationAmount });
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		let prizeTime = await cosmicGame.timeUntilPrize();
+        await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+        await ethers.provider.send("evm_mine");
+        await cosmicGame.connect(addr1).claimPrize();	// we need to claim prize because we want updated bidPrice (larger value)
+
+		bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+		let bidPriceFixedPointCustom = bidPrice.toBigInt();
+		bidPriceFixedPointCustom = bidPriceFixedPointCustom >> 50n;
+		let maxBidderAddr = await cosmicGame.maxEthBidderAddress();
+		let maxEthBidderAmount = await cosmicGame.maxEthBidderAmount();
+
+		expect(maxBidderAddr).to.equal(addr1.address);
+		expect(maxEthBidderAmount).to.equal(bidPriceFixedPointCustom);
 	});
 });
