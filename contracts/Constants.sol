@@ -26,6 +26,7 @@ library CosmicGameConstants {
 		uint64 bidPricePaidCST; //fixed-point decimal, precision = 3 (ETH) digits, formula: bidPricePaidCST = bidPriceCST >> 15; (price in Wei units)
 		uint64 bidCount;
 		uint64 bidTime; // duration of each bid, summarized
+		uint256 totalSpentInRound;
 	}
 	struct DonatedNFT {
 		IERC721 nftAddress;

@@ -51,8 +51,8 @@ contract BusinessLogic is Context, Ownable {
 	address public longestBidderAddress;
 	uint256 public prevBidderStartTime;
 	address public prevBidderAddress;
-	uint256 public maxEthBidderAmount;
-	address public maxEthBidderAddress;
+	uint256 public stellarSpenderAmount;
+	address public stellarSpenderAddress;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -103,11 +103,12 @@ contract BusinessLogic is Context, Ownable {
 		uint256 erc20TokenAmount,
 		uint256 winnerIndex
 	);
-	event MaxEthBidderWinnerEvent(
+	event StellarSpenderWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
 		uint256 indexed erc721TokenId,
 		uint256 erc20TokenAmount,
+		uint256 totalSpent,
 		uint256 winnerIndex
 	);
 	event NFTDonationEvent(
@@ -261,8 +262,8 @@ contract BusinessLogic is Context, Ownable {
 		longestBidderAddress = address(0);
 		prevBidderStartTime = 0;
 		prevBidderAddress = address(0);
-		maxEthBidderAmount = 0;
-		maxEthBidderAddress = address(0);
+		stellarSpenderAmount = 0;
+		stellarSpenderAddress = address(0);
 
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
@@ -299,6 +300,7 @@ contract BusinessLogic is Context, Ownable {
 	function _updateStatisticsAfterClaimPrize() internal {
 		_updatePreviousBidderStats();
 	}
+
 	function _updateStatisticsAfterBid(uint256 price, bool isCst) internal {
 		_updatePreviousBidderStats();
 
@@ -309,14 +311,19 @@ contract BusinessLogic is Context, Ownable {
 			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
 		} else {
 			bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
+			bidderStatistics.totalSpentInRound += price; // Update total spent
 		}
 		bidderStatistics.bidCount += 1;
 
-		if (bidderStatistics.bidPricePaidEth > maxEthBidderAmount) {
-			maxEthBidderAmount = bidderStatistics.bidPricePaidEth;
-			maxEthBidderAddress = msg.sender;
+		// Update Stellar Spender
+		if (bidderStatistics.totalSpentInRound > stellarSpenderAmount) {
+			stellarSpenderAmount = bidderStatistics.totalSpentInRound;
+			stellarSpenderAddress = msg.sender;
 		}
+
+		bidStats[msg.sender] = bidderStatistics;
 	}
+
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
 		require(
 			block.timestamp >= activationTime,
@@ -481,18 +488,25 @@ contract BusinessLogic is Context, Ownable {
 			winnerIndex += 1;
 		}
 		{
-			// MaxEthBidder Prize, for contributing the most ETH during the round (by bidding)
+			// Stellar Spender Prize
 			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, maxEthBidderAddress, roundNum)
+				abi.encodeWithSelector(CosmicSignature.mint.selector, stellarSpenderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			(
 				address(token).call(
-					abi.encodeWithSelector(CosmicToken.mint.selector, maxEthBidderAddress, erc20TokenReward)
+					abi.encodeWithSelector(CosmicToken.mint.selector, stellarSpenderAddress, erc20TokenReward)
 				)
 			);
-			emit MaxEthBidderWinnerEvent(maxEthBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
+			emit StellarSpenderWinnerEvent(
+				stellarSpenderAddress,
+				roundNum,
+				tokenId,
+				erc20TokenReward,
+				stellarSpenderAmount,
+				winnerIndex
+			);
 			winnerIndex += 1;
 		}
 

@@ -82,8 +82,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	address public longestBidderAddress = address(0);
 	uint256 public prevBidderStartTime = 0;
 	address public prevBidderAddress = address(0);
-	uint256 public maxEthBidderAmount = 0;
-	address public maxEthBidderAddress = address(0);
+	uint256 public stellarSpenderAmount;
+	address public stellarSpenderAddress;
+
 	// END OF Bidding and prize variables
 
 	// Percentages for fund distribution
