@@ -260,7 +260,6 @@ contract BusinessLogic is Context, Ownable {
 		// Initially this is 12 hours, but will grow slowly over time.
 		CSTAuctionLength = (12 * nanoSecondsExtra) / 1_000_000_000;
 		numRaffleParticipants[roundNum + 1] = 0;
-		_resetBidPrice();
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
@@ -272,14 +271,6 @@ contract BusinessLogic is Context, Ownable {
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 			emit SystemModeChanged(systemMode);
-		}
-	}
-
-	function _resetBidPrice() internal {
-		if (roundNum == 0) {
-			bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
-		} else {
-			bidPrice = address(this).balance / initialBidAmountFraction;
 		}
 	}
 

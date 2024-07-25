@@ -43,7 +43,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// Holds current round number, incremented on every claimPrize()
 	uint256 public roundNum = 0;
 	// current bid price in ETH, incremented on every bid
-	uint256 public bidPrice = 10 ** 15;
+	uint256 public bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 	// initial bid price for bidding with CST (in Dutch auction)
 	uint256 public startingBidPriceCST = 100e18;
 	// how much the deadline is pushed after every bid
