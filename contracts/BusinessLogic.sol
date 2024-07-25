@@ -46,13 +46,11 @@ contract BusinessLogic is Context, Ownable {
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
-	mapping(address => CosmicGameConstants.BidderStatRec) public bidStats;
-	uint256 public longestBidderTime;
-	address public longestBidderAddress;
-	uint256 public prevBidderStartTime;
-	address public prevBidderAddress;
+	mapping(uint256 => mapping(address => CosmicGameConstants.BidderInfo)) public bidderInfo; // roundNum => bidder => BidderInfo
+	address public stellarSpender;
 	uint256 public stellarSpenderAmount;
-	address public stellarSpenderAddress;
+	address public enduranceChampion;
+	uint256 public enduranceChampionDuration;
 	uint256 public prizePercentage;
 	uint256 public charityPercentage;
 	uint256 public rafflePercentage;
@@ -217,9 +215,15 @@ contract BusinessLogic is Context, Ownable {
 			paidBidPrice = newBidPrice;
 		}
 
+		// Update Stellar Spender
+		bidderInfo[roundNum][msg.sender].totalSpent += paidBidPrice;
+		if (bidderInfo[roundNum][msg.sender].totalSpent > stellarSpenderAmount) {
+			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpent;
+			stellarSpender = msg.sender;
+		}
+
 		bidPrice = newBidPrice;
 
-		_updateStatisticsAfterBid(bidPrice, false);
 		_bidCommon(params.message, bidType);
 
 		if (msg.value > paidBidPrice) {
@@ -238,6 +242,7 @@ contract BusinessLogic is Context, Ownable {
 			params.message
 		);
 	}
+
 	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -246,6 +251,7 @@ contract BusinessLogic is Context, Ownable {
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
+
 	function _roundEndResets() internal {
 		// everything that needs to be reset after round ends
 		lastCSTBidTime = block.timestamp;
@@ -258,18 +264,17 @@ contract BusinessLogic is Context, Ownable {
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
-		longestBidderTime = 0;
-		longestBidderAddress = address(0);
-		prevBidderStartTime = 0;
-		prevBidderAddress = address(0);
+		stellarSpender = address(0);
 		stellarSpenderAmount = 0;
-		stellarSpenderAddress = address(0);
+		enduranceChampion = address(0);
+		enduranceChampionDuration = 0;
 
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
 			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 			emit SystemModeChanged(systemMode);
 		}
 	}
+
 	function _resetBidPrice() internal {
 		if (roundNum == 0) {
 			bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
@@ -277,51 +282,15 @@ contract BusinessLogic is Context, Ownable {
 			bidPrice = address(this).balance / initialBidAmountFraction;
 		}
 	}
-	function _updatePreviousBidderStats() internal {
-		CosmicGameConstants.BidderStatRec memory prevBidderStatistics;
-		prevBidderStatistics = bidStats[prevBidderAddress];
-		uint32 prevBidTime = 0;
-		if (block.timestamp > prevBidderStartTime) {
-			if (prevBidderStartTime > 0) {
-				prevBidTime = uint32(block.timestamp) - uint32(prevBidderStartTime);
-			}
+
+	function _updateEnduranceChampion() internal {
+		if (lastBidder == address(0)) return;
+
+		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
+		if (lastBidDuration > enduranceChampionDuration) {
+			enduranceChampionDuration = lastBidDuration;
+			enduranceChampion = lastBidder;
 		}
-		prevBidderStatistics.bidTime += prevBidTime;
-		bidStats[prevBidderAddress] = prevBidderStatistics;
-
-		if (longestBidderAddress == address(0)) {
-			longestBidderAddress = msg.sender;
-			longestBidderTime = 0;
-		} else if (prevBidderStatistics.bidTime > longestBidderTime) {
-			longestBidderTime = prevBidderStatistics.bidTime;
-			longestBidderAddress = prevBidderAddress;
-		}
-	}
-	function _updateStatisticsAfterClaimPrize() internal {
-		_updatePreviousBidderStats();
-	}
-
-	function _updateStatisticsAfterBid(uint256 price, bool isCst) internal {
-		_updatePreviousBidderStats();
-
-		CosmicGameConstants.BidderStatRec memory bidderStatistics;
-		bidderStatistics = bidStats[msg.sender];
-		uint64 fixedPointPrice = uint64(price >> 50); // we divide by 2^50 which gives us 1/1000 of ETH (approx) value
-		if (isCst) {
-			bidderStatistics.bidPricePaidCST = bidderStatistics.bidPricePaidCST + fixedPointPrice;
-		} else {
-			bidderStatistics.bidPricePaidEth = bidderStatistics.bidPricePaidEth + fixedPointPrice;
-			bidderStatistics.totalSpentInRound += price; // Update total spent
-		}
-		bidderStatistics.bidCount += 1;
-
-		// Update Stellar Spender
-		if (bidderStatistics.totalSpentInRound > stellarSpenderAmount) {
-			stellarSpenderAmount = bidderStatistics.totalSpentInRound;
-			stellarSpenderAddress = msg.sender;
-		}
-
-		bidStats[msg.sender] = bidderStatistics;
 	}
 
 	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
@@ -339,11 +308,12 @@ contract BusinessLogic is Context, Ownable {
 			prizeTime = block.timestamp + initialSecondsUntilPrize;
 		}
 
+		_updateEnduranceChampion();
 		lastBidder = _msgSender();
 		lastBidType = bidType;
 
-		prevBidderAddress = lastBidder;
-		prevBidderStartTime = block.timestamp;
+		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
+		lastBidder = msg.sender;
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
@@ -397,7 +367,6 @@ contract BusinessLogic is Context, Ownable {
 		// In order to achieve this, we will adjust the auction length depending on the ratio.
 		token.burn(msg.sender, price);
 
-		_updateStatisticsAfterBid(bidPrice, true);
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
@@ -442,8 +411,6 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
-		_updateStatisticsAfterClaimPrize();
-
 		lastBidder = address(0);
 		address winner = _msgSender();
 		winners[roundNum] = winner;
@@ -475,32 +442,28 @@ contract BusinessLogic is Context, Ownable {
 		{
 			// Endurance Champion Prize
 			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
+				abi.encodeWithSelector(CosmicSignature.mint.selector, enduranceChampion, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			(
 				address(token).call(
-					abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, erc20TokenReward)
+					abi.encodeWithSelector(CosmicToken.mint.selector, enduranceChampion, erc20TokenReward)
 				)
 			);
-			emit EnduranceChampionWinnerEvent(longestBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
+			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
 		{
 			// Stellar Spender Prize
 			(, bytes memory data) = address(nft).call(
-				abi.encodeWithSelector(CosmicSignature.mint.selector, stellarSpenderAddress, roundNum)
+				abi.encodeWithSelector(CosmicSignature.mint.selector, stellarSpender, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			(
-				address(token).call(
-					abi.encodeWithSelector(CosmicToken.mint.selector, stellarSpenderAddress, erc20TokenReward)
-				)
-			);
+			(address(token).call(abi.encodeWithSelector(CosmicToken.mint.selector, stellarSpender, erc20TokenReward)));
 			emit StellarSpenderWinnerEvent(
-				stellarSpenderAddress,
+				stellarSpender,
 				roundNum,
 				tokenId,
 				erc20TokenReward,
@@ -656,12 +619,9 @@ contract BusinessLogic is Context, Ownable {
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
-		if (block.timestamp < activationTime) {
-			// Set the initial bid prize only if the game has not started yet.
-			_resetBidPrice();
-		}
 		emit DonationEvent(_msgSender(), msg.value);
 	}
+
 	function donateWithInfo(string calldata _data) external payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,

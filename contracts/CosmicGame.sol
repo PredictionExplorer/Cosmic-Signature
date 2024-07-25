@@ -76,15 +76,12 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 	// stores default auction duration, and used to reset the duration at every round start
 	uint256 public RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
-	mapping(address => CosmicGameConstants.BidderStatRec) public bidStats; // bidderAddress => (bid stats record)
+	mapping(uint256 => mapping(address => CosmicGameConstants.BidderInfo)) public bidderInfo; // roundNum => bidder => BidderInfo
 	// variables used to keep track of the bidder with longest bid time (accumulated)
-	uint256 public longestBidderTime = 0;
-	address public longestBidderAddress = address(0);
-	uint256 public prevBidderStartTime = 0;
-	address public prevBidderAddress = address(0);
+	address public stellarSpender;
 	uint256 public stellarSpenderAmount;
-	address public stellarSpenderAddress;
-
+	address public enduranceChampion;
+	uint256 public enduranceChampionDuration;
 	// END OF Bidding and prize variables
 
 	// Percentages for fund distribution
@@ -753,15 +750,16 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	// View functions
 
-	function currentLongestBidder() external view returns (address, uint256) {
-		if (prevBidderAddress == address(0)) {
+	function currentEnduranceChampion() external view returns (address, uint256) {
+		if (lastBidder == address(0)) {
 			return (address(0), 0);
 		}
-		uint256 prevBidderTime = block.timestamp - prevBidderStartTime;
-		if (prevBidderTime > longestBidderTime) {
-			return (prevBidderAddress, prevBidderTime);
+
+		uint256 lastBidTime = block.timestamp - bidderInfo[roundNum][msg.sender].lastBidTime;
+		if (lastBidTime > enduranceChampionDuration) {
+			return (lastBidder, lastBidTime);
 		}
-		return (longestBidderAddress, longestBidderTime);
+		return (lastBidder, enduranceChampionDuration);
 	}
 
 	function timeUntilActivation() external view returns (uint256) {
