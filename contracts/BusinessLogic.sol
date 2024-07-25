@@ -85,7 +85,7 @@ contract BusinessLogic is Context, Ownable {
 		string message
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
-	event DonationWithInfoEvent(address indexed donor, uint256 amount,uint256 recordId);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
@@ -312,7 +312,7 @@ contract BusinessLogic is Context, Ownable {
 		}
 		bidderStatistics.bidCount += 1;
 
-		if (bidderStatistics.bidPricePaidEth > maxEthBidderAmount ) {
+		if (bidderStatistics.bidPricePaidEth > maxEthBidderAmount) {
 			maxEthBidderAmount = bidderStatistics.bidPricePaidEth;
 			maxEthBidderAddress = msg.sender;
 		}
@@ -452,15 +452,15 @@ contract BusinessLogic is Context, Ownable {
 		// If the project just launched, we do not send anything to the staking wallet because
 		// nothing could be staked at this point.
 		if (cosmicSupply > 0) {
-			(address(stakingWalletCST).call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-			));
+			(
+				address(stakingWalletCST).call{ value: stakingAmount_ }(
+					abi.encodeWithSelector(StakingWalletCST.deposit.selector)
+				)
+			);
 		}
 
 		// Give the NFT to the winner.
-		(address(nft).call(
-			abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum)
-		));
+		(address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, winner, roundNum)));
 
 		// Winner index is used to emit the correct event.
 		uint256 winnerIndex = 0;
@@ -471,10 +471,12 @@ contract BusinessLogic is Context, Ownable {
 				abi.encodeWithSelector(CosmicSignature.mint.selector, longestBidderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
-			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			(address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, erc20TokenReward)
-			));
+			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
+			(
+				address(token).call(
+					abi.encodeWithSelector(CosmicToken.mint.selector, longestBidderAddress, erc20TokenReward)
+				)
+			);
 			emit EnduranceChampionWinnerEvent(longestBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
@@ -484,10 +486,12 @@ contract BusinessLogic is Context, Ownable {
 				abi.encodeWithSelector(CosmicSignature.mint.selector, maxEthBidderAddress, roundNum)
 			);
 			uint256 tokenId = abi.decode(data, (uint256));
-			uint256 erc20TokenReward =  erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			(address(token).call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, maxEthBidderAddress, erc20TokenReward)
-			));
+			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
+			(
+				address(token).call(
+					abi.encodeWithSelector(CosmicToken.mint.selector, maxEthBidderAddress, erc20TokenReward)
+				)
+			);
 			emit MaxEthBidderWinnerEvent(maxEthBidderAddress, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
@@ -540,9 +544,11 @@ contract BusinessLogic is Context, Ownable {
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numParticipants];
-			(address(raffleWallet).call{ value: perWinnerAmount_ }(
-				abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
-			));
+			(
+				address(raffleWallet).call{ value: perWinnerAmount_ }(
+					abi.encodeWithSelector(RaffleWallet.deposit.selector, raffleWinner_)
+				)
+			);
 			emit RaffleETHWinnerEvent(raffleWinner_, roundNum, winnerIndex, perWinnerAmount_);
 			winnerIndex += 1;
 		}
@@ -654,6 +660,6 @@ contract BusinessLogic is Context, Ownable {
 			amount: msg.value,
 			data: _data
 		});
-		emit DonationWithInfoEvent(_msgSender(), msg.value,recordId);
+		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId);
 	}
 }

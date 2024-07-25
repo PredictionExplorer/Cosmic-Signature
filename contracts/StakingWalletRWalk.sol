@@ -24,7 +24,7 @@ contract StakingWalletRWalk is Ownable {
 
 	mapping(uint256 => StakeAction) public stakeActions;
 	uint256 public numStakeActions;
-	mapping(uint256 => bool) public usedTokens;	// tokens can be staked only once, and then they become 'used'
+	mapping(uint256 => bool) public usedTokens; // tokens can be staked only once, and then they become 'used'
 
 	// Variables to manage uniquneness of tokens and pick random winner
 	uint256[] public stakedTokens;
@@ -64,11 +64,8 @@ contract StakingWalletRWalk is Ownable {
 
 	function stake(uint256 _tokenId) public {
 		require(
-			usedTokens[_tokenId]!=true,
-			CosmicGameErrors.OneTimeStaking(
-				"Staking/unstaking token is allowed only once",
-				_tokenId
-			)
+			usedTokens[_tokenId] != true,
+			CosmicGameErrors.OneTimeStaking("Staking/unstaking token is allowed only once", _tokenId)
 		);
 		usedTokens[_tokenId] = true;
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
@@ -78,12 +75,7 @@ contract StakingWalletRWalk is Ownable {
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
 		numStakeActions += 1;
 		numStakedNFTs += 1;
-		emit StakeActionEvent(
-			numStakeActions - 1,
-			_tokenId,
-			numStakedNFTs,
-			msg.sender
-		);
+		emit StakeActionEvent(numStakeActions - 1, _tokenId, numStakedNFTs, msg.sender);
 	}
 
 	function stakeMany(uint256[] memory ids) external {

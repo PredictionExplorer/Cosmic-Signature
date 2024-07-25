@@ -36,7 +36,7 @@ library CosmicGameConstants {
 	struct DonationInfoRecord {
 		address donor;
 		uint256 amount;
-		string data;			// JSON-formatted string with data, defined by us (offchain)
+		string data; // JSON-formatted string with data, defined by us (offchain)
 	}
 	enum BidType {
 		ETH,

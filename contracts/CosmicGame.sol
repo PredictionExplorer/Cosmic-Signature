@@ -150,7 +150,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		string message
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
-	event DonationWithInfoEvent(address indexed donor, uint256 amount,uint256 recordId);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId);
 	event NFTDonationEvent(
 		address indexed donor,
 		IERC721 indexed nftAddress,
@@ -356,7 +356,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	}
 
 	function donateWithInfo(string calldata _data) external payable {
-		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.donateWithInfo.selector,_data));
+		(bool success, ) = address(bLogic).delegatecall(
+			abi.encodeWithSelector(BusinessLogic.donateWithInfo.selector, _data)
+		);
 		if (!success) {
 			assembly {
 				let ptr := mload(0x40)
@@ -367,7 +369,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		}
 	}
 
-	function getDonationInfoRecord(uint256 recordId) public view returns (CosmicGameConstants.DonationInfoRecord memory) {
+	function getDonationInfoRecord(
+		uint256 recordId
+	) public view returns (CosmicGameConstants.DonationInfoRecord memory) {
 		return donationInfoRecords[recordId];
 	}
 
@@ -701,7 +705,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		erc20RewardMultiplier= newMultiplier;
+		erc20RewardMultiplier = newMultiplier;
 		emit Erc20RewardMultiplierChanged(erc20RewardMultiplier);
 	}
 
