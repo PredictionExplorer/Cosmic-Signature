@@ -330,7 +330,10 @@ contract OpenBusinessLogic is Context, Ownable {
 			// After the this interval have elapsed, then *anyone* is able to claim the prize!
 			// This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
 			// which would stop the creation of new Cosmic Signature NFTs.
-			uint256 timeToWait = prizeTime - block.timestamp;
+			uint256 timeToWait = 0;
+			if (prizeTime > block.timestamp) {
+				timeToWait = prizeTime - block.timestamp;
+			}
 			require(
 				_msgSender() == lastBidder,
 				CosmicGameErrors.LastBidderOnly(

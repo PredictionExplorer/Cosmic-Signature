@@ -64,6 +64,8 @@ contract BusinessLogic is Context, Ownable {
 	bytes32 public raffleEntropy;
 	mapping(uint256 => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 	uint256 public numDonatedNFTs;
+	uint256 public donateWithInfoNumRecords;
+	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
 	uint256 public activationTime;
 	uint256 public tokenReward;
 	uint256 public erc20RewardMultiplier;
@@ -83,6 +85,7 @@ contract BusinessLogic is Context, Ownable {
 		string message
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount,uint256 recordId);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
@@ -417,7 +420,10 @@ contract BusinessLogic is Context, Ownable {
 			// After the this interval have elapsed, then *anyone* is able to claim the prize!
 			// This prevents a DOS attack, where somebody keeps bidding, but never claims the prize
 			// which would stop the creation of new Cosmic Signature NFTs.
-			uint256 timeToWait = prizeTime - block.timestamp;
+			uint256 timeToWait = 0;
+			if (prizeTime > block.timestamp) {
+				timeToWait = prizeTime - block.timestamp;
+			}
 			require(
 				_msgSender() == lastBidder,
 				CosmicGameErrors.LastBidderOnly(
@@ -635,5 +641,19 @@ contract BusinessLogic is Context, Ownable {
 			_resetBidPrice();
 		}
 		emit DonationEvent(_msgSender(), msg.value);
+	}
+	function donateWithInfo(string calldata _data) external payable {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
+		uint256 recordId = donateWithInfoNumRecords;
+		donateWithInfoNumRecords += 1;
+		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
+			donor: msg.sender,
+			amount: msg.value,
+			data: _data
+		});
+		emit DonationWithInfoEvent(_msgSender(), msg.value,recordId);
 	}
 }

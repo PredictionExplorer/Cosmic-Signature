@@ -115,6 +115,10 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// END OF prize claim variables
 
 	// System variables (for managing the system)
+	// counter for records with info about donations
+	uint256 public donateWithInfoNumRecords = 0;
+	// stores the info records about each donation (only those that want to have additional info)
+	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
 	// stores the timestamp for when project starts operating
 	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 	// amount of CST tokens given as reward for every bid
@@ -146,6 +150,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		string message
 	);
 	event DonationEvent(address indexed donor, uint256 amount);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount,uint256 recordId);
 	event NFTDonationEvent(
 		address indexed donor,
 		IERC721 indexed nftAddress,
@@ -348,6 +353,22 @@ contract CosmicGame is Ownable, IERC721Receiver {
 				revert(ptr, size)
 			}
 		}
+	}
+
+	function donateWithInfo(string calldata _data) external payable {
+		(bool success, ) = address(bLogic).delegatecall(abi.encodeWithSelector(BusinessLogic.donateWithInfo.selector,_data));
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
+
+	function getDonationInfoRecord(uint256 recordId) public view returns (CosmicGameConstants.DonationInfoRecord memory) {
+		return donationInfoRecords[recordId];
 	}
 
 	// Use this function to read/write state variables in BusinessLogic contract
