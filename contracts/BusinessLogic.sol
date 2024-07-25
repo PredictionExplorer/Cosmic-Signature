@@ -402,6 +402,7 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
+		_updateEnduranceChampion();
 		lastBidder = address(0);
 		address winner = _msgSender();
 		winners[roundNum] = winner;
