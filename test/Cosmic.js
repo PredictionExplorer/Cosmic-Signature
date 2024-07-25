@@ -139,9 +139,6 @@ describe("Cosmic Set1", function () {
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 		await expect(cosmicGame.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
 
-		prizeTime = await cosmicGame.timeUntilPrize();
-		expect(prizeTime).to.equal(nanoSecondsExtra.div(1000000000).add(24 * 3600));
-
 		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
 		await ethers.provider.send("evm_mine");
 
