@@ -275,11 +275,15 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	function _updateEnduranceChampion() internal {
+
 		if (lastBidder == address(0)) return;
 
 		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
-		if (lastBidDuration > enduranceChampionDuration) {
-			enduranceChampionDuration = lastBidDuration;
+		uint256 totalDuration = bidderInfo[roundNum][lastBidder].totalBidTime;
+		totalDuration += lastBidDuration;
+		bidderInfo[roundNum][lastBidder].totalBidTime = totalDuration;
+		if (totalDuration > enduranceChampionDuration) {
+			enduranceChampionDuration = totalDuration;
 			enduranceChampion = lastBidder;
 		}
 	}

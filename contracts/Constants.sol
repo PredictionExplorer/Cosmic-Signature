@@ -23,6 +23,7 @@ library CosmicGameConstants {
 	struct BidderInfo {
 		uint256 totalSpent;
 		uint256 lastBidTime;
+		uint256 totalBidTime;	// total time for all bids of this bidder
 	}
 
 	struct DonatedNFT {
