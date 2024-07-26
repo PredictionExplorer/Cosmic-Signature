@@ -89,8 +89,8 @@ describe("Bid time accounting", function () {
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
-		maxbtime = await cosmicGame.longestBidderTime();
-		maxbaddr = await cosmicGame.longestBidderAddress();
+		maxbtime = await cosmicGame.enduranceChampionDuration();
+		maxbaddr = await cosmicGame.enduranceChampion();
 		expect(maxbtime).to.equal(6000);
 		expect(maxbaddr).to.equal(addr2.address);
 	});
@@ -164,8 +164,8 @@ describe("Bid time accounting", function () {
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800012000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid13 (addr1)
 		
-		maxbtime = await cosmicGame.longestBidderTime();
-		maxbaddr = await cosmicGame.longestBidderAddress();
+		maxbtime = await cosmicGame.enduranceChampionDuration();
+		maxbaddr = await cosmicGame.enduranceChampion();
 
 		expect(maxbtime).to.equal(6000);
 		expect(maxbaddr).to.equal(addr2.address);
