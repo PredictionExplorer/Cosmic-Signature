@@ -1,35 +1,25 @@
-extern crate rustfft;
-use rustfft::num_complex::Complex;
-use rustfft::FftPlanner;
-
+// External crates
 extern crate nalgebra as na;
-use rand::Rng;
-use rand::SeedableRng;
-use rand_chacha::ChaCha8Rng;
-use std::sync::Arc;
+extern crate rustfft;
 
-use nalgebra::{Point2, Point3, Vector3};
-use noise::NoiseFn;
-use noise::Simplex;
-
-use image::{DynamicImage, ImageBuffer, Rgb};
-use palette::{rgb::Rgb as PaletteRgb, FromColor, Gradient, Hsv, Srgb};
-
-use rayon::prelude::*;
-
-use sha3::{Digest, Sha3_256};
-
+// Standard library imports
 use std::f64::{INFINITY, NEG_INFINITY};
-
-use imageproc::drawing::draw_filled_circle_mut;
-
-use statrs::statistics::Statistics;
-
-use clap::Parser;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+// Third-party crates
+use clap::Parser;
 use hex;
+use image::{DynamicImage, ImageBuffer, Rgb};
+use imageproc::drawing::draw_filled_circle_mut;
+use nalgebra::{Point2, Point3, Vector3};
+use palette::{rgb::Rgb as PaletteRgb, FromColor, Hsv, Srgb};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
+use rayon::prelude::*;
+use rustfft::{num_complex::Complex, FftPlanner};
+use sha3::{Digest, Sha3_256};
+use statrs::statistics::Statistics;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -298,24 +288,15 @@ impl Camera {
 struct Particle {
     position: Point3<f64>,
     velocity: Vector3<f64>,
-    color: PaletteRgb,
+    color: Rgb<u8>,
 }
 
 struct ParticleSystem {
     particles: Vec<Particle>,
-    noise: Arc<Simplex>,
-    gradient: Gradient<Hsv>,
 }
 
 impl ParticleSystem {
     fn new(num_particles: usize, bounds: (f64, f64, f64)) -> Self {
-        let noise = Arc::new(Simplex::new(rand::random()));
-        let gradient = Gradient::new(vec![
-            Hsv::new(0.0, 0.0, 1.0),
-            Hsv::new(0.0, 0.0, 1.0),
-            Hsv::new(0.0, 0.0, 1.0),
-        ]);
-
         let particles: Vec<Particle> = (0..num_particles)
             .into_par_iter()
             .map_init(
@@ -326,54 +307,20 @@ impl ParticleSystem {
                         rng.gen_range(-bounds.1..bounds.1),
                         rng.gen_range(-bounds.2..bounds.2),
                     );
-                    let color = PaletteRgb::from_color(gradient.get(rng.gen()));
-                    Particle {
-                        position,
-                        velocity: Vector3::new(
-                            rng.gen_range(-0.01..0.01),
-                            rng.gen_range(-0.01..0.01),
-                            rng.gen_range(-0.01..0.01),
-                        ),
-                        color,
-                    }
+                    let color = Rgb([255, 255, 255]); // White color for all particles
+                    Particle { position, velocity: Vector3::zeros(), color }
                 },
             )
             .collect();
 
-        ParticleSystem { particles, noise, gradient }
+        ParticleSystem { particles }
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        let time = time_step as f32 * 0.1;
-        let noise = Arc::clone(&self.noise);
+        const G: f64 = 6.67430e-11; // Gravitational constant
 
         self.particles.par_iter_mut().for_each(|particle| {
-            // Apply noise-based movement
-            let noise_value = noise.get([
-                particle.position.x * 0.1,
-                particle.position.y * 0.1,
-                particle.position.z * 0.1 + time as f64,
-            ]) as f64;
-
-            let noise_velocity = Vector3::new(
-                (noise_value * 2.0 - 1.0) * 0.1,
-                (noise.get([
-                    particle.position.x * 0.1 + 100.0,
-                    particle.position.y * 0.1,
-                    time as f64,
-                ]) * 2.0
-                    - 1.0)
-                    * 0.1,
-                (noise.get([
-                    particle.position.x * 0.1,
-                    particle.position.y * 0.1 + 100.0,
-                    time as f64,
-                ]) * 2.0
-                    - 1.0)
-                    * 0.1,
-            );
-
-            particle.velocity += noise_velocity;
+            let mut acceleration = Vector3::zeros();
 
             // Apply influence from bodies
             for body in bodies {
@@ -382,23 +329,24 @@ impl ParticleSystem {
                     Vector3::new(particle.position.x, particle.position.y, particle.position.z);
                 let to_body = body_pos - particle_pos;
                 let distance = to_body.magnitude();
-                if distance < 0.5 {
-                    // Influence radius
-                    let force = to_body.normalize() * (0.5 - distance) * 0.1 * body.mass; // Stronger force
-                    particle.velocity += force;
+                if distance > 0.001 {
+                    // Avoid division by zero
+                    let force = G * body.mass / (distance * distance);
+                    acceleration += to_body.normalize() * force;
                 }
             }
 
-            // Update position
+            // Update velocity and position
+            particle.velocity += acceleration * time_step;
             particle.position += particle.velocity * time_step;
 
             // Boundary check and wrapping
             particle.position.x = (particle.position.x + bounds.0) % (2.0 * bounds.0) - bounds.0;
             particle.position.y = (particle.position.y + bounds.1) % (2.0 * bounds.1) - bounds.1;
-            particle.position.z = (particle.position.z + bounds.2) % (2.0 * bounds.2) - bounds.2;
+            particle.position.z = (particle.position.z + bounds.2) % (2.0 * bounds.2) - bounds.0;
 
-            // Damping
-            particle.velocity *= 0.99;
+            // Damping (optional, removes energy from the system)
+            particle.velocity *= 0.999;
         });
     }
 
@@ -406,7 +354,7 @@ impl ParticleSystem {
         let particles = &self.particles;
 
         ImageBuffer::from_fn(width, height, |x, y| {
-            let mut color = Srgb::new(0.0, 0.0, 0.0);
+            let mut color = [0.0f32, 0.0f32, 0.0f32]; // Using an array for RGB values
 
             for particle in particles {
                 let screen_pos = camera.world_to_screen(particle.position, width, height);
@@ -414,25 +362,21 @@ impl ParticleSystem {
                 let dy = y as f64 - screen_pos.y;
                 let distance_sq = dx * dx + dy * dy;
                 if distance_sq < 100.0 {
-                    // Increased particle size
                     let intensity = (1.0 - distance_sq / 100.0).powi(2) as f32;
-                    let particle_color = Srgb::new(
-                        (particle.color.red * intensity).min(1.0),
-                        (particle.color.green * intensity).min(1.0),
-                        (particle.color.blue * intensity).min(1.0),
-                    );
+                    let particle_color = [
+                        particle.color[0] as f32 / 255.0,
+                        particle.color[1] as f32 / 255.0,
+                        particle.color[2] as f32 / 255.0,
+                    ];
+
                     // Manually add colors
-                    color.red = (color.red + particle_color.red).min(1.0);
-                    color.green = (color.green + particle_color.green).min(1.0);
-                    color.blue = (color.blue + particle_color.blue).min(1.0);
+                    color[0] = (color[0] + particle_color[0] * intensity).min(1.0);
+                    color[1] = (color[1] + particle_color[1] * intensity).min(1.0);
+                    color[2] = (color[2] + particle_color[2] * intensity).min(1.0);
                 }
             }
 
-            Rgb([
-                (color.red * 255.0) as u8,
-                (color.green * 255.0) as u8,
-                (color.blue * 255.0) as u8,
-            ])
+            Rgb([(color[0] * 255.0) as u8, (color[1] * 255.0) as u8, (color[2] * 255.0) as u8])
         })
     }
 }
@@ -449,7 +393,7 @@ fn plot_positions(
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
-    let mut particle_system = ParticleSystem::new(1_000, (1.0, 1.0, 1.0)); // 10,000 particles in a 2x2x2 cube
+    let mut particle_system = ParticleSystem::new(100, (1.0, 1.0, 1.0)); // 10,000 particles in a 2x2x2 cube
     let camera = Camera {
         position: Point3::new(0.0, 0.0, -5.0), // Move camera back
         direction: Vector3::new(0.0, 0.0, 1.0),
