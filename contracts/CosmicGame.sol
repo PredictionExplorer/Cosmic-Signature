@@ -165,18 +165,6 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		bool isStaker,
 		bool isRWalk
 	);
-	event EnduranceNFTWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 indexed tokenId,
-		uint256 winnerIndex
-	);
-	event TopBidderNFTWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 indexed tokenId,
-		uint256 winnerIndex
-	);
 	event DonatedNFTClaimedEvent(
 		uint256 indexed round,
 		uint256 index,
