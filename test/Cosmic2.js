@@ -541,12 +541,10 @@ describe("Cosmic Set2", function () {
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-		let bidPriceFixedPointCustom = bidPrice.toBigInt();
-		bidPriceFixedPointCustom = bidPriceFixedPointCustom >> 50n;
-		let maxBidderAddr = await cosmicGame.maxEthBidderAddress();
-		let maxEthBidderAmount = await cosmicGame.maxEthBidderAmount();
+		let maxBidderAddr = await cosmicGame.stellarSpender();
+		let maxEthBidderAmount = await cosmicGame.stellarSpenderAmount();
 
 		expect(maxBidderAddr).to.equal(addr1.address);
-		expect(maxEthBidderAmount).to.equal(bidPriceFixedPointCustom);
+		expect(maxEthBidderAmount).to.equal(bidPrice);
 	});
 });
