@@ -16,12 +16,13 @@ use nalgebra::{Point2, Point3, Vector3};
 use palette::{rgb::Rgb as PaletteRgb, FromColor, Hsv};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use rand_distr::{Distribution, Normal};
 use rayon::prelude::*;
 use rustfft::{num_complex::Complex, FftPlanner};
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
 
-const PARTICLES_PER_FRAME: usize = 50;
+const PARTICLES_PER_FRAME: usize = 100;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -345,7 +346,7 @@ impl ParticleSystem {
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        const WIND_STRENGTH: f64 = 0.02; // Adjust this to control the strength of the effect
+        const WIND_STRENGTH: f64 = 0.015; // Adjust this to control the strength of the effect
         const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
 
         let mut i = 0;
@@ -378,12 +379,15 @@ impl ParticleSystem {
 
     fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
+        let normal = Normal::new(0.0, 0.02).unwrap();
+
         for i in 0..count {
             let offset = Vector3::new(
-                rng.gen_range(-0.05..0.05),
-                rng.gen_range(-0.05..0.05),
-                rng.gen_range(-0.05..0.05),
+                normal.sample(&mut rng),
+                normal.sample(&mut rng),
+                normal.sample(&mut rng),
             );
+
             let position = body.position + offset;
             let velocity = Vector3::new(
                 rng.gen_range(-0.0001..0.0001),
