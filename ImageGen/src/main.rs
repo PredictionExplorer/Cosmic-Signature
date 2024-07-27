@@ -308,7 +308,12 @@ impl ParticleSystem {
                         rng.gen_range(-bounds.2..bounds.2),
                     );
 
-                    let color = Rgb([255, 255, 255]); // White color for all particles
+                    // Generate a random bright shade of purple
+                    let r = rng.gen_range(100..200); // Moderate to high red
+                    let b = rng.gen_range(150..255); // High blue
+                    let g = rng.gen_range(0..100); // Low green to keep it purple
+                    let color = Rgb([r, g, b]);
+
                     Particle { position, velocity: Vector3::zeros(), color }
                 },
             )
@@ -372,10 +377,10 @@ fn plot_positions(
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
-    let bounds = (1.0, 1.0, 1.0); // Adjust these values as needed
-    let mut particle_system = ParticleSystem::new(100, bounds); // 10,000 particles
+    let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
+    let mut particle_system = ParticleSystem::new(1_000_000, bounds); // 10,000 particles
     let camera = Camera {
-        position: Point3::new(0.0, 0.0, -3.0),
+        position: Point3::new(0.0, 0.0, -2.8),
         direction: Vector3::new(0.0, 0.0, 1.0),
         up: Vector3::new(0.0, 1.0, 0.0),
         fov: 60.0f64.to_radians(),
@@ -816,7 +821,7 @@ fn main() {
     const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
-    const FRAME_SIZE: u32 = 600;
+    const FRAME_SIZE: u32 = 1600;
 
     let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
