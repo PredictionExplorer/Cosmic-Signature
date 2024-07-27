@@ -340,10 +340,6 @@ impl ParticleSystem {
             particle.velocity += wind * time_step;
             particle.velocity *= 0.99; // Damping to prevent excessive speeds
             particle.position += particle.velocity * time_step;
-
-            particle.position.x = (particle.position.x + bounds.0) % (2.0 * bounds.0) - bounds.0;
-            particle.position.y = (particle.position.y + bounds.1) % (2.0 * bounds.1) - bounds.1;
-            particle.position.z = (particle.position.z + bounds.2) % (2.0 * bounds.2) - bounds.0;
         });
     }
 
