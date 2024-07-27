@@ -660,19 +660,29 @@ fn create_video_from_frames_in_memory(
 ) {
     let mut command = Command::new("ffmpeg");
     command
-        .arg("-y") // Overwrite the output file if it exists
+        .arg("-y")
         .arg("-f")
         .arg("image2pipe")
         .arg("-vcodec")
         .arg("png")
         .arg("-r")
-        .arg(frame_rate.to_string())
+        .arg("60") // 60 fps
+        .arg("-s") // Specify size
+        .arg("1600x1600") // Width x Height
         .arg("-i")
         .arg("-")
         .arg("-c:v")
-        .arg("libx264")
+        .arg("libx265") // H.265/HEVC codec
+        .arg("-preset")
+        .arg("medium")
+        .arg("-crf")
+        .arg("23")
         .arg("-pix_fmt")
         .arg("yuv420p")
+        .arg("-tag:v")
+        .arg("hvc1")
+        .arg("-threads")
+        .arg("0")
         .arg(output_file)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
