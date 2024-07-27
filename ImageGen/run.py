@@ -29,7 +29,7 @@ def main():
     possible_velocities = [2]
     possible_min_mass = [100]
     possible_max_mass = [300]
-    possible_special = [True]
+    possible_special = [False]
 
     seed = '0x10' + ''.join(random.choice("0123456789abcdef") for _ in range(6))
 

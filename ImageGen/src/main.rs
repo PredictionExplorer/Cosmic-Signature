@@ -21,6 +21,8 @@ use rustfft::{num_complex::Complex, FftPlanner};
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
 
+const PARTICLES_PER_FRAME: usize = 50;
+
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
     seed: Vec<u8>,
@@ -293,10 +295,12 @@ struct Particle {
 
 struct ParticleSystem {
     particles: Vec<Particle>,
+    color_walks: Vec<Vec<Rgb<u8>>>,
+    emission_counts: [usize; 3],
 }
 
 impl ParticleSystem {
-    fn new(num_particles: usize, bounds: (f64, f64, f64)) -> Self {
+    fn new(num_particles: usize, bounds: (f64, f64, f64), color_walks: Vec<Vec<Rgb<u8>>>) -> Self {
         let max_initial_velocity = 0.001;
         let mut shared_rng = ChaCha8Rng::from_entropy();
         let x_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
@@ -337,17 +341,17 @@ impl ParticleSystem {
             )
             .collect();
 
-        ParticleSystem { particles }
+        ParticleSystem { particles, color_walks, emission_counts: [0; 3] }
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        const WIND_STRENGTH: f64 = 0.2; // Adjust this to control the strength of the effect
+        const WIND_STRENGTH: f64 = 0.02; // Adjust this to control the strength of the effect
         const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
 
+        let mut i = 0;
         for body in bodies {
-            let accel_magnitude = body.acceleration.magnitude();
-            let particle_count = (accel_magnitude * 10.0) as usize; // Adjust multiplier as needed
-            self.emit_particles(body, 20); // Cap at 20 particles per frame
+            self.emit_particles(body, PARTICLES_PER_FRAME, i); // Cap at 20 particles per frame
+            i += 1;
         }
 
         self.particles.par_iter_mut().for_each(|particle| {
@@ -372,26 +376,30 @@ impl ParticleSystem {
         });
     }
 
-    fn emit_particles(&mut self, body: &Body, count: usize) {
+    fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
-        for _ in 0..count {
+        for i in 0..count {
             let offset = Vector3::new(
                 rng.gen_range(-0.05..0.05),
                 rng.gen_range(-0.05..0.05),
                 rng.gen_range(-0.05..0.05),
             );
             let position = body.position + offset;
-            let velocity = body.velocity * 0.1
-                + Vector3::new(
-                    rng.gen_range(-0.01..0.01),
-                    rng.gen_range(-0.01..0.01),
-                    rng.gen_range(-0.01..0.01),
-                );
+            let velocity = Vector3::new(
+                rng.gen_range(-0.0001..0.0001),
+                rng.gen_range(-0.0001..0.0001),
+                rng.gen_range(-0.0001..0.0001),
+            );
 
-            let color = Rgb([0, 255, 200]); // Light pink color for emitted particles
+            let color = self.color_walks[body_idx][self.emission_counts[body_idx] + i];
 
             self.particles.push(Particle { position, velocity, color });
+
+            //let color = Rgb([0, 255, 200]); // Light pink color for emitted particles
+
+            //self.particles.push(Particle { position, velocity, color });
         }
+        self.emission_counts[body_idx] += count;
     }
 
     fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
@@ -424,7 +432,7 @@ fn plot_positions(
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
     let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
-    let mut particle_system = ParticleSystem::new(1_000, bounds);
+    let mut particle_system = ParticleSystem::new(1_000, bounds, colors.to_vec());
     let camera = Camera {
         position: Point3::new(0.0, 0.0, -2.8),
         direction: Vector3::new(0.0, 0.0, 1.0),
@@ -490,7 +498,7 @@ fn plot_positions(
                 let py = screen_pos.y as i32;
 
                 if px >= 0 && px < frame_size as i32 && py >= 0 && py < frame_size as i32 {
-                    draw_filled_circle_mut(&mut img, (px, py), 6, colors[body_idx][i]);
+                    //draw_filled_circle_mut(&mut img, (px, py), 6, Rgb([255, 255, 255]));
                 }
             }
         }
@@ -842,7 +850,7 @@ fn main() {
     let steps = args.num_steps;
 
     // Determine the hide vector based on the special flag
-    let hide = if args.special {
+    /*let hide = if args.special {
         vec![false, false, false]
         //vec![true, true, true]
     } else {
@@ -855,10 +863,11 @@ fn main() {
             vec![false, true, true] // 1/3 chance to hide none
         }
     };
+    */
+
+    let hide = vec![false, false, false];
 
     let mut positions = get_best(&mut byte_stream, args.num_sims, steps, steps);
-
-    let colors = get_3_colors(&mut byte_stream, steps, args.special);
 
     let s: &str = args.file_name.as_str();
     let file_name = format!("vids/{}.mp4", s);
@@ -868,6 +877,12 @@ fn main() {
     const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
+
+    let total_frames = steps / steps_per_frame;
+    let total_particles = total_frames * PARTICLES_PER_FRAME * 3;
+
+    let colors = get_3_colors(&mut byte_stream, total_particles, args.special);
+
     const FRAME_SIZE: u32 = 1600;
 
     let random_vid_snake_len = 1.0;
