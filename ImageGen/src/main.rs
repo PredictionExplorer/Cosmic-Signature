@@ -22,7 +22,7 @@ use rustfft::{num_complex::Complex, FftPlanner};
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
 
-const PARTICLES_PER_FRAME: usize = 100;
+const PARTICLES_PER_FRAME: usize = 400;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -292,6 +292,7 @@ struct Particle {
     position: Point3<f64>,
     velocity: Vector3<f64>,
     color: Rgb<u8>,
+    lifetime: f64, // Lifetime in seconds
 }
 
 struct ParticleSystem {
@@ -336,8 +337,9 @@ impl ParticleSystem {
                     let b = rng.gen_range(150..255); // High blue
                     let g = rng.gen_range(0..100); // Low green to keep it purple
                     let color = Rgb([r, g, b]);
+                    let lifetime = rng.gen_range(0.0..2.0);
 
-                    Particle { position, velocity: velocity, color }
+                    Particle { position, velocity: velocity, color, lifetime }
                 },
             )
             .collect();
@@ -346,7 +348,12 @@ impl ParticleSystem {
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        const WIND_STRENGTH: f64 = 0.015; // Adjust this to control the strength of the effect
+        self.particles.retain_mut(|particle| {
+            particle.lifetime += time_step;
+            particle.lifetime < 4000.0
+        });
+
+        const WIND_STRENGTH: f64 = 0.005; // Adjust this to control the strength of the effect
         const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
 
         let mut i = 0;
@@ -379,7 +386,7 @@ impl ParticleSystem {
 
     fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
-        let normal = Normal::new(0.0, 0.02).unwrap();
+        let normal = Normal::new(0.0, 0.04).unwrap();
 
         for i in 0..count {
             let offset = Vector3::new(
@@ -390,14 +397,14 @@ impl ParticleSystem {
 
             let position = body.position + offset;
             let velocity = Vector3::new(
-                rng.gen_range(-0.0001..0.0001),
-                rng.gen_range(-0.0001..0.0001),
-                rng.gen_range(-0.0001..0.0001),
+                rng.gen_range(-0.00015..0.00015),
+                rng.gen_range(-0.00015..0.00015),
+                rng.gen_range(-0.00015..0.00015),
             );
 
             let color = self.color_walks[body_idx][self.emission_counts[body_idx] + i];
-
-            self.particles.push(Particle { position, velocity, color });
+            let lifetime = rng.gen_range(0.0..2.0);
+            self.particles.push(Particle { position, velocity, color, lifetime });
 
             //let color = Rgb([0, 255, 200]); // Light pink color for emitted particles
 
@@ -409,7 +416,22 @@ impl ParticleSystem {
     fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         let mut img = ImageBuffer::new(width, height);
 
-        for particle in &self.particles {
+        // Create a vector of particles with their distances from the camera
+        let mut particles_with_distance: Vec<_> = self
+            .particles
+            .iter()
+            .map(|p| {
+                let distance = (Point3::from(p.position) - camera.position).magnitude();
+                (p, distance)
+            })
+            .collect();
+
+        // Sort particles by distance, furthest first (descending order)
+        particles_with_distance
+            .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Render sorted particles
+        for (particle, _) in particles_with_distance {
             let screen_pos = camera.world_to_screen(particle.position, width, height);
             let x = screen_pos.x.round() as i32;
             let y = screen_pos.y.round() as i32;
@@ -418,7 +440,6 @@ impl ParticleSystem {
                 img.put_pixel(x as u32, y as u32, particle.color);
             }
         }
-
         img
     }
 }
