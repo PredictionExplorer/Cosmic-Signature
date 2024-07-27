@@ -301,6 +301,8 @@ impl ParticleSystem {
         let mut shared_rng = ChaCha8Rng::from_entropy();
         let x_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
         let y_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
+        let x_velocity = 0.0;
+        let y_velocity = 0.0;
 
         let particles: Vec<Particle> = (0..num_particles)
             .into_par_iter()
@@ -339,7 +341,7 @@ impl ParticleSystem {
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        const WIND_STRENGTH: f64 = 0.1; // Adjust this to control the strength of the effect
+        const WIND_STRENGTH: f64 = 0.2; // Adjust this to control the strength of the effect
         const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
 
         self.particles.par_iter_mut().for_each(|particle| {
@@ -359,7 +361,7 @@ impl ParticleSystem {
 
             // Update particle velocity and position
             particle.velocity += wind * time_step;
-            particle.velocity *= 0.99; // Damping to prevent excessive speeds
+            particle.velocity *= 0.999; // Damping to prevent excessive speeds
             particle.position += particle.velocity * time_step;
         });
     }
@@ -394,7 +396,7 @@ fn plot_positions(
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
     let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
-    let mut particle_system = ParticleSystem::new(1_000_000, bounds); // 10,000 particles
+    let mut particle_system = ParticleSystem::new(1_000_000, bounds);
     let camera = Camera {
         position: Point3::new(0.0, 0.0, -2.8),
         direction: Vector3::new(0.0, 0.0, 1.0),
