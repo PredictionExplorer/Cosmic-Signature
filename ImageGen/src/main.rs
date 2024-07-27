@@ -13,7 +13,7 @@ use hex;
 use image::{DynamicImage, ImageBuffer, Rgb};
 use imageproc::drawing::draw_filled_circle_mut;
 use nalgebra::{Point2, Point3, Vector3};
-use palette::{rgb::Rgb as PaletteRgb, FromColor, Hsv, Srgb};
+use palette::{rgb::Rgb as PaletteRgb, FromColor, Hsv};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
@@ -307,6 +307,7 @@ impl ParticleSystem {
                         rng.gen_range(-bounds.1..bounds.1),
                         rng.gen_range(-bounds.2..bounds.2),
                     );
+
                     let color = Rgb([255, 255, 255]); // White color for all particles
                     Particle { position, velocity: Vector3::zeros(), color }
                 },
@@ -317,67 +318,49 @@ impl ParticleSystem {
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        const G: f64 = 6.67430e-11; // Gravitational constant
+        const WIND_STRENGTH: f64 = 0.1; // Adjust this to control the strength of the effect
+        const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
 
         self.particles.par_iter_mut().for_each(|particle| {
-            let mut acceleration = Vector3::zeros();
+            let mut wind = Vector3::zeros();
 
-            // Apply influence from bodies
+            // Calculate wind effect from each body
             for body in bodies {
-                let body_pos = Vector3::new(body.position.x, body.position.y, body.position.z);
-                let particle_pos =
-                    Vector3::new(particle.position.x, particle.position.y, particle.position.z);
-                let to_body = body_pos - particle_pos;
-                let distance = to_body.magnitude();
-                if distance > 0.001 {
-                    // Avoid division by zero
-                    let force = G * body.mass / (distance * distance);
-                    acceleration += to_body.normalize() * force;
+                let body_pos = body.position.coords;
+                let to_particle = particle.position.coords - body_pos;
+                let distance = to_particle.magnitude();
+
+                if distance < MAX_INFLUENCE_DISTANCE {
+                    let influence = (1.0 - distance / MAX_INFLUENCE_DISTANCE).powf(2.0);
+                    wind += body.velocity * influence * WIND_STRENGTH;
                 }
             }
 
-            // Update velocity and position
-            particle.velocity += acceleration * time_step;
+            // Update particle velocity and position
+            particle.velocity += wind * time_step;
+            particle.velocity *= 0.99; // Damping to prevent excessive speeds
             particle.position += particle.velocity * time_step;
 
-            // Boundary check and wrapping
             particle.position.x = (particle.position.x + bounds.0) % (2.0 * bounds.0) - bounds.0;
             particle.position.y = (particle.position.y + bounds.1) % (2.0 * bounds.1) - bounds.1;
             particle.position.z = (particle.position.z + bounds.2) % (2.0 * bounds.2) - bounds.0;
-
-            // Damping (optional, removes energy from the system)
-            particle.velocity *= 0.999;
         });
     }
 
     fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-        let particles = &self.particles;
+        let mut img = ImageBuffer::new(width, height);
 
-        ImageBuffer::from_fn(width, height, |x, y| {
-            let mut color = [0.0f32, 0.0f32, 0.0f32]; // Using an array for RGB values
+        for particle in &self.particles {
+            let screen_pos = camera.world_to_screen(particle.position, width, height);
+            let x = screen_pos.x.round() as i32;
+            let y = screen_pos.y.round() as i32;
 
-            for particle in particles {
-                let screen_pos = camera.world_to_screen(particle.position, width, height);
-                let dx = x as f64 - screen_pos.x;
-                let dy = y as f64 - screen_pos.y;
-                let distance_sq = dx * dx + dy * dy;
-                if distance_sq < 100.0 {
-                    let intensity = (1.0 - distance_sq / 100.0).powi(2) as f32;
-                    let particle_color = [
-                        particle.color[0] as f32 / 255.0,
-                        particle.color[1] as f32 / 255.0,
-                        particle.color[2] as f32 / 255.0,
-                    ];
-
-                    // Manually add colors
-                    color[0] = (color[0] + particle_color[0] * intensity).min(1.0);
-                    color[1] = (color[1] + particle_color[1] * intensity).min(1.0);
-                    color[2] = (color[2] + particle_color[2] * intensity).min(1.0);
-                }
+            if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+                img.put_pixel(x as u32, y as u32, particle.color);
             }
+        }
 
-            Rgb([(color[0] * 255.0) as u8, (color[1] * 255.0) as u8, (color[2] * 255.0) as u8])
-        })
+        img
     }
 }
 
@@ -393,12 +376,13 @@ fn plot_positions(
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
-    let mut particle_system = ParticleSystem::new(100, (1.0, 1.0, 1.0)); // 10,000 particles in a 2x2x2 cube
+    let bounds = (1.0, 1.0, 1.0); // Adjust these values as needed
+    let mut particle_system = ParticleSystem::new(100, bounds); // 10,000 particles
     let camera = Camera {
-        position: Point3::new(0.0, 0.0, -5.0), // Move camera back
+        position: Point3::new(0.0, 0.0, -3.0),
         direction: Vector3::new(0.0, 0.0, 1.0),
         up: Vector3::new(0.0, 1.0, 0.0),
-        fov: 90.0f64.to_radians(), // Wider field of view
+        fov: 60.0f64.to_radians(),
     };
 
     let mut current_pos: usize = 0;
@@ -439,7 +423,7 @@ fn plot_positions(
             })
             .collect();
 
-        particle_system.update(&bodies, frame_interval as f64 * TIME_PER_FRAME, (1.0, 1.0, 1.0));
+        particle_system.update(&bodies, frame_interval as f64 * TIME_PER_FRAME, bounds);
         let mut img = particle_system.render(frame_size, frame_size, &camera);
 
         // Draw bodies
