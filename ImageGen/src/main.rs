@@ -297,6 +297,11 @@ struct ParticleSystem {
 
 impl ParticleSystem {
     fn new(num_particles: usize, bounds: (f64, f64, f64)) -> Self {
+        let max_initial_velocity = 0.001;
+        let mut shared_rng = ChaCha8Rng::from_entropy();
+        let x_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
+        let y_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
+
         let particles: Vec<Particle> = (0..num_particles)
             .into_par_iter()
             .map_init(
@@ -308,13 +313,24 @@ impl ParticleSystem {
                         rng.gen_range(-bounds.2..bounds.2),
                     );
 
+                    // Generate a random initial velocity
+                    let velocity = Vector3::new(
+                        x_velocity
+                            + rng
+                                .gen_range(-max_initial_velocity / 3.0..max_initial_velocity / 3.0),
+                        y_velocity
+                            + rng
+                                .gen_range(-max_initial_velocity / 3.0..max_initial_velocity / 3.0),
+                        0.0,
+                    );
+
                     // Generate a random bright shade of purple
                     let r = rng.gen_range(100..200); // Moderate to high red
                     let b = rng.gen_range(150..255); // High blue
                     let g = rng.gen_range(0..100); // Low green to keep it purple
                     let color = Rgb([r, g, b]);
 
-                    Particle { position, velocity: Vector3::zeros(), color }
+                    Particle { position, velocity: velocity, color }
                 },
             )
             .collect();
@@ -798,6 +814,7 @@ fn main() {
     // Determine the hide vector based on the special flag
     let hide = if args.special {
         vec![false, false, false]
+        //vec![true, true, true]
     } else {
         let random_val = byte_stream.gen_range(0.0, 1.0);
         if random_val < 1.0 / 3.0 {
