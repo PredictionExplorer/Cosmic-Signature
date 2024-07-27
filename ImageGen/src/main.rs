@@ -344,6 +344,12 @@ impl ParticleSystem {
         const WIND_STRENGTH: f64 = 0.2; // Adjust this to control the strength of the effect
         const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
 
+        for body in bodies {
+            let accel_magnitude = body.acceleration.magnitude();
+            let particle_count = (accel_magnitude * 10.0) as usize; // Adjust multiplier as needed
+            self.emit_particles(body, 20); // Cap at 20 particles per frame
+        }
+
         self.particles.par_iter_mut().for_each(|particle| {
             let mut wind = Vector3::zeros();
 
@@ -364,6 +370,28 @@ impl ParticleSystem {
             particle.velocity *= 0.999; // Damping to prevent excessive speeds
             particle.position += particle.velocity * time_step;
         });
+    }
+
+    fn emit_particles(&mut self, body: &Body, count: usize) {
+        let mut rng = rand::thread_rng();
+        for _ in 0..count {
+            let offset = Vector3::new(
+                rng.gen_range(-0.05..0.05),
+                rng.gen_range(-0.05..0.05),
+                rng.gen_range(-0.05..0.05),
+            );
+            let position = body.position + offset;
+            let velocity = body.velocity * 0.1
+                + Vector3::new(
+                    rng.gen_range(-0.01..0.01),
+                    rng.gen_range(-0.01..0.01),
+                    rng.gen_range(-0.01..0.01),
+                );
+
+            let color = Rgb([0, 255, 200]); // Light pink color for emitted particles
+
+            self.particles.push(Particle { position, velocity, color });
+        }
     }
 
     fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
@@ -396,7 +424,7 @@ fn plot_positions(
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
     let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
-    let mut particle_system = ParticleSystem::new(1_000_000, bounds);
+    let mut particle_system = ParticleSystem::new(1_000, bounds);
     let camera = Camera {
         position: Point3::new(0.0, 0.0, -2.8),
         direction: Vector3::new(0.0, 0.0, 1.0),
