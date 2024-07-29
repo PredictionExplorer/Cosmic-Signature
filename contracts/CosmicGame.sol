@@ -147,8 +147,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		uint256 prizeTime,
 		string message
 	);
-	event DonationEvent(address indexed donor, uint256 amount);
-	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId);
+	event DonationEvent(address indexed donor, uint256 amount, uint256 round);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId, uint256 round);
 	event NFTDonationEvent(
 		address indexed donor,
 		IERC721 indexed nftAddress,

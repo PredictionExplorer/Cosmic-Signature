@@ -82,8 +82,8 @@ contract BusinessLogic is Context, Ownable {
 		uint256 prizeTime,
 		string message
 	);
-	event DonationEvent(address indexed donor, uint256 amount);
-	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId);
+	event DonationEvent(address indexed donor, uint256 amount, uint256 round);
+	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId, uint256 round);
 	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
 	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
 	event RaffleNFTWinnerEvent(
@@ -611,7 +611,7 @@ contract BusinessLogic is Context, Ownable {
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
-		emit DonationEvent(_msgSender(), msg.value);
+		emit DonationEvent(_msgSender(), msg.value, roundNum);
 	}
 
 	function donateWithInfo(string calldata _data) external payable {
@@ -626,6 +626,6 @@ contract BusinessLogic is Context, Ownable {
 			amount: msg.value,
 			data: _data
 		});
-		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId);
+		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
 	}
 }
