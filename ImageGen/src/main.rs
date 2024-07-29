@@ -11,16 +11,21 @@ use std::process::{Command, Stdio};
 use clap::Parser;
 use hex;
 use image::{DynamicImage, ImageBuffer, Rgb, Rgba};
-use imageproc::drawing::draw_filled_circle_mut;
 use nalgebra::{Point2, Point3, Vector3};
 use palette::{rgb::Rgb as PaletteRgb, FromColor, Hsv};
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha8Rng;
+use rand::Rng;
 use rand_distr::{Distribution, Normal};
 use rayon::prelude::*;
 use rustfft::{num_complex::Complex, FftPlanner};
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
+
+use ndarray::Array3;
+
+const GRID_RESOLUTION: (usize, usize, usize) = (50, 50, 50);
+const DIFFUSION_RATE: f64 = 0.01;
+const THERMAL_COEFFICIENT: f64 = 0.001;
+const AMBIENT_TEMP: f64 = 0.0;
 
 const PARTICLES_PER_FRAME: usize = 100;
 
@@ -283,6 +288,224 @@ impl Camera {
     }
 }
 
+struct FluidGrid {
+    velocity: Array3<Vector3<f64>>,
+    density: Array3<f64>,
+    temperature: Array3<f64>,
+}
+
+struct VolumetricGrid {
+    grid: Array3<f32>,
+    resolution: (usize, usize, usize),
+    bounds: (Vector3<f64>, Vector3<f64>),
+}
+
+impl FluidGrid {
+    fn new(resolution: (usize, usize, usize)) -> Self {
+        FluidGrid {
+            velocity: Array3::zeros(resolution),
+            density: Array3::zeros(resolution),
+            temperature: Array3::zeros(resolution),
+        }
+    }
+
+    fn advect(&mut self, dt: f64) {
+        // Simple Euler advection
+        let (nx, ny, nz) = self.velocity.dim();
+        let mut new_density = Array3::zeros((nx, ny, nz));
+        let mut new_temperature = Array3::zeros((nx, ny, nz));
+
+        for x in 0..nx {
+            for y in 0..ny {
+                for z in 0..nz {
+                    let pos = Vector3::new(x as f64, y as f64, z as f64);
+                    let vel = self.velocity[[x, y, z]];
+                    let new_pos = pos - vel * dt;
+
+                    // Clamp positions to grid bounds
+                    let nx = new_pos.x.clamp(0.0, (nx - 1) as f64);
+                    let ny = new_pos.y.clamp(0.0, (ny - 1) as f64);
+                    let nz = new_pos.z.clamp(0.0, (nz - 1) as f64);
+
+                    // Interpolate density and temperature
+                    new_density[[x, y, z]] = self.interpolate(&self.density, nx, ny, nz);
+                    new_temperature[[x, y, z]] = self.interpolate(&self.temperature, nx, ny, nz);
+                }
+            }
+        }
+
+        self.density = new_density;
+        self.temperature = new_temperature;
+    }
+
+    fn diffuse(&mut self, dt: f64) {
+        let rate = DIFFUSION_RATE * dt;
+        self.density = self.gauss_seidel(&self.density, rate);
+        self.temperature = self.gauss_seidel(&self.temperature, rate);
+    }
+
+    fn project(&mut self) {
+        // Simplified pressure projection
+        let (nx, ny, nz) = self.velocity.dim();
+        let mut div = Array3::zeros((nx, ny, nz));
+        let mut p = Array3::zeros((nx, ny, nz));
+
+        for x in 1..nx - 1 {
+            for y in 1..ny - 1 {
+                for z in 1..nz - 1 {
+                    div[[x, y, z]] = 0.5
+                        * (self.velocity[[x + 1, y, z]][0] - self.velocity[[x - 1, y, z]][0]
+                            + self.velocity[[x, y + 1, z]][1]
+                            - self.velocity[[x, y - 1, z]][1]
+                            + self.velocity[[x, y, z + 1]][2]
+                            - self.velocity[[x, y, z - 1]][2]);
+                }
+            }
+        }
+
+        // Solve for pressure
+        p = self.gauss_seidel(&div, 1.0);
+
+        // Apply pressure
+        for x in 1..nx - 1 {
+            for y in 1..ny - 1 {
+                for z in 1..nz - 1 {
+                    self.velocity[[x, y, z]] -= 0.5
+                        * Vector3::new(
+                            p[[x + 1, y, z]] - p[[x - 1, y, z]],
+                            p[[x, y + 1, z]] - p[[x, y - 1, z]],
+                            p[[x, y, z + 1]] - p[[x, y, z - 1]],
+                        );
+                }
+            }
+        }
+    }
+
+    fn interpolate(&self, grid: &Array3<f64>, x: f64, y: f64, z: f64) -> f64 {
+        let i0 = x.floor() as usize;
+        let i1 = i0 + 1;
+        let j0 = y.floor() as usize;
+        let j1 = j0 + 1;
+        let k0 = z.floor() as usize;
+        let k1 = k0 + 1;
+
+        let s1 = x - i0 as f64;
+        let s0 = 1.0 - s1;
+        let t1 = y - j0 as f64;
+        let t0 = 1.0 - t1;
+        let u1 = z - k0 as f64;
+        let u0 = 1.0 - u1;
+
+        let (nx, ny, nz) = grid.dim();
+        let i0 = i0.min(nx - 1);
+        let i1 = i1.min(nx - 1);
+        let j0 = j0.min(ny - 1);
+        let j1 = j1.min(ny - 1);
+        let k0 = k0.min(nz - 1);
+        let k1 = k1.min(nz - 1);
+
+        s0 * (t0 * (u0 * grid[[i0, j0, k0]] + u1 * grid[[i0, j0, k1]])
+            + t1 * (u0 * grid[[i0, j1, k0]] + u1 * grid[[i0, j1, k1]]))
+            + s1 * (t0 * (u0 * grid[[i1, j0, k0]] + u1 * grid[[i1, j0, k1]])
+                + t1 * (u0 * grid[[i1, j1, k0]] + u1 * grid[[i1, j1, k1]]))
+    }
+
+    fn gauss_seidel(&self, b: &Array3<f64>, alpha: f64) -> Array3<f64> {
+        let (nx, ny, nz) = b.dim();
+        let mut x = Array3::zeros((nx, ny, nz));
+        let beta = 1.0 / (1.0 + 6.0 * alpha);
+
+        for _ in 0..20 {
+            // Number of iterations
+            for i in 1..nx - 1 {
+                for j in 1..ny - 1 {
+                    for k in 1..nz - 1 {
+                        x[[i, j, k]] = (x[[i - 1, j, k]]
+                            + x[[i + 1, j, k]]
+                            + x[[i, j - 1, k]]
+                            + x[[i, j + 1, k]]
+                            + x[[i, j, k - 1]]
+                            + x[[i, j, k + 1]])
+                            * alpha
+                            + b[[i, j, k]] * beta;
+                    }
+                }
+            }
+        }
+
+        x
+    }
+}
+
+impl VolumetricGrid {
+    fn new(resolution: (usize, usize, usize), bounds: (Vector3<f64>, Vector3<f64>)) -> Self {
+        VolumetricGrid { grid: Array3::zeros(resolution), resolution, bounds }
+    }
+
+    fn add_particle(&mut self, position: &Point3<f64>, density: f32) {
+        let (min_bound, max_bound) = self.bounds;
+        let normalized_pos = (position.coords - min_bound).component_div(&(max_bound - min_bound));
+        let (x, y, z) = (
+            (normalized_pos[0] * self.resolution.0 as f64) as usize,
+            (normalized_pos[1] * self.resolution.1 as f64) as usize,
+            (normalized_pos[2] * self.resolution.2 as f64) as usize,
+        );
+        if x < self.resolution.0 && y < self.resolution.1 && z < self.resolution.2 {
+            self.grid[[x, y, z]] += density;
+        }
+    }
+
+    fn apply_3d_blur(&mut self, sigma: f32) {
+        // Simple 3D box blur as an approximation
+        let blur_radius = (sigma * 3.0) as usize;
+        let mut new_grid = self.grid.clone();
+
+        for x in 0..self.resolution.0 {
+            for y in 0..self.resolution.1 {
+                for z in 0..self.resolution.2 {
+                    let mut sum = 0.0;
+                    let mut count = 0;
+                    for dx in 0..=blur_radius * 2 {
+                        for dy in 0..=blur_radius * 2 {
+                            for dz in 0..=blur_radius * 2 {
+                                let nx = x.saturating_add(dx).saturating_sub(blur_radius);
+                                let ny = y.saturating_add(dy).saturating_sub(blur_radius);
+                                let nz = z.saturating_add(dz).saturating_sub(blur_radius);
+                                if nx < self.resolution.0
+                                    && ny < self.resolution.1
+                                    && nz < self.resolution.2
+                                {
+                                    sum += self.grid[[nx, ny, nz]];
+                                    count += 1;
+                                }
+                            }
+                        }
+                    }
+                    new_grid[[x, y, z]] = sum / count as f32;
+                }
+            }
+        }
+
+        self.grid = new_grid;
+    }
+
+    fn get_density(&self, position: &Point3<f64>) -> f32 {
+        let (min_bound, max_bound) = self.bounds;
+        let normalized_pos = (position.coords - min_bound).component_div(&(max_bound - min_bound));
+        let (x, y, z) = (
+            (normalized_pos[0] * self.resolution.0 as f64) as usize,
+            (normalized_pos[1] * self.resolution.1 as f64) as usize,
+            (normalized_pos[2] * self.resolution.2 as f64) as usize,
+        );
+        if x < self.resolution.0 && y < self.resolution.1 && z < self.resolution.2 {
+            self.grid[[x, y, z]]
+        } else {
+            0.0
+        }
+    }
+}
+
+#[derive(Clone)]
 struct Particle {
     position: Point3<f64>,
     velocity: Vector3<f64>,
@@ -297,6 +520,8 @@ struct ParticleSystem {
     particles: Vec<Particle>,
     color_walks: Vec<Vec<Rgba<u8>>>,
     emission_counts: [usize; 3],
+    fluid_grid: FluidGrid,
+    volumetric_grid: VolumetricGrid,
 }
 
 const MAX_INFLUENCE_DISTANCE: f64 = 1.0; // Adjust this value based on your simulation scale
@@ -319,65 +544,154 @@ impl ParticleSystem {
                 ),
                 color: Rgba([255, 255, 255, 255]),
                 lifetime: 0.0,
-                max_lifetime: rng.gen_range(50.0..300.0),
+                max_lifetime: rng.gen_range(100.0..8000.0),
                 size: rng.gen_range(1.0..3.0),
-                max_size: rng.gen_range(4.0..8.0),
+                max_size: rng.gen_range(10.0..100.0),
             })
             .collect();
 
-        ParticleSystem { particles, color_walks, emission_counts: [0; 3] }
+        let fluid_grid = FluidGrid::new(GRID_RESOLUTION);
+        let grid_bounds = (
+            Vector3::new(-bounds.0, -bounds.1, -bounds.2),
+            Vector3::new(bounds.0, bounds.1, bounds.2),
+        );
+        let volumetric_grid = VolumetricGrid::new(GRID_RESOLUTION, grid_bounds);
+
+        ParticleSystem {
+            particles,
+            color_walks,
+            emission_counts: [0; 3],
+            fluid_grid,
+            volumetric_grid,
+        }
     }
 
-    fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
-        const DRAG_COEFFICIENT: f64 = 0.01; // Reduced drag for more movement
+    fn update(&mut self, bodies: &[Body], time_step: f64, _bounds: (f64, f64, f64)) {
+        // Update fluid simulation
+        self.fluid_grid.advect(time_step);
+        self.fluid_grid.diffuse(time_step);
+        self.fluid_grid.project();
 
-        self.particles.retain_mut(|particle| {
-            particle.lifetime += time_step;
-            if particle.lifetime < particle.max_lifetime {
-                // Gradually increase size
-                particle.size = particle.size + (particle.max_size - particle.size) * 0.05;
+        // Clear and repopulate the volumetric grid
+        self.volumetric_grid = VolumetricGrid::new(GRID_RESOLUTION, self.volumetric_grid.bounds);
 
-                let mut wind = Vector3::zeros();
-                for body in bodies {
-                    let body_pos = body.position.coords;
-                    let to_particle = particle.position.coords - body_pos;
-                    let distance = to_particle.magnitude();
+        // Update particles
+        let mut particles_to_remove = Vec::new();
+        let mut updated_particles = Vec::new();
 
-                    if distance < MAX_INFLUENCE_DISTANCE {
-                        let influence = (1.0 - distance / MAX_INFLUENCE_DISTANCE).powf(2.0);
-                        wind += body.velocity * influence * WIND_STRENGTH;
-                    }
-                }
-
-                // Apply drag force
-                let drag = -particle.velocity * DRAG_COEFFICIENT;
-                particle.velocity += (wind + drag) * time_step;
-                particle.position += particle.velocity * time_step;
-
-                // Add some random movement
-                let mut rng = rand::thread_rng();
-                let vel = 0.0002;
-                particle.velocity += Vector3::new(
-                    rng.gen_range(-vel..vel),
-                    rng.gen_range(-vel..vel),
-                    rng.gen_range(-vel..vel),
-                );
-
-                true
-            } else {
-                false
+        for (i, particle) in self.particles.iter().enumerate() {
+            let mut updated_particle = particle.clone();
+            updated_particle.lifetime += time_step;
+            if updated_particle.lifetime >= updated_particle.max_lifetime {
+                particles_to_remove.push(i);
+                continue;
             }
-        });
+
+            // Gradually increase size
+            updated_particle.size =
+                updated_particle.size + (updated_particle.max_size - updated_particle.size) * 0.02;
+
+            let grid_pos = self.world_to_grid(&updated_particle.position);
+            let fluid_velocity = self.fluid_grid.velocity[grid_pos];
+
+            // Apply fluid velocity
+            updated_particle.velocity += (fluid_velocity - updated_particle.velocity) * time_step;
+
+            // Apply thermal effects
+            let local_temp = self.fluid_grid.temperature[grid_pos];
+            updated_particle.velocity +=
+                Vector3::new(0.0, (local_temp - AMBIENT_TEMP) * THERMAL_COEFFICIENT, 0.0);
+
+            // Update position
+            updated_particle.position += updated_particle.velocity * time_step;
+
+            // Add random movement for diffusion
+            let mut rng = rand::thread_rng();
+            let diffusion_strength = 0.0005;
+            updated_particle.velocity += Vector3::new(
+                rng.gen_range(-diffusion_strength..diffusion_strength),
+                rng.gen_range(-diffusion_strength..diffusion_strength),
+                rng.gen_range(-diffusion_strength..diffusion_strength),
+            );
+
+            // Add particle to volumetric grid
+            self.volumetric_grid.add_particle(&updated_particle.position, 1.0);
+
+            updated_particles.push(updated_particle);
+        }
+
+        // Remove dead particles
+        for &i in particles_to_remove.iter().rev() {
+            self.particles.swap_remove(i);
+        }
+
+        // Update particles with their new states
+        self.particles = updated_particles;
 
         // Emit new particles
         for (idx, body) in bodies.iter().enumerate() {
             self.emit_particles(body, PARTICLES_PER_FRAME, idx);
         }
+
+        // Apply 3D blur to volumetric grid
+        self.volumetric_grid.apply_3d_blur(1.5);
+
+        // Update fluid grid based on particles
+        self.update_fluid_grid();
+
+        // Conserve momentum
+        self.conserve_momentum();
+    }
+
+    fn world_to_grid(&self, position: &Point3<f64>) -> (usize, usize, usize) {
+        let (min_bound, max_bound) = self.volumetric_grid.bounds;
+        let normalized_pos = (position.coords - min_bound).component_div(&(max_bound - min_bound));
+        (
+            (normalized_pos[0] * self.volumetric_grid.resolution.0 as f64) as usize,
+            (normalized_pos[1] * self.volumetric_grid.resolution.1 as f64) as usize,
+            (normalized_pos[2] * self.volumetric_grid.resolution.2 as f64) as usize,
+        )
+    }
+
+    fn update_fluid_grid(&mut self) {
+        // Reset fluid grid
+        self.fluid_grid = FluidGrid::new(GRID_RESOLUTION);
+
+        // Update fluid grid based on particles
+        for particle in &self.particles {
+            let (x, y, z) = self.world_to_grid(&particle.position);
+            if x < GRID_RESOLUTION.0 && y < GRID_RESOLUTION.1 && z < GRID_RESOLUTION.2 {
+                self.fluid_grid.velocity[[x, y, z]] += particle.velocity;
+                self.fluid_grid.density[[x, y, z]] += 1.0;
+                self.fluid_grid.temperature[[x, y, z]] += 1.0; // Simplified temperature addition
+            }
+        }
+
+        // Normalize velocity and temperature
+        for x in 0..GRID_RESOLUTION.0 {
+            for y in 0..GRID_RESOLUTION.1 {
+                for z in 0..GRID_RESOLUTION.2 {
+                    if self.fluid_grid.density[[x, y, z]] > 0.0 {
+                        self.fluid_grid.velocity[[x, y, z]] /= self.fluid_grid.density[[x, y, z]];
+                        self.fluid_grid.temperature[[x, y, z]] /=
+                            self.fluid_grid.density[[x, y, z]];
+                    }
+                }
+            }
+        }
+    }
+
+    fn conserve_momentum(&mut self) {
+        let total_momentum: Vector3<f64> = self.particles.iter().map(|p| p.velocity).sum();
+        let average_velocity = total_momentum / self.particles.len() as f64;
+        for particle in &mut self.particles {
+            particle.velocity -= average_velocity;
+        }
     }
 
     fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
-        let normal = Normal::new(0.0, 0.03).unwrap(); // Reduced spread
+        let normal = Normal::new(0.0, 0.01).unwrap(); // Reduced spread
 
         for _ in 0..count {
             let offset = Vector3::new(
@@ -387,25 +701,24 @@ impl ParticleSystem {
             );
 
             let position = body.position + offset;
-            let vel = 0.0005;
+            let vel = 0.0001; // Reduced initial velocity
             let velocity = Vector3::new(
-                rng.gen_range(-vel..vel), // Reduced initial velocity
                 rng.gen_range(-vel..vel),
                 rng.gen_range(-vel..vel),
-            ) + body.velocity * 0.01; // Reduced influence of body velocity
+                rng.gen_range(-vel..vel),
+            ) + body.velocity * 0.005; // Reduced influence of body velocity
 
-            // Ensure we're using the color_walks correctly
             let color_index = self.emission_counts[body_idx] % self.color_walks[body_idx].len();
             let base_color = self.color_walks[body_idx][color_index];
             let color = Rgba([
                 base_color[0],
                 base_color[1],
                 base_color[2],
-                rng.gen_range(50..150), // Reduced initial alpha for softer appearance
+                rng.gen_range(20..100), // Reduced initial alpha for softer appearance
             ]);
 
-            let max_lifetime = rng.gen_range(5.0..4000.0);
-            let max_size = rng.gen_range(2.5..50.0);
+            let max_lifetime = rng.gen_range(100.0..8000.0);
+            let max_size = rng.gen_range(10.0..100.0);
 
             self.particles.push(Particle {
                 position,
@@ -428,27 +741,17 @@ impl ParticleSystem {
             *pixel = Rgba([0, 0, 0, 255]);
         }
 
-        let mut particles_with_distance: Vec<_> = self
-            .particles
-            .iter()
-            .map(|p| {
-                let distance = (Point3::from(p.position) - camera.position).magnitude();
-                (p, distance)
-            })
-            .collect();
-
-        particles_with_distance
-            .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-        for (particle, _) in particles_with_distance {
+        for particle in &self.particles {
             let screen_pos = camera.world_to_screen(particle.position, width, height);
             let x = screen_pos.x.round() as i32;
             let y = screen_pos.y.round() as i32;
 
             if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-                self.draw_smoke_particle(&mut img, x, y, particle);
+                let density = self.volumetric_grid.get_density(&particle.position);
+                self.draw_smoke_particle(&mut img, x, y, particle, density);
             }
         }
+
         img
     }
 
@@ -458,6 +761,7 @@ impl ParticleSystem {
         x: i32,
         y: i32,
         particle: &Particle,
+        density: f32,
     ) {
         let radius = particle.size as i32;
         let fade_factor = (1.0 - (particle.lifetime / particle.max_lifetime)).powf(0.5);
@@ -469,7 +773,9 @@ impl ParticleSystem {
                     let px = x + dx;
                     let py = y + dy;
                     if px >= 0 && px < img.width() as i32 && py >= 0 && py < img.height() as i32 {
-                        let opacity = fade_factor * (1.0 - distance / particle.size).powf(0.5);
+                        let opacity = fade_factor
+                            * (1.0 - (distance / particle.size).powf(1.5)).powf(0.5)
+                            * density as f64;
                         let current_color = img.get_pixel(px as u32, py as u32);
                         let new_color = self.blend_colors(current_color, &particle.color, opacity);
                         img.put_pixel(px as u32, py as u32, new_color);
@@ -606,8 +912,8 @@ fn normalize_position(
     pos: Vector3<f64>,
     min_pos: &Vector3<f64>,
     pos_range: &Vector3<f64>,
-) -> Point3<f64> {
-    Point3::from((pos - min_pos).component_div(pos_range) * 2.0 - Vector3::new(1.0, 1.0, 1.0))
+) -> Vector3<f64> {
+    (pos - min_pos).component_div(pos_range) * 2.0 - Vector3::new(1.0, 1.0, 1.0)
 }
 
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
