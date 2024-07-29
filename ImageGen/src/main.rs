@@ -22,7 +22,7 @@ use rustfft::{num_complex::Complex, FftPlanner};
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
 
-const PARTICLES_PER_FRAME: usize = 400;
+const PARTICLES_PER_FRAME: usize = 1000;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -319,7 +319,7 @@ impl ParticleSystem {
                 ),
                 color: Rgba([255, 255, 255, 255]),
                 lifetime: 0.0,
-                max_lifetime: rng.gen_range(50.0..1000.0),
+                max_lifetime: rng.gen_range(50.0..2000.0),
                 size: rng.gen_range(2.0..5.0),
                 max_size: rng.gen_range(10.0..20.0),
             })
@@ -500,7 +500,7 @@ fn plot_positions(
 ) -> Vec<ImageBuffer<Rgba<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
     let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
-    let mut particle_system = ParticleSystem::new(100, bounds, colors.to_vec());
+    let mut particle_system = ParticleSystem::new(0, bounds, colors.to_vec());
     let camera = Camera {
         position: Point3::new(0.0, 0.0, -2.8),
         direction: Vector3::new(0.0, 0.0, 1.0),
