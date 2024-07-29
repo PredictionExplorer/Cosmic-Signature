@@ -7,10 +7,12 @@ if test -z "$CG_ADDR" ; then
 	echo set CG_ADDR variable
 	exit 1
 fi
+# ToDo-0 Isn't this variable name supposed to be prefixed with a $ ?
 if test -z "CG_PRIVKEY" ;  then
 	echo set CG_PRIVKEY variable
 	exit 1
 fi
+# ToDo-0 Isn't this variable name supposed to be prefixed with a $ ?
 if test -z "CG_NETWORK" ; then
 	echo set CG_NETWORK variable
 	exit 1

@@ -472,7 +472,7 @@ describe("Cosmic Set1", function () {
 		let sysMode = await cosmicGame.systemMode();
 		expect(sysMode.toString()).to.equal("2");
 
-		var testAcct;
+		let testAcct;
 		testAcct = ethers.Wallet.createRandom();
 		await cosmicGame.connect(owner).setCharity(testAcct.address);
 		expect(await cosmicGame.charity()).to.equal(testAcct.address);
@@ -588,7 +588,7 @@ describe("Cosmic Set1", function () {
 
 		let sysMode = await cosmicGame.systemMode();
 		expect(sysMode.toString()).to.equal("0");
-		var testAcct;
+		let testAcct;
 		testAcct = ethers.Wallet.createRandom();
 
 		let revertStr = "System must be in MODE_MAINTENANCE";
