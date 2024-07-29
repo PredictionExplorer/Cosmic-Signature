@@ -22,12 +22,15 @@ use statrs::statistics::Statistics;
 
 use ndarray::Array3;
 
+use backtrace::Backtrace;
+use std::panic;
+
 const GRID_RESOLUTION: (usize, usize, usize) = (50, 50, 50);
 const DIFFUSION_RATE: f64 = 0.01;
 const THERMAL_COEFFICIENT: f64 = 0.001;
 const AMBIENT_TEMP: f64 = 0.0;
 
-const PARTICLES_PER_FRAME: usize = 100;
+const PARTICLES_PER_FRAME: usize = 10;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -166,25 +169,18 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
     let mut hue = rng.gen_range(0.0, 360.0);
     for _ in 0..len {
         if rng.next_byte() & 1 == 0 {
-            hue += 0.1;
+            hue += 0.5;
         } else {
-            hue -= 0.1;
+            hue -= 0.5;
         }
-        if hue < 0.0 {
-            hue += 360.0;
-        }
-        if hue > 360.0 {
-            hue -= 360.0;
-        }
-        let hsv = Hsv::new(hue, 1.0, 0.5);
-        let my_new_rgb = PaletteRgb::from_color(hsv);
-
-        let r = (my_new_rgb.red * 255.0) as u8;
-        let g = (my_new_rgb.green * 255.0) as u8;
-        let b = (my_new_rgb.blue * 255.0) as u8;
-
-        let line_color: Rgb<u8> = Rgb([r, g, b]);
-        colors.push(line_color);
+        hue = hue.rem_euclid(360.0);
+        let hsv = Hsv::new(hue, 0.7, 0.5); // Reduced saturation
+        let rgb = PaletteRgb::from_color(hsv);
+        colors.push(Rgb([
+            (rgb.red * 255.0) as u8,
+            (rgb.green * 255.0) as u8,
+            (rgb.blue * 255.0) as u8,
+        ]));
     }
     colors
 }
@@ -267,16 +263,17 @@ struct Camera {
 impl Camera {
     fn world_to_screen(&self, world_pos: Point3<f64>, width: u32, height: u32) -> Point2<f64> {
         let to_camera = world_pos - self.position;
-        let right = self.direction.cross(&self.up).normalize();
-        let up = right.cross(&self.direction);
-
         let forward = to_camera.dot(&self.direction);
-        let horizontal = to_camera.dot(&right);
-        let vertical = to_camera.dot(&up);
 
         if forward <= 0.0 {
             return Point2::new(-1.0, -1.0); // Behind the camera
         }
+
+        let right = self.direction.cross(&self.up).normalize();
+        let up = right.cross(&self.direction);
+
+        let horizontal = to_camera.dot(&right);
+        let vertical = to_camera.dot(&up);
 
         let aspect_ratio = width as f64 / height as f64;
         let tan_fov = (self.fov / 2.0).tan();
@@ -348,7 +345,6 @@ impl FluidGrid {
         // Simplified pressure projection
         let (nx, ny, nz) = self.velocity.dim();
         let mut div = Array3::zeros((nx, ny, nz));
-        let mut p = Array3::zeros((nx, ny, nz));
 
         for x in 1..nx - 1 {
             for y in 1..ny - 1 {
@@ -364,7 +360,7 @@ impl FluidGrid {
         }
 
         // Solve for pressure
-        p = self.gauss_seidel(&div, 1.0);
+        let p = self.gauss_seidel(&div, 1.0);
 
         // Apply pressure
         for x in 1..nx - 1 {
@@ -566,7 +562,7 @@ impl ParticleSystem {
         }
     }
 
-    fn update(&mut self, bodies: &[Body], time_step: f64, _bounds: (f64, f64, f64)) {
+    fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
         // Update fluid simulation
         self.fluid_grid.advect(time_step);
         self.fluid_grid.diffuse(time_step);
@@ -576,38 +572,51 @@ impl ParticleSystem {
         self.volumetric_grid = VolumetricGrid::new(GRID_RESOLUTION, self.volumetric_grid.bounds);
 
         // Update particles
-        let mut particles_to_remove = Vec::new();
         let mut updated_particles = Vec::new();
 
-        for (i, particle) in self.particles.iter().enumerate() {
+        for particle in &self.particles {
             let mut updated_particle = particle.clone();
             updated_particle.lifetime += time_step;
             if updated_particle.lifetime >= updated_particle.max_lifetime {
-                particles_to_remove.push(i);
                 continue;
             }
 
             // Gradually increase size
-            updated_particle.size =
-                updated_particle.size + (updated_particle.max_size - updated_particle.size) * 0.02;
+            updated_particle.size += (updated_particle.max_size - updated_particle.size) * 0.01;
 
             let grid_pos = self.world_to_grid(&updated_particle.position);
             let fluid_velocity = self.fluid_grid.velocity[grid_pos];
 
             // Apply fluid velocity
-            updated_particle.velocity += (fluid_velocity - updated_particle.velocity) * time_step;
+            updated_particle.velocity +=
+                (fluid_velocity - updated_particle.velocity) * time_step * 0.1;
 
             // Apply thermal effects
             let local_temp = self.fluid_grid.temperature[grid_pos];
             updated_particle.velocity +=
-                Vector3::new(0.0, (local_temp - AMBIENT_TEMP) * THERMAL_COEFFICIENT, 0.0);
+                Vector3::new(0.0, (local_temp - AMBIENT_TEMP) * THERMAL_COEFFICIENT, 0.0)
+                    * time_step;
+
+            // Add slight downward force (gravity)
+            updated_particle.velocity += Vector3::new(0.0, -0.01, 0.0) * time_step;
 
             // Update position
             updated_particle.position += updated_particle.velocity * time_step;
 
+            // Contain particles within bounds
+            for i in 0..3 {
+                if updated_particle.position[i] < -bounds.0
+                    || updated_particle.position[i] > bounds.0
+                {
+                    updated_particle.velocity[i] *= -0.5; // Bounce off walls
+                    updated_particle.position[i] =
+                        updated_particle.position[i].clamp(-bounds.0, bounds.0);
+                }
+            }
+
             // Add random movement for diffusion
             let mut rng = rand::thread_rng();
-            let diffusion_strength = 0.0005;
+            let diffusion_strength = 0.0001;
             updated_particle.velocity += Vector3::new(
                 rng.gen_range(-diffusion_strength..diffusion_strength),
                 rng.gen_range(-diffusion_strength..diffusion_strength),
@@ -618,11 +627,6 @@ impl ParticleSystem {
             self.volumetric_grid.add_particle(&updated_particle.position, 1.0);
 
             updated_particles.push(updated_particle);
-        }
-
-        // Remove dead particles
-        for &i in particles_to_remove.iter().rev() {
-            self.particles.swap_remove(i);
         }
 
         // Update particles with their new states
@@ -647,9 +651,9 @@ impl ParticleSystem {
         let (min_bound, max_bound) = self.volumetric_grid.bounds;
         let normalized_pos = (position.coords - min_bound).component_div(&(max_bound - min_bound));
         (
-            (normalized_pos[0] * self.volumetric_grid.resolution.0 as f64) as usize,
-            (normalized_pos[1] * self.volumetric_grid.resolution.1 as f64) as usize,
-            (normalized_pos[2] * self.volumetric_grid.resolution.2 as f64) as usize,
+            (normalized_pos[0].clamp(0.0, 1.0) * (GRID_RESOLUTION.0 - 1) as f64) as usize,
+            (normalized_pos[1].clamp(0.0, 1.0) * (GRID_RESOLUTION.1 - 1) as f64) as usize,
+            (normalized_pos[2].clamp(0.0, 1.0) * (GRID_RESOLUTION.2 - 1) as f64) as usize,
         )
     }
 
@@ -691,7 +695,7 @@ impl ParticleSystem {
 
     fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
-        let normal = Normal::new(0.0, 0.01).unwrap(); // Reduced spread
+        let normal = Normal::new(0.0, 0.1).unwrap();
 
         for _ in 0..count {
             let offset = Vector3::new(
@@ -701,24 +705,20 @@ impl ParticleSystem {
             );
 
             let position = body.position + offset;
-            let vel = 0.0001; // Reduced initial velocity
+            let vel = 0.01;
             let velocity = Vector3::new(
                 rng.gen_range(-vel..vel),
                 rng.gen_range(-vel..vel),
                 rng.gen_range(-vel..vel),
-            ) + body.velocity * 0.005; // Reduced influence of body velocity
+            ) + body.velocity * 0.1;
 
             let color_index = self.emission_counts[body_idx] % self.color_walks[body_idx].len();
             let base_color = self.color_walks[body_idx][color_index];
-            let color = Rgba([
-                base_color[0],
-                base_color[1],
-                base_color[2],
-                rng.gen_range(20..100), // Reduced initial alpha for softer appearance
-            ]);
+            let color =
+                Rgba([base_color[0], base_color[1], base_color[2], rng.gen_range(100..200)]);
 
-            let max_lifetime = rng.gen_range(100.0..8000.0);
-            let max_size = rng.gen_range(10.0..100.0);
+            let max_lifetime = rng.gen_range(1.0..5.0);
+            let max_size = rng.gen_range(5.0..20.0);
 
             self.particles.push(Particle {
                 position,
@@ -726,21 +726,32 @@ impl ParticleSystem {
                 color,
                 lifetime: 0.0,
                 max_lifetime,
-                size: max_size * 0.1, // Start with smaller size
+                size: max_size * 0.2,
                 max_size,
             });
         }
         self.emission_counts[body_idx] += count;
+
+        // Debug: Print emitted particle count
+        println!("Emitted {} particles for body {}", count, body_idx);
     }
 
     fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
-        // Fill the image with a black background
+        // Fill the image with a dark gray background
         for pixel in img.pixels_mut() {
-            *pixel = Rgba([0, 0, 0, 255]);
+            *pixel = Rgba([20, 20, 20, 255]);
         }
 
+        // Debug: Draw a white rectangle in the center
+        for y in height / 4..3 * height / 4 {
+            for x in width / 4..3 * width / 4 {
+                img.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+            }
+        }
+
+        // Render particles
         for particle in &self.particles {
             let screen_pos = camera.world_to_screen(particle.position, width, height);
             let x = screen_pos.x.round() as i32;
@@ -751,6 +762,9 @@ impl ParticleSystem {
                 self.draw_smoke_particle(&mut img, x, y, particle, density);
             }
         }
+
+        // Debug: Print number of particles
+        println!("Number of particles: {}", self.particles.len());
 
         img
     }
@@ -763,18 +777,18 @@ impl ParticleSystem {
         particle: &Particle,
         density: f32,
     ) {
-        let radius = particle.size as i32;
+        let radius = (particle.size * 5.0) as i32;
         let fade_factor = (1.0 - (particle.lifetime / particle.max_lifetime)).powf(0.5);
 
         for dy in -radius..=radius {
             for dx in -radius..=radius {
                 let distance = ((dx * dx + dy * dy) as f64).sqrt();
-                if distance <= particle.size {
+                if distance <= radius as f64 {
                     let px = x + dx;
                     let py = y + dy;
                     if px >= 0 && px < img.width() as i32 && py >= 0 && py < img.height() as i32 {
                         let opacity = fade_factor
-                            * (1.0 - (distance / particle.size).powf(1.5)).powf(0.5)
+                            * (1.0 - distance / radius as f64).powf(2.0)
                             * density as f64;
                         let current_color = img.get_pixel(px as u32, py as u32);
                         let new_color = self.blend_colors(current_color, &particle.color, opacity);
@@ -807,10 +821,10 @@ fn plot_positions(
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgba<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
-    let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
+    let bounds = (5.0, 5.0, 5.0);
     let mut particle_system = ParticleSystem::new(0, bounds, colors.to_vec());
     let camera = Camera {
-        position: Point3::new(0.0, 0.0, -2.8),
+        position: Point3::new(0.0, 0.0, -5.0), // Moved further back
         direction: Vector3::new(0.0, 0.0, 1.0),
         up: Vector3::new(0.0, 1.0, 0.0),
         fov: 60.0f64.to_radians(),
@@ -855,35 +869,7 @@ fn plot_positions(
             .collect();
 
         particle_system.update(&bodies, frame_interval as f64 * TIME_PER_FRAME, bounds);
-        let mut img = particle_system.render(frame_size, frame_size, &camera);
-
-        // Draw bodies
-        /*
-        for (body_idx, pos) in positions.iter().enumerate() {
-            if hide[body_idx] {
-                continue;
-            }
-
-            let idx = (current_pos + 1).min(pos.len());
-            let start = current_pos.saturating_sub(snake_length);
-
-            for i in start..idx {
-                let normalized_pos = normalize_position(pos[i], &min_pos, &pos_range);
-                let screen_pos =
-                    camera.world_to_screen(Point3::from(normalized_pos), frame_size, frame_size);
-                let px = screen_pos.x as i32;
-                let py = screen_pos.y as i32;
-
-                if px >= 0 && px < frame_size as i32 && py >= 0 && py < frame_size as i32 {
-                    //draw_filled_circle_mut(&mut img, (px, py), 6, Rgb([255, 255, 255]));
-                }
-            }
-        }
-        */
-
-        if !avoid_effects {
-            img = imageproc::filter::gaussian_blur_f32(&img, 1.0);
-        }
+        let img = particle_system.render(frame_size, frame_size, &camera);
 
         frames.push(img);
 
@@ -913,7 +899,7 @@ fn normalize_position(
     min_pos: &Vector3<f64>,
     pos_range: &Vector3<f64>,
 ) -> Vector3<f64> {
-    (pos - min_pos).component_div(pos_range) * 2.0 - Vector3::new(1.0, 1.0, 1.0)
+    (pos - min_pos).component_div(pos_range)
 }
 
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
@@ -1021,7 +1007,7 @@ fn create_video_from_frames_in_memory(
         .arg("-r")
         .arg("60") // 60 fps
         .arg("-s") // Specify size
-        .arg("1600x1600") // Width x Height
+        .arg("300x300") // Width x Height
         .arg("-i")
         .arg("-")
         .arg("-c:v")
@@ -1226,6 +1212,11 @@ struct Args {
 }
 
 fn main() {
+    panic::set_hook(Box::new(|panic_info| {
+        let backtrace = Backtrace::new();
+        println!("Panic occurred: {:?}", panic_info);
+        println!("Backtrace: {:?}", backtrace);
+    }));
     let args = Args::parse();
     let string_seed = if args.seed.starts_with("0x") {
         args.seed[2..].to_string()
@@ -1269,7 +1260,7 @@ fn main() {
     println!("done simulating");
 
     let init_len: usize = 0;
-    const NUM_SECONDS: usize = 30;
+    const NUM_SECONDS: usize = 5;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
 
@@ -1278,7 +1269,7 @@ fn main() {
 
     let colors = get_3_colors(&mut byte_stream, total_particles, args.special);
 
-    const FRAME_SIZE: u32 = 800;
+    const FRAME_SIZE: u32 = 300;
 
     let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
@@ -1333,6 +1324,11 @@ fn main() {
             args.avoid_effects,
             false,
         );
+
+        // Debug: Save the first frame
+        if let Some(first_frame) = frames.first() {
+            first_frame.save("debug_first_frame.png").expect("Failed to save debug frame");
+        }
 
         create_video_from_frames_in_memory(&frames, &file_name, 60);
         println!("done creating video");

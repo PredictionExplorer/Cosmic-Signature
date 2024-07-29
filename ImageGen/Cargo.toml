@@ -22,9 +22,11 @@ noise = "0.8"
 rand = "0.8.5"
 rand_chacha = "0.3"
 rand_distr = "0.4.3"
-ndarray = "0.15.6"  # Add this line
+ndarray = "0.15.6"
+backtrace = "0.3"
 
 [profile.release]
 lto = true
 codegen-units = 1
 panic = "abort"
+debug = true

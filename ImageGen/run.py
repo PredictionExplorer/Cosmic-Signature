@@ -7,11 +7,27 @@ import sys
 
 def run_program(command):
     try:
-        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        return result.stdout.strip()
+        # Set environment variables
+        env = os.environ.copy()
+        env['RUST_BACKTRACE'] = '1'
+
+        # Run the command and capture output
+        result = subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env
+        )
+
+        # Combine stdout and stderr
+        output = result.stdout + result.stderr
+        return output.strip()
     except subprocess.CalledProcessError as e:
-        sys.stderr.write(f'Error: {e}\n')
-        return None
+        # Capture and return error output
+        error_output = e.stdout + e.stderr
+        return f'Error: {e}\n{error_output}'
 
 def main():
     print("starting")
@@ -90,8 +106,9 @@ def main():
             params = futures[future]
             try:
                 output = future.result()
-                print(params)
-                print(output)
+                print(f"Parameters: {params}")
+                print(f"Output:\n{output}")
+                print("-" * 80)  # Separator for readability
             except Exception as e:
                 sys.stderr.write(f'Error running program with parameters {params}: {e}\n')
 
