@@ -22,7 +22,7 @@ use rustfft::{num_complex::Complex, FftPlanner};
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
 
-const PARTICLES_PER_FRAME: usize = 1000;
+const PARTICLES_PER_FRAME: usize = 100;
 
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
@@ -319,9 +319,9 @@ impl ParticleSystem {
                 ),
                 color: Rgba([255, 255, 255, 255]),
                 lifetime: 0.0,
-                max_lifetime: rng.gen_range(50.0..2000.0),
-                size: rng.gen_range(2.0..5.0),
-                max_size: rng.gen_range(10.0..20.0),
+                max_lifetime: rng.gen_range(50.0..300.0),
+                size: rng.gen_range(1.0..3.0),
+                max_size: rng.gen_range(4.0..8.0),
             })
             .collect();
 
@@ -356,10 +356,11 @@ impl ParticleSystem {
 
                 // Add some random movement
                 let mut rng = rand::thread_rng();
+                let vel = 0.0002;
                 particle.velocity += Vector3::new(
-                    rng.gen_range(-0.0001..0.0001),
-                    rng.gen_range(-0.0001..0.0001),
-                    rng.gen_range(-0.0001..0.0001),
+                    rng.gen_range(-vel..vel),
+                    rng.gen_range(-vel..vel),
+                    rng.gen_range(-vel..vel),
                 );
 
                 true
@@ -376,7 +377,7 @@ impl ParticleSystem {
 
     fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
-        let normal = Normal::new(0.0, 0.02).unwrap(); // Reduced spread
+        let normal = Normal::new(0.0, 0.03).unwrap(); // Reduced spread
 
         for _ in 0..count {
             let offset = Vector3::new(
@@ -386,10 +387,11 @@ impl ParticleSystem {
             );
 
             let position = body.position + offset;
+            let vel = 0.0005;
             let velocity = Vector3::new(
-                rng.gen_range(-0.0001..0.0001), // Reduced initial velocity
-                rng.gen_range(-0.0001..0.0001),
-                rng.gen_range(-0.0001..0.0001),
+                rng.gen_range(-vel..vel), // Reduced initial velocity
+                rng.gen_range(-vel..vel),
+                rng.gen_range(-vel..vel),
             ) + body.velocity * 0.01; // Reduced influence of body velocity
 
             // Ensure we're using the color_walks correctly
@@ -403,7 +405,7 @@ impl ParticleSystem {
             ]);
 
             let max_lifetime = rng.gen_range(5.0..4000.0);
-            let max_size = rng.gen_range(1.5..2.5); // Smaller initial size
+            let max_size = rng.gen_range(2.5..50.0);
 
             self.particles.push(Particle {
                 position,
@@ -550,6 +552,7 @@ fn plot_positions(
         let mut img = particle_system.render(frame_size, frame_size, &camera);
 
         // Draw bodies
+        /*
         for (body_idx, pos) in positions.iter().enumerate() {
             if hide[body_idx] {
                 continue;
@@ -570,6 +573,7 @@ fn plot_positions(
                 }
             }
         }
+        */
 
         if !avoid_effects {
             img = imageproc::filter::gaussian_blur_f32(&img, 1.0);
@@ -968,7 +972,7 @@ fn main() {
 
     let colors = get_3_colors(&mut byte_stream, total_particles, args.special);
 
-    const FRAME_SIZE: u32 = 1200;
+    const FRAME_SIZE: u32 = 800;
 
     let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
