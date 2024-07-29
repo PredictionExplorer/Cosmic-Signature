@@ -10,7 +10,7 @@ use std::process::{Command, Stdio};
 // Third-party crates
 use clap::Parser;
 use hex;
-use image::{DynamicImage, ImageBuffer, Rgb};
+use image::{DynamicImage, ImageBuffer, Rgb, Rgba};
 use imageproc::drawing::draw_filled_circle_mut;
 use nalgebra::{Point2, Point3, Vector3};
 use palette::{rgb::Rgb as PaletteRgb, FromColor, Hsv};
@@ -184,16 +184,7 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
     colors
 }
 
-fn get_white_color_walk(len: usize) -> Vec<Rgb<u8>> {
-    let mut colors = Vec::new();
-    const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
-    for _ in 0..len {
-        colors.push(WHITE_COLOR);
-    }
-    colors
-}
-
-fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize, special: bool) -> Vec<Vec<Rgb<u8>>> {
+fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize, special: bool) -> Vec<Vec<Rgba<u8>>> {
     let mut colors = Vec::new();
     if special {
         let white_color = get_white_color_walk(len);
@@ -203,10 +194,14 @@ fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize, special: bool) -> Ve
     } else {
         for _ in 0..3 {
             let c = get_single_color_walk(rng, len);
-            colors.push(c);
+            colors.push(c.into_iter().map(|rgb| Rgba([rgb[0], rgb[1], rgb[2], 255])).collect());
         }
     }
     colors
+}
+
+fn get_white_color_walk(len: usize) -> Vec<Rgba<u8>> {
+    vec![Rgba([255, 255, 255, 255]); len]
 }
 
 fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
@@ -291,104 +286,99 @@ impl Camera {
 struct Particle {
     position: Point3<f64>,
     velocity: Vector3<f64>,
-    color: Rgb<u8>,
-    lifetime: f64, // Lifetime in seconds
+    color: Rgba<u8>,
+    lifetime: f64,
+    max_lifetime: f64,
+    size: f64,
+    max_size: f64,
 }
 
 struct ParticleSystem {
     particles: Vec<Particle>,
-    color_walks: Vec<Vec<Rgb<u8>>>,
+    color_walks: Vec<Vec<Rgba<u8>>>,
     emission_counts: [usize; 3],
 }
 
+const MAX_INFLUENCE_DISTANCE: f64 = 1.0; // Adjust this value based on your simulation scale
+const WIND_STRENGTH: f64 = 0.01; // Adjust this to control how much the bodies affect particle movement
+
 impl ParticleSystem {
-    fn new(num_particles: usize, bounds: (f64, f64, f64), color_walks: Vec<Vec<Rgb<u8>>>) -> Self {
-        let max_initial_velocity = 0.001;
-        let mut shared_rng = ChaCha8Rng::from_entropy();
-        let x_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
-        let y_velocity = shared_rng.gen_range(-max_initial_velocity..max_initial_velocity);
-        let x_velocity = 0.0;
-        let y_velocity = 0.0;
-
-        let particles: Vec<Particle> = (0..num_particles)
-            .into_par_iter()
-            .map_init(
-                || ChaCha8Rng::from_entropy(),
-                |rng, _| {
-                    let position = Point3::new(
-                        rng.gen_range(-bounds.0..bounds.0),
-                        rng.gen_range(-bounds.1..bounds.1),
-                        rng.gen_range(-bounds.2..bounds.2),
-                    );
-
-                    // Generate a random initial velocity
-                    let velocity = Vector3::new(
-                        x_velocity
-                            + rng
-                                .gen_range(-max_initial_velocity / 3.0..max_initial_velocity / 3.0),
-                        y_velocity
-                            + rng
-                                .gen_range(-max_initial_velocity / 3.0..max_initial_velocity / 3.0),
-                        0.0,
-                    );
-
-                    // Generate a random bright shade of purple
-                    let r = rng.gen_range(100..200); // Moderate to high red
-                    let b = rng.gen_range(150..255); // High blue
-                    let g = rng.gen_range(0..100); // Low green to keep it purple
-                    let color = Rgb([r, g, b]);
-                    let lifetime = rng.gen_range(0.0..2.0);
-
-                    Particle { position, velocity: velocity, color, lifetime }
-                },
-            )
+    fn new(num_particles: usize, bounds: (f64, f64, f64), color_walks: Vec<Vec<Rgba<u8>>>) -> Self {
+        let mut rng = rand::thread_rng();
+        let particles = (0..num_particles)
+            .map(|_| Particle {
+                position: Point3::new(
+                    rng.gen_range(-bounds.0..bounds.0),
+                    rng.gen_range(-bounds.1..bounds.1),
+                    rng.gen_range(-bounds.2..bounds.2),
+                ),
+                velocity: Vector3::new(
+                    rng.gen_range(-0.00015..0.00015),
+                    rng.gen_range(-0.00015..0.00015),
+                    rng.gen_range(-0.00015..0.00015),
+                ),
+                color: Rgba([255, 255, 255, 255]),
+                lifetime: 0.0,
+                max_lifetime: rng.gen_range(50.0..1000.0),
+                size: rng.gen_range(2.0..5.0),
+                max_size: rng.gen_range(10.0..20.0),
+            })
             .collect();
 
         ParticleSystem { particles, color_walks, emission_counts: [0; 3] }
     }
 
     fn update(&mut self, bodies: &[Body], time_step: f64, bounds: (f64, f64, f64)) {
+        const DRAG_COEFFICIENT: f64 = 0.01; // Reduced drag for more movement
+
         self.particles.retain_mut(|particle| {
             particle.lifetime += time_step;
-            particle.lifetime < 4000.0
-        });
+            if particle.lifetime < particle.max_lifetime {
+                // Gradually increase size
+                particle.size = particle.size + (particle.max_size - particle.size) * 0.05;
 
-        const WIND_STRENGTH: f64 = 0.005; // Adjust this to control the strength of the effect
-        const MAX_INFLUENCE_DISTANCE: f64 = 0.5; // Maximum distance at which a body affects particles
+                let mut wind = Vector3::zeros();
+                for body in bodies {
+                    let body_pos = body.position.coords;
+                    let to_particle = particle.position.coords - body_pos;
+                    let distance = to_particle.magnitude();
 
-        let mut i = 0;
-        for body in bodies {
-            self.emit_particles(body, PARTICLES_PER_FRAME, i); // Cap at 20 particles per frame
-            i += 1;
-        }
-
-        self.particles.par_iter_mut().for_each(|particle| {
-            let mut wind = Vector3::zeros();
-
-            // Calculate wind effect from each body
-            for body in bodies {
-                let body_pos = body.position.coords;
-                let to_particle = particle.position.coords - body_pos;
-                let distance = to_particle.magnitude();
-
-                if distance < MAX_INFLUENCE_DISTANCE {
-                    let influence = (1.0 - distance / MAX_INFLUENCE_DISTANCE).powf(2.0);
-                    wind += body.velocity * influence * WIND_STRENGTH;
+                    if distance < MAX_INFLUENCE_DISTANCE {
+                        let influence = (1.0 - distance / MAX_INFLUENCE_DISTANCE).powf(2.0);
+                        wind += body.velocity * influence * WIND_STRENGTH;
+                    }
                 }
-            }
 
-            // Update particle velocity and position
-            particle.velocity += wind * time_step;
-            particle.velocity *= 0.999; // Damping to prevent excessive speeds
-            particle.position += particle.velocity * time_step;
+                // Apply drag force
+                let drag = -particle.velocity * DRAG_COEFFICIENT;
+                particle.velocity += (wind + drag) * time_step;
+                particle.position += particle.velocity * time_step;
+
+                // Add some random movement
+                let mut rng = rand::thread_rng();
+                particle.velocity += Vector3::new(
+                    rng.gen_range(-0.0001..0.0001),
+                    rng.gen_range(-0.0001..0.0001),
+                    rng.gen_range(-0.0001..0.0001),
+                );
+
+                true
+            } else {
+                false
+            }
         });
+
+        // Emit new particles
+        for (idx, body) in bodies.iter().enumerate() {
+            self.emit_particles(body, PARTICLES_PER_FRAME, idx);
+        }
     }
 
     fn emit_particles(&mut self, body: &Body, count: usize, body_idx: usize) {
         let mut rng = rand::thread_rng();
-        let normal = Normal::new(0.0, 0.04).unwrap();
+        let normal = Normal::new(0.0, 0.02).unwrap(); // Reduced spread
 
-        for i in 0..count {
+        for _ in 0..count {
             let offset = Vector3::new(
                 normal.sample(&mut rng),
                 normal.sample(&mut rng),
@@ -397,26 +387,45 @@ impl ParticleSystem {
 
             let position = body.position + offset;
             let velocity = Vector3::new(
-                rng.gen_range(-0.00015..0.00015),
-                rng.gen_range(-0.00015..0.00015),
-                rng.gen_range(-0.00015..0.00015),
-            );
+                rng.gen_range(-0.0001..0.0001), // Reduced initial velocity
+                rng.gen_range(-0.0001..0.0001),
+                rng.gen_range(-0.0001..0.0001),
+            ) + body.velocity * 0.01; // Reduced influence of body velocity
 
-            let color = self.color_walks[body_idx][self.emission_counts[body_idx] + i];
-            let lifetime = rng.gen_range(0.0..2.0);
-            self.particles.push(Particle { position, velocity, color, lifetime });
+            // Ensure we're using the color_walks correctly
+            let color_index = self.emission_counts[body_idx] % self.color_walks[body_idx].len();
+            let base_color = self.color_walks[body_idx][color_index];
+            let color = Rgba([
+                base_color[0],
+                base_color[1],
+                base_color[2],
+                rng.gen_range(50..150), // Reduced initial alpha for softer appearance
+            ]);
 
-            //let color = Rgb([0, 255, 200]); // Light pink color for emitted particles
+            let max_lifetime = rng.gen_range(5.0..4000.0);
+            let max_size = rng.gen_range(1.5..2.5); // Smaller initial size
 
-            //self.particles.push(Particle { position, velocity, color });
+            self.particles.push(Particle {
+                position,
+                velocity,
+                color,
+                lifetime: 0.0,
+                max_lifetime,
+                size: max_size * 0.1, // Start with smaller size
+                max_size,
+            });
         }
         self.emission_counts[body_idx] += count;
     }
 
-    fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-        let mut img = ImageBuffer::new(width, height);
+    fn render(&self, width: u32, height: u32, camera: &Camera) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+        let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
-        // Create a vector of particles with their distances from the camera
+        // Fill the image with a black background
+        for pixel in img.pixels_mut() {
+            *pixel = Rgba([0, 0, 0, 255]);
+        }
+
         let mut particles_with_distance: Vec<_> = self
             .particles
             .iter()
@@ -426,21 +435,55 @@ impl ParticleSystem {
             })
             .collect();
 
-        // Sort particles by distance, furthest first (descending order)
         particles_with_distance
             .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-        // Render sorted particles
         for (particle, _) in particles_with_distance {
             let screen_pos = camera.world_to_screen(particle.position, width, height);
             let x = screen_pos.x.round() as i32;
             let y = screen_pos.y.round() as i32;
 
             if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-                img.put_pixel(x as u32, y as u32, particle.color);
+                self.draw_smoke_particle(&mut img, x, y, particle);
             }
         }
         img
+    }
+
+    fn draw_smoke_particle(
+        &self,
+        img: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+        x: i32,
+        y: i32,
+        particle: &Particle,
+    ) {
+        let radius = particle.size as i32;
+        let fade_factor = (1.0 - (particle.lifetime / particle.max_lifetime)).powf(0.5);
+
+        for dy in -radius..=radius {
+            for dx in -radius..=radius {
+                let distance = ((dx * dx + dy * dy) as f64).sqrt();
+                if distance <= particle.size {
+                    let px = x + dx;
+                    let py = y + dy;
+                    if px >= 0 && px < img.width() as i32 && py >= 0 && py < img.height() as i32 {
+                        let opacity = fade_factor * (1.0 - distance / particle.size).powf(0.5);
+                        let current_color = img.get_pixel(px as u32, py as u32);
+                        let new_color = self.blend_colors(current_color, &particle.color, opacity);
+                        img.put_pixel(px as u32, py as u32, new_color);
+                    }
+                }
+            }
+        }
+    }
+
+    fn blend_colors(&self, bg: &Rgba<u8>, fg: &Rgba<u8>, opacity: f64) -> Rgba<u8> {
+        let alpha = (opacity * fg[3] as f64 / 255.0) as f32;
+        let r = (fg[0] as f32 * alpha + bg[0] as f32 * (1.0 - alpha)) as u8;
+        let g = (fg[1] as f32 * alpha + bg[1] as f32 * (1.0 - alpha)) as u8;
+        let b = (fg[2] as f32 * alpha + bg[2] as f32 * (1.0 - alpha)) as u8;
+        let a = (fg[3] as f32 * alpha + bg[3] as f32 * (1.0 - alpha)) as u8;
+        Rgba([r, g, b, a])
     }
 }
 
@@ -450,14 +493,14 @@ fn plot_positions(
     snake_lens: [f64; 3],
     _init_len: usize,
     hide: &Vec<bool>,
-    colors: &Vec<Vec<Rgb<u8>>>,
+    colors: &Vec<Vec<Rgba<u8>>>,
     frame_interval: usize,
     avoid_effects: bool,
     one_frame: bool,
-) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+) -> Vec<ImageBuffer<Rgba<u8>, Vec<u8>>> {
     let mut frames = Vec::new();
     let bounds = (3.0, 3.0, 1.0); // Adjust these values as needed
-    let mut particle_system = ParticleSystem::new(1_000, bounds, colors.to_vec());
+    let mut particle_system = ParticleSystem::new(100, bounds, colors.to_vec());
     let camera = Camera {
         position: Point3::new(0.0, 0.0, -2.8),
         direction: Vector3::new(0.0, 0.0, 1.0),
@@ -654,9 +697,9 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>
 }
 
 fn create_video_from_frames_in_memory(
-    frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
+    frames: &[ImageBuffer<Rgba<u8>, Vec<u8>>],
     output_file: &str,
-    frame_rate: u32,
+    _frame_rate: u32, // Note: We're not using this parameter, so I've prefixed it with an underscore
 ) {
     let mut command = Command::new("ffmpeg");
     command
@@ -692,7 +735,14 @@ fn create_video_from_frames_in_memory(
     let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed to open ffmpeg stdin");
 
     for frame in frames {
-        let dyn_image = DynamicImage::ImageRgb8(frame.clone());
+        // Convert Rgba to Rgb
+        let rgb_frame: ImageBuffer<Rgb<u8>, Vec<u8>> =
+            ImageBuffer::from_fn(frame.width(), frame.height(), |x, y| {
+                let rgba = frame.get_pixel(x, y);
+                Rgb([rgba[0], rgba[1], rgba[2]])
+            });
+
+        let dyn_image = DynamicImage::ImageRgb8(rgb_frame);
         dyn_image
             .write_to(ffmpeg_stdin, image::ImageOutputFormat::Png)
             .expect("Failed to write frame to ffmpeg stdin");
@@ -918,7 +968,7 @@ fn main() {
 
     let colors = get_3_colors(&mut byte_stream, total_particles, args.special);
 
-    const FRAME_SIZE: u32 = 1600;
+    const FRAME_SIZE: u32 = 1200;
 
     let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
