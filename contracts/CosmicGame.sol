@@ -122,7 +122,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
 	/// @notice For prizes Endurance Champion Prize and Stellar Spender Prize (given during claimPrize()) this is the coefficient that is used to multiply the amount of bids (in the round) to get the reward of ERC20 tokens paid to each winner
-	uint256 public erc20RewardMultiplier;
+	uint256 public erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 	// amount of CST tokens given as reward on every bid for marketing the project
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
 	// maximum length of message attached to bid() operation
