@@ -4,6 +4,20 @@
 // todo-0 Take a look at those.
 // todo-0 It appears that none of those packages are included in our "package.json" directly,
 // todo-0 so we probably can't eliminate those warnings.
+//
+// todo-0 Do we really need all the packages listed in "package.json"?
+//
+// todo-0 "ethers" is included by Hardhat, right?
+// todo-0 Hardhat might include a different version.
+// todo-0 So I would try removing it from "package.json".
+//
+// todo-0 Do we really need "@nomiclabs/hardhat-waffle" and "ethereum-waffle"?
+//
+// todo-0 In Feb 2024, I created a Hardhat project just to play with it.
+// todo-0 The Hardhat wizard included this: "@nomicfoundation/hardhat-toolbox": "^4.0.0"
+// todo-0 But in our project the version is "^1.0.2".
+// todo-0 Make sense to increase the version?
+
 require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-tracer");
