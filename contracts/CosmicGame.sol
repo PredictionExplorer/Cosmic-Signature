@@ -121,7 +121,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
-	// Coefficient that is used to increase the amount of tokens top bidders (longest bidder and most eth bidder) get
+	/// @notice For prizes Endurance Champion Prize and Stellar Spender Prize (given during claimPrize()) this is the coefficient that is used to multiply the amount of bids (in the round) to get the reward of ERC20 tokens paid to each winner
 	uint256 public erc20RewardMultiplier;
 	// amount of CST tokens given as reward on every bid for marketing the project
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
