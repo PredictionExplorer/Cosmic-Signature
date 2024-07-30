@@ -619,6 +619,7 @@ contract BusinessLogic is Context, Ownable {
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
+		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		uint256 recordId = donateWithInfoNumRecords;
 		donateWithInfoNumRecords += 1;
 		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
