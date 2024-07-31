@@ -452,8 +452,10 @@ contract BusinessLogic is Context, Ownable {
 			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
-		{
-			// Stellar Spender Prize
+
+		if (stellarSpender != address(0)) {
+			// Stellar Spender Prize. We need to check for address(0) because all the bids of the round can be made with CST,
+			// in that case, no one will get the prize
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, stellarSpender, roundNum)
 			);
