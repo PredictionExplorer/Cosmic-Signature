@@ -8,6 +8,7 @@ if test -z "$CG_ADDR" ; then
 	exit 1
 fi
 # ToDo-0 Isn't this variable name supposed to be prefixed with a $ ?
+yep, it misses '$' , this is a bug
 if test -z "CG_PRIVKEY" ;  then
 	echo set CG_PRIVKEY variable
 	exit 1

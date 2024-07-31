@@ -473,6 +473,7 @@ describe("Cosmic Set1", function () {
 		expect(sysMode.toString()).to.equal("2");
 
 		let testAcct;
+		this change is also ok
 		testAcct = ethers.Wallet.createRandom();
 		await cosmicGame.connect(owner).setCharity(testAcct.address);
 		expect(await cosmicGame.charity()).to.equal(testAcct.address);
