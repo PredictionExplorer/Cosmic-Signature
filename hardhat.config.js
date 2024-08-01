@@ -1,3 +1,4 @@
+// require("@nomicfoundation/hardhat-toolbox");
 require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-tracer");
@@ -6,16 +7,19 @@ require("@nomicfoundation/hardhat-chai-matchers");
 require("./tasks/cosmic-tasks.js");
 module.exports = {
 	solidity: {
-		// When changing this, revisit Comment-202408026 and Comment-202408025.
+		// todo-1 When changing this, revisit Comment-202408026 and Comment-202408025.
 		version: "0.8.26",
 
 		settings: {
-			// [Comment-202408026]
-			// By default, this is "paris".
-			// See https://hardhat.org/hardhat-runner/docs/config
-			// But we want this to be the latest with which Arbitrum is compatible.
-			// [/Comment-202408026]
-			evmVersion: "cancun",
+			// // [Comment-202408026]
+			// // By default, this is "paris".
+			// // See https://hardhat.org/hardhat-runner/docs/config
+			// // But we want this to be the latest with which Arbitrum is compatible.
+			// // Actually this change results in a half of tests failing, so let's leave it alone for now.
+			// // We probably need a newer version of Hardhat.
+			// // todo-1 To be revisited.
+			// // [/Comment-202408026]
+			// evmVersion: "cancun",
 
 			// Comment-202408025 applies.
 			optimizer: {
