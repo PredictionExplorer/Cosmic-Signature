@@ -5,8 +5,11 @@ coverage.json
 typechain
 typechain-types
 
-# Hardhat files
+# Hardhat files.
 cache
 artifacts
+
+# Comment-202408024 relates.
+abi
 
 config.sh

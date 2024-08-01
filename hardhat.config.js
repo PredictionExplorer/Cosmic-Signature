@@ -1,23 +1,3 @@
-// todo-0 I executed "npm install", which updated "package-lock.json".
-// todo-0 After merging this branch, you guys should execute "npm ci".
-// todo-0 It will generate a bunch of warnings for certain packages.
-// todo-0 Take a look at those.
-// todo-0 It appears that none of those packages are included in our "package.json" directly,
-// todo-0 so we probably can't eliminate those warnings.
-//
-// todo-0 Do we really need all the packages listed in "package.json"?
-//
-// todo-0 "ethers" is included by Hardhat, right?
-// todo-0 Hardhat might include a different version.
-// todo-0 So I would try removing it from "package.json".
-//
-// todo-0 Do we really need "@nomiclabs/hardhat-waffle" and "ethereum-waffle"?
-//
-// todo-0 In Feb 2024, I created a Hardhat project just to play with it.
-// todo-0 The Hardhat wizard included this: "@nomicfoundation/hardhat-toolbox": "^4.0.0"
-// todo-0 But in our project the version is "^1.0.2".
-// todo-0 Make sense to increase the version?
-
 require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-tracer");
@@ -25,18 +5,28 @@ require("@nomicfoundation/hardhat-chai-matchers");
 require("./tasks/cosmic-tasks.js");
 module.exports = {
 	solidity: {
+		// When changing this, revisit Comment-202408026 and Comment-202408025.
 		version: "0.8.26",
+
 		settings: {
-			// todo-0 This is "paris" by default, right?
-			// todo-0 There were "shanghai" and "cancun" afterwards.
-         // todo-0 I'd rather set this to the latest.
-         // todo-0 But it's unclear what vesion Arbitrum is compatible with.
-         // todo-0 Write a todo to revisit this.
-         evmVersion: "cancun",
+			// [Comment-202408026]
+			// By default, this is "paris".
+			// See https://hardhat.org/hardhat-runner/docs/config
+			// But we want this to be the latest with which Arbitrum is compatible.
+			// [/Comment-202408026]
+			evmVersion: "cancun",
+
+			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
+				details: {
+					yulDetails: {
+						optimizerSteps: "u",
+					},
+				},
 				runs: 20000,
 			},
+
 			outputSelection: {
 				"*": {
 					"*": [
@@ -44,12 +34,11 @@ module.exports = {
 					],
 				},
 			},
-			// ToDo-0 This feature is still considered unstable, right?
-			// ToDo-0 Are we OK with that?
-			// ToDo-0 Besides, Hardhat docs recommends also setting `optimizerSteps: "u"`.
-			// ToDo-0 Should we do that?
-			// ToDo-0 See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
-         // ToDo-0 Write a todo to revisit this.
+
+			// [Comment-202408025]
+			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
+			// [/Comment-202408025]
+			// This is expected to be the default for Solidity 0.8.27.
 			viaIR: true,
 		},
 	},
@@ -57,11 +46,11 @@ module.exports = {
 		timeout: 600000
 	},
 	abiExporter: {
-		// ToDo-0 Should we add this folder to ".gitignore"?
-		// ToDo-0 I see that files in it are of old versions.
-		// ToDo-0 Then also don't forget to delete it from the main GitHub repo.
-		// ToDo-1 Later make sure it hasn't resurrected there.
+		// [Comment-202408024]
+		// This folder exists in ".gitignore".
+		// [/Comment-202408024]
 		path: './abi',
+
 		clear: true,
 		flat: true,
 		only: ['CharityWalle', 'CosmicDao', 'CosmicGame', 'CosmicSignature', 'CosmicToken', 'RaffleWallet', 'RandomWalkNFT'],
@@ -94,4 +83,4 @@ module.exports = {
 	etherscan: {
 		apiKey: process.env.API_KEY,
 	}
-};
+}

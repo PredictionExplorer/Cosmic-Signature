@@ -530,7 +530,7 @@ describe("Staking CST tests", function () {
 		await brokenStaker.startBlockingDeposits();
 
 		await expect(brokenStaker.doClaimReward(0,0)).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
-    });
+	});
 	it("Changing charity address works", async function () {
 		const {
 			cosmicGame,
@@ -571,7 +571,7 @@ describe("Staking CST tests", function () {
 
 		const NewStakingWalletCST = await ethers.getContractFactory("TestStakingWalletCST");
 		let newStakingWalletCST = await NewStakingWalletCST.deploy(cosmicSignature.address,cosmicGame.address,charityWallet.address);
-        await newStakingWalletCST.deployed();
+		await newStakingWalletCST.deployed();
 		await cosmicGame.setStakingWalletCST(newStakingWalletCST.address);
 		let actTimeStamp = (await ethers.provider.getBlock("latest")).timestamp;
 		await cosmicGame.setActivationTime(actTimeStamp);
@@ -627,8 +627,8 @@ describe("Staking CST tests", function () {
 		}
 		
 		let contractBalance = await ethers.provider.getBalance(stakingWalletCST.address);
-        let m = await stakingWalletCST.modulo();
-        expect(m).to.equal(contractBalance);
+		let m = await stakingWalletCST.modulo();
+		expect(m).to.equal(contractBalance);
 	});
 	it("User stakes his 10 CosmicSignature tokens and gets all 10 tokens back after claim", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -783,11 +783,11 @@ describe("Staking CST tests", function () {
 
 		const NewStakingWalletCST = await ethers.getContractFactory("StakingWalletCST");
 		let newStakingWalletCST = await NewStakingWalletCST.deploy(newCosmicSignature.address, cosmicGame.address,charityWallet.address);
-        await newStakingWalletCST.deployed();
+		await newStakingWalletCST.deployed();
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
-        await newStakingWalletRWalk.deployed();
+		await newStakingWalletRWalk.deployed();
 
 		let numSigners = 20;
 		let numLoops = 20;

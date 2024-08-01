@@ -11,17 +11,17 @@ async function main() {
 	}
 	let deployerAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	const {
-        cosmicGame,
-        cosmicToken,
-        cosmicSignature,
-        charityWallet,
-        cosmicDAO,
-        raffleWallet,
-        randomWalkNFT,
-        stakingWalletCST,
+		cosmicGame,
+		cosmicToken,
+		cosmicSignature,
+		charityWallet,
+		cosmicDAO,
+		raffleWallet,
+		randomWalkNFT,
+		stakingWalletCST,
 		stakingWalletRWalk,
-        marketingWallet,
-        bLogic,
+		marketingWallet,
+		bLogic,
 	} =
 		await basicDeploymentAdvanced("SelfdestructibleCosmicGame",deployerAcct, "", 0, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
 	console.log("CosmicGame address:", cosmicGame.address);

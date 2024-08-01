@@ -67,20 +67,20 @@ describe("Events2", function () {
 		await cosmicGame.connect(addr1).claimPrize();
 
 		// we need to stake tokens to have holder owners to earn raffle tokens
-        let ts = await cosmicSignature.totalSupply();
-        for (let i = 0; i<ts.toNumber(); i++) {
-            let ownr = await cosmicSignature.ownerOf(i)
-            let owner_signer = cosmicGame.provider.getSigner(ownr);
-            await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWalletCST.address, true);
-            await stakingWalletCST.connect(owner_signer).stake(i);
-        }
-        ts = await randomWalkNFT.totalSupply();
-        for (let i = 0; i<ts.toNumber(); i++) {
-            let ownr = await randomWalkNFT.ownerOf(i)
-            let owner_signer = randomWalkNFT.provider.getSigner(ownr);
-            await randomWalkNFT.connect(owner_signer).setApprovalForAll(stakingWalletRWalk.address, true);
-			await stakingWalletRWalk.connect(owner_signer).stake(i);
-        }
+		let ts = await cosmicSignature.totalSupply();
+		for (let i = 0; i<ts.toNumber(); i++) {
+			let ownr = await cosmicSignature.ownerOf(i)
+			let owner_signer = cosmicGame.provider.getSigner(ownr);
+			await cosmicSignature.connect(owner_signer).setApprovalForAll(stakingWalletCST.address, true);
+			await stakingWalletCST.connect(owner_signer).stake(i);
+		}
+		ts = await randomWalkNFT.totalSupply();
+		for (let i = 0; i<ts.toNumber(); i++) {
+			let ownr = await randomWalkNFT.ownerOf(i)
+			let owner_signer = randomWalkNFT.provider.getSigner(ownr);
+			await randomWalkNFT.connect(owner_signer).setApprovalForAll(stakingWalletRWalk.address, true);
+		await stakingWalletRWalk.connect(owner_signer).stake(i);
+		}
 
 
 		// test begins here
