@@ -286,4 +286,32 @@ contract StakingWalletCST is Ownable {
 		stakedTokens.pop();
 		lastActionIds[tokenId] = -1;
 	}
+	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) public {
+		// executes 2 actions in a single pass
+		//      1:      unstakes token using action [stakeActionId]
+		//      2:      claims reward corresponding to the deposit [ETHDepositId]
+		unstake(stakeActionId);
+		claimReward(stakeActionId, ETHDepositId);
+	} 
+	function unstakeClaimMany(
+		uint256[] memory unstake_actions,
+		uint256[] memory claim_actions,
+		uint256[] memory claim_deposits
+	) external {
+		for (uint256 i = 0; i < unstake_actions.length; i++) {
+			unstake(unstake_actions[i]);
+		}
+		require(
+			claim_actions.length == claim_deposits.length,
+			CosmicGameErrors.IncorrectArrayArguments(
+				"Claim array arguments must be of the same length.",
+				claim_actions.length,
+				claim_deposits.length
+			)
+		);
+		for (uint256 i = 0; i < claim_actions.length; i++) {
+			claimReward(claim_actions[i], claim_deposits[i]);
+		}
+	} 
+
 }
