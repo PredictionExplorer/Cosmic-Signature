@@ -302,7 +302,7 @@ describe("Cosmic Set2", function () {
 		let m = await stakingWalletCST.modulo();
 		expect(m).to.equal(contractBalance);
 		
-        // check that every staker has its own tokens back
+		// check that every staker has its own tokens back
 		for (user in tokensByStaker) {
 			let userTokens = tokensByStaker[user];
 			for (let i = 0; i < userTokens.length; i++ ) {
@@ -535,9 +535,9 @@ describe("Cosmic Set2", function () {
 		let bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
 		let prizeTime = await cosmicGame.timeUntilPrize();
-        await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
-        await ethers.provider.send("evm_mine");
-        await cosmicGame.connect(addr1).claimPrize();	// we need to claim prize because we want updated bidPrice (larger value)
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await cosmicGame.connect(addr1).claimPrize();	// we need to claim prize because we want updated bidPrice (larger value)
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });

@@ -147,7 +147,7 @@ describe("Staking RandomWalk tests", function () {
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("TestStakingWalletRWalk");
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
-        await newStakingWalletRWalk.deployed();
+		await newStakingWalletRWalk.deployed();
 		await cosmicGame.setStakingWalletRWalk(newStakingWalletRWalk.address);
 		await cosmicGame.setRuntimeMode();
 		let sampleTokenId = 33;
@@ -276,7 +276,7 @@ describe("Staking RandomWalk tests", function () {
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(randomWalkNFT.address,cosmicGame.address);
-        await newStakingWalletRWalk.deployed();
+		await newStakingWalletRWalk.deployed();
 
 		let numSigners = 20;
 		let numLoops = 20;
