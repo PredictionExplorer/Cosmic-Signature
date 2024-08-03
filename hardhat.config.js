@@ -54,7 +54,7 @@ module.exports = {
 	},
 	abiExporter: {
 		// [Comment-202408024]
-		// This folder exists in ".gitignore".
+		// This folder name exists in multiple places.
 		// [/Comment-202408024]
 		path: './abi',
 
