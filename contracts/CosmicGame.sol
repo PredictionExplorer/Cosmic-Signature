@@ -71,6 +71,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// stores the number of participants made a bid (same as counter for total number of bids), one value per round (in map)
 	mapping(uint256 => uint256) public numRaffleParticipants; // roundNum => totalBids
 	// keeps track of last bid with CST tokens, used to calculate current CST bid price
+	// todo-0 Using `activationTime` before initing it?
 	uint256 public lastCSTBidTime = activationTime;
 	// stores the duration of Dutch auction, for bidding with CST tokens
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
@@ -117,8 +118,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public donateWithInfoNumRecords = 0;
 	// stores the info records about each donation (only those that want to have additional info)
 	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
-	// stores the timestamp for when project starts operating
-	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
+	// @notice The time when the project is scheduled to start operating.
+	// The initial value equals December 13 2023 19:00 New York Time.
+	// @dev
+	// [Comment-202408046]
+	// It could be possible to eliminate this and use `systemMode` in relevant logic. It would let us to save some gas.
+	// But it's probably OK as is.
+	// [/Comment-202408046]
+	uint256 public activationTime = 1702512000;
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
 	/// @notice For prizes Endurance Champion Prize and Stellar Spender Prize (given during claimPrize()) this is the coefficient that is used to multiply the amount of bids (in the round) to get the reward of ERC20 tokens paid to each winner
@@ -127,7 +134,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
 	// maximum length of message attached to bid() operation
 	uint256 public maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
-	// stores current system mode (Runtime , PrepareMaintenance , Maintenance)
+	// @notice The current system mode. Equals one of the `CosmicGameConstants.MODE_...` constants.
+	// @dev Comment-202408046 relates.
 	uint256 public systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 	// END OF system variables
 

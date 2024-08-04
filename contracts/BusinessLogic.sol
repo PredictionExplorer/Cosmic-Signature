@@ -174,6 +174,7 @@ contract BusinessLogic is Context, Ownable {
 				)
 			);
 			require(
+				// todo-0 Instead of calling `_msgSender`, should we simply write `msg.sender`?
 				game.randomWalk().ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
@@ -304,6 +305,7 @@ contract BusinessLogic is Context, Ownable {
 		lastBidType = bidType;
 
 		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
+		// todo-0 We have already assigned this a few lines above.
 		lastBidder = msg.sender;
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
@@ -363,6 +365,7 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	function _pushBackPrizeTime() internal {
+		// todo-0 Make sense to move this comment to near `CosmicGame.nanoSecondsExtra`.
 		// nanosecondsExtra is an additional coefficient to make the time interval larger over months of playing the game
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;

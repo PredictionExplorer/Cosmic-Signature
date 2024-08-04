@@ -91,6 +91,7 @@ contract StakingWalletCST is Ownable {
 			emit CharityDepositEvent(msg.value, charity);
 			return;
 		}
+		// todo-0 Here and elsewhere, the use of `block.timestamp` could be a bad option. Consider using a counter.
 		ETHDeposits[numETHDeposits].depositTime = block.timestamp;
 		ETHDeposits[numETHDeposits].depositAmount = msg.value;
 		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
