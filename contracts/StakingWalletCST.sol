@@ -96,6 +96,7 @@ contract StakingWalletCST is Ownable {
 		ETHDeposits[numETHDeposits].depositAmount = msg.value;
 		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
 		numETHDeposits += 1;
+		// todo: add comment
 		modulo += msg.value % numStakedNFTs;
 		emit EthDepositEvent(block.timestamp, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
 	}
@@ -145,7 +146,9 @@ contract StakingWalletCST is Ownable {
 		}
 	}
 
+	// todo: Remove this function and combine it with claim many.
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
+		// todo: Are we achecking everything needed? Any more require statements needed?
 		require(
 			stakeActionId < numStakeActions,
 			CosmicGameErrors.InvalidActionId("Invalid stakeActionId.", stakeActionId)
@@ -163,6 +166,7 @@ contract StakingWalletCST is Ownable {
 			CosmicGameErrors.DepositAlreadyClaimed("This deposit was claimed already.", stakeActionId, ETHDepositId)
 		);
 		require(
+			// todo: random to NFT owner
 			stakeActions[stakeActionId].owner == msg.sender,
 			CosmicGameErrors.AccessError("Only the owner can claim reward.", stakeActionId, msg.sender)
 		);
@@ -207,6 +211,7 @@ contract StakingWalletCST is Ownable {
 			)
 		);
 		for (uint256 i = 0; i < actions.length; i++) {
+			// todo: make this more efficent. We don't want to call so many times.
 			claimReward(actions[i], deposits[i]);
 		}
 	}

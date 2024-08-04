@@ -190,6 +190,7 @@ contract BusinessLogic is Context, Ownable {
 			? CosmicGameConstants.BidType.ETH
 			: CosmicGameConstants.BidType.RandomWalk;
 
+		// todo: put getBidPrice() in Business Logic
 		uint256 newBidPrice = game.getBidPrice();
 		uint256 rwalkBidPrice = newBidPrice / 2;
 		uint256 paidBidPrice;
@@ -249,18 +250,19 @@ contract BusinessLogic is Context, Ownable {
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
+		// todo: consider adding reentracy protection.
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
 
+	// Everything that needs to be reset after round ends.
 	function _roundEndResets() internal {
-		// everything that needs to be reset after round ends
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
 		// The auction should last 12 longer than the amount of time we add after every bid.
 		// Initially this is 12 hours, but will grow slowly over time.
 		CSTAuctionLength = (12 * nanoSecondsExtra) / 1_000_000_000;
-		numRaffleParticipants[roundNum + 1] = 0;
+		numRaffleParticipants[roundNum + 1] = 0; // todo: this can be probably deleted
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
@@ -308,6 +310,7 @@ contract BusinessLogic is Context, Ownable {
 		// todo-0 We have already assigned this a few lines above.
 		lastBidder = msg.sender;
 
+		// todo: Not clear named, maybe rename to numBids? Think about this code more in general
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
 		numParticipants += 1;
@@ -369,6 +372,7 @@ contract BusinessLogic is Context, Ownable {
 		// nanosecondsExtra is an additional coefficient to make the time interval larger over months of playing the game
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
+		// todo: remame timeIncrease
 		nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / CosmicGameConstants.MILLION;
 	}
 
@@ -405,9 +409,11 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
-		_updateEnduranceChampion();
+		address winner = lastBidder;
+		// This prevents reentracy attack. todo: think about this more and make a better comment
 		lastBidder = address(0);
-		address winner = _msgSender();
+		_updateEnduranceChampion();
+
 		winners[roundNum] = winner;
 
 		uint256 cosmicSupply = nft.totalSupply();
@@ -502,7 +508,7 @@ contract BusinessLogic is Context, Ownable {
 			}
 		}
 
-		// Give ETH to the winner.
+		// Give ETH to the last winner.
 		(success, ) = winner.call{ value: prizeAmount_ }("");
 		// This is the only require() that we have when it comes to giving prizes,
 		// checks on external calls are omitted to ensure the winner gets main prize no matter what
@@ -552,6 +558,8 @@ contract BusinessLogic is Context, Ownable {
 	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
 		// If you are a creator you can donate some NFT to the winner of the
 		// current round (which might get you featured on the front page of the website).
+		// todo: Think if this can be attacked some how. What if Someone makes some hacked
+		//       nft and we are going to call that function. Is there any danger??
 		_nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: _nftAddress,
@@ -564,11 +572,13 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	// Claiming donated NFTs
+	// todo: potentially dangerous because we are calling some unkown external contract
 	function claimDonatedNFT(uint256 num) public {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
+		// todo: Make sure that the donated NFT can ONLY be claimed by the last winner of the given round
 		require(num < numDonatedNFTs, CosmicGameErrors.NonExistentDonatedNFT("The donated NFT does not exist.", num));
 		address winner = winners[donatedNFTs[num].round];
 		require(winner != address(0), CosmicGameErrors.NonExistentWinner("Non-existent winner for the round.", num));
