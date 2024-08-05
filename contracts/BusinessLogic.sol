@@ -17,6 +17,22 @@ import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 
+// todo-1 Idea. The logic should result in a big jack-pot prize once in a while.
+// todo-1 But this will not necessarily work well, given that we aren't going to have that many bidding rounds,
+// todo-1 like 100 over 10 years.
+// todo-1 One other problem is that our random numbers are not perfectly random,
+// todo-1 so some block proposers can invest in exploiting it.
+// todo-1 Or it's not really that easy to exploit it?
+//
+// todo-1 After a round ends, we should remove data related to the ended round.
+// todo-1 So we need to refactor the data by turning mappings into scalars.
+// todo-1 This will simplify the logic and reduce gas fees.
+// todo-1 Some variables, such as `bidPrice`, are already scalars.
+// todo-1 But some data related to past rounds must be preserved. For example, donated NFTs.
+// todo-1 We also need to save past round winners to let them claim those NFTs.
+// todo-1 But after a timeout we will forget them and let anybody claim the NFTs.
+//
+// todo-1 Rememebr to refactor the front-end in sync with any refactorings here.
 contract BusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
 	RandomWalkNFT public randomWalk;
@@ -158,12 +174,18 @@ contract BusinessLogic is Context, Ownable {
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
+	// todo-1 Make most `public` methods `external`.
+	// todo-1 But we do call `bid` internally as well.
+	// todo-1 But It would become a problem if we implement locking.
+	// todo-1 So we will need an internal `bid` method to be called after we have gone through the locker.
 	function bid(bytes memory _param_data) public payable {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		BidParams memory params = abi.decode(_param_data, (BidParams));
+		// todo-1 Make sense to move this variable to the storage? But can I eliminate it?
+		// todo-1 I've seen variables like this in multiple places.
 		CosmicGame game = CosmicGame(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -174,7 +196,9 @@ contract BusinessLogic is Context, Ownable {
 				)
 			);
 			require(
-				// todo-0 Instead of calling `_msgSender`, should we simply write `msg.sender`?
+				// todo-1 It's good practice to use `_msgSender` over using `msg.sender` directly, right?
+				// todo-1 Make sure we always call `_msgSender`.
+				// todo-1 The same applies to all `Context` methods.
 				game.randomWalk().ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
@@ -190,7 +214,8 @@ contract BusinessLogic is Context, Ownable {
 			? CosmicGameConstants.BidType.ETH
 			: CosmicGameConstants.BidType.RandomWalk;
 
-		// todo: put getBidPrice() in Business Logic
+		// todo-1 This makes an external call, right? That's expensive.
+		// todo-1 So make copies of `getBidPrice()` and maybe some others in `BusinessLogic`.
 		uint256 newBidPrice = game.getBidPrice();
 		uint256 rwalkBidPrice = newBidPrice / 2;
 		uint256 paidBidPrice;
@@ -231,6 +256,8 @@ contract BusinessLogic is Context, Ownable {
 		if (msg.value > paidBidPrice) {
 			// Return the extra money to the bidder.
 			uint256 amountToSend = msg.value - paidBidPrice;
+			// todo-1 Any external call can result in a reentrancy.
+			// todo-1 But in this case we are probably not vulnerable.
 			(bool success, ) = lastBidder.call{ value: amountToSend }("");
 			require(success, CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend, lastBidder));
 		}
@@ -246,6 +273,7 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	function bidAndDonateNFT(bytes calldata _param_data, IERC721 nftAddress, uint256 tokenId) external payable {
+		// todo-1 Remove this validation becuase `bid` will do it anyway.
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -262,7 +290,14 @@ contract BusinessLogic is Context, Ownable {
 		// The auction should last 12 longer than the amount of time we add after every bid.
 		// Initially this is 12 hours, but will grow slowly over time.
 		CSTAuctionLength = (12 * nanoSecondsExtra) / 1_000_000_000;
-		numRaffleParticipants[roundNum + 1] = 0; // todo: this can be probably deleted
+		// todo-1 This assignment is redundant, right?
+		// todo-1 But it will not be after we make this a scalar variable.
+		numRaffleParticipants[roundNum + 1] = 0;
+		// [ToDo-202408061-1]
+		// What if a crazy zillionaire bids up the price to such a level that this would result in a zillion dollars initial bid price?
+		// Maybe if nobody bids in a round we should divide the initial bid price by 10, but make sure it can't become zero.
+		// ToDo-202408062-1 relates and/or applies.
+		// [/ToDo-202408061-1]
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// note: we aren't resetting 'lastBidder' here because of reentrancy issues
 
@@ -278,6 +313,7 @@ contract BusinessLogic is Context, Ownable {
 	}
 
 	function _updateEnduranceChampion() internal {
+		// todo-1 Make sure this condition really can be true.
 		if (lastBidder == address(0)) return;
 
 		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
@@ -307,11 +343,14 @@ contract BusinessLogic is Context, Ownable {
 		lastBidType = bidType;
 
 		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
-		// todo-0 We have already assigned this a few lines above.
+		// todo-1 We have already made this assignment a few lines above.
 		lastBidder = msg.sender;
 
 		// todo: Not clear named, maybe rename to numBids? Think about this code more in general
 		uint256 numParticipants = numRaffleParticipants[roundNum];
+		// todo-1 Rename to `bidders. Comment that this contains a bidder address per bid and can contain duplicate addresses.
+		// todo-1 Do we need a `struct` for all parameters related to a particular bid?
+		// todo-1 Then this will be a map of bid index to bid info struct.
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
 		numParticipants += 1;
 		numRaffleParticipants[roundNum] = numParticipants;
@@ -367,15 +406,30 @@ contract BusinessLogic is Context, Ownable {
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 
+	// todo-1 Rename to `_extendPrizeTime`?
+	// todo-1 Or `_increaseRoundDuration`?
+	// todo-1 Maybe also rename `prizeTime` to `roundEndScheduledTime`.
+	// todo-1 Remember that bidding is still allowed afterwards. So perhaps something like `prizeEarliestTime` would be more appropriate.
 	function _pushBackPrizeTime() internal {
-		// todo-0 Make sense to move this comment to near `CosmicGame.nanoSecondsExtra`.
+		// TODO: Explain what this function does and why it works this way. It's not intuitive.
+		// todo-0 Move this comment to near `CosmicGame.nanoSecondsExtra`.
 		// nanosecondsExtra is an additional coefficient to make the time interval larger over months of playing the game
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+
+		// We allow bidding after `prizeTime`, so this logic expects that `block.timestamp` is after `prizeTime`.
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
-		// todo: remame timeIncrease
+
+		// Increasing this by a small fraction, such as by 0.003%, which is exponential.
+		// todo-1 I dislike it that we use a mix of billions/nano and millions/micro. Should we express everything in nanoseconds?
 		nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / CosmicGameConstants.MILLION;
 	}
 
+	// [ToDo-202408062-1]
+	// Make sure this works correct if nobody executed a bid.
+	// In that case we need to lower next round initial bid price, but make sure it doesn't become zero.
+	// We need to do it without spending gas, with a `view` method. The front-end will call it to get the bid price.
+	// ToDo-202408061-1 relates and/or applies.
+	// [/ToDo-202408062-1]
 	function claimPrize() external {
 		// In this function will distribute rewards according to current configuration
 
@@ -409,9 +463,19 @@ contract BusinessLogic is Context, Ownable {
 			);
 		}
 
+		// todo-1 Would it be more gas efficient to assign `_msgSender()` to this?
 		address winner = lastBidder;
 		// This prevents reentracy attack. todo: think about this more and make a better comment
+		// todo-1 But maybe implement locking of all `public` and `external` methods using a transient storage variable.
+		// todo-1 Then consider making this resetting at the very end in `_roundEndResets`.
 		lastBidder = address(0);
+		// todo-1 This uses `lastBidder`, but we have just reset it. Make sure it's by design.
+		// todo-1 Write and cross-reference relevant comments.
+		// todo-1 Actually Taras edited this while we spoke and introduced a bug
+		// todo-1 because before that we called `_updateEnduranceChampion` first and then reset `lastBidder`.
+		// todo-1 I am going to restore the old logic from an old commit.
+		// todo-1 If the same bidder makes multiple bids in a row we should use their cumulative time between bids
+		// todo-1 to see if they are the endurance champion.
 		_updateEnduranceChampion();
 
 		winners[roundNum] = winner;
@@ -442,6 +506,12 @@ contract BusinessLogic is Context, Ownable {
 
 		{
 			// Endurance Champion Prize
+			// todo-1 The highest bidder can also be Endurance Champion, right?
+			// todo-1 Make sure in this case it's impossible that we will send funds to them multiple times,
+			// todo-1 even if it's possible to make a single consolidated send.
+			// todo-1 But if the same bidder is also a raffle winner we probably can combine the amounts and make a single send.
+			// todo-1 Remember that we make ETH and CST sends.
+			// todo-1 Regardless if I fix this or not, write a comment explaining things.
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, enduranceChampion, roundNum)
 			);
@@ -558,6 +628,9 @@ contract BusinessLogic is Context, Ownable {
 	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
 		// If you are a creator you can donate some NFT to the winner of the
 		// current round (which might get you featured on the front page of the website).
+		// todo-1 Why do we need the "safe" method call?
+		// todo-1 The "safe" means that it will check if our contract is able to receive NFT, right?
+		// todo-1 That check is unnecessary, right?
 		// todo: Think if this can be attacked some how. What if Someone makes some hacked
 		//       nft and we are going to call that function. Is there any danger??
 		_nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
@@ -571,14 +644,24 @@ contract BusinessLogic is Context, Ownable {
 		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
 	}
 
-	// Claiming donated NFTs
-	// todo: potentially dangerous because we are calling some unkown external contract
+	/// @notice
+	/// [Comment-202408065]
+	/// The bidding round winner (who has successfully executed the `claimPrize` method) is allowed (but not required)
+	/// to claim NFTs someone donated to us during the round.
+	/// todo-1 Make sure that the donated NFT can ONLY be claimed by the winner of the given round.
+	/// todo-1 Will it be a problem if someone donates us a zillion NFTs?
+	/// todo-1 Limit the number of NFTs we allow to donate to us per round?
+	/// todo-1 If the last winner forgets to claim some NFTs within a timeout, we should let anyone claim them.
+	/// todo-1 Should we forget (remove from our storage) unclaimed donated NFTs after like max(1 year, 12 rounds)?
+	/// todo-1 Maybe it's not really that important to forget unclaimed donated NFTs.
+	/// todo: potentially dangerous because we are calling some unkown external contract
+	/// todo-1 What if someone donates an NFT which claim attempt will always fail.
+	/// [/Comment-202408065]
 	function claimDonatedNFT(uint256 num) public {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
-		// todo: Make sure that the donated NFT can ONLY be claimed by the last winner of the given round
 		require(num < numDonatedNFTs, CosmicGameErrors.NonExistentDonatedNFT("The donated NFT does not exist.", num));
 		address winner = winners[donatedNFTs[num].round];
 		require(winner != address(0), CosmicGameErrors.NonExistentWinner("Non-existent winner for the round.", num));
@@ -597,11 +680,15 @@ contract BusinessLogic is Context, Ownable {
 		);
 	}
 
+	/// @notice Comment-202408065 applies.
 	function claimManyDonatedNFTs(uint256[] memory tokens) external {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
+		// todo-1 This should not be an all-or-nothing transaction. Sucessful claims should not be rolled back, even if some others fail.
+		// todo-1 One reason for that is because someone can DoS us by donating a bad NFT which claim will always fail.
+		// todo-1 Should we generate an event for each failed claim? Will they help the front-end?
 		for (uint256 i = 0; i < tokens.length; i++) {
 			claimDonatedNFT(tokens[i]);
 		}

@@ -4,7 +4,10 @@ pragma solidity 0.8.26;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameErrors } from "./Errors.sol";
 
+/// @notice todo-1 write a comment
+/// Comment-202408059 applies.
 contract CharityWallet is Ownable {
+	// todo-1 We don't need to support an array of charity addresses, right? Maybe write a comment about this limitation.
 	address public charityAddress;
 
 	event DonationReceivedEvent(address indexed donor, uint256 amount);
@@ -21,6 +24,8 @@ contract CharityWallet is Ownable {
 		emit CharityUpdatedEvent(charityAddress);
 	}
 
+	// todo-1 This will be called like once a month, right? Comment better.
+	// todo-1 This is not `onlyOwner`. Explain why.
 	function send() external {
 		uint256 amount = address(this).balance;
 		(bool success, ) = charityAddress.call{ value: amount }("");

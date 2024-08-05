@@ -6,6 +6,10 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicGameErrors } from "./Errors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/// @notice This contract holds CST rewards for marketing the project on social media.
+/// [Comment-202408059]
+/// Eventually, the founders of the project will transfer this wallet ownership to our DAO.
+/// [/Comment-202408059]
 contract MarketingWallet is Ownable {
 	CosmicToken public token;
 

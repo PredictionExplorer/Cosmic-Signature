@@ -7,6 +7,7 @@ import { CosmicGameConstants } from "./Constants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameErrors } from "./Errors.sol";
 
+// ToDo-202408067-1 relates and/o applies.
 contract StakingWalletRWalk is Ownable {
 	struct StakeAction {
 		uint256 tokenId;

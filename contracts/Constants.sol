@@ -7,10 +7,12 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @notice These are default values/types you can use in your scripts when calling methods of the contracts
 /// @dev For state variables the constants are used by the constructor, but usually will be updated to other values
 library CosmicGameConstants {
+    // todo-1 Add a constant like this for a billion?
 	uint256 public constant MILLION = 10 ** 6;
 	/// @notice Specifies the default value for state variable `maxMessageLength` declared in CosmicGame.sol , set in the constructor() of CosmicGame.sol
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
 	/// @notice Specifies the default value for state variable `bidPrice` declared in CosmicGame.sol, set in the constructor() of CosmicGame.sol
+	// todo-1 Rewrite this as `(1 ETHER) / 10_000`?
 	uint256 public constant FIRST_ROUND_BID_PRICE = 1e14; // 1 / 10,000 of ETH
 	/// @notice Specifies the default value for the state variable `tokenReward` in CosmicGame.sol, set in the constructor() of CosmicGame.sol
 	uint256 public constant TOKEN_REWARD = 100 * 1e18;

@@ -19,6 +19,7 @@ import { MarketingWallet } from "../MarketingWallet.sol";
 
 // This is a sample upgrade contract for a hypothetical case where users
 // wanted to enable open-bidding, i.e. bid whatever price you want
+// todo-1 This logic is not necessarily kept in sync with `BusinessLogic`. To be revisited.
 contract OpenBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
 	RandomWalkNFT public randomWalk;
@@ -305,10 +306,8 @@ contract OpenBusinessLogic is Context, Ownable {
 	}
 
 	function _pushBackPrizeTime() internal {
-		// TODO: Explain what this function does and why it works this way. It's not intuitive.
 		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
-		// TODO: Explain why we are dividing by a million here.
 		nanoSecondsExtra = (nanoSecondsExtra * timeIncrease) / CosmicGameConstants.MILLION;
 	}
 
