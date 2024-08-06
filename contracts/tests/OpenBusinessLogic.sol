@@ -19,7 +19,7 @@ import { MarketingWallet } from "../MarketingWallet.sol";
 
 // This is a sample upgrade contract for a hypothetical case where users
 // wanted to enable open-bidding, i.e. bid whatever price you want
-// todo-1 This logic is not necessarily kept in sync with `BusinessLogic`. To be revisited.
+// todo-1 This logic is not necessarily kept in sync with `BusinessLogic`. To be revisited when needed.
 contract OpenBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
 	RandomWalkNFT public randomWalk;

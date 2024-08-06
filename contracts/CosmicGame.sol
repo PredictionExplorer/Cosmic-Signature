@@ -35,7 +35,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	StakingWalletRWalk public stakingWalletRWalk;
 	MarketingWallet public marketingWallet;
 	/// @notice Account receiving all charity deposits on each prize claim.
-	/// This is intended to be our `CharityWallet` contract.
+	/// This is intended to be our own `CharityWallet` contract, although any address would work.
 	address public charity;
 	// END OF external contracts
 
@@ -67,14 +67,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public initialSecondsUntilPrize = 24 * 3600;
 	// stores the timestamp when main prize can be claimed, incremented on every bid
 	uint256 public prizeTime;
-	// @notice Timeout for the winner to claim prize after `prizeTime` (seconds).
+	// @notice Timeout for the winner to claim prize after `prizeTime` (in seconds).
 	uint256 public timeoutClaimPrize = 24 * 3600;
 	// keeps the addresses of every bidder (in the map), used to pick random winner of ETH in raffles, one map per round
 	mapping(uint256 => mapping(uint256 => address)) public raffleParticipants; // roundNum => (bidNumber => address)
 	// stores the number of participants made a bid (same as counter for total number of bids), one value per round (in map)
 	mapping(uint256 => uint256) public numRaffleParticipants; // roundNum => totalBids
 	// keeps track of last bid with CST tokens, used to calculate current CST bid price
-	// todo-0 Using `activationTime` before initing it?
+	// todo-1 Using `activationTime` before initing it?
 	uint256 public lastCSTBidTime = activationTime;
 	// stores the duration of Dutch auction, for bidding with CST tokens
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
@@ -123,7 +123,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
 	// @notice The time when the project is scheduled to start operating.
 	// In other words, that's when the 1st bidding round is going to begin.
-	// Although the logic will work even if it's not the 1st bidding round.
+	// Although the logic will work correct even if it's not the 1st bidding round.
 	// The currently hardcoded initial value is December 13 2023 19:00 New York Time.
 	// We are going to change it after we deploy all contracts.
 	// @dev
@@ -230,7 +230,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 
 		// We are going to change this address shortly. We have no intention to pocket charity money. :-)
-		// todo-1 Should we leave this zero? Then on send make sure this is not zero.
+		// todo-1 Would it be more correct to use `msg.sender` directly in this contract?
 		charity = _msgSender();
 	}
 

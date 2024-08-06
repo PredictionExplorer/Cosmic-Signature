@@ -7,7 +7,6 @@ import { CosmicGameErrors } from "./Errors.sol";
 /// @notice todo-1 write a comment
 /// Comment-202408059 applies.
 contract CharityWallet is Ownable {
-	// todo-1 We don't need to support an array of charity addresses, right? Maybe write a comment about this limitation.
 	address public charityAddress;
 
 	event DonationReceivedEvent(address indexed donor, uint256 amount);

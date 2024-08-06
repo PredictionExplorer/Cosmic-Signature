@@ -7,23 +7,19 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./Constants.sol";
 import { CosmicGameErrors } from "./Errors.sol";
 
-// todo-1 I want to study deeper and improve this contract. See todos below.
 // [ToDo-202408067-1]
-// Some todos might apply to `StakingWalletRWalk` as well.
-// I need to review it better.
+// Some todos might apply to `StakingWalletRWalk` as well. I need to review it better.
 // [/ToDo-202408067-1]
 //
-// todo-1 What if someone stakes an NFT and then sells it to another owner?
-// todo-1 The sale can happen after unstaking and before claiming rewards.
-// todo-1 Then the new owner can sell it again, possibly witin the same block.
-// todo-1 It's possible that the old owner will buy the same NFT again.
-// todo-1 We should pay all rewards to the current owner.
+// todo-1 This contract needs improvement. See todos below.
 //
-// todo-1 See https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1722601107544849
-// todo-1 See https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1722602985005979
+// todo-1 Should we give the owner an option to sell a staked NFT together with unrealized rewards?
 contract StakingWalletCST is Ownable {
 	struct StakeAction {
 		uint256 tokenId;
+		// todo-1 Rename to `NFTOwner`.
+		// todo-1 I would really name this `nftOwner` (and if `NFT` ws in the midle of the name, it would be `Nft`),
+		// todo-1 but that's not how things are named in this project.
 		address owner;
 		uint256 stakeTime;
 		uint256 unstakeTime;
@@ -91,18 +87,20 @@ contract StakingWalletCST is Ownable {
 		charity = charity_;
 	}
 
-	// todo-1 We aren't going to make multiple deposits witin a single block.
-	// todo-1 But if we did so would the behavior still be correct?
+	// todo-1 We aren't going to make multiple deposits within a single block.
+	// todo-1 But if we did so, would the behavior still be correct?
 	function deposit() external payable {
-		// We don't want to let anybody to donate money to us because someone will be able to DoS us by making a zillion deposits.
+		// We don't let anybody to donate money to us because someone would be able to DoS us by making a zillion deposits.
 		require(
 			msg.sender == address(game),
 			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract can deposit.", msg.sender)
 		);
 
+		// [Comment-202408074/]
 		if (numStakedNFTs == 0) {
 			// todo-1 Should we send our whole balance to charity, not only `msg.value`?
 			// todo-1 Maybe better in this case reject the deposit? The funds will stay in `CosmicGame`.
+			// todo-1 But the admin should be somehow notified about the error.
 			// todo-1 This kind of logic doesn't exist in `StakingWalletRWalk`, right? Take another look.
 			(bool success, ) = charity.call{ value: msg.value }("");
 			require(
@@ -112,15 +110,19 @@ contract StakingWalletCST is Ownable {
 			emit CharityDepositEvent(msg.value, charity);
 			return;
 		}
-		// todo-1 Here and elsewhere, the use of `block.timestamp` could be a bad option. Consider using a counter instead.
+		// todo-1 Here and possibly in some other places throughout the codebase,
+		// todo-1 the use of `block.timestamp` could be a bad option.
+		// todo-1 The use of timestamps if often a bad option in regular apps too, not only in smart contract.
+		// todo-1 Consider using an ever increasing counter variable instead.
 		// todo-1 The current logic would not necessarily work correct if someone stakes or unstakes
-		// todo-1 within the same block we deposit funds.
+		// todo-1 within the block in which we deposit funds.
+		// todo-1 In such a case, this contract will pocket and lock forever the staker's money.
 		//
 		// todo-1 I feel that it could be unnecesary to create another `ETHDeposits` item
-		// todo-1 if there have been no staking or unstaking action since the previous deposit.
+		// todo-1 if there have been no staking and/or unstaking action since the previous deposit.
 		// todo-1 But event listeners would need to be aware of this logic and use only the last event data for a particular ETH deposit ID.
 		ETHDeposits[numETHDeposits].depositTime = block.timestamp;
-		// todo-1 Is it guaranteed that this is a nonzero?
+		// todo-1 Is it guaranteed that this is a nonzero? Write a comment? Cross-ref with where we validated who is the sender.
 		ETHDeposits[numETHDeposits].depositAmount = msg.value;
 		ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
 		numETHDeposits += 1;
@@ -135,11 +137,13 @@ contract StakingWalletCST is Ownable {
 			CosmicGameErrors.OneTimeStaking("Staking/unstaking token is allowed only once", _tokenId)
 		);
 		usedTokens[_tokenId] = true;
-		nft.transferFrom(msg.sender, address(this), _tokenId);
 		// [ToDo-202408068-1]
-		// Would it be more secure to make this external call a bit later?
-		// We can get by without locking public/external methods in this wallet, right?
+		// Would it be more secure to make this external call after making all state updates?
+		// Although this is our own NFT contract, so maybe it doesn't matter.
+		// But at least comment.
+		// We can get by without locking public/external methods in this staking wallet, right?
 		// [/ToDo-202408068-1]
+		nft.transferFrom(msg.sender, address(this), _tokenId);
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].owner = msg.sender;
@@ -179,8 +183,9 @@ contract StakingWalletCST is Ownable {
 		}
 	}
 
-	// todo: Remove this function and combine it with claim many.
+	// todo: Remove this function and combine it with `claimManyRewards`.
 	// todo: Refactor the front-end if needed.
+	// todo-1 See https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1722601107544849
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
 		// todo: Are we checking everything needed? Any more require statements needed?
 		require(
@@ -200,12 +205,12 @@ contract StakingWalletCST is Ownable {
 			CosmicGameErrors.DepositAlreadyClaimed("This deposit was claimed already.", stakeActionId, ETHDepositId)
 		);
 		require(
-			// todo: rename to NFT owner
 			stakeActions[stakeActionId].owner == msg.sender,
 			CosmicGameErrors.AccessError("Only the owner can claim reward.", stakeActionId, msg.sender)
 		);
 		// depositTime is compared without '=' operator to prevent frontrunning (sending stake
 		// operation within the same block as claimPrize transaction)
+		// todo-1 That won't be a concern if we used an ever increasing counter variable to populate `stakeTime`, right?
 		require(
 			stakeActions[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime,
 			CosmicGameErrors.DepositOutsideStakingWindow(
@@ -238,12 +243,8 @@ contract StakingWalletCST is Ownable {
 		emit ClaimRewardEvent(stakeActionId, ETHDepositId, amount, msg.sender);
 	}
 
-	// todo-1 Maybe comment that unstake and claim reward are separate transactions.
-	// todo-1 But is it really a good idea to keep them separate?
-	// todo-1 Does the front-end remember the arguments?
-	// todo-1 Can the front-end crash and lose the data?
-	// todo-1 We need a `view` method to get the data for a given staker address.
-	// todo-1 Or the front-end can reliably retrieve the data from events and re-query the events after a crash?
+	// todo-1 Maybe comment here and near `claimReward` (but it's to be eliminated)
+	// todo-1 that unstaking and claiming the reward are separate transactions.
 	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external {
 		require(
 			actions.length == deposits.length,
