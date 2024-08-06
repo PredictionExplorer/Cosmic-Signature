@@ -11,6 +11,7 @@ module.exports = {
 		version: "0.8.26",
 
 		settings: {
+			evmVersion: "cancun",
 			// // [Comment-202408026]
 			// // By default, this is "paris".
 			// // See https://hardhat.org/hardhat-runner/docs/config

@@ -386,6 +386,7 @@ contract BusinessLogic is Context, Ownable {
 			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
 		);
 		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
+		address winner;
 		if (block.timestamp - prizeTime < timeoutClaimPrize) {
 			// The winner has [timeoutClaimPrize] to claim the prize.
 			// After the this interval have elapsed, then *anyone* is able to claim the prize!
@@ -404,12 +405,14 @@ contract BusinessLogic is Context, Ownable {
 					timeToWait
 				)
 			);
+			winner = lastBidder;
+		} else {
+			winner = _msgSender();
 		}
+		_updateEnduranceChampion();
 
-		address winner = lastBidder;
 		// This prevents reentracy attack. todo: think about this more and make a better comment
 		lastBidder = address(0);
-		_updateEnduranceChampion();
 
 		winners[roundNum] = winner;
 
@@ -452,8 +455,10 @@ contract BusinessLogic is Context, Ownable {
 			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, winnerIndex);
 			winnerIndex += 1;
 		}
-		{
-			// Stellar Spender Prize
+
+		if (stellarSpender != address(0)) {
+			// Stellar Spender Prize. We need to check for address(0) because all the bids of the round can be made with CST,
+			// in that case, no one will get the prize
 			(, bytes memory data) = address(nft).call(
 				abi.encodeWithSelector(CosmicSignature.mint.selector, stellarSpender, roundNum)
 			);

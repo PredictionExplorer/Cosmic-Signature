@@ -62,8 +62,8 @@ describe("Bid time accounting", function () {
 			await loadFixture(deployCosmic);
 
 		// test case description:
-		// 		addr1 will make a total time of 2000 (in 2 bids)
-		// 		addr2 will make a total time of 6000 (in 2 bids)
+		// 		addr1 will make a maximum duration of 1000 seconds in his bids
+		// 		addr2 will make a maximum duration of 5000 seconds in his bids
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = ethers.utils.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
@@ -91,7 +91,7 @@ describe("Bid time accounting", function () {
 		
 		maxbtime = await cosmicGame.enduranceChampionDuration();
 		maxbaddr = await cosmicGame.enduranceChampion();
-		expect(maxbtime).to.equal(6000);
+		expect(maxbtime).to.equal(5000);
 		expect(maxbaddr).to.equal(addr2.address);
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
@@ -167,7 +167,67 @@ describe("Bid time accounting", function () {
 		maxbtime = await cosmicGame.enduranceChampionDuration();
 		maxbaddr = await cosmicGame.enduranceChampion();
 
-		expect(maxbtime).to.equal(6000);
-		expect(maxbaddr).to.equal(addr2.address);
+		expect(maxbtime).to.equal(1000);
+		expect(maxbaddr).to.equal(addr1.address);
+	});
+	it("Stellar spender prize is correctly assigned", async function () {
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+
+		// test case description:
+		// 		all 3 bidders make bids
+		// 		addr1 makes bids for a total of 3 ETH
+		// 		addr2 makes bids for a total of 9 ETH
+		// 		addr3 makes bids for a total of 19 ETH
+		// 		Stellar Spender is assigned to addr3
+		let limitSumAddr1 = ethers.utils.parseEther("3");
+		let limitSumAddr2 = ethers.utils.parseEther("9");
+		let limitSumAddr3 = ethers.utils.parseEther("19");
+		let sumPrice;
+		let maxbtime,maxbaddr,prevbst,prevbaddr;
+		let donationAmount = ethers.utils.parseEther("1000");
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGame.getBidPrice();
+		await cosmicGame.bid(params, { value: bidPrice })
+		await cosmicGame.donate({ value: donationAmount });
+		let prizeTime = await cosmicGame.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_mine");
+		await cosmicGame.claimPrize();	// we need to skip the first round to rise bidPrice
+
+		let stellarSpender;
+		sumPrice = ethers.BigNumber.from("0");
+		while(true) {
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
+			sumPrice = sumPrice.add(bidPrice);
+			if (sumPrice.gt(limitSumAddr1)) { break; }
+		
+		}
+		stellarSpender = await cosmicGame.stellarSpender();
+		expect(stellarSpender).to.equal(addr1.address);
+
+		sumPrice = ethers.BigNumber.from("0");
+		while(true) {
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
+			sumPrice = sumPrice.add(bidPrice);
+			if (sumPrice.gt(limitSumAddr2)) { break; }
+		
+		}
+		stellarSpender = await cosmicGame.stellarSpender();
+		expect(stellarSpender).to.equal(addr2.address);
+
+		sumPrice = ethers.BigNumber.from("0");
+		while(true) {
+			bidPrice = await cosmicGame.getBidPrice();
+			await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+			sumPrice = sumPrice.add(bidPrice);
+			if (sumPrice.gt(limitSumAddr3)) { break; }
+		}
+		stellarSpender = await cosmicGame.stellarSpender();
+		expect(stellarSpender).to.equal(addr3.address);
 	});
 });
