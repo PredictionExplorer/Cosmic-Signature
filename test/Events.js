@@ -96,9 +96,10 @@ describe("Events", function () {
 		await cosmicGame.connect(owner).donate({ value: INITIAL_AMOUNT });
 		const donationAmount = ethers.utils.parseEther("1");
 
+		let roundNum = 0;
 		await expect(cosmicGame.connect(donor).donate({ value: donationAmount }))
 			.to.emit(cosmicGame, "DonationEvent")
-			.withArgs(donor.address, donationAmount);
+			.withArgs(donor.address, donationAmount, roundNum);
 
 		const contractBalance = await ethers.provider.getBalance(cosmicGame.address);
 		expect(contractBalance).to.equal(donationAmount.add(INITIAL_AMOUNT));
