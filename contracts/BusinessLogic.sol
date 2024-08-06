@@ -405,11 +405,11 @@ contract BusinessLogic is Context, Ownable {
 				)
 			);
 		}
+		_updateEnduranceChampion();
 
 		address winner = lastBidder;
 		// This prevents reentracy attack. todo: think about this more and make a better comment
 		lastBidder = address(0);
-		_updateEnduranceChampion();
 
 		winners[roundNum] = winner;
 
