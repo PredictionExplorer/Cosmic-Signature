@@ -743,11 +743,11 @@ contract CosmicGame is Ownable, IERC721Receiver {
 			return (address(0), 0);
 		}
 
-		uint256 lastBidTime = block.timestamp - bidderInfo[roundNum][msg.sender].lastBidTime;
+		uint256 lastBidTime = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
 		if (lastBidTime > enduranceChampionDuration) {
 			return (lastBidder, lastBidTime);
 		}
-		return (lastBidder, enduranceChampionDuration);
+		return (enduranceChampion, enduranceChampionDuration);
 	}
 
 	function timeUntilActivation() external view returns (uint256) {

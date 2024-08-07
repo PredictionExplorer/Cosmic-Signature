@@ -79,10 +79,10 @@ describe("Special test for Endurance Champion logic testing", function () {
 		// test case description:
 		// first bid is made by owner, to initialize all the variables, duration of 1000 seconds
 		// second bid is made by addr1 , duration of 2000 seconds
-		// bid 3 will be made by addr2, duration of 5000 seconds. 
-		// 5000 seconds is longer than 1000 seconds of the owner, and 2000 seconds of addr1, 
+		// bid 3 will be made by addr2, duration of 5000 seconds.
+		// 5000 seconds is longer than 1000 seconds of the owner, and 2000 seconds of addr1,
 		// therefore addr2 is the Endurance Champion
-		
+
 		let donationAmount = ethers.utils.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
 
@@ -90,7 +90,7 @@ describe("Special test for Endurance Champion logic testing", function () {
 
 		result = await cosmicGame.currentEnduranceChampion();
 		champion = result[0]; duration = result[1];
-		//console.log("before bid: champion = "+champion); console.log("duration = "+duration);
+		console.log("before bid: champion = "+champion); console.log("duration = "+duration);
 
 		var bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
@@ -99,14 +99,14 @@ describe("Special test for Endurance Champion logic testing", function () {
 		await cosmicGame.connect(owner).bid(params, { value: bidPrice });	// bid1 (owner, for 1,000 seconds
 		result = await cosmicGame.currentEnduranceChampion();
 		champion = result[0]; duration = result[1];
-		//console.log("after bid1: champion = "+champion); console.log("duration = "+duration);
+		console.log("after bid1: champion = "+champion); console.log("duration = "+duration);
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800001000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid2	(addr1, for 2,000 seconds)
 		result = await cosmicGame.currentEnduranceChampion();
 		champion = result[0]; duration = result[1];
-		//console.log("after bid2: champion = "+champion); console.log("duration = "+duration);
+		console.log("after bid2: champion = "+champion); console.log("duration = "+duration);
 
 		bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800003000]);
@@ -119,7 +119,7 @@ describe("Special test for Endurance Champion logic testing", function () {
 
 		result = await cosmicGame.currentEnduranceChampion();
 		champion = result[0]; duration = result[1];
-		//console.log("after bid2: champion = "+champion); console.log("duration = "+duration);
+		console.log("after bid2: champion = "+champion); console.log("duration = "+duration);
 		expect(champion).to.equal(addr2.address);
 		expect(duration).to.equal(5000);
 	});
