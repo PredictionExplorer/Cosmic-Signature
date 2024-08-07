@@ -7,10 +7,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 pragma solidity ^0.8.26;
 
 contract RandomWalkNFT is ERC721Enumerable, Ownable {
+	// todo-1 We never change this.
+	// todo-1 Should this be a `constant`?
 	uint256 public saleTime = 1636675200; // November 11 2021 19:00 New York Time
+	// todo-1 Rewrite this as `(1 ETHER) / 1_000`?
 	uint256 public price = 10 ** 15; // Price starts at .001 eth
 
 	// How long to wait until the last minter can withdraw
+	// todo-1 Should this be a `constant`?
+	// todo-1 Should this be in `CosmicGameConstants`?
 	uint256 public withdrawalWaitSeconds = 3600 * 24 * 30; // 1 month
 
 	// Seeds
@@ -36,6 +41,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 	event WithdrawalEvent(uint256 indexed tokenId, address destination, uint256 amount);
 
 	// IPFS link to the Python script that generates images and videos for each NFT based on seed.
+	// todo-1 Should this be a `constant`?
 	string public tokenGenerationScript = "ipfs://QmP7Z8VbQLpytzXnceeAAc4D5tX39XVzoEeUZwEK8aPk8W";
 
 	constructor() ERC721("RandomWalkNFT", "RWLK") {

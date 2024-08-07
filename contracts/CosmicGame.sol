@@ -33,9 +33,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	StakingWalletCST public stakingWalletCST;
 	// Contract used to stake RandomWalk tokens, used to pick random winner of raffle CST tokens
 	StakingWalletRWalk public stakingWalletRWalk;
-	// Contract holding rewards for marketing the project in social media
 	MarketingWallet public marketingWallet;
-	// Account receiving all charity deposits on each prize claim
+	/// @notice Account receiving all charity deposits on each prize claim.
+	/// This is intended to be our own `CharityWallet` contract, although any address would work.
 	address public charity;
 	// END OF external contracts
 
@@ -49,6 +49,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// how much the deadline is pushed after every bid
 	uint256 public nanoSecondsExtra = 3600 * 10 ** 9;
 	// how much is the secondsExtra increased by after every bid (You can think of it as the second derivative)
+	// todo-1 Rename `timeIncrease` and related methods. Remember that these entities exist in multiple contracts.
+	// todo-1 Maybe rename this to `nanoSecondsExtraIncreaseMultiplier`.
+	// todo-1 Although it could make sense to name `nanoSecondsExtra` better as well.
 	uint256 public timeIncrease = 1000030;
 	// how much the bid price is increased after every bid
 	uint256 public priceIncrease = 1010000; // we are going to divide this number by a million
@@ -64,13 +67,14 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public initialSecondsUntilPrize = 24 * 3600;
 	// stores the timestamp when main prize can be claimed, incremented on every bid
 	uint256 public prizeTime;
-	// timeout for the winner to claim prize (seconds)
+	// @notice Timeout for the winner to claim prize after `prizeTime` (in seconds).
 	uint256 public timeoutClaimPrize = 24 * 3600;
 	// keeps the addresses of every bidder (in the map), used to pick random winner of ETH in raffles, one map per round
 	mapping(uint256 => mapping(uint256 => address)) public raffleParticipants; // roundNum => (bidNumber => address)
 	// stores the number of participants made a bid (same as counter for total number of bids), one value per round (in map)
 	mapping(uint256 => uint256) public numRaffleParticipants; // roundNum => totalBids
 	// keeps track of last bid with CST tokens, used to calculate current CST bid price
+	// todo-1 Using `activationTime` before initing it?
 	uint256 public lastCSTBidTime = activationTime;
 	// stores the duration of Dutch auction, for bidding with CST tokens
 	uint256 public CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
@@ -117,8 +121,17 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public donateWithInfoNumRecords = 0;
 	// stores the info records about each donation (only those that want to have additional info)
 	mapping(uint256 => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
-	// stores the timestamp for when project starts operating
-	uint256 public activationTime = 1702512000; // December 13 2023 19:00 New York Time
+	// @notice The time when the project is scheduled to start operating.
+	// In other words, that's when the 1st bidding round is going to begin.
+	// Although the logic will work correct even if it's not the 1st bidding round.
+	// The currently hardcoded initial value is December 13 2023 19:00 New York Time.
+	// We are going to change it after we deploy all contracts.
+	// @dev
+	// [Comment-202408046]
+	// It could be possible to eliminate this and use `systemMode` in relevant logic. It would be more gas efficient.
+	// But it's probably OK as is.
+	// [/Comment-202408046]
+	uint256 public activationTime = 1702512000;
 	// amount of CST tokens given as reward for every bid
 	uint256 public tokenReward = CosmicGameConstants.TOKEN_REWARD;
 	/// @notice For prizes Endurance Champion Prize and Stellar Spender Prize (given during claimPrize()) this is the coefficient that is used to multiply the amount of bids (in the round) to get the reward of ERC20 tokens paid to each winner
@@ -127,7 +140,8 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	uint256 public marketingReward = CosmicGameConstants.MARKETING_REWARD;
 	// maximum length of message attached to bid() operation
 	uint256 public maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
-	// stores current system mode (Runtime , PrepareMaintenance , Maintenance)
+	// @notice The current system mode. Equals one of the `CosmicGameConstants.MODE_...` constants.
+	// @dev Comment-202408046 relates.
 	uint256 public systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 	// END OF system variables
 
@@ -214,6 +228,9 @@ contract CosmicGame is Ownable, IERC721Receiver {
 
 	constructor() {
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
+
+		// We are going to change this address shortly. We have no intention to pocket charity money. :-)
+		// todo-1 Would it be more correct to use `msg.sender` directly in this contract?
 		charity = _msgSender();
 	}
 
