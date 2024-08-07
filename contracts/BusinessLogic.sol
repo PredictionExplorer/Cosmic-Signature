@@ -317,7 +317,10 @@ contract BusinessLogic is Context, Ownable {
 		}
 	}
 
-	function _updateEnduranceChampion() internal {
+// todo-1 If a particular bidder makes multiple bids in a row
+// todo-1 we should use their combined timespan between consequitive bids made by the same bidder
+// todo-1 to see if they are the endurance champion.
+function _updateEnduranceChampion() internal {
 		// todo-1 Make sure this condition really can be true.
 		// todo-1 It's true when we get here for the 1st time after a rounds begins, right?
 		// todo-1 Write a comment?
@@ -456,6 +459,7 @@ contract BusinessLogic is Context, Ownable {
 			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
 		);
 		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
+		address winner;
 		if (block.timestamp - prizeTime < timeoutClaimPrize) {
 			// todo-1 Move this comment to near `CosmicGame.timeoutClaimPrize`?
 			// The winner has [timeoutClaimPrize] to claim the prize.
@@ -478,21 +482,20 @@ contract BusinessLogic is Context, Ownable {
 					timeToWait
 				)
 			);
+			// todo-1 At this point, `lastBidder` equals '_msgSender()', right?
+			// todo-1 So it appears that we can unconditionally assign `winner = _msgSender();`
+			// todo-1 Or just eliminate the `winner` variable and instead call `_msgSender`, asuming the call will be inlined.
+			// todo-1 Is it more gas efficient to call `_msgSender()` than to read a state variable?
+			winner = lastBidder;
+		} else {
+			winner = _msgSender();
 		}
-
-		// todo-1 Would it be more gas efficient to assign `_msgSender()` to this?
-		address winner = lastBidder;
+		_updateEnduranceChampion();
+		
 		// This prevents reentracy attack. todo: think about this more and make a better comment
 		// todo-1 But maybe implement locking of all `public` and `external` methods using a transient storage variable.
 		// todo-1 Then consider making this resetting at the very end in `_roundEndResets`.
 		lastBidder = address(0);
-		// todo-1 This uses `lastBidder`, but we have just reset it.
-		// todo-1 Actually Taras edited the code around here while we spoke and introduced a bug
-		// todo-1 because before that we called `_updateEnduranceChampion` first and then reset `lastBidder`.
-		// todo-1 If a particular bidder makes multiple bids in a row
-		// todo-1 we should use their combined timespan between consequitive bids made by the same bidder
-		// todo-1 to see if they are the endurance champion.
-		_updateEnduranceChampion();
 
 		winners[roundNum] = winner;
 

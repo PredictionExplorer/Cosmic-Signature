@@ -11,17 +11,12 @@ module.exports = {
 		version: "0.8.26",
 
 		settings: {
-			// // [Comment-202408026]
-			// // By default, this is "paris".
-			// // See https://hardhat.org/hardhat-runner/docs/config
-			// // But we want this to be the latest with which Arbitrum is compatible.
-			// // Actually this change results in a half of tests failing, so let's leave it alone for now.
-			// // We probably need a newer version of Hardhat.
-			// // V. 2.22.7 is said to support "cancun".
-			// // todo-1 To be revisited.
-			// // todo-0 Should we address this issue sooner? Because we use the latest Solidity features.
-			// // [/Comment-202408026]
-			// evmVersion: "cancun",
+			// [Comment-202408026]
+			// By default, this is "paris".
+			// See https://hardhat.org/hardhat-runner/docs/config
+			// But we want this to be the latest with which Arbitrum is compatible.
+			// [/Comment-202408026]
+			evmVersion: "cancun",
 
 			// Comment-202408025 applies.
 			optimizer: {

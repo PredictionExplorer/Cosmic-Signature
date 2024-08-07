@@ -1,6 +1,3 @@
-@ todo-1 We should use a newer version of "hadhat".
-  todo-1 Comment-202408026 explains why.
-
 @ todo-1 "@nomicfoundation/hardhat-toolbox" version is currently 2.0.2, which a bit too old.
   todo-1 It could make sense to upgrage it to 4.0.0.
   todo-1 But that would result in a version conflict with other packages.

@@ -87,7 +87,7 @@ contract StakingWalletCST is Ownable {
 		charity = charity_;
 	}
 
-	// todo-1 We aren't going to make multiple deposits within a single block.
+	// todo-1 We probably aren't going to make multiple deposits within a single block.
 	// todo-1 But if we did so, would the behavior still be correct?
 	function deposit() external payable {
 		// We don't let anybody to donate money to us because someone would be able to DoS us by making a zillion deposits.
@@ -101,7 +101,7 @@ contract StakingWalletCST is Ownable {
 			// todo-1 Should we send our whole balance to charity, not only `msg.value`?
 			// todo-1 Maybe better in this case reject the deposit? The funds will stay in `CosmicGame`.
 			// todo-1 But the admin should be somehow notified about the error.
-			// todo-1 This kind of logic doesn't exist in `StakingWalletRWalk`, right? Take another look.
+			// todo-1 This kind of logic doesn't seem to exist in `StakingWalletRWalk`. But take another look.
 			(bool success, ) = charity.call{ value: msg.value }("");
 			require(
 				success,
@@ -141,7 +141,7 @@ contract StakingWalletCST is Ownable {
 		// Would it be more secure to make this external call after making all state updates?
 		// Although this is our own NFT contract, so maybe it doesn't matter.
 		// But at least comment.
-		// We can get by without locking public/external methods in this staking wallet, right?
+		// We can get by without locking public/external methods in `StakingWalletCST`, right?
 		// [/ToDo-202408068-1]
 		nft.transferFrom(msg.sender, address(this), _tokenId);
 		_insertToken(_tokenId, numStakeActions);
@@ -186,6 +186,8 @@ contract StakingWalletCST is Ownable {
 	// todo: Remove this function and combine it with `claimManyRewards`.
 	// todo: Refactor the front-end if needed.
 	// todo-1 See https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1722601107544849
+	// todo-1 There is now a new similar method that unstakes and claims reward in one shot.
+	// todo-1 Revisit it as well.
 	function claimReward(uint256 stakeActionId, uint256 ETHDepositId) public {
 		// todo: Are we checking everything needed? Any more require statements needed?
 		require(
@@ -245,6 +247,7 @@ contract StakingWalletCST is Ownable {
 
 	// todo-1 Maybe comment here and near `claimReward` (but it's to be eliminated)
 	// todo-1 that unstaking and claiming the reward are separate transactions.
+	// todo-1 Actually we now also support the two actions in a single transaction.
 	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external {
 		require(
 			actions.length == deposits.length,
