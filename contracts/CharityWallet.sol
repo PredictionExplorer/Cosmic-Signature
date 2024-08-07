@@ -28,14 +28,17 @@ contract CharityWallet is Ownable {
 
 	/// @notice Allows the contract to receive ETH donations
 	/// @dev This function is called for plain ETH transfers without data
+	/// todo-1 Here and elsewhere, this kind of dev comment is unnecessary. This is a well known documented method.
 	receive() external payable {
 		emit DonationReceivedEvent(_msgSender(), msg.value);
 	}
 
 	/// @notice Sets or updates the address of the designated charity
 	/// @dev Only the contract owner can call this function
+	/// todo-1 Here and elsewhere, this kind of dev comment is unnecessary. It's clear by looking at the method declaration.
 	/// @param newCharityAddress The address of the new charity
 	function setCharity(address newCharityAddress) external onlyOwner {
+		// todo-1 Should we allow a zero address? It would pause sends to charity until we (or the DAO) decide which charity to donate to.
 		require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		charityAddress = newCharityAddress;
 		emit CharityUpdatedEvent(charityAddress);
