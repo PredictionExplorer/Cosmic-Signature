@@ -24,7 +24,7 @@ contract CharityWallet is Ownable {
 	}
 
 	// todo-1 This will be called like once a month, right? Comment better.
-	// todo-1 This is not `onlyOwner`. Explain why.
+	// todo-1 This is not `onlyOwner`. Explain in a comment why.
 	function send() external {
 		uint256 amount = address(this).balance;
 		(bool success, ) = charityAddress.call{ value: amount }("");

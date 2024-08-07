@@ -294,6 +294,7 @@ contract StakingWalletCST is Ownable {
 		return stakedTokens.length;
 	}
 
+	// todo-1 We don't really need this method, given that `stakedTokens` is `public`.
 	function tokenByIndex(uint256 tokenIndex) public view returns (uint256) {
 		return stakedTokens[tokenIndex];
 	}
