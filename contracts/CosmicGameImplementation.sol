@@ -702,6 +702,119 @@ contract CosmicGameImplementation is
 		}
 	}
 
+	/**
+	 * @notice Donate ETH to the game
+	 */
+	function donate() external payable nonReentrant whenNotPaused {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
+		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
+		emit DonationEvent(_msgSender(), msg.value, roundNum);
+	}
+
+	/**
+	 * @notice Donate ETH to the game with additional info
+	 * @param _data Additional information about the donation
+	 */
+	function donateWithInfo(string calldata _data) external payable nonReentrant whenNotPaused {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
+		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
+		uint256 recordId = donateWithInfoNumRecords;
+		donateWithInfoNumRecords = donateWithInfoNumRecords.add(1);
+		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
+			donor: _msgSender(),
+			amount: msg.value,
+			data: _data
+		});
+		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
+	}
+
+	/**
+	 * @notice Bid and donate an NFT in a single transaction
+	 * @param _param_data Encoded bid parameters
+	 * @param nftAddress Address of the NFT contract
+	 * @param tokenId ID of the NFT to donate
+	 */
+	function bidAndDonateNFT(
+		bytes calldata _param_data,
+		IERC721 nftAddress,
+		uint256 tokenId
+	) external payable nonReentrant whenNotPaused {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
+		bid(_param_data);
+		_donateNFT(nftAddress, tokenId);
+	}
+
+	/**
+	 * @notice Handle direct Ether transfers to the contract
+	 */
+	receive() external payable {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
+		BusinessLogic.BidParams memory defaultParams;
+		defaultParams.message = "";
+		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data = abi.encode(defaultParams);
+		bid(param_data);
+	}
+
+	/**
+	 * @notice Get the address of a bidder at a specific position from the end in a given round
+	 * @param _round The round number
+	 * @param _positionFromEnd The position from the end of the bidders list
+	 * @return The address of the bidder
+	 */
+	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view returns (address) {
+		uint256 numParticipants = numRaffleParticipants[_round];
+		require(
+			_round <= roundNum,
+			CosmicGameErrors.InvalidBidderQueryRound(
+				"Provided round number is larger than total number of rounds",
+				_round,
+				roundNum
+			)
+		);
+		require(
+			numParticipants > 0,
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", _round)
+		);
+		require(
+			_positionFromEnd < numParticipants,
+			CosmicGameErrors.InvalidBidderQueryOffset(
+				"Provided index is larger than array length",
+				_round,
+				_positionFromEnd,
+				numParticipants
+			)
+		);
+		uint256 offset = numParticipants.sub(_positionFromEnd).sub(1);
+		address bidderAddr = raffleParticipants[_round][offset];
+		return bidderAddr;
+	}
+
+	// Internal function to handle NFT donations
+	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
+		_nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
+		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
+			nftAddress: _nftAddress,
+			tokenId: _tokenId,
+			round: roundNum,
+			claimed: false
+		});
+		numDonatedNFTs = numDonatedNFTs.add(1);
+		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs.sub(1));
+	}
+
 	// Admin Functions
 
 	function setRandomWalk(address _randomWalk) external onlyOwner {
@@ -801,6 +914,27 @@ contract CosmicGameImplementation is
 	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external onlyOwner {
 		erc20RewardMultiplier = _erc20RewardMultiplier;
 		emit Erc20RewardMultiplierChanged(_erc20RewardMultiplier);
+	}
+
+	// Add or update functions to set percentages and emit events
+	function setCharityPercentage(uint256 _charityPercentage) external onlyOwner {
+		charityPercentage = _charityPercentage;
+		emit CharityPercentageChanged(_charityPercentage);
+	}
+
+	function setPrizePercentage(uint256 _prizePercentage) external onlyOwner {
+		prizePercentage = _prizePercentage;
+		emit PrizePercentageChanged(_prizePercentage);
+	}
+
+	function setRafflePercentage(uint256 _rafflePercentage) external onlyOwner {
+		rafflePercentage = _rafflePercentage;
+		emit RafflePercentageChanged(_rafflePercentage);
+	}
+
+	function setStakingPercentage(uint256 _stakingPercentage) external onlyOwner {
+		stakingPercentage = _stakingPercentage;
+		emit StakingPercentageChanged(_stakingPercentage);
 	}
 
 	// Override functions
