@@ -40,26 +40,37 @@ contract BrokenStaker {
 	// used to test revert() statements in StakingWallet
 	bool blockDeposits = false;
 	StakingWalletCST stakingWalletCST;
+
 	constructor(StakingWalletCST sw_, address nft_) {
 		stakingWalletCST = sw_;
 		IERC721(nft_).setApprovalForAll(address(sw_), true);
 	}
+
 	receive() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
+
 	function doStake(uint256 tokenId) external {
 		stakingWalletCST.stake(tokenId);
 	}
+
 	function doUnstake(uint256 actionId) external {
 		stakingWalletCST.unstake(actionId);
 	}
+
 	function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
-		stakingWalletCST.claimReward(stakeActionId, depositId);
+		uint256[] memory actions = new uint256[](1);
+		uint256[] memory deposits = new uint256[](1);
+		actions[0] = stakeActionId;
+		deposits[0] = depositId;
+		stakingWalletCST.claimManyRewards(actions, deposits);
 	}
+
 	function startBlockingDeposits() external {
 		blockDeposits = true;
 	}
 }
+
 contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
