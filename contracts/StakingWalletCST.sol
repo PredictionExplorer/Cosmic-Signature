@@ -242,7 +242,7 @@ contract StakingWalletCST is Ownable {
 		);
 		uint256 totalReward = 0;
 		for (int256 i = int256(actions.length) - 1; i >= 0; i--) {
-			totalReward += _calculateReward(uint256(i), actions[uint256(i)], deposits[uint256(i)]);
+			totalReward += _calculateReward(actions[uint256(i)], deposits[uint256(i)]);
 		}
 		if (totalReward > 0) {
 			(bool success, ) = msg.sender.call{ value: totalReward }("");
@@ -251,11 +251,10 @@ contract StakingWalletCST is Ownable {
 	}
 
 	/// @notice Calculates the reward for a single stake action and deposit
-	/// @param index Index in the action array
 	/// @param stakeActionId ID of the stake action
 	/// @param ETHDepositId ID of the ETH deposit
 	/// @return Calculated reward amount
-	function _calculateReward(uint256 index, uint256 stakeActionId, uint256 ETHDepositId) internal returns (uint256) {
+	function _calculateReward(uint256 stakeActionId, uint256 ETHDepositId) internal returns (uint256) {
 		require(
 			stakeActionId < numStakeActions,
 			CosmicGameErrors.InvalidActionId("Invalid stakeActionId.", stakeActionId)
@@ -397,7 +396,7 @@ contract StakingWalletCST is Ownable {
 	/// @param ETHDepositId ID of the ETH deposit for reward calculation
 	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) public {
 		unstake(stakeActionId);
-		uint256 reward = _calculateReward(0, stakeActionId, ETHDepositId);
+		uint256 reward = _calculateReward(stakeActionId, ETHDepositId);
 		if (reward > 0) {
 			(bool success, ) = msg.sender.call{ value: reward }("");
 			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", reward, msg.sender));
@@ -426,7 +425,7 @@ contract StakingWalletCST is Ownable {
 		);
 		uint256 totalReward = 0;
 		for (int256 i = int256(claim_actions.length) - 1; i >= 0; i--) {
-			totalReward += _calculateReward(uint256(i), claim_actions[uint256(i)], claim_deposits[uint256(i)]);
+			totalReward += _calculateReward(claim_actions[uint256(i)], claim_deposits[uint256(i)]);
 		}
 		if (totalReward > 0) {
 			(bool success, ) = msg.sender.call{ value: totalReward }("");
