@@ -547,4 +547,46 @@ describe("Cosmic Set2", function () {
 		expect(maxBidderAddr).to.equal(addr1.address);
 		expect(maxEthBidderAmount).to.equal(bidPrice);
 	});
+	it("The msg.sender will get the prize if the lastBidder won't claim it", async function () {
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGame,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet,
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+
+		// in this test we will make one bid as EOA, after that we will wait for claimPrize() timeout
+		// and call the claimPrize() function from a contract. The contract should get the (main) prize.
+
+		const BidderContract = await ethers.getContractFactory("BidderContract");
+		const bContract = await BidderContract.deploy(cosmicGame.address);
+
+		let donationAmount = hre.ethers.utils.parseEther("10");
+		await cosmicGame.donate({ value: donationAmount });
+
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+
+		let bidPrice = await cosmicGame.getBidPrice();
+		var bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
+		let prizeTime = await cosmicGame.timeUntilPrize();
+		// forward time 2 days
+		await ethers.provider.send("evm_increaseTime", [prizeTime.add(48 * 3600).toNumber()]);
+		await ethers.provider.send("evm_mine");
+
+		let tx = await bContract.connect(addr2).doClaim();
+		let receipt = await tx.wait();
+		let topic_sig = cosmicGame.interface.getEventTopic("PrizeClaimEvent");
+		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		let parsed_log = cosmicGame.interface.parseLog(log);
+		expect(parsed_log.args.destination).to.equal(bContract.address);
+	});
 });

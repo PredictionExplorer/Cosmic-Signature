@@ -7,7 +7,7 @@ require("@nomicfoundation/hardhat-chai-matchers");
 require("./tasks/cosmic-tasks.js");
 module.exports = {
 	solidity: {
-		// todo-1 When changing this, revisit Comment-202408026 and Comment-202408025.
+		// When changing this, remember to revisit Comment-202408026 and Comment-202408025.
 		version: "0.8.26",
 
 		settings: {
