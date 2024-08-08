@@ -1,13 +1,13 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
-const { getCosmicGameContract } = require("./helper.js");
+const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function main() {
-	let cosmicGame = await getCosmicGameContract();
+	let cosmicGameProxy = await getCosmicGameProxyContract();
 
 	[owner] = await ethers.getSigners();
 	const BidderContract = await ethers.getContractFactory("BidderContract");
-	let bidderContract = await BidderContract.connect(owner).deploy(cosmicGame.address);
+	let bidderContract = await BidderContract.connect(owner).deploy(cosmicGameProxy.address);
 	await bidderContract.deployed();
 
 	console.log("BidderContract address: " + bidderContract.address);

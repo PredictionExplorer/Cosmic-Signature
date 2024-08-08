@@ -1,13 +1,13 @@
 const hre = require("hardhat");
 
-async function getCosmicGameContract() {
-	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
-	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
-		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
+async function getCosmicGameProxyContract() {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_PROXY_ADDRESS;
+	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
+		console.log("COSMIC_GAME_PROXY_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGame = await ethers.getContractAt("CosmicGame", cosmicGameAddr);
-	return cosmicGame;
+	let cosmicGameProxy = await ethers.getContractAt("CosmicGameProxy", cosmicGameProxyAddr);
+	return cosmicGameProxy;
 }
 
 async function main() {
@@ -26,8 +26,8 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGame = await getCosmicGameContract();
-	let stakingWalletAddr = await cosmicGame.stakingWalletRWalk();
+	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let stakingWalletAddr = await cosmicGameProxy.stakingWalletRWalk();
 	let stakingWalletRWalk = await ethers.getContractAt("StakingWalletRWalk",stakingWalletAddr);
 	console.log("staking wallet");console.log(stakingWalletAddr);
 	try {

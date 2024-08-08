@@ -11,7 +11,7 @@ async function main() {
 	}
 	let deployerAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	const {
-		cosmicGame,
+		cosmicGameProxy,
 		cosmicToken,
 		cosmicSignature,
 		charityWallet,
@@ -21,10 +21,10 @@ async function main() {
 		stakingWalletCST,
 		stakingWalletRWalk,
 		marketingWallet,
-		bLogic,
+		cosmicGameImplementation,
 	} =
-		await basicDeploymentAdvanced("SelfdestructibleCosmicGame",deployerAcct, "", 0, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
-	console.log("CosmicGame address:", cosmicGame.address);
+		await basicDeploymentAdvanced("SelfdestructibleCosmicGameProxy",deployerAcct, "", 0, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
+	console.log("CosmicGameProxy address:", cosmicGameProxy.address);
 	console.log("CosmicToken address:", cosmicToken.address);
 	console.log("CosmicSignature address:", cosmicSignature.address);
 	console.log("CharityWallet address:", charityWallet.address);
@@ -34,7 +34,7 @@ async function main() {
 	console.log("stakingWalletCST address: ",stakingWalletCST.address);
 	console.log("stakingWalletRWalk address: ",stakingWalletRWalk.address);
 	console.log("marketingWallet address: ",marketingWallet.address);
-	console.log("businessLogic address: ",bLogic.adress);
+	console.log("cosmicGameImplementation address: ",cosmicGameImplementation.adress);
 }
 
 main()

@@ -5,14 +5,14 @@
 // (note: only for unclaimed tokens)
 const hre = require("hardhat");
 const { expect } = require("chai");
-const { getCosmicGameContract } = require("./helper.js");
+const { getCosmicGameProxyContract } = require("./helper.js");
 
-async function get_unclaimed_donated_nfts(cosmicGame) {
-	let numDonatedNFTs = await cosmicGame.numDonatedNFTs();
+async function get_unclaimed_donated_nfts(cosmicGameProxy) {
+	let numDonatedNFTs = await cosmicGameProxy.numDonatedNFTs();
 	let numNFTs = numDonatedNFTs.toNumber();
 	let prizeData = [];
 	for (let i = 0; i < numNFTs; i++) {
-		let record_orig = await cosmicGame.donatedNFTs(i);
+		let record_orig = await cosmicGameProxy.donatedNFTs(i);
 		let record = Object.assign({}, record_orig);
 		Object.defineProperty(record, "index", { value: i, writable: true });
 		if (record.claimed) {
@@ -64,8 +64,8 @@ async function main() {
 	let privKey = process.env.PRIVKEY;
 
 	let testingAcct;
-	let cosmicGame = await getCosmicGameContract();
-	let nfts = await get_unclaimed_donated_nfts(cosmicGame);
+	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let nfts = await get_unclaimed_donated_nfts(cosmicGameProxy);
 	if (nfts.length == 0) {
 		console.log("Map of donated unclaimed tokens is empty, no claiming is possible");
 		return;
@@ -84,7 +84,7 @@ async function main() {
 	}
 	let roundToClaim = parseInt(roundNumStr, 10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
-	let prizeWinner = await cosmicGame.winners(roundToClaim);
+	let prizeWinner = await cosmicGameProxy.winners(roundToClaim);
 	if (prizeWinner.toString() != testingAcct.address.toString()) {
 		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + prizeWinner.toString());
 		process.exit(1);
@@ -93,7 +93,7 @@ async function main() {
 	if (privKey.length > 0) {
 		if (paramList.length > 0) {
 			console.log("Sending claimMany transaction");
-			await cosmicGame.connect(testingAcct).claimManyDonatedNFTs(paramList);
+			await cosmicGameProxy.connect(testingAcct).claimManyDonatedNFTs(paramList);
 		}
 	}
 }

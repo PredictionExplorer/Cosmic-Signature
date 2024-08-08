@@ -20,7 +20,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	console.log(param_copy);
 	let deployerAcct = new hre.ethers.Wallet(config_params.privKey, hre.ethers.provider);
 	const {
-		cosmicGame,
+		cosmicGameProxy,
 		cosmicToken,
 		cosmicSignature,
 		charityWallet,
@@ -30,7 +30,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 		stakingWalletCST,
 		stakingWalletRWalk,
 		marketingWallet,
-		bLogic,
+		cosmicGameImplementation,
 	} = await basicDeployment(
 		deployerAcct,
 		config_params.randomWalkAddr,
@@ -43,23 +43,23 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	if (config_params.donateToContract == true) {
 		let ethValue = "2";
 		let donationAmount = ethers.utils.parseEther(ethValue);
-		await cosmicGame.connect(deployerAcct).donate({value:donationAmount});
+		await cosmicGameProxy.connect(deployerAcct).donate({value:donationAmount});
 		console.log("Donated "+ethValue+" ETH to contract");
 	}
-	console.log("CosmicGame address:", cosmicGame.address);
+	console.log("CosmicGameProxy address:", cosmicGameProxy.address);
 	console.log("CosmicToken address:", cosmicToken.address);
 	console.log("CosmicSignature address:", cosmicSignature.address);
 	console.log("CharityWallet address:", charityWallet.address);
 	console.log("CosmicDAO address", cosmicDAO.address);
 	console.log("RaffleWallet address:", raffleWallet.address);
-	console.log("BidLogic address:", bLogic.address);
+	console.log("BidLogic address:", cosmicGameImplementation.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
 	console.log("StakingWalletCST address:", stakingWalletCST.address);
 	console.log("StakingWalletRWalk address:", stakingWalletRWalk.address);
 	console.log("MarketingWallet address:", marketingWallet.address);
 	console.log(
 		"INSERT INTO cg_contracts VALUES('" +
-			cosmicGame.address +
+			cosmicGameProxy.address +
 			"','" +
 			cosmicSignature.address +
 			"','" +
@@ -79,7 +79,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 			"','" +
 			marketingWallet.address +
 			"','" +
-			bLogic.address +
+			cosmicGameImplementation.address +
 			"')",
 	);
 }).addParam("deployconfig", "Config file (JSON)");
