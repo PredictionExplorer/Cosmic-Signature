@@ -11,6 +11,19 @@ import "./CosmicGameStorage.sol";
 import "./CosmicGameConstants.sol";
 import "./CosmicGameErrors.sol";
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { CosmicGameConstants } from "./CosmicGameConstants.sol";
+import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
+import { RaffleWallet } from "./RaffleWallet.sol";
+import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
+import { MarketingWallet } from "./MarketingWallet.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+
 /// @title Cosmic Game Implementation
 /// @author Cosmic Game Team
 /// @notice This contract implements the main functionality of the Cosmic Game
@@ -330,7 +343,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 				)
 			);
 			require(
-				IRandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
+				RandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
 					randomWalk,
@@ -600,7 +613,6 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 		// Mint Cosmic Signature NFT for the winner
 		uint256 winnerTokenId = IERC721Upgradeable(nft).safeMint(winner, roundNum);
-		emit CosmicSignatureMinted(winner, roundNum, winnerTokenId);
 
 		// Endurance Champion and Stellar Spender prizes
 		_distributeSpecialPrizes();
@@ -744,6 +756,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonatedNFTClaimedEvent(nft.round, index, _msgSender(), address(nft.nftAddress), nft.tokenId);
 	}
 
+	/*
 	/// @notice Claim multiple donated NFTs in a single transaction
 	/// @dev This function allows claiming multiple NFTs at once to save gas
 	/// @param indices An array of indices of the donated NFTs to claim
@@ -752,6 +765,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			claimDonatedNFT(indices[i]);
 		}
 	}
+	*/
 
 	/// @notice Donate ETH to the game
 	/// @dev This function allows users to donate ETH without placing a bid
@@ -783,6 +797,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
 	}
 
+	/*
 	/// @notice Bid and donate an NFT in a single transaction
 	/// @dev This function combines bidding and NFT donation
 	/// @param _param_data Encoded bid parameters
@@ -800,6 +815,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
+	*/
 
 	/// @notice Internal function to handle NFT donations
 	/// @dev This function is called by donateNFT and bidAndDonateNFT
@@ -1151,6 +1167,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit StakingPercentageChanged(_stakingPercentage);
 	}
 
+	/*
 	/// @notice Fallback function to handle incoming ETH transactions
 	/// @dev This function is called for empty calldata (and any value)
 	receive() external payable {
@@ -1165,6 +1182,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		bytes memory param_data = abi.encode(defaultParams);
 		bid(param_data);
 	}
+	*/
 
 	/// @notice Fallback function to handle incoming calls with data
 	/// @dev This function is called when msg.data is not empty
