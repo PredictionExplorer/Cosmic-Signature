@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import { CosmicGame } from "../CosmicGame.sol";
+import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract ReClaim {
-	CosmicGame public cosmicGameContract;
+	CosmicGameProxy public cosmicGameProxyContract;
 	uint public numIterations = 0;
-	constructor(address payable _cosmicGameContract) {
-		cosmicGameContract = CosmicGame(_cosmicGameContract);
+	constructor(address payable _cosmicGameProxyContract) {
+		cosmicGameProxyContract = CosmicGameProxy(_cosmicGameProxyContract);
 	}
 	receive() external payable {
 		if (numIterations == 0) {
 			return;
 		}
 		numIterations--;
-		cosmicGameContract.claimPrize();
+		cosmicGameProxyContract.claimPrize();
 	}
 	function claimAndReset(uint256 pNumIterations) public {
 		numIterations = pNumIterations;
-		cosmicGameContract.claimPrize();
+		cosmicGameProxyContract.claimPrize();
 	}
 }

@@ -7,8 +7,8 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameConstants } from "../Constants.sol";
-import { CosmicGameErrors } from "../Errors.sol";
-import { CosmicGame } from "../CosmicGame.sol";
+import { CosmicGameErrors } from "../CosmicGameErrors.sol";
+import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
@@ -19,13 +19,13 @@ import { MarketingWallet } from "../MarketingWallet.sol";
 
 // This is a sample upgrade contract for a hypothetical case where users
 // wanted to enable open-bidding, i.e. bid whatever price you want
-// todo-1 This logic is not necessarily kept in sync with `BusinessLogic`. To be revisited when needed.
+// todo-1 This logic is not necessarily kept in sync with `CosmicGameImplementation`. To be revisited when needed.
 contract OpenBusinessLogic is Context, Ownable {
 	// COPY OF main contract variables
 	RandomWalkNFT public randomWalk;
 	CosmicSignature public nft;
 	CosmicToken public token;
-	OpenBusinessLogic public bLogic;
+	OpenBusinessLogic public cosmicGameImplementation;
 	RaffleWallet public raffleWallet;
 	StakingWalletCST public stakingWalletCST;
 	StakingWalletRWalk public stakingWalletRWalk;
@@ -119,7 +119,7 @@ contract OpenBusinessLogic is Context, Ownable {
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		BidParams memory params = abi.decode(_param_data, (BidParams));
-		CosmicGame game = CosmicGame(payable(address(this)));
+		CosmicGameProxy game = CosmicGameProxy(payable(address(this)));
 		if (params.randomWalkNFTId != -1) {
 			require(
 				!usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
@@ -318,7 +318,7 @@ contract OpenBusinessLogic is Context, Ownable {
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
-		CosmicGame game = CosmicGame(payable(address(this)));
+		CosmicGameProxy game = CosmicGameProxy(payable(address(this)));
 		require(
 			prizeTime <= block.timestamp,
 			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)

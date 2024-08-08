@@ -3,12 +3,12 @@ pragma solidity 0.8.26;
 import { StakingWalletCST } from "../StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
-import { CosmicGame } from "../CosmicGame.sol";
+import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../Constants.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
-import { CosmicGameErrors } from "../Errors.sol";
+import { CosmicGameErrors } from "../CosmicGameErrors.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {
@@ -23,7 +23,7 @@ contract BrokenToken {
 	}
 }
 contract BrokenERC20 {
-	// used to test revert() statements in BusinessLogic contract
+	// used to test revert() statements in CosmicGameImplementation contract
 	uint256 counter;
 	function mint(address, uint256) external pure {
 		require(false, "Test mint() (ERC20) failed");
@@ -71,11 +71,11 @@ contract BrokenStaker {
 	}
 }
 
-contract SelfdestructibleCosmicGame is CosmicGame {
+contract SelfdestructibleCosmicGameProxy is CosmicGameProxy {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
 
-	constructor() CosmicGame() {}
+	constructor() CosmicGameProxy() {}
 
 	function finalizeTesting() external onlyOwner {
 		// returns all the assets to the creator of the contract and self-destroys
@@ -97,10 +97,10 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 		selfdestruct(payable(this.owner()));
 	}
 }
-contract SpecialCosmicGame is CosmicGame {
-	// special CosmicGame contract to be used in unit tests to create special test setups
+contract SpecialCosmicGameProxy is CosmicGameProxy {
+	// special CosmicGameProxy contract to be used in unit tests to create special test setups
 
-	constructor() CosmicGame() {}
+	constructor() CosmicGameProxy() {}
 	function setCharityRaw(address addr) external {
 		charity = addr;
 	}
@@ -146,7 +146,7 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
-	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, CosmicGameProxy game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
@@ -171,7 +171,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 	}
 }
 contract TestStakingWalletRWalk is StakingWalletRWalk {
-	constructor(RandomWalkNFT nft_, CosmicGame game_) StakingWalletRWalk(nft_, game_) {}
+	constructor(RandomWalkNFT nft_, CosmicGameProxy game_) StakingWalletRWalk(nft_, game_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
