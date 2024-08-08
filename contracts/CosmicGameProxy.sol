@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// Comment-202408113 applies.
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+
 import "./CosmicGameStorage.sol";
 
 contract CosmicGameProxy is UUPSUpgradeable, CosmicGameStorage {

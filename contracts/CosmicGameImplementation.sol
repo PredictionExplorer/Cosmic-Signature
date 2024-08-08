@@ -3,13 +3,31 @@ pragma solidity 0.8.26;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
+
+// [Comment-202408113]
+// The same named source file exists in multiple folders.
+// [/Comment-202408113]
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./CosmicGameStorage.sol";
 import "./CosmicGameConstants.sol";
 import "./CosmicGameErrors.sol";
+
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { CosmicGameConstants } from "./CosmicGameConstants.sol";
+import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
+import { RaffleWallet } from "./RaffleWallet.sol";
+import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
+import { MarketingWallet } from "./MarketingWallet.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 
 /// @title Cosmic Game Implementation
 /// @author Cosmic Game Team
@@ -169,10 +187,6 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @param newCosmicSignature The new Cosmic Signature address
 	event CosmicSignatureAddressChanged(address newCosmicSignature);
 
-	/// @notice Emitted when the Business Logic contract address is changed
-	/// @param newContractAddress The new Business Logic contract address
-	event BusinessLogicAddressChanged(address newContractAddress);
-
 	/// @notice Emitted when the number of ETH raffle winners for bidding is changed
 	/// @param newNumRaffleETHWinnersBidding The new number of ETH raffle winners
 	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
@@ -253,6 +267,19 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @param newStakingPercentage The new staking percentage
 	event StakingPercentageChanged(uint256 newStakingPercentage);
 
+	/// @title Bid Parameters
+	/// @dev Struct to encapsulate parameters for placing a bid in the Cosmic Game
+	/// todo-1 I am not sure if we still need this.
+	struct BidParams {
+		/// @notice The message associated with the bid
+		/// @dev Can be used to store additional information or comments from the bidder
+		string message;
+		/// @notice The ID of the RandomWalk NFT used for bidding, if any
+		/// @dev Set to -1 if no RandomWalk NFT is used, otherwise contains the NFT's ID
+		/// @custom:note RandomWalk NFTs may provide special benefits or discounts when used for bidding
+		int256 randomWalkNFTId;
+	}
+
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	/// @notice Contract constructor
 	/// @dev This constructor is only used to disable initializers for the implementation contract
@@ -311,7 +338,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 
-		CosmicGameImplementation.BidParams memory params = abi.decode(_data, (CosmicGameImplementation.BidParams));
+		BidParams memory params = abi.decode(_data, (BidParams));
 
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -1151,7 +1178,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		// Treat incoming ETH as a bid with default parameters
-		CosmicGameImplementation.BidParams memory defaultParams;
+		BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
