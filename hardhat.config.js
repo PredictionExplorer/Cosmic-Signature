@@ -55,7 +55,15 @@ module.exports = {
 
 		clear: true,
 		flat: true,
-		only: ['CharityWalle', 'CosmicDao', 'CosmicGame', 'CosmicSignature', 'CosmicToken', 'RaffleWallet', 'RandomWalkNFT'],
+		only: [
+			'CharityWallet',
+			'CosmicDao',
+			'CosmicGameProxy',
+			'CosmicSignature',
+			'CosmicToken',
+			'RaffleWallet',
+			'RandomWalkNFT',
+		],
 		spacing: 2,
 		pretty: true,
 	},
