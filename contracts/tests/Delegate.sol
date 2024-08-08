@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import { CosmicGameConstants } from "../Constants.sol";
+import { CosmicGameConstants } from "../CosmicGameConstants.sol";
 import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";

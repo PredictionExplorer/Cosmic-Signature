@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -573,10 +575,10 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @notice Distribute prizes to various recipients
 	/// @dev This function handles the distribution of ETH and NFT prizes
 	/// @param winner Address of the round winner
-	/// @param prizeAmount Amount of ETH for the main prize
-	/// @param charityAmount Amount of ETH for charity
-	/// @param raffleAmount Amount of ETH for raffle winners
-	/// @param stakingAmount Amount of ETH for staking rewards
+	/// @param prizeAmount_ Amount of ETH for the main prize
+	/// @param charityAmount_ Amount of ETH for charity
+	/// @param raffleAmount_ Amount of ETH for raffle winners
+	/// @param stakingAmount_ Amount of ETH for staking rewards
 	function _distributePrizes(
 		address winner,
 		uint256 prizeAmount_,

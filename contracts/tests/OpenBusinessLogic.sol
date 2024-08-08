@@ -6,7 +6,7 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameConstants } from "../Constants.sol";
+import { CosmicGameConstants } from "../CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../CosmicGameErrors.sol";
 import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
