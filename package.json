@@ -4,6 +4,7 @@
 		"@nomicfoundation/hardhat-toolbox": "^2.0.2",
 		"@nomiclabs/hardhat-etherscan": "^3.1.8",
 		"@openzeppelin/contracts": "^4.9.6",
+		"@openzeppelin/contracts-upgradeable": "^4.9.6",
 		"@openzeppelin/hardhat-upgrades": "^1.28.0",
 		"hardhat": "^2.22.8",
 		"hardhat-abi-exporter": "^2.10.1",
