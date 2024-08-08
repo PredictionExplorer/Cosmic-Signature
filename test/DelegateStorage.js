@@ -7,7 +7,7 @@ const DEFAULT_VALUE = "111";
 const DEFAULT_INDEX = "11";
 const DEFAULT_ADDRESS = "0x1111111111111111111111111111111111111111";
 
-// CHecks that storage offsets and slots in BusinessLogic contract and CosmicGame contract
+// CHecks that storage offsets and slots in CosmicGameImplementation contract and CosmicGameProxy contract
 // are pointing to the same indexes
 describe("DelegateCallStorage", function () {
 	async function deployCosmic(deployerAcct) {
@@ -234,10 +234,10 @@ describe("DelegateCallStorage", function () {
 		let value = await cgtest.nft();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
-	it("bLogic", async function () {
+	it("cosmicGameImplementation", async function () {
 		const { cgtest, bltest } = await loadFixture(deployCosmic);
 		await cgtest.f39();
-		let value = await cgtest.bLogic();
+		let value = await cgtest.cosmicGameImplementation();
 		expect(await value).to.equal(DEFAULT_ADDRESS);
 	});
 	it("extraStorage", async function () {

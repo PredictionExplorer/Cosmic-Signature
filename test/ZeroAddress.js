@@ -12,7 +12,7 @@ describe("Zero-address checking", function () {
 		let contractDeployerAcct;
 		[contractDeployerAcct] = await ethers.getSigners();
 		const {
-			cosmicGame,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
@@ -22,11 +22,11 @@ describe("Zero-address checking", function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-			bLogic,
+			cosmicGameImplementation,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 
 		return {
-			cosmicGame,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
@@ -36,7 +36,7 @@ describe("Zero-address checking", function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-			bLogic,
+			cosmicGameImplementation,
 		};
 	}
 	const bidParamsEncoding = {
@@ -49,7 +49,7 @@ describe("Zero-address checking", function () {
 	};
 	it("Shouldn't be possible to set a zero-address for CharityWallet", async function () {
 		const {
-			cosmicGame,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
@@ -68,7 +68,7 @@ describe("Zero-address checking", function () {
 	});
 	it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
 		const {
-			cosmicGame,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
