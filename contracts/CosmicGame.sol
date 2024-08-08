@@ -94,7 +94,7 @@ contract CosmicGame is Ownable, IERC721Receiver {
 	// percentage of funds that goes to charity
 	uint256 public charityPercentage = 10;
 	// percentage of funds that is distributed in ETH raffles (given only to bidders)
-	uint256 public rafflePercentage = 5;
+	uint256 public rafflePercentage = 12;
 	// percentage of funds that id ditributed between stakers (CST stakers only)
 	uint256 public stakingPercentage = 10;
 	// END OF percentage variables
