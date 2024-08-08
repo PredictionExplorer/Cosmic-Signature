@@ -27,7 +27,7 @@ because eth_estimateGas function produces very low gasLimit values and because A
 
 ##### for Arbitrum Sepolia:
 
-    npx hardhat deploy-cosmicgame--deployconfig ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
+    npx hardhat deploy-cosmicgame --deployconfig ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
 
 Note: the main difference between localnet and Sepolia deployment is that for localnet a donation is made for 2 ETH (this is set in the config file, but the deployment process is the same)
 
@@ -36,17 +36,17 @@ Note: the main difference between localnet and Sepolia deployment is that for lo
 
 ##### Set contract timing values to shorter interval for testing purposes
 
-    PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-short-time-intervals.js --network [network-name]
+    PRIVKEY=[private_key] COSMIC_GAME_PROXY_ADDRESS=[addr] npx hardhat run ./scripts/set-short-time-intervals.js --network [network-name]
 
 ##### Enable game-mode
 
-    PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime.js --network [network-name])
+    PRIVKEY=[private_key] COSMIC_GAME_PROXY_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime.js --network [network-name])
 
-Copy the CosmicGame contract address and run test scripts:
+Copy the CosmicGameProxy contract address and run test scripts:
 
 ##### To mint Random Walk tokens
 
-	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
+	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_GAME_PROXY_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
 
 	(note: this command will set RWALK_TOKENS shell variable to tokens minted)
 
@@ -61,8 +61,8 @@ Copy the CosmicGame contract address and run test scripts:
 
 ##### Run the test set of bids
 
-    RWALK_TOKENS="[comma_separated_list_of_tokens]" PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
+    RWALK_TOKENS="[comma_separated_list_of_tokens]" PRIVKEY=[private_key] COSMIC_GAME_PROXY_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
 
 ##### Wait for time to advance to be able to claimPrize() and execute second set of tests
 
-    PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part2.js --network [network-name]
+    PRIVKEY=[private_key] COSMIC_GAME_PROXY_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part2.js --network [network-name]
