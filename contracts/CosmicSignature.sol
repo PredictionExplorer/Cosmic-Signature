@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameErrors } from "./Errors.sol";
+import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 
 /// @title CosmicSignature - NFT for the Cosmic Game ecosystem
 /// @author Cosmic Game Development Team
@@ -26,8 +26,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	/// @notice Base URI for token metadata
 	string private _baseTokenURI;
 
-	/// @notice Address of the CosmicGame contract
-	address public immutable cosmicGameContract;
+	/// @notice Address of the CosmicGameProxy contract.
+	address public immutable cosmicGameProxyContract;
 
 	/// @notice IPFS link to the script that generates images and videos for each NFT based on seed
 	string public tokenGenerationScriptURL = "ipfs://TBD";
@@ -53,11 +53,11 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	event BaseURIEvent(string newURI);
 
 	/// @notice Initializes the CosmicSignature contract
-	/// @param _cosmicGameContract The address of the CosmicGame contract
-	constructor(address _cosmicGameContract) ERC721("CosmicSignature", "CSS") {
-		require(_cosmicGameContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+	/// @param _cosmicGameProxyContract The address of the CosmicGameProxy contract.
+	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") {
+		require(_cosmicGameProxyContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
-		cosmicGameContract = _cosmicGameContract;
+		cosmicGameProxyContract = _cosmicGameProxyContract;
 	}
 
 	/// @notice Sets the URL for the token generation script
@@ -91,15 +91,15 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 	}
 
 	/// @notice Mints a new CosmicSignature token
-	/// @dev Only callable by the CosmicGame contract
+	/// @dev Only callable by the CosmicGameProxy contract.
 	/// @param owner The address that will receive the newly minted token
 	/// @param roundNum The round number in which the token is minted
 	/// @return The ID of the newly minted token
 	function mint(address owner, uint256 roundNum) external returns (uint256) {
 		require(owner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		require(
-			_msgSender() == cosmicGameContract,
-			CosmicGameErrors.NoMintPrivileges("Only the CosmicGame contract can mint.", msg.sender)
+			_msgSender() == cosmicGameProxyContract,
+			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract can mint.", msg.sender)
 		);
 
 		uint256 tokenId = numTokens;

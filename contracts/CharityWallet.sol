@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameErrors } from "./Errors.sol";
+import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 
 /// @title CharityWallet - A contract for managing charitable donations
 /// @author Cosmic Game Development Team

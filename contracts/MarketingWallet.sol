@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicToken } from "./CosmicToken.sol";
-import { CosmicGameErrors } from "./Errors.sol";
+import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title MarketingWallet - A wallet for managing CST rewards for marketing efforts

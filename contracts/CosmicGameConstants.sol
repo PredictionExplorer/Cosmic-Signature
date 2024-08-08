@@ -29,7 +29,7 @@ library CosmicGameConstants {
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * 3600;
 
 	/// @notice System mode constants
-	/// @dev These define the operational states of the CosmicGame contract
+	/// @dev These define the operational states of the CosmicGameProxy contract.
 	uint256 public constant MODE_RUNTIME = 0; // Normal operation
 	uint256 public constant MODE_PREPARE_MAINTENANCE = 1; // Preparing for maintenance
 	uint256 public constant MODE_MAINTENANCE = 2; // System under maintenance

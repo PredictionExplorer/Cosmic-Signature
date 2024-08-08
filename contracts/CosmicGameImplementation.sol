@@ -309,7 +309,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 
-		BusinessLogic.BidParams memory params = abi.decode(_data, (BusinessLogic.BidParams));
+		CosmicGameImplementation.BidParams memory params = abi.decode(_data, (CosmicGameImplementation.BidParams));
 
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -1149,7 +1149,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		// Treat incoming ETH as a bid with default parameters
-		BusinessLogic.BidParams memory defaultParams;
+		CosmicGameImplementation.BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
