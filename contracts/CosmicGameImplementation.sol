@@ -16,10 +16,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 // ToDo-202408115-0 applies.
 // import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "./CosmicGameStorage.sol";
-import "./CosmicGameConstants.sol";
-import "./CosmicGameErrors.sol";
-
 // import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 // import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -31,8 +27,9 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
-import { MarketingWallet } from "./MarketingWallet.sol";
+// import { MarketingWallet } from "./MarketingWallet.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import "./CosmicGameStorage.sol";
 
 /// @title Cosmic Game Implementation
 /// @author Cosmic Game Team
@@ -296,6 +293,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		_disableInitializers();
 	}
 
+// todo-0 Is this correct?
+// todo-0 See also: `CosmicGameProxy.initialize` and todos there.
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
 	function initialize() public override initializer {
@@ -805,7 +804,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonatedNFTClaimedEvent(nft.round, index, _msgSender(), address(nft.nftAddress), nft.tokenId);
 	}
 
-	/*
+	/* todo-0 Have I commented this out? I don't remember.
 	/// @notice Claim multiple donated NFTs in a single transaction
 	/// @dev This function allows claiming multiple NFTs at once to save gas
 	/// @param indices An array of indices of the donated NFTs to claim
@@ -847,7 +846,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
 	}
 
-	/*
+	/* todo-0 Have I commented this out? I don't remember.
 	/// @notice Bid and donate an NFT in a single transaction
 	/// @dev This function combines bidding and NFT donation
 	/// @param _param_data Encoded bid parameters
@@ -1231,7 +1230,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
 	}
 
-	/*
+	/* todo-0 Have I commented this out? I don't remember.
 	/// @notice Fallback function to handle incoming ETH transactions
 	/// @dev This function is called for empty calldata (and any value)
 	receive() external payable {
