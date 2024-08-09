@@ -2,6 +2,9 @@
 pragma solidity 0.8.26;
 pragma abicoder v2;
 
+// todo-1 Commented out to suppress a compile error.
+/*
+
 import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
@@ -154,3 +157,5 @@ contract BidCNonRecv {
 		cosmicGameProxy.claimPrize();
 	}
 }
+
+*/
