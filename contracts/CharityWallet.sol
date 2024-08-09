@@ -26,6 +26,13 @@ contract CharityWallet is Ownable {
 	/// @param newCharityAddress The new address of the designated charity
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 
+	// [ToDo-202408114-1]
+	// `Ownable` `constructor` and `__Ownable_init` now require a nonzero `initialOwner`.
+	// I have provided a simple one, but this is to be revisited.
+	// [/ToDo-202408114-1]
+	constructor() Ownable(msg.sender) {
+	}
+
 	/// @notice Allows the contract to receive ETH donations
 	/// @dev This function is called for plain ETH transfers without data
 	receive() external payable {

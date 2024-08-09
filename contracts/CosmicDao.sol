@@ -29,14 +29,14 @@ contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, Govern
 	/// @notice Retrieves the voting delay
 	/// @dev Overrides the Governor and GovernorSettings implementations
 	/// @return The number of blocks between proposal creation and the start of voting
-	function votingDelay() public view override(IGovernor, GovernorSettings) returns (uint256) {
+	function votingDelay() public view override(Governor, GovernorSettings) returns (uint256) {
 		return super.votingDelay();
 	}
 
 	/// @notice Retrieves the voting period
 	/// @dev Overrides the Governor and GovernorSettings implementations
 	/// @return The duration of voting on a proposal, in blocks
-	function votingPeriod() public view override(IGovernor, GovernorSettings) returns (uint256) {
+	function votingPeriod() public view override(Governor, GovernorSettings) returns (uint256) {
 		return super.votingPeriod();
 	}
 
@@ -46,7 +46,7 @@ contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, Govern
 	/// @return The number of votes required for a quorum
 	function quorum(
 		uint256 blockNumber
-	) public view override(IGovernor, GovernorVotesQuorumFraction) returns (uint256) {
+	) public view override(Governor, GovernorVotesQuorumFraction) returns (uint256) {
 		return super.quorum(blockNumber);
 	}
 

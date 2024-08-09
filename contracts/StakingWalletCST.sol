@@ -129,7 +129,8 @@ contract StakingWalletCST is Ownable {
 	/// @param nft_ Address of the CosmicSignature NFT contract
 	/// @param game_ Address of the CosmicGameProxy contract.
 	/// @param charity_ Address of the charity
-	constructor(CosmicSignature nft_, CosmicGameProxy game_, address charity_) {
+	/// ToDo-202408114-1 applies.
+	constructor(CosmicSignature nft_, CosmicGameProxy game_, address charity_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
 		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		require(charity_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for charity."));

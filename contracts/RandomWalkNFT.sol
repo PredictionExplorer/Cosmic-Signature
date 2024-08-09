@@ -1,12 +1,14 @@
+// todo-1 Is license supposed to be the same in all files? Currently it's not.
 // SPDX-License-Identifier: MIT
 
+pragma solidity 0.8.26;
+
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import { MyERC721Enumerable } from "./MyERC721Enumerable.sol";
 
-pragma solidity ^0.8.26;
-
-contract RandomWalkNFT is ERC721Enumerable, Ownable {
+contract RandomWalkNFT is MyERC721Enumerable, Ownable {
 	// todo-1 We never change this.
 	// todo-1 Should this be a `constant`?
 	uint256 public saleTime = 1636675200; // November 11 2021 19:00 New York Time
@@ -44,7 +46,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 	// todo-1 Should this be a `constant`?
 	string public tokenGenerationScript = "ipfs://QmP7Z8VbQLpytzXnceeAAc4D5tX39XVzoEeUZwEK8aPk8W";
 
-	constructor() ERC721("RandomWalkNFT", "RWLK") {
+	// ToDo-202408114-1 applies.
+	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(msg.sender) {
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",

@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: CC0-1.0
+
 pragma solidity 0.8.26;
 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+// import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { MyERC721Enumerable } from "./MyERC721Enumerable.sol";
 
 /// @title CosmicSignature - NFT for the Cosmic Game ecosystem
 /// @author Cosmic Game Development Team
 /// @notice This contract implements the CosmicSignature NFT with unique features for the Cosmic Game
-/// @dev Extends ERC721Enumerable and includes custom minting and metadata management
-contract CosmicSignature is ERC721Enumerable, Ownable {
+/// @dev Extends MyERC721Enumerable and includes custom minting and metadata management
+contract CosmicSignature is MyERC721Enumerable, Ownable {
 	/// @notice Mapping of token IDs to their unique seeds
 	mapping(uint256 => bytes32) public seeds;
 
@@ -54,7 +56,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
 	/// @notice Initializes the CosmicSignature contract
 	/// @param _cosmicGameProxyContract The address of the CosmicGameProxy contract.
-	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") {
+	/// ToDo-202408114-1 applies.
+	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") Ownable(msg.sender) {
 		require(_cosmicGameProxyContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
 		cosmicGameProxyContract = _cosmicGameProxyContract;
@@ -107,6 +110,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable {
 
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), tokenId, owner));
 		seeds[tokenId] = entropy;
+		// todo-1 We use safeMint to mint a Random Walk NFT? Why not here? At least explain in a comment.
 		_mint(owner, tokenId);
 
 		emit MintEvent(tokenId, owner, roundNum, entropy);

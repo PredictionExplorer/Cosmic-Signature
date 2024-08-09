@@ -84,7 +84,8 @@ contract StakingWalletRWalk is Ownable {
 	/// @notice Initializes the StakingWalletRWalk contract
 	/// @param rwalk_ Address of the RandomWalkNFT contract
 	/// @param game_ Address of the CosmicGameProxy contract.
-	constructor(RandomWalkNFT rwalk_, CosmicGameProxy game_) {
+	/// ToDo-202408114-1 applies.
+	constructor(RandomWalkNFT rwalk_, CosmicGameProxy game_) Ownable(msg.sender) {
 		require(
 			address(rwalk_) != address(0),
 			CosmicGameErrors.ZeroAddress("Zero-address was given for the RandomWalk token.")

@@ -25,7 +25,8 @@ contract MarketingWallet is Ownable {
 
 	/// @notice Initializes the MarketingWallet contract
 	/// @param token_ Address of the CosmicToken contract
-	constructor(CosmicToken token_) {
+	/// ToDo-202408114-1 applies.
+	constructor(CosmicToken token_) Ownable(msg.sender) {
 		require(address(token_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		token = token_;
 	}

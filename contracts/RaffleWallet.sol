@@ -28,7 +28,8 @@ contract RaffleWallet is Ownable {
 
 	/// @notice Initializes the RaffleWallet contract
 	/// @param game_ Address of the CosmicGameProxy contract.
-	constructor(CosmicGameProxy game_) {
+	/// ToDo-202408114-1 applies.
+	constructor(CosmicGameProxy game_) Ownable(msg.sender) {
 		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		game = game_;
 	}

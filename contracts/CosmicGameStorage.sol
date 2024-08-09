@@ -7,8 +7,12 @@ import "./CosmicGameConstants.sol";
 contract CosmicGameStorage is OwnableUpgradeable {
 	// #region External Contracts
 
+	// todo-1 Why not name this `randomWalkNFT`?
 	address public randomWalk;
+
+	// todo-1 This is a `CosmicSignature`address, right? Rename this to make it clear.
 	address public nft;
+
 	address public token;
 	address public raffleWallet;
 	address public stakingWalletCST;
@@ -79,7 +83,10 @@ contract CosmicGameStorage is OwnableUpgradeable {
 
 	mapping(uint256 => uint256) public extraStorage;
 
-	function initialize() public initializer {
-		__Ownable_init();
+	// #endregion
+
+	function initialize() public virtual initializer {
+		// ToDo-202408114-1 applies.
+		__Ownable_init(msg.sender);
 	}
 }
