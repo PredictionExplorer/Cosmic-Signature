@@ -1,7 +1,2 @@
-@ todo-1 "@nomicfoundation/hardhat-toolbox" version is currently 2.0.2, which a bit too old.
-  todo-1 It could make sense to upgrage it to 4.0.0.
-  todo-1 But that would result in a version conflict with other packages.
-
-@ todo-1 "@openzeppelin/hardhat-upgrades" version is currently 1.28.0, which a bit too old.
-  todo-1 It could make sense to upgrage it to 2.5.1.
-  todo-1 But possible implications of the upgrade need to be studied.
+@ todo-2 https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
+  todo-2 The @nomiclabs/hardhat-etherscan package is deprecated, please use @nomicfoundation/hardhat-verify instead
