@@ -1,13 +1,14 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+// const { ethers } = require("hardhat");
+const hre = require("hardhat");
 const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Events2", function () {
-	let INITIAL_AMOUNT = ethers.utils.parseEther("10");
+	// const INITIAL_AMOUNT = hre.ethers.parseEther("10");
 	async function deployCosmic() {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		[contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -47,9 +48,9 @@ describe("Events2", function () {
 	it("Number of Raffle events match the configuration", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 
-		// we need to min RWalk tokens for all bidders that participate to avoid missing events
+		// we need to mint RWalk tokens for all bidders that participate to avoid missing events
 		let tokenPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: tokenPrice });
 		tokenPrice = await randomWalkNFT.getMintPrice();
@@ -60,10 +61,10 @@ describe("Events2", function () {
 		// we need to create CosmicToken holders prior to our test
 		let p = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let params = hre.ethers.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: p });
 		let ptime = await cosmicGameProxy.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [ptime.toNumber()]);
+		await hre.ethers.provider.send("evm_increaseTime", [ptime.toNumber()]);
 		await cosmicGameProxy.connect(addr1).claimPrize();
 
 		// we need to stake tokens to have holder owners to earn raffle tokens
@@ -79,7 +80,7 @@ describe("Events2", function () {
 			let ownr = await randomWalkNFT.ownerOf(i)
 			let owner_signer = randomWalkNFT.provider.getSigner(ownr);
 			await randomWalkNFT.connect(owner_signer).setApprovalForAll(stakingWalletRWalk.address, true);
-		await stakingWalletRWalk.connect(owner_signer).stake(i);
+			await stakingWalletRWalk.connect(owner_signer).stake(i);
 		}
 
 
@@ -91,20 +92,20 @@ describe("Events2", function () {
 		let tx, receipt, log, parsed_log, bidPrice, winner;
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
-		await ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
+		await hre.ethers.provider.send("evm_mine");
 
 		tx = await cosmicGameProxy.connect(addr3).claimPrize();
 		receipt = await tx.wait();
