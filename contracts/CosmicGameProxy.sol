@@ -13,9 +13,17 @@ contract CosmicGameProxy is UUPSUpgradeable, CosmicGameStorage {
 	}
 
 	function initialize(address _implementation) public initializer {
-		__UUPSUpgradeable_init();
+		// todo-0 I commented out this call.
+		// todo-0 See Comment-202408113.
+		// todo-0 If we imported the other "UUPSUpgradeable.sol" this would compile.
+		// __UUPSUpgradeable_init();
+
 		CosmicGameStorage.initialize();
-		_upgradeTo(_implementation);
+
+		// todo-0 `_upgradeTo` no longer exists. Calling `upgradeToAndCall` instead. Make sense?
+		// todo-0 I dislike it that `_upgradeTo` probably was `internal`, but `upgradeToAndCall` is `public`.
+		// _upgradeTo(_implementation);
+		upgradeToAndCall(_implementation, "");
 	}
 
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
