@@ -2,23 +2,28 @@
 pragma solidity 0.8.26;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
 
 // [Comment-202408113]
-// The same named source file exists in multiple folders.
+// A file with this name exists in multiple folders.
+// todo-0 Do we `import` the right file where this comment is referenced?
 // [/Comment-202408113]
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+// ToDo-202408115-0 applies.
+// import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./CosmicGameStorage.sol";
 import "./CosmicGameConstants.sol";
 import "./CosmicGameErrors.sol";
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+// import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+// import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { CosmicGameConstants } from "./CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
@@ -34,8 +39,12 @@ import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 /// @notice This contract implements the main functionality of the Cosmic Game
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameStorage {
-	using SafeERC20Upgradeable for IERC20Upgradeable;
-	using SafeMathUpgradeable for uint256;
+	// using SafeERC20Upgradeable for IERC20Upgradeable;
+	using SafeERC20 for IERC20;
+// [ToDo-202408115-0]
+// Commented out to suppress a compile error.
+// [/ToDo-202408115-0]
+	// using SafeMathUpgradeable for uint256;
 
 	/// @notice Emitted when a prize is claimed
 	/// @param prizeNum The number of the prize being claimed
@@ -269,7 +278,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 	/// @title Bid Parameters
 	/// @dev Struct to encapsulate parameters for placing a bid in the Cosmic Game
-	/// todo-1 I am not sure if we still need this.
+	/// todo-0 I am not sure if we still need this.
 	struct BidParams {
 		/// @notice The message associated with the bid
 		/// @dev Can be used to store additional information or comments from the bidder
@@ -289,10 +298,11 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
-	function initialize() public initializer {
+	function initialize() public override initializer {
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
-		__Ownable_init();
+		// ToDo-202408114-1 applies.
+		__Ownable_init(msg.sender);
 
 		// Initialize state variables
 		roundNum = 0;
@@ -349,7 +359,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 				)
 			);
 			require(
-				IRandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
+				RandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
 					randomWalk,
@@ -392,7 +402,12 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		}
 
 		// Update Stellar Spender
-		bidderInfo[roundNum][_msgSender()].totalSpent = bidderInfo[roundNum][_msgSender()].totalSpent.add(paidBidPrice);
+		// [ToDo-202408116-0]
+		// This fails to compile, apparently because I have commented out the piece of code near ToDo-202408115-0.
+		// Is the safe math needed for overflow checks? That's the default behavior since Solidity 8.0.0.
+		// So I have rewritten this to use the `+` or `-` operator.
+		// [/ToDo-202408116-0]
+		bidderInfo[roundNum][_msgSender()].totalSpent = bidderInfo[roundNum][_msgSender()].totalSpent/*.add*/ + (paidBidPrice);
 		if (bidderInfo[roundNum][_msgSender()].totalSpent > stellarSpenderAmount) {
 			stellarSpenderAmount = bidderInfo[roundNum][_msgSender()].totalSpent;
 			stellarSpender = _msgSender();
@@ -404,7 +419,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 		// Refund excess ETH if the bidder sent more than required
 		if (msg.value > paidBidPrice) {
-			uint256 amountToSend = msg.value.sub(paidBidPrice);
+			// ToDo-202408116-0 applies.
+			uint256 amountToSend = msg.value/*.sub*/ - (paidBidPrice);
 			(bool success, ) = _msgSender().call{ value: amountToSend }("");
 			require(
 				success,
@@ -439,7 +455,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 		if (lastBidder == address(0)) {
 			// First bid of the round
-			prizeTime = block.timestamp.add(initialSecondsUntilPrize);
+			// ToDo-202408116-0 applies.
+			prizeTime = block.timestamp/*.add*/ + (initialSecondsUntilPrize);
 		}
 
 		_updateEnduranceChampion();
@@ -450,11 +467,14 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
-		numRaffleParticipants[roundNum] = numParticipants.add(1);
+		// ToDo-202408116-0 applies.
+		numRaffleParticipants[roundNum] = numParticipants/*.add*/ + (1);
 
 		// Distribute token rewards
-		IERC20Upgradeable(token).safeTransferFrom(address(this), lastBidder, tokenReward);
-		IERC20Upgradeable(token).safeTransferFrom(address(this), marketingWallet, marketingReward);
+		// IERC20Upgradeable(token).safeTransferFrom(address(this), lastBidder, tokenReward);
+		IERC20(token).safeTransferFrom(address(this), lastBidder, tokenReward);
+		// IERC20Upgradeable(token).safeTransferFrom(address(this), marketingWallet, marketingReward);
+		IERC20(token).safeTransferFrom(address(this), marketingWallet, marketingReward);
 
 		_pushBackPrizeTime();
 	}
@@ -464,7 +484,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	function _updateEnduranceChampion() internal {
 		if (lastBidder == address(0)) return;
 
-		uint256 lastBidDuration = block.timestamp.sub(bidderInfo[roundNum][lastBidder].lastBidTime);
+		// ToDo-202408116-0 applies.
+		uint256 lastBidDuration = block.timestamp/*.sub*/ - (bidderInfo[roundNum][lastBidder].lastBidTime);
 		if (lastBidDuration > enduranceChampionDuration) {
 			enduranceChampionDuration = lastBidDuration;
 			enduranceChampion = lastBidder;
@@ -474,9 +495,12 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		uint256 secondsAdded = nanoSecondsExtra.div(1_000_000_000);
-		prizeTime = Math.max(prizeTime, block.timestamp).add(secondsAdded);
-		nanoSecondsExtra = nanoSecondsExtra.mul(timeIncrease).div(CosmicGameConstants.MILLION);
+		// ToDo-202408116-0 applies.
+		uint256 secondsAdded = nanoSecondsExtra/*.div*/ / (1_000_000_000);
+		// ToDo-202408116-0 applies.
+		prizeTime = Math.max(prizeTime, block.timestamp)/*.add*/ + (secondsAdded);
+		// ToDo-202408116-0 applies.
+		nanoSecondsExtra = nanoSecondsExtra/*.mul*/ * (timeIncrease)/*.div*/ / (CosmicGameConstants.MILLION);
 	}
 
 	/// @notice Place a bid using CST tokens
@@ -487,7 +511,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
-		uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
+		// uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
+		uint256 userBalance = IERC20(token).balanceOf(_msgSender());
 		uint256 price = currentCSTPrice();
 		require(
 			userBalance >= price,
@@ -499,12 +524,16 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		);
 
 		// Double the starting CST price for the next auction, with a minimum of 100 CST
-		startingBidPriceCST = Math.max(100e18, price).mul(2);
+		// ToDo-202408116-0 applies.
+		startingBidPriceCST = Math.max(100e18, price)/*.mul*/ * (2);
 		lastCSTBidTime = block.timestamp;
 
 		// Burn the CST tokens used for bidding
-		IERC20Upgradeable(token).safeTransferFrom(_msgSender(), address(this), price);
-		IERC20Upgradeable(token).burn(price);
+		// IERC20Upgradeable(token).safeTransferFrom(_msgSender(), address(this), price);
+		IERC20(token).safeTransferFrom(_msgSender(), address(this), price);
+		// IERC20Upgradeable(token).burn(price);
+		// IERC20(token).burn(price);
+		ERC20Burnable(token).burn(price);
 
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
@@ -518,15 +547,18 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
-		uint256 fraction = uint256(1e6).sub((uint256(1e6).mul(secondsElapsed)).div(duration));
-		return (fraction.mul(startingBidPriceCST)).div(1e6);
+		// ToDo-202408116-0 applies.
+		uint256 fraction = uint256(1e6)/*.sub*/ - ((uint256(1e6)/*.mul*/ * (secondsElapsed))/*.div*/ / (duration));
+		// ToDo-202408116-0 applies.
+		return (fraction/*.mul*/ * (startingBidPriceCST))/*.div*/ / (1e6);
 	}
 
 	/// @notice Get the current auction duration and elapsed time
 	/// @dev This function is used to calculate the CST price
 	/// @return A tuple containing the seconds elapsed and total duration of the current auction
 	function auctionDuration() public view returns (uint256, uint256) {
-		uint256 secondsElapsed = block.timestamp.sub(lastCSTBidTime);
+		// ToDo-202408116-0 applies.
+		uint256 secondsElapsed = block.timestamp/*.sub*/ - (lastCSTBidTime);
 		return (secondsElapsed, CSTAuctionLength);
 	}
 
@@ -536,8 +568,10 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
 		// The auction should last 12 hours longer than the amount of time we add after every bid
-		CSTAuctionLength = uint256(12).mul(nanoSecondsExtra).div(1_000_000_000);
-		bidPrice = address(this).balance.div(initialBidAmountFraction);
+		// ToDo-202408116-0 applies.
+		CSTAuctionLength = uint256(12)/*.mul*/ * (nanoSecondsExtra)/*.div*/ / (1_000_000_000);
+		// ToDo-202408116-0 applies.
+		bidPrice = address(this).balance/*.div*/ / (initialBidAmountFraction);
 		stellarSpender = address(0);
 		stellarSpenderAmount = 0;
 		enduranceChampion = address(0);
@@ -563,7 +597,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 
 		address winner;
-		if (block.timestamp.sub(prizeTime) < timeoutClaimPrize) {
+		// ToDo-202408116-0 applies.
+		if (block.timestamp/*.sub*/ - (prizeTime) < timeoutClaimPrize) {
 			// Only the last bidder can claim within the timeoutClaimPrize period
 			require(
 				_msgSender() == lastBidder,
@@ -571,7 +606,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 					"Only the last bidder can claim the prize during the first 24 hours.",
 					lastBidder,
 					_msgSender(),
-					timeoutClaimPrize.sub(block.timestamp.sub(prizeTime))
+					// ToDo-202408116-0 applies.
+					timeoutClaimPrize/*.sub*/ - (block.timestamp/*.sub*/ - (prizeTime))
 				)
 			);
 			winner = _msgSender();
@@ -596,7 +632,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 		_roundEndResets();
 		emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
-		roundNum = roundNum.add(1);
+		// ToDo-202408116-0 applies.
+		roundNum = roundNum/*.add*/ + (1);
 	}
 
 	/// @notice Distribute prizes to various recipients
@@ -617,9 +654,10 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		(bool success, ) = winner.call{ value: prizeAmount_ }("");
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, winner));
 
-		// Mint Cosmic Signature NFT for the winner
-		uint256 winnerTokenId = IERC721Upgradeable(nft).safeMint(winner, roundNum);
-		emit CosmicSignatureMinted(winner, roundNum, winnerTokenId);
+		// Mint Cosmic Signature NFT for the winner.
+		// todo-0 `winnerTokenId` is unused. Bug or feature?
+		// uint256 winnerTokenId = IERC721Upgradeable(nft).safeMint(winner, roundNum);
+		uint256 winnerTokenId = CosmicSignature(nft).mint(winner, roundNum);
 
 		// Endurance Champion and Stellar Spender prizes
 		_distributeSpecialPrizes();
@@ -629,7 +667,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity));
 
 		// Staking
-		if (IERC721Upgradeable(nft).totalSupply() > 0) {
+		// if (IERC721Upgradeable(nft).totalSupply() > 0) {
+		if (IERC721Enumerable(nft).totalSupply() > 0) {
 			(success, ) = stakingWalletCST.call{ value: stakingAmount_ }(
 				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
 			);
@@ -653,7 +692,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		// Endurance Champion Prize
 		if (enduranceChampion != address(0)) {
 			uint256 tokenId = CosmicSignature(nft).mint(enduranceChampion, roundNum);
-			uint256 erc20TokenReward = erc20RewardMultiplier.mul(numRaffleParticipants[roundNum]);
+			// ToDo-202408116-0 applies.
+			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
 			CosmicToken(token).transfer(enduranceChampion, erc20TokenReward);
 			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, 0);
 		}
@@ -661,7 +701,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		// Stellar Spender Prize
 		if (stellarSpender != address(0)) {
 			uint256 tokenId = CosmicSignature(nft).mint(stellarSpender, roundNum);
-			uint256 erc20TokenReward = erc20RewardMultiplier.mul(numRaffleParticipants[roundNum]);
+			// ToDo-202408116-0 applies.
+			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
 			CosmicToken(token).transfer(stellarSpender, erc20TokenReward);
 			emit StellarSpenderWinnerEvent(
 				stellarSpender,
@@ -679,7 +720,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
 	function _distributeRafflePrizes(uint256 raffleAmount_) internal {
 		// Distribute ETH prizes
-		uint256 perWinnerAmount = raffleAmount_.div(numRaffleETHWinnersBidding);
+		// ToDo-202408116-0 applies.
+		uint256 perWinnerAmount = raffleAmount_/*.div*/ / (numRaffleETHWinnersBidding);
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner = raffleParticipants[roundNum][
@@ -702,11 +744,11 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		}
 
 		// Distribute NFTs to random RandomWalkNFT stakers
-		uint256 numStakedTokensRWalk = stakingWalletRWalk.numTokensStaked();
+		uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numTokensStaked();
 		if (numStakedTokensRWalk > 0) {
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateEntropy();
-				address rwalkWinner = stakingWalletRWalk.pickRandomStaker(raffleEntropy);
+				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStaker(raffleEntropy);
 
 				uint256 tokenId = CosmicSignature(nft).mint(rwalkWinner, roundNum);
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
@@ -763,6 +805,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonatedNFTClaimedEvent(nft.round, index, _msgSender(), address(nft.nftAddress), nft.tokenId);
 	}
 
+	/*
 	/// @notice Claim multiple donated NFTs in a single transaction
 	/// @dev This function allows claiming multiple NFTs at once to save gas
 	/// @param indices An array of indices of the donated NFTs to claim
@@ -771,6 +814,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			claimDonatedNFT(indices[i]);
 		}
 	}
+	*/
 
 	/// @notice Donate ETH to the game
 	/// @dev This function allows users to donate ETH without placing a bid
@@ -793,7 +837,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		);
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		uint256 recordId = donateWithInfoNumRecords;
-		donateWithInfoNumRecords = donateWithInfoNumRecords.add(1);
+		// ToDo-202408116-0 applies.
+		donateWithInfoNumRecords = donateWithInfoNumRecords/*.add*/ + (1);
 		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
 			donor: _msgSender(),
 			amount: msg.value,
@@ -802,6 +847,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
 	}
 
+	/*
 	/// @notice Bid and donate an NFT in a single transaction
 	/// @dev This function combines bidding and NFT donation
 	/// @param _param_data Encoded bid parameters
@@ -819,6 +865,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
+	*/
 
 	/// @notice Internal function to handle NFT donations
 	/// @dev This function is called by donateNFT and bidAndDonateNFT
@@ -832,8 +879,10 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			round: roundNum,
 			claimed: false
 		});
-		numDonatedNFTs = numDonatedNFTs.add(1);
-		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs.sub(1));
+		// ToDo-202408116-0 applies.
+		numDonatedNFTs = numDonatedNFTs/*.add*/ + (1);
+		// ToDo-202408116-0 applies.
+		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs/*.sub*/ - (1));
 	}
 
 	/// @notice Get the current endurance champion and their duration
@@ -843,7 +892,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			return (address(0), 0);
 		}
 
-		uint256 lastBidTime = block.timestamp.sub(bidderInfo[roundNum][lastBidder].lastBidTime);
+		// ToDo-202408116-0 applies.
+		uint256 lastBidTime = block.timestamp/*.sub*/ - (bidderInfo[roundNum][lastBidder].lastBidTime);
 		if (lastBidTime > enduranceChampionDuration) {
 			return (lastBidder, lastBidTime);
 		}
@@ -854,44 +904,51 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @return The number of seconds until activation, or 0 if already activated
 	function timeUntilActivation() external view returns (uint256) {
 		if (activationTime < block.timestamp) return 0;
-		return activationTime.sub(block.timestamp);
+		// ToDo-202408116-0 applies.
+		return activationTime/*.sub*/ - (block.timestamp);
 	}
 
 	/// @notice Get the time until the next prize can be claimed
 	/// @return The number of seconds until the prize can be claimed, or 0 if claimable now
 	function timeUntilPrize() external view returns (uint256) {
 		if (prizeTime < block.timestamp) return 0;
-		return prizeTime.sub(block.timestamp);
+		// ToDo-202408116-0 applies.
+		return prizeTime/*.sub*/ - (block.timestamp);
 	}
 
 	/// @notice Get the current bid price
 	/// @return The current bid price in wei
 	function getBidPrice() public view returns (uint256) {
-		return bidPrice.mul(priceIncrease).div(CosmicGameConstants.MILLION);
+		// ToDo-202408116-0 applies.
+		return bidPrice/*.mul*/ * (priceIncrease)/*.div*/ / (CosmicGameConstants.MILLION);
 	}
 
 	/// @notice Get the current prize amount
 	/// @return The current prize amount in wei
 	function prizeAmount() public view returns (uint256) {
-		return address(this).balance.mul(prizePercentage).div(100);
+		// ToDo-202408116-0 applies.
+		return address(this).balance/*.mul*/ * (prizePercentage)/*.div*/ / (100);
 	}
 
 	/// @notice Get the current charity amount
 	/// @return The current charity amount in wei
 	function charityAmount() public view returns (uint256) {
-		return address(this).balance.mul(charityPercentage).div(100);
+		// ToDo-202408116-0 applies.
+		return address(this).balance/*.mul*/ * (charityPercentage)/*.div*/ / (100);
 	}
 
 	/// @notice Get the current raffle amount
 	/// @return The current raffle amount in wei
 	function raffleAmount() public view returns (uint256) {
-		return address(this).balance.mul(rafflePercentage).div(100);
+		// ToDo-202408116-0 applies.
+		return address(this).balance/*.mul*/ * (rafflePercentage)/*.div*/ / (100);
 	}
 
 	/// @notice Get the current staking amount
 	/// @return The current staking amount in wei
 	function stakingAmount() public view returns (uint256) {
-		return address(this).balance.mul(stakingPercentage).div(100);
+		// ToDo-202408116-0 applies.
+		return address(this).balance/*.mul*/ * (stakingPercentage)/*.div*/ / (100);
 	}
 
 	/// @notice Get the total number of bids in the current round
@@ -971,7 +1028,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 				numParticipants
 			)
 		);
-		uint256 offset = numParticipants.sub(_positionFromEnd).sub(1);
+		// ToDo-202408116-0 applies.
+		uint256 offset = numParticipants/*.sub*/ - (_positionFromEnd)/*.sub*/ - (1);
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
@@ -1170,6 +1228,10 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit StakingPercentageChanged(_stakingPercentage);
 	}
 
+	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+	}
+
+	/*
 	/// @notice Fallback function to handle incoming ETH transactions
 	/// @dev This function is called for empty calldata (and any value)
 	receive() external payable {
@@ -1184,6 +1246,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		bytes memory param_data = abi.encode(defaultParams);
 		bid(param_data);
 	}
+	*/
 
 	/// @notice Fallback function to handle incoming calls with data
 	/// @dev This function is called when msg.data is not empty
