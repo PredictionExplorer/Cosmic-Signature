@@ -42,6 +42,7 @@ import "./CosmicGameStorage.sol";
 /// [ToDo-202408119-0]
 /// Is `CosmicGameStorage` supposed to be the first base contract
 /// in both `CosmicGameImplementation` and `CosmicGameProxy`?
+/// Write a comment explaining things.
 /// [/ToDo-202408119-0]
 contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameStorage {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
