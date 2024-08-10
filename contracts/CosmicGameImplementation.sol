@@ -39,6 +39,10 @@ import "./CosmicGameStorage.sol";
 /// @author Cosmic Game Team
 /// @notice This contract implements the main functionality of the Cosmic Game
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
+/// [ToDo-202408119-0]
+/// Is `CosmicGameStorage` supposed to be the first base contract
+/// in both `CosmicGameImplementation` and `CosmicGameProxy`?
+/// [/ToDo-202408119-0]
 contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameStorage {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
@@ -794,7 +798,7 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 	/// @notice Claim a donated NFT
 	/// @dev Only the winner of the round can claim the NFT within a certain timeframe
-	/// todo-1 This was `external`, but that didn't compile, so I made it `public`.
+	/// todo-1 This was `external`, but that didn't compile, so I made it `public`. To be revisited.
 	/// @param index The index of the donated NFT in the storage array
 	function claimDonatedNFT(uint256 index) public nonReentrant {
 		require(

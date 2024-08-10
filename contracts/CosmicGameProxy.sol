@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import "./CosmicGameStorage.sol";
 
+// ToDo-202408119-0 applies.
 contract CosmicGameProxy is UUPSUpgradeable, CosmicGameStorage {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
