@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
+// #region Imports
+
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 // import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
 
@@ -31,6 +33,8 @@ import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import "./CosmicGameStorage.sol";
 
+// #endregion
+
 /// @title Cosmic Game Implementation
 /// @author Cosmic Game Team
 /// @notice This contract implements the main functionality of the Cosmic Game
@@ -38,9 +42,9 @@ import "./CosmicGameStorage.sol";
 contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameStorage {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
-// [ToDo-202408115-0]
-// Commented out to suppress a compile error.
-// [/ToDo-202408115-0]
+	// [ToDo-202408115-0]
+	// Commented out to suppress a compile error.
+	// [/ToDo-202408115-0]
 	// using SafeMathUpgradeable for uint256;
 
 	/// @notice Emitted when a prize is claimed
@@ -293,8 +297,8 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		_disableInitializers();
 	}
 
-// todo-0 Is this correct?
-// todo-0 See also: `CosmicGameProxy.initialize` and todos there.
+	// todo-0 Is this correct?
+	// todo-0 See also: `CosmicGameProxy.initialize` and todos there.
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
 	function initialize() public override initializer {
@@ -342,6 +346,10 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	/// @dev This function handles ETH bids and RandomWalk NFT bids
 	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
 	function bid(bytes calldata _data) external payable nonReentrant {
+		_bid(_data);
+	}
+
+	function _bid(bytes calldata _data) internal {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -786,8 +794,9 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 
 	/// @notice Claim a donated NFT
 	/// @dev Only the winner of the round can claim the NFT within a certain timeframe
+	/// todo-1 This was `external`, but that didn't compile, so I made it `public`.
 	/// @param index The index of the donated NFT in the storage array
-	function claimDonatedNFT(uint256 index) external nonReentrant {
+	function claimDonatedNFT(uint256 index) public nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -804,7 +813,6 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonatedNFTClaimedEvent(nft.round, index, _msgSender(), address(nft.nftAddress), nft.tokenId);
 	}
 
-	/* todo-0 Have I commented this out? I don't remember.
 	/// @notice Claim multiple donated NFTs in a single transaction
 	/// @dev This function allows claiming multiple NFTs at once to save gas
 	/// @param indices An array of indices of the donated NFTs to claim
@@ -813,7 +821,6 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 			claimDonatedNFT(indices[i]);
 		}
 	}
-	*/
 
 	/// @notice Donate ETH to the game
 	/// @dev This function allows users to donate ETH without placing a bid
@@ -846,7 +853,6 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
 	}
 
-	/* todo-0 Have I commented this out? I don't remember.
 	/// @notice Bid and donate an NFT in a single transaction
 	/// @dev This function combines bidding and NFT donation
 	/// @param _param_data Encoded bid parameters
@@ -857,14 +863,15 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 		IERC721 nftAddress,
 		uint256 tokenId
 	) external payable nonReentrant {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
-		bid(_param_data);
+		// // This validation is unnecessary. `_bid` will make it.
+		// require(
+		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+		// 	CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		// );
+		
+		_bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
 	}
-	*/
 
 	/// @notice Internal function to handle NFT donations
 	/// @dev This function is called by donateNFT and bidAndDonateNFT
@@ -1230,26 +1237,34 @@ contract CosmicGameImplementation is UUPSUpgradeable, ReentrancyGuardUpgradeable
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
 	}
 
-	/* todo-0 Have I commented this out? I don't remember.
 	/// @notice Fallback function to handle incoming ETH transactions
 	/// @dev This function is called for empty calldata (and any value)
-	receive() external payable {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
+	receive() external payable /*nonReentrant*/ {
+		// // This validation is unnecessary. `_bid` will make it.
+		// require(
+		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+		// 	CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		// );
+
 		// Treat incoming ETH as a bid with default parameters
 		BidParams memory defaultParams;
+		// todo-1 Is this assignment redundant?
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
-		bid(param_data);
+
+		// todo-1 Making this ugly external call because we can't convert `memory` to `calldata`.
+		// todo-1 Make sure this will revert the transaction on error.
+		// todo-1 Is it possible to somehow make an internal call to `_bid`?
+		// todo-1 If so, refactor the code and mark `receive` `nonReentrant`.
+		// todo-1 Otherwise write a todo-3 to revisit this issue when the conversion becomes possible.
+		// todo-1 In either case, explain things in a comment.
+		this.bid(param_data);
 	}
-	*/
 
 	/// @notice Fallback function to handle incoming calls with data
 	/// @dev This function is called when msg.data is not empty
-	fallback() external payable {
+	fallback() external payable /*nonReentrant*/ {
 		revert("Function does not exist");
 	}
 }
