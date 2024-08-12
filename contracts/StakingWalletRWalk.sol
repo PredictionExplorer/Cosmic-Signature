@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
+pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameProxy } from "./CosmicGameProxy.sol";
@@ -54,7 +55,7 @@ contract StakingWalletRWalk is Ownable {
 
 	/// @notice Reference to the RandomWalkNFT contract
 	RandomWalkNFT public randomWalk;
-	/// @notice Reference to the CosmicGameProxy contract.
+	/// @notice Reference to the CosmicGameProxy contract
 	CosmicGameProxy public game;
 
 	/// @notice Emitted when a token is staked
@@ -83,8 +84,8 @@ contract StakingWalletRWalk is Ownable {
 
 	/// @notice Initializes the StakingWalletRWalk contract
 	/// @param rwalk_ Address of the RandomWalkNFT contract
-	/// @param game_ Address of the CosmicGameProxy contract.
-	/// ToDo-202408114-1 applies.
+	/// @param game_ Address of the CosmicGameProxy contract
+	/// @dev Sets up the initial state of the contract
 	constructor(RandomWalkNFT rwalk_, CosmicGameProxy game_) Ownable(msg.sender) {
 		require(
 			address(rwalk_) != address(0),
@@ -93,10 +94,17 @@ contract StakingWalletRWalk is Ownable {
 		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		randomWalk = rwalk_;
 		game = game_;
+
+		// SMT Checker assertions for constructor
+		assert(address(randomWalk) == address(rwalk_));
+		assert(address(game) == address(game_));
+		assert(numStakedNFTs == 0);
+		assert(numStakeActions == 0);
 	}
 
 	/// @notice Stakes a single RandomWalk NFT
 	/// @param _tokenId ID of the token to stake
+	/// @dev Transfers the NFT to this contract and records the stake action
 	function stake(uint256 _tokenId) public {
 		require(
 			!usedTokens[_tokenId],
@@ -111,18 +119,32 @@ contract StakingWalletRWalk is Ownable {
 		numStakeActions += 1;
 		numStakedNFTs += 1;
 		emit StakeActionEvent(numStakeActions - 1, _tokenId, numStakedNFTs, msg.sender);
+
+		// SMT Checker assertions
+		assert(usedTokens[_tokenId] == true);
+		assert(stakeActions[numStakeActions - 1].tokenId == _tokenId);
+		assert(stakeActions[numStakeActions - 1].owner == msg.sender);
+		assert(stakeActions[numStakeActions - 1].stakeTime == block.timestamp);
+		assert(isTokenStaked(_tokenId));
+		assert(numStakedNFTs > 0);
+		assert(lastActionIdByTokenId(_tokenId) == int256(numStakeActions - 1));
 	}
 
 	/// @notice Stakes multiple RandomWalk NFTs
 	/// @param ids Array of token IDs to stake
+	/// @dev Calls stake() for each token ID in the array
 	function stakeMany(uint256[] memory ids) external {
+		uint256 initialStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			stake(ids[i]);
 		}
+		// SMT Checker assertions
+		assert(numStakedNFTs == initialStakedNFTs + ids.length);
 	}
 
 	/// @notice Unstakes a single RandomWalk NFT
 	/// @param stakeActionId ID of the stake action to unstake
+	/// @dev Transfers the NFT back to the owner and records the unstake action
 	function unstake(uint256 stakeActionId) public {
 		require(
 			stakeActions[stakeActionId].unstakeTime == 0,
@@ -138,14 +160,24 @@ contract StakingWalletRWalk is Ownable {
 		stakeActions[stakeActionId].unstakeTime = block.timestamp;
 		numStakedNFTs -= 1;
 		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
+
+		// SMT Checker assertions
+		assert(stakeActions[stakeActionId].unstakeTime != 0);
+		assert(!isTokenStaked(tokenId));
+		assert(lastActionIdByTokenId(tokenId) == -1);
+		assert(numStakedNFTs < numStakeActions);
 	}
 
 	/// @notice Unstakes multiple RandomWalk NFTs
 	/// @param ids Array of stake action IDs to unstake
+	/// @dev Calls unstake() for each stake action ID in the array
 	function unstakeMany(uint256[] memory ids) external {
+		uint256 initialStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
 		}
+		// SMT Checker assertions
+		assert(numStakedNFTs == initialStakedNFTs - ids.length);
 	}
 
 	/// @notice Checks if a token has been used for staking
@@ -165,6 +197,8 @@ contract StakingWalletRWalk is Ownable {
 	/// @notice Returns the number of currently staked tokens
 	/// @return Number of staked tokens
 	function numTokensStaked() public view returns (uint256) {
+		// SMT Checker assertion
+		assert(stakedTokens.length == numStakedNFTs);
 		return stakedTokens.length;
 	}
 
@@ -212,6 +246,12 @@ contract StakingWalletRWalk is Ownable {
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
+
+		// SMT Checker assertions
+		assert(isTokenStaked(tokenId));
+		assert(tokenIndices[tokenId] == stakedTokens.length);
+		assert(lastActionIds[tokenId] == int256(actionId));
+		assert(stakedTokens[stakedTokens.length - 1] == tokenId);
 	}
 
 	/// @notice Removes a token from the staked tokens list
@@ -226,5 +266,11 @@ contract StakingWalletRWalk is Ownable {
 		delete tokenIndices[tokenId];
 		stakedTokens.pop();
 		lastActionIds[tokenId] = -1;
+
+		// SMT Checker assertions
+		assert(!isTokenStaked(tokenId));
+		assert(tokenIndices[tokenId] == 0);
+		assert(lastActionIds[tokenId] == -1);
+		assert(stakedTokens.length == numStakedNFTs);
 	}
 }
