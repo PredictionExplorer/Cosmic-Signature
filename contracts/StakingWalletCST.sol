@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
+pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameProxy } from "./CosmicGameProxy.sol";
@@ -59,7 +60,7 @@ contract StakingWalletCST is Ownable {
 
 	/// @notice Reference to the CosmicSignature NFT contract
 	CosmicSignature public nft;
-	/// @notice Reference to the CosmicGameProxy contract.
+	/// @notice Reference to the CosmicGameProxy contract
 	CosmicGameProxy public game;
 
 	/// @dev Precision factor for calculations
@@ -127,9 +128,9 @@ contract StakingWalletCST is Ownable {
 
 	/// @notice Initializes the StakingWalletCST contract
 	/// @param nft_ Address of the CosmicSignature NFT contract
-	/// @param game_ Address of the CosmicGameProxy contract.
+	/// @param game_ Address of the CosmicGameProxy contract
 	/// @param charity_ Address of the charity
-	/// ToDo-202408114-1 applies.
+	/// @dev ToDo-202408114-1 applies
 	constructor(CosmicSignature nft_, CosmicGameProxy game_, address charity_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
 		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
@@ -137,15 +138,27 @@ contract StakingWalletCST is Ownable {
 		nft = nft_;
 		game = game_;
 		charity = charity_;
+
+		// SMT Checker assertions
+		assert(address(nft) == address(nft_));
+		assert(address(game) == address(game_));
+		assert(charity == charity_);
+		assert(numStakedNFTs == 0);
+		assert(numStakeActions == 0);
+		assert(numETHDeposits == 0);
+		assert(modulo == 0);
 	}
 
 	/// @notice Deposits ETH for reward distribution
-	/// @dev Only callable by the CosmicGameProxy contract.
+	/// @dev Only callable by the CosmicGameProxy contract
 	function deposit() external payable {
 		require(
 			msg.sender == address(game),
 			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGameProxy contract can deposit.", msg.sender)
 		);
+
+		uint256 initialModulo = modulo;
+		uint256 initialNumETHDeposits = numETHDeposits;
 
 		if (numStakedNFTs == 0) {
 			(bool success, ) = charity.call{ value: msg.value }("");
@@ -169,6 +182,11 @@ contract StakingWalletCST is Ownable {
 		modulo += msg.value % numStakedNFTs;
 		actionCounter++;
 		emit EthDepositEvent(actionCounter, numETHDeposits - 1, numStakedNFTs, msg.value, modulo);
+
+		// SMT Checker assertions
+		assert(modulo >= initialModulo);
+		assert(numETHDeposits >= initialNumETHDeposits);
+		assert(actionCounter > 0);
 	}
 
 	/// @notice Stakes a single token
@@ -180,6 +198,9 @@ contract StakingWalletCST is Ownable {
 		);
 		usedTokens[_tokenId] = true;
 
+		uint256 initialNumStakeActions = numStakeActions;
+		uint256 initialNumStakedNFTs = numStakedNFTs;
+
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
 		stakeActions[numStakeActions].nftOwner = msg.sender;
@@ -190,14 +211,25 @@ contract StakingWalletCST is Ownable {
 		nft.transferFrom(msg.sender, address(this), _tokenId);
 		actionCounter++;
 		emit StakeActionEvent(numStakeActions - 1, _tokenId, numStakedNFTs, msg.sender);
+
+		// SMT Checker assertions
+		assert(usedTokens[_tokenId]);
+		assert(numStakeActions == initialNumStakeActions + 1);
+		assert(numStakedNFTs == initialNumStakedNFTs + 1);
+		assert(stakeActions[numStakeActions - 1].tokenId == _tokenId);
+		assert(stakeActions[numStakeActions - 1].nftOwner == msg.sender);
+		assert(isTokenStaked(_tokenId));
 	}
 
 	/// @notice Stakes multiple tokens
 	/// @param ids Array of token IDs to stake
 	function stakeMany(uint256[] memory ids) external {
+		uint256 initialNumStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			stake(ids[i]);
 		}
+		// SMT Checker assertion
+		assert(numStakedNFTs == initialNumStakedNFTs + ids.length);
 	}
 
 	/// @notice Unstakes a single token
@@ -212,6 +244,8 @@ contract StakingWalletCST is Ownable {
 			CosmicGameErrors.AccessError("Only the owner can unstake.", stakeActionId, msg.sender)
 		);
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
+		uint256 initialNumStakedNFTs = numStakedNFTs;
+
 		_removeToken(tokenId);
 		stakeActions[stakeActionId].unstakeTime = actionCounter;
 		numStakedNFTs -= 1;
@@ -219,14 +253,22 @@ contract StakingWalletCST is Ownable {
 		nft.transferFrom(address(this), msg.sender, tokenId);
 		actionCounter++;
 		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
+
+		// SMT Checker assertions
+		assert(stakeActions[stakeActionId].unstakeTime > 0);
+		assert(!isTokenStaked(tokenId));
+		assert(numStakedNFTs == initialNumStakedNFTs - 1);
 	}
 
 	/// @notice Unstakes multiple tokens
 	/// @param ids Array of stake action IDs to unstake
 	function unstakeMany(uint256[] memory ids) external {
+		uint256 initialNumStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
 		}
+		// SMT Checker assertion
+		assert(numStakedNFTs == initialNumStakedNFTs - ids.length);
 	}
 
 	/// @notice Claims rewards for multiple stake actions and deposits
@@ -249,6 +291,8 @@ contract StakingWalletCST is Ownable {
 			(bool success, ) = msg.sender.call{ value: totalReward }("");
 			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", totalReward, msg.sender));
 		}
+		// SMT Checker assertion
+		assert(totalReward <= address(this).balance);
 	}
 
 	/// @notice Calculates the reward for a single stake action and deposit
@@ -301,6 +345,11 @@ contract StakingWalletCST is Ownable {
 		stakeActions[stakeActionId].depositClaimed[ETHDepositId] = true;
 		uint256 amount = ETHDeposits[ETHDepositId].depositAmount / ETHDeposits[ETHDepositId].numStaked;
 		emit ClaimRewardEvent(stakeActionId, ETHDepositId, amount, msg.sender);
+
+		// SMT Checker assertions
+		assert(amount <= ETHDeposits[ETHDepositId].depositAmount);
+		assert(stakeActions[stakeActionId].depositClaimed[ETHDepositId]);
+
 		return amount;
 	}
 
@@ -308,8 +357,13 @@ contract StakingWalletCST is Ownable {
 	/// @param newCharityAddress Address of the new charity
 	function setCharity(address newCharityAddress) external onlyOwner {
 		require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		address oldCharity = charity;
 		charity = newCharityAddress;
 		emit CharityUpdatedEvent(charity);
+
+		// SMT Checker assertions
+		assert(charity == newCharityAddress);
+		assert(charity != oldCharity);
 	}
 
 	/// @notice Sends accumulated modulo to charity
@@ -320,6 +374,9 @@ contract StakingWalletCST is Ownable {
 		(bool success, ) = charity.call{ value: amount }("");
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", amount, charity));
 		emit ModuloSentEvent(amount);
+
+		// SMT Checker assertions
+		assert(modulo == 0);
 	}
 
 	/// @notice Checks if a token has been used for staking
@@ -339,6 +396,8 @@ contract StakingWalletCST is Ownable {
 	/// @notice Returns the number of currently staked tokens
 	/// @return Number of staked tokens
 	function numTokensStaked() public view returns (uint256) {
+		// SMT Checker assertion
+		assert(stakedTokens.length == numStakedNFTs);
 		return stakedTokens.length;
 	}
 
@@ -373,9 +432,16 @@ contract StakingWalletCST is Ownable {
 			!isTokenStaked(tokenId),
 			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
 		);
+		uint256 initialLength = stakedTokens.length;
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
+
+		// SMT Checker assertions
+		assert(isTokenStaked(tokenId));
+		assert(tokenIndices[tokenId] == stakedTokens.length);
+		assert(lastActionIds[tokenId] == int256(actionId));
+		assert(stakedTokens.length == initialLength + 1);
 	}
 
 	/// @notice Removes a token from the staked tokens list
@@ -390,18 +456,28 @@ contract StakingWalletCST is Ownable {
 		delete tokenIndices[tokenId];
 		stakedTokens.pop();
 		lastActionIds[tokenId] = -1;
+
+		// SMT Checker assertions
+		assert(!isTokenStaked(tokenId));
+		assert(tokenIndices[tokenId] == 0);
+		assert(lastActionIds[tokenId] == -1);
 	}
 
 	/// @notice Unstakes a token and claims its reward in a single transaction
 	/// @param stakeActionId ID of the stake action
 	/// @param ETHDepositId ID of the ETH deposit for reward calculation
 	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) public {
+		uint256 initialBalance = address(this).balance;
 		unstake(stakeActionId);
 		uint256 reward = _calculateReward(stakeActionId, ETHDepositId);
 		if (reward > 0) {
 			(bool success, ) = msg.sender.call{ value: reward }("");
 			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", reward, msg.sender));
 		}
+
+		// SMT Checker assertions
+		assert(address(this).balance == initialBalance - reward);
+		assert(!isTokenStaked(stakeActions[stakeActionId].tokenId));
 	}
 
 	/// @notice Unstakes multiple tokens and claims their rewards in a single transaction
@@ -413,6 +489,9 @@ contract StakingWalletCST is Ownable {
 		uint256[] memory claim_actions,
 		uint256[] memory claim_deposits
 	) external {
+		uint256 initialBalance = address(this).balance;
+		uint256 initialNumStakedNFTs = numStakedNFTs;
+
 		for (uint256 i = 0; i < unstake_actions.length; i++) {
 			unstake(unstake_actions[i]);
 		}
@@ -432,5 +511,9 @@ contract StakingWalletCST is Ownable {
 			(bool success, ) = msg.sender.call{ value: totalReward }("");
 			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", totalReward, msg.sender));
 		}
+
+		// SMT Checker assertions
+		assert(address(this).balance == initialBalance - totalReward);
+		assert(numStakedNFTs == initialNumStakedNFTs - unstake_actions.length);
 	}
 }
