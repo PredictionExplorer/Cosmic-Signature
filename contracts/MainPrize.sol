@@ -2,19 +2,20 @@
 
 pragma solidity 0.8.26;
 
+import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "./CosmicGameStorage.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
-import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "./interfaces/SystemEvents.sol";
 
-contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,SystemEvents {
+abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,SystemEvents {
 	/// @notice Emitted when a prize is claimed
 	/// @param prizeNum The number of the prize being claimed
 	/// @param destination The address receiving the prize
@@ -90,19 +91,19 @@ contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics
 		if (block.timestamp/*.sub*/ - (prizeTime) < timeoutClaimPrize) {
 			// Only the last bidder can claim within the timeoutClaimPrize period
 			require(
-				_msgSender() == lastBidder,
+				msg.sender == lastBidder,
 				CosmicGameErrors.LastBidderOnly(
 					"Only the last bidder can claim the prize during the first 24 hours.",
 					lastBidder,
-					_msgSender(),
+					msg.sender,
 					// ToDo-202408116-0 applies.
 					timeoutClaimPrize/*.sub*/ - (block.timestamp/*.sub*/ - (prizeTime))
 				)
 			);
-			winner = _msgSender();
+			winner = msg.sender;
 		} else {
 			// After the timeout, anyone can claim the prize
-			winner = _msgSender();
+			winner = msg.sender;
 		}
 
 		_updateEnduranceChampion();

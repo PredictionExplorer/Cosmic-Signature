@@ -4,11 +4,12 @@
 pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./CosmicGameStorage.sol";
 import "./interfaces/SystemEvents.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 
-contract SystemManagement is ReentrancyGuardUpgradeable,CosmicGameStorage, SystemEvents {
+abstract contract SystemManagement is OwnableUpgradeable , CosmicGameStorage, SystemEvents {
 
 	/// @notice Set the charity address
 	/// @dev Only callable by the contract owner
@@ -19,14 +20,23 @@ contract SystemManagement is ReentrancyGuardUpgradeable,CosmicGameStorage, Syste
 		emit CharityAddressChanged(_charity);
 	}
 
-	/// @notice Set the system mode
-	/// @dev Only callable by the contract owner
-	/// @param _systemMode The new system mode
-	function setSystemMode(uint256 _systemMode) external onlyOwner {
-		require(_systemMode <= CosmicGameConstants.MODE_MAINTENANCE, "Invalid system mode");
-		systemMode = _systemMode;
-		emit SystemEvents.SystemModeChanged(_systemMode);
-	}
+    function prepareMaintenance() external onlyOwner {
+        require(
+            systemMode == CosmicGameConstants.MODE_RUNTIME,
+            CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+        );
+        systemMode = CosmicGameConstants.MODE_PREPARE_MAINTENANCE;
+        emit SystemModeChanged(systemMode);
+    }   
+
+    function setRuntimeMode() external onlyOwner {
+        require(
+            systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+            CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+        );
+        systemMode = CosmicGameConstants.MODE_RUNTIME;
+        emit SystemModeChanged(systemMode);
+    }
 
 	/// @notice Set the RandomWalk NFT contract address
 	/// @dev Only callable by the contract owner

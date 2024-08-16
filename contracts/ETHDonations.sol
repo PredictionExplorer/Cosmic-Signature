@@ -2,11 +2,12 @@
 
 pragma solidity 0.8.26;
 
-import "./CosmicGameStorage.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./CosmicGameStorage.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 
-contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
+abstract contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 
 	/// @notice Emitted when a donation is made
 	/// @param donor The address of the donor
@@ -29,7 +30,7 @@ contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
-		emit DonationEvent(_msgSender(), msg.value, roundNum);
+		emit DonationEvent(msg.sender, msg.value, roundNum);
 	}
 
 	/// @notice Donate ETH with additional information
@@ -45,10 +46,10 @@ contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 		// ToDo-202408116-0 applies.
 		donateWithInfoNumRecords = donateWithInfoNumRecords/*.add*/ + (1);
 		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
-			donor: _msgSender(),
+			donor: msg.sender,
 			amount: msg.value,
 			data: _data
 		});
-		emit DonationWithInfoEvent(_msgSender(), msg.value, recordId, roundNum);
+		emit DonationWithInfoEvent(msg.sender, msg.value, recordId, roundNum);
 	}
 }

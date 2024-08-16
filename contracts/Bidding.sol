@@ -10,7 +10,7 @@ import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 
-contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics {
+abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidStatistics {
 	/// @title Bid Parameters
 	/// @dev Struct to encapsulate parameters for placing a bid in the Cosmic Game
 	/// todo-0 I am not sure if we still need this.
@@ -40,6 +40,7 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 		uint256 prizeTime,
 		string message
 	);
+	
 	/// @notice Place a bid in the current round 
 	/// @dev This function handles ETH bids and RandomWalk NFT bids
 	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
@@ -64,12 +65,12 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 				)
 			);
 			require(
-				RandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == _msgSender(),
+				RandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
 					randomWalk,
 					uint256(params.randomWalkNFTId),
-					_msgSender()
+					msg.sender
 				)
 			);
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
@@ -112,10 +113,10 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 		// Is the safe math needed for overflow checks? That's the default behavior since Solidity 8.0.0.
 		// So I have rewritten this to use the `+` or `-` operator.
 		// [/ToDo-202408116-0]
-		bidderInfo[roundNum][_msgSender()].totalSpent = bidderInfo[roundNum][_msgSender()].totalSpent/*.add*/ + (paidBidPrice);
-		if (bidderInfo[roundNum][_msgSender()].totalSpent > stellarSpenderAmount) {
-			stellarSpenderAmount = bidderInfo[roundNum][_msgSender()].totalSpent;
-			stellarSpender = _msgSender();
+		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + (paidBidPrice);
+		if (bidderInfo[roundNum][msg.sender].totalSpent > stellarSpenderAmount) {
+			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpent;
+			stellarSpender = msg.sender;
 		}
 
 		bidPrice = newBidPrice;
@@ -125,11 +126,11 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 		// Refund excess ETH if the bidder sent more than required
 		if (msg.value > paidBidPrice) {
 			// ToDo-202408116-0 applies.
-			uint256 amountToSend = msg.value/*.sub*/ - (paidBidPrice);
-			(bool success, ) = _msgSender().call{ value: amountToSend }("");
+			uint256 amountToSend = msg.value - (paidBidPrice);
+			(bool success, ) = msg.sender.call{ value: amountToSend }("");
 			require(
 				success,
-				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend, _msgSender())
+				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend,msg.sender) 
 			);
 		}
 
@@ -161,19 +162,19 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 		if (lastBidder == address(0)) {
 			// First bid of the round
 			// ToDo-202408116-0 applies.
-			prizeTime = block.timestamp/*.add*/ + (initialSecondsUntilPrize);
+			prizeTime = block.timestamp + (initialSecondsUntilPrize);
 		}
 
 		_updateEnduranceChampion();
-		lastBidder = _msgSender();
+		lastBidder = msg.sender;
 		lastBidType = bidType;
 
-		bidderInfo[roundNum][_msgSender()].lastBidTime = block.timestamp;
+		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
 		// ToDo-202408116-0 applies.
-		numRaffleParticipants[roundNum] = numParticipants/*.add*/ + (1);
+		numRaffleParticipants[roundNum] = numParticipants + (1);
 
 		// Distribute token rewards
 		SafeERC20.safeTransferFrom(IERC20(token),address(this), lastBidder, tokenReward);
@@ -185,18 +186,18 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 	/// @return The current bid price in wei
 	function getBidPrice() public view returns (uint256) {
 		// ToDo-202408116-0 applies.
-		return bidPrice/*.mul*/ * (priceIncrease)/*.div*/ / (CosmicGameConstants.MILLION);
+		return bidPrice * (priceIncrease) / (CosmicGameConstants.MILLION);
 	}
 
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
 		// ToDo-202408116-0 applies.
-		uint256 secondsAdded = nanoSecondsExtra/*.div*/ / (1_000_000_000);
+		uint256 secondsAdded = nanoSecondsExtra / (1_000_000_000);
 		// ToDo-202408116-0 applies.
-		prizeTime = Math.max(prizeTime, block.timestamp)/*.add*/ + (secondsAdded);
+		prizeTime = Math.max(prizeTime, block.timestamp) + (secondsAdded);
 		// ToDo-202408116-0 applies.
-		nanoSecondsExtra = nanoSecondsExtra/*.mul*/ * (timeIncrease)/*.div*/ / (CosmicGameConstants.MILLION);
+		nanoSecondsExtra = nanoSecondsExtra * (timeIncrease) / (CosmicGameConstants.MILLION);
 	}
 	/// @notice Get the address of a bidder at a specific position from the end in a given round
 	/// @param _round The round number
@@ -226,7 +227,7 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 			)
 		);
 		// ToDo-202408116-0 applies.
-		uint256 offset = numParticipants/*.sub*/ - (_positionFromEnd)/*.sub*/ - (1);
+		uint256 offset = numParticipants - (_positionFromEnd) - (1);
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
@@ -239,7 +240,7 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 		// uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
-		uint256 userBalance = IERC20(token).balanceOf(_msgSender());
+		uint256 userBalance = IERC20(token).balanceOf(msg.sender);
 		uint256 price = currentCSTPrice();
 		require(
 			userBalance >= price,
@@ -252,11 +253,11 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 
 		// Double the starting CST price for the next auction, with a minimum of 100 CST
 		// ToDo-202408116-0 applies.
-		startingBidPriceCST = Math.max(100e18, price)/*.mul*/ * (2);
+		startingBidPriceCST = Math.max(100e18, price) * (2);
 		lastCSTBidTime = block.timestamp;
 
 		// Burn the CST tokens used for bidding
-		SafeERC20.safeTransferFrom(IERC20(token),_msgSender(), address(this), price);
+		SafeERC20.safeTransferFrom(IERC20(token),msg.sender, address(this), price);
 		ERC20Burnable(token).burn(price);
 
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
@@ -271,16 +272,16 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 			return 0;
 		}
 		// ToDo-202408116-0 applies.
-		uint256 fraction = uint256(1e6)/*.sub*/ - ((uint256(1e6)/*.mul*/ * (secondsElapsed))/*.div*/ / (duration));
+		uint256 fraction = uint256(1e6) - ((uint256(1e6) * (secondsElapsed)) / (duration));
 		// ToDo-202408116-0 applies.
-		return (fraction/*.mul*/ * (startingBidPriceCST))/*.div*/ / (1e6);
+		return (fraction * (startingBidPriceCST)) / (1e6);
 	}
 	/// @notice Get the current auction duration and elapsed time
 	/// @dev This function is used to calculate the CST price
 	/// @return A tuple containing the seconds elapsed and total duration of the current auction
 	function auctionDuration() public view returns (uint256, uint256) {
 		// ToDo-202408116-0 applies.
-		uint256 secondsElapsed = block.timestamp/*.sub*/ - (lastCSTBidTime);
+		uint256 secondsElapsed = block.timestamp - (lastCSTBidTime);
 		return (secondsElapsed, CSTAuctionLength);
 	}
 	/// @notice Get the total number of bids in the current round
@@ -310,5 +311,4 @@ contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics
 	function isRandomWalkNFTUsed(uint256 tokenId) public view returns (bool) {
 		return usedRandomWalkNFTs[tokenId];
 	}
-
 }

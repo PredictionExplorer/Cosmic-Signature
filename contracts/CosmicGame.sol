@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 // #region Imports
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -38,7 +39,7 @@ import { SystemEvents} from "./interfaces/SystemEvents.sol";
 /// in both `CosmicGameImplementation` and `CosmicGameProxy`?
 /// Write a comment explaining things.
 /// [/ToDo-202408119-0]
-contract CosmicGame is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameStorage, Bidding, NFTDonations, ETHDonations, SpecialPrizes, MainPrize, SystemManagement {
+contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, Bidding, NFTDonations, ETHDonations, SpecialPrizes, MainPrize, SystemManagement {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
 	// [ToDo-202408115-0]
@@ -56,13 +57,14 @@ contract CosmicGame is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameSt
 	// todo-0 See also: `CosmicGameProxy.initialize` and todos there.
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
-	function initialize() public override initializer {
+	function initialize(address _gameAdministrator) public initializer {
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
 		__Ownable_init(msg.sender);
 
 		// Initialize state variables
+		transferOwnership(_gameAdministrator);
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		startingBidPriceCST = 100e18;
@@ -119,7 +121,7 @@ contract CosmicGame is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameSt
 
 	/// @notice Fallback function to handle incoming ETH transactions
 	/// @dev This function is called for empty calldata (and any value)
-	receive() external payable /*nonReentrant*/ {
+	receive() external payable {
 		// // This validation is unnecessary. `_bid` will make it.
 		// require(
 		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -144,7 +146,7 @@ contract CosmicGame is UUPSUpgradeable, ReentrancyGuardUpgradeable, CosmicGameSt
 
 	/// @notice Fallback function to handle incoming calls with data
 	/// @dev This function is called when msg.data is not empty
-	fallback() external payable /*nonReentrant*/ {
+	fallback() external payable {
 		revert("Function does not exist");
 	}
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {

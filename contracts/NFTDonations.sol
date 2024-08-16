@@ -2,11 +2,12 @@
 
 pragma solidity 0.8.26;
 
-import "./CosmicGameStorage.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./CosmicGameStorage.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 
-contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
+abstract contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 	/// @notice Emitted when an NFT is donated
 	/// @param donor The address of the donor
 	/// @param nftAddress The address of the NFT contract
@@ -43,7 +44,7 @@ contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
 
-		nftAddress.safeTransferFrom(_msgSender(), address(this), tokenId);
+		nftAddress.safeTransferFrom(msg.sender, address(this), tokenId);
 
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: nftAddress,
@@ -53,14 +54,14 @@ contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 		});
 
 		numDonatedNFTs += 1;
-		emit NFTDonationEvent(_msgSender(), nftAddress, roundNum, tokenId, numDonatedNFTs - 1);
+		emit NFTDonationEvent(msg.sender, nftAddress, roundNum, tokenId, numDonatedNFTs - 1);
 	}
 	/// @notice Internal function to handle NFT donations
 	/// @dev This function is called by donateNFT and bidAndDonateNFT
 	/// @param _nftAddress Address of the NFT contract
 	/// @param _tokenId ID of the NFT to donate
 	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
-		_nftAddress.safeTransferFrom(_msgSender(), address(this), _tokenId);
+		_nftAddress.safeTransferFrom(msg.sender, address(this), _tokenId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: _nftAddress,
 			tokenId: _tokenId,
@@ -70,7 +71,7 @@ contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 		// ToDo-202408116-0 applies.
 		numDonatedNFTs = numDonatedNFTs/*.add*/ + (1);
 		// ToDo-202408116-0 applies.
-		emit NFTDonationEvent(_msgSender(), _nftAddress, roundNum, _tokenId, numDonatedNFTs/*.sub*/ - (1));
+		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _tokenId, numDonatedNFTs/*.sub*/ - (1));
 	}
 
 	/// @notice Claim a donated NFT
@@ -86,12 +87,12 @@ contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 
 		CosmicGameConstants.DonatedNFT storage nft = donatedNFTs[index];
 		require(!nft.claimed, "NFT already claimed");
-		require(winners[nft.round] == _msgSender(), "Only the round winner can claim this NFT");
+		require(winners[nft.round] == msg.sender, "Only the round winner can claim this NFT");
 
 		nft.claimed = true;
-		nft.nftAddress.safeTransferFrom(address(this), _msgSender(), nft.tokenId);
+		nft.nftAddress.safeTransferFrom(address(this), msg.sender, nft.tokenId);
 
-		emit DonatedNFTClaimedEvent(nft.round, index, _msgSender(), address(nft.nftAddress), nft.tokenId);
+		emit DonatedNFTClaimedEvent(nft.round, index, msg.sender, address(nft.nftAddress), nft.tokenId);
 	}
 	/// @notice Claim multiple donated NFTs in a single transaction
 	/// @dev This function allows claiming multiple NFTs at once to save gas

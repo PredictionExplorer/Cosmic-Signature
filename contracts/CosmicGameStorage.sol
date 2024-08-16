@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./CosmicGameConstants.sol";
 
-contract CosmicGameStorage is OwnableUpgradeable {
+abstract contract CosmicGameStorage {
 	// #region External Contracts
 
 	// todo-1 Why not name this `randomWalkNFT`?
@@ -79,14 +78,4 @@ contract CosmicGameStorage is OwnableUpgradeable {
 	uint256 public systemMode;
 
 	// #endregion
-	// #region Additional Storage
-
-	mapping(uint256 => uint256) public extraStorage;
-
-	// #endregion
-
-	function initialize() public virtual initializer {
-		// ToDo-202408114-1 applies.
-		__Ownable_init(msg.sender);
-	}
 }
