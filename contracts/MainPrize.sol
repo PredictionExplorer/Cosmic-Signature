@@ -13,9 +13,9 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
-import "./interfaces/SystemEvents.sol";
+import "./interfaces/ISystemEvents.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,SystemEvents {
+abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,ISystemEvents {
 	/// @notice Emitted when a prize is claimed
 	/// @param prizeNum The number of the prize being claimed
 	/// @param destination The address receiving the prize
