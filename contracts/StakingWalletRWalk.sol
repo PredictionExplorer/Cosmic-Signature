@@ -6,7 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameProxy } from "./CosmicGameProxy.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 /// @title StakingWalletRWalk - Staking contract for RandomWalk NFTs
 /// @author Cosmic Game Development Team

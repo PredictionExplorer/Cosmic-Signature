@@ -12,7 +12,7 @@ import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
-import { CosmicGameErrors } from "../CosmicGameErrors.sol";
+import { CosmicGameErrors } from "../libraries/CosmicGameErrors.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {

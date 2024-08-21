@@ -6,7 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameProxy } from "./CosmicGameProxy.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 /// @title StakingWalletCST - A staking wallet for Cosmic Signature Tokens
 /// @author Cosmic Game Development Team

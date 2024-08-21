@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./CosmicGameStorage.sol";
 import "./interfaces/ISystemEvents.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 abstract contract SystemManagement is OwnableUpgradeable , CosmicGameStorage, ISystemEvents {
 
