@@ -9,16 +9,16 @@ import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "../libraries/CosmicGameErrors.sol";
-import { CosmicGameProxy } from "../CosmicGameProxy.sol";
-import { CosmicSignature } from "../CosmicSignature.sol";
-import { CosmicToken } from "../CosmicToken.sol";
-import { RandomWalkNFT } from "../RandomWalkNFT.sol";
-import { RaffleWallet } from "../RaffleWallet.sol";
-import { StakingWalletCST } from "../StakingWalletCST.sol";
-import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
-import { MarketingWallet } from "../MarketingWallet.sol";
+import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
+import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
+import { CosmicGameProxy } from "../production/CosmicGameProxy.sol";
+import { CosmicSignature } from "../production/CosmicSignature.sol";
+import { CosmicToken } from "../production/CosmicToken.sol";
+import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+import { RaffleWallet } from "../production/RaffleWallet.sol";
+import { StakingWalletCST } from "../production/StakingWalletCST.sol";
+import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
+import { MarketingWallet } from "../production/MarketingWallet.sol";
 
 // This is a sample upgrade contract for a hypothetical case where users
 // wanted to enable open-bidding, i.e. bid whatever price you want

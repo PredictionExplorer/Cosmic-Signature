@@ -4,16 +4,16 @@ pragma solidity 0.8.26;
 // todo-1 Commented out to suppress a compile error.
 /*
 
-import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
-import { CosmicGameProxy } from "../CosmicGameProxy.sol";
-import { CosmicToken } from "../CosmicToken.sol";
-import { CosmicSignature } from "../CosmicSignature.sol";
-import { RaffleWallet } from "../RaffleWallet.sol";
-import { StakingWalletCST } from "../StakingWalletCST.sol";
-import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
-import { MarketingWallet } from "../MarketingWallet.sol";
-import { RandomWalkNFT } from "../RandomWalkNFT.sol";
-import { CosmicGameImplementation } from "../CosmicGameImplementation.sol";
+import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
+import { CosmicGameProxy } from "../production/CosmicGameProxy.sol";
+import { CosmicToken } from "../production/CosmicToken.sol";
+import { CosmicSignature } from "../production/CosmicSignature.sol";
+import { RaffleWallet } from "../production/RaffleWallet.sol";
+import { StakingWalletCST } from "../production/StakingWalletCST.sol";
+import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
+import { MarketingWallet } from "../production/MarketingWallet.sol";
+import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+import { CosmicGameImplementation } from "../production/CosmicGameImplementation.sol";
 
 contract BLTest is CosmicGameImplementation {
 	uint256 public constant DEFAULT_INDEX = 11;

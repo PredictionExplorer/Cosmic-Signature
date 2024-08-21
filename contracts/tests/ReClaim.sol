@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 // todo-1 Commented out to suppress a compile error.
 /*
 
-import { CosmicGameProxy } from "../CosmicGameProxy.sol";
+import { CosmicGameProxy } from "../production/CosmicGameProxy.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 

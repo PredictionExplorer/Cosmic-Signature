@@ -4,15 +4,15 @@ pragma solidity 0.8.26;
 // todo-1 Commented out to suppress a compile error.
 /*
 
-import { StakingWalletCST } from "../StakingWalletCST.sol";
-import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
-import { RaffleWallet } from "../RaffleWallet.sol";
-import { CosmicGameProxy } from "../CosmicGameProxy.sol";
-import { CosmicSignature } from "../CosmicSignature.sol";
-import { CosmicToken } from "../CosmicToken.sol";
-import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
-import { RandomWalkNFT } from "../RandomWalkNFT.sol";
-import { CosmicGameErrors } from "../libraries/CosmicGameErrors.sol";
+import { StakingWalletCST } from "../production/StakingWalletCST.sol";
+import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
+import { RaffleWallet } from "../production/RaffleWallet.sol";
+import { CosmicGameProxy } from "../production/CosmicGameProxy.sol";
+import { CosmicSignature } from "../production/CosmicSignature.sol";
+import { CosmicToken } from "../production/CosmicToken.sol";
+import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
+import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BrokenToken {
