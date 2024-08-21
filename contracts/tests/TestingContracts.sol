@@ -10,7 +10,7 @@ import { RaffleWallet } from "../RaffleWallet.sol";
 import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
-import { CosmicGameConstants } from "../CosmicGameConstants.sol";
+import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
 import { CosmicGameErrors } from "../CosmicGameErrors.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";

@@ -4,7 +4,7 @@ pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameProxy } from "./CosmicGameProxy.sol";
-import { CosmicGameConstants } from "./CosmicGameConstants.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 

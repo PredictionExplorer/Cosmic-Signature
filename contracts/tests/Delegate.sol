@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 // todo-1 Commented out to suppress a compile error.
 /*
 
-import { CosmicGameConstants } from "../CosmicGameConstants.sol";
+import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
 import { CosmicGameProxy } from "../CosmicGameProxy.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
