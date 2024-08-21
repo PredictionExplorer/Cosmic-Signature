@@ -3,12 +3,12 @@ const hre = require("hardhat");
 const { expect } = require("chai");
 
 async function getSelfDestructableCosmicGameProxyContract() {
-	let cosmicGameProxyAddr = process.env.COSMIC_GAME_PROXY_ADDRESS;
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
-		console.log("COSMIC_GAME_PROXY_ADDRESS environment variable does not contain contract address");
+		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await ethers.getContractAt("SelfdestructibleCosmicGameProxy", cosmicGameProxyAddr);
+	let cosmicGameProxy = await ethers.getContractAt("SelfdestructibleCosmicGame", cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
 async function main() {

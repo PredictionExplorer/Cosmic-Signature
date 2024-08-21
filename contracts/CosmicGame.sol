@@ -10,6 +10,9 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
+import { ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { CosmicGameConstants } from "./CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
@@ -26,7 +29,7 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { Bidding } from "./Bidding.sol";
 import { NFTDonations } from  "./NFTDonations.sol";
-import { SystemEvents} from "./interfaces/SystemEvents.sol";
+import { ISystemEvents} from "./interfaces/ISystemEvents.sol";
 
 // #endregion
 
@@ -34,11 +37,6 @@ import { SystemEvents} from "./interfaces/SystemEvents.sol";
 /// @author Cosmic Game Team
 /// @notice This contract implements the main functionality of the Cosmic Game
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
-/// [ToDo-202408119-0]
-/// Is `CosmicGameStorage` supposed to be the first base contract
-/// in both `CosmicGameImplementation` and `CosmicGameProxy`?
-/// Write a comment explaining things.
-/// [/ToDo-202408119-0]
 contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, Bidding, NFTDonations, ETHDonations, SpecialPrizes, MainPrize, SystemManagement {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
@@ -61,10 +59,9 @@ contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, B
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
-		__Ownable_init(msg.sender);
+		__Ownable_init(_gameAdministrator);
 
 		// Initialize state variables
-		transferOwnership(_gameAdministrator);
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		startingBidPriceCST = 100e18;
@@ -151,4 +148,9 @@ contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, B
 	}
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
 	}
+	function upgradeTo(address _newImplementation) public onlyOwner {
+		 _authorizeUpgrade(_newImplementation);
+		 StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
+	}
+
 }

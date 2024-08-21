@@ -5,7 +5,7 @@ const { getCosmicGameProxyContract, getBidderContract } = require("./helper.js")
 async function main() {
 	let bidderContract = await getBidderContract();
 	let cosmicGameProxyAddr = await bidderContract.cosmicGameProxy();
-	let cosmicGameProxy = await ethers.getContractAt("CosmicGameProxy", cosmicGameProxyAddr);
+	let cosmicGameProxy = await ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 
 	[owner, addr1, addr2] = await ethers.getSigners();

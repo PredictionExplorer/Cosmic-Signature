@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "./CosmicGameStorage.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 
@@ -177,8 +178,28 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		numRaffleParticipants[roundNum] = numParticipants + (1);
 
 		// Distribute token rewards
-		SafeERC20.safeTransferFrom(IERC20(token),address(this), lastBidder, tokenReward);
-		SafeERC20.safeTransferFrom(IERC20(token),address(this), marketingWallet, marketingReward);
+		(bool mintSuccess, ) = address(token).call(
+			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
+		);
+		require(
+			mintSuccess,
+			CosmicGameErrors.ERC20Mint(
+				"CosmicToken mint() failed to mint reward tokens for the bidder.",
+				lastBidder,
+				tokenReward
+			)
+		);
+		(mintSuccess, ) = address(token).call(
+			abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, marketingReward)
+		);
+		require(
+			mintSuccess,
+			CosmicGameErrors.ERC20Mint(
+				"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
+				address(marketingWallet),
+				marketingReward
+			)
+		);
 
 		_pushBackPrizeTime();
 	}

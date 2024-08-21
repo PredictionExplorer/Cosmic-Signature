@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameProxy } from "./CosmicGameProxy.sol";
+import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicGameConstants } from "./CosmicGameConstants.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
@@ -55,8 +55,8 @@ contract StakingWalletRWalk is Ownable {
 
 	/// @notice Reference to the RandomWalkNFT contract
 	RandomWalkNFT public randomWalk;
-	/// @notice Reference to the CosmicGameProxy contract
-	CosmicGameProxy public game;
+	/// @notice Reference to the CosmicGame contract
+	CosmicGame public game;
 
 	/// @notice Emitted when a token is staked
 	/// @param actionId The ID of the stake action
@@ -84,9 +84,9 @@ contract StakingWalletRWalk is Ownable {
 
 	/// @notice Initializes the StakingWalletRWalk contract
 	/// @param rwalk_ Address of the RandomWalkNFT contract
-	/// @param game_ Address of the CosmicGameProxy contract
+	/// @param game_ Address of the CosmicGame contract
 	/// @dev Sets up the initial state of the contract
-	constructor(RandomWalkNFT rwalk_, CosmicGameProxy game_) Ownable(msg.sender) {
+	constructor(RandomWalkNFT rwalk_, CosmicGame game_) Ownable(msg.sender) {
 		require(
 			address(rwalk_) != address(0),
 			CosmicGameErrors.ZeroAddress("Zero-address was given for the RandomWalk token.")

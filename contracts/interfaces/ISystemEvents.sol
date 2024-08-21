@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-interface SystemEvents {
+interface ISystemEvents {
 
 	/// @notice Emitted when the system mode is changed
 	/// @param newSystemMode The new system mode

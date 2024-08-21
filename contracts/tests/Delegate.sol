@@ -2,10 +2,9 @@
 pragma solidity 0.8.26;
 
 // todo-1 Commented out to suppress a compile error.
-/*
 
 import { CosmicGameConstants } from "../CosmicGameConstants.sol";
-import { CosmicGameProxy } from "../CosmicGameProxy.sol";
+import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
@@ -13,9 +12,13 @@ import { StakingWalletCST } from "../StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
 import { MarketingWallet } from "../MarketingWallet.sol";
 import { RandomWalkNFT } from "../RandomWalkNFT.sol";
-import { CosmicGameImplementation } from "../CosmicGameImplementation.sol";
+import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
-contract BLTest is CosmicGameImplementation {
+// Business Logic Test contract
+// Tests that slots of the variables match by comparing variable value obtained from Proxy contract 
+// versus the same value but obtained through delegate call
+// At every upgrade there should be one test contract created and each variable should be verified
+contract BLTest is CosmicGame { 
 	uint256 public constant DEFAULT_INDEX = 11;
 	uint256 public constant DEFAULT_VALUE = 111;
 	address public constant DEFAULT_ADDRESS = 0x1111111111111111111111111111111111111111;
@@ -27,7 +30,7 @@ contract BLTest is CosmicGameImplementation {
 		usedRandomWalkNFTs[DEFAULT_INDEX] = true;
 	}
 	function f2() external {
-		randomWalk = RandomWalkNFT(DEFAULT_ADDRESS);
+		randomWalk = DEFAULT_ADDRESS;
 	}
 	function f3() external {
 		bidPrice = DEFAULT_VALUE;
@@ -54,10 +57,10 @@ contract BLTest is CosmicGameImplementation {
 		numRaffleParticipants[1] = DEFAULT_VALUE;
 	}
 	function f12() external {
-		token = CosmicToken(DEFAULT_ADDRESS);
+		token = DEFAULT_ADDRESS;
 	}
 	function f13() external {
-		marketingWallet = MarketingWallet(DEFAULT_ADDRESS);
+		marketingWallet = DEFAULT_ADDRESS;
 	}
 	function f14() external {
 		startingBidPriceCST = DEFAULT_VALUE;
@@ -111,10 +114,10 @@ contract BLTest is CosmicGameImplementation {
 		raffleEntropy = bytes32(bytes20(DEFAULT_ADDRESS));
 	}
 	function f34() external {
-		raffleWallet = RaffleWallet(DEFAULT_ADDRESS);
+		raffleWallet = DEFAULT_ADDRESS;
 	}
 	function f35() external {
-		stakingWalletCST = StakingWalletCST(DEFAULT_ADDRESS);
+		stakingWalletCST = DEFAULT_ADDRESS;
 	}
 	function f36() external {
 		donatedNFTs[DEFAULT_INDEX].round = DEFAULT_VALUE;
@@ -123,187 +126,190 @@ contract BLTest is CosmicGameImplementation {
 		numDonatedNFTs = DEFAULT_VALUE;
 	}
 	function f38() external {
-		nft = CosmicSignature(DEFAULT_ADDRESS);
+		nft = DEFAULT_ADDRESS;
 	}
 	function f39() external {
-		cosmicGameImplementation = CosmicGameImplementation(DEFAULT_ADDRESS);
+		// selector available for reuse
 	}
 	function f40() external {
-		extraStorage[DEFAULT_INDEX] = DEFAULT_VALUE;
+		// selector available for reuse
 	}
 	function f41() external {
 		systemMode = DEFAULT_VALUE;
 	}
 	function f42() external {
-		stakingWalletRWalk = StakingWalletRWalk(DEFAULT_ADDRESS);
+		stakingWalletRWalk = DEFAULT_ADDRESS;
 	}
 	function f43() external {
 		numRaffleNFTWinnersStakingRWalk = DEFAULT_VALUE;
 	}
 }
 
-contract CGTest is CosmicGameProxy {
+contract CGTest is CosmicGame {
+	function _implementation() internal returns (address) {
+		return ERC1967Utils.getImplementation();
+	}
 	function f0() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f0.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f0.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f1() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f1.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f1.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f2() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f2.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f2.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f3() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f3.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f3.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f5() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f5.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f5.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f6() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f6.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f6.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f7() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f7.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f7.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f8() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f8.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f8.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f9() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f9.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f9.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f10() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f10.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f10.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f11() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f11.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f11.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f12() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f12.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f12.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f13() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f13.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f13.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f14() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f14.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f14.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f15() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f15.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f15.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f18() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f18.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f18.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f19() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f19.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f19.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f20() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f20.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f20.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f21() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f21.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f21.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f22() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f22.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f22.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f23() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f23.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f23.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f24() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f24.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f24.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f25() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f25.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f25.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f26() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f26.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f26.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f27() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f27.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f27.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f28() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f28.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f28.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f29() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f29.selector));
-		require(success, "Delegate call execution failed.");
+		// selector available for reuse
 	}
 	function f30() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f30.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f30.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f32() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f32.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f32.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f33() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f33.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f33.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f34() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f34.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f34.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f35() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f35.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f35.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f36() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f36.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f36.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f37() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f37.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f37.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f38() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f38.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f38.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f39() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f39.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f39.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f40() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f40.selector));
-		require(success, "Delegate call execution failed.");
+		// selector available for reuse
 	}
 	function f41() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f41.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f41.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f42() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f42.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f42.selector));
 		require(success, "Delegate call execution failed.");
 	}
 	function f43() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(BLTest.f43.selector));
+		(bool success, ) = _implementation().delegatecall(abi.encodeWithSelector(BLTest.f43.selector));
 		require(success, "Delegate call execution failed.");
 	}
 }
+/*
+PENDING FOR (possible) DELETION
 contract LogicVers1 is CosmicGameImplementation {
 	// contract for testing upgradability of business logi
 	function write() external {
@@ -321,9 +327,8 @@ contract LogicVers2 is CosmicGameImplementation {
 contract CGVersions is CosmicGameProxy {
 	// contract for testing upgradability of business logic
 	function write() external {
-		(bool success, ) = address(cosmicGameImplementation).delegatecall(abi.encodeWithSelector(LogicVers1.write.selector));
+		(bool success, ) = address(cosmicGame).delegatecall(abi.encodeWithSelector(LogicVers1.write.selector));
 		require(success, "Delegate call execution failed.");
 	}
 }
-
 */

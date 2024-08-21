@@ -1,9 +1,11 @@
 // require("@nomicfoundation/hardhat-toolbox");
 require('hardhat-abi-exporter');
 require("@nomiclabs/hardhat-etherscan");
+require("@nomicfoundation/hardhat-ethers");
 require("hardhat-tracer");
 require("hardhat-docgen");
 require("@nomicfoundation/hardhat-chai-matchers");
+require('@openzeppelin/hardhat-upgrades');
 require("./tasks/cosmic-tasks.js");
 module.exports = {
 	solidity: {

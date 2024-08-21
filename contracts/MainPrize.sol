@@ -13,9 +13,9 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
-import "./interfaces/SystemEvents.sol";
+import "./interfaces/ISystemEvents.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,SystemEvents {
+abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,ISystemEvents {
 	/// @notice Emitted when a prize is claimed
 	/// @param prizeNum The number of the prize being claimed
 	/// @param destination The address receiving the prize
@@ -178,7 +178,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidS
 			uint256 tokenId = CosmicSignature(nft).mint(enduranceChampion, roundNum);
 			// ToDo-202408116-0 applies.
 			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
-			CosmicToken(token).transfer(enduranceChampion, erc20TokenReward);
+			token.call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, enduranceChampion, erc20TokenReward)
+			);
 			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, 0);
 		}
 
@@ -187,7 +189,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidS
 			uint256 tokenId = CosmicSignature(nft).mint(stellarSpender, roundNum);
 			// ToDo-202408116-0 applies.
 			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
-			CosmicToken(token).transfer(stellarSpender, erc20TokenReward);
+			token.call(
+				abi.encodeWithSelector(CosmicToken.mint.selector, stellarSpender, erc20TokenReward)
+			);
 			emit StellarSpenderWinnerEvent(
 				stellarSpender,
 				roundNum,

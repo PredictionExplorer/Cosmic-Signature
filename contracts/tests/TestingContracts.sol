@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-// todo-1 Commented out to suppress a compile error.
-/*
-
 import { StakingWalletCST } from "../StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../StakingWalletRWalk.sol";
 import { RaffleWallet } from "../RaffleWallet.sol";
-import { CosmicGameProxy } from "../CosmicGameProxy.sol";
+import { CosmicGame } from "../CosmicGame.sol";
 import { CosmicSignature } from "../CosmicSignature.sol";
 import { CosmicToken } from "../CosmicToken.sol";
 import { CosmicGameConstants } from "../CosmicGameConstants.sol";
@@ -75,25 +72,25 @@ contract BrokenStaker {
 	}
 }
 
-contract SelfdestructibleCosmicGameProxy is CosmicGameProxy {
+contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
 
-	constructor() CosmicGameProxy() {}
+	constructor() CosmicGame() {}
 
 	function finalizeTesting() external onlyOwner {
 		// returns all the assets to the creator of the contract and self-destroys
 
 		// CosmicSignature tokens
-		uint256 cosmicSupply = nft.totalSupply();
+		uint256 cosmicSupply = CosmicSignature(nft).totalSupply();
 		for (uint256 i = 0; i < cosmicSupply; i++) {
-			address owner = nft.ownerOf(i);
+			address owner = CosmicSignature(nft).ownerOf(i);
 			if (owner == address(this)) {
-				nft.transferFrom(address(this), this.owner(), i);
+				CosmicSignature(nft).transferFrom(address(this), this.owner(), i);
 			}
 		}
-		cosmicSupply = token.balanceOf(address(this));
-		token.transfer(this.owner(), cosmicSupply);
+		cosmicSupply = CosmicToken(token).balanceOf(address(this));
+		CosmicToken(token).transfer(this.owner(), cosmicSupply);
 		for (uint256 i = 0; i < numDonatedNFTs; i++) {
 			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
 			IERC721(dnft.nftAddress).transferFrom(address(this), this.owner(), dnft.tokenId);
@@ -101,24 +98,24 @@ contract SelfdestructibleCosmicGameProxy is CosmicGameProxy {
 		selfdestruct(payable(this.owner()));
 	}
 }
-contract SpecialCosmicGameProxy is CosmicGameProxy {
-	// special CosmicGameProxy contract to be used in unit tests to create special test setups
+contract SpecialCosmicGame is CosmicGame {
+	// special CosmicGame contract to be used in unit tests to create special test setups
 
-	constructor() CosmicGameProxy() {}
+	constructor() CosmicGame() {}
 	function setCharityRaw(address addr) external {
 		charity = addr;
 	}
 	function setRaffleWalletRaw(address addr) external {
-		raffleWallet = RaffleWallet(addr);
+		raffleWallet = addr;
 	}
 	function setStakingWalletCSTRaw(address addr) external {
-		stakingWalletCST = StakingWalletCST(addr);
+		stakingWalletCST = addr;
 	}
 	function setNftContractRaw(address addr) external {
-		nft = CosmicSignature(addr);
+		nft = addr;
 	}
 	function setTokenContractRaw(address addr) external {
-		token = CosmicToken(addr);
+		token = addr;
 	}
 	function setActivationTimeRaw(uint256 newActivationTime) external {
 		activationTime = newActivationTime;
@@ -150,7 +147,7 @@ contract SpecialCosmicGameProxy is CosmicGameProxy {
 	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
-	constructor(CosmicSignature nft_, CosmicGameProxy game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
@@ -175,7 +172,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 	}
 }
 contract TestStakingWalletRWalk is StakingWalletRWalk {
-	constructor(RandomWalkNFT nft_, CosmicGameProxy game_) StakingWalletRWalk(nft_, game_) {}
+	constructor(RandomWalkNFT nft_, CosmicGame game_) StakingWalletRWalk(nft_, game_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
@@ -199,5 +196,3 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 		lastActionIds[tokenId] = -1;
 	}
 }
-
-*/

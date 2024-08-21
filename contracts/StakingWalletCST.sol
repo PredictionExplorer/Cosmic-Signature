@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameProxy } from "./CosmicGameProxy.sol";
+import { CosmicGame} from "./CosmicGame.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
@@ -60,8 +60,8 @@ contract StakingWalletCST is Ownable {
 
 	/// @notice Reference to the CosmicSignature NFT contract
 	CosmicSignature public nft;
-	/// @notice Reference to the CosmicGameProxy contract
-	CosmicGameProxy public game;
+	/// @notice Reference to the CosmicGame contract
+	CosmicGame public game;
 
 	/// @dev Precision factor for calculations
 	uint256 private constant PRECISION = 1e18;
@@ -128,10 +128,10 @@ contract StakingWalletCST is Ownable {
 
 	/// @notice Initializes the StakingWalletCST contract
 	/// @param nft_ Address of the CosmicSignature NFT contract
-	/// @param game_ Address of the CosmicGameProxy contract
+	/// @param game_ Address of the CosmicGame contract
 	/// @param charity_ Address of the charity
 	/// @dev ToDo-202408114-1 applies
-	constructor(CosmicSignature nft_, CosmicGameProxy game_, address charity_) Ownable(msg.sender) {
+	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
 		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		require(charity_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for charity."));
@@ -150,11 +150,11 @@ contract StakingWalletCST is Ownable {
 	}
 
 	/// @notice Deposits ETH for reward distribution
-	/// @dev Only callable by the CosmicGameProxy contract
+	/// @dev Only callable by the CosmicGame contract
 	function deposit() external payable {
 		require(
 			msg.sender == address(game),
-			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGameProxy contract can deposit.", msg.sender)
+			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract can deposit.", msg.sender)
 		);
 
 		uint256 initialModulo = modulo;

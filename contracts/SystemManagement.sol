@@ -6,10 +6,10 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./CosmicGameStorage.sol";
-import "./interfaces/SystemEvents.sol";
+import "./interfaces/ISystemEvents.sol";
 import { CosmicGameErrors } from "./CosmicGameErrors.sol";
 
-abstract contract SystemManagement is OwnableUpgradeable , CosmicGameStorage, SystemEvents {
+abstract contract SystemManagement is OwnableUpgradeable , CosmicGameStorage, ISystemEvents {
 
 	/// @notice Set the charity address
 	/// @dev Only callable by the contract owner
