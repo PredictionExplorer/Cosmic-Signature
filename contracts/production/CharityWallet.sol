@@ -21,8 +21,8 @@ contract CharityWallet is Ownable, ICharityWallet {
 	}
 
 	function setCharity(address newCharityAddress) external override onlyOwner {
-		// todo-0 Here and in a few other places, SolHint generates this warning:
-		// todo-0 warning  GC: Use Custom Errors instead of require statements  gas-custom-errors
+		// todo-1 Here and in a few other places, SolHint generates this warning:
+		// todo-1 warning  GC: Use Custom Errors instead of require statements  gas-custom-errors
 		require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		charityAddress = newCharityAddress;
 		emit CharityUpdatedEvent(charityAddress);
