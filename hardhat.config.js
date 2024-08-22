@@ -1,12 +1,42 @@
-require("@nomicfoundation/hardhat-toolbox");
-// require("@nomicfoundation/hardhat-ethers");
-// require("@nomicfoundation/hardhat-chai-matchers");
-require('hardhat-abi-exporter');
-require("hardhat-docgen");
-require('@openzeppelin/hardhat-upgrades');
-require("hardhat-tracer");
+// // todo-0 This is how I want imports to look like.
+// // todo-0 But this generates the following compile error:
+// // todo-0    Error HH209: Redefinition of task verify:get-contract-information failed. Unsupported operation adding mandatory (non optional) param definitions in an overridden task.
+// // todo-0    For more info go to https://hardhat.org/HH209 or run Hardhat with --show-stack-traces
+// // todo-0 Removing the import of "@nomiclabs/hardhat-etherscan" would fix the error.
+// // todo-0 Do we really need that import here?
+// // todo-0 I prototyped contract deployment and verification, and it worked without explicitly importing that package.
+// require("@nomicfoundation/hardhat-toolbox");
+// // require("@nomicfoundation/hardhat-ethers");
+// // require("@nomicfoundation/hardhat-chai-matchers");
+// require("hardhat-abi-exporter");
+// require("hardhat-docgen");
+// require("@openzeppelin/hardhat-upgrades");
+// require("hardhat-tracer");
+// require("@nomiclabs/hardhat-etherscan");
+// require("./tasks/cosmic-tasks.js");
+
+//---
+
+// // todo-0 In a newly generated Hardhat project, this is the only import. Why did someone remove this import?
+// require("@nomicfoundation/hardhat-toolbox");
+
+require("hardhat-abi-exporter");
 require("@nomiclabs/hardhat-etherscan");
+
+// todo-0 "@nomicfoundation/hardhat-toolbox" imports this.
+// todo-0 So if you decide to import "@nomicfoundation/hardhat-toolbox", this import would be redundant.
+require("@nomicfoundation/hardhat-ethers");
+
+require("hardhat-tracer");
+require("hardhat-docgen");
+
+// todo-0 "@nomicfoundation/hardhat-toolbox" imports this.
+// todo-0 So if you decide to import "@nomicfoundation/hardhat-toolbox", this import would be redundant.
+require("@nomicfoundation/hardhat-chai-matchers");
+
+require("@openzeppelin/hardhat-upgrades");
 require("./tasks/cosmic-tasks.js");
+
 module.exports = {
 	solidity: {
 		// When changing this, remember to revisit Comment-202408026 and Comment-202408025.
