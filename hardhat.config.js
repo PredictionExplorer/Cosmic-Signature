@@ -1,11 +1,11 @@
-// require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-toolbox");
+// require("@nomicfoundation/hardhat-ethers");
+// require("@nomicfoundation/hardhat-chai-matchers");
 require('hardhat-abi-exporter');
-require("@nomiclabs/hardhat-etherscan");
-require("@nomicfoundation/hardhat-ethers");
-require("hardhat-tracer");
 require("hardhat-docgen");
-require("@nomicfoundation/hardhat-chai-matchers");
 require('@openzeppelin/hardhat-upgrades');
+require("hardhat-tracer");
+require("@nomiclabs/hardhat-etherscan");
 require("./tasks/cosmic-tasks.js");
 module.exports = {
 	solidity: {
@@ -23,8 +23,14 @@ module.exports = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-				details: {
-				},
+				// details: {
+				// 	yulDetails: {
+				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support recommends this setting.
+				// 		// Issue. But it appears to increase contract binary size.
+				// 		// todo-1 To be revisited.
+				// 		optimizerSteps: "u",
+				// 	},
+				// },
 				runs: 20000,
 			},
 
@@ -91,5 +97,5 @@ module.exports = {
 	},
 	etherscan: {
 		apiKey: process.env.API_KEY,
-	}
+	},
 };
