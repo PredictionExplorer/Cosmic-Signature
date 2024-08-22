@@ -3,7 +3,7 @@
 pragma solidity 0.8.26;
 
 import "./CosmicGameStorage.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 abstract contract BidStatistics is CosmicGameStorage {
 

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "./CosmicGameStorage.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicToken } from "./CosmicToken.sol";

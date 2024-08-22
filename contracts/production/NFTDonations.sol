@@ -4,8 +4,9 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./CosmicGameStorage.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 abstract contract NFTDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 	/// @notice Emitted when an NFT is donated

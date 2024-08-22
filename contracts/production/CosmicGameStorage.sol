@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import "./CosmicGameConstants.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 
 abstract contract CosmicGameStorage {
 	// #region External Contracts

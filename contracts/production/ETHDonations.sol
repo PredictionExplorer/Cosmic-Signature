@@ -5,7 +5,7 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./CosmicGameStorage.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 abstract contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 

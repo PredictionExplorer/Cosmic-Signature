@@ -13,8 +13,8 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import { CosmicGameConstants } from "./CosmicGameConstants.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";

@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGame } from "./CosmicGame.sol";
-import { CosmicGameErrors } from "./CosmicGameErrors.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 
 /// @title RaffleWallet - A wallet for managing raffle winnings in the Cosmic Game
 /// @author Cosmic Game Development Team
