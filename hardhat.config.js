@@ -12,6 +12,7 @@
 // require("hardhat-docgen");
 // require("@openzeppelin/hardhat-upgrades");
 // require("hardhat-tracer");
+// require("@nomiclabs/hardhat-solhint");
 // require("@nomiclabs/hardhat-etherscan");
 // require("./tasks/cosmic-tasks.js");
 
@@ -35,6 +36,7 @@ require("hardhat-docgen");
 require("@nomicfoundation/hardhat-chai-matchers");
 
 require("@openzeppelin/hardhat-upgrades");
+require("@nomiclabs/hardhat-solhint");
 require("./tasks/cosmic-tasks.js");
 
 module.exports = {
