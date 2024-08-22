@@ -278,8 +278,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		lastCSTBidTime = block.timestamp;
 
 		// Burn the CST tokens used for bidding
-		SafeERC20.safeTransferFrom(IERC20(token),msg.sender, address(this), price);
-		ERC20Burnable(token).burn(price);
+		CosmicToken(token).burn(msg.sender,price);
 
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
