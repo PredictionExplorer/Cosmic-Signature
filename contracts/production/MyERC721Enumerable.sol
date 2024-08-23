@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
+/// @dev We don't currently need an `interface` for this to implement.
 abstract contract MyERC721Enumerable is ERC721Enumerable {
 	// todo-0 ChatGPT provided this code. Is it correct?
 	// todo-0 The code is almost the same as it was in the old OpenZeppelin, but see todos below.
