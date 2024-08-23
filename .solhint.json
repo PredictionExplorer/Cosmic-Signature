@@ -13,7 +13,6 @@
 		"imports-on-top": "warn",
 		"ordering": "warn",
 		"visibility-modifier-order": "warn",
-		"func-visibility": [ "warn", { "ignoreConstructors": true } ],
-		"no-inline-assembly": "off"
+		"func-visibility": [ "warn", { "ignoreConstructors": true } ]
 	}
 }
