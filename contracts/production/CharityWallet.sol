@@ -7,7 +7,8 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { ICharityWallet } from "./interfaces/ICharityWallet.sol";
 
 contract CharityWallet is Ownable, ICharityWallet {
-	address public override charityAddress;
+	/// @notice The address of the current designated charity
+	address public charityAddress;
 
 	// [ToDo-202408114-1]
 	// `Ownable` `constructor` and `__Ownable_init` now require a nonzero `initialOwner`.

@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.26;
 
-import { CosmicToken } from "../CosmicToken.sol";
-
 /// @title A wallet for managing CST rewards for marketing efforts
 /// @author Cosmic Game Development Team
 /// @notice This wallet holds CST rewards for marketing the project on social media
@@ -28,7 +26,4 @@ interface IMarketingWallet {
 	/// @param amount Amount of CST tokens to send
 	/// @param to Address of the reward recipient
 	function send(uint256 amount, address to) external;
-
-	/// @notice Reference to the CosmicToken contract
-	function token() external view returns (CosmicToken);
 }

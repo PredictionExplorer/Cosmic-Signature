@@ -39,7 +39,4 @@ interface ICharityWallet {
 	/// @dev This function is intentionally not restricted to onlyOwner to ensure transparency
 	/// and allow regular donations. It can be called by anyone at any time.
 	function send() external;
-
-	/// @notice The address of the current designated charity
-	function charityAddress() external view returns (address);
 }

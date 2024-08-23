@@ -8,7 +8,8 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
 contract MarketingWallet is Ownable, IMarketingWallet {
-	CosmicToken public override token;
+	/// @notice Reference to the CosmicToken contract
+	CosmicToken public token;
 
 	/// @notice Initializes the MarketingWallet contract
 	/// @param token_ Address of the CosmicToken contract
