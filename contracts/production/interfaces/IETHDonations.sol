@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.26;
 
+// todo-0 Derive from `ICosmicGameStorage`?
 interface IETHDonations {
 	/// @notice Emitted when a donation is made
 	/// @param donor Donor address
