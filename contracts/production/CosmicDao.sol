@@ -6,12 +6,10 @@ import { GovernorSettings } from "@openzeppelin/contracts/governance/extensions/
 import { GovernorCountingSimple } from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import { GovernorVotes, IVotes } from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import { ICosmicDAO } from "./interfaces/ICosmicDAO.sol";
 
-/// @title CosmicDAO - Governance contract for the Cosmic ecosystem
-/// @author Cosmic Game Development Team
-/// @notice This contract implements the governance mechanism for the Cosmic ecosystem
 /// @dev Extends various OpenZeppelin Governor modules to create a comprehensive DAO
-contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction {
+contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction, ICosmicDAO {
 	/// @notice Initializes the CosmicDAO contract
 	/// @dev Sets up the governance parameters and links the voting token
 	/// @param _token The address of the token used for voting power
