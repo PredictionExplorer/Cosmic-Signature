@@ -2,12 +2,11 @@
 
 pragma solidity 0.8.26;
 
-import "./CosmicGameStorage.sol";
+import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { ISpecialPrizes } from "./interfaces/ISpecialPrizes.sol";
 
-contract SpecialPrizes is CosmicGameStorage {
-	/// @notice Get the current endurance champion and their duration
-	/// @return The address of the current endurance champion and their duration
-	function currentEnduranceChampion() external view returns (address, uint256) {
+abstract contract SpecialPrizes is CosmicGameStorage, ISpecialPrizes {
+	function currentEnduranceChampion() external view override returns (address, uint256) {
 		if (lastBidder == address(0)) {
 			return (address(0), 0);
 		}
