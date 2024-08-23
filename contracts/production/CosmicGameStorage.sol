@@ -2,8 +2,9 @@
 pragma solidity 0.8.26;
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
-abstract contract CosmicGameStorage {
+abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// #region External Contracts
 
 	// todo-1 Why not name this `randomWalkNFT`?
