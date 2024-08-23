@@ -5,7 +5,6 @@
 		"contract-name-camelcase": "warn",
 		"event-name-camelcase": "warn",
 		"func-name-mixedcase": "warn",
-		"func-visibility": [ "warn", { "ignoreConstructors": true } ],
 		"func-param-name-mixedcase": "warn",
 		"modifier-name-mixedcase": "warn",
 		"private-vars-leading-underscore": "warn",
@@ -14,6 +13,7 @@
 		"imports-on-top": "warn",
 		"ordering": "warn",
 		"visibility-modifier-order": "warn",
+		"func-visibility": [ "warn", { "ignoreConstructors": true } ],
 		"no-inline-assembly": "off"
 	}
 }
