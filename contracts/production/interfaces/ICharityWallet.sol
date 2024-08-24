@@ -38,5 +38,7 @@ interface ICharityWallet {
 	/// Expected to be called approximately once a month, but frequency may vary
 	/// @dev This function is intentionally not restricted to onlyOwner to ensure transparency
 	/// and allow regular donations. It can be called by anyone at any time.
+	/// todo-1 Should this be `payable`? Then someone wouldhave n option to send some ETH and hen send everything to charity.
+	/// todo-1 Do we need an oveload of this accepting the amount to send?
 	function send() external;
 }
