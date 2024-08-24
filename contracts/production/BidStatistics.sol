@@ -2,11 +2,11 @@
 
 pragma solidity 0.8.26;
 
-import "./CosmicGameStorage.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
-abstract contract BidStatistics is CosmicGameStorage {
-
+abstract contract BidStatistics is CosmicGameStorage, IBidStatistics {
 	/// @notice Update the endurance champion based on the current bid
 	/// @dev This function is called for each bid to potentially update the endurance champion
 	function _updateEnduranceChampion() internal {
