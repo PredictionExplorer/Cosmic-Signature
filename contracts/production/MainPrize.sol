@@ -14,10 +14,9 @@ import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { BidStatistics } from "./BidStatistics.sol";
-import { ISystemEvents } from "./interfaces/ISystemEvents.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, ISystemEvents, IMainPrize {
+abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, IMainPrize {
 	function claimPrize() external override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,

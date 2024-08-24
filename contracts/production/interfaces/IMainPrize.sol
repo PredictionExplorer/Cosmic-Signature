@@ -4,8 +4,9 @@ pragma solidity 0.8.26;
 
 // import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
+import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface IMainPrize is /*ICosmicGameStorage,*/ IBidStatistics {
+interface IMainPrize is /*ICosmicGameStorage,*/ IBidStatistics, ISystemEvents {
 	/// @notice Emitted when a prize is claimed
 	/// @param prizeNum The number of the prize being claimed
 	/// @param destination The address receiving the prize
