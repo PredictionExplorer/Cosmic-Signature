@@ -3,16 +3,16 @@ pragma solidity 0.8.26;
 pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGame } from "./CosmicGame.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { CosmicGame } from "./CosmicGame.sol";
+import { IStakingWalletRWalk } from "./interfaces/IStakingWalletRWalk.sol";
 
-/// @title StakingWalletRWalk - Staking contract for RandomWalk NFTs
-/// @author Cosmic Game Development Team
-/// @notice This contract allows users to stake their RandomWalk NFTs
 /// @dev Implements staking, unstaking, and random staker selection for RandomWalk NFTs
-contract StakingWalletRWalk is Ownable {
+contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
+	// #region Data Types
+
 	/// @notice Represents a staking action for a token
 	/// @dev Stores details about each staking event
 	struct StakeAction {
@@ -30,6 +30,9 @@ contract StakingWalletRWalk is Ownable {
 		uint256 depositAmount;
 		uint256 numStaked;
 	}
+
+	// #endregion
+	// #region State
 
 	/// @notice Mapping of stake action ID to StakeAction
 	mapping(uint256 => StakeAction) public stakeActions;
@@ -58,29 +61,7 @@ contract StakingWalletRWalk is Ownable {
 	/// @notice Reference to the CosmicGame contract
 	CosmicGame public game;
 
-	/// @notice Emitted when a token is staked
-	/// @param actionId The ID of the stake action
-	/// @param tokenId The ID of the staked token
-	/// @param totalNFTs Total number of staked NFTs after this action
-	/// @param staker Address of the staker
-	event StakeActionEvent(
-		uint256 indexed actionId,
-		uint256 indexed tokenId,
-		uint256 totalNFTs,
-		address indexed staker
-	);
-
-	/// @notice Emitted when a token is unstaked
-	/// @param actionId The ID of the unstake action
-	/// @param tokenId The ID of the unstaked token
-	/// @param totalNFTs Total number of staked NFTs after this action
-	/// @param staker Address of the staker
-	event UnstakeActionEvent(
-		uint256 indexed actionId,
-		uint256 indexed tokenId,
-		uint256 totalNFTs,
-		address indexed staker
-	);
+	// #endregion
 
 	/// @notice Initializes the StakingWalletRWalk contract
 	/// @param rwalk_ Address of the RandomWalkNFT contract
@@ -102,10 +83,7 @@ contract StakingWalletRWalk is Ownable {
 		assert(numStakeActions == 0);
 	}
 
-	/// @notice Stakes a single RandomWalk NFT
-	/// @param _tokenId ID of the token to stake
-	/// @dev Transfers the NFT to this contract and records the stake action
-	function stake(uint256 _tokenId) public {
+	function stake(uint256 _tokenId) public override {
 		require(
 			!usedTokens[_tokenId],
 			CosmicGameErrors.OneTimeStaking("Staking/unstaking token is allowed only once", _tokenId)
@@ -130,10 +108,7 @@ contract StakingWalletRWalk is Ownable {
 		assert(lastActionIdByTokenId(_tokenId) == int256(numStakeActions - 1));
 	}
 
-	/// @notice Stakes multiple RandomWalk NFTs
-	/// @param ids Array of token IDs to stake
-	/// @dev Calls stake() for each token ID in the array
-	function stakeMany(uint256[] memory ids) external {
+	function stakeMany(uint256[] memory ids) external override {
 		uint256 initialStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			stake(ids[i]);
@@ -142,10 +117,7 @@ contract StakingWalletRWalk is Ownable {
 		assert(numStakedNFTs == initialStakedNFTs + ids.length);
 	}
 
-	/// @notice Unstakes a single RandomWalk NFT
-	/// @param stakeActionId ID of the stake action to unstake
-	/// @dev Transfers the NFT back to the owner and records the unstake action
-	function unstake(uint256 stakeActionId) public {
+	function unstake(uint256 stakeActionId) public override {
 		require(
 			stakeActions[stakeActionId].unstakeTime == 0,
 			CosmicGameErrors.TokenAlreadyUnstaked("Token has already been unstaked.", stakeActionId)
@@ -168,10 +140,7 @@ contract StakingWalletRWalk is Ownable {
 		assert(numStakedNFTs < numStakeActions);
 	}
 
-	/// @notice Unstakes multiple RandomWalk NFTs
-	/// @param ids Array of stake action IDs to unstake
-	/// @dev Calls unstake() for each stake action ID in the array
-	function unstakeMany(uint256[] memory ids) external {
+	function unstakeMany(uint256[] memory ids) external override {
 		uint256 initialStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
@@ -180,32 +149,21 @@ contract StakingWalletRWalk is Ownable {
 		assert(numStakedNFTs == initialStakedNFTs - ids.length);
 	}
 
-	/// @notice Checks if a token has been used for staking
-	/// @param _tokenId ID of the token to check
-	/// @return True if the token has been used, false otherwise
-	function wasTokenUsed(uint256 _tokenId) public view returns (bool) {
+	function wasTokenUsed(uint256 _tokenId) public view override returns (bool) {
 		return usedTokens[_tokenId];
 	}
 
-	/// @notice Checks if a token is currently staked
-	/// @param tokenId ID of the token to check
-	/// @return True if the token is staked, false otherwise
-	function isTokenStaked(uint256 tokenId) public view returns (bool) {
+	function isTokenStaked(uint256 tokenId) public view override returns (bool) {
 		return tokenIndices[tokenId] != 0;
 	}
 
-	/// @notice Returns the number of currently staked tokens
-	/// @return Number of staked tokens
-	function numTokensStaked() public view returns (uint256) {
+	function numTokensStaked() public view override returns (uint256) {
 		// SMT Checker assertion
 		assert(stakedTokens.length == numStakedNFTs);
 		return stakedTokens.length;
 	}
 
-	/// @notice Gets the last action ID for a given token
-	/// @param tokenId ID of the token to check
-	/// @return Last action ID for the token, -2 if never staked, -1 if unstaked
-	function lastActionIdByTokenId(uint256 tokenId) public view returns (int256) {
+	function lastActionIdByTokenId(uint256 tokenId) public view override returns (int256) {
 		uint256 tokenIndex = tokenIndices[tokenId];
 		if (tokenIndex == 0) {
 			return -2;
@@ -213,10 +171,7 @@ contract StakingWalletRWalk is Ownable {
 		return lastActionIds[tokenId];
 	}
 
-	/// @notice Gets the staker's address for a given token
-	/// @param tokenId ID of the token to check
-	/// @return Address of the staker, address(0) if not staked
-	function stakerByTokenId(uint256 tokenId) public view returns (address) {
+	function stakerByTokenId(uint256 tokenId) public view override returns (address) {
 		int256 actionId = lastActionIdByTokenId(tokenId);
 		if (actionId < 0) {
 			return address(0);
@@ -224,10 +179,7 @@ contract StakingWalletRWalk is Ownable {
 		return stakeActions[uint256(actionId)].owner;
 	}
 
-	/// @notice Picks a random staker based on the provided entropy
-	/// @param entropy Random bytes used to select a staker
-	/// @return Address of the randomly selected staker
-	function pickRandomStaker(bytes32 entropy) public view returns (address) {
+	function pickRandomStaker(bytes32 entropy) public view override returns (address) {
 		require(stakedTokens.length > 0, CosmicGameErrors.NoTokensStaked("There are no RandomWalk tokens staked."));
 		uint256 luckyTokenId = stakedTokens[uint256(entropy) % stakedTokens.length];
 		int256 actionId = lastActionIds[luckyTokenId];
