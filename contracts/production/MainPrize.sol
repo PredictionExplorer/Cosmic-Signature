@@ -2,80 +2,23 @@
 
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import "./CosmicGameStorage.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { BidStatistics } from "./BidStatistics.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
-import "./interfaces/ISystemEvents.sol";
+import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { BidStatistics } from "./BidStatistics.sol";
+import { ISystemEvents } from "./interfaces/ISystemEvents.sol";
+import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidStatistics,ISystemEvents {
-	/// @notice Emitted when a prize is claimed
-	/// @param prizeNum The number of the prize being claimed
-	/// @param destination The address receiving the prize
-	/// @param amount The amount of the prize
-	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
-	/// @notice Emitted when an ETH raffle winner is selected
-	/// @param winner The address of the winner
-	/// @param round The round number
-	/// @param winnerIndex The index of the winner
-	/// @param amount The amount won
-	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed round, uint256 winnerIndex, uint256 amount);
-
-	/// @notice Emitted when an NFT raffle winner is selected
-	/// @param winner The address of the winner
-	/// @param round The round number
-	/// @param tokenId The ID of the NFT won
-	/// @param winnerIndex The index of the winner
-	/// @param isStaker Whether the winner is a staker
-	/// @param isRWalk Whether the NFT is a RandomWalk NFT
-	event RaffleNFTWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 indexed tokenId,
-		uint256 winnerIndex,
-		bool isStaker,
-		bool isRWalk
-	);
-	/// @notice Emitted when the Endurance Champion winner is determined
-	/// @param winner The address of the Endurance Champion
-	/// @param round The round number
-	/// @param erc721TokenId The ID of the ERC721 token awarded
-	/// @param erc20TokenAmount The amount of ERC20 tokens awarded
-	/// @param winnerIndex The index of the winner
-	event EnduranceChampionWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 indexed erc721TokenId,
-		uint256 erc20TokenAmount,
-		uint256 winnerIndex
-	);
-	/// @notice Emitted when the Stellar Spender winner is determined
-	/// @param winner The address of the Stellar Spender
-	/// @param round The round number
-	/// @param erc721TokenId The ID of the ERC721 token awarded
-	/// @param erc20TokenAmount The amount of ERC20 tokens awarded
-	/// @param totalSpent The total amount spent by the winner
-	/// @param winnerIndex The index of the winner
-	event StellarSpenderWinnerEvent(
-		address indexed winner,
-		uint256 indexed round,
-		uint256 indexed erc721TokenId,
-		uint256 erc20TokenAmount,
-		uint256 totalSpent,
-		uint256 winnerIndex
-	);
-
-
-	/// @notice Claim the prize for the current round
-	/// @dev This function distributes prizes, updates game state, and starts a new round
-	function claimPrize() external nonReentrant {
+abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, ISystemEvents, IMainPrize {
+	function claimPrize() external override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -125,6 +68,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidS
 		// ToDo-202408116-0 applies.
 		roundNum = roundNum/*.add*/ + (1);
 	}
+
 	/// @notice Distribute prizes to various recipients
 	/// @dev This function handles the distribution of ETH and NFT prizes
 	/// @param winner Address of the round winner
@@ -249,6 +193,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidS
 	function _updateEntropy() internal {
 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
 	}
+
 	/// @notice Reset various parameters at the end of a bidding round
 	/// @dev This function is called after a prize is claimed to prepare for the next round
 	function _roundEndResets() internal {
@@ -269,54 +214,41 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable,CosmicGameStorage,BidS
 			emit SystemModeChanged(systemMode);
 		}
 	}
-	/// @notice Get the current prize amount
-	/// @return The current prize amount in wei
-	function prizeAmount() public view returns (uint256) {
+
+	function prizeAmount() public view override returns (uint256) {
 		// ToDo-202408116-0 applies.
 		return address(this).balance/*.mul*/ * (prizePercentage)/*.div*/ / (100);
 	}
 
-	/// @notice Get the current charity amount
-	/// @return The current charity amount in wei
-	function charityAmount() public view returns (uint256) {
+	function charityAmount() public view override returns (uint256) {
 		// ToDo-202408116-0 applies.
 		return address(this).balance/*.mul*/ * (charityPercentage)/*.div*/ / (100);
 	}
 
-	/// @notice Get the current raffle amount
-	/// @return The current raffle amount in wei
-	function raffleAmount() public view returns (uint256) {
+	function raffleAmount() public view override returns (uint256) {
 		// ToDo-202408116-0 applies.
 		return address(this).balance/*.mul*/ * (rafflePercentage)/*.div*/ / (100);
 	}
 
-	/// @notice Get the current staking amount
-	/// @return The current staking amount in wei
-	function stakingAmount() public view returns (uint256) {
+	function stakingAmount() public view override returns (uint256) {
 		// ToDo-202408116-0 applies.
 		return address(this).balance/*.mul*/ * (stakingPercentage)/*.div*/ / (100);
 	}
 
-	/// @notice Get the time until the game activates
-	/// @return The number of seconds until activation, or 0 if already activated
-	function timeUntilActivation() external view returns (uint256) {
+   /// todo-0 Does this function belong to `SytemManagement`?
+	function timeUntilActivation() external view override returns (uint256) {
 		if (activationTime < block.timestamp) return 0;
 		// ToDo-202408116-0 applies.
 		return activationTime/*.sub*/ - (block.timestamp);
 	}
 
-	/// @notice Get the time until the next prize can be claimed
-	/// @return The number of seconds until the prize can be claimed, or 0 if claimable now
-	function timeUntilPrize() external view returns (uint256) {
+	function timeUntilPrize() external view override returns (uint256) {
 		if (prizeTime < block.timestamp) return 0;
 		// ToDo-202408116-0 applies.
 		return prizeTime/*.sub*/ - (block.timestamp);
 	}
 
-	/// @notice Get the winner of a specific round
-	/// @param round The round number
-	/// @return The address of the winner for the specified round
-	function getWinnerByRound(uint256 round) public view returns (address) {
+	function getWinnerByRound(uint256 round) public view override returns (address) {
 		return winners[round];
 	}
 }
