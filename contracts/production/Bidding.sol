@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "./CosmicGameStorage.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { BidStatistics } from "./BidStatistics.sol";
+import { IBidding } from "./interfaces/IBidding.sol";
 
-abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidStatistics {
+abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, IBidding {
+	// #region Data Types
+
 	/// @title Bid Parameters
 	/// @dev Struct to encapsulate parameters for placing a bid in the Cosmic Game
 	/// todo-0 I am not sure if we still need this.
@@ -24,28 +27,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		/// @custom:note RandomWalk NFTs may provide special benefits or discounts when used for bidding
 		int256 randomWalkNFTId;
 	}
-	/// @notice Emitted when a bid is placed
-	/// @param lastBidder The address of the bidder
-	/// @param round The current round number
-	/// @param bidPrice The price of the bid
-	/// @param randomWalkNFTId The ID of the RandomWalk NFT used (if any)
-	/// @param numCSTTokens The number of CST tokens used (if any)
-	/// @param prizeTime The time when the prize can be claimed
-	/// @param message An optional message from the bidder
-	event BidEvent(
-		address indexed lastBidder,
-		uint256 indexed round,
-		int256 bidPrice,
-		int256 randomWalkNFTId,
-		int256 numCSTTokens,
-		uint256 prizeTime,
-		string message
-	);
-	
-	/// @notice Place a bid in the current round 
-	/// @dev This function handles ETH bids and RandomWalk NFT bids
-	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
-	function bid(bytes calldata _data) external payable nonReentrant {
+
+	// #endregion
+
+	function bid(bytes calldata _data) external payable override nonReentrant {
 		_bid(_data);
 	}
 
@@ -203,9 +188,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 
 		_pushBackPrizeTime();
 	}
-	/// @notice Get the current bid price
-	/// @return The current bid price in wei
-	function getBidPrice() public view returns (uint256) {
+
+	function getBidPrice() public view override returns (uint256) {
 		// ToDo-202408116-0 applies.
 		return bidPrice * (priceIncrease) / (CosmicGameConstants.MILLION);
 	}
@@ -220,11 +204,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		// ToDo-202408116-0 applies.
 		nanoSecondsExtra = nanoSecondsExtra * (timeIncrease) / (CosmicGameConstants.MILLION);
 	}
-	/// @notice Get the address of a bidder at a specific position from the end in a given round
-	/// @param _round The round number
-	/// @param _positionFromEnd The position from the end of the bidders list
-	/// @return The address of the bidder
-	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view returns (address) {
+
+	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
 		uint256 numParticipants = numRaffleParticipants[_round];
 		require(
 			_round <= roundNum,
@@ -252,10 +233,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
-	/// @notice Place a bid using CST tokens
-	/// @dev This function allows bidding with CST tokens, adjusting the CST price dynamically
-	/// @param message The bidder's message
-	function bidWithCST(string memory message) external nonReentrant {
+
+	function bidWithCST(string memory message) external override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -284,10 +263,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
-	/// @notice Calculate the current CST token price for bidding
-	/// @dev The price decreases linearly over the auction duration
-	/// @return The current CST token price
-	function currentCSTPrice() public view returns (uint256) {
+
+	function currentCSTPrice() public view override returns (uint256) {
 		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
 		if (secondsElapsed >= duration) {
 			return 0;
@@ -297,39 +274,27 @@ abstract contract Bidding is ReentrancyGuardUpgradeable,CosmicGameStorage, BidSt
 		// ToDo-202408116-0 applies.
 		return (fraction * (startingBidPriceCST)) / (1e6);
 	}
-	/// @notice Get the current auction duration and elapsed time
-	/// @dev This function is used to calculate the CST price
-	/// @return A tuple containing the seconds elapsed and total duration of the current auction
-	function auctionDuration() public view returns (uint256, uint256) {
+
+	function auctionDuration() public view override returns (uint256, uint256) {
 		// ToDo-202408116-0 applies.
 		uint256 secondsElapsed = block.timestamp - (lastCSTBidTime);
 		return (secondsElapsed, CSTAuctionLength);
 	}
-	/// @notice Get the total number of bids in the current round
-	/// @return The total number of bids in the current round
-	function getTotalBids() public view returns (uint256) {
+
+	function getTotalBids() public view override returns (uint256) {
 		return numRaffleParticipants[roundNum];
 	}
 
-	/// @notice Get the address of a bidder at a specific position in the current round
-	/// @param position The position of the bidder (0-indexed)
-	/// @return The address of the bidder at the specified position
-	function getBidderAtPosition(uint256 position) public view returns (address) {
+	function getBidderAtPosition(uint256 position) public view override returns (address) {
 		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
 		return raffleParticipants[roundNum][position];
 	}
 
-	/// @notice Get the total amount spent by a bidder in the current round
-	/// @param bidder The address of the bidder
-	/// @return The total amount spent by the bidder in wei
-	function getTotalSpentByBidder(address bidder) public view returns (uint256) {
+	function getTotalSpentByBidder(address bidder) public view override returns (uint256) {
 		return bidderInfo[roundNum][bidder].totalSpent;
 	}
 
-	/// @notice Check if a RandomWalk NFT has been used for bidding
-	/// @param tokenId The ID of the RandomWalk NFT
-	/// @return True if the NFT has been used, false otherwise
-	function isRandomWalkNFTUsed(uint256 tokenId) public view returns (bool) {
+	function isRandomWalkNFTUsed(uint256 tokenId) public view override returns (bool) {
 		return usedRandomWalkNFTs[tokenId];
 	}
 }
