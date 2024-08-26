@@ -101,7 +101,6 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 contract SpecialCosmicGame is CosmicGame {
 	// special CosmicGame contract to be used in unit tests to create special test setups
 
-	constructor() CosmicGame() {}
 	function setCharityRaw(address addr) external {
 		charity = addr;
 	}
