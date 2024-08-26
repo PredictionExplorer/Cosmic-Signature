@@ -2,29 +2,15 @@
 
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "./CosmicGameStorage.sol";
+// import { ??? } from "@openzeppelin/contracts/utils/Context.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { IETHDonations } from "./interfaces/IETHDonations.sol";
 
-abstract contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
-
-	/// @notice Emitted when a donation is made
-	/// @param donor The address of the donor
-	/// @param amount The amount donated
-	/// @param round The current round number
-	event DonationEvent(address indexed donor, uint256 amount, uint256 round);
-
-	/// @notice Emitted when a donation with additional info is made
-	/// @param donor The address of the donor
-	/// @param amount The amount donated
-	/// @param recordId The ID of the donation record
-	/// @param round The current round number
-	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId, uint256 round);
-
-	/// @notice Donate ETH to the game
-	/// @dev This function allows users to donate ETH without placing a bid
-	function donate() external payable nonReentrant {
+abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, IETHDonations {
+	function donate() external payable override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -33,10 +19,7 @@ abstract contract ETHDonations is ReentrancyGuardUpgradeable,CosmicGameStorage {
 		emit DonationEvent(msg.sender, msg.value, roundNum);
 	}
 
-	/// @notice Donate ETH with additional information
-	/// @dev This function allows users to donate ETH and attach a message or data
-	/// @param _data Additional information about the donation
-	function donateWithInfo(string calldata _data) external payable nonReentrant {
+	function donateWithInfo(string calldata _data) external payable override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)

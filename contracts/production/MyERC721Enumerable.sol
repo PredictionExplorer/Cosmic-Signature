@@ -3,12 +3,13 @@
 pragma solidity 0.8.26;
 
 import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { IMyERC721Enumerable } from "./interfaces/IMyERC721Enumerable.sol";
 
-abstract contract MyERC721Enumerable is ERC721Enumerable {
+abstract contract MyERC721Enumerable is ERC721Enumerable, IMyERC721Enumerable {
 	// todo-0 ChatGPT provided this code. Is it correct?
 	// todo-0 The code is almost the same as it was in the old OpenZeppelin, but see todos below.
 	// todo-0 See old code at https://www.npmjs.com/package/@openzeppelin/contracts/v/4.9.6?activeTab=code
-	/// @notice This method was removed from OpenZeppelin 5.
+	/// @notice This function existed in OpenZeppelin 4.
 	function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
 		address owner = ownerOf(tokenId);
 		// todo-0 Are we happy with the order in which `getApproved` and `isApprovedForAll` are called?

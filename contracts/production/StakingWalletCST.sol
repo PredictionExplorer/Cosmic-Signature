@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
+// todo-0 Remove all uses of this pragma. It's deprecated. Instead, configure SMTChecker in the Hardhat config file.
 pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGame} from "./CosmicGame.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
+import { CosmicGame} from "./CosmicGame.sol";
+import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
 
-/// @title StakingWalletCST - A staking wallet for Cosmic Signature Tokens
-/// @author Cosmic Game Development Team
-/// @notice This contract allows users to stake their Cosmic Signature Tokens (CST) and earn rewards
 /// @dev Implements staking, unstaking, and reward distribution mechanisms for CST NFTs
-contract StakingWalletCST is Ownable {
+contract StakingWalletCST is Ownable, IStakingWalletCST {
+	// #region Data Types
+
 	/// @notice Represents a staking action for a token
 	/// @dev Stores details about each staking event
 	struct StakeAction {
@@ -30,6 +31,9 @@ contract StakingWalletCST is Ownable {
 		uint256 depositAmount;
 		uint256 numStaked;
 	}
+
+	// #endregion
+	// #region State
 
 	/// @notice Mapping of stake action ID to StakeAction
 	mapping(uint256 => StakeAction) public stakeActions;
@@ -68,63 +72,7 @@ contract StakingWalletCST is Ownable {
 	/// @dev Counter for actions to replace block.timestamp
 	uint256 private actionCounter;
 
-	/// @notice Emitted when a token is staked
-	/// @param actionId The ID of the stake action
-	/// @param tokenId The ID of the staked token
-	/// @param totalNFTs Total number of staked NFTs after this action
-	/// @param staker Address of the staker
-	event StakeActionEvent(
-		uint256 indexed actionId,
-		uint256 indexed tokenId,
-		uint256 totalNFTs,
-		address indexed staker
-	);
-
-	/// @notice Emitted when a token is unstaked
-	/// @param actionId The ID of the unstake action
-	/// @param tokenId The ID of the unstaked token
-	/// @param totalNFTs Total number of staked NFTs after this action
-	/// @param staker Address of the staker
-	event UnstakeActionEvent(
-		uint256 indexed actionId,
-		uint256 indexed tokenId,
-		uint256 totalNFTs,
-		address indexed staker
-	);
-
-	/// @notice Emitted when a reward is claimed
-	/// @param actionId The ID of the stake action
-	/// @param depositId The ID of the ETH deposit
-	/// @param reward Amount of reward claimed
-	/// @param staker Address of the staker claiming the reward
-	event ClaimRewardEvent(uint256 indexed actionId, uint256 indexed depositId, uint256 reward, address indexed staker);
-
-	/// @notice Emitted when an ETH deposit is made
-	/// @param depositTime Timestamp of the deposit
-	/// @param depositNum Deposit number
-	/// @param numStakedNFTs Number of staked NFTs at the time of deposit
-	/// @param amount Amount of ETH deposited
-	/// @param modulo Accumulated modulo after this deposit
-	event EthDepositEvent(
-		uint256 indexed depositTime,
-		uint256 depositNum,
-		uint256 numStakedNFTs,
-		uint256 amount,
-		uint256 modulo
-	);
-
-	/// @notice Emitted when a deposit is sent to charity
-	/// @param amount Amount sent to charity
-	/// @param charityAddress Address of the charity
-	event CharityDepositEvent(uint256 amount, address charityAddress);
-
-	/// @notice Emitted when the charity address is updated
-	/// @param newCharityAddress New address of the charity
-	event CharityUpdatedEvent(address indexed newCharityAddress);
-
-	/// @notice Emitted when accumulated modulo is sent to charity
-	/// @param amount Amount of modulo sent to charity
-	event ModuloSentEvent(uint256 amount);
+	// #endregion
 
 	/// @notice Initializes the StakingWalletCST contract
 	/// @param nft_ Address of the CosmicSignature NFT contract
@@ -149,9 +97,7 @@ contract StakingWalletCST is Ownable {
 		assert(modulo == 0);
 	}
 
-	/// @notice Deposits ETH for reward distribution
-	/// @dev Only callable by the CosmicGame contract
-	function deposit() external payable {
+	function deposit() external payable override {
 		require(
 			msg.sender == address(game),
 			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract can deposit.", msg.sender)
@@ -189,9 +135,7 @@ contract StakingWalletCST is Ownable {
 		assert(actionCounter > 0);
 	}
 
-	/// @notice Stakes a single token
-	/// @param _tokenId ID of the token to stake
-	function stake(uint256 _tokenId) public {
+	function stake(uint256 _tokenId) public override {
 		require(
 			!usedTokens[_tokenId],
 			CosmicGameErrors.OneTimeStaking("Staking/unstaking token is allowed only once", _tokenId)
@@ -221,9 +165,7 @@ contract StakingWalletCST is Ownable {
 		assert(isTokenStaked(_tokenId));
 	}
 
-	/// @notice Stakes multiple tokens
-	/// @param ids Array of token IDs to stake
-	function stakeMany(uint256[] memory ids) external {
+	function stakeMany(uint256[] memory ids) external override {
 		uint256 initialNumStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			stake(ids[i]);
@@ -232,9 +174,7 @@ contract StakingWalletCST is Ownable {
 		assert(numStakedNFTs == initialNumStakedNFTs + ids.length);
 	}
 
-	/// @notice Unstakes a single token
-	/// @param stakeActionId ID of the stake action to unstake
-	function unstake(uint256 stakeActionId) public {
+	function unstake(uint256 stakeActionId) public override {
 		require(
 			stakeActions[stakeActionId].unstakeTime == 0,
 			CosmicGameErrors.TokenAlreadyUnstaked("Token has already been unstaked.", stakeActionId)
@@ -260,9 +200,7 @@ contract StakingWalletCST is Ownable {
 		assert(numStakedNFTs == initialNumStakedNFTs - 1);
 	}
 
-	/// @notice Unstakes multiple tokens
-	/// @param ids Array of stake action IDs to unstake
-	function unstakeMany(uint256[] memory ids) external {
+	function unstakeMany(uint256[] memory ids) external override {
 		uint256 initialNumStakedNFTs = numStakedNFTs;
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
@@ -271,10 +209,7 @@ contract StakingWalletCST is Ownable {
 		assert(numStakedNFTs == initialNumStakedNFTs - ids.length);
 	}
 
-	/// @notice Claims rewards for multiple stake actions and deposits
-	/// @param actions Array of stake action IDs
-	/// @param deposits Array of deposit IDs
-	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external {
+	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external override {
 		require(
 			actions.length == deposits.length,
 			CosmicGameErrors.IncorrectArrayArguments(
@@ -353,9 +288,7 @@ contract StakingWalletCST is Ownable {
 		return amount;
 	}
 
-	/// @notice Sets a new charity address
-	/// @param newCharityAddress Address of the new charity
-	function setCharity(address newCharityAddress) external onlyOwner {
+	function setCharity(address newCharityAddress) external override onlyOwner {
 		require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		address oldCharity = charity;
 		charity = newCharityAddress;
@@ -366,8 +299,7 @@ contract StakingWalletCST is Ownable {
 		assert(charity != oldCharity);
 	}
 
-	/// @notice Sends accumulated modulo to charity
-	function moduloToCharity() external onlyOwner {
+	function moduloToCharity() external override onlyOwner {
 		uint256 amount = modulo;
 		require(amount > 0, CosmicGameErrors.ModuloIsZero("Modulo is zero."));
 		modulo = 0;
@@ -379,32 +311,21 @@ contract StakingWalletCST is Ownable {
 		assert(modulo == 0);
 	}
 
-	/// @notice Checks if a token has been used for staking
-	/// @param _tokenId ID of the token to check
-	/// @return True if the token has been used, false otherwise
-	function wasTokenUsed(uint256 _tokenId) public view returns (bool) {
+	function wasTokenUsed(uint256 _tokenId) public view override returns (bool) {
 		return usedTokens[_tokenId];
 	}
 
-	/// @notice Checks if a token is currently staked
-	/// @param tokenId ID of the token to check
-	/// @return True if the token is staked, false otherwise
-	function isTokenStaked(uint256 tokenId) public view returns (bool) {
+	function isTokenStaked(uint256 tokenId) public view override returns (bool) {
 		return tokenIndices[tokenId] != 0;
 	}
 
-	/// @notice Returns the number of currently staked tokens
-	/// @return Number of staked tokens
-	function numTokensStaked() public view returns (uint256) {
+	function numTokensStaked() public view override returns (uint256) {
 		// SMT Checker assertion
 		assert(stakedTokens.length == numStakedNFTs);
 		return stakedTokens.length;
 	}
 
-	/// @notice Gets the last action ID for a given token
-	/// @param tokenId ID of the token to check
-	/// @return Last action ID for the token, -2 if never staked, -1 if unstaked
-	function lastActionIdByTokenId(uint256 tokenId) public view returns (int256) {
+	function lastActionIdByTokenId(uint256 tokenId) public view override returns (int256) {
 		uint256 tokenIndex = tokenIndices[tokenId];
 		if (tokenIndex == 0) {
 			return -2;
@@ -412,10 +333,7 @@ contract StakingWalletCST is Ownable {
 		return lastActionIds[tokenId];
 	}
 
-	/// @notice Gets the staker's address for a given token
-	/// @param tokenId ID of the token to check
-	/// @return Address of the staker, address(0) if not staked
-	function stakerByTokenId(uint256 tokenId) public view returns (address) {
+	function stakerByTokenId(uint256 tokenId) public view override returns (address) {
 		int256 actionId = lastActionIdByTokenId(tokenId);
 		if (actionId < 0) {
 			return address(0);
@@ -463,10 +381,7 @@ contract StakingWalletCST is Ownable {
 		assert(lastActionIds[tokenId] == -1);
 	}
 
-	/// @notice Unstakes a token and claims its reward in a single transaction
-	/// @param stakeActionId ID of the stake action
-	/// @param ETHDepositId ID of the ETH deposit for reward calculation
-	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) public {
+	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) public override {
 		uint256 initialBalance = address(this).balance;
 		unstake(stakeActionId);
 		uint256 reward = _calculateReward(stakeActionId, ETHDepositId);
@@ -480,15 +395,11 @@ contract StakingWalletCST is Ownable {
 		assert(!isTokenStaked(stakeActions[stakeActionId].tokenId));
 	}
 
-	/// @notice Unstakes multiple tokens and claims their rewards in a single transaction
-	/// @param unstake_actions Array of stake action IDs to unstake
-	/// @param claim_actions Array of stake action IDs for claiming rewards
-	/// @param claim_deposits Array of deposit IDs for claiming rewards
 	function unstakeClaimMany(
 		uint256[] memory unstake_actions,
 		uint256[] memory claim_actions,
 		uint256[] memory claim_deposits
-	) external {
+	) external override {
 		uint256 initialBalance = address(this).balance;
 		uint256 initialNumStakedNFTs = numStakedNFTs;
 

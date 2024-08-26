@@ -1,37 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 // todo-1 In prev OpenZeppelin version, this was named "draft-ERC20Permit.sol".
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
+import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 
-/// @title CosmicToken - The official token for the Cosmic Game ecosystem
-/// @author Cosmic Game Development Team
-/// @notice This contract implements the CosmicToken (CST), an ERC20 token with additional features
-/// @dev This token includes burning, ownership, permit, and voting capabilities
-contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes {
+/// todo-0 Make sense to move `Ownable` to the beginning of the base contract list?
+contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ICosmicToken {
 	/// @notice Initializes the CosmicToken contract
 	/// @dev Sets the token name to "CosmicToken" and symbol to "CST"
 	/// ToDo-202408114-1 applies.
 	constructor() ERC20("CosmicToken", "CST") Ownable(msg.sender) ERC20Permit("CosmicToken") {}
 
-	/// @notice Mints new tokens and assigns them to the specified address
-	/// @dev Only the contract owner can call this function
-	/// @param to The address that will receive the minted tokens
-	/// @param amount The amount of tokens to mint
-	function mint(address to, uint256 amount) public onlyOwner {
+	function mint(address to, uint256 amount) public override onlyOwner {
 		_mint(to, amount);
 	}
 
-	/// @notice Burns a specific amount of tokens from a given account
-	/// @dev This function overrides the burn function from ERC20Burnable to allow burning from any account
-	/// @param account The address from which to burn tokens
-	/// @param amount The amount of tokens to burn
-	function burn(address account, uint256 amount) public {
+	function burn(address account, uint256 amount) override public {
 		_burn(account, amount);
 	}
 

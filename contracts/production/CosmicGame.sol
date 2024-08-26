@@ -3,59 +3,65 @@ pragma solidity 0.8.26;
 
 // #region Imports
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
-import { ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicToken } from "./CosmicToken.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
-import { RaffleWallet } from "./RaffleWallet.sol";
-import { StakingWalletCST } from "./StakingWalletCST.sol";
-import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { SpecialPrizes } from "./SpecialPrizes.sol";
-import { ETHDonations } from "./ETHDonations.sol";
-import { NFTDonations } from "./NFTDonations.sol";
-import { MainPrize } from "./MainPrize.sol";
-import { SystemManagement } from "./SystemManagement.sol";
+// import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+// import { CosmicToken } from "./CosmicToken.sol";
+// import { CosmicSignature } from "./CosmicSignature.sol";
+// import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+// import { RaffleWallet } from "./RaffleWallet.sol";
+// import { StakingWalletCST } from "./StakingWalletCST.sol";
+// import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { Bidding } from "./Bidding.sol";
-import { NFTDonations } from  "./NFTDonations.sol";
-// import { ISystemEvents} from "./interfaces/ISystemEvents.sol";
+import { NFTDonations } from "./NFTDonations.sol";
+import { ETHDonations } from "./ETHDonations.sol";
+import { SpecialPrizes } from "./SpecialPrizes.sol";
+import { MainPrize } from "./MainPrize.sol";
+import { SystemManagement } from "./SystemManagement.sol";
+import { ICosmicGame } from "./interfaces/ICosmicGame.sol";
 
 // #endregion
 
-/// @title Cosmic Game Implementation
-/// @author Cosmic Game Team
-/// @notice This contract implements the main functionality of the Cosmic Game
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
-contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, Bidding, NFTDonations, ETHDonations, SpecialPrizes, MainPrize, SystemManagement {
+contract CosmicGame is
+	OwnableUpgradeable,
+	UUPSUpgradeable,
+	CosmicGameStorage,
+	Bidding,
+	NFTDonations,
+	ETHDonations,
+	SpecialPrizes,
+	MainPrize,
+	SystemManagement,
+	ICosmicGame {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
 	// [ToDo-202408115-0]
 	// Commented out to suppress a compile error.
 	// [/ToDo-202408115-0]
 	// using SafeMathUpgradeable for uint256;
+
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	/// @notice Contract constructor
-	/// @dev This constructor is only used to disable initializers for the implementation contract
+	/// @dev This constructor is only used to disable initializers for the implementation contract	
 	constructor() {
 		_disableInitializers();
 	}
 
-	// todo-0 Is this correct?
-	// todo-0 See also: `CosmicGameProxy.initialize` and todos there.
-	/// @notice Initializes the contract
-	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
-	function initialize(address _gameAdministrator) public initializer {
+	// todo-0 Is this related?: `CosmicGameProxy.initialize` and todos there.
+	// todo-0 Cross-reference them?
+	// todo-0 Remember that there are respective function declarations in the interfaces.
+	function initialize(address _gameAdministrator) public override initializer {
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
@@ -96,16 +102,11 @@ contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, B
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 	}
 
-	/// @notice Bid and donate an NFT in a single transaction
-	/// @dev This function combines bidding and NFT donation
-	/// @param _param_data Encoded bid parameters
-	/// @param nftAddress Address of the NFT contract
-	/// @param tokenId ID of the NFT to donate
 	function bidAndDonateNFT(
 		bytes calldata _param_data,
 		IERC721 nftAddress,
 		uint256 tokenId
-	) external payable nonReentrant {
+	) external payable override nonReentrant {
 		// // This validation is unnecessary. `_bid` will make it.
 		// require(
 		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -116,9 +117,7 @@ contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, B
 		_donateNFT(nftAddress, tokenId);
 	}
 
-	/// @notice Fallback function to handle incoming ETH transactions
-	/// @dev This function is called for empty calldata (and any value)
-	receive() external payable {
+	receive() external payable override {
 		// // This validation is unnecessary. `_bid` will make it.
 		// require(
 		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -141,16 +140,15 @@ contract CosmicGame is OwnableUpgradeable, UUPSUpgradeable, CosmicGameStorage, B
 		this.bid(param_data);
 	}
 
-	/// @notice Fallback function to handle incoming calls with data
-	/// @dev This function is called when msg.data is not empty
-	fallback() external payable {
+	fallback() external payable override {
 		revert("Function does not exist");
 	}
+
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
 	}
-	function upgradeTo(address _newImplementation) public onlyOwner {
+
+	function upgradeTo(address _newImplementation) public override onlyOwner {
 		 _authorizeUpgrade(_newImplementation);
 		 StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
 	}
-
 }

@@ -94,7 +94,7 @@ module.exports = {
 		flat: true,
 		only: [
 			'CharityWallet',
-			'CosmicDao',
+			'CosmicDAO',
 			'CosmicGameProxy',
 			'CosmicSignature',
 			'CosmicToken',
