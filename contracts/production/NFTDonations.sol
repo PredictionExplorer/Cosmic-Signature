@@ -67,6 +67,10 @@ abstract contract NFTDonations is CosmicGameStorage, INFTDonations {
 	}
 
 	function claimManyDonatedNFTs(uint256[] calldata indices) external override {
+		require(
+			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+		);
 		for (uint256 i = 0; i < indices.length; i++) {
 			claimDonatedNFT(indices[i]);
 		}
