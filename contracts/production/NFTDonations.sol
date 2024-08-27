@@ -54,11 +54,11 @@ abstract contract NFTDonations is CosmicGameStorage, INFTDonations {
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
-		require(index < numDonatedNFTs, "Invalid donated NFT index");
+		require(index < numDonatedNFTs, CosmicGameErrors.InvalidDonatedNFTIndex("Invalid donated NFT index",index));
 
 		CosmicGameConstants.DonatedNFT storage nft = donatedNFTs[index];
-		require(!nft.claimed, "NFT already claimed");
-		require(winners[nft.round] == msg.sender, "Only the round winner can claim this NFT");
+		require(!nft.claimed, CosmicGameErrors.NFTAlreadyClaimed("NFT already claimed",index));
+		require(winners[nft.round] == msg.sender, CosmicGameErrors.NonExistentWinner("Only the round winner can claim this NFT",index));
 
 		nft.claimed = true;
 		nft.nftAddress.safeTransferFrom(address(this), msg.sender, nft.tokenId);
