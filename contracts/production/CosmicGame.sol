@@ -117,6 +117,11 @@ contract CosmicGame is
 		_donateNFT(nftAddress, tokenId);
 	}
 
+	// Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
+	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+		return this.onERC721Received.selector;
+	}
+
 	receive() external payable override {
 		// // This validation is unnecessary. `_bid` will make it.
 		// require(
