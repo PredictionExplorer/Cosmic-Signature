@@ -76,6 +76,33 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit CosmicSignatureAddressChanged(_nft);
 	}
 
+	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		numRaffleETHWinnersBidding = newNumRaffleETHWinnersBidding;
+		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
+	}
+
+	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
+		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
+	}
+
+	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
+		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
+	}
+
 	function setTimeIncrease(uint256 _timeIncrease) external override onlyOwner {
 		timeIncrease = _timeIncrease;
 		emit TimeIncreaseChanged(_timeIncrease);
@@ -86,9 +113,27 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit PriceIncreaseChanged(_priceIncrease);
 	}
 
+	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		nanoSecondsExtra = newNanoSecondsExtra;
+		emit NanoSecondsExtraChanged(nanoSecondsExtra);
+	}
+
 	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external override onlyOwner {
 		initialSecondsUntilPrize = _initialSecondsUntilPrize;
 		emit InitialSecondsUntilPrizeChanged(_initialSecondsUntilPrize);
+	}
+
+	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner {
+		require(
+			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
+			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+		);
+		initialBidAmountFraction = newInitialBidAmountFraction;
+		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
 	}
 
 	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external override onlyOwner {
