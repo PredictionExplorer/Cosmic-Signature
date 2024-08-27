@@ -10,8 +10,8 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
-abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, INFTDonations {
-	function donateNFT(IERC721 nftAddress, uint256 tokenId) external override nonReentrant {
+abstract contract NFTDonations is CosmicGameStorage, INFTDonations {
+	function donateNFT(IERC721 nftAddress, uint256 tokenId) external override {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -49,7 +49,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 	}
 
 	// todo-1 This was `external`, but that didn't compile, so I made it `public`. To be revisited.
-	function claimDonatedNFT(uint256 index) public override nonReentrant {
+	function claimDonatedNFT(uint256 index) public override {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
@@ -66,7 +66,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 		emit DonatedNFTClaimedEvent(nft.round, index, msg.sender, address(nft.nftAddress), nft.tokenId);
 	}
 
-	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant {
+	function claimManyDonatedNFTs(uint256[] calldata indices) external override {
 		for (uint256 i = 0; i < indices.length; i++) {
 			claimDonatedNFT(indices[i]);
 		}
