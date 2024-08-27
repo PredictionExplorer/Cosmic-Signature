@@ -87,9 +87,7 @@ contract CosmicSignature is MyERC721Enumerable, Ownable, ICosmicSignature {
 		return tokenId;
 	}
 
-	// /// @return The base URI for token metadata
-	// /// @dev ToDo-202408241-1 applies.
-	// function _baseURI() internal view virtual override returns (string memory) {
-	// 	return _baseTokenURI;
-	// }
+	function _baseURI() internal view virtual override returns (string memory) {
+		return _baseTokenURI;
+	}
 }
