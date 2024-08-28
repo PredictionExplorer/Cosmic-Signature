@@ -218,6 +218,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 				deposits.length
 			)
 		);
+		uint256 balanceBefore = address(this).balance;
 		uint256 totalReward = 0;
 		for (int256 i = int256(actions.length) - 1; i >= 0; i--) {
 			totalReward += _calculateReward(actions[uint256(i)], deposits[uint256(i)]);
@@ -227,7 +228,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", totalReward, msg.sender));
 		}
 		// SMT Checker assertion
-		assert(totalReward <= address(this).balance);
+		assert((balanceBefore - totalReward) == address(this).balance);
 	}
 
 	/// @notice Calculates the reward for a single stake action and deposit
@@ -290,6 +291,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	function setCharity(address newCharityAddress) external override onlyOwner {
 		require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(charity != newCharityAddress,CosmicGameErrors.AddressAlreadySet("Address  already set.",newCharityAddress));
 		address oldCharity = charity;
 		charity = newCharityAddress;
 		emit CharityUpdatedEvent(charity);

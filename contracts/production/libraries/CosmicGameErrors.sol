@@ -259,4 +259,9 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	/// @param tokenId The ID of the token
 	error OneTimeStaking(string errStr, uint256 tokenId);
+
+	/// @notice Thrown when attempting to set address that have already been set
+	/// @param errStr Description of the error
+	/// @param addr Address value to be set
+	error AddressAlreadySet(string errStr, address addr);
 }
