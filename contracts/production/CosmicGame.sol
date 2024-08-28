@@ -142,7 +142,7 @@ contract CosmicGame is
 		// todo-1 If so, refactor the code and mark `receive` `nonReentrant`.
 		// todo-1 Otherwise write a todo-3 to revisit this issue when the conversion becomes possible.
 		// todo-1 In either case, explain things in a comment.
-		this.bid(param_data);
+		this.bid{value: msg.value}(param_data);
 	}
 
 	fallback() external payable override {
