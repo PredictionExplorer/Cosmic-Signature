@@ -136,8 +136,9 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		// SMT Checker assertions
 		assert(stakeActions[stakeActionId].unstakeTime != 0);
 		assert(!isTokenStaked(tokenId));
-		assert(lastActionIdByTokenId(tokenId) == -1);
+		assert(lastActionIdByTokenId(tokenId) == -2);
 		assert(numStakedNFTs < numStakeActions);
+		assert(stakedTokens.length == numStakedNFTs);
 	}
 
 	function unstakeMany(uint256[] memory ids) external override {
@@ -223,6 +224,5 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		assert(!isTokenStaked(tokenId));
 		assert(tokenIndices[tokenId] == 0);
 		assert(lastActionIds[tokenId] == -1);
-		assert(stakedTokens.length == numStakedNFTs);
 	}
 }
