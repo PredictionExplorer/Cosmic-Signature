@@ -31,8 +31,6 @@ const basicDeploymentAdvanced = async function (
 		console.error("switchToRuntime is not set");
 		process.exit(1);
 	}
-	// TODO : because .address changed for getAddress() and now uses 'await' keyword, we have to add validation
-	// 		otherwise the setXYZ(address) method may fail or do a set to address(0) (critical issue)
 	let CosmicGame = await ethers.getContractFactory(cgpName);
 	let cosmicGame = await CosmicGame.connect(deployerAcct).deploy();	// implementation contract (business logic)
 	await cosmicGame.waitForDeployment();
@@ -49,35 +47,41 @@ const basicDeploymentAdvanced = async function (
 	let CosmicToken = await ethers.getContractFactory("CosmicToken");
 	cosmicToken = await CosmicToken.connect(deployerAcct).deploy();
 	await cosmicToken.waitForDeployment();
-	await cosmicToken.connect(deployerAcct).transferOwnership(await cosmicGameProxyAddr);
+	let cosmicTokenAddr = await cosmicToken.getAddress();
+	await cosmicToken.connect(deployerAcct).transferOwnership(cosmicGameProxyAddr);
 
 	let CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-	cosmicSignature = await CosmicSignature.connect(deployerAcct).deploy(await cosmicGameProxyAddr);
+	cosmicSignature = await CosmicSignature.connect(deployerAcct).deploy(cosmicGameProxyAddr);
 	await cosmicSignature.waitForDeployment();
+	let cosmicSignatureAddr = await cosmicSignature.getAddress();
 
 	let CosmicDAO = await ethers.getContractFactory("CosmicDAO");
-	cosmicDAO = await CosmicDAO.connect(deployerAcct).deploy(await cosmicToken.getAddress());
+	cosmicDAO = await CosmicDAO.connect(deployerAcct).deploy(cosmicTokenAddr);
 	await cosmicDAO.waitForDeployment();
+	let cosmicDAOAddr = await cosmicDAO.getAddress();
 
 	let CharityWallet = await ethers.getContractFactory("CharityWallet");
 	charityWallet = await CharityWallet.connect(deployerAcct).deploy();
 	await charityWallet.waitForDeployment();
+	let charityWalletAddr = await charityWallet.getAddress();
 	if (charityAddr.length == 0) {
 		let [owner, otherAccount] = await ethers.getSigners();
 		charityAddr = otherAccount.address;
 	}
 	await charityWallet.setCharity(charityAddr);
 	if (transferOwnership) {
-		await charityWallet.connect(deployerAcct).transferOwnership(await cosmicDAO.getAddress());
+		await charityWallet.connect(deployerAcct).transferOwnership(cosmicDAOAddr);
 	}
 
 	let RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-	raffleWallet = await RaffleWallet.connect(deployerAcct).deploy(await cosmicGameProxyAddr);
+	raffleWallet = await RaffleWallet.connect(deployerAcct).deploy(cosmicGameProxyAddr);
 	await raffleWallet.waitForDeployment();
+	let raffleWalletAddr = await raffleWallet.getAddress();
 
 	let MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
-	marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(await cosmicToken.getAddress());
+	marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicToken);
 	await marketingWallet.waitForDeployment();
+	let marketingWalletAddr = await marketingWallet.getAddress();
 
 	let RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
 	if (randomWalkAddr.length === 0) {
@@ -87,6 +91,7 @@ const basicDeploymentAdvanced = async function (
 	} else {
 		randomWalkNFT = await ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
 	}
+	let randomWalkNFTAddr = await randomWalkNFT.getAddress();
 
 	let StakingWalletCST = await hre.ethers.getContractFactory("StakingWalletCST");
 	stakingWalletCST = await StakingWalletCST.connect(deployerAcct).deploy(
@@ -95,19 +100,21 @@ const basicDeploymentAdvanced = async function (
 		charityAddr,
 	);
 	await stakingWalletCST.waitForDeployment();
+	let stakingWalletCSTAddr = await stakingWalletCST.getAddress();
 
 	let StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
 	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(randomWalkAddr,cosmicGameProxyAddr);
 	await stakingWalletRWalk.waitForDeployment();
+	let stakingWalletRWalkAddr = await stakingWalletRWalk.getAddress();
 
-	await cosmicGameProxy.connect(deployerAcct).setTokenContract(await cosmicToken.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setNftContract(await cosmicSignature.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setCharity(await charityWallet.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setRandomWalk(await randomWalkNFT.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setRaffleWallet(await raffleWallet.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setStakingWalletCST(await stakingWalletCST.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setStakingWalletRWalk(await stakingWalletRWalk.getAddress());
-	await cosmicGameProxy.connect(deployerAcct).setMarketingWallet(await marketingWallet.getAddress());
+	await cosmicGameProxy.connect(deployerAcct).setTokenContract(cosmicTokenAddr);
+	await cosmicGameProxy.connect(deployerAcct).setNftContract(cosmicSignatureAddr);
+	await cosmicGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
+	await cosmicGameProxy.connect(deployerAcct).setRandomWalk(randomWalkNFTAddr);
+	await cosmicGameProxy.connect(deployerAcct).setRaffleWallet(raffleWalletAddr);
+	await cosmicGameProxy.connect(deployerAcct).setStakingWalletCST(stakingWalletCSTAddr);
+	await cosmicGameProxy.connect(deployerAcct).setStakingWalletRWalk(stakingWalletRWalkAddr);
+	await cosmicGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	if (activationTime == 0) {
 		let latestBlock = await hre.ethers.provider.getBlock("latest");
 		await cosmicGameProxy.connect(deployerAcct).setActivationTime(latestBlock.timestamp);
