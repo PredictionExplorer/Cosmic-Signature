@@ -49,12 +49,12 @@ describe("Cosmic Set1", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-		let donationAmount = ethers.utils.parseEther("10");
+		let donationAmount = ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
 		let numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
 		expect(numDonationInfoRecs).to.equal(1);
-		let donationInfoRec = await cosmicGameProxy.getDonationInfoRecord(0);
+		let donationInfoRec = await cosmicGameProxy.donationInfoRecords(0);
 		expect(donationInfoRec.donor).to.equal(addr1.address);
 		expect(donationInfoRec.data).to.equal(dataStr);
 

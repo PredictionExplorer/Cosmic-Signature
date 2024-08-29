@@ -65,10 +65,10 @@ describe("Bid time accounting", function () {
 		// 		addr1 will make a maximum duration of 1000 seconds in his bids
 		// 		addr2 will make a maximum duration of 5000 seconds in his bids
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = ethers.utils.parseEther("10");
+		let donationAmount = ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
@@ -108,10 +108,10 @@ describe("Bid time accounting", function () {
 		// 		addr3 makes 3 bids
 		// 		bid amount is 1000 for every bid
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = ethers.utils.parseEther("10");
+		let donationAmount = ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
@@ -181,51 +181,51 @@ describe("Bid time accounting", function () {
 		// 		addr2 makes bids for a total of 9 ETH
 		// 		addr3 makes bids for a total of 19 ETH
 		// 		Stellar Spender is assigned to addr3
-		let limitSumAddr1 = ethers.utils.parseEther("3");
-		let limitSumAddr2 = ethers.utils.parseEther("9");
-		let limitSumAddr3 = ethers.utils.parseEther("19");
+		let limitSumAddr1 = ethers.parseEther("3");
+		let limitSumAddr2 = ethers.parseEther("9");
+		let limitSumAddr3 = ethers.parseEther("19");
 		let sumPrice;
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = ethers.utils.parseEther("1000");
+		let donationAmount = ethers.parseEther("1000");
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.bid(params, { value: bidPrice })
 		await cosmicGameProxy.donate({ value: donationAmount });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		await ethers.provider.send("evm_mine");
 		await cosmicGameProxy.claimPrize();	// we need to skip the first round to rise bidPrice
 
 		let stellarSpender;
-		sumPrice = ethers.BigNumber.from("0");
+		sumPrice = 0n;
 		while(true) {
 			bidPrice = await cosmicGameProxy.getBidPrice();
 			await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-			sumPrice = sumPrice.add(bidPrice);
-			if (sumPrice.gt(limitSumAddr1)) { break; }
+			sumPrice = sumPrice + bidPrice;
+			if (sumPrice > limitSumAddr1) { break; }
 		
 		}
 		stellarSpender = await cosmicGameProxy.stellarSpender();
 		expect(stellarSpender).to.equal(addr1.address);
 
-		sumPrice = ethers.BigNumber.from("0");
+		sumPrice = 0n;
 		while(true) {
 			bidPrice = await cosmicGameProxy.getBidPrice();
 			await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
-			sumPrice = sumPrice.add(bidPrice);
-			if (sumPrice.gt(limitSumAddr2)) { break; }
+			sumPrice = sumPrice + bidPrice;
+			if (sumPrice > limitSumAddr2) { break; }
 		
 		}
 		stellarSpender = await cosmicGameProxy.stellarSpender();
 		expect(stellarSpender).to.equal(addr2.address);
 
-		sumPrice = ethers.BigNumber.from("0");
+		sumPrice = 0n;
 		while(true) {
 			bidPrice = await cosmicGameProxy.getBidPrice();
 			await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
-			sumPrice = sumPrice.add(bidPrice);
-			if (sumPrice.gt(limitSumAddr3)) { break; }
+			sumPrice = sumPrice + bidPrice;
+			if (sumPrice > limitSumAddr3) { break; }
 		}
 		stellarSpender = await cosmicGameProxy.stellarSpender();
 		expect(stellarSpender).to.equal(addr3.address);

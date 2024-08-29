@@ -89,7 +89,6 @@ describe("Events", function () {
 			.to.emit(charityWallet, "DonationSentEvent")
 			.withArgs(bidder3.address, balance);
 	});
-
 	it("should emit DonationEvent on successful donation", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
@@ -283,7 +282,6 @@ describe("Events", function () {
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		console.log(bidPrice);
 		await expect(cosmicGameProxy.connect(bidder1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"ActivationTime");
 
 		await expect(
