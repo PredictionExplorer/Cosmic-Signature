@@ -8,14 +8,14 @@ const bidParamsEncoding = {
 		{name: 'openbid',type: 'bool'},
 	]
 }; 
-async function getCosmicGameContract() {
-	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
-	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
-		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
+async function getCosmicGameProxyContract() {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_PROXY_ADDRESS;
+	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
+		console.log("COSMIC_GAME_PROXY_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGame = await ethers.getContractAt("CosmicGame", cosmicGameAddr);
-	return cosmicGame;
+	let cosmicGameProxy = await ethers.getContractAt("CosmicGameProxy", cosmicGameProxyAddr);
+	return cosmicGameProxy;
 }
 
 async function main() {
@@ -27,11 +27,11 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGame = await getCosmicGameContract();
-	let bidPrice = await cosmicGame.getBidPrice();
+	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let bidPrice = await cosmicGameProxy.getBidPrice();
 	let bidParams = {msg:'bid test',rwalk:-1,'openbid':false};
 	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
-	await cosmicGame.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
+	await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
 }
 main()
 	.then(() => process.exit(0))

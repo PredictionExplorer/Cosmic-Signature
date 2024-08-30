@@ -1,31 +1,31 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
-const { getCosmicGameContract } = require("./helper.js");
+const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function main() {
-	let cosmicGame = await getCosmicGameContract();
+	let cosmicGameProxy = await getCosmicGameProxyContract();
 
 	let o, addr;
-	o = await cosmicGame.owner();
-	console.log("Owner of CosmicGame: " + o);
+	o = await cosmicGameProxy.owner();
+	console.log("Owner of CosmicGameProxy: " + o);
 
-	addr = cosmicGame.token();
+	addr = cosmicGameProxy.token();
 	let tokenContract = await ethers.getContractAt("CosmicToken", addr);
 	o = await tokenContract.owner();
 	console.log("Owner of CosmicToken: " + o);
 
-	addr = cosmicGame.nft();
+	addr = cosmicGameProxy.nft();
 	let cstContract = await ethers.getContractAt("CosmicSignature", addr);
 	o = await cstContract.owner();
 	console.log("Owner of CosmicSignature: " + o);
 
-	addr = cosmicGame.raffleWallet();
+	addr = cosmicGameProxy.raffleWallet();
 	let raffleWalletContract = await ethers.getContractAt("RaffleWallet", addr);
 	o = await raffleWalletContract.owner();
 	console.log("Owner of RaffleWallet: " + o);
 
-	addr = await cosmicGame.charity();
-	console.log("CharityWallet contract at CosmicGame contract: " + addr);
+	addr = await cosmicGameProxy.charity();
+	console.log("CharityWallet contract at CosmicGameProxy contract: " + addr);
 	let charityContract = await ethers.getContractAt("CharityWallet", addr);
 	addr = await charityContract.charityAddress();
 	console.log("Charity address at CharityWallet contract: " + addr);

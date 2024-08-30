@@ -2,14 +2,14 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 
-async function getSelfdestructibleCosmicGameContract() {
-	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
-	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
+async function getSelfDestructableCosmicGameProxyContract() {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
+	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
 		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGame = await ethers.getContractAt("SelfdestructibleCosmicGame", cosmicGameAddr);
-	return cosmicGame;
+	let cosmicGameProxy = await ethers.getContractAt("SelfdestructibleCosmicGame", cosmicGameProxyAddr);
+	return cosmicGameProxy;
 }
 async function main() {
 	let privKey = process.env.PRIVKEY;
@@ -20,8 +20,8 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGame = await getSelfdestructibleCosmicGameContract();
-	await cosmicGame.finalizeTesting();
+	let cosmicGameProxy = await getSelfDestructableCosmicGameProxyContract();
+	await cosmicGameProxy.finalizeTesting();
 }
 main()
 	.then(() => process.exit(0))

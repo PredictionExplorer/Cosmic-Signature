@@ -1,3 +1,4 @@
+
 const basicDeployment = async function (
 	deployerAcct,
 	randomWalkAddr,
@@ -17,7 +18,7 @@ const basicDeployment = async function (
 	);
 };
 const basicDeploymentAdvanced = async function (
-	cgName,
+	cgpName,
 	deployerAcct,
 	randomWalkAddr,
 	activationTime,
@@ -25,95 +26,106 @@ const basicDeploymentAdvanced = async function (
 	transferOwnership,
 	switchToRuntime,
 ) {
-	let cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
+	let cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
 	if (switchToRuntime === undefined) {
 		console.error("switchToRuntime is not set");
 		process.exit(1);
 	}
+	let CosmicGame = await ethers.getContractFactory(cgpName);
+	let cosmicGame = await CosmicGame.connect(deployerAcct).deploy();	// implementation contract (business logic)
+	await cosmicGame.waitForDeployment();
+	let cosmicGameAddr = await cosmicGame.getAddress();
 
-	const CosmicGame = await ethers.getContractFactory(cgName);
-	cosmicGame = await CosmicGame.connect(deployerAcct).deploy();
-	await cosmicGame.deployed();
-
-	const CosmicToken = await ethers.getContractFactory("CosmicToken");
+	cosmicGameProxy = await hre.upgrades.deployProxy(
+		CosmicGame,
+		args = [deployerAcct.address],
+		opts = {
+			kind: "uups"
+		}
+	);
+	cosmicGameProxyAddr = await cosmicGameProxy.getAddress();
+	let CosmicToken = await ethers.getContractFactory("CosmicToken");
 	cosmicToken = await CosmicToken.connect(deployerAcct).deploy();
-	await cosmicToken.deployed();
-	await cosmicToken.connect(deployerAcct).transferOwnership(cosmicGame.address);
+	await cosmicToken.waitForDeployment();
+	let cosmicTokenAddr = await cosmicToken.getAddress();
+	await cosmicToken.connect(deployerAcct).transferOwnership(cosmicGameProxyAddr);
 
-	const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
-	cosmicSignature = await CosmicSignature.connect(deployerAcct).deploy(cosmicGame.address);
-	await cosmicSignature.deployed();
+	let CosmicSignature = await ethers.getContractFactory("CosmicSignature");
+	cosmicSignature = await CosmicSignature.connect(deployerAcct).deploy(cosmicGameProxyAddr);
+	await cosmicSignature.waitForDeployment();
+	let cosmicSignatureAddr = await cosmicSignature.getAddress();
 
-	const CosmicDAO = await ethers.getContractFactory("CosmicDAO");
-	cosmicDAO = await CosmicDAO.connect(deployerAcct).deploy(cosmicToken.address);
-	await cosmicDAO.deployed();
+	let CosmicDAO = await ethers.getContractFactory("CosmicDAO");
+	cosmicDAO = await CosmicDAO.connect(deployerAcct).deploy(cosmicTokenAddr);
+	await cosmicDAO.waitForDeployment();
+	let cosmicDAOAddr = await cosmicDAO.getAddress();
 
-	const CharityWallet = await ethers.getContractFactory("CharityWallet");
+	let CharityWallet = await ethers.getContractFactory("CharityWallet");
 	charityWallet = await CharityWallet.connect(deployerAcct).deploy();
-	await charityWallet.deployed();
+	await charityWallet.waitForDeployment();
+	let charityWalletAddr = await charityWallet.getAddress();
 	if (charityAddr.length == 0) {
-		const [owner, otherAccount] = await ethers.getSigners();
+		let [owner, otherAccount] = await ethers.getSigners();
 		charityAddr = otherAccount.address;
 	}
 	await charityWallet.setCharity(charityAddr);
 	if (transferOwnership) {
-		await charityWallet.connect(deployerAcct).transferOwnership(cosmicDAO.address);
+		await charityWallet.connect(deployerAcct).transferOwnership(cosmicDAOAddr);
 	}
 
-	const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-	raffleWallet = await RaffleWallet.connect(deployerAcct).deploy(cosmicGame.address);
-	await raffleWallet.deployed();
+	let RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
+	raffleWallet = await RaffleWallet.connect(deployerAcct).deploy(cosmicGameProxyAddr);
+	await raffleWallet.waitForDeployment();
+	let raffleWalletAddr = await raffleWallet.getAddress();
 
-	const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
-	marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicToken.address);
-	await marketingWallet.deployed();
+	let MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
+	marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicToken);
+	await marketingWallet.waitForDeployment();
+	let marketingWalletAddr = await marketingWallet.getAddress();
 
-	const RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
+	let RandomWalkNFT = await ethers.getContractFactory("RandomWalkNFT");
 	if (randomWalkAddr.length === 0) {
 		randomWalkNFT = await RandomWalkNFT.connect(deployerAcct).deploy();
-		randomWalkAddr = randomWalkNFT.address;
-		await randomWalkNFT.deployed();
+		await randomWalkNFT.waitForDeployment();
+		randomWalkAddr = await randomWalkNFT.getAddress();
 	} else {
 		randomWalkNFT = await ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
 	}
+	let randomWalkNFTAddr = await randomWalkNFT.getAddress();
 
-	const StakingWalletCST = await hre.ethers.getContractFactory("StakingWalletCST");
+	let StakingWalletCST = await hre.ethers.getContractFactory("StakingWalletCST");
 	stakingWalletCST = await StakingWalletCST.connect(deployerAcct).deploy(
-		cosmicSignature.address,
-		cosmicGame.address,
+		await cosmicSignature.getAddress(),
+		cosmicGameProxyAddr,
 		charityAddr,
 	);
-	await stakingWalletCST.deployed();
+	await stakingWalletCST.waitForDeployment();
+	let stakingWalletCSTAddr = await stakingWalletCST.getAddress();
 
-	const StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
-	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(randomWalkAddr,cosmicGame.address);
-	await stakingWalletRWalk.deployed();
+	let StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
+	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(randomWalkAddr,cosmicGameProxyAddr);
+	await stakingWalletRWalk.waitForDeployment();
+	let stakingWalletRWalkAddr = await stakingWalletRWalk.getAddress();
 
-	const BusinessLogic = await ethers.getContractFactory("BusinessLogic");
-	bLogic = await BusinessLogic.connect(deployerAcct).deploy();
-	await bLogic.deployed();
-
-	await cosmicGame.connect(deployerAcct).setTokenContract(cosmicToken.address);
-	await cosmicGame.connect(deployerAcct).setNftContract(cosmicSignature.address);
-	await cosmicGame.connect(deployerAcct).setCharity(charityWallet.address);
-	await cosmicGame.connect(deployerAcct).setBusinessLogicContract(bLogic.address);
-	await cosmicGame.connect(deployerAcct).setRandomWalk(randomWalkNFT.address);
-	await cosmicGame.connect(deployerAcct).setRaffleWallet(raffleWallet.address);
-	await cosmicGame.connect(deployerAcct).setStakingWalletCST(stakingWalletCST.address);
-	await cosmicGame.connect(deployerAcct).setStakingWalletRWalk(stakingWalletRWalk.address);
-	await cosmicGame.connect(deployerAcct).setMarketingWallet(marketingWallet.address);
+	await cosmicGameProxy.connect(deployerAcct).setTokenContract(cosmicTokenAddr);
+	await cosmicGameProxy.connect(deployerAcct).setNftContract(cosmicSignatureAddr);
+	await cosmicGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
+	await cosmicGameProxy.connect(deployerAcct).setRandomWalk(randomWalkNFTAddr);
+	await cosmicGameProxy.connect(deployerAcct).setRaffleWallet(raffleWalletAddr);
+	await cosmicGameProxy.connect(deployerAcct).setStakingWalletCST(stakingWalletCSTAddr);
+	await cosmicGameProxy.connect(deployerAcct).setStakingWalletRWalk(stakingWalletRWalkAddr);
+	await cosmicGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	if (activationTime == 0) {
 		let latestBlock = await hre.ethers.provider.getBlock("latest");
-		await cosmicGame.connect(deployerAcct).setActivationTime(latestBlock.timestamp);
+		await cosmicGameProxy.connect(deployerAcct).setActivationTime(latestBlock.timestamp);
 	} else {
-		await cosmicGame.connect(deployerAcct).setActivationTime(activationTime);
+		await cosmicGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}
 	if (switchToRuntime) {
-		await cosmicGame.connect(deployerAcct).setRuntimeMode();
+		await cosmicGameProxy.connect(deployerAcct).setRuntimeMode();
 	}
-
 	return {
-		cosmicGame,
+		cosmicGameProxy,
 		cosmicToken,
 		cosmicSignature,
 		charityWallet,
@@ -123,7 +135,7 @@ const basicDeploymentAdvanced = async function (
 		stakingWalletCST,
 		stakingWalletRWalk,
 		marketingWallet,
-		bLogic,
+		cosmicGame,
 	};
 };
 module.exports = { basicDeployment, basicDeploymentAdvanced };

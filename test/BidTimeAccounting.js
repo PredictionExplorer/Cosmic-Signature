@@ -14,7 +14,7 @@ describe("Bid time accounting", function () {
 		let contractDeployerAcct;
 		[contractDeployerAcct] = await ethers.getSigners();
 		const {
-			cosmicGame,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
@@ -22,12 +22,12 @@ describe("Bid time accounting", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCST,
-			sttaingWaalletRWalk,
+			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
 		return {
-			cosmicGame,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
@@ -58,45 +58,45 @@ describe("Bid time accounting", function () {
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
 		// 		addr1 will make a maximum duration of 1000 seconds in his bids
 		// 		addr2 will make a maximum duration of 5000 seconds in his bids
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = ethers.utils.parseEther("10");
-		await cosmicGame.donate({ value: donationAmount });
+		let donationAmount = ethers.parseEther("10");
+		await cosmicGameProxy.donate({ value: donationAmount });
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicGame.getBidPrice();
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
 
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800001000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800006000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid3 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid3 (addr1)
 				
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800007000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
 
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
-		maxbtime = await cosmicGame.enduranceChampionDuration();
-		maxbaddr = await cosmicGame.enduranceChampion();
+		maxbtime = await cosmicGameProxy.enduranceChampionDuration();
+		maxbaddr = await cosmicGameProxy.enduranceChampion();
 		expect(maxbtime).to.equal(5000);
 		expect(maxbaddr).to.equal(addr2.address);
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
@@ -108,71 +108,71 @@ describe("Bid time accounting", function () {
 		// 		addr3 makes 3 bids
 		// 		bid amount is 1000 for every bid
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = ethers.utils.parseEther("10");
-		await cosmicGame.donate({ value: donationAmount });
+		let donationAmount = ethers.parseEther("10");
+		await cosmicGameProxy.donate({ value: donationAmount });
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicGame.getBidPrice();
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid1 (addr1)
 
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800001000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid2	(addr2)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800002000]);
-		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid3 (addr3)
+		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });	// bid3 (addr3)
 				
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800003000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid4 (addr2)
 
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800004000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800005000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid6 (addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid6 (addr2)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800006000]);
-		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid7 (addr3)
+		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });	// bid7 (addr3)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800007000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid8 (addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid8 (addr2)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid9 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid9 (addr1)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800009000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid10 (addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid10 (addr2)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800010000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid11 (addr3)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid11 (addr3)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800011000]);
-		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid12(addr2)
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });	// bid12(addr2)
 		
-		bidPrice = await cosmicGame.getBidPrice();
+		bidPrice = await cosmicGameProxy.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800012000]);
-		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid13 (addr1)
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid13 (addr1)
 		
-		maxbtime = await cosmicGame.enduranceChampionDuration();
-		maxbaddr = await cosmicGame.enduranceChampion();
+		maxbtime = await cosmicGameProxy.enduranceChampionDuration();
+		maxbaddr = await cosmicGameProxy.enduranceChampion();
 
 		expect(maxbtime).to.equal(1000);
 		expect(maxbaddr).to.equal(addr1.address);
 	});
 	it("Stellar spender prize is correctly assigned", async function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		const { cosmicGame, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
@@ -181,53 +181,53 @@ describe("Bid time accounting", function () {
 		// 		addr2 makes bids for a total of 9 ETH
 		// 		addr3 makes bids for a total of 19 ETH
 		// 		Stellar Spender is assigned to addr3
-		let limitSumAddr1 = ethers.utils.parseEther("3");
-		let limitSumAddr2 = ethers.utils.parseEther("9");
-		let limitSumAddr3 = ethers.utils.parseEther("19");
+		let limitSumAddr1 = ethers.parseEther("3");
+		let limitSumAddr2 = ethers.parseEther("9");
+		let limitSumAddr3 = ethers.parseEther("19");
 		let sumPrice;
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = ethers.utils.parseEther("1000");
+		let donationAmount = ethers.parseEther("1000");
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicGame.getBidPrice();
-		await cosmicGame.bid(params, { value: bidPrice })
-		await cosmicGame.donate({ value: donationAmount });
-		let prizeTime = await cosmicGame.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [prizeTime.toNumber()]);
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.bid(params, { value: bidPrice })
+		await cosmicGameProxy.donate({ value: donationAmount });
+		let prizeTime = await cosmicGameProxy.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		await ethers.provider.send("evm_mine");
-		await cosmicGame.claimPrize();	// we need to skip the first round to rise bidPrice
+		await cosmicGameProxy.claimPrize();	// we need to skip the first round to rise bidPrice
 
 		let stellarSpender;
-		sumPrice = ethers.BigNumber.from("0");
+		sumPrice = 0n;
 		while(true) {
-			bidPrice = await cosmicGame.getBidPrice();
-			await cosmicGame.connect(addr1).bid(params, { value: bidPrice });
-			sumPrice = sumPrice.add(bidPrice);
-			if (sumPrice.gt(limitSumAddr1)) { break; }
+			bidPrice = await cosmicGameProxy.getBidPrice();
+			await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+			sumPrice = sumPrice + bidPrice;
+			if (sumPrice > limitSumAddr1) { break; }
 		
 		}
-		stellarSpender = await cosmicGame.stellarSpender();
+		stellarSpender = await cosmicGameProxy.stellarSpender();
 		expect(stellarSpender).to.equal(addr1.address);
 
-		sumPrice = ethers.BigNumber.from("0");
+		sumPrice = 0n;
 		while(true) {
-			bidPrice = await cosmicGame.getBidPrice();
-			await cosmicGame.connect(addr2).bid(params, { value: bidPrice });
-			sumPrice = sumPrice.add(bidPrice);
-			if (sumPrice.gt(limitSumAddr2)) { break; }
+			bidPrice = await cosmicGameProxy.getBidPrice();
+			await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
+			sumPrice = sumPrice + bidPrice;
+			if (sumPrice > limitSumAddr2) { break; }
 		
 		}
-		stellarSpender = await cosmicGame.stellarSpender();
+		stellarSpender = await cosmicGameProxy.stellarSpender();
 		expect(stellarSpender).to.equal(addr2.address);
 
-		sumPrice = ethers.BigNumber.from("0");
+		sumPrice = 0n;
 		while(true) {
-			bidPrice = await cosmicGame.getBidPrice();
-			await cosmicGame.connect(addr3).bid(params, { value: bidPrice });
-			sumPrice = sumPrice.add(bidPrice);
-			if (sumPrice.gt(limitSumAddr3)) { break; }
+			bidPrice = await cosmicGameProxy.getBidPrice();
+			await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
+			sumPrice = sumPrice + bidPrice;
+			if (sumPrice > limitSumAddr3) { break; }
 		}
-		stellarSpender = await cosmicGame.stellarSpender();
+		stellarSpender = await cosmicGameProxy.stellarSpender();
 		expect(stellarSpender).to.equal(addr3.address);
 	});
 	it("Endurance Champion selection is correct for a specific use case", async function () {

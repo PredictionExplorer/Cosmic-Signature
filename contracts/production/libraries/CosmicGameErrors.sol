@@ -84,18 +84,18 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when attempting to claim a non-existent donated NFT
 	/// @param errStr Description of the error
-	/// @param num The number of the non-existent NFT
-	error NonExistentDonatedNFT(string errStr, uint256 num);
+	/// @param index The index of the non-existent NFT
+	error InvalidDonatedNFTIndex(string errStr, uint256 index);
 
 	/// @notice Thrown when a non-existent winner attempts to claim a prize
 	/// @param errStr Description of the error
-	/// @param num The number of the non-existent winner
-	error NonExistentWinner(string errStr, uint256 num);
+	/// @param index The index of the donated token
+	error NonExistentWinner(string errStr, uint256 index);
 
 	/// @notice Thrown when attempting to claim an already claimed NFT
 	/// @param errStr Description of the error
-	/// @param num The number of the already claimed NFT
-	error NFTAlreadyClaimed(string errStr, uint256 num);
+	/// @param index The index of the already claimed NFT
+	error NFTAlreadyClaimed(string errStr, uint256 index);
 
 	// Game logic errors
 	/// @notice Thrown when a call to the business logic contract fails
@@ -259,4 +259,9 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	/// @param tokenId The ID of the token
 	error OneTimeStaking(string errStr, uint256 tokenId);
+
+	/// @notice Thrown when attempting to set address that have already been set
+	/// @param errStr Description of the error
+	/// @param addr Address value to be set
+	error AddressAlreadySet(string errStr, address addr);
 }

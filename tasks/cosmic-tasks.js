@@ -20,7 +20,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	console.log(param_copy);
 	let deployerAcct = new hre.ethers.Wallet(config_params.privKey, hre.ethers.provider);
 	const {
-		cosmicGame,
+		cosmicGameProxy,
 		cosmicToken,
 		cosmicSignature,
 		charityWallet,
@@ -30,7 +30,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 		stakingWalletCST,
 		stakingWalletRWalk,
 		marketingWallet,
-		bLogic,
+		cosmicGame,
 	} = await basicDeployment(
 		deployerAcct,
 		config_params.randomWalkAddr,
@@ -42,44 +42,44 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	console.log("contracts deployed");
 	if (config_params.donateToContract == true) {
 		let ethValue = "2";
-		let donationAmount = ethers.utils.parseEther(ethValue);
-		await cosmicGame.connect(deployerAcct).donate({value:donationAmount});
+		let donationAmount = ethers.parseEther(ethValue);
+		await cosmicGameProxy.connect(deployerAcct).donate({value:donationAmount});
 		console.log("Donated "+ethValue+" ETH to contract");
 	}
-	console.log("CosmicGame address:", cosmicGame.address);
-	console.log("CosmicToken address:", cosmicToken.address);
-	console.log("CosmicSignature address:", cosmicSignature.address);
-	console.log("CharityWallet address:", charityWallet.address);
-	console.log("CosmicDAO address", cosmicDAO.address);
-	console.log("RaffleWallet address:", raffleWallet.address);
-	console.log("BidLogic address:", bLogic.address);
-	console.log("randomWalkNFT address:", randomWalkNFT.address);
-	console.log("StakingWalletCST address:", stakingWalletCST.address);
-	console.log("StakingWalletRWalk address:", stakingWalletRWalk.address);
-	console.log("MarketingWallet address:", marketingWallet.address);
+	console.log("CosmicGameProxy address:", await cosmicGameProxy.getAddress());
+	console.log("CosmicToken address:", await cosmicToken.getAddress());
+	console.log("CosmicSignature address:",await cosmicSignature.getAddress());
+	console.log("CharityWallet address:",await charityWallet.getAddress());
+	console.log("CosmicDAO address", await cosmicDAO.getAddress());
+	console.log("RaffleWallet address:", await raffleWallet.getAddress());
+	console.log("Proxy implementation address:", await cosmicGame.getAddress());
+	console.log("randomWalkNFT address:", await randomWalkNFT.getAddress());
+	console.log("StakingWalletCST address:", await stakingWalletCST.getAddress());
+	console.log("StakingWalletRWalk address:", await stakingWalletRWalk.getAddress());
+	console.log("MarketingWallet address:", await marketingWallet.getAddress());
 	console.log(
 		"INSERT INTO cg_contracts VALUES('" +
-			cosmicGame.address +
+			await cosmicGameProxy.getAddress()+
 			"','" +
-			cosmicSignature.address +
+			await cosmicSignature.getAddress()+
 			"','" +
-			cosmicToken.address +
+			await cosmicToken.getAddress()+
 			"','" +
-			cosmicDAO.address +
+			await cosmicDAO.getAddress() +
 			"','" +
-			charityWallet.address +
+			await charityWallet.getAddress() +
 			"','" +
-			raffleWallet.address +
+			await raffleWallet.getAddress() +
 			"','" +
-			randomWalkNFT.address +
+			await randomWalkNFT.getAddress() +
 			"','" +
-			stakingWalletCST.address +
+			await stakingWalletCST.getAddress() +
 			"','" +
-			stakingWalletRWalk.address +
+			await stakingWalletRWalk.getAddress() +
 			"','" +
-			marketingWallet.address +
+			await marketingWallet.getAddress() +
 			"','" +
-			bLogic.address +
+			await cosmicGame.getAddress() +
 			"')",
 	);
 }).addParam("deployconfig", "Config file (JSON)");

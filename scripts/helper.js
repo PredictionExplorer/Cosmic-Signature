@@ -1,12 +1,12 @@
 //const hre = require("hardhat");
-async function getCosmicGameContract() {
-	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
-	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
+async function getCosmicGameProxyContract() {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
+	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
 		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGame = await ethers.getContractAt("CosmicGame", cosmicGameAddr);
-	return cosmicGame;
+	let cosmicGameProxy = await ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
+	return cosmicGameProxy;
 }
 async function getBidderContract() {
 	let bidderContractAddr = process.env.BIDDER_CONTRACT_ADDRESS;
@@ -18,4 +18,4 @@ async function getBidderContract() {
 	let bidderContract = await ethers.getContractAt("BidderContract", bidderContractAddr);
 	return bidderContract;
 }
-module.exports = { getCosmicGameContract, getBidderContract };
+module.exports = { getCosmicGameProxyContract, getBidderContract };

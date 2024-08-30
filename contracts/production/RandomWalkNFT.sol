@@ -1,12 +1,16 @@
+// todo-1 Is license supposed to be the same in all files? Currently it's not.
 // SPDX-License-Identifier: MIT
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+pragma solidity 0.8.26;
 
-pragma solidity ^0.8.26;
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { MyERC721Enumerable } from "./MyERC721Enumerable.sol";
+import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
-contract RandomWalkNFT is ERC721Enumerable, Ownable {
+contract RandomWalkNFT is MyERC721Enumerable, Ownable, IRandomWalkNFT {
+	// #region State
+
 	// todo-1 We never change this.
 	// todo-1 Should this be a `constant`?
 	uint256 public saleTime = 1636675200; // November 11 2021 19:00 New York Time
@@ -36,15 +40,14 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 
 	string private _baseTokenURI;
 
-	event TokenNameEvent(uint256 tokenId, string newName);
-	event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed, uint256 price);
-	event WithdrawalEvent(uint256 indexed tokenId, address destination, uint256 amount);
-
 	// IPFS link to the Python script that generates images and videos for each NFT based on seed.
 	// todo-1 Should this be a `constant`?
 	string public tokenGenerationScript = "ipfs://QmP7Z8VbQLpytzXnceeAAc4D5tX39XVzoEeUZwEK8aPk8W";
 
-	constructor() ERC721("RandomWalkNFT", "RWLK") {
+	// #endregion
+
+	// ToDo-202408114-1 applies.
+	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(msg.sender) {
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",
@@ -54,37 +57,45 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 		);
 	}
 
-	function setBaseURI(string memory baseURI) public onlyOwner {
+	function setBaseURI(string memory baseURI) public override onlyOwner {
 		_baseTokenURI = baseURI;
 	}
 
-	function setTokenName(uint256 tokenId, string memory name) public {
+	function setTokenName(uint256 tokenId, string memory name) public override {
 		require(_isApprovedOrOwner(_msgSender(), tokenId), "setTokenName caller is not owner nor approved");
 		require(bytes(name).length <= 32, "Token name is too long.");
 		tokenNames[tokenId] = name;
 		emit TokenNameEvent(tokenId, name);
 	}
 
-	function _baseURI() internal view virtual override returns (string memory) {
-		return _baseTokenURI;
-	}
+	// /// @return The base URI for token metadata
+	// /// @dev
+	// /// [ToDo-202408241-1]
+	// /// Should this be `private`?
+	// /// Does this really need to be `virtual`?
+	// /// Does this belong to `MyERC721Enumerable`?
+	// /// But we don't even use this. So I have commented this out for now.
+	// /// [/ToDo-202408241-1]
+	// function _baseURI() internal view virtual override returns (string memory) {
+	// 	return _baseTokenURI;
+	// }
 
-	function getMintPrice() public view returns (uint256) {
+	function getMintPrice() public view override returns (uint256) {
 		return (price * 10011) / 10000;
 	}
 
-	function timeUntilSale() public view returns (uint256) {
+	function timeUntilSale() public view override returns (uint256) {
 		if (saleTime < block.timestamp) return 0;
 		return saleTime - block.timestamp;
 	}
 
-	function timeUntilWithdrawal() public view returns (uint256) {
+	function timeUntilWithdrawal() public view override returns (uint256) {
 		uint256 withdrawalTime = lastMintTime + withdrawalWaitSeconds;
 		if (withdrawalTime < block.timestamp) return 0;
 		return withdrawalTime - block.timestamp;
 	}
 
-	function withdrawalAmount() public view returns (uint256) {
+	function withdrawalAmount() public view override returns (uint256) {
 		return address(this).balance / 2;
 	}
 
@@ -92,7 +103,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 	 * If there was no mint for withdrawalWaitSeconds, then the last minter can withdraw
 	 * half of the balance in the smart contract.
 	 */
-	function withdraw() public {
+	function withdraw() public override {
 		require(_msgSender() == lastMinter, "Only last minter can withdraw.");
 		require(timeUntilWithdrawal() == 0, "Not enough time has elapsed.");
 
@@ -115,7 +126,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 
-	function mint() public payable {
+	function mint() public payable override {
 		uint256 newPrice = getMintPrice();
 		require(msg.value >= newPrice, "The value submitted with this transaction is too low.");
 		require(block.timestamp >= saleTime, "The sale is not open yet.");
@@ -140,8 +151,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 		emit MintEvent(tokenId, lastMinter, entropy, price);
 	}
 
-	// Returns a list of token Ids owned by _owner.
-	function walletOfOwner(address _owner) public view returns (uint256[] memory) {
+	/// @return A list of token IDs owned by `_owner`
+	function walletOfOwner(address _owner) public view override returns (uint256[] memory) {
 		uint256 tokenCount = balanceOf(_owner);
 
 		if (tokenCount == 0) {
@@ -156,8 +167,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable {
 		return result;
 	}
 
-	// Returns a list of seeds owned by _owner.
-	function seedsOfOwner(address _owner) public view returns (bytes32[] memory) {
+	/// @return A list of seeds owned by `_owner`
+	function seedsOfOwner(address _owner) public view override returns (bytes32[] memory) {
 		uint256 tokenCount = balanceOf(_owner);
 
 		if (tokenCount == 0) {

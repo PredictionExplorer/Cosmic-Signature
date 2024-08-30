@@ -1,13 +1,13 @@
 const hre = require("hardhat");
 
-async function getCosmicGameContract() {
-	let cosmicGameAddr = process.env.COSMIC_GAME_ADDRESS;
-	if (typeof cosmicGameAddr === "undefined" || cosmicGameAddr.length != 42) {
-		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
+async function getCosmicGameProxyContract() {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_PROXY_ADDRESS;
+	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
+		console.log("COSMIC_GAME_PROXY_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGame = await ethers.getContractAt("CosmicGame", cosmicGameAddr);
-	return cosmicGame;
+	let cosmicGameProxy = await ethers.getContractAt("CosmicGameProxy", cosmicGameProxyAddr);
+	return cosmicGameProxy;
 }
 
 async function main() {
@@ -19,11 +19,11 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGame = await getCosmicGameContract();
+	let cosmicGameProxy = await getCosmicGameProxyContract();
 	const OpenBusinessLogic = await ethers.getContractFactory("OpenBusinessLogic");
 	let newLogic = await OpenBusinessLogic.deploy();
-	await cosmicGame.setBusinessLogicContract(newLogic.address);
-	await cosmicGame.setRuntimeMode();
+	await cosmicGameProxy.setBusinessLogicContract(newLogic.address);
+	await cosmicGameProxy.setRuntimeMode();
 
 	console.log("OpenBidLogic Address : "+newLogic.address);
 }
