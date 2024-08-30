@@ -1,5 +1,5 @@
 node_modules
-.env
+# .env
 
 # Hardhat files
 /cache
@@ -19,4 +19,4 @@ ignition/deployments/chain-31337
 # Comment-202408024 applies.
 /abi
 
-config.sh
+# config.sh
