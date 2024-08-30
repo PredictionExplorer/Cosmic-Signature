@@ -233,7 +233,7 @@ describe("Bid time accounting", function () {
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const {
-		cosmicGame,
+			cosmicGame,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
@@ -244,12 +244,7 @@ describe("Bid time accounting", function () {
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
-		} = await basicDeploymentAdvanced("CosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
-		await cosmicGame.setTimeoutClaimPrize(0);	// zero the timeout varaible so we can get clean bid times for endurance champion check
-		await cosmicGame.setTimeIncrease(0);		// zero time increment variables
-		await cosmicGame.setInitialSecondsUntilPrize(0);
-		await cosmicGame.setNanoSecondsExtra(ethers.BigNumber.from("1000000000"));
-		await await cosmicGame.setRuntimeMode();
+		} = await basicDeploymentAdvanced("CosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
 		// test case description:
 		// first bid is made by owner, to initialize all the variables, duration of 1000 seconds
@@ -258,11 +253,11 @@ describe("Bid time accounting", function () {
 		// 5000 seconds is longer than 1000 seconds of the owner, and 2000 seconds of addr1, 
 		// therefore addr2 is the Endurance Champion
 		
-		let donationAmount = ethers.utils.parseEther("10");
+		let donationAmount = ethers.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
 
 		var bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGame.getBidPrice();
 		await ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
 		await cosmicGame.connect(owner).bid(params, { value: bidPrice });	// bid1 (owner, for 1,000 seconds
