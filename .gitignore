@@ -1,15 +1,19 @@
 node_modules
 .env
-coverage
-coverage.json
-typechain
-typechain-types
 
-# Hardhat files.
-cache
-artifacts
+# Hardhat files
+/cache
+/artifacts
+
+# TypeChain files
+/typechain
+/typechain-types
+
+# solidity-coverage files
+/coverage
+/coverage.json
 
 # Comment-202408024 applies.
-abi
+/abi
 
 config.sh
