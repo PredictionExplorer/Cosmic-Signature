@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
+
 pragma solidity 0.8.26;
-pragma experimental SMTChecker;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
@@ -76,11 +76,12 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		randomWalk = rwalk_;
 		game = game_;
 
-		// SMT Checker assertions for constructor
-		assert(address(randomWalk) == address(rwalk_));
-		assert(address(game) == address(game_));
-		assert(numStakedNFTs == 0);
-		assert(numStakeActions == 0);
+		// #region Assertions
+		// #enable_asserts assert(address(randomWalk) == address(rwalk_));
+		// #enable_asserts assert(address(game) == address(game_));
+		// #enable_asserts assert(numStakedNFTs == 0);
+		// #enable_asserts assert(numStakeActions == 0);
+		// #endregion
 	}
 
 	function stake(uint256 _tokenId) public override {
@@ -98,23 +99,27 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		numStakedNFTs += 1;
 		emit StakeActionEvent(numStakeActions - 1, _tokenId, numStakedNFTs, msg.sender);
 
-		// SMT Checker assertions
-		assert(usedTokens[_tokenId] == true);
-		assert(stakeActions[numStakeActions - 1].tokenId == _tokenId);
-		assert(stakeActions[numStakeActions - 1].owner == msg.sender);
-		assert(stakeActions[numStakeActions - 1].stakeTime == block.timestamp);
-		assert(isTokenStaked(_tokenId));
-		assert(numStakedNFTs > 0);
-		assert(lastActionIdByTokenId(_tokenId) == int256(numStakeActions - 1));
+		// #region Assertions
+		// #enable_asserts assert(usedTokens[_tokenId] == true);
+		// #enable_asserts assert(stakeActions[numStakeActions - 1].tokenId == _tokenId);
+		// #enable_asserts assert(stakeActions[numStakeActions - 1].owner == msg.sender);
+		// #enable_asserts assert(stakeActions[numStakeActions - 1].stakeTime == block.timestamp);
+		// #enable_asserts assert(isTokenStaked(_tokenId));
+		// #enable_asserts assert(numStakedNFTs > 0);
+		// #enable_asserts assert(lastActionIdByTokenId(_tokenId) == int256(numStakeActions - 1));
+		// #endregion
 	}
 
 	function stakeMany(uint256[] memory ids) external override {
-		uint256 initialStakedNFTs = numStakedNFTs;
+		// #enable_asserts uint256 initialStakedNFTs = numStakedNFTs;
+
 		for (uint256 i = 0; i < ids.length; i++) {
 			stake(ids[i]);
 		}
-		// SMT Checker assertions
-		assert(numStakedNFTs == initialStakedNFTs + ids.length);
+
+		// #region Assertions
+		// #enable_asserts assert(numStakedNFTs == initialStakedNFTs + ids.length);
+		// #endregion
 	}
 
 	function unstake(uint256 stakeActionId) public override {
@@ -133,21 +138,25 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		numStakedNFTs -= 1;
 		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
 
-		// SMT Checker assertions
-		assert(stakeActions[stakeActionId].unstakeTime != 0);
-		assert(!isTokenStaked(tokenId));
-		assert(lastActionIdByTokenId(tokenId) == -2);
-		assert(numStakedNFTs < numStakeActions);
-		assert(stakedTokens.length == numStakedNFTs);
+		// #region Assertions
+		// #enable_asserts assert(stakeActions[stakeActionId].unstakeTime != 0);
+		// #enable_asserts assert(!isTokenStaked(tokenId));
+		// #enable_asserts assert(lastActionIdByTokenId(tokenId) == -2);
+		// #enable_asserts assert(numStakedNFTs < numStakeActions);
+		// #enable_asserts assert(stakedTokens.length == numStakedNFTs);
+		// #endregion
 	}
 
 	function unstakeMany(uint256[] memory ids) external override {
-		uint256 initialStakedNFTs = numStakedNFTs;
+		// #enable_asserts uint256 initialStakedNFTs = numStakedNFTs;
+
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
 		}
-		// SMT Checker assertions
-		assert(numStakedNFTs == initialStakedNFTs - ids.length);
+
+		// #region Assertions
+		// #enable_asserts assert(numStakedNFTs == initialStakedNFTs - ids.length);
+		// #endregion
 	}
 
 	function wasTokenUsed(uint256 _tokenId) public view override returns (bool) {
@@ -159,8 +168,13 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	}
 
 	function numTokensStaked() public view override returns (uint256) {
-		// SMT Checker assertion
-		assert(stakedTokens.length == numStakedNFTs);
+		// #region Assertions
+		// todo-1 Given this equality, why do we need to store `numStakedNFTs` separately? To save gas?
+		// todo-1 At least explain this in a comment near `numStakedNFTs`.
+		// todo-1 The same applies to `StakingWalletCST`.
+		// #enable_asserts assert(stakedTokens.length == numStakedNFTs);
+		// #endregion
+
 		return stakedTokens.length;
 	}
 
@@ -200,11 +214,12 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		tokenIndices[tokenId] = stakedTokens.length;
 		lastActionIds[tokenId] = int256(actionId);
 
-		// SMT Checker assertions
-		assert(isTokenStaked(tokenId));
-		assert(tokenIndices[tokenId] == stakedTokens.length);
-		assert(lastActionIds[tokenId] == int256(actionId));
-		assert(stakedTokens[stakedTokens.length - 1] == tokenId);
+		// #region Assertions
+		// #enable_asserts assert(isTokenStaked(tokenId));
+		// #enable_asserts assert(tokenIndices[tokenId] == stakedTokens.length);
+		// #enable_asserts assert(lastActionIds[tokenId] == int256(actionId));
+		// #enable_asserts assert(stakedTokens[stakedTokens.length - 1] == tokenId);
+		// #endregion
 	}
 
 	/// @notice Removes a token from the staked tokens list
@@ -220,9 +235,10 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		stakedTokens.pop();
 		lastActionIds[tokenId] = -1;
 
-		// SMT Checker assertions
-		assert(!isTokenStaked(tokenId));
-		assert(tokenIndices[tokenId] == 0);
-		assert(lastActionIds[tokenId] == -1);
+		// #region Assertions
+		// #enable_asserts assert(!isTokenStaked(tokenId));
+		// #enable_asserts assert(tokenIndices[tokenId] == 0);
+		// #enable_asserts assert(lastActionIds[tokenId] == -1);
+		// #endregion
 	}
 }

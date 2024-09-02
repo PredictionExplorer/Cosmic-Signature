@@ -1,0 +1,25 @@
+    How to execute SMTChecker.
+
+@ Review https://github.com/PredictionExplorer/hardhat-preprocessor-integration-prototype/blob/main/contracts/Lock.sol
+  for what you can possibly do. Althoug that prototype goes beyond of what makes sense to do in the production code,
+  and it's not necessarily OK to deploy as is, without preprocessing.
+
+@ In the code, add asserts and whatever other relevant logic.
+
+@ Prepend relevant code lines with 1 or more of the following comments:
+// #enable_asserts 
+// #disable_asserts 
+// #enable_smtchecker 
+// #disable_smtchecker 
+
+  Remember to prepent any variables that are used only by asserts.
+  Make sure the code is OK to deploy as is, without preprocessing.
+
+@ Review Comment-202409013.
+  Specify there what contracts to analyze, or leave all commented.
+
+@ Execute `./compile-1.bash`.
+
+@ While it's running, you might want to review "hardhat.config.js" to get an idea what's under the hood.
+
+@ After the script finishes, review the newly created file in the subfolder specified near Comment-202409014.
