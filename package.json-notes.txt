@@ -1,2 +1,6 @@
-@ todo-2 https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
-  todo-2 The @nomiclabs/hardhat-etherscan package is deprecated, please use @nomicfoundation/hardhat-verify instead
+@ [ToDo-202408312-0]
+  https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
+  It says:
+     The @nomiclabs/hardhat-etherscan package is deprecated, please use @nomicfoundation/hardhat-verify instead
+  ToDo-202408311-0 relates.
+  [/ToDo-202408312-0]

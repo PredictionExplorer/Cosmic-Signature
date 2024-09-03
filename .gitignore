@@ -14,9 +14,12 @@ node_modules
 /coverage.json
 
 # Hardhat Ignition default folder for deployments against a local node
-ignition/deployments/chain-31337
+/ignition/deployments/chain-31337
+
+# Comment-202409014 applies.
+/smtchecker/compile-1-output
 
 # Comment-202408024 applies.
 /abi
 
-# config.sh
+# /config.sh
