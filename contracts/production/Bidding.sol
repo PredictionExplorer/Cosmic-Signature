@@ -13,8 +13,9 @@ import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, IBidding {
+abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
 	/// @title Bid Parameters

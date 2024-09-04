@@ -16,6 +16,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { Bidding } from "./Bidding.sol";
+import { BidStatistics } from "./BidStatistics.sol";
 import { NFTDonations } from "./NFTDonations.sol";
 import { ETHDonations } from "./ETHDonations.sol";
 import { SpecialPrizes } from "./SpecialPrizes.sol";
@@ -30,12 +31,13 @@ contract CosmicGame is
 	OwnableUpgradeable,
 	UUPSUpgradeable,
 	CosmicGameStorage,
+	SystemManagement,
+	BidStatistics,
 	Bidding,
+	MainPrize,
 	NFTDonations,
 	ETHDonations,
 	SpecialPrizes,
-	MainPrize,
-	SystemManagement,
 	ICosmicGame {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;

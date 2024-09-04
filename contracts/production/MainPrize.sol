@@ -13,10 +13,12 @@ import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { Bidding } from "./Bidding.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, IMainPrize {
+abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, Bidding, IMainPrize {
 	function claimPrize() external override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,

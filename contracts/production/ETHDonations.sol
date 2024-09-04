@@ -7,8 +7,9 @@ import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { IETHDonations } from "./interfaces/IETHDonations.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, IETHDonations {
+abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, IETHDonations {
 	function donate() external payable override nonReentrant {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,

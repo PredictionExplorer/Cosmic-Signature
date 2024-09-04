@@ -8,8 +8,9 @@ import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, INFTDonations {
+abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, INFTDonations {
 	function donateNFT(IERC721 nftAddress, uint256 tokenId) external override nonReentrant  {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,

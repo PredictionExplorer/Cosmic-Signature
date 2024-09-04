@@ -3,10 +3,11 @@
 pragma solidity 0.8.26;
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-// import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
+import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { IBidding } from "./IBidding.sol";
 import { INFTDonations } from "./INFTDonations.sol";
 import { IETHDonations } from "./IETHDonations.sol";
+import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISpecialPrizes } from "./ISpecialPrizes.sol";
 import { IMainPrize } from "./IMainPrize.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
@@ -14,14 +15,8 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 /// @title Cosmic Game Implementation
 /// @author Cosmic Game Development Team
 /// @notice A contract implementing this interface implements the main functionality of the Cosmic Game
-interface ICosmicGame is
-   // ICosmicGameStorage,
-	IBidding,
-	INFTDonations,
-	IETHDonations,
-	ISpecialPrizes,
-	IMainPrize,
-	ISystemManagement {
+//interface ICosmicGame is ICosmicGameStorage, ISystemManagement, IMainPrize, INFTDonations, IETHDonations {
+interface ICosmicGame is ICosmicGameStorage, ISystemManagement, IBidStatistics, IBidding, IMainPrize, INFTDonations, IETHDonations, ISpecialPrizes {
 
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
