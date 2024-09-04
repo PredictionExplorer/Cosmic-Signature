@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.26;
 
+import { CosmicToken } from "../CosmicToken.sol";
+
 /// @title A wallet for managing CST rewards for marketing efforts
 /// @author Cosmic Game Development Team
 /// @notice This wallet holds CST rewards for marketing the project on social media
@@ -9,7 +11,7 @@ pragma solidity 0.8.26;
 interface IMarketingWallet {
 	/// @notice Emitted when the CosmicToken contract address is changed
 	/// @param newCosmicToken Address of the new CosmicToken contract
-	event CosmicTokenAddressChanged(address newCosmicToken);
+	event CosmicTokenAddressChanged(CosmicToken newCosmicToken);
 
 	/// @notice Emitted when a reward is sent to a marketer
 	/// @param marketer Address of the reward recipient
@@ -19,7 +21,7 @@ interface IMarketingWallet {
 	/// @notice Updates the address of the CosmicToken contract
 	/// @dev Only callable by the contract owner
 	/// @param addr Address of the new CosmicToken contract
-	function setTokenContract(address addr) external;
+	function setTokenContract(CosmicToken addr) external;
 
 	/// @notice Sends CST tokens as a reward to a marketer
 	/// @dev Only callable by the contract owner

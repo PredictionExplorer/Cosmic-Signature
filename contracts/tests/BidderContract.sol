@@ -98,7 +98,7 @@ contract BidderContract is IERC721Receiver {
 		if (totalSupply > 0) {
 			lastTokenIdChecked = totalSupply - 1;
 		}
-		CosmicToken token = CosmicToken(cosmicGame.token());
+		CosmicToken token = cosmicGame.token();
 		uint ctokenBalance = token.balanceOf(address(this));
 		if (ctokenBalance > 0) {
 			token.transfer(creator, ctokenBalance);

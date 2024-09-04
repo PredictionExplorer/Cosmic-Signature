@@ -19,9 +19,9 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		token = token_;
 	}
 
-	function setTokenContract(address addr) external override onlyOwner {
-		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = CosmicToken(addr);
+	function setTokenContract(CosmicToken addr) external override onlyOwner {
+		require(address(addr) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		token = addr;
 		emit CosmicTokenAddressChanged(addr);
 	}
 
@@ -29,8 +29,13 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		require(to != address(0), CosmicGameErrors.ZeroAddress("Recipient address cannot be zero."));
 		require(amount > 0, CosmicGameErrors.NonZeroValueRequired("Amount must be greater than zero."));
 
-		(bool success, ) = address(token).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
-		require(success, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount));
+		// (bool success, ) = address(token).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
+		// require(success, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount));
+		// todo-0 Do we really need to cast `token` here?
+		try IERC20(token).transfer(to, amount) {
+		} catch {
+			revert CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount);
+		}
 		emit RewardSentEvent(to, amount);
 	}
 }

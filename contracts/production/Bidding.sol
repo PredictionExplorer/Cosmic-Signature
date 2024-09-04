@@ -165,28 +165,46 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 		numRaffleParticipants[roundNum] = numParticipants + (1);
 
 		// Distribute token rewards
-		(bool mintSuccess, ) = address(token).call(
-			abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
-		);
-		require(
-			mintSuccess,
-			CosmicGameErrors.ERC20Mint(
-				"CosmicToken mint() failed to mint reward tokens for the bidder.",
-				lastBidder,
-				tokenReward
-			)
-		);
-		(mintSuccess, ) = address(token).call(
-			abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, marketingReward)
-		);
-		require(
-			mintSuccess,
-			CosmicGameErrors.ERC20Mint(
-				"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
-				address(marketingWallet),
-				marketingReward
-			)
-		);
+		// (bool mintSuccess, ) = address(token).call(
+		// 	abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
+		// );
+		// require(
+		// 	mintSuccess,
+		// 	CosmicGameErrors.ERC20Mint(
+		// 		"CosmicToken mint() failed to mint reward tokens for the bidder.",
+		// 		lastBidder,
+		// 		tokenReward
+		// 	)
+		// );
+		try token.mint(lastBidder, tokenReward) {
+		} catch {
+			revert
+				CosmicGameErrors.ERC20Mint(
+					"CosmicToken mint() failed to mint reward tokens for the bidder.",
+					lastBidder,
+					tokenReward
+				);
+		}
+		// (mintSuccess, ) = address(token).call(
+		// 	abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, marketingReward)
+		// );
+		// require(
+		// 	mintSuccess,
+		// 	CosmicGameErrors.ERC20Mint(
+		// 		"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
+		// 		address(marketingWallet),
+		// 		marketingReward
+		// 	)
+		// );
+		try token.mint(marketingWallet, marketingReward) {
+		} catch {
+			revert
+				CosmicGameErrors.ERC20Mint(
+					"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
+					address(marketingWallet),
+					marketingReward
+				);
+		}
 
 		_pushBackPrizeTime();
 	}
@@ -241,6 +259,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
 		);
+		// todo-0 Do we really need to cast `token` here?
+		// todo-0 Note that `token` type used to be `address`, and now it's `CosmicToken`.
 		// uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
 		uint256 userBalance = IERC20(token).balanceOf(msg.sender);
 		uint256 price = currentCSTPrice();
@@ -259,7 +279,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 		lastCSTBidTime = block.timestamp;
 
 		// Burn the CST tokens used for bidding
-		CosmicToken(token).burn(msg.sender,price);
+		token.burn(msg.sender, price);
 
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);

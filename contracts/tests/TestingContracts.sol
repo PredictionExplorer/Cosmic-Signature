@@ -89,8 +89,8 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 				CosmicSignature(nft).transferFrom(address(this), this.owner(), i);
 			}
 		}
-		cosmicSupply = CosmicToken(token).balanceOf(address(this));
-		CosmicToken(token).transfer(this.owner(), cosmicSupply);
+		cosmicSupply = token.balanceOf(address(this));
+		token.transfer(this.owner(), cosmicSupply);
 		for (uint256 i = 0; i < numDonatedNFTs; i++) {
 			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
 			IERC721(dnft.nftAddress).transferFrom(address(this), this.owner(), dnft.tokenId);
@@ -113,7 +113,7 @@ contract SpecialCosmicGame is CosmicGame {
 	function setNftContractRaw(address addr) external {
 		nft = addr;
 	}
-	function setTokenContractRaw(address addr) external {
+	function setTokenContractRaw(CosmicToken addr) external {
 		token = addr;
 	}
 	function setActivationTimeRaw(uint256 newActivationTime) external {

@@ -27,7 +27,7 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 
 	// The following functions are overrides required by Solidity.
 
-// todo-1 It appears that we no longer need to override this. Commented out.
+	// todo-1 It appears that we no longer need to override this. Commented out.
 	// /// @notice Hook that is called after any token transfer, including minting and burning
 	// /// @dev This function is required to update the voting power
 	// /// @param from The address tokens are transferred from (address(0) for minting)
@@ -37,7 +37,7 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 	// 	super._afterTokenTransfer(from, to, amount);
 	// }
 
-// todo-1 It appears that we no longer need to override this. Commented out.
+	// todo-1 It appears that we no longer need to override this. Commented out.
 	// /// @notice Internal function to mint tokens
 	// /// @dev This function is required to update the voting power when minting
 	// /// @param to The address that will receive the minted tokens
@@ -46,7 +46,7 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 	// 	super._mint(to, amount);
 	// }
 
-// todo-1 It appears that we no longer need to override this. Commented out.
+	// todo-1 It appears that we no longer need to override this. Commented out.
 	// /// @notice Internal function to burn tokens
 	// /// @dev This function is required to update the voting power when burning
 	// /// @param account The address from which to burn tokens
