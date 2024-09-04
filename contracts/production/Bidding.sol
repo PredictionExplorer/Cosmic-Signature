@@ -165,17 +165,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 		numRaffleParticipants[roundNum] = numParticipants + (1);
 
 		// Distribute token rewards
-		// (bool mintSuccess, ) = address(token).call(
-		// 	abi.encodeWithSelector(CosmicToken.mint.selector, lastBidder, tokenReward)
-		// );
-		// require(
-		// 	mintSuccess,
-		// 	CosmicGameErrors.ERC20Mint(
-		// 		"CosmicToken mint() failed to mint reward tokens for the bidder.",
-		// 		lastBidder,
-		// 		tokenReward
-		// 	)
-		// );
 		try token.mint(lastBidder, tokenReward) {
 		} catch {
 			revert
@@ -185,17 +174,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 					tokenReward
 				);
 		}
-		// (mintSuccess, ) = address(token).call(
-		// 	abi.encodeWithSelector(CosmicToken.mint.selector, marketingWallet, marketingReward)
-		// );
-		// require(
-		// 	mintSuccess,
-		// 	CosmicGameErrors.ERC20Mint(
-		// 		"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
-		// 		address(marketingWallet),
-		// 		marketingReward
-		// 	)
-		// );
 		try token.mint(marketingWallet, marketingReward) {
 		} catch {
 			revert

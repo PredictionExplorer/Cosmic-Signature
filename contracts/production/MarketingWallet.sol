@@ -30,8 +30,6 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		require(to != address(0), CosmicGameErrors.ZeroAddress("Recipient address cannot be zero."));
 		require(amount > 0, CosmicGameErrors.NonZeroValueRequired("Amount must be greater than zero."));
 
-		// (bool success, ) = address(token).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
-		// require(success, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount));
 		// todo-0 Do we really need to cast `token` here?
 		try IERC20(token).transfer(to, amount) {
 		} catch {
