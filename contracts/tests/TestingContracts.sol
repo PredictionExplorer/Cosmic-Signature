@@ -147,7 +147,7 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
-	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, address game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
@@ -172,7 +172,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 	}
 }
 contract TestStakingWalletRWalk is StakingWalletRWalk {
-	constructor(RandomWalkNFT nft_, CosmicGame game_) StakingWalletRWalk(nft_, game_) {}
+	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {

@@ -103,7 +103,7 @@ const basicDeploymentAdvanced = async function (
 	let stakingWalletCSTAddr = await stakingWalletCST.getAddress();
 
 	let StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
-	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(randomWalkAddr,cosmicGameProxyAddr);
+	stakingWalletRWalk = await StakingWalletRWalk.connect(deployerAcct).deploy(randomWalkAddr);
 	await stakingWalletRWalk.waitForDeployment();
 	let stakingWalletRWalkAddr = await stakingWalletRWalk.getAddress();
 

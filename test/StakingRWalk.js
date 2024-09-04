@@ -72,7 +72,7 @@ describe("Staking RandomWalk tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice })
 
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(await randomWalkNFT.getAddress(),await cosmicGameProxy.getAddress());
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 		await randomWalkNFT.setApprovalForAll(await newStakingWalletRWalk.getAddress(), true);
 
@@ -114,7 +114,7 @@ describe("Staking RandomWalk tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice })
 
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(await randomWalkNFT.getAddress(),await cosmicGameProxy.getAddress());
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 		await randomWalkNFT.setApprovalForAll(await newStakingWalletRWalk.getAddress(), true);
 
@@ -146,7 +146,7 @@ describe("Staking RandomWalk tests", function () {
 		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("TestStakingWalletRWalk");
-		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress(),await cosmicGameProxy.getAddress());
+		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 		await cosmicGameProxy.setStakingWalletRWalk(await newStakingWalletRWalk.getAddress());
 		await cosmicGameProxy.setRuntimeMode();
@@ -266,7 +266,7 @@ describe("Staking RandomWalk tests", function () {
 		await newCosmicSignature.waitForDeployment();
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress(),await cosmicGameProxy.getAddress());
+		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 
 		let numSigners = 20;
@@ -342,7 +342,7 @@ describe("Staking RandomWalk tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice })
 
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(await randomWalkNFT.getAddress(),await cosmicGameProxy.getAddress());
+		let newStakingWalletRWalk = await StakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 		await randomWalkNFT.setApprovalForAll(await newStakingWalletRWalk.getAddress(), true);
 
