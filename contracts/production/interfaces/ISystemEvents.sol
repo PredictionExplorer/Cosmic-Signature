@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-import { CosmicToken } from "../CosmicToken.sol";
+import { ICosmicToken } from "./ICosmicToken.sol";
 
 interface ISystemEvents {
 
@@ -35,7 +35,7 @@ interface ISystemEvents {
 
 	/// @notice Emitted when the Cosmic Token address is changed
 	/// @param newCosmicToken The new Cosmic Token address
-	event CosmicTokenAddressChanged(CosmicToken newCosmicToken);
+	event CosmicTokenAddressChanged(ICosmicToken newCosmicToken);
 
 	/// @notice Emitted when the Cosmic Signature address is changed
 	/// @param newCosmicSignature The new Cosmic Signature address

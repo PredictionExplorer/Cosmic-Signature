@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
@@ -19,9 +20,9 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		token = token_;
 	}
 
-	function setTokenContract(CosmicToken addr) external override onlyOwner {
+	function setTokenContract(ICosmicToken addr) external override onlyOwner {
 		require(address(addr) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = addr;
+		token = CosmicToken(address(addr));
 		emit CosmicTokenAddressChanged(addr);
 	}
 
