@@ -5,8 +5,7 @@ pragma solidity 0.8.26;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
-import { CosmicGame} from "./CosmicGame.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
 
 /// @dev Implements staking, unstaking, and reward distribution mechanisms for CST NFTs
@@ -62,9 +61,9 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	uint256 public modulo;
 
 	/// @notice Reference to the CosmicSignature NFT contract
-	CosmicSignature public nft;
+	IERC721 public nft;
 	/// @notice Reference to the CosmicGame contract
-	CosmicGame public game;
+	address public game;
 
 	/// @dev Precision factor for calculations
 	uint256 private constant PRECISION = 1e18;
@@ -78,7 +77,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	/// @param game_ Address of the CosmicGame contract
 	/// @param charity_ Address of the charity
 	/// @dev ToDo-202408114-1 applies
-	constructor(CosmicSignature nft_, CosmicGame game_, address charity_) Ownable(msg.sender) {
+	constructor(IERC721 nft_, address game_, address charity_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
 		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		require(charity_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for charity."));
