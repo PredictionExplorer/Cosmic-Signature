@@ -19,11 +19,7 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, Bidding, IMainPrize {
-	function claimPrize() external override nonReentrant {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
+	function claimPrize() external override nonReentrant onlyRuntime {
 		require(
 			prizeTime <= block.timestamp,
 			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)

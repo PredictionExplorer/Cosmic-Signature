@@ -37,11 +37,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		_bid(_data);
 	}
 
-	function _bid(bytes calldata _data) internal {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
+	function _bid(bytes calldata _data) internal onlyRuntime {
 
 		BidParams memory params = abi.decode(_data, (BidParams));
 
@@ -233,11 +229,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
+	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
+
 		// todo-0 Do we really need to cast `token` here?
 		// todo-0 Note that `token` type used to be `address`, and now it's `CosmicToken`.
 		// uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
