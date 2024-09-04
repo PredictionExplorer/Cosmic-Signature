@@ -121,9 +121,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Bi
 			uint256 tokenId = CosmicSignature(nft).mint(enduranceChampion, roundNum);
 			// ToDo-202408116-0 applies.
 			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
-			token.call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, enduranceChampion, erc20TokenReward)
-			);
+			try token.mint(enduranceChampion, erc20TokenReward) {
+			} catch  {
+			}
 			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, 0);
 		}
 
@@ -132,9 +132,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Bi
 			uint256 tokenId = CosmicSignature(nft).mint(stellarSpender, roundNum);
 			// ToDo-202408116-0 applies.
 			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
-			token.call(
-				abi.encodeWithSelector(CosmicToken.mint.selector, stellarSpender, erc20TokenReward)
-			);
+			try token.mint(stellarSpender, erc20TokenReward) {
+			} catch  {
+			}
 			emit StellarSpenderWinnerEvent(
 				stellarSpender,
 				roundNum,

@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
 abstract contract CosmicGameStorage is ICosmicGameStorage {
@@ -13,7 +14,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// todo-1 This is a `CosmicSignature`address, right? Rename this to make it clear.
 	address public nft;
 
-	address public token;
+	CosmicToken public token;
 	address public raffleWallet;
 	address public stakingWalletCST;
 	address public stakingWalletRWalk;

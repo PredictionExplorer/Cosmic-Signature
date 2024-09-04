@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
+import { CosmicToken } from "../production/CosmicToken.sol";
 import { StakingWalletCST } from "../production/StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
 import { RaffleWallet } from "../production/RaffleWallet.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 import { CosmicSignature } from "../production/CosmicSignature.sol";
-import { CosmicToken } from "../production/CosmicToken.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
@@ -89,8 +90,8 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 				CosmicSignature(nft).transferFrom(address(this), this.owner(), i);
 			}
 		}
-		cosmicSupply = CosmicToken(token).balanceOf(address(this));
-		CosmicToken(token).transfer(this.owner(), cosmicSupply);
+		cosmicSupply = token.balanceOf(address(this));
+		token.transfer(this.owner(), cosmicSupply);
 		for (uint256 i = 0; i < numDonatedNFTs; i++) {
 			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
 			IERC721(dnft.nftAddress).transferFrom(address(this), this.owner(), dnft.tokenId);
@@ -113,8 +114,8 @@ contract SpecialCosmicGame is CosmicGame {
 	function setNftContractRaw(address addr) external {
 		nft = addr;
 	}
-	function setTokenContractRaw(address addr) external {
-		token = addr;
+	function setTokenContractRaw(ICosmicToken addr) external {
+		token = CosmicToken(address(addr));
 	}
 	function setActivationTimeRaw(uint256 newActivationTime) external {
 		activationTime = newActivationTime;

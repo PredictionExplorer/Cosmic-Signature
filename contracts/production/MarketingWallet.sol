@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
@@ -19,9 +20,9 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		token = token_;
 	}
 
-	function setTokenContract(address addr) external override onlyOwner {
-		require(addr != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = CosmicToken(addr);
+	function setTokenContract(ICosmicToken addr) external override onlyOwner {
+		require(address(addr) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		token = CosmicToken(address(addr));
 		emit CosmicTokenAddressChanged(addr);
 	}
 
@@ -29,8 +30,11 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		require(to != address(0), CosmicGameErrors.ZeroAddress("Recipient address cannot be zero."));
 		require(amount > 0, CosmicGameErrors.NonZeroValueRequired("Amount must be greater than zero."));
 
-		(bool success, ) = address(token).call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
-		require(success, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount));
+		// todo-0 Do we really need to cast `token` here?
+		try IERC20(token).transfer(to, amount) {
+		} catch {
+			revert CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount);
+		}
 		emit RewardSentEvent(to, amount);
 	}
 }

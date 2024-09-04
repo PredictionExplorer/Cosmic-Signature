@@ -6,6 +6,8 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
+import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
@@ -88,13 +90,13 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit MarketingWalletAddressChanged(_marketingWallet);
 	}
 
-	function setTokenContract(address _token) external override onlyOwner {
+	function setTokenContract(ICosmicToken _token) external override onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
-		require(_token != address(0), "Invalid address");
-		token = _token;
+		require(address(_token) != address(0), "Invalid address");
+		token = CosmicToken(address(_token));
 		emit CosmicTokenAddressChanged(_token);
 	}
 
