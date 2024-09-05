@@ -18,7 +18,7 @@ import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, Bidding, IMainPrize {
+abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	function claimPrize() external override nonReentrant onlyRuntime {
 		require(
 			prizeTime <= block.timestamp,
