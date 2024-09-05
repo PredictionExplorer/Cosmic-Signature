@@ -32,10 +32,6 @@ const basicDeploymentAdvanced = async function (
 		process.exit(1);
 	}
 	let CosmicGame = await ethers.getContractFactory(cgpName);
-	let cosmicGame = await CosmicGame.connect(deployerAcct).deploy();	// implementation contract (business logic)
-	await cosmicGame.waitForDeployment();
-	let cosmicGameAddr = await cosmicGame.getAddress();
-
 	cosmicGameProxy = await hre.upgrades.deployProxy(
 		CosmicGame,
 		args = [deployerAcct.address],
@@ -44,6 +40,8 @@ const basicDeploymentAdvanced = async function (
 		}
 	);
 	cosmicGameProxyAddr = await cosmicGameProxy.getAddress();
+	let cosmicGameAddr = await cosmicGameProxy.runner.provider.getStorage(cosmicGameProxyAddr,'0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc');
+	let cosmicGame = await CosmicGame.attach(cosmicGameProxyAddr);
 	let CosmicToken = await ethers.getContractFactory("CosmicToken");
 	cosmicToken = await CosmicToken.connect(deployerAcct).deploy();
 	await cosmicToken.waitForDeployment();
