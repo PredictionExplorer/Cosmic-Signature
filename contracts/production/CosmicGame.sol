@@ -121,7 +121,7 @@ contract CosmicGame is
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
 
-		this.bid{value: msg.value}(param_data);
+		bid(param_data);
 	}
 
 	fallback() external payable override {

@@ -33,11 +33,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 	// #endregion
 
-	function bid(bytes calldata _data) external payable override nonReentrant {
+	function bid(bytes memory _data) public payable override nonReentrant {
 		_bid(_data);
 	}
 
-	function _bid(bytes calldata _data) internal onlyRuntime {
+	function _bid(bytes memory _data) internal onlyRuntime {
 
 		BidParams memory params = abi.decode(_data, (BidParams));
 
