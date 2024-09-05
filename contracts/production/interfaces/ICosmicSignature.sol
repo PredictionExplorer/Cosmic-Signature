@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.26;
 
-import { IMyERC721Enumerable } from "./IMyERC721Enumerable.sol";
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 /// @title NFT for the Cosmic Game ecosystem
 /// @author Cosmic Game Development Team
 /// @notice A contract implementing this interaface implements the CosmicSignature NFT
 /// with unique features for the Cosmic Game
-interface ICosmicSignature is IMyERC721Enumerable {
+interface ICosmicSignature is IERC721Enumerable {
 	/// @notice Emitted when a token's name is set or changed
 	/// @param tokenId The ID of the token
 	/// @param newName The new name of the token
