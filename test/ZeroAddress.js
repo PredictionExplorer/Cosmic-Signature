@@ -95,8 +95,7 @@ describe("Zero-address checking", function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
-		await expect(StakingWalletRWalk.deploy(ethers.ZeroAddress,addr1.address, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
-		await expect(StakingWalletRWalk.deploy(owner.address,ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		await expect(StakingWalletRWalk.deploy(ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy CosmicSignature with zero-address-ed parameters", async function () {
 		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");

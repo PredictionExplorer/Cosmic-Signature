@@ -13,8 +13,9 @@ import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, IBidding {
+abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
 	/// @title Bid Parameters
@@ -32,15 +33,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 
 	// #endregion
 
-	function bid(bytes calldata _data) external payable override nonReentrant {
+	function bid(bytes memory _data) public payable override nonReentrant {
 		_bid(_data);
 	}
 
-	function _bid(bytes calldata _data) internal {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
+	function _bid(bytes memory _data) internal onlyRuntime {
 
 		BidParams memory params = abi.decode(_data, (BidParams));
 
@@ -232,14 +229,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, BidS
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
-		// todo-0 Do we really need to cast `token` here?
-		// todo-0 Note that `token` type used to be `address`, and now it's `CosmicToken`.
-		// uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
+	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
+
 		uint256 userBalance = IERC20(token).balanceOf(msg.sender);
 		uint256 price = currentCSTPrice();
 		require(

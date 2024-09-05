@@ -3,13 +3,12 @@
 pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { MyERC721Enumerable } from "./MyERC721Enumerable.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
 
-/// @dev Extends MyERC721Enumerable and includes custom minting and metadata management
-contract CosmicSignature is MyERC721Enumerable, Ownable, ICosmicSignature {
+/// @dev Extends ERC721Enumerable and includes custom minting and metadata management
+contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	// #region State
 
 	/// @notice Mapping of token IDs to their unique seeds
@@ -57,7 +56,7 @@ contract CosmicSignature is MyERC721Enumerable, Ownable, ICosmicSignature {
 
 	function setTokenName(uint256 tokenId, string memory name) external override {
 		require(
-			_isApprovedOrOwner(_msgSender(), tokenId),
+			_isAuthorized(_ownerOf(tokenId), _msgSender(), tokenId),
 			CosmicGameErrors.OwnershipError("setTokenName caller is not owner nor approved.", tokenId)
 		);
 		require(

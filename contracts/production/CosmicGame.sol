@@ -14,15 +14,9 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-// import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-// import { CosmicToken } from "./CosmicToken.sol";
-// import { CosmicSignature } from "./CosmicSignature.sol";
-// import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-// import { RaffleWallet } from "./RaffleWallet.sol";
-// import { StakingWalletCST } from "./StakingWalletCST.sol";
-// import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { Bidding } from "./Bidding.sol";
+import { BidStatistics } from "./BidStatistics.sol";
 import { NFTDonations } from "./NFTDonations.sol";
 import { ETHDonations } from "./ETHDonations.sol";
 import { SpecialPrizes } from "./SpecialPrizes.sol";
@@ -37,12 +31,13 @@ contract CosmicGame is
 	OwnableUpgradeable,
 	UUPSUpgradeable,
 	CosmicGameStorage,
+	SystemManagement,
+	BidStatistics,
 	Bidding,
+	MainPrize,
 	NFTDonations,
 	ETHDonations,
 	SpecialPrizes,
-	MainPrize,
-	SystemManagement,
 	ICosmicGame {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
@@ -71,14 +66,14 @@ contract CosmicGame is
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		startingBidPriceCST = 100e18;
-		nanoSecondsExtra = 3600 * 10 ** 9;
-		timeIncrease = 1000030;
-		priceIncrease = 1010000;
-		initialBidAmountFraction = 4000;
+		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
+		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
+		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;
+		initialBidAmountFraction = CosmicGameConstants.INITIAL_BID_AMOUNT_FRACTION;
 		lastBidder = address(0);
-		initialSecondsUntilPrize = 24 * 3600;
-		timeoutClaimPrize = 24 * 3600;
-		activationTime = 1702512000; // December 13 2023 19:00 New York Time
+		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
+		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
+		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
 		lastCSTBidTime = activationTime;
 		CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
@@ -89,15 +84,15 @@ contract CosmicGame is
 		systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 
 		// Initialize percentages
-		prizePercentage = 25;
-		charityPercentage = 10;
-		rafflePercentage = 5;
-		stakingPercentage = 10;
+		prizePercentage = CosmicGameConstants.INITIAL_PRIZE_PERCENTAGE;
+		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
+		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
+		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
 
 		// Initialize raffle winners
-		numRaffleETHWinnersBidding = 3;
-		numRaffleNFTWinnersBidding = 5;
-		numRaffleNFTWinnersStakingRWalk = 4;
+		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
+		numRaffleNFTWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
+		numRaffleNFTWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
 
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 	}
@@ -107,11 +102,6 @@ contract CosmicGame is
 		IERC721 nftAddress,
 		uint256 tokenId
 	) external payable override nonReentrant {
-		// // This validation is unnecessary. `_bid` will make it.
-		// require(
-		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-		// 	CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		// );
 		
 		_bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
@@ -123,11 +113,6 @@ contract CosmicGame is
 	}
 
 	receive() external payable override {
-		// // This validation is unnecessary. `_bid` will make it.
-		// require(
-		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-		// 	CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		// );
 
 		// Treat incoming ETH as a bid with default parameters
 		BidParams memory defaultParams;
@@ -136,13 +121,7 @@ contract CosmicGame is
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
 
-		// todo-1 Making this ugly external call because we can't convert `memory` to `calldata`.
-		// todo-1 Make sure this will revert the transaction on error.
-		// todo-1 Is it possible to somehow make an internal call to `_bid`?
-		// todo-1 If so, refactor the code and mark `receive` `nonReentrant`.
-		// todo-1 Otherwise write a todo-3 to revisit this issue when the conversion becomes possible.
-		// todo-1 In either case, explain things in a comment.
-		this.bid{value: msg.value}(param_data);
+		bid(param_data);
 	}
 
 	fallback() external payable override {

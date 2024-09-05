@@ -4,11 +4,10 @@
 pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { MyERC721Enumerable } from "./MyERC721Enumerable.sol";
+import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
-contract RandomWalkNFT is MyERC721Enumerable, Ownable, IRandomWalkNFT {
+contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 
 	// todo-1 We never change this.
@@ -62,7 +61,7 @@ contract RandomWalkNFT is MyERC721Enumerable, Ownable, IRandomWalkNFT {
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
-		require(_isApprovedOrOwner(_msgSender(), tokenId), "setTokenName caller is not owner nor approved");
+		require(_isAuthorized(_ownerOf(tokenId),_msgSender(), tokenId), "setTokenName caller is not owner nor approved");
 		require(bytes(name).length <= 32, "Token name is too long.");
 		tokenNames[tokenId] = name;
 		emit TokenNameEvent(tokenId, name);

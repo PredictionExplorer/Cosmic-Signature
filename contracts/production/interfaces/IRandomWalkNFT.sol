@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.26;
 
-import { IMyERC721Enumerable } from "./IMyERC721Enumerable.sol";
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-interface IRandomWalkNFT is IMyERC721Enumerable {
+interface IRandomWalkNFT is IERC721Enumerable {
 	event TokenNameEvent(uint256 tokenId, string newName);
 	event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed, uint256 price);
 	event WithdrawalEvent(uint256 indexed tokenId, address destination, uint256 amount);
