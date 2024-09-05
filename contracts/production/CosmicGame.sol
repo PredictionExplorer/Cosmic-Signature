@@ -102,11 +102,6 @@ contract CosmicGame is
 		IERC721 nftAddress,
 		uint256 tokenId
 	) external payable override nonReentrant {
-		// // This validation is unnecessary. `_bid` will make it.
-		// require(
-		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-		// 	CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		// );
 		
 		_bid(_param_data);
 		_donateNFT(nftAddress, tokenId);
@@ -118,11 +113,6 @@ contract CosmicGame is
 	}
 
 	receive() external payable override {
-		// // This validation is unnecessary. `_bid` will make it.
-		// require(
-		// 	systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-		// 	CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		// );
 
 		// Treat incoming ETH as a bid with default parameters
 		BidParams memory defaultParams;
@@ -131,12 +121,6 @@ contract CosmicGame is
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
 
-		// todo-1 Making this ugly external call because we can't convert `memory` to `calldata`.
-		// todo-1 Make sure this will revert the transaction on error.
-		// todo-1 Is it possible to somehow make an internal call to `_bid`?
-		// todo-1 If so, refactor the code and mark `receive` `nonReentrant`.
-		// todo-1 Otherwise write a todo-3 to revisit this issue when the conversion becomes possible.
-		// todo-1 In either case, explain things in a comment.
 		this.bid{value: msg.value}(param_data);
 	}
 

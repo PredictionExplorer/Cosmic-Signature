@@ -92,7 +92,6 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity));
 
 		// Staking
-		// if (IERC721Upgradeable(nft).totalSupply() > 0) {
 		if (IERC721Enumerable(nft).totalSupply() > 0) {
 			(success, ) = stakingWalletCST.call{ value: stakingAmount_ }(
 				abi.encodeWithSelector(StakingWalletCST.deposit.selector)

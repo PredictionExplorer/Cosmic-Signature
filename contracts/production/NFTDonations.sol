@@ -44,7 +44,6 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _tokenId, numDonatedNFTs/*.sub*/ - (1));
 	}
 
-	// todo-1 This was `external`, but that didn't compile, so I made it `public`. To be revisited.
 	function claimDonatedNFT(uint256 index) public override onlyRuntime {
 		require(index < numDonatedNFTs, CosmicGameErrors.InvalidDonatedNFTIndex("Invalid donated NFT index",index));
 

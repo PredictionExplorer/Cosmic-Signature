@@ -231,9 +231,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
 
-		// todo-0 Do we really need to cast `token` here?
-		// todo-0 Note that `token` type used to be `address`, and now it's `CosmicToken`.
-		// uint256 userBalance = IERC20Upgradeable(token).balanceOf(_msgSender());
 		uint256 userBalance = IERC20(token).balanceOf(msg.sender);
 		uint256 price = currentCSTPrice();
 		require(
