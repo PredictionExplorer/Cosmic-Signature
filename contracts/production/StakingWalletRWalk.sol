@@ -6,7 +6,6 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { CosmicGame } from "./CosmicGame.sol";
 import { IStakingWalletRWalk } from "./interfaces/IStakingWalletRWalk.sol";
 
 /// @dev Implements staking, unstaking, and random staker selection for RandomWalk NFTs
@@ -58,23 +57,18 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 
 	/// @notice Reference to the RandomWalkNFT contract
 	RandomWalkNFT public randomWalk;
-	/// @notice Reference to the CosmicGame contract
-	CosmicGame public game;
 
 	// #endregion
 
 	/// @notice Initializes the StakingWalletRWalk contract
 	/// @param rwalk_ Address of the RandomWalkNFT contract
-	/// @param game_ Address of the CosmicGame contract
 	/// @dev Sets up the initial state of the contract
-	constructor(RandomWalkNFT rwalk_, CosmicGame game_) Ownable(msg.sender) {
+	constructor(RandomWalkNFT rwalk_) Ownable(msg.sender) {
 		require(
 			address(rwalk_) != address(0),
 			CosmicGameErrors.ZeroAddress("Zero-address was given for the RandomWalk token.")
 		);
-		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		randomWalk = rwalk_;
-		game = game_;
 
 		// #region Assertions
 		// #enable_asserts assert(address(randomWalk) == address(rwalk_));

@@ -937,7 +937,7 @@ describe('Staking CST tests', function () {
 		await newStakingWalletCST.waitForDeployment();
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory('StakingWalletRWalk');
-		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress(), await cosmicGameProxy.getAddress());
+		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 
 		let numSigners = 20;

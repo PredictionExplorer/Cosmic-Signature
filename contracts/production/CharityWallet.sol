@@ -10,10 +10,6 @@ contract CharityWallet is Ownable, ICharityWallet {
 	/// @notice The address of the current designated charity
 	address public charityAddress;
 
-	// [ToDo-202408114-1]
-	// `Ownable` `constructor` and `__Ownable_init` now require a nonzero `initialOwner`.
-	// I have provided a simple one, but this implementation is to be revisited everywhere this ToDo is referenced.
-	// [/ToDo-202408114-1]
 	constructor() Ownable(msg.sender) {
 	}
 

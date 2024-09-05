@@ -3,8 +3,9 @@
 pragma solidity 0.8.26;
 
 import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
+import { ISystemManagement } from "./ISystemManagement.sol";
 
-interface IETHDonations is ICosmicGameStorage {
+interface IETHDonations is ICosmicGameStorage, ISystemManagement {
 	/// @notice Emitted when a donation is made
 	/// @param donor Donor address
 	/// @param amount The amount donated

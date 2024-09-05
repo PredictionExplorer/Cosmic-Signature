@@ -13,15 +13,13 @@ import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { Bidding } from "./Bidding.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, BidStatistics, IMainPrize {
-	function claimPrize() external override nonReentrant {
-		require(
-			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
-		);
+abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, Bidding, IMainPrize {
+	function claimPrize() external override nonReentrant onlyRuntime {
 		require(
 			prizeTime <= block.timestamp,
 			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
@@ -94,7 +92,6 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Bi
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity));
 
 		// Staking
-		// if (IERC721Upgradeable(nft).totalSupply() > 0) {
 		if (IERC721Enumerable(nft).totalSupply() > 0) {
 			(success, ) = stakingWalletCST.call{ value: stakingAmount_ }(
 				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
