@@ -66,14 +66,14 @@ contract CosmicGame is
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		startingBidPriceCST = 100e18;
-		nanoSecondsExtra = 3600 * 10 ** 9;
-		timeIncrease = 1000030;
-		priceIncrease = 1010000;
-		initialBidAmountFraction = 4000;
+		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
+		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
+		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;
+		initialBidAmountFraction = CosmicGameConstants.INITIAL_BID_AMOUNT_FRACTION;
 		lastBidder = address(0);
-		initialSecondsUntilPrize = 24 * 3600;
-		timeoutClaimPrize = 24 * 3600;
-		activationTime = 1702512000; // December 13 2023 19:00 New York Time
+		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
+		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
+		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
 		lastCSTBidTime = activationTime;
 		CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
@@ -84,15 +84,15 @@ contract CosmicGame is
 		systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 
 		// Initialize percentages
-		prizePercentage = 25;
-		charityPercentage = 10;
-		rafflePercentage = 5;
-		stakingPercentage = 10;
+		prizePercentage = CosmicGameConstants.INITIAL_PRIZE_PERCENTAGE;
+		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
+		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
+		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
 
 		// Initialize raffle winners
-		numRaffleETHWinnersBidding = 3;
-		numRaffleNFTWinnersBidding = 5;
-		numRaffleNFTWinnersStakingRWalk = 4;
+		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
+		numRaffleNFTWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
+		numRaffleNFTWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
 
 		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 	}

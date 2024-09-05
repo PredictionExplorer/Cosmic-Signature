@@ -38,6 +38,21 @@ library CosmicGameConstants {
 	string public constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE";
 	string public constant ERR_STR_MODE_RUNTIME = "System in maintenance mode";
 
+	uint256 public constant INITIAL_NANOSECONDS_EXTRA = 3600 * 10 ** 9;
+	uint256 public constant INITIAL_TIME_INCREASE = 1000030;
+	uint256 public constant INITIAL_PRICE_INCREASE = 1010000;
+	uint256 public constant INITIAL_BID_AMOUNT_FRACTION = 4000;
+	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = 24 * 3600;
+	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = 24 * 3600;
+	uint256 public constant INITIAL_ACTIVATION_TIME = 1702512000;
+	uint256 public constant INITIAL_PRIZE_PERCENTAGE = 25;
+	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
+	uint256 public constant INITIAL_RAFFLE_PERCENTAGE = 5;
+	uint256 public constant INITIAL_STAKING_PERCENTAGE = 10;
+	uint256 public constant INITIAL_RAFFLE_ETH_WINNERS_BIDDING = 3;
+	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
+	uint256 public constant INITIAL_STAKING_WINNERS_RWALK = 4;
+
 	/// @notice Information about a bidder
 	/// @dev Stores the total amount spent and the time of the last bid
 	struct BidderInfo {
