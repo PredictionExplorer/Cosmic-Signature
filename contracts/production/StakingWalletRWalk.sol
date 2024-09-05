@@ -72,7 +72,6 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 
 		// #region Assertions
 		// #enable_asserts assert(address(randomWalk) == address(rwalk_));
-		// #enable_asserts assert(address(game) == address(game_));
 		// #enable_asserts assert(numStakedNFTs == 0);
 		// #enable_asserts assert(numStakeActions == 0);
 		// #endregion

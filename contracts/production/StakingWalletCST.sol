@@ -79,7 +79,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	/// @dev ToDo-202408114-1 applies
 	constructor(IERC721 nft_, address game_, address charity_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
-		require(address(game_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
+		require(game_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		require(charity_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for charity."));
 		nft = nft_;
 		game = game_;
@@ -87,7 +87,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 		// #region Assertions
 		// #enable_asserts assert(address(nft) == address(nft_));
-		// #enable_asserts assert(address(game) == address(game_));
+		// #enable_asserts assert(game == game_);
 		// #enable_asserts assert(charity == charity_);
 		// #enable_asserts assert(numStakedNFTs == 0);
 		// #enable_asserts assert(numStakeActions == 0);
@@ -98,7 +98,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	function deposit() external payable override {
 		require(
-			msg.sender == address(game),
+			msg.sender == game,
 			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract can deposit.", msg.sender)
 		);
 
