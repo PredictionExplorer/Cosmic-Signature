@@ -43,7 +43,7 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR && helpersModule.parseBool
 // Another option is to use the "solc-select" tool.
 // Remember that depending on how your system upates are configured and how you installed the solc package,
 // the package can be updated at any moment, so you might want to disable quiet automatic updates.
-// Hardhat will not necesarily validate solc of what version it's executing.
+// Hardhat will not necessarily validate solc of what version it's executing.
 // [/Comment-202409011]
 const solidityCompilerPath = "/usr/bin/solc";
 
@@ -72,7 +72,7 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
 }
 
-console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necesarily validate that.`);
+console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
 
 // #endregion
 // #region //
