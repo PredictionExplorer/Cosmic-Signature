@@ -5,6 +5,7 @@
 // #endregion
 // #region
 
+const nodeFSModule = require("node:fs");
 const helpersModule = require("./src/Helpers.js");
 
 // #endregion
@@ -45,13 +46,25 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR && helpersModule.parseBool
 // the package can be updated at any moment, so you might want to disable quiet automatic updates.
 // Hardhat will not necessarily validate solc of what version it's executing.
 // [/Comment-202409011]
-const solidityCompilerPath = "/usr/bin/solc";
+// const solidityCompilerPath = "/usr/bin/solc";
+// todo-1 I upgarded solc, but found out it wasn't supported yet, but I was ubale to downgrade it.
+// todo-1 So I used the "solc-select" tool to install the older version.
+// todo-1 To be revisited.
+// todo-1 Then eliminate `nodeFSModule`.
+const solidityCompilerDefaultPath = "/usr/bin/solc";
+const solidityCompilerAlternativePath = process.env["HOME"] + "/.local/bin/solc";
+const solidityCompilerPath = 
+	nodeFSModule.existsSync(solidityCompilerAlternativePath) ?
+	solidityCompilerAlternativePath :
+	solidityCompilerDefaultPath;
 
 // Comment-202409011 applies.
 // When changing this, remember to revisit Comment-202408026 and Comment-202408025.
+// const solidityVersion = "0.8.27";
 const solidityVersion = "0.8.26";
 
 // Comment-202409011 applies.
+// const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
 const solidityCompilerLongVersion = solidityVersion + "+commit.8a97fa7a.Linux.g++";
 
 // #endregion
@@ -274,7 +287,8 @@ const hardhatUserConfig = {
 			// [Comment-202408025]
 			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
-			// This is expected to be the default for Solidity 0.8.27.
+			// Is this going to become `true` by default in a future Solidity version?
+			// As of the 0.8.27, this is `false` by default.
 			viaIR: true,
 		},
 	},
