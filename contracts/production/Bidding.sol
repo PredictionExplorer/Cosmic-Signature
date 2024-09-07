@@ -229,6 +229,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		);
 
 		// Double the starting CST price for the next auction, with a minimum of 100 CST
+		// todo-1 Use `unchecked` here?
+		// todo-1 Magic number hardcoded.
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 
@@ -244,6 +246,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
+		// todo-1 Should we replace `1e6` with 'CosmicGameConstants.MILLION'?
 		uint256 fraction = uint256(1e6) - (uint256(1e6) * secondsElapsed / duration);
 		return fraction * startingBidPriceCST / 1e6;
 	}
