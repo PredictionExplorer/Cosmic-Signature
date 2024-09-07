@@ -12,8 +12,7 @@ abstract contract BidStatistics is CosmicGameStorage, IBidStatistics {
 	function _updateEnduranceChampion() internal {
 		if (lastBidder == address(0)) return;
 
-		// ToDo-202408116-0 applies.
-		uint256 lastBidDuration = block.timestamp/*.sub*/ - (bidderInfo[roundNum][lastBidder].lastBidTime);
+		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
 		if (lastBidDuration > enduranceChampionDuration) {
 			enduranceChampionDuration = lastBidDuration;
 			enduranceChampion = lastBidder;

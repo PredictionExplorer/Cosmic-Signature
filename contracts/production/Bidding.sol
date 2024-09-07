@@ -93,12 +93,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		}
 
 		// Update Stellar Spender
-		// [ToDo-202408116-0]
-		// This fails to compile, apparently because I have commented out the piece of code near ToDo-202408115-0.
-		// Is the safe math needed for overflow checks? That's the default behavior since Solidity 8.0.0.
-		// So I have rewritten this to use the `+` or `-` operator.
-		// [/ToDo-202408116-0]
-		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + (paidBidPrice);
+		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + paidBidPrice;
 		if (bidderInfo[roundNum][msg.sender].totalSpent > stellarSpenderAmount) {
 			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpent;
 			stellarSpender = msg.sender;
@@ -110,8 +105,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 		// Refund excess ETH if the bidder sent more than required
 		if (msg.value > paidBidPrice) {
-			// ToDo-202408116-0 applies.
-			uint256 amountToSend = msg.value - (paidBidPrice);
+			uint256 amountToSend = msg.value - paidBidPrice;
 			(bool success, ) = msg.sender.call{ value: amountToSend }("");
 			require(
 				success,
@@ -146,8 +140,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 		if (lastBidder == address(0)) {
 			// First bid of the round
-			// ToDo-202408116-0 applies.
-			prizeTime = block.timestamp + (initialSecondsUntilPrize);
+			prizeTime = block.timestamp + initialSecondsUntilPrize;
 		}
 
 		_updateEnduranceChampion();
@@ -158,8 +151,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
-		// ToDo-202408116-0 applies.
-		numRaffleParticipants[roundNum] = numParticipants + (1);
+		numRaffleParticipants[roundNum] = numParticipants + 1;
 
 		// Distribute token rewards
 		try token.mint(lastBidder, tokenReward) {
@@ -185,19 +177,15 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function getBidPrice() public view override returns (uint256) {
-		// ToDo-202408116-0 applies.
-		return bidPrice * (priceIncrease) / (CosmicGameConstants.MILLION);
+		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		// ToDo-202408116-0 applies.
-		uint256 secondsAdded = nanoSecondsExtra / (1_000_000_000);
-		// ToDo-202408116-0 applies.
-		prizeTime = Math.max(prizeTime, block.timestamp) + (secondsAdded);
-		// ToDo-202408116-0 applies.
-		nanoSecondsExtra = nanoSecondsExtra * (timeIncrease) / (CosmicGameConstants.MILLION);
+		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MILLION;
 	}
 
 	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
@@ -223,8 +211,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 				numParticipants
 			)
 		);
-		// ToDo-202408116-0 applies.
-		uint256 offset = numParticipants - (_positionFromEnd) - (1);
+		uint256 offset = numParticipants - _positionFromEnd - 1;
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
@@ -242,8 +229,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		);
 
 		// Double the starting CST price for the next auction, with a minimum of 100 CST
-		// ToDo-202408116-0 applies.
-		startingBidPriceCST = Math.max(100e18, price) * (2);
+		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 
 		// Burn the CST tokens used for bidding
@@ -258,15 +244,12 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
-		// ToDo-202408116-0 applies.
-		uint256 fraction = uint256(1e6) - ((uint256(1e6) * (secondsElapsed)) / (duration));
-		// ToDo-202408116-0 applies.
-		return (fraction * (startingBidPriceCST)) / (1e6);
+		uint256 fraction = uint256(1e6) - (uint256(1e6) * secondsElapsed / duration);
+		return fraction * startingBidPriceCST / 1e6;
 	}
 
 	function auctionDuration() public view override returns (uint256, uint256) {
-		// ToDo-202408116-0 applies.
-		uint256 secondsElapsed = block.timestamp - (lastCSTBidTime);
+		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
 		return (secondsElapsed, CSTAuctionLength);
 	}
 

@@ -38,10 +38,8 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 			round: roundNum,
 			claimed: false
 		});
-		// ToDo-202408116-0 applies.
-		numDonatedNFTs = numDonatedNFTs/*.add*/ + (1);
-		// ToDo-202408116-0 applies.
-		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _tokenId, numDonatedNFTs/*.sub*/ - (1));
+		++ numDonatedNFTs;
+		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
 	}
 
 	function claimDonatedNFT(uint256 index) public override onlyRuntime {

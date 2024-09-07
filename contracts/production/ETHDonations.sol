@@ -18,8 +18,7 @@ abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 	function donateWithInfo(string calldata _data) external payable override nonReentrant onlyRuntime {
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		uint256 recordId = donateWithInfoNumRecords;
-		// ToDo-202408116-0 applies.
-		donateWithInfoNumRecords = donateWithInfoNumRecords/*.add*/ + (1);
+		++ donateWithInfoNumRecords;
 		donationInfoRecords[recordId] = CosmicGameConstants.DonationInfoRecord({
 			donor: msg.sender,
 			amount: msg.value,
