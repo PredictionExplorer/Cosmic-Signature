@@ -1,3 +1,5 @@
+@ ToDo-202409098-1 applies to the "hardhat" package version.
+
 @ [ToDo-202408312-0]
   https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
   It says:

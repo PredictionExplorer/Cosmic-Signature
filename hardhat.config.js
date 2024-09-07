@@ -59,13 +59,15 @@ const solidityCompilerPath =
 	solidityCompilerDefaultPath;
 
 // Comment-202409011 applies.
-// When changing this, remember to revisit Comment-202408026 and Comment-202408025.
-// const solidityVersion = "0.8.27";
+// [ToDo-202409098-1]
+// When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
+// [/ToDo-202409098-1]
 const solidityVersion = "0.8.26";
+// const solidityVersion = "0.8.27";
 
 // Comment-202409011 applies.
-// const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
 const solidityCompilerLongVersion = solidityVersion + "+commit.8a97fa7a.Linux.g++";
+// const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
 
 // #endregion
 // #region
@@ -260,13 +262,21 @@ const hardhatUserConfig = {
 			// [/Comment-202408026]
 			evmVersion: "cancun",
 
+			// [Comment-202408025]
+			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
+			// [/Comment-202408025]
+			// Is this going to become `true` by default in a future Solidity version?
+			// As of the 0.8.27, this is `false` by default.
+			viaIR: true,
+
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
 
 				// details: {
 				// 	yulDetails: {
-				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support recommends this setting.
+				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
+				// 		// this setting makes Hardhat work as well as possible.
 				// 		// Issue. But it appears to increase contract binary size.
 				// 		// todo-1 To be revisited.
 				// 		optimizerSteps: "u",
@@ -283,13 +293,6 @@ const hardhatUserConfig = {
 					],
 				},
 			},
-
-			// [Comment-202408025]
-			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
-			// [/Comment-202408025]
-			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.27, this is `false` by default.
-			viaIR: true,
 		},
 	},
 
