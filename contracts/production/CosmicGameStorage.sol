@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
 abstract contract CosmicGameStorage is ICosmicGameStorage {
@@ -11,9 +12,9 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// todo-1 Why not name this `randomWalkNFT`?
 	address public randomWalk;
 
-	// todo-1 This is a `CosmicSignature`address, right? Rename this to make it clear.
-	address public nft;
-
+	/// @notice Reference to the CosmicSignature NFT contract
+	CosmicSignature public nft;
+	
 	CosmicToken public token;
 	address public raffleWallet;
 	address public stakingWalletCST;

@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
+import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
@@ -49,7 +50,7 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	/// @notice Set the Cosmic Signature NFT contract address
 	/// @dev Only callable by the contract owner
 	/// @param _nft The new Cosmic Signature NFT contract address
-   function setNftContract(address _nft) external;
+   function setNftContract(ICosmicSignature _nft) external;
 
 	/// @notice Set the time increase factor
 	/// @dev Only callable by the contract owner

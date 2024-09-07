@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
+import { ICosmicSignature } from "./ICosmicSignature.sol";
 
 interface ISystemEvents {
 
@@ -39,7 +40,7 @@ interface ISystemEvents {
 
 	/// @notice Emitted when the Cosmic Signature address is changed
 	/// @param newCosmicSignature The new Cosmic Signature address
-	event CosmicSignatureAddressChanged(address newCosmicSignature);
+	event CosmicSignatureAddressChanged(ICosmicSignature newCosmicSignature);
 
 	/// @notice Emitted when the number of ETH raffle winners for bidding is changed
 	/// @param newNumRaffleETHWinnersBidding The new number of ETH raffle winners

@@ -13,9 +13,9 @@ import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
-import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	function claimPrize() external override nonReentrant onlyRuntime {
@@ -111,7 +111,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	function _distributeSpecialPrizes() internal {
 		// Endurance Champion Prize
 		if (enduranceChampion != address(0)) {
-			uint256 tokenId = CosmicSignature(nft).mint(enduranceChampion, roundNum);
+			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			try token.mint(enduranceChampion, erc20TokenReward) {
 			} catch  {
@@ -121,7 +121,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 		// Stellar Spender Prize
 		if (stellarSpender != address(0)) {
-			uint256 tokenId = CosmicSignature(nft).mint(stellarSpender, roundNum);
+			uint256 tokenId = nft.mint(stellarSpender, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			try token.mint(stellarSpender, erc20TokenReward) {
 			} catch  {
@@ -160,7 +160,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 				uint256(raffleEntropy) % numRaffleParticipants[roundNum]
 			];
 
-			uint256 tokenId = CosmicSignature(nft).mint(raffleWinner, roundNum);
+			uint256 tokenId = nft.mint(raffleWinner, roundNum);
 			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, tokenId, i, false, false);
 		}
 
@@ -171,7 +171,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 				_updateEntropy();
 				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStaker(raffleEntropy);
 
-				uint256 tokenId = CosmicSignature(nft).mint(rwalkWinner, roundNum);
+				uint256 tokenId = nft.mint(rwalkWinner, roundNum);
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
 			}
 		}
