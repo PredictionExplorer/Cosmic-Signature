@@ -41,10 +41,6 @@ contract CosmicGame is
 	ICosmicGame {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
-	// [ToDo-202408115-0]
-	// Commented out to suppress a compile error.
-	// [/ToDo-202408115-0]
-	// using SafeMathUpgradeable for uint256;
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	/// @notice Contract constructor
