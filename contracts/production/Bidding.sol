@@ -230,8 +230,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
-
-		uint256 userBalance = IERC20(token).balanceOf(msg.sender);
+		uint256 userBalance = token.balanceOf(msg.sender);
 		uint256 price = currentCSTPrice();
 		require(
 			userBalance >= price,
