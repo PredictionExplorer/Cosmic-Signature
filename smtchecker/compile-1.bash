@@ -29,6 +29,7 @@
 		export ENABLE_SMTCHECKER='true'
 
 		# Comment-202409012 applies.
+		# Slither executes the cleans in this order. We do the same.
 		'npx' 'hardhat' 'clean' && 'npx' 'hardhat' 'clean' '--global'
 
 		if [ $? -ne 0 ]; then
@@ -52,7 +53,7 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		time 'npx' 'hardhat' 'compile' &>> "${SMTCheckerOutputFolderName}/${UniqueIdNumber}.txt"
+		time 'npx' 'hardhat' 'compile' '--force' &>> "${SMTCheckerOutputFolderName}/${UniqueIdNumber}.txt"
 
 		if [ $? -ne 0 ]; then
 			echo 'Error. Hardhat Compile failed.'
