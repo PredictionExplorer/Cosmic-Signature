@@ -34,6 +34,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	bytes32 public entropy;
 
 	address public lastMinter = address(0);
+	// todo-0 Slither: RandomWalkNFT.lastMintTime is set pre-construction with a non-constant function or state variable: saleTime
 	uint256 public lastMintTime = saleTime;
 	uint256 public nextTokenId = 0;
 
@@ -88,6 +89,12 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		return saleTime - block.timestamp;
 	}
 
+	// todo-0 Slither dislikes some time comparisons.
+	// todo-0 Would it make sense to subtract the times as signed `int256` in most cases?
+	// todo-0 It could also make sense to do it from within an `unchecked` block.
+	// todo-0 All our times are supposed to be reasonable values that are close to `block.timestamp`.
+	// todo-0 `activationTime`, even though it's set externally, will also be reasonable, right?
+	// todo-0 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
 	function timeUntilWithdrawal() public view override returns (uint256) {
 		uint256 withdrawalTime = lastMintTime + withdrawalWaitSeconds;
 		if (withdrawalTime < block.timestamp) return 0;
@@ -122,6 +129,9 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		(bool success, ) = destination.call{ value: amount }("");
 		require(success, "Transfer failed.");
 
+		// todo-0 Slither dislikes it that we make external calls and then emit events.
+		// todo-0 In Slither report, see: reentrancy-events
+		// todo-0 Ask ChatGPT: In Solidity, is it ok to make an external call and then emit an event? Is it good practice?
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 

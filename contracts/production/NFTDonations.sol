@@ -12,17 +12,14 @@ import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
 abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, INFTDonations {
 	function donateNFT(IERC721 nftAddress, uint256 tokenId) external override nonReentrant onlyRuntime  {
-
 		nftAddress.safeTransferFrom(msg.sender, address(this), tokenId);
-
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: nftAddress,
 			tokenId: tokenId,
 			round: roundNum,
 			claimed: false
 		});
-
-		numDonatedNFTs += 1;
+		++ numDonatedNFTs;
 		emit NFTDonationEvent(msg.sender, nftAddress, roundNum, tokenId, numDonatedNFTs - 1);
 	}
 

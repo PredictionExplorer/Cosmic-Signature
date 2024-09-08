@@ -114,7 +114,7 @@ contract CosmicGame is
 
 		// Treat incoming ETH as a bid with default parameters
 		BidParams memory defaultParams;
-		// todo-1 Is this assignment redundant?
+		// todo-1 Is this assignment redundant? Replace it with an `assert`?
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);

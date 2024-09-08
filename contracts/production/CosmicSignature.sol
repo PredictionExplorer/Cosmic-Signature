@@ -24,6 +24,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	uint256 public numTokens = 0;
 
 	/// @notice Base URI for token metadata
+	/// todo-0 Slither is saying that this is never used.
 	string private _baseTokenURI;
 
 	/// @notice Address of the CosmicGameProxy contract.
