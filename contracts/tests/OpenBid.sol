@@ -27,7 +27,7 @@ import { ICosmicGame } from "../production/interfaces/ICosmicGame.sol";
 // #endregion
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
-abstract contract CosmicGameOpenBid is
+contract CosmicGameOpenBid is
 	OwnableUpgradeable,
 	UUPSUpgradeable,
 	CosmicGameStorage,
@@ -39,7 +39,7 @@ abstract contract CosmicGameOpenBid is
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
-		/*
+
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeERC20 for IERC20;
 	// [ToDo-202408115-0]
@@ -136,5 +136,4 @@ abstract contract CosmicGameOpenBid is
 		 _authorizeUpgrade(_newImplementation);
 		 StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
 	}
-	*/
 }

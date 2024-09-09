@@ -15,9 +15,10 @@ import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
 
-abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
+abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding  {
 
-	uint256 public timesBidPrice = 10; // multiples of bid price that open bid has to be
+	uint256 public timesBidPrice; // multiples of bid price that open bid has to be
+
 
 	struct BidParams {
 		/// @notice The message associated with the bid
@@ -301,10 +302,9 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		return usedRandomWalkNFTs[tokenId];
 	}
 
-	function setTimesBidPrice(bytes memory _data) external onlyOwner {
-		uint256 value = abi.decode(_data, (uint256));
-		timesBidPrice = value;
-		emit TimesBidPriceChangedEvent(value);
+	function setTimesBidPrice(uint256 _value) external onlyOwner {
+		timesBidPrice = _value;
+		emit TimesBidPriceChangedEvent(_value);
 	}
 
 }

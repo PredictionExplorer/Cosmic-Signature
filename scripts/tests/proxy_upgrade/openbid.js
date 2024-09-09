@@ -8,13 +8,13 @@ const bidParamsEncoding = {
 		{name: 'openbid',type: 'bool'},
 	]
 }; 
-async function getCosmicGameProxyContract() {
-	let cosmicGameProxyAddr = process.env.COSMIC_GAME_PROXY_ADDRESS;
+async function getCosmicGameProxyContract(contractName) {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
-		console.log("COSMIC_GAME_PROXY_ADDRESS environment variable does not contain contract address");
+		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await ethers.getContractAt("CosmicGameProxy", cosmicGameProxyAddr);
+	let cosmicGameProxy = await ethers.getContractAt(contractName, cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
 
@@ -27,22 +27,17 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicGameProxy = await getCosmicGameProxyContract("CosmicGameOpenBid");
 
-	let input = cosmicGameProxy.interface.encodeFunctionData("proxyCall",['0xffc81d97',0]); // access to timesBidPrice public state variable
-	let message = await cosmicGameProxy.provider.call({
-		to: cosmicGameProxy.address,
-		data: input
-
-	});
-	let res = cosmicGameProxy.interface.decodeFunctionResult("proxyCall",message);
-	let multiplier = ethers.utils.defaultAbiCoder.decode(["uint256"], res[0]);
-	multiplier = ethers.BigNumber.from(multiplier + "");
-	console.log("multiplier:");console.log(multiplier);
-	let bidParams = {msg:'bid test',rwalk:-1,'openbid':true};
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
+	let multiplier = await cosmicGameProxy.timesBidPrice()
+	let bidParams = {msg:'open bid',rwalk:-1,'openbid':true};
+	let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicGameProxy.getBidPrice();
-	await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice.mul(multiplier), gasLimit: 30000000 });
+	console.log("bidPrice before: "+bidPrice);
+	await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice * multiplier, gasLimit: 30000000 });
+	bidPrice = await cosmicGameProxy.getBidPrice();
+	console.log("bidPrice after: "+bidPrice);
+
 }
 main()
 	.then(() => process.exit(0))
