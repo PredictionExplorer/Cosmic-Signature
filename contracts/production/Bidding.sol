@@ -246,9 +246,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
-		// todo-1 Should we replace `1e6` with 'CosmicGameConstants.MILLION'?
-		uint256 fraction = uint256(1e6) - (uint256(1e6) * secondsElapsed / duration);
-		return fraction * startingBidPriceCST / 1e6;
+		uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
+		return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
 	}
 
 	function auctionDuration() public view override returns (uint256, uint256) {

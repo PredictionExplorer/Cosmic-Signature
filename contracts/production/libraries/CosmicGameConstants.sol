@@ -8,7 +8,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @dev These constants are used for initial state variables but may be updated later
 library CosmicGameConstants {
 	/// @notice Represents one million, useful for calculations involving millions
-	uint256 public constant MILLION = 10 ** 6;
+	uint256 public constant MILLION = 1e6;
 
 	/// @notice Default maximum length for bid messages
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
