@@ -89,17 +89,15 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 		// Staking
 		if (nft.totalSupply() > 0) {
-			(success, ) = stakingWalletCST.call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-			);
-			require(
-				success,
-				CosmicGameErrors.FundTransferFailed(
-					"Transfer to staking wallet failed.",
-					stakingAmount_,
-					stakingWalletCST
-				)
-			);
+			try stakingWalletCST.deposit{ value: stakingAmount_ }() {
+			} catch {
+				revert
+					CosmicGameErrors.FundTransferFailed(
+						"Transfer to staking wallet failed.",
+						stakingAmount_,
+						address(stakingWalletCST)
+					);
+			}
 		}
 
 		// Raffle

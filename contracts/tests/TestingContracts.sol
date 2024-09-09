@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
+import { IStakingWalletCST } from "../production/interfaces/IStakingWalletCST.sol";
 import { StakingWalletCST } from "../production/StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
 import { RaffleWallet } from "../production/RaffleWallet.sol";
@@ -113,8 +114,8 @@ contract SpecialCosmicGame is CosmicGame {
 	function setRaffleWalletRaw(address addr) external {
 		raffleWallet = addr;
 	}
-	function setStakingWalletCSTRaw(address addr) external {
-		stakingWalletCST = addr;
+	function setStakingWalletCSTRaw(IStakingWalletCST addr) external {
+		stakingWalletCST = StakingWalletCST(address(addr));
 	}
 	function setNftContractRaw(ICosmicSignature addr) external {
 		nft = CosmicSignature(address(addr));

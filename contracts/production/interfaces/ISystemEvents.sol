@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { IStakingWalletCST } from "./IStakingWalletCST.sol";
 
 interface ISystemEvents {
 
@@ -24,7 +25,7 @@ interface ISystemEvents {
 
 	/// @notice Emitted when the CST staking wallet address is changed
 	/// @param newStakingWalletCST The new CST staking wallet address
-	event StakingWalletCSTAddressChanged(address newStakingWalletCST);
+	event StakingWalletCSTAddressChanged(IStakingWalletCST newStakingWalletCST);
 
 	/// @notice Emitted when the RWalk staking wallet address is changed
 	/// @param newStakingWalletRWalk The new RWalk staking wallet address

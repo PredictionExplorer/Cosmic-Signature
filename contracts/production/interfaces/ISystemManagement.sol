@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { IStakingWalletCST } from "./IStakingWalletCST.sol";
 import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
@@ -30,7 +31,7 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	/// @notice Set the CST staking wallet address
 	/// @dev Only callable by the contract owner
 	/// @param _stakingWalletCST The new CST staking wallet address
-   function setStakingWalletCST(address _stakingWalletCST) external;
+   function setStakingWalletCST(IStakingWalletCST _stakingWalletCST) external;
 
 	/// @notice Set the RWalk staking wallet address
 	/// @dev Only callable by the contract owner

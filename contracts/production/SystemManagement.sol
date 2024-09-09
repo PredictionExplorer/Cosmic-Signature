@@ -10,6 +10,8 @@ import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
+import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
+import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
@@ -71,9 +73,9 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit RaffleWalletAddressChanged(_raffleWallet);
 	}
 
-	function setStakingWalletCST(address _stakingWalletCST) external override onlyOwner onlyMaintenance {
-		require(_stakingWalletCST != address(0), "Invalid address");
-		stakingWalletCST = _stakingWalletCST;
+	function setStakingWalletCST(IStakingWalletCST _stakingWalletCST) external override onlyOwner onlyMaintenance {
+		require(address(_stakingWalletCST) != address(0), "Invalid address");
+		stakingWalletCST = StakingWalletCST(address(_stakingWalletCST));
 		emit StakingWalletCSTAddressChanged(_stakingWalletCST);
 	}
 
