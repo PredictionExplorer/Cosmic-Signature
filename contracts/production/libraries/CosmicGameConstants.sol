@@ -10,6 +10,16 @@ library CosmicGameConstants {
 	/// @notice Represents one million, useful for calculations involving millions
 	uint256 public constant MILLION = 1e6;
 
+	uint256 public constant NANOSECONDS_PER_SECOND = 1e9;
+	uint256 public constant MICROSECONDS_PER_SECOND = 1e6;
+	uint256 public constant SECONDS_PER_MINUTE = 60;
+	uint256 public constant MINUTES_PER_HOUR = 60;
+	uint256 public constant HOURS_PER_DAY = 24;
+	uint256 public constant SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+	uint256 public constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * SECONDS_PER_HOUR;
+	uint256 public constant SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY;
+	uint256 public constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * SECONDS_PER_DAY;
+
 	/// @notice Default maximum length for bid messages
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
@@ -26,7 +36,7 @@ library CosmicGameConstants {
 	uint256 public constant MARKETING_REWARD = 15 * 1e18;
 
 	/// @notice Default auction length (12 hours)
-	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * 3600;
+	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * SECONDS_PER_HOUR;
 
 	/// @notice System mode constants
 	/// @dev These define the operational states of the CosmicGameProxy contract.
@@ -38,12 +48,12 @@ library CosmicGameConstants {
 	string public constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE";
 	string public constant ERR_STR_MODE_RUNTIME = "System in maintenance mode";
 
-	uint256 public constant INITIAL_NANOSECONDS_EXTRA = 3600 * 10 ** 9;
-	uint256 public constant INITIAL_TIME_INCREASE = 1000030;
-	uint256 public constant INITIAL_PRICE_INCREASE = 1010000;
+	uint256 public constant INITIAL_NANOSECONDS_EXTRA = NANOSECONDS_PER_HOUR;
+	uint256 public constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
+	uint256 public constant INITIAL_PRICE_INCREASE = MILLION + 10000;
 	uint256 public constant INITIAL_BID_AMOUNT_FRACTION = 4000;
-	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = 24 * 3600;
-	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = 24 * 3600;
+	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = SECONDS_PER_DAY;
+	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = SECONDS_PER_DAY;
 	uint256 public constant INITIAL_ACTIVATION_TIME = 1702512000;
 	uint256 public constant INITIAL_PRIZE_PERCENTAGE = 25;
 	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
