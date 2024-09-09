@@ -7,6 +7,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
+/// @dev This contract has already been deployed, so it makes little sense to refactor it.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 
