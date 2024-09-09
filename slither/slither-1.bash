@@ -20,7 +20,7 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		'slither' '--filter-paths' '\.\./contracts/tests/|\.\.node_modules/' '--show-ignored-findings' '--checklist' '..' > "${SlitherOutputFileName}"
+		'slither' '--filter-paths' '\.\./contracts/tests/|\.\.node_modules/' '--show-ignored-findings' '--checklist' '..' >> "${SlitherOutputFileName}"
 		# echo $?
 
 		# Even when there appear to be no errors, exit code is 255.
