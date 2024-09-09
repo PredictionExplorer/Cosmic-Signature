@@ -17,6 +17,8 @@ contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, Govern
 		IVotes _token
 	)
 		Governor("CosmicDAO")
+		// todo-0 Magic numbers hardcoded.
+		// todo-0 Besides, a day contains a different number of seconds.
 		GovernorSettings(7200 /* 1 day */, 216000 /* 1 month */, 100e18)
 		GovernorVotes(_token)
 		GovernorVotesQuorumFraction(4)

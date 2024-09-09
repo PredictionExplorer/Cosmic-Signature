@@ -17,10 +17,9 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// todo-1 Rewrite this as `(1 ETHER) / 1_000`?
 	uint256 public price = 10 ** 15; // Price starts at .001 eth
 
-	// How long to wait until the last minter can withdraw
-	// todo-1 Should this be a `constant`?
+	/// @notice How long to wait until the last minter can withdraw (30 days)
 	// todo-1 Should this be in `CosmicGameConstants`?
-	uint256 public withdrawalWaitSeconds = 3600 * 24 * 30; // 1 month
+	uint256 public constant withdrawalWaitSeconds = 60 * 60 * 24 * 30;
 
 	// Seeds
 	mapping(uint256 => bytes32) public seeds;

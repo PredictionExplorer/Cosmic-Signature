@@ -229,8 +229,12 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		);
 
 		// Double the starting CST price for the next auction, with a minimum of 100 CST
-		// todo-1 Use `unchecked` here?
-		// todo-1 Magic number hardcoded.
+		// todo-0 Use `unchecked` here?
+		// todo-0 Magic number hardcoded.
+		// todo-0 Find all "e18".
+		// todo-0 could you update the code with constant labels? for 100e18 we need a new constant,
+		// todo-0 and it should actually be parametrizable, so we need to add a new state variable and copy it during initializer().
+		// todo-0 (just like everything else, for example percentages)
 		startingBidPriceCST = Math.max(100e18, price) * 2;
 		lastCSTBidTime = block.timestamp;
 
