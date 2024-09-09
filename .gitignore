@@ -16,6 +16,9 @@ node_modules
 # Hardhat Ignition default folder for deployments against a local node
 /ignition/deployments/chain-31337
 
+# Comment-202409124 applies.
+/solhint/check-1-output.txt
+
 # Comment-202409112 applies.
 /slither/slither-1-output.md
 
