@@ -8,6 +8,8 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
 
 /// @dev Extends ERC721Enumerable and includes custom minting and metadata management
+/// todo-0 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
+/// todo-0 At least write a comment here and near RandomWalkNFT.
 contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	// #region State
 
@@ -24,6 +26,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	uint256 public numTokens = 0;
 
 	/// @notice Base URI for token metadata
+	/// todo-0 Slither is saying that this is never used.
 	string private _baseTokenURI;
 
 	/// @notice Address of the CosmicGameProxy contract.

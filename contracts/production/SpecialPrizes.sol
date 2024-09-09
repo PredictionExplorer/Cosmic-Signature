@@ -11,8 +11,7 @@ abstract contract SpecialPrizes is CosmicGameStorage, ISpecialPrizes {
 			return (address(0), 0);
 		}
 
-		// ToDo-202408116-0 applies.
-		uint256 lastBidTime = block.timestamp/*.sub*/ - (bidderInfo[roundNum][lastBidder].lastBidTime);
+		uint256 lastBidTime = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
 		if (lastBidTime > enduranceChampionDuration) {
 			return (lastBidder, lastBidTime);
 		}

@@ -85,7 +85,7 @@ contract BidderContract is IERC721Receiver {
 		if (bal > 0) {
 			raffleWallet.withdraw();
 		}
-		CosmicSignature nft = CosmicSignature(cosmicGame.nft());
+		CosmicSignature nft = cosmicGame.nft();
 		(bool success, ) = creator.call{ value: address(this).balance }("");
 		success = false;
 		uint256 totalSupply = nft.totalSupply();

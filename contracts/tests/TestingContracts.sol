@@ -3,10 +3,12 @@ pragma solidity 0.8.26;
 
 import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
+import { IStakingWalletCST } from "../production/interfaces/IStakingWalletCST.sol";
 import { StakingWalletCST } from "../production/StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
 import { RaffleWallet } from "../production/RaffleWallet.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
+import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "../production/CosmicSignature.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
@@ -43,6 +45,10 @@ contract BrokenStaker {
 	bool blockDeposits = false;
 	StakingWalletCST stakingWalletCST;
 
+	// todo-1 Should `nft_` type be `CosmicSignature`?
+	// todo-1 Is `nft_` the same as `sw_.nft()`?
+	// todo-1 But these considerations are prbably not important in this test code.
+	// todo-1 At least explain in a comment.
 	constructor(StakingWalletCST sw_, address nft_) {
 		stakingWalletCST = sw_;
 		IERC721(nft_).setApprovalForAll(address(sw_), true);
@@ -83,11 +89,11 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 		// returns all the assets to the creator of the contract and self-destroys
 
 		// CosmicSignature tokens
-		uint256 cosmicSupply = CosmicSignature(nft).totalSupply();
+		uint256 cosmicSupply = nft.totalSupply();
 		for (uint256 i = 0; i < cosmicSupply; i++) {
-			address owner = CosmicSignature(nft).ownerOf(i);
+			address owner = nft.ownerOf(i);
 			if (owner == address(this)) {
-				CosmicSignature(nft).transferFrom(address(this), this.owner(), i);
+				nft.transferFrom(address(this), this.owner(), i);
 			}
 		}
 		cosmicSupply = token.balanceOf(address(this));
@@ -108,11 +114,11 @@ contract SpecialCosmicGame is CosmicGame {
 	function setRaffleWalletRaw(address addr) external {
 		raffleWallet = addr;
 	}
-	function setStakingWalletCSTRaw(address addr) external {
-		stakingWalletCST = addr;
+	function setStakingWalletCSTRaw(IStakingWalletCST addr) external {
+		stakingWalletCST = StakingWalletCST(address(addr));
 	}
-	function setNftContractRaw(address addr) external {
-		nft = addr;
+	function setNftContractRaw(ICosmicSignature addr) external {
+		nft = CosmicSignature(address(addr));
 	}
 	function setTokenContractRaw(ICosmicToken addr) external {
 		token = CosmicToken(address(addr));
@@ -135,7 +141,9 @@ contract SpecialCosmicGame is CosmicGame {
 		}
 	}
 	function mintCST(address to, uint256 roundNum) external {
+		// SMTChecker doesn't support low level calls, but maybe it doesn't matter in this test code.
 		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
+
 		if (!success) {
 			assembly {
 				let ptr := mload(0x40)
@@ -147,6 +155,8 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 }
 contract TestStakingWalletCST is StakingWalletCST {
+	// todo-1 Is `nft_` the same as `game_.nft()`?
+	// todo-1 At least explain in a comment.
 	constructor(CosmicSignature nft_, address game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
 
 	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'

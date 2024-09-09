@@ -1,0 +1,7 @@
+    How to execute SolHint.
+
+@ If necessary, edit "../.solhint.json".
+
+@ Execute `./check-1.bash`.
+
+@ After the script finishes, review its report file, which name is specified near Comment-202409124.

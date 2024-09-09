@@ -9,11 +9,11 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 abstract contract BidStatistics is CosmicGameStorage, IBidStatistics {
 	/// @notice Update the endurance champion based on the current bid
 	/// @dev This function is called for each bid to potentially update the endurance champion
+	/// todo-0 Slither reports that this function is never used.
 	function _updateEnduranceChampion() internal {
 		if (lastBidder == address(0)) return;
 
-		// ToDo-202408116-0 applies.
-		uint256 lastBidDuration = block.timestamp/*.sub*/ - (bidderInfo[roundNum][lastBidder].lastBidTime);
+		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
 		if (lastBidDuration > enduranceChampionDuration) {
 			enduranceChampionDuration = lastBidDuration;
 			enduranceChampion = lastBidder;

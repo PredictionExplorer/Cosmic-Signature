@@ -1,18 +1,17 @@
 {
 	"extends": "solhint:recommended",
 	"rules": {
-		"const-name-snakecase": "warn",
-		"contract-name-camelcase": "warn",
-		"event-name-camelcase": "warn",
-		"func-name-mixedcase": "warn",
 		"func-param-name-mixedcase": "warn",
+		"interface-starts-with-i": "warn",
 		"modifier-name-mixedcase": "warn",
 		"private-vars-leading-underscore": "warn",
-		"var-name-mixedcase": "warn",
-		"use-forbidden-name": "warn",
-		"imports-on-top": "warn",
 		"ordering": "warn",
-		"visibility-modifier-order": "warn",
+		"gas-calldata-parameters": "warn",
+		"gas-increment-by-one": "warn",
+		"gas-length-in-loops": "warn",
+		"gas-small-strings": "warn",
+		"gas-struct-packing": "warn",
+		"comprehensive-interface": "warn",
 		"func-visibility": [ "warn", { "ignoreConstructors": true } ]
 	}
 }

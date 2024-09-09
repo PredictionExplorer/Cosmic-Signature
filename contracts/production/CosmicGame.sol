@@ -40,11 +40,9 @@ contract CosmicGame is
 	SpecialPrizes,
 	ICosmicGame {
 	// using SafeERC20Upgradeable for IERC20Upgradeable;
+	// todo-0 Should we use this for `ERC20` instead, to give SMTChecker more info?
+	// todo-0 But it won't compile then, right?
 	using SafeERC20 for IERC20;
-	// [ToDo-202408115-0]
-	// Commented out to suppress a compile error.
-	// [/ToDo-202408115-0]
-	// using SafeMathUpgradeable for uint256;
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	/// @notice Contract constructor
@@ -116,7 +114,7 @@ contract CosmicGame is
 
 		// Treat incoming ETH as a bid with default parameters
 		BidParams memory defaultParams;
-		// todo-1 Is this assignment redundant?
+		// todo-1 Is this assignment redundant? Replace it with an `assert`?
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);

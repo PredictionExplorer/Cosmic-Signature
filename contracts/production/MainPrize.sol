@@ -13,9 +13,9 @@ import { StakingWalletCST } from "./StakingWalletCST.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
-import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	function claimPrize() external override nonReentrant onlyRuntime {
@@ -26,8 +26,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 
 		address winner;
-		// ToDo-202408116-0 applies.
-		if (block.timestamp/*.sub*/ - (prizeTime) < timeoutClaimPrize) {
+		if (block.timestamp - prizeTime < timeoutClaimPrize) {
 			// Only the last bidder can claim within the timeoutClaimPrize period
 			require(
 				msg.sender == lastBidder,
@@ -35,8 +34,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 					"Only the last bidder can claim the prize during the first 24 hours.",
 					lastBidder,
 					msg.sender,
-					// ToDo-202408116-0 applies.
-					timeoutClaimPrize/*.sub*/ - (block.timestamp/*.sub*/ - (prizeTime))
+					timeoutClaimPrize - (block.timestamp - prizeTime)
 				)
 			);
 			winner = msg.sender;
@@ -61,8 +59,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 		_roundEndResets();
 		emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
-		// ToDo-202408116-0 applies.
-		roundNum = roundNum/*.add*/ + (1);
+		++ roundNum;
 	}
 
 	/// @notice Distribute prizes to various recipients
@@ -91,18 +88,16 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity));
 
 		// Staking
-		if (IERC721Enumerable(nft).totalSupply() > 0) {
-			(success, ) = stakingWalletCST.call{ value: stakingAmount_ }(
-				abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-			);
-			require(
-				success,
-				CosmicGameErrors.FundTransferFailed(
-					"Transfer to staking wallet failed.",
-					stakingAmount_,
-					stakingWalletCST
-				)
-			);
+		if (nft.totalSupply() > 0) {
+			try stakingWalletCST.deposit{ value: stakingAmount_ }() {
+			} catch {
+				revert
+					CosmicGameErrors.FundTransferFailed(
+						"Transfer to staking wallet failed.",
+						stakingAmount_,
+						address(stakingWalletCST)
+					);
+			}
 		}
 
 		// Raffle
@@ -114,9 +109,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	function _distributeSpecialPrizes() internal {
 		// Endurance Champion Prize
 		if (enduranceChampion != address(0)) {
-			uint256 tokenId = CosmicSignature(nft).mint(enduranceChampion, roundNum);
-			// ToDo-202408116-0 applies.
-			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
+			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
+			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			try token.mint(enduranceChampion, erc20TokenReward) {
 			} catch  {
 			}
@@ -125,9 +119,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 		// Stellar Spender Prize
 		if (stellarSpender != address(0)) {
-			uint256 tokenId = CosmicSignature(nft).mint(stellarSpender, roundNum);
-			// ToDo-202408116-0 applies.
-			uint256 erc20TokenReward = erc20RewardMultiplier/*.mul*/ * (numRaffleParticipants[roundNum]);
+			uint256 tokenId = nft.mint(stellarSpender, roundNum);
+			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			try token.mint(stellarSpender, erc20TokenReward) {
 			} catch  {
 			}
@@ -147,8 +140,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
 	function _distributeRafflePrizes(uint256 raffleAmount_) internal {
 		// Distribute ETH prizes
-		// ToDo-202408116-0 applies.
-		uint256 perWinnerAmount = raffleAmount_/*.div*/ / (numRaffleETHWinnersBidding);
+		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner = raffleParticipants[roundNum][
@@ -166,7 +158,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 				uint256(raffleEntropy) % numRaffleParticipants[roundNum]
 			];
 
-			uint256 tokenId = CosmicSignature(nft).mint(raffleWinner, roundNum);
+			uint256 tokenId = nft.mint(raffleWinner, roundNum);
 			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, tokenId, i, false, false);
 		}
 
@@ -177,7 +169,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 				_updateEntropy();
 				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStaker(raffleEntropy);
 
-				uint256 tokenId = CosmicSignature(nft).mint(rwalkWinner, roundNum);
+				uint256 tokenId = nft.mint(rwalkWinner, roundNum);
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
 			}
 		}
@@ -195,10 +187,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
 		// The auction should last 12 hours longer than the amount of time we add after every bid
-		// ToDo-202408116-0 applies.
-		CSTAuctionLength = uint256(12)/*.mul*/ * (nanoSecondsExtra)/*.div*/ / (1_000_000_000);
-		// ToDo-202408116-0 applies.
-		bidPrice = address(this).balance/*.div*/ / (initialBidAmountFraction);
+		CSTAuctionLength = uint256(12) * nanoSecondsExtra / 1_000_000_000;
+		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
 		stellarSpenderAmount = 0;
 		enduranceChampion = address(0);
@@ -211,36 +201,30 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	}
 
 	function prizeAmount() public view override returns (uint256) {
-		// ToDo-202408116-0 applies.
-		return address(this).balance/*.mul*/ * (prizePercentage)/*.div*/ / (100);
+		return address(this).balance * prizePercentage / 100;
 	}
 
 	function charityAmount() public view override returns (uint256) {
-		// ToDo-202408116-0 applies.
-		return address(this).balance/*.mul*/ * (charityPercentage)/*.div*/ / (100);
+		return address(this).balance * charityPercentage / 100;
 	}
 
 	function raffleAmount() public view override returns (uint256) {
-		// ToDo-202408116-0 applies.
-		return address(this).balance/*.mul*/ * (rafflePercentage)/*.div*/ / (100);
+		return address(this).balance * rafflePercentage / 100;
 	}
 
 	function stakingAmount() public view override returns (uint256) {
-		// ToDo-202408116-0 applies.
-		return address(this).balance/*.mul*/ * (stakingPercentage)/*.div*/ / (100);
+		return address(this).balance * stakingPercentage / 100;
 	}
 
    /// todo-0 Does this function belong to `SytemManagement`?
 	function timeUntilActivation() external view override returns (uint256) {
 		if (activationTime < block.timestamp) return 0;
-		// ToDo-202408116-0 applies.
-		return activationTime/*.sub*/ - (block.timestamp);
+		return activationTime - block.timestamp;
 	}
 
 	function timeUntilPrize() external view override returns (uint256) {
 		if (prizeTime < block.timestamp) return 0;
-		// ToDo-202408116-0 applies.
-		return prizeTime/*.sub*/ - (block.timestamp);
+		return prizeTime - block.timestamp;
 	}
 
 	function getWinnerByRound(uint256 round) public view override returns (address) {
