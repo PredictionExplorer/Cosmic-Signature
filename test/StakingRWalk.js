@@ -81,6 +81,13 @@ describe("Staking RandomWalk tests", function () {
 		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionEvent").topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
+
+		expect(await newStakingWalletRWalk.wasTokenUsed(0)).to.equal(true);
+		expect(await newStakingWalletRWalk.stakerByTokenId(0)).to.equal(owner.address);
+		expect(await newStakingWalletRWalk.stakerByTokenId(99)).to.equal(ethers.ZeroAddress);
+		expect(await newStakingWalletRWalk.lastActionIdByTokenId(0)).to.equal(0);
+		expect(await newStakingWalletRWalk.lastActionIdByTokenId(99)).to.equal(-2);
+
 		await ethers.provider.send("evm_increaseTime", [6000]);
 		await ethers.provider.send("evm_mine");
 		await newStakingWalletRWalk.unstake(0);

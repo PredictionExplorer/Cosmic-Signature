@@ -126,21 +126,26 @@ describe('Staking CST tests', function () {
 		const CosmicSignature = await ethers.getContractFactory('CosmicSignature');
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		await newCosmicSignature.mint(owner.address, 0);
+		await newCosmicSignature.mint(owner.address, 0);
 
 		const StakingWalletCST = await ethers.getContractFactory('StakingWalletCST');
 		let newStakingWalletCST = await StakingWalletCST.deploy(
 			await newCosmicSignature.getAddress(),
-			await cosmicGameProxy.getAddress(),
+			await owner.address,
 			await cBidder.getAddress()
 		);
 		await newStakingWalletCST.waitForDeployment();
 		await newCosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 
-		let tx = await newStakingWalletCST.stake(0);
+		let tx = await newStakingWalletCST.stakeMany([0,1]);
 		let receipt = await tx.wait();
 		let topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
+
+		expect(await newStakingWalletCST.lastActionIdByTokenId(0)).to.equal(0);
+		expect(await newStakingWalletCST.stakerByTokenId(0)).to.equal(owner.address);
+		expect(await newStakingWalletCST.stakerByTokenId(99n)).to.equal(ethers.ZeroAddress);
 		await ethers.provider.send('evm_increaseTime', [6000]);
 		await ethers.provider.send('evm_mine');
 		await newStakingWalletCST.unstake(0);
@@ -149,6 +154,13 @@ describe('Staking CST tests', function () {
 			contractErrors,
 			'TokenAlreadyUnstaked'
 		);
+		expect(await newStakingWalletCST.wasTokenUsed(0)).to.equal(true);
+
+		await newStakingWalletCST.deposit({ value: ethers.parseEther('1') });
+		await newStakingWalletCST.deposit({ value: ethers.parseEther('2') });
+		let d = await newStakingWalletCST.ETHDeposits(0);
+		expect(d.depositAmount).to.equal(ethers.parseEther('3'));
+		expect(await newStakingWalletCST.numETHDeposits()).to.equal(1n);
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
@@ -312,8 +324,8 @@ describe('Staking CST tests', function () {
 		await ethers.provider.send('evm_mine');
 
 		await cosmicGameProxy.depositStakingCST({ value: ethers.parseEther('2') });
-		expect(await newStakingWalletCST.unstake(0));
-		expect(await newStakingWalletCST.claimManyRewards([0], [0]));
+		await newStakingWalletCST.unstake(0);
+		await newStakingWalletCST.claimManyRewards([0], [0]);
 		await expect(newStakingWalletCST.claimManyRewards([0], [0])).to.be.revertedWithCustomError(
 			contractErrors,
 			'DepositAlreadyClaimed'
@@ -373,7 +385,7 @@ describe('Staking CST tests', function () {
 		await ethers.provider.send('evm_mine');
 
 		await cosmicGameProxy.depositStakingCST({ value: ethers.parseEther('2') });
-		expect(await newStakingWalletCST.unstake(0));
+		await newStakingWalletCST.unstake(0);
 		await expect(newStakingWalletCST.connect(addr1).claimManyRewards([0], [0])).to.be.revertedWithCustomError(
 			contractErrors,
 			'AccessError'
@@ -696,8 +708,8 @@ describe('Staking CST tests', function () {
 			cosmicGameImplementation
 		} = await basicDeployment(owner, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false, false);
 		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
-		/*
-		 * THIS TEST IS BROKEN for unknown reasons (hardhat trace hangs, no way to know, pending for deep debugging)
+		
+		// * THIS TEST IS BROKEN for unknown reasons (hardhat trace hangs, no way to know, pending for deep debugging)
 		const NewStakingWalletCST = await ethers.getContractFactory('TestStakingWalletCST');
 		let newStakingWalletCST = await NewStakingWalletCST.deploy(
 			await cosmicSignature.getAddress(),
@@ -732,12 +744,14 @@ describe('Staking CST tests', function () {
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		var bidParams = { msg: '', rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await expect(cosmicGameProxy.bid(params, { value: bidPrice }));
+		await cosmicGameProxy.bid(params, { value: bidPrice });
 
+		await ethers.provider.send('evm_mine');
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 		await ethers.provider.send('evm_mine');
 
+		prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await cosmicGameProxy.claimPrize();
 		
 		await cosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
@@ -772,7 +786,6 @@ describe('Staking CST tests', function () {
 		let contractBalance = await ethers.provider.getBalance(await stakingWalletCST.getAddress());
 		let m = await stakingWalletCST.modulo();
 		expect(m).to.equal(contractBalance);
-		*/
 	});
 	it('User stakes his 10 CosmicSignature tokens and gets all 10 tokens back after claim', async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -827,11 +840,14 @@ describe('Staking CST tests', function () {
 		await ethers.provider.send('evm_increaseTime', [6000]);
 		await ethers.provider.send('evm_mine');
 
-		for (let i = 0; i < 10; i++) {
+		for (let i = 4; i < 10; i++) {
 			await newStakingWalletCST.unstake(i);
 			let o = await newCosmicSignature.ownerOf(i);
 			expect(o).to.equal(owner.address);
 		}
+		await newStakingWalletCST.unstakeClaim(0,0);
+		await newStakingWalletCST.unstakeClaimMany([1],[1],[0]);
+		await newStakingWalletCST.unstakeMany([2,3]);
 	});
 	it('StakingWallet is properly distributing prize amount() (modulo check)', async function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
@@ -906,6 +922,8 @@ describe('Staking CST tests', function () {
 		let moduloInRound = depositRecord.depositAmount % depositRecord.numStaked;
 		expect(parsed_log.args.amount).to.equal(previousStakingAmount);
 		expect(parsed_log.args.modulo).to.equal(moduloInRound);
+
+		await stakingWalletCST.moduloToCharity();
 	});
 	it('The random picking of winner from StakingWallet is really random', async function () {
 		let signers = await ethers.getSigners();
@@ -970,7 +988,7 @@ describe('Staking CST tests', function () {
 		// then we consider randomness works. Sample size is 100 (25% of the population)
 		{
 			let luckyStakers = {};
-			let numSamples = 100;
+			let numSamples = 1000;
 			for (let i = 0; i < numSamples; i++) {
 				let r = Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, "0")
 				let luckyAddr = await newStakingWalletRWalk.pickRandomStaker(ethers.hashMessage('0x'+r));

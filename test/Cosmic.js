@@ -51,20 +51,22 @@ describe("Cosmic Set1", function () {
 		expect(await cosmicToken.totalSupply()).to.equal(0);
 	});
 	it("Should be possible to bid", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		expect(await cosmicGameProxy.prizeAmount()).to.equal((donationAmount * 25n)/100n);
+		let echamp = await cosmicGameProxy.currentEnduranceChampion();
+		expect(echamp[0]).to.equal(ethers.ZeroAddress);
 		var bidParams = { msg: "", rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: 1 })).to.be.revertedWithCustomError(contractErrors,"BidPrice");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
 		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice - 1n })).to.be.revertedWithCustomError(contractErrors,"CallToBusinessLogicFailed");
+		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice - 1n })).to.be.revertedWithCustomError(contractErrors,"BidPrice");
 
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
 		expect(prizeTime).to.equal(0);
@@ -75,9 +77,14 @@ describe("Cosmic Set1", function () {
 		const contractBalance = await ethers.provider.getBalance(cosmicGameProxy.getAddress());
 		expect(contractBalance).to.equal(donationAmount+bidPrice);
 
+		await ethers.provider.send("evm_increaseTime",[100]);
+		await ethers.provider.send("evm_mine");
+		echamp =await cosmicGameProxy.currentEnduranceChampion();
+		expect(echamp[0]).to.equal(addr1.address);
+
 		let nanoSecondsExtra = await cosmicGameProxy.nanoSecondsExtra();
 		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		expect(prizeTime).to.equal((nanoSecondsExtra/ 1000000000n)+(24n * 3600n));
+		expect(prizeTime).to.equal((nanoSecondsExtra/ 1000000000n)+(24n * 3600n)-100n);
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
@@ -88,7 +95,7 @@ describe("Cosmic Set1", function () {
 			((nanoSecondsExtra
 				/1000000000n)
 				*2n)
-				+(24n * 3600n - 1n),
+				+(24n * 3600n - 1n -100n),
 		);
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -100,7 +107,7 @@ describe("Cosmic Set1", function () {
 			((nanoSecondsExtra
 				/1000000000n)
 				*3n)
-				+(24n * 3600n - 2n),
+				+(24n * 3600n - 2n -100n),
 		); // not super clear why we are subtracting 2 here and 1 above
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
 
@@ -120,10 +127,26 @@ describe("Cosmic Set1", function () {
 
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"LastBidderOnly");
 
+		bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
+		await ethers.provider.send("evm_increaseTime",[100]);
+		await ethers.provider.send("evm_mine");
+
+		bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
+		await ethers.provider.send("evm_increaseTime",[10]);
+		await ethers.provider.send("evm_mine");
+
+		echamp =await cosmicGameProxy.currentEnduranceChampion();
+		expect(echamp[0]).to.equal(addr2.address);
+
+		prizeTime = await cosmicGameProxy.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)+1]);
+		await ethers.provider.send("evm_mine");
 		let prizeAmount = await cosmicGameProxy.prizeAmount();
 		let charityAmount = await cosmicGameProxy.charityAmount();
 		let raffleAmount = await cosmicGameProxy.raffleAmount();
-		await cosmicGameProxy.connect(addr2).claimPrize();
+		await cosmicGameProxy.connect(addr3).claimPrize();
 		let prizeAmount2 = await cosmicGameProxy.prizeAmount();
 		let balance = await ethers.provider.getBalance(await cosmicGameProxy.getAddress());
 		let expectedprizeAmount = (balance * 25n) / 100n;
@@ -139,6 +162,7 @@ describe("Cosmic Set1", function () {
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
 
+		prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		await ethers.provider.send("evm_mine");
 
@@ -556,6 +580,11 @@ describe("Cosmic Set1", function () {
 
 		await cosmicGameProxy.connect(owner).setMaxMessageLength(1234567890n);
 		expect(await cosmicGameProxy.maxMessageLength()).to.equal(1234567890n);
+
+		await cosmicGameProxy.connect(owner).setErc20RewardMultiplier(99n);
+		expect(await cosmicGameProxy.erc20RewardMultiplier()).to.equal(99n);
+
+		expect(await cosmicGameProxy.getSystemMode()).to.equal(2);
 
 		await expect(cosmicGameProxy.connect(owner).prepareMaintenance()).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode");
 		await cosmicGameProxy.setRuntimeMode();
