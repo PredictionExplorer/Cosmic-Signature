@@ -40,6 +40,7 @@ contract BrokenCharity {
 		require(false, "Test deposit failed");
 	}
 }
+/*
 contract BrokenStaker {
 	// used to test revert() statements in StakingWallet
 	bool blockDeposits = false;
@@ -77,7 +78,70 @@ contract BrokenStaker {
 	function startBlockingDeposits() external {
 		blockDeposits = true;
 	}
+}*/
+contract BrokenStaker {
+	// used to test revert() statements in StakingWallet
+	bool blockDeposits = false;
+	StakingWalletCST stakingWalletCST;
+
+	constructor() {	}
+
+	receive() external payable {
+		require(!blockDeposits, "I am not accepting deposits");
+	}
+
+	function deposit() external payable {
+		/// we don't call it doDeposit() because this method is called from CosmicGame.sol
+		require(!blockDeposits, "I am not accepting deposits");
+		stakingWalletCST.deposit();
+	}
+
+	function doStake(uint256 tokenId) external {
+		stakingWalletCST.stake(tokenId);
+	}
+
+	function doUnstake(uint256 actionId) external {
+		stakingWalletCST.unstake(actionId);
+	}
+
+	function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
+		uint256[] memory actions = new uint256[](1);
+		uint256[] memory deposits = new uint256[](1);
+		actions[0] = stakeActionId;
+		deposits[0] = depositId;
+		stakingWalletCST.claimManyRewards(actions, deposits);
+	}
+
+	function startBlockingDeposits() external {
+		blockDeposits = true;
+	}
+	function setStakingWallet(address sw_) external {
+		stakingWalletCST = StakingWalletCST(sw_);
+	}
+	function doSetApprovalForAll(address nft_) external {
+		IERC721(nft_).setApprovalForAll(address(stakingWalletCST), true);
+	}
 }
+/*
+contract BrokenStaker is StakingWalletCST {
+	// used to test revert() statements in StakingWallet
+	bool blockDeposits = false;
+
+	constructor(address game_, address nft_, address charity_) StakingWalletCST(CosmicSignature(nft_),game_,charity_){
+	}
+
+	receive() external payable {
+		require(!blockDeposits, "I am not accepting deposits");
+	}
+	function deposit() external payable override {
+		require(!blockDeposits, "I am not accepting deposits");
+		super.deposit();
+	}
+
+	function startBlockingDeposits() external {
+		blockDeposits = true;
+	}
+}*/
 
 contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
