@@ -625,6 +625,7 @@ describe('Staking CST tests', function () {
 
 		const CosmicSignature = await ethers.getContractFactory('CosmicSignature');
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		newCosmicSignature.waitForDeployment();
 		const StakingWalletCST = await ethers.getContractFactory('StakingWalletCST');
 		let newStakingWalletCST = await StakingWalletCST.deploy(
 			await newCosmicSignature.getAddress(),
@@ -638,8 +639,10 @@ describe('Staking CST tests', function () {
 		await newCosmicSignature.connect(addr1).setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 
 		const BrokenStaker = await ethers.getContractFactory('BrokenStaker');
-		let brokenStaker = await BrokenStaker.deploy(await newStakingWalletCST.getAddress(), await newCosmicSignature.getAddress());
+		let brokenStaker = await BrokenStaker.deploy();
 		await brokenStaker.waitForDeployment();
+		await brokenStaker.setStakingWallet(await newStakingWalletCST.getAddress());
+		await brokenStaker.doSetApprovalForAll(await newCosmicSignature.getAddress());
 		await newCosmicSignature.setApprovalForAll(await stakingWalletCST.getAddress(), true);
 
 		await newCosmicSignature.mint(await brokenStaker.getAddress(), 0);
@@ -669,6 +672,74 @@ describe('Staking CST tests', function () {
 			contractErrors,
 			'FundTransferFailed'
 		);
+	});
+	it('A failure to deposit() to StakingWalletCST shouldn\'t abort the process of claiming main prize', async function () {
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWalletCST,
+			stakingWalletRWalk
+		} = await basicDeploymentAdvanced(
+			'SpecialCosmicGame',
+			owner,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			false
+		);
+		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+
+		const CosmicSignature = await ethers.getContractFactory('CosmicSignature');
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		newCosmicSignature.waitForDeployment();
+
+		const BrokenStaker = await ethers.getContractFactory('BrokenStaker');
+		let brokenStaker = await BrokenStaker.deploy();
+		await brokenStaker.waitForDeployment();
+
+		const StakingWalletCST = await ethers.getContractFactory('StakingWalletCST');
+		let newStakingWalletCST = await StakingWalletCST.deploy(
+			await newCosmicSignature.getAddress(),
+			await brokenStaker.getAddress(),
+			addr1.address
+		);
+		await newStakingWalletCST.waitForDeployment();
+		await brokenStaker.setStakingWallet(await newStakingWalletCST.getAddress());
+		await brokenStaker.doSetApprovalForAll(await newCosmicSignature.getAddress());
+		await brokenStaker.startBlockingDeposits();
+
+		await cosmicGameProxy.setStakingWalletCST(await newStakingWalletCST.getAddress());
+		await newCosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
+		await newCosmicSignature.connect(addr1).setApprovalForAll(await newStakingWalletCST.getAddress(), true);
+
+		await cosmicGameProxy.setStakingWalletCST(brokenStaker);
+		await cosmicGameProxy.setRuntimeMode();
+
+		await newCosmicSignature.setApprovalForAll(await stakingWalletCST.getAddress(), true);
+		await newCosmicSignature.mint(await brokenStaker.getAddress(), 0);
+		await newCosmicSignature.mint(addr1.address, 0);
+
+		await newStakingWalletCST.connect(addr1).stake(1); // we need to stake, otherwise charity will get the deposit
+		await ethers.provider.send('evm_increaseTime', [6000]); // prepare for unstake
+
+		let bidPrice = await cosmicGameProxy.getBidPrice();
+		var bidParams = { msg: '', rwalk: -1 };
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		await cosmicGameProxy.bid(params, { value: bidPrice });
+
+		let prizeTime = await cosmicGameProxy.timeUntilPrize();
+		await ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		await ethers.provider.send('evm_mine');
+
+		await expect(cosmicGameProxy.claimPrize()).not.to.be.reverted;	
+
 	});
 	it('Changing charity address works', async function () {
 		const {
