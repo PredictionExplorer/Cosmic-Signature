@@ -187,7 +187,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
 		// The auction should last 12 hours longer than the amount of time we add after every bid
-		CSTAuctionLength = uint256(12) * nanoSecondsExtra / 1_000_000_000;
+		// todo-0 magic number hardcoded
+		CSTAuctionLength = uint256(12) * nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
 		stellarSpenderAmount = 0;

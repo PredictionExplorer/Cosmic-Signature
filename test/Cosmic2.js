@@ -349,8 +349,10 @@ describe('Cosmic Set2', function () {
 		await ethers.provider.send('evm_mine');
 		await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 
-		let cstPrice = await cosmicGameProxy.currentCSTPrice();
-		expect(cstPrice.toString()).to.equal('200000000000000000000');
+		let cstPrice = await cosmicGameProxy.calculateCurrentBidPriceCST();
+		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
+		// expect(cstPrice.toString()).to.equal('2000000000000000000');
+		expect(cstPrice.toString()).to.equal('107413600000000000000');
 
 		let tx = await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 		let receipt = await tx.wait();
@@ -358,13 +360,15 @@ describe('Cosmic Set2', function () {
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
-		expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
+		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
+		// expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
+		expect(args.numCSTTokens.toString()).to.equal('107411129487200000000');
 		expect(args.bidPrice.toString()).to.equal("-1");
 		expect(args.lastBidder).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');
 	});
 	it('Distribution of prize amounts matches specified business logic', async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,

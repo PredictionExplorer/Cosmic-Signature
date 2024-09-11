@@ -14,7 +14,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// todo-1 We never change this.
 	// todo-1 Should this be a `constant`?
 	uint256 public saleTime = 1636675200; // November 11 2021 19:00 New York Time
-	// todo-1 Rewrite this as `(1 ETHER) / 1_000`?
+	// todo-1 Rewrite this as `(1 ether) / 1_000`?
 	uint256 public price = 10 ** 15; // Price starts at .001 eth
 
 	/// @notice How long to wait until the last minter can withdraw (30 days)

@@ -123,18 +123,22 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit TimeIncreaseChanged(_timeIncrease);
 	}
 
-	function setPriceIncrease(uint256 _priceIncrease) external override onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
+	function setPriceIncrease(uint256 _priceIncrease) external override onlyOwner onlyMaintenance {
 		priceIncrease = _priceIncrease;
 		emit PriceIncreaseChanged(_priceIncrease);
 	}
 
-	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external onlyOwner onlyMaintenance {
+	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyMaintenance {
+		// todo-0 Do we really need this validation?
+		// todo-0 If we do, do we need a custom error for it?
+		require(newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT);
+		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
+		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
+	}
+
+	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external override onlyOwner onlyMaintenance {
 		nanoSecondsExtra = newNanoSecondsExtra;
-		emit NanoSecondsExtraChanged(nanoSecondsExtra);
+		emit NanoSecondsExtraChanged(newNanoSecondsExtra);
 	}
 
 	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external override onlyOwner onlyMaintenance {
@@ -142,7 +146,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit InitialSecondsUntilPrizeChanged(_initialSecondsUntilPrize);
 	}
 
-	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner onlyMaintenance {
+	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external override onlyOwner onlyMaintenance {
 		initialBidAmountFraction = newInitialBidAmountFraction;
 		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
 	}

@@ -63,7 +63,8 @@ contract CosmicGame is
 		// Initialize state variables
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
-		startingBidPriceCST = 100e18;
+		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
+		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
 		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
 		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;

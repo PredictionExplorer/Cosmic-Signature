@@ -183,7 +183,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+		uint256 secondsAdded = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
 		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MILLION;
 	}
@@ -218,7 +218,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
 		uint256 userBalance = token.balanceOf(msg.sender);
-		uint256 price = currentCSTPrice();
+		// todo-0 This can be zero, right? Is it a problem? At least comment.
+		uint256 price = calculateCurrentBidPriceCST();
+		// todo-1 Do we really need to validate this, given that `token.burn` would probably fail anyway if this condition is not met?
+		// todo-1 Regardless, write a comment and cross-ref with where we call `token.burn`.
 		require(
 			userBalance >= price,
 			CosmicGameErrors.InsufficientCSTBalance(
@@ -228,14 +231,13 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 			)
 		);
 
-		// Double the starting CST price for the next auction, with a minimum of 100 CST
-		// todo-0 Use `unchecked` here?
-		// todo-0 Magic number hardcoded.
-		// todo-0 Find all "e18".
-		// todo-0 could you update the code with constant labels? for 100e18 we need a new constant,
-		// todo-0 and it should actually be parametrizable, so we need to add a new state variable and copy it during initializer().
-		// todo-0 (just like everything else, for example percentages)
-		startingBidPriceCST = Math.max(100e18, price) * 2;
+		// Doubling the starting CST price for the next auction, while enforcing a minimum
+		// todo-1 The above comment appears to be inaccurate because the calculated value can be used within the current auction (bidding round) too, right?
+		// todo-0 I added `unchecked`, but is it safe? Do we need a max limit, at least to avoid the possibility of an overflow?
+		unchecked {
+			startingBidPriceCST = Math.max(startingBidPriceCSTMinLimit, price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER);
+		}
+
 		lastCSTBidTime = block.timestamp;
 
 		// Burn the CST tokens used for bidding
@@ -245,7 +247,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 
-	function currentCSTPrice() public view override returns (uint256) {
+	function calculateCurrentBidPriceCST() public view override returns (uint256) {
 		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
 		if (secondsElapsed >= duration) {
 			return 0;

@@ -10,6 +10,8 @@ import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 
+/// @notice Both CST and ETH tokens have the same scale, meaning the minimum amount equals 1 Wei,
+/// which makes it possible to use Solidity syntax, such as `1 ether`, to specify an amount of CST.
 /// todo-0 Make sense to move `Ownable` to the beginning of the base contract list?
 contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ICosmicToken {
 	/// @notice Initializes the CosmicToken contract
