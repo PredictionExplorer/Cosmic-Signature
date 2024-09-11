@@ -9,7 +9,9 @@ interface IRandomWalkNFT is IERC721Enumerable {
 	event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed, uint256 price);
 	event WithdrawalEvent(uint256 indexed tokenId, address destination, uint256 amount);
 
-   function setBaseURI(string memory baseURI) external;
+	/// @notice Sets the base URI for token metadata
+	/// @param value The new value to set
+   function setBaseURI(string memory value) external;
 
    function setTokenName(uint256 tokenId, string memory name) external;
 

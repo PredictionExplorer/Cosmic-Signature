@@ -82,7 +82,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	/// @notice
 	/// [Comment-202409143]
-	/// This is actually byte count max limit, which can be fewer UTF-8 characters.
+	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	uint256 public maxMessageLength;
 

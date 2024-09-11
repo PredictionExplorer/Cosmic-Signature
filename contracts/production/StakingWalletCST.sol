@@ -67,6 +67,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	address public game;
 
 	// /// @dev Precision factor for calculations
+	// /// todo-9 Magic number hardcoded. Can I move it to `CosmicGameConstants` or reuse one that is already in there?
 	// uint256 private constant PRECISION = 1 ether;
 	
 	/// @dev Counter for actions to replace block.timestamp

@@ -11,9 +11,9 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
-import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
@@ -185,7 +185,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	function _pushBackPrizeTime() internal {
 		uint256 secondsAdded = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MILLION;
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
 	}
 
 	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
@@ -234,6 +234,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// Doubling the starting CST price for the next auction, while enforcing a minimum
 		// todo-1 The above comment appears to be inaccurate because the calculated value can be used within the current auction (bidding round) too, right?
 		// todo-0 I added `unchecked`, but is it safe? Do we need a max limit, at least to avoid the possibility of an overflow?
+		// #enable_smtchecker uint256 dummy1 = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
 		unchecked {
 			startingBidPriceCST = Math.max(startingBidPriceCSTMinLimit, price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER);
 		}

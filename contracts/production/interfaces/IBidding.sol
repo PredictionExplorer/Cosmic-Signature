@@ -44,7 +44,7 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
 	/// @param message The bidder's message
    function bidWithCST(string memory message) external;
 
-	/// @notice Calculates the amount in CST required to place a bid
+	/// @notice Calculates the current amount in CST required to place a bid
 	/// @dev The price decreases linearly over the auction duration
 	/// @return The calculated value
    function calculateCurrentBidPriceCST() external view returns (uint256);

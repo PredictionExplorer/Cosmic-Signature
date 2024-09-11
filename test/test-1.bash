@@ -33,7 +33,7 @@
 	SafeTryHardhatTest 'true' 'true' 'false'
 
 	# Preprocessor, no asserts, no SMTChecker.
-	# This combination or arguments used to generate a warning near Comment-202409025, but not any more.
+	# This combination of arguments used to generate a warning near Comment-202409025, but not any more.
 	SafeTryHardhatTest 'true' 'false' 'false'
 
 	# No preprocessor.

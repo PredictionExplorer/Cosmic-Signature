@@ -34,8 +34,8 @@ interface ICosmicSignature is IERC721Enumerable {
    function setTokenGenerationScriptURL(string memory newTokenGenerationScriptURL) external;
 
 	/// @notice Sets the base URI for token metadata
-	/// @param baseURI The new base URI to set
-   function setBaseURI(string memory baseURI) external;
+	/// @param value The new value to set
+   function setBaseURI(string memory value) external;
 
 	/// @notice Allows token owners to set a custom name for their token
 	/// @param tokenId The ID of the token to name

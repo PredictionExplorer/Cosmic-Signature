@@ -39,7 +39,6 @@ contract CosmicGame is
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
-	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	// todo-0 Should we use this for `ERC20` instead, to give SMTChecker more info?
 	// todo-0 But it won't compile then, right?
 	using SafeERC20 for IERC20;

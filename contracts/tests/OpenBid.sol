@@ -39,13 +39,9 @@ contract CosmicGameOpenBid is
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
-
-	// using SafeERC20Upgradeable for IERC20Upgradeable;
+	// todo-0 Should we use this for `ERC20` instead, to give SMTChecker more info?
+	// todo-0 But it won't compile then, right?
 	using SafeERC20 for IERC20;
-	// [ToDo-202408115-0]
-	// Commented out to suppress a compile error.
-	// [/ToDo-202408115-0]
-	// using SafeMathUpgradeable for uint256;
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	/// @notice Contract constructor
@@ -66,7 +62,8 @@ contract CosmicGameOpenBid is
 		// Initialize state variables
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
-		startingBidPriceCST = 100e18;
+		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
+		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
 		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
 		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;
@@ -117,7 +114,7 @@ contract CosmicGameOpenBid is
 
 		// Treat incoming ETH as a bid with default parameters
 		BidParams memory defaultParams;
-		// todo-1 Is this assignment redundant?
+		// todo-1 Is this assignment redundant? Replace it with an `assert`?
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);

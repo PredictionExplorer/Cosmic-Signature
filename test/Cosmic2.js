@@ -351,7 +351,7 @@ describe('Cosmic Set2', function () {
 
 		let cstPrice = await cosmicGameProxy.calculateCurrentBidPriceCST();
 		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
-		// expect(cstPrice.toString()).to.equal('2000000000000000000');
+		// expect(cstPrice.toString()).to.equal('200000000000000000000');
 		expect(cstPrice.toString()).to.equal('107413600000000000000');
 
 		let tx = await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
@@ -368,7 +368,7 @@ describe('Cosmic Set2', function () {
 		expect(args.message).to.equal('cst bid');
 	});
 	it('Distribution of prize amounts matches specified business logic', async function () {
-		const[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
