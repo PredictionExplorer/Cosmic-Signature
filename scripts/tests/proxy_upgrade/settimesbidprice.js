@@ -1,11 +1,11 @@
 const hre = require("hardhat");
-async function getCosmicGameProxyContract() {
-	let cosmicGameProxyAddr = process.env.COSMIC_GAME_PROXY_ADDRESS;
+async function getCosmicGameProxyContract(contractName) {
+	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
-		console.log("COSMIC_GAME_PROXY_ADDRESS environment variable does not contain contract address");
+		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await ethers.getContractAt("CosmicGameProxy", cosmicGameProxyAddr);
+	let cosmicGameProxy = await ethers.getContractAt(contractName, cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
 
@@ -18,9 +18,8 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGameProxy = await getCosmicGameProxyContract();
-	let params = ethers.utils.defaultAbiCoder.encode(['uint256'],[2]);
-	await cosmicGameProxy.connect(testingAcct).proxyCall('0x57a23952',params, {gasLimit: 30000000 }); // call setTimesBidPrice() function
+	let cosmicGameProxy = await getCosmicGameProxyContract("CosmicGameOpenBid");
+	await cosmicGameProxy.setTimesBidPrice(20n);
 }
 main()
 	.then(() => process.exit(0))
