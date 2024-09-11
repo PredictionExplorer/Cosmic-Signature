@@ -67,14 +67,6 @@ contract BrokenStaker {
 
 	constructor() {}
 
-	function setStakingWallet(IStakingWalletCST sw_) external {
-		stakingWalletCST = StakingWalletCST(address(sw_));
-	}
-
-	function startBlockingDeposits() external {
-		blockDeposits = true;
-	}
-
 	receive() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
@@ -105,6 +97,14 @@ contract BrokenStaker {
 		actions[0] = stakeActionId;
 		deposits[0] = depositId;
 		stakingWalletCST.claimManyRewards(actions, deposits);
+	}
+
+	function startBlockingDeposits() external {
+		blockDeposits = true;
+	}
+
+	function setStakingWallet(IStakingWalletCST sw_) external {
+		stakingWalletCST = StakingWalletCST(address(sw_));
 	}
 
 	function doSetApprovalForAll(address nft_) external {
