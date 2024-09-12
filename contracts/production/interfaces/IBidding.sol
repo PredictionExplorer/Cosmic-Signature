@@ -47,10 +47,10 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
 	/// @notice Calculates the current amount in CST required to place a bid
 	/// @dev The price decreases linearly over the auction duration
 	/// @return The calculated value
-   function calculateCurrentBidPriceCST() external view returns (uint256);
+   function getCurrentBidPriceCST() external view returns (uint256);
 
 	/// @notice Get the current auction duration and elapsed time
-	/// @dev This function is used by `calculateCurrentBidPriceCST`
+	/// @dev This function is used by `getCurrentBidPriceCST`
 	/// @return A tuple containing the seconds elapsed and total duration of the current auction
    function auctionDuration() external view returns (uint256, uint256);
 

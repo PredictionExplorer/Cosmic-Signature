@@ -106,7 +106,7 @@ describe("CosmicGameImplementation", function () {
 			while (true) {
 				bidPrice = await cosmicGameProxy.getBidPrice();
 				balance = await cosmicToken.balanceOf(owner.address);
-				cstPrice = await cosmicGameProxy.calculateCurrentBidPriceCST();
+				cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
 				await cosmicGameProxy.bid(params, { value: bidPrice });
 				if (balance > cstPrice) {
 					break;

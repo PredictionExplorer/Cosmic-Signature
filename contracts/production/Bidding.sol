@@ -219,7 +219,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
 		uint256 userBalance = token.balanceOf(msg.sender);
 		// todo-0 This can be zero, right? Is it a problem? At least comment.
-		uint256 price = calculateCurrentBidPriceCST();
+		uint256 price = getCurrentBidPriceCST();
 		// todo-1 Do we really need to validate this, given that `token.burn` would probably fail anyway if this condition is not met?
 		// todo-1 Regardless, write a comment and cross-ref with where we call `token.burn`.
 		require(
@@ -231,13 +231,25 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 			)
 		);
 
-		// Doubling the starting CST price for the next auction, while enforcing a minimum
-		// todo-1 The above comment appears to be inaccurate because the calculated value can be used within the current auction (bidding round) too, right?
-		// todo-0 I added `unchecked`, but is it safe? Do we need a max limit, at least to avoid the possibility of an overflow?
-		// #enable_smtchecker uint256 dummy1 = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
-		unchecked {
-			startingBidPriceCST = Math.max(startingBidPriceCSTMinLimit, price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER);
+		// [Comment-202409163]
+		// Doubling the starting CST price for the next CST bid, while enforcing a minimum.
+		// This logic avoids an overfow, both here and near Comment-202409162.
+		// [/Comment-202409163]
+		uint256 newStartingBidPriceCST;
+		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
+			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
 		}
+		else {
+			// #enable_smtchecker /*
+			unchecked
+			// #enable_smtchecker */
+			{
+				newStartingBidPriceCST = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
+			}
+			newStartingBidPriceCST = Math.max(newStartingBidPriceCST, startingBidPriceCSTMinLimit);
+		}
+		startingBidPriceCST = newStartingBidPriceCST;
+		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 
 		lastCSTBidTime = block.timestamp;
 
@@ -248,13 +260,20 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 
-	function calculateCurrentBidPriceCST() public view override returns (uint256) {
+	function getCurrentBidPriceCST() public view override returns (uint256) {
 		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
-		uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
-		return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
+
+			// [Comment-202409162/]
+			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+		}
 	}
 
 	function auctionDuration() public view override returns (uint256, uint256) {

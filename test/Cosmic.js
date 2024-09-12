@@ -874,6 +874,8 @@ describe("Cosmic Set1", function () {
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 
 		await cosmicGameProxy.connect(addr1).bidWithCST("cst bid");
 

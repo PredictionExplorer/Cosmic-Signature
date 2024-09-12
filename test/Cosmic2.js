@@ -341,6 +341,8 @@ describe('Cosmic Set2', function () {
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 		await cosmicGameProxy.connect(addr1).claimPrize();
@@ -349,10 +351,10 @@ describe('Cosmic Set2', function () {
 		await ethers.provider.send('evm_mine');
 		await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 
-		let cstPrice = await cosmicGameProxy.calculateCurrentBidPriceCST();
+		let cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
 		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
 		// expect(cstPrice.toString()).to.equal('200000000000000000000');
-		expect(cstPrice.toString()).to.equal('107413600000000000000');
+		expect(cstPrice.toString()).to.equal('214831600000000000000');
 
 		let tx = await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 		let receipt = await tx.wait();
@@ -362,7 +364,7 @@ describe('Cosmic Set2', function () {
 		let args = parsed_log.args.toObject();
 		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
 		// expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
-		expect(args.numCSTTokens.toString()).to.equal('107411129487200000000');
+		expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
 		expect(args.bidPrice.toString()).to.equal("-1");
 		expect(args.lastBidder).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');

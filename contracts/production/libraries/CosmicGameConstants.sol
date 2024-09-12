@@ -71,7 +71,7 @@ library CosmicGameConstants {
 	uint256 public constant STARTING_BID_PRICE_CST_MULTIPLIER = 2;
 
 	/// @notice CST bid price initial min limit
-	uint256 public constant STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT = 100 * (1 ether);
+	uint256 public constant STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT = 200 ether;
 
 	/// @notice CST bid price hard min limit
 	/// This is used for a sanity check
