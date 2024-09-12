@@ -63,4 +63,18 @@ describe("Cosmic Set1", function () {
 		numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
 		expect(numDonationInfoRecs).to.equal(2);
 	});
+	it("donateNFT() without making a bid works", async function () {
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+
+		let mintPrice = await randomWalkNFT.getMintPrice();
+		await randomWalkNFT.connect(owner).mint({ value: mintPrice });
+		await randomWalkNFT.connect(owner).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+
+		await cosmicGameProxy.connect(owner).donateNFT(await randomWalkNFT.getAddress(),0);
+		let details = await cosmicGameProxy.getDonatedNFTDetails(0);
+		expect(details[0]).to.equal(await randomWalkNFT.getAddress());
+	});
 });

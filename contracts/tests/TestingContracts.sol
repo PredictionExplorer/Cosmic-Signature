@@ -29,8 +29,15 @@ contract BrokenToken {
 contract BrokenERC20 {
 	// used to test revert() statements in CosmicGameImplementation contract
 	uint256 counter;
-	function mint(address, uint256) external pure {
-		require(false, "Test mint() (ERC20) failed");
+	constructor(uint256 _counter) {
+		counter = _counter;
+	}
+	function mint(address, uint256) external {
+		if (counter == 0 ) {
+			require(false, "Test mint() (ERC20) failed");
+		} else {
+			counter = counter - 1;
+		}
 	}
 }
 contract BrokenCharity {
@@ -40,45 +47,6 @@ contract BrokenCharity {
 		require(false, "Test deposit failed");
 	}
 }
-/*
-contract BrokenStaker {
-	// used to test revert() statements in StakingWallet
-	bool blockDeposits = false;
-	StakingWalletCST stakingWalletCST;
-
-	// todo-1 Should `nft_` type be `CosmicSignature`?
-	// todo-1 Is `nft_` the same as `sw_.nft()`?
-	// todo-1 But these considerations are prbably not important in this test code.
-	// todo-1 At least explain in a comment.
-	constructor(StakingWalletCST sw_, address nft_) {
-		stakingWalletCST = sw_;
-		IERC721(nft_).setApprovalForAll(address(sw_), true);
-	}
-
-	receive() external payable {
-		require(!blockDeposits, "I am not accepting deposits");
-	}
-
-	function doStake(uint256 tokenId) external {
-		stakingWalletCST.stake(tokenId);
-	}
-
-	function doUnstake(uint256 actionId) external {
-		stakingWalletCST.unstake(actionId);
-	}
-
-	function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
-		uint256[] memory actions = new uint256[](1);
-		uint256[] memory deposits = new uint256[](1);
-		actions[0] = stakeActionId;
-		deposits[0] = depositId;
-		stakingWalletCST.claimManyRewards(actions, deposits);
-	}
-
-	function startBlockingDeposits() external {
-		blockDeposits = true;
-	}
-}*/
 contract BrokenStaker {
 	// used to test revert() statements in StakingWallet
 	bool blockDeposits = false;
@@ -122,27 +90,6 @@ contract BrokenStaker {
 		IERC721(nft_).setApprovalForAll(address(stakingWalletCST), true);
 	}
 }
-/*
-contract BrokenStaker is StakingWalletCST {
-	// used to test revert() statements in StakingWallet
-	bool blockDeposits = false;
-
-	constructor(address game_, address nft_, address charity_) StakingWalletCST(CosmicSignature(nft_),game_,charity_){
-	}
-
-	receive() external payable {
-		require(!blockDeposits, "I am not accepting deposits");
-	}
-	function deposit() external payable override {
-		require(!blockDeposits, "I am not accepting deposits");
-		super.deposit();
-	}
-
-	function startBlockingDeposits() external {
-		blockDeposits = true;
-	}
-}*/
-
 contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)

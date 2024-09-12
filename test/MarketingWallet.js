@@ -1,10 +1,9 @@
 const { expect } = require("chai");
-// const { ethers } = require("hardhat");
 const hre = require("hardhat");
 const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
-describe("Events", function () {
+describe("MarketingWallet", function () {
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
 		[contractDeployerAcct] = await ethers.getSigners();
@@ -70,7 +69,7 @@ describe("Events", function () {
 		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
 		await expect(marketingWallet.setTokenContract(ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
-		expect(cosmicGameProxy.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
+		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -88,17 +87,24 @@ describe("Events", function () {
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
+		const BidderContract = await ethers.getContractFactory('BidderContract');
+		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		await cBidder.waitForDeployment();
+
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		await cBidder.doBid({ value: bidPrice });
 
 		const marketingReward = ethers.parseEther('15');
 		await expect(marketingWallet.send(marketingReward,ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
-		await expect(marketingWallet.send(0n,addr2.address)).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
-		await marketingWallet.send(marketingReward,addr2);
+		await expect(marketingWallet.send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
+		await marketingWallet.send(marketingReward,addr1);
+		await marketingWallet.setTokenContract(await cBidder.getAddress());
 
-		let balanceAfter = await cosmicToken.balanceOf(addr2);
+		// note : following call reverts because of unknown selector, not because of require() in the fallback function of BidderContract
+		// so no need to use startBlockingSeposits() function in this case
+		await expect(marketingWallet.send(marketingReward,await cBidder.getAddress())).to.be.reverted;
+
+		let balanceAfter = await cosmicToken.balanceOf(addr1);
 		expect(balanceAfter).to.equal(marketingReward);
 
 	});
