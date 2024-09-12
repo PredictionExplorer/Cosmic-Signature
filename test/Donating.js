@@ -62,6 +62,8 @@ describe("Cosmic Set1", function () {
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
 		numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
 		expect(numDonationInfoRecs).to.equal(2);
+
+		await expect(cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: 0n})).to.be.revertedWithCustomError(cosmicGameProxy,"NonZeroValueRequired");
 	});
 	it("donateNFT() without making a bid works", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
@@ -76,5 +78,6 @@ describe("Cosmic Set1", function () {
 		await cosmicGameProxy.connect(owner).donateNFT(await randomWalkNFT.getAddress(),0);
 		let details = await cosmicGameProxy.getDonatedNFTDetails(0);
 		expect(details[0]).to.equal(await randomWalkNFT.getAddress());
+		await expect(cosmicGameProxy.getDonatedNFTDetails(1)).to.be.revertedWith("Invalid donated NFT index");
 	});
 });
