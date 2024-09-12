@@ -127,6 +127,9 @@ contract BidderContract is IERC721Receiver {
 	function startBlockingDeposits() external {
 		blockDeposits = true;
 	}
+	function stopBlockingDeposits() external {
+		blockDeposits = false;
+	}
 	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
 		return this.onERC721Received.selector;
 	}

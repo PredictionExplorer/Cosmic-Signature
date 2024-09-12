@@ -591,4 +591,61 @@ describe('Cosmic Set2', function () {
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
 		expect(parsed_log.args.destination).to.equal(await bContract.getAddress());
 	});
+	it("Fallback function works", async function () {
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet
+		} = await basicDeployment(
+			contractDeployerAcct,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			true
+		);
+		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		await expect(
+			ethers.provider.call({
+				to:  await cosmicGameProxy.getAddress(),
+				data: "0xffffffff", // non-existent selector
+			})
+		).to.be.revertedWith("Function does not exist");
+	})
+	it("upgradeTo() works", async function () {
+		[contractDeployerAcct] = await ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet
+		} = await basicDeployment(
+			contractDeployerAcct,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			true
+		);
+		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+
+        const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
+        let brokenCharity = await BrokenCharity.deploy();
+        await brokenCharity.waitForDeployment();
+
+		await cosmicGameProxy.upgradeTo(await brokenCharity.getAddress());
+		await expect(contractDeployerAcct.sendTransaction({ to: await cosmicGameProxy.getAddress(), value: 1000000000000000000n})).to.be.revertedWith("Test deposit failed");
+	})
 });

@@ -2,7 +2,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
-const SKIP_LONG_TESTS = "1";
+const SKIP_LONG_TESTS = "0";
 const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
 
 describe("Cosmic Set1", function () {
@@ -313,6 +313,15 @@ describe("Cosmic Set1", function () {
 		await expect(
 			cosmicSignature.connect(addr1).mint(addr1.address, 0n),
 		).to.be.revertedWithCustomError(contractErrors,"NoMintPrivileges");
+	});
+	it("ERC20 nonces() function exists", async function () {
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		await expect(
+			cosmicToken.nonces(owner.address),
+		).not.to.be.reverted;
 	});
 	it("Should not be possible to donate 0 value", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
@@ -821,7 +830,7 @@ describe("Cosmic Set1", function () {
 
 		let tx, receipt, log, parsed_log, bidPrice, winner, donationAmount;
 
-		donationAmount = ethers.utils.parseEther("10");
+		donationAmount = ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -850,13 +859,13 @@ describe("Cosmic Set1", function () {
 		await cosmicToken.connect(addr3).delegate(addr3.address);
 		let proposal_func = charityWallet.interface.encodeFunctionData("setCharity", [addr1.address]);
 		let proposal_desc = "set charityWallet to new addr";
-		tx = await cosmicDAO.connect(owner).propose([charityWallet.address], [0], [proposal_func], proposal_desc);
+		tx = await cosmicDAO.connect(owner).propose([await charityWallet.getAddress()], [0], [proposal_func], proposal_desc);
 		receipt = await tx.wait();
 
 		parsed_log = cosmicDAO.interface.parseLog(receipt.logs[0]);
 		let proposal_id = parsed_log.args.proposalId;
 
-		await forward_blocks(voting_delay.toNumber());
+		await forward_blocks(Number(voting_delay));
 
 		let vote = await cosmicDAO.connect(addr1).castVote(proposal_id, 1);
 		vote = await cosmicDAO.connect(addr2).castVote(proposal_id, 1);
@@ -864,8 +873,8 @@ describe("Cosmic Set1", function () {
 
 		await forward_blocks(voting_period);
 
-		let desc_hash = hre.ethers.utils.id(proposal_desc);
-		tx = await cosmicDAO.connect(owner).execute([charityWallet.address], [0], [proposal_func], desc_hash);
+		let desc_hash = hre.ethers.id(proposal_desc);
+		tx = await cosmicDAO.connect(owner).execute([await charityWallet.getAddress()], [0], [proposal_func], desc_hash);
 		receipt = await tx.wait();
 
 		let new_charity_addr = await charityWallet.charityAddress();
