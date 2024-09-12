@@ -68,6 +68,7 @@ describe("MarketingWallet", function () {
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(marketingWallet.connect(addr1).setTokenContract(addr1.address)).to.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
@@ -95,9 +96,10 @@ describe("MarketingWallet", function () {
 
 		const marketingReward = hre.ethers.parseEther('15');
 		await expect(marketingWallet.send(marketingReward,hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
-		await expect(marketingWallet.send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
+		await expect(marketingWallet.connect(addr1).send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		await marketingWallet.send(marketingReward,addr1);
 		await marketingWallet.setTokenContract(await cBidder.getAddress());
+		await expect(marketingWallet.connect(addr1).setTokenContract(await cBidder.getAddress())).to.be.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 
 		// note : following call reverts because of unknown selector, not because of require() in the fallback function of BidderContract
 		// so no need to use startBlockingSeposits() function in this case
@@ -105,6 +107,5 @@ describe("MarketingWallet", function () {
 
 		let balanceAfter = await cosmicToken.balanceOf(addr1);
 		expect(balanceAfter).to.equal(marketingReward);
-
 	});
 });
