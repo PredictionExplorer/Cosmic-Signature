@@ -29,8 +29,8 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
 	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
 	function bid(bytes calldata _data) external payable;
 
-	/// @notice Get the current bid price in ETH
-	/// @return The current bid price in wei
+	/// @notice Obtains the current price that a bidder is required to pay to place an ETH bid
+	/// @return The ETH price, in Wei
    function getBidPrice() external view returns (uint256);
 
 	/// @notice Get the address of a bidder at a specific position from the end in a given round
@@ -44,9 +44,9 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
 	/// @param message The bidder's message
    function bidWithCST(string memory message) external;
 
-	/// @notice Calculates the current amount in CST required to place a bid
-	/// @dev The price decreases linearly over the auction duration
-	/// @return The calculated value
+	/// @notice Obtains the current price that a bidder is required to pay to place a CST bid
+	/// In our game, the price decreases linearly over the auction duration
+	/// @return The CST price, in Wei
    function getCurrentBidPriceCST() external view returns (uint256);
 
 	/// @notice Get the current auction duration and elapsed time

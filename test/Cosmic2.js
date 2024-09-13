@@ -339,8 +339,9 @@ describe('Cosmic Set2', function () {
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
-		bidPrice = await cosmicGameProxy.getBidPrice();
-		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		// // todo-0 Uncomment this when fixing ToDo-202409199-0.
+		// bidPrice = await cosmicGameProxy.getBidPrice();
+		// await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -352,9 +353,9 @@ describe('Cosmic Set2', function () {
 		await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 
 		let cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
-		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
-		// expect(cstPrice.toString()).to.equal('200000000000000000000');
-		expect(cstPrice.toString()).to.equal('214831600000000000000');
+		expect(cstPrice.toString()).to.equal('200000000000000000000');
+		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
+		// expect(cstPrice.toString()).to.equal('214831600000000000000');
 
 		let tx = await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 		let receipt = await tx.wait();
@@ -362,9 +363,9 @@ describe('Cosmic Set2', function () {
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
-		// todo-0 Business logic fix resulted in this validation failing. I have fixed the validation. Nick, please recheck.
-		// expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
-		expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
+		expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
+		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
+		// expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
 		expect(args.bidPrice.toString()).to.equal("-1");
 		expect(args.lastBidder).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');

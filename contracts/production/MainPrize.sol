@@ -19,45 +19,51 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	function claimPrize() external override nonReentrant onlyRuntime {
-		require(
-			block.timestamp >= prizeTime,
-			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
-		);
-		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			require(
+				block.timestamp >= prizeTime,
+				CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
+			);
+			require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 
-		address winner = msg.sender;
+			// todo-1 Do we really need this variable. Maybe just use `msg.sender`?
+			address winner = msg.sender;
 
-		// Only the last bidder may claim the prize.
-		// But after the timeout expires, anyone is welcomed to.
-		require(
-			winner == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize,
-			CosmicGameErrors.LastBidderOnly(
-				// todo-1 Timeout duration hardcoed in this message. Rephrase?
-				"Only the last bidder can claim the prize during the first 24 hours.",
-				lastBidder,
-				winner,
-				timeoutClaimPrize - (block.timestamp - prizeTime)
-			)
-		);
+			// Only the last bidder may claim the prize.
+			// But after the timeout expires, anyone is welcomed to.
+			if ( ! (winner == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize) ) {
+				revert
+					CosmicGameErrors.LastBidderOnly(
+						// todo-1 Timeout duration hardcoed in this message. Rephrase?
+						"Only the last bidder can claim the prize during the first 24 hours.",
+						lastBidder,
+						winner,
+						timeoutClaimPrize - (block.timestamp - prizeTime)
+					);
+			}
 
-		_updateEnduranceChampion();
+			_updateEnduranceChampion();
 
-		// Prevent reentrancy
-		// todo-1 Reentrancy is no longer possible, right?
-		lastBidder = address(0);
-		winners[roundNum] = winner;
+			// Prevent reentrancy
+			// todo-1 Reentrancy is no longer possible, right?
+			lastBidder = address(0);
+			winners[roundNum] = winner;
 
-		uint256 prizeAmount_ = prizeAmount();
-		uint256 charityAmount_ = charityAmount();
-		uint256 raffleAmount_ = raffleAmount();
-		uint256 stakingAmount_ = stakingAmount();
+			uint256 prizeAmount_ = prizeAmount();
+			uint256 charityAmount_ = charityAmount();
+			uint256 raffleAmount_ = raffleAmount();
+			uint256 stakingAmount_ = stakingAmount();
 
-		// Distribute prizes
-		_distributePrizes(winner, prizeAmount_, charityAmount_, raffleAmount_, stakingAmount_);
+			// Distribute prizes
+			_distributePrizes(winner, prizeAmount_, charityAmount_, raffleAmount_, stakingAmount_);
 
-		_roundEndResets();
-		emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
-		++ roundNum;
+			_roundEndResets();
+			emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
+			++ roundNum;
+		}
 	}
 
 	/// @notice Distribute prizes to various recipients
