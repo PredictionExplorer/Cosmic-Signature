@@ -738,8 +738,8 @@ describe('Staking CST tests', function () {
 		await ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 		await ethers.provider.send('evm_mine');
 
+		// todo-0 This fails.
 		await expect(cosmicGameProxy.claimPrize()).not.to.be.reverted;	
-
 	});
 	it('Changing charity address works', async function () {
 		const {

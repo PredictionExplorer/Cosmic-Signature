@@ -22,7 +22,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	uint256 public saleTime = 1_636_675_200;
 
 	/// @notice Price starts at 0.001 ETH
-	uint256 public price = (1 ether) / 1_000;
+	uint256 public price = 0.001 ether;
 
 	/// @notice How long to wait until the last minter can withdraw (30 days)
 	uint256 public constant withdrawalWaitSeconds = 30 * CosmicGameConstants.SECONDS_PER_DAY;

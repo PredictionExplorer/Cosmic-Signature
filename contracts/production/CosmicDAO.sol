@@ -19,7 +19,7 @@ contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, Govern
 		Governor("CosmicDAO")
 		// todo-0 Magic numbers hardcoded. Can I move some to `CosmicGameConstants` and/or reuse some that are already in there?
 		// todo-0 Besides, a day contains a different number of seconds.
-		GovernorSettings(7200 /* 1 day */, 216000 /* 1 month */, 100 * (1 ether))
+		GovernorSettings(7200 /* 1 day */, 216000 /* 1 month */, 100 ether)
 		GovernorVotes(_token)
 		GovernorVotesQuorumFraction(4)
 	{}

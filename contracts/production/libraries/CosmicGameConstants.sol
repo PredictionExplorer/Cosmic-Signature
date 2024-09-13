@@ -66,7 +66,7 @@ library CosmicGameConstants {
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
 	/// @notice Initial ETH bid price for the first round
-	uint256 public constant FIRST_ROUND_BID_PRICE = (1 ether) / 10_000;
+	uint256 public constant FIRST_ROUND_BID_PRICE = 0.0001 ether;
 
 	uint256 public constant STARTING_BID_PRICE_CST_MULTIPLIER = 2;
 
@@ -80,13 +80,13 @@ library CosmicGameConstants {
 	uint256 public constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
 
 	/// @notice Default token reward amount (100 tokens)
-	uint256 public constant TOKEN_REWARD = 100 * (1 ether);
+	uint256 public constant TOKEN_REWARD = 100 ether;
 
 	/// @notice Default multiplier for ERC20 token rewards
 	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
 
 	/// @notice Default marketing reward amount (15 tokens)
-	uint256 public constant MARKETING_REWARD = 15 * (1 ether);
+	uint256 public constant MARKETING_REWARD = 15 ether;
 
 	/// @notice Default auction length (12 hours)
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * SECONDS_PER_HOUR;
