@@ -130,11 +130,17 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 
 	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyMaintenance {
 		// This ensures that SMTChecker won't flag the logic or an `assert` near Comment-202409163 or Comment-202409162.
+		// We probably don't need a `require` to enforce this condition.
 		// #enable_asserts assert(newStartingBidPriceCSTMinLimit <= type(uint256).max / CosmicGameConstants.MILLION);
 
-		// todo-0 Do we really need this validation?
-		// todo-0 If we do, do we need a custom error for it?
-		require(newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT);
+		require(
+			newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
+			CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+				"Provided starting bid price in CST min limit is too small",
+				newStartingBidPriceCSTMinLimit,
+				CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
+			)
+		);
 		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
 		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
 	}

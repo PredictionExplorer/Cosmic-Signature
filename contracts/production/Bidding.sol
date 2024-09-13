@@ -217,19 +217,31 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
-		uint256 userBalance = token.balanceOf(msg.sender);
-		// todo-0 This can be zero, right? Is it a problem? At least comment.
+		// uint256 userBalance = token.balanceOf(msg.sender);
+
+		// [Comment-202409179]
+		// This can be zero.
+		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
+		// We are OK with that.
+		// [/Comment-202409179]
 		uint256 price = getCurrentBidPriceCST();
-		// todo-1 Do we really need to validate this, given that `token.burn` would probably fail anyway if this condition is not met?
-		// todo-1 Regardless, write a comment and cross-ref with where we call `token.burn`.
-		require(
-			userBalance >= price,
-			CosmicGameErrors.InsufficientCSTBalance(
-				"Insufficient CST token balance to make a bid with CST",
-				price,
-				userBalance
-			)
-		);
+
+		// // [Comment-202409181]
+		// // This validation is unnecessary, given that `token.burn` caled near Comment-202409177 is going to perform it too.
+		// // [/Comment-202409181]
+		// require(
+		// 	userBalance >= price,
+		// 	CosmicGameErrors.InsufficientCSTBalance(
+		// 		"Insufficient CST token balance to make a bid with CST",
+		// 		price,
+		// 		userBalance
+		// 	)
+		// );
+
+		// [Comment-202409177]
+		// Burn the CST tokens used for bidding
+		// [/Comment-202409177]
+		token.burn(msg.sender, price);
 
 		// [Comment-202409163]
 		// Doubling the starting CST price for the next CST bid, while enforcing a minimum.
@@ -252,11 +264,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 
 		lastCSTBidTime = block.timestamp;
-
-		// Burn the CST tokens used for bidding
-		token.burn(msg.sender, price);
-
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
+
+		// [Comment-202409182]
+		// The cast of `price` to a signed integer can't overflow, thanks to the logic near Comment-202409163.
+		// [/Comment-202409182]
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 

@@ -237,16 +237,23 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 	}
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
-		uint256 userBalance = token.balanceOf(msg.sender);
+		// uint256 userBalance = token.balanceOf(msg.sender);
+
+		// Comment-202409179 applies.
 		uint256 price = getCurrentBidPriceCST();
-		require(
-			userBalance >= price,
-			CosmicGameErrors.InsufficientCSTBalance(
-				"Insufficient CST token balance to make a bid with CST",
-				price,
-				userBalance
-			)
-		);
+
+		// // Comment-202409181 applies.
+		// require(
+		// 	userBalance >= price,
+		// 	CosmicGameErrors.InsufficientCSTBalance(
+		// 		"Insufficient CST token balance to make a bid with CST",
+		// 		price,
+		// 		userBalance
+		// 	)
+		// );
+
+		// Comment-202409177 applies.
+		token.burn(msg.sender, price);
 
 		// Comment-202409163 applies.
 		uint256 newStartingBidPriceCST;
@@ -266,11 +273,9 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 		
 		lastCSTBidTime = block.timestamp;
-
-		// Burn the CST tokens used for bidding
-		token.burn(msg.sender, price);
-
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
+
+		// Comment-202409182 applies.
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 
