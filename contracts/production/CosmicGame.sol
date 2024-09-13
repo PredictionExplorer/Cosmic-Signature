@@ -64,7 +64,7 @@ contract CosmicGame is
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
 		// [ToDo-202409199-0]
-		// It very likely a bug that we assign a twice smaller value here.
+		// It's very likely a bug that we assign a twice smaller value here.
 		// Waiting for Taras to comment on the issue.
 		// [/ToDo-202409199-0]
 		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
