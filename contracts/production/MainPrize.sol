@@ -20,32 +20,30 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	function claimPrize() external override nonReentrant onlyRuntime {
 		require(
-			prizeTime <= block.timestamp,
+			block.timestamp >= prizeTime,
 			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
 		);
 		require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 
-		address winner;
-		if (block.timestamp - prizeTime < timeoutClaimPrize) {
-			// Only the last bidder can claim within the timeoutClaimPrize period
-			require(
-				msg.sender == lastBidder,
-				CosmicGameErrors.LastBidderOnly(
-					"Only the last bidder can claim the prize during the first 24 hours.",
-					lastBidder,
-					msg.sender,
-					timeoutClaimPrize - (block.timestamp - prizeTime)
-				)
-			);
-			winner = msg.sender;
-		} else {
-			// After the timeout, anyone can claim the prize
-			winner = msg.sender;
-		}
+		address winner = msg.sender;
+
+		// Only the last bidder may claim the prize.
+		// But after the timeout expires, anyone is welcomed to.
+		require(
+			winner == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize,
+			CosmicGameErrors.LastBidderOnly(
+				// todo-1 Timeout duration hardcoed in this message. Rephrase?
+				"Only the last bidder can claim the prize during the first 24 hours.",
+				lastBidder,
+				winner,
+				timeoutClaimPrize - (block.timestamp - prizeTime)
+			)
+		);
 
 		_updateEnduranceChampion();
 
 		// Prevent reentrancy
+		// todo-1 Reentrancy is no longer possible, right?
 		lastBidder = address(0);
 		winners[roundNum] = winner;
 
