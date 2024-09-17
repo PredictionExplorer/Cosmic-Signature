@@ -36,7 +36,7 @@ contract BrokenERC20 {
 	}
 	function mint(address, uint256) external {
 		if (counter == 0 ) {
-			require(false, "Test mint() (ERC20) failed";
+			require(false, "Test mint() (ERC20) failed");
 		} else {
 			counter = counter - 1;
 		}
@@ -219,7 +219,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 		// stakedTokens.pop();
 		// lastActionIds[tokenId] = -1;
 
-		_removeToken(uint256 tokenId);
+		_removeToken(tokenId);
 	}
 }
 

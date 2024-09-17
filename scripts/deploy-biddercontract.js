@@ -5,8 +5,8 @@ const { getCosmicGameProxyContract } = require("./helper.js");
 async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
-	[owner] = await ethers.getSigners();
-	const BidderContract = await ethers.getContractFactory("BidderContract");
+	const [owner] = await ethers.getSigners();
+	const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 	let bidderContract = await BidderContract.connect(owner).deploy(cosmicGameProxy.address);
 	await bidderContract.deployed();
 

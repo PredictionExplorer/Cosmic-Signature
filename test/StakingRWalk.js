@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
-const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
+const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Staking RandomWalk tests", function () {
 	async function deployCosmic(deployerAcct) {
@@ -62,9 +62,9 @@ describe("Staking RandomWalk tests", function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
-		await cBidder.waitForDeployment();
+		// const BidderContract = await ethers.getContractFactory("BidderContract");
+		// let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		// await cBidder.waitForDeployment();
 
 		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
@@ -111,9 +111,9 @@ describe("Staking RandomWalk tests", function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
-		await cBidder.waitForDeployment();
+		// const BidderContract = await ethers.getContractFactory("BidderContract");
+		// let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		// await cBidder.waitForDeployment();
 
 		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
@@ -339,9 +339,9 @@ describe("Staking RandomWalk tests", function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
 		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
-		const BidderContract = await ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
-		await cBidder.waitForDeployment();
+		// const BidderContract = await ethers.getContractFactory("BidderContract");
+		// let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		// await cBidder.waitForDeployment();
 
 		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);

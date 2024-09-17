@@ -93,10 +93,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		try stakingWalletCST.depositIfPossible{ value: stakingAmount_ }() {
 		} catch (bytes memory errorDetails) {
 			bool unexpectedErrorOccurred;
-			// todo-0 Nick, you might wan to develop tests for all these cases:
-			// todo-0    errorDetails.length == 32 && the InvalidOperationInCurrentState error occurred
-			// todo-0    errorDetails.length == 32 && some other error occurred
-			// todo-0    errorDetails.length != 32
+			// [ToDo-202409226-0]
+			// Nick, you might wan to develop tests for all these cases:
+			//    errorDetails.length == 32 && the InvalidOperationInCurrentState error occurred
+			//    errorDetails.length == 32 && some other error occurred
+			//    errorDetails.length != 32
+			// [/ToDo-202409226-0]
 			if (errorDetails.length == 32) {
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(errorDetails) }
