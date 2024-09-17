@@ -27,6 +27,7 @@ contract BrokenToken {
 		return 1;
 	}
 }
+
 contract BrokenERC20 {
 	// used to test revert() statements in CosmicGameImplementation contract
 	uint256 counter;
@@ -35,41 +36,58 @@ contract BrokenERC20 {
 	}
 	function mint(address, uint256) external {
 		if (counter == 0 ) {
-			require(false, "Test mint() (ERC20) failed");
+			require(false, "Test mint() (ERC20) failed";
 		} else {
 			counter = counter - 1;
 		}
 	}
 }
+
+/// @notice Used to test `revert` statements for charity deposits
 contract BrokenCharity {
-	// used to test revert() statements for charity deposits
-	uint256 counter;
+	// uint256 private counter;
 	receive() external payable {
 		require(false, "Test deposit failed");
 	}
 }
+
+/// @notice used to test revert() statements for charity deposits
 contract BrokenCharityWallet is CharityWallet {
-	// used to test revert() statements for charity deposits
-	uint256 counter;
+	// uint256 counter;
 	function setCharityToZeroAddress() external {
 		charityAddress = address(0);
 	}
 }
-contract BrokenStaker {
-	// used to test revert() statements in StakingWallet
-	bool blockDeposits = false;
-	StakingWalletCST stakingWalletCST;
 
-	constructor() {	}
+/// @notice Used to test `revert` statements in `StakingWalletCST`
+contract BrokenStakingWalletCST {
+	StakingWalletCST private stakingWalletCST;
+	bool private blockDeposits = false;
+
+	constructor() {}
+
+	function setStakingWallet(IStakingWalletCST sw_) external {
+		stakingWalletCST = StakingWalletCST(address(sw_));
+	}
+
+	function startBlockingDeposits() external {
+		blockDeposits = true;
+	}
 
 	receive() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
 
-	function deposit() external payable {
-		/// we don't call it doDeposit() because this method is called from CosmicGame.sol
+	// /// @dev we don't call it doDeposit() because this method is called from CosmicGame.sol
+	// function deposit() external payable {
+	// 	require(!blockDeposits, "I am not accepting deposits");
+	// 	stakingWalletCST.deposit();
+	// }
+
+	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicGame.sol
+	function depositIfPossible() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
-		stakingWalletCST.deposit();
+		stakingWalletCST.depositIfPossible();
 	}
 
 	function doStake(uint256 tokenId) external {
@@ -88,16 +106,11 @@ contract BrokenStaker {
 		stakingWalletCST.claimManyRewards(actions, deposits);
 	}
 
-	function startBlockingDeposits() external {
-		blockDeposits = true;
-	}
-	function setStakingWallet(address sw_) external {
-		stakingWalletCST = StakingWalletCST(sw_);
-	}
 	function doSetApprovalForAll(address nft_) external {
 		IERC721(nft_).setApprovalForAll(address(stakingWalletCST), true);
 	}
 }
+
 contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
@@ -124,6 +137,7 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 		selfdestruct(payable(this.owner()));
 	}
 }
+
 contract SpecialCosmicGame is CosmicGame {
 	// special CosmicGame contract to be used in unit tests to create special test setups
 
@@ -146,18 +160,22 @@ contract SpecialCosmicGame is CosmicGame {
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
 	}
-	function depositStakingCST() external payable {
-		(bool success, ) = address(stakingWalletCST).call{ value: msg.value }(
-			abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-		);
-		if (!success) {
-			assembly {
-				let ptr := mload(0x40)
-				let size := returndatasize()
-				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
-			}
-		}
+	// function depositStakingCST() external payable {
+	//		// todo-9 Should we make a high level call here?
+	// 	(bool success, ) = address(stakingWalletCST).call{ value: msg.value }(
+	// 		abi.encodeWithSelector(StakingWalletCST.deposit.selector)
+	// 	);
+	// 	if (!success) {
+	// 		assembly {
+	// 			let ptr := mload(0x40)
+	// 			let size := returndatasize()
+	// 			returndatacopy(ptr, 0, size)
+	// 			revert(ptr, size)
+	// 		}
+	// 	}
+	// }
+	function depositStakingCSTIfPossible() external payable {
+		stakingWalletCST.depositIfPossible{ value: msg.value }();
 	}
 	function mintCST(address to, uint256 roundNum) external {
 		// SMTChecker doesn't support low level calls, but maybe it doesn't matter in this test code.
@@ -173,55 +191,63 @@ contract SpecialCosmicGame is CosmicGame {
 		}
 	}
 }
+
 contract TestStakingWalletCST is StakingWalletCST {
 	// todo-1 Is `nft_` the same as `game_.nft()`?
 	// todo-1 At least explain in a comment.
-	constructor(CosmicSignature nft_, address game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) StakingWalletCST(nft_, game_ /* , charity_ */) {}
 
-	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
-		require(
-			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
-		);
-		stakedTokens.push(tokenId);
-		tokenIndices[tokenId] = stakedTokens.length;
-		lastActionIds[tokenId] = int256(actionId);
+		// require(
+		// 	!isTokenStaked(tokenId),
+		// 	CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
+		// );
+		// stakedTokens.push(tokenId);
+		// tokenIndices[tokenId] = stakedTokens.length;
+		// lastActionIds[tokenId] = int256(actionId);
+
+		_insertToken(tokenId, actionId);
 	}
 
 	function removeToken(uint256 tokenId) external {
-		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
-		uint256 index = tokenIndices[tokenId];
-		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		stakedTokens[index - 1] = lastTokenId;
-		tokenIndices[lastTokenId] = index;
-		delete tokenIndices[tokenId];
-		stakedTokens.pop();
-		lastActionIds[tokenId] = -1;
+		// require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
+		// uint256 index = tokenIndices[tokenId];
+		// uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		// stakedTokens[index - 1] = lastTokenId;
+		// tokenIndices[lastTokenId] = index;
+		// delete tokenIndices[tokenId];
+		// stakedTokens.pop();
+		// lastActionIds[tokenId] = -1;
+
+		_removeToken(uint256 tokenId);
 	}
 }
+
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
-	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
-		require(
-			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
-		);
-		stakedTokens.push(tokenId);
-		tokenIndices[tokenId] = stakedTokens.length;
-		lastActionIds[tokenId] = int256(actionId);
+		// require(
+		// 	!isTokenStaked(tokenId),
+		// 	CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
+		// );
+		// stakedTokens.push(tokenId);
+		// tokenIndices[tokenId] = stakedTokens.length;
+		// lastActionIds[tokenId] = int256(actionId);
+
+		_insertToken(tokenId, actionId);
 	}
 
 	function removeToken(uint256 tokenId) external {
-		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
-		uint256 index = tokenIndices[tokenId];
-		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		stakedTokens[index - 1] = lastTokenId;
-		tokenIndices[lastTokenId] = index;
-		delete tokenIndices[tokenId];
-		stakedTokens.pop();
-		lastActionIds[tokenId] = -1;
+		// require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
+		// uint256 index = tokenIndices[tokenId];
+		// uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		// stakedTokens[index - 1] = lastTokenId;
+		// tokenIndices[lastTokenId] = index;
+		// delete tokenIndices[tokenId];
+		// stakedTokens.pop();
+		// lastActionIds[tokenId] = -1;
+
+		_removeToken(tokenId);
 	}
 }

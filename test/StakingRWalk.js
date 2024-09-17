@@ -60,7 +60,7 @@ describe("Staking RandomWalk tests", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
@@ -109,7 +109,7 @@ describe("Staking RandomWalk tests", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
@@ -150,7 +150,7 @@ describe("Staking RandomWalk tests", function () {
 			marketingWallet,
 			cosmicGameImplementation,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const NewStakingWalletRWalk = await ethers.getContractFactory("TestStakingWalletRWalk");
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
@@ -337,7 +337,7 @@ describe("Staking RandomWalk tests", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await ethers.getContractFactory("BidderContract");
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());

@@ -76,7 +76,7 @@ describe("CosmicGameImplementation", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BrokenToken = await ethers.getContractFactory("BrokenERC20");
 		let newToken= await BrokenToken.deploy(0);
@@ -101,7 +101,7 @@ describe("CosmicGameImplementation", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		const BrokenToken = await ethers.getContractFactory("BrokenERC20");
 		let newToken= await BrokenToken.deploy(1);

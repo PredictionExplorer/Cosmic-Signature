@@ -6,13 +6,16 @@ pragma solidity 0.8.26;
 /// @notice This library contains custom errors used throughout the Cosmic Game contracts
 /// @dev Use these errors to provide more detailed and gas-efficient error handling
 library CosmicGameErrors {
-	// System errors
+	// #region System Errors
+
 	/// @notice Thrown when an action is attempted in an incorrect system mode
 	/// @param errStr Description of the error
 	/// @param systemMode The current system mode
 	error SystemMode(string errStr, uint256 systemMode);
 
-	// Bidding errors
+	// #endregion
+	// #region Bidding Errors
+
 	/// @notice Thrown when the bid price is incorrect
 	/// @param errStr Description of the error
 	/// @param amountRequired The required bid amount
@@ -70,7 +73,9 @@ library CosmicGameErrors {
 	/// @param providedRound The round number provided
 	error BidderQueryNoBidsYet(string errStr, uint256 providedRound);
 
-	// Claim prize errors
+	// #endregion
+	// #region Claim Prize Errors
+
 	/// @notice Thrown when attempting to claim a prize too early
 	/// @param errStr Description of the error
 	/// @param claimTime The time when claiming is allowed
@@ -103,7 +108,13 @@ library CosmicGameErrors {
 	/// @param index The index of the already claimed NFT
 	error NFTAlreadyClaimed(string errStr, uint256 index);
 
-	// Game logic errors
+	// #endregion
+	// #region Game Logic Errors
+
+	/// @notice Thrown when an operation is not possible in the current contract state.
+	/// @dev In .NET, `InvalidOperationException` serves the same purpose. So consider renaming this to `InvalidOperation`.
+	error InvalidOperationInCurrentState();
+
 	/// @notice Thrown when a call to the business logic contract fails
 	/// @param errStr Description of the error
 	/// @param businessLogicAddr The address of the business logic contract
@@ -121,14 +132,17 @@ library CosmicGameErrors {
 	/// @param percentageSum The sum of percentages (should be 100)
 	error PercentageValidation(string errStr, uint256 percentageSum);
 
-	// Token-related errors
-	/// @notice Thrown when ERC20 token minting fails
-	/// @param errStr Description of the error
-	/// @param receiver The intended receiver of the tokens
-	/// @param tokenAmount The amount of tokens to mint
-	error ERC20Mint(string errStr, address receiver, uint256 tokenAmount);
+	// #endregion
+	// #region Token-Related Errors
+
+	// /// @notice Thrown when ERC20 token minting fails
+	// /// @param errStr Description of the error
+	// /// @param receiver The intended receiver of the tokens
+	// /// @param tokenAmount The amount of tokens to mint
+	// error ERC20Mint(string errStr, address receiver, uint256 tokenAmount);
 
 	/// @notice Thrown when an ERC20 token transfer fails
+	/// See also: `CosmicGameEvents.ERC20TransferFailed`
 	/// @param errStr Description of the error
 	/// @param receiver The intended receiver of the tokens
 	/// @param tokenAmount The amount of tokens to transfer
@@ -162,7 +176,9 @@ library CosmicGameErrors {
 	/// @param tokenId The ID of the token
 	error OwnershipError(string errStr, uint256 tokenId);
 
-	// Zero-checking errors
+	// #endregion
+	// #region Zero Checking Errors
+
 	/// @notice Thrown when a non-zero value is required but zero is provided
 	/// @param errStr Description of the error
 	error NonZeroValueRequired(string errStr);
@@ -175,8 +191,11 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	error ZeroBalance(string errStr);
 
-	// Monetary transfer errors
+	// #endregion
+	// #region Monetary Transfer Errors
+
 	/// @notice Thrown when a fund transfer fails
+	/// See also: `CosmicGameEvents.FundTransferFailed`
 	/// @param errStr Description of the error
 	/// @param amount The amount that failed to transfer
 	/// @param destination The intended destination of the funds
@@ -187,7 +206,9 @@ library CosmicGameErrors {
 	/// @param sender The address of the unauthorized sender
 	error DepositFromUnauthorizedSender(string errStr, address sender);
 
-	// Staking errors
+	// #endregion
+	// #region Staking Errors
+
 	/// @notice Thrown when attempting to unstake an already unstaked token
 	/// @param errStr Description of the error
 	/// @param actionId The ID of the stake action
@@ -242,9 +263,9 @@ library CosmicGameErrors {
 	/// @param depositsLen The length of the deposits array
 	error IncorrectArrayArguments(string errStr, uint256 actionsLen, uint256 depositsLen);
 
-	/// @notice Thrown when the modulo is zero when it shouldn't be
-	/// @param errStr Description of the error
-	error ModuloIsZero(string errStr);
+	// /// @notice Thrown when the modulo is zero when it shouldn't be
+	// /// @param errStr Description of the error
+	// error ModuloIsZero(string errStr);
 
 	/// @notice Thrown when attempting to insert an already inserted token
 	/// @param errStr Description of the error
@@ -270,4 +291,6 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	/// @param addr Address value to be set
 	error AddressAlreadySet(string errStr, address addr);
+
+	// #endregion
 }

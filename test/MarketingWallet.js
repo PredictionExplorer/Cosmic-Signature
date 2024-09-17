@@ -66,7 +66,7 @@ describe("MarketingWallet", function () {
 			true,
 			false
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
 		await expect(marketingWallet.setTokenContract(ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
 		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
@@ -85,7 +85,7 @@ describe("MarketingWallet", function () {
 			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
 		const BidderContract = await ethers.getContractFactory('BidderContract');
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());

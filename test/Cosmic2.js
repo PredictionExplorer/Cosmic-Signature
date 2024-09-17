@@ -70,7 +70,7 @@ describe('Cosmic Set2', function () {
 		
 		let donationAmount = ethers.parseEther('10');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		var bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { msg: '', rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.bid(params, { value: bidPrice });
@@ -157,7 +157,7 @@ describe('Cosmic Set2', function () {
 		let cosmicGameAddr = await cosmicGameProxy.getAddress();
 		let donationAmount = ethers.parseEther('10');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		var bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { msg: '', rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -190,13 +190,13 @@ describe('Cosmic Set2', function () {
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 	});
 	it('Bidding a lot & staking a lot works correctly ', async function () {
-		[owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+		const [owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWalletCST } =
 			await loadFixture(deployCosmic);
 		let donationAmount = ethers.parseEther('100');
 		await cosmicGameProxy.donate({ value: donationAmount });
 
-		let bidParams, params, prizeTime;
+		let bidParams, params, prizeTime, bidPrice;
 		bidParams = { msg: '', rwalk: -1 };
 		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		for (let i = 0; i < 30; i++) {
@@ -313,12 +313,14 @@ describe('Cosmic Set2', function () {
 				await stakingWalletCST.connect(owner_signer).claimManyRewards([i], [j]);
 			}
 		}
-		let contractBalance = await ethers.provider.getBalance(await stakingWalletCST.getAddress());
-		let m = await stakingWalletCST.modulo();
-		expect(m).to.equal(contractBalance);
+
+		// // Comment-202409208 relates.
+		// const contractBalance = await ethers.provider.getBalance(await stakingWalletCST.getAddress());
+		// const m = await stakingWalletCST.modulo();
+		// expect(m).to.equal(contractBalance);
 
 		// check that every staker has its own tokens back
-		for (user in tokensByStaker) {
+		for (let user in tokensByStaker) {
 			let userTokens = tokensByStaker[user];
 			for (let i = 0; i < userTokens.length; i++) {
 				let o = await cosmicSignature.ownerOf(userTokens[i]);
@@ -371,7 +373,7 @@ describe('Cosmic Set2', function () {
 		expect(args.message).to.equal('cst bid');
 	});
 	it('Distribution of prize amounts matches specified business logic', async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -400,7 +402,7 @@ describe('Cosmic Set2', function () {
 
 		await cosmicGameProxy.mintCST(addr1.address, 0); // mint a token so we can stake
 		await cosmicSignature.connect(addr1).setApprovalForAll(await stakingWalletCST.getAddress(), true);
-		await stakingWalletCST.connect(addr1).stake(0); // stake a token so the deposits to staking wallet go to staking wallet , not to charity
+		await stakingWalletCST.connect(addr1).stake(0); // we need to stake, otherwise the deposit would be rejected
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: '', rwalk: -1 };
@@ -415,7 +417,7 @@ describe('Cosmic Set2', function () {
 		// for paying gas price since it is accounted on the EOA that sends the TX,
 		// and this will guarantee clean calculations
 		const BidderContract = await ethers.getContractFactory('BidderContract');
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -432,7 +434,7 @@ describe('Cosmic Set2', function () {
 		let amountPerWinner = Number(raffleAmount)/Number(numWinners);
 		let modAmount = Number(raffleAmount) % Number(numWinners);
 		raffleAmount = raffleAmount - BigInt(modAmount); // clean the value from reminder if not divisible by numWinners
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
+		const prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 		await ethers.provider.send('evm_mine');
 		let tx = await cBidder.doClaim();
@@ -443,8 +445,8 @@ describe('Cosmic Set2', function () {
 
 		let topic_sig = cosmicGameProxy.interface.getEvent('RaffleETHWinnerEvent').topicHash;
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		var unique_winners = [];
-		var sumDeposits = 0n;
+		const unique_winners = [];
+		let sumDeposits = 0n;
 		for (let i = 0; i < deposit_logs.length; i++) {
 			let wlog = cosmicGameProxy.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
@@ -471,7 +473,7 @@ describe('Cosmic Set2', function () {
 		[owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: '', rwalk: -1 };
@@ -532,7 +534,7 @@ describe('Cosmic Set2', function () {
 			await loadFixture(deployCosmic);
 		let donationAmount = ethers.parseEther('9000');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		var bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { msg: '', rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -569,7 +571,7 @@ describe('Cosmic Set2', function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
 		// in this test we will make one bid as EOA, after that we will wait for claimPrize() timeout
 		// and call the claimPrize() function from a contract. The contract should get the (main) prize.
@@ -583,7 +585,7 @@ describe('Cosmic Set2', function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		var bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { msg: '', rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -618,7 +620,7 @@ describe('Cosmic Set2', function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 		await expect(
 			ethers.provider.call({
 				to:  await cosmicGameProxy.getAddress(),
@@ -646,11 +648,11 @@ describe('Cosmic Set2', function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
 
-        const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
-        let brokenCharity = await BrokenCharity.deploy();
-        await brokenCharity.waitForDeployment();
+		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
+		let brokenCharity = await BrokenCharity.deploy();
+		await brokenCharity.waitForDeployment();
 
 		await cosmicGameProxy.upgradeTo(await brokenCharity.getAddress());
 		await expect(contractDeployerAcct.sendTransaction({ to: await cosmicGameProxy.getAddress(), value: 1000000000000000000n})).to.be.revertedWith("Test deposit failed");

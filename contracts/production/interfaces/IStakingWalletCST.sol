@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: CC0-1.0
-
 pragma solidity 0.8.26;
 
 /// @title A staking wallet for Cosmic Signature Tokens
@@ -42,31 +41,22 @@ interface IStakingWalletCST {
 	/// @param depositNum Deposit number
 	/// @param numStakedNFTs Number of staked NFTs at the time of deposit
 	/// @param amount Amount of ETH deposited
-	/// @param modulo Accumulated modulo after this deposit
+	/// // param modulo Accumulated modulo after this deposit
 	event EthDepositEvent(
 		uint256 indexed depositTime,
 		uint256 depositNum,
 		uint256 numStakedNFTs,
-		uint256 amount,
-		uint256 modulo
+		uint256 amount
+		// uint256 modulo
 	);
 
-	/// @notice Emitted when a deposit is sent to charity
-	/// @param amount Amount sent to charity
-	/// @param charityAddress Address of the charity
-	event CharityDepositEvent(uint256 amount, address charityAddress);
+	// /// @notice Emitted when the charity address is updated
+	// /// @param newCharityAddress New address of the charity
+	// event CharityUpdatedEvent(address indexed newCharityAddress);
 
-	/// @notice Emitted when the charity address is updated
-	/// @param newCharityAddress New address of the charity
-	event CharityUpdatedEvent(address indexed newCharityAddress);
-
-	/// @notice Emitted when accumulated modulo is sent to charity
-	/// @param amount Amount of modulo sent to charity
-	event ModuloSentEvent(uint256 amount);
-
-	/// @notice Deposits ETH for reward distribution
-	/// @dev Only callable by the CosmicGame contract
-	function deposit() external payable;
+	// /// @notice Emitted when accumulated modulo is sent to charity
+	// /// @param amount Amount of modulo sent to charity
+	// event ModuloSentToCharityEvent(uint256 amount);
 
 	/// @notice Stakes a single token
 	/// @param _tokenId ID of the token to stake
@@ -89,12 +79,20 @@ interface IStakingWalletCST {
 	/// @param deposits Array of deposit IDs
 	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external;
 
-	/// @notice Sets a new charity address
-	/// @param newCharityAddress Address of the new charity
-	function setCharity(address newCharityAddress) external;
+	/// @notice Unstakes a token and claims its reward in a single transaction
+	/// @param stakeActionId ID of the stake action
+	/// @param ETHDepositId ID of the ETH deposit for reward calculation
+	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) external;
 
-	/// @notice Sends accumulated modulo to charity
-	function moduloToCharity() external;
+	/// @notice Unstakes multiple tokens and claims their rewards in a single transaction
+	/// @param unstake_actions Array of stake action IDs to unstake
+	/// @param claim_actions Array of stake action IDs for claiming rewards
+	/// @param claim_deposits Array of deposit IDs for claiming rewards
+	function unstakeClaimMany(
+		uint256[] memory unstake_actions,
+		uint256[] memory claim_actions,
+		uint256[] memory claim_deposits
+	) external;
 
 	/// @notice Checks if a token has been used for staking
 	/// @param _tokenId ID of the token to check
@@ -120,18 +118,21 @@ interface IStakingWalletCST {
 	/// @return Address of the staker, address(0) if not staked
 	function stakerByTokenId(uint256 tokenId) external view returns (address);
 
-	/// @notice Unstakes a token and claims its reward in a single transaction
-	/// @param stakeActionId ID of the stake action
-	/// @param ETHDepositId ID of the ETH deposit for reward calculation
-	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) external;
+	/// @notice Deposits ETH for reward distribution
+	/// @dev Only callable by the CosmicGame contract
+	/// The implementation is not designed to handle the case when there are no staked NFTs,
+	/// so it reverts the transaction with the `CosmicGameErrors.InvalidOperationInCurrentState` error.
+	function depositIfPossible() external payable;
 
-	/// @notice Unstakes multiple tokens and claims their rewards in a single transaction
-	/// @param unstake_actions Array of stake action IDs to unstake
-	/// @param claim_actions Array of stake action IDs for claiming rewards
-	/// @param claim_deposits Array of deposit IDs for claiming rewards
-	function unstakeClaimMany(
-		uint256[] memory unstake_actions,
-		uint256[] memory claim_actions,
-		uint256[] memory claim_deposits
-	) external;
+	// /// @notice Sets a new charity address
+	// /// @param newCharityAddress Address of the new charity
+	// /// @dev Comment-202409208 relates and/or applies.
+	// function setCharity(address newCharityAddress) external;
+
+	// /// @notice Sends accumulated modulo to charity
+	// /// @dev Comment-202409208 relates and/or applies.
+	// function moduloToCharity() external;
+
+	/// @dev Comment-202409208 relates and/or applies.
+	function transferRemainingBalanceToCharity(address charityAddress_) external;
 }

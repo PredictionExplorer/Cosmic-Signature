@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.26;
 
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
@@ -7,6 +6,7 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCST } from "./StakingWalletCST.sol";
@@ -29,28 +29,31 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			);
 			require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 
-			// todo-1 Do we really need this variable. Maybe just use `msg.sender`?
-			address winner = msg.sender;
+			// // toto-1 We don't need this. `msg.sender` is the winner.
+			// // toto-1 Remove this garbage soon.
+			// address winner = msg.sender;
 
 			// Only the last bidder may claim the prize.
 			// But after the timeout expires, anyone is welcomed to.
-			if ( ! (winner == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize) ) {
+			// todo-1 Here and elsewhere, use respective functions from `Context`.
+			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize) ) {
 				revert
 					CosmicGameErrors.LastBidderOnly(
-						// todo-1 Timeout duration hardcoed in this message. Rephrase?
-						"Only the last bidder can claim the prize during the first 24 hours.",
+						"Only the last bidder may claim the prize until a timeout expires.",
 						lastBidder,
-						winner,
+						/*winner*/ msg.sender,
 						timeoutClaimPrize - (block.timestamp - prizeTime)
 					);
 			}
 
 			_updateEnduranceChampion();
 
-			// Prevent reentrancy
-			// todo-1 Reentrancy is no longer possible, right?
-			lastBidder = address(0);
-			winners[roundNum] = winner;
+			// // Prevent reentrancy
+			// // todo-1 Reentrancy is no longer possible. Moved to `_roundEndResets`.
+			// // todo-1 Remove this garbage soon.
+			// lastBidder = address(0);
+
+			winners[roundNum] = /*winner*/ msg.sender;
 
 			uint256 prizeAmount_ = prizeAmount();
 			uint256 charityAmount_ = charityAmount();
@@ -58,43 +61,50 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			uint256 stakingAmount_ = stakingAmount();
 
 			// Distribute prizes
-			_distributePrizes(winner, prizeAmount_, charityAmount_, raffleAmount_, stakingAmount_);
+			_distributePrizes(/*winner,*/ prizeAmount_, charityAmount_, raffleAmount_, stakingAmount_);
 
 			_roundEndResets();
-			emit PrizeClaimEvent(roundNum, winner, prizeAmount_);
+			emit PrizeClaimEvent(roundNum, /*winner*/ msg.sender, prizeAmount_);
 			++ roundNum;
 		}
 	}
 
 	/// @notice Distribute prizes to various recipients
 	/// @dev This function handles the distribution of ETH and NFT prizes
-	/// @param winner Address of the round winner
+	/// // param winner Address of the round winner
 	/// @param prizeAmount_ Amount of ETH for the main prize
 	/// @param charityAmount_ Amount of ETH for charity
 	/// @param raffleAmount_ Amount of ETH for raffle winners
 	/// @param stakingAmount_ Amount of ETH for staking rewards
 	function _distributePrizes(
-		address winner,
+		// address winner,
 		uint256 prizeAmount_,
 		uint256 charityAmount_,
 		uint256 raffleAmount_,
 		uint256 stakingAmount_
 	) internal {
-		// Main prize
-		(bool success, ) = winner.call{ value: prizeAmount_ }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, winner));
-
 		// Endurance Champion and Stellar Spender prizes
 		_distributeSpecialPrizes();
 
-		// Charity
-		(success, ) = charity.call{ value: charityAmount_ }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity));
+		// Raffle
+		_distributeRafflePrizes(raffleAmount_);
 
 		// Staking
-		if (nft.totalSupply() > 0) {
-			try stakingWalletCST.deposit{ value: stakingAmount_ }() {
-			} catch {
+		try stakingWalletCST.depositIfPossible{ value: stakingAmount_ }() {
+		} catch (bytes memory errorDetails) {
+			bool unexpectedErrorOccurred;
+			// todo-0 Nick, you might wan to develop tests for all these cases:
+			// todo-0    errorDetails.length == 32 && the InvalidOperationInCurrentState error occurred
+			// todo-0    errorDetails.length == 32 && some other error occurred
+			// todo-0    errorDetails.length != 32
+			if (errorDetails.length == 32) {
+				bytes4 errorSelector;
+				assembly { errorSelector := mload(errorDetails) }
+				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.InvalidOperationInCurrentState.selector;
+			} else {
+				unexpectedErrorOccurred = true;
+			}
+			if (unexpectedErrorOccurred) {
 				revert
 					CosmicGameErrors.FundTransferFailed(
 						"Transfer to staking wallet failed.",
@@ -102,32 +112,60 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 						address(stakingWalletCST)
 					);
 			}
+			charityAmount_ += stakingAmount_;
+			// stakingAmount_ = 0;
 		}
 
-		// Raffle
-		_distributeRafflePrizes(raffleAmount_);
+		// Charity
+		// If this fails we won't revert the transaction. The funds would simply stay in the game.
+		(bool success, ) = charity.call{ value: charityAmount_ }("");
+		if (success) {
+			emit CosmicGameEvents.FundsTransferredToCharityEvent(charityAmount_, charity);
+		} else {
+			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity);
+		}
+
+		// Sending main prize at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
+		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
+		// which would inflict damage if we ignore that error.
+		// todo-1 Can/should we specify how much gas an untrusted external call is allowed to use?
+		// todo-1 Can/should we forward all gas to trusted external calls?
+		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, /*winner*/ msg.sender));
 	}
 
 	/// @notice Distribute special prizes to Endurance Champion and Stellar Spender
 	/// @dev This function mints NFTs and distributes CST tokens to special winners
 	function _distributeSpecialPrizes() internal {
 		// Endurance Champion Prize
+		// todo-0 Can this address really be zero? Maybe just assert this?
 		if (enduranceChampion != address(0)) {
 			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			try token.mint(enduranceChampion, erc20TokenReward) {
-			} catch  {
-			}
+			// try
+			// todo-0 Can this, realistically, fail?
+			// todo-0 This can't, realistically, overflow, right?
+			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+			token.mint(enduranceChampion, erc20TokenReward);
+			// {
+			// } catch {
+			// }
 			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, 0);
 		}
 
 		// Stellar Spender Prize
+		// todo-0 Can this address really be zero? Maybe just assert this?
 		if (stellarSpender != address(0)) {
 			uint256 tokenId = nft.mint(stellarSpender, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
-			try token.mint(stellarSpender, erc20TokenReward) {
-			} catch  {
-			}
+			// try
+			// todo-0 Can this, realistically, fail?
+			// todo-0 This can't, realistically, overflow, right?
+			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+			token.mint(stellarSpender, erc20TokenReward);
+			// {
+			// } catch {
+			// }
 			emit StellarSpenderWinnerEvent(
 				stellarSpender,
 				roundNum,
@@ -147,10 +185,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
-			address raffleWinner = raffleParticipants[roundNum][
-				uint256(raffleEntropy) % numRaffleParticipants[roundNum]
-			];
-
+			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
+			// todo-0 Make `raffleWallet` strongly typed.
 			RaffleWallet(raffleWallet).deposit{ value: perWinnerAmount }(raffleWinner);
 			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
 		}
@@ -158,10 +194,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// Distribute NFT prizes to bidders
 		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
-			address raffleWinner = raffleParticipants[roundNum][
-				uint256(raffleEntropy) % numRaffleParticipants[roundNum]
-			];
-
+			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
 			uint256 tokenId = nft.mint(raffleWinner, roundNum);
 			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, tokenId, i, false, false);
 		}
@@ -171,8 +204,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		if (numStakedTokensRWalk > 0) {
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateEntropy();
+				// todo-0 Make `stakingWalletRWalk` strongly typed.
 				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStaker(raffleEntropy);
-
 				uint256 tokenId = nft.mint(rwalkWinner, roundNum);
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
 			}
@@ -182,16 +215,23 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	/// @notice Update the entropy used for random selection
 	/// @dev This function updates the entropy using the current block information
 	function _updateEntropy() internal {
-		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
+		}
 	}
 
 	/// @notice Reset various parameters at the end of a bidding round
 	/// @dev This function is called after a prize is claimed to prepare for the next round
 	function _roundEndResets() internal {
+		lastBidder = address(0);
+		// todo-0 Maybe better reset this to zero? Review uses.
 		lastCSTBidTime = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
 		// The auction should last 12 hours longer than the amount of time we add after every bid
-		// todo-0 magic number hardcoded
+		// todo-0 Magic number hardcoded. I added a relevant constant. Use it.
 		CSTAuctionLength = uint256(12) * nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
@@ -223,13 +263,23 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
    /// todo-0 Does this function belong to `SytemManagement`?
 	function timeUntilActivation() external view override returns (uint256) {
-		if (activationTime < block.timestamp) return 0;
-		return activationTime - block.timestamp;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			if (activationTime <= block.timestamp) return 0;
+			return activationTime - block.timestamp;
+		}
 	}
 
 	function timeUntilPrize() external view override returns (uint256) {
-		if (prizeTime < block.timestamp) return 0;
-		return prizeTime - block.timestamp;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			if (prizeTime <= block.timestamp) return 0;
+			return prizeTime - block.timestamp;
+		}
 	}
 
 	function getWinnerByRound(uint256 round) public view override returns (address) {

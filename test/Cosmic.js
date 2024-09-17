@@ -53,7 +53,7 @@ describe("Cosmic Set1", function () {
 		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		expect(await cosmicGameProxy.prizeAmount()).to.equal((donationAmount * 25n)/100n);
@@ -198,7 +198,7 @@ describe("Cosmic Set1", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let tokenPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: tokenPrice }); // tokenId=0
 
@@ -238,7 +238,7 @@ describe("Cosmic Set1", function () {
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(cBidder.doFailedBid({ value: donationAmount })).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 	});
 	it("Shouldn't be possible to bid using very long message", async function () {
@@ -251,7 +251,7 @@ describe("Cosmic Set1", function () {
 		for (let i = 0; i < 280 + 1; i++) {
 			longMsg = longMsg + "a";
 		}
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		var bidParams = { msg: longMsg, rwalk: -1 };
 		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -261,7 +261,7 @@ describe("Cosmic Set1", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(
 			cosmicSignature.connect(owner).mint(owner.address, 0n),
 		).to.be.revertedWithCustomError(contractErrors,"NoMintPrivileges");
@@ -295,7 +295,7 @@ describe("Cosmic Set1", function () {
 		let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
 		expect(remote_token_name).to.equal("name 0");
 
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(cosmicSignature.connect(addr2).setTokenName(token_id, "name 000")).to.be.revertedWithCustomError(
 			contractErrors,
 			"OwnershipError"
@@ -308,7 +308,7 @@ describe("Cosmic Set1", function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(
 			cosmicSignature.connect(addr1).mint(addr1.address, 0n),
 		).to.be.revertedWithCustomError(contractErrors,"NoMintPrivileges");
@@ -317,7 +317,7 @@ describe("Cosmic Set1", function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(
 			cosmicToken.nonces(owner.address),
 		).not.to.be.reverted;
@@ -326,7 +326,7 @@ describe("Cosmic Set1", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(cosmicGameProxy.connect(addr1).donate()).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
 	});
 	it("Raffle deposits sent should match raffle deposits received", async function () {

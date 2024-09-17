@@ -62,7 +62,7 @@ describe("Zero-address checking", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(charityWallet.setCharity(ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
@@ -80,30 +80,30 @@ describe("Zero-address checking", function () {
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		await expect(marketingWallet.setTokenContract(ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy StakingWalletCST with zero-address-ed parameters", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const [owner, addr1 /* , addr2 */ /* , addr3 */] = await ethers.getSigners();
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		const StakingWalletCST = await ethers.getContractFactory("StakingWalletCST");
-		await expect(StakingWalletCST.deploy(ethers.ZeroAddress,addr1.address, addr2.address, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
-		await expect(StakingWalletCST.deploy(owner.address,ethers.ZeroAddress, addr2.address, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
-		await expect(StakingWalletCST.deploy(addr1.address, addr2.address,ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		await expect(StakingWalletCST.deploy(ethers.ZeroAddress, addr1.address, /*addr2.address,*/ {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		await expect(StakingWalletCST.deploy(owner.address, ethers.ZeroAddress, /*addr2.address,*/ {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		// await expect(StakingWalletCST.deploy(addr1.address, addr2.address, ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy StakingWalletRWalk with zero-address-ed parameters", async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		const StakingWalletRWalk = await ethers.getContractFactory("StakingWalletRWalk");
 		await expect(StakingWalletRWalk.deploy(ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy CosmicSignature with zero-address-ed parameters", async function () {
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		const CosmicSignature = await ethers.getContractFactory("CosmicSignature");
 		await expect(CosmicSignature.deploy(ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy RaffleWallet with zero-address-ed parameters", async function () {
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		const RaffleWallet = await ethers.getContractFactory("RaffleWallet");
 		await expect(RaffleWallet.deploy(ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});

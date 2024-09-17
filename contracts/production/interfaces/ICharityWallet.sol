@@ -22,11 +22,15 @@ interface ICharityWallet {
 	/// @notice Emitted after accumulated donations were sent to the charity
 	/// @param charity The address of the charity receiving the donation
 	/// @param amount The amount of ETH sent to the charity
+	/// @dev
+	/// [ToDo-202409212-1]
+	/// todo-1 Consider eliminating this and using `CosmicGameEvents.FundsTransferredToCharityEvent` instead.
+	/// [/ToDo-202409212-1]
 	event DonationSentEvent(address indexed charity, uint256 amount);
 
 	/// @notice Allows the contract to receive ETH donations
 	/// @dev This function is called for plain ETH transfers without data
-   /// todo-0 That dev comment is unnecessary. It's a well known fact.
+   /// todo-1 That dev comment is unnecessary. It's a well known fact.
 	receive() external payable;
 
 	/// @notice Sets or updates the address of the designated charity
@@ -38,7 +42,7 @@ interface ICharityWallet {
 	/// Expected to be called approximately once a month, but frequency may vary
 	/// @dev This function is intentionally not restricted to onlyOwner to ensure transparency
 	/// and allow regular donations. It can be called by anyone at any time.
-	/// todo-1 Should this be `payable`? Then someone wouldhave n option to send some ETH and hen send everything to charity.
+	/// todo-1 Should this be `payable`? Then someone would have an option to send some ETH and hen send everything to charity.
 	/// todo-1 Do we need an oveload of this accepting the amount to send?
 	function send() external;
 }

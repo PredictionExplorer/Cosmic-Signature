@@ -48,7 +48,7 @@ describe("Cosmic Set1", function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
@@ -67,7 +67,7 @@ describe("Cosmic Set1", function () {
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(owner).mint({ value: mintPrice });

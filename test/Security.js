@@ -33,7 +33,7 @@ describe("Security", function () {
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 
 		await cosmicGameProxy.setTokenContract(await cosmicToken.getAddress());
 		await cosmicGameProxy.setNftContract(await cosmicSignature.getAddress());
@@ -70,7 +70,7 @@ describe("Security", function () {
 			deployCosmic,
 		);
 		[owner, addr1, ...addrs] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		await ethers.provider.send("evm_mine"); // begin
