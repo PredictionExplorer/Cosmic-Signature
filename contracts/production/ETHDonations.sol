@@ -10,12 +10,12 @@ import { IETHDonations } from "./interfaces/IETHDonations.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, IETHDonations {
-	function donate() external payable override nonReentrant onlyRuntime {
+	function donate() external payable override onlyRuntime {
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		emit DonationEvent(msg.sender, msg.value, roundNum);
 	}
 
-	function donateWithInfo(string calldata _data) external payable override nonReentrant onlyRuntime {
+	function donateWithInfo(string calldata _data) external payable override onlyRuntime {
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		uint256 recordId = donateWithInfoNumRecords;
 		++ donateWithInfoNumRecords;
