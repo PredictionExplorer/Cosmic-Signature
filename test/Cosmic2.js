@@ -655,4 +655,77 @@ describe('Cosmic Set2', function () {
 		await cosmicGameProxy.upgradeTo(await brokenCharity.getAddress());
 		await expect(contractDeployerAcct.sendTransaction({ to: await cosmicGameProxy.getAddress(), value: 1000000000000000000n})).to.be.revertedWith("Test deposit failed");
 	})
+	it("initialize() is disabled", async function () {
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet
+		} = await basicDeployment(
+			owner,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			true
+		);
+		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+
+		await expect(cosmicGameProxy.initialize(owner.address)).revertedWithCustomError(cosmicGameProxy,"InvalidInitialization");
+	})
+	it("Only owner can upgrade proxy", async function () {
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWallet,
+			marketingWallet
+		} = await basicDeployment(
+			owner,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			true
+		);
+		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+
+		await expect(cosmicGameProxy.connect(addr2).upgradeTo(addr1.address)).revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
+	})
+	it('It is not possible to bid with CST if balance is not enough', async function () {
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		await expect(cosmicGameProxy.connect(addr1).bidWithCST('cst bid')).to.be.revertedWithCustomError(cosmicGameProxy,"InsufficientCSTBalance");
+	});
+	it('getBidderAtPosition() reverts if invalid position index is provided', async function () {
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWalletCST, stakingWalletRWalk,marketingWallet,cosmicGame} =
+			await loadFixture(deployCosmic);
+		
+		let donationAmount = ethers.parseEther('10');
+		await cosmicGameProxy.donate({ value: donationAmount });
+		var bidParams = { msg: '', rwalk: -1 };
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGameProxy.getBidPrice();
+		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
+		bidPrice = await cosmicGameProxy.getBidPrice();
+
+		expect(await cosmicGameProxy.getBidderAtPosition(0)).to.equal(addr1.address);
+		expect(await cosmicGameProxy.getBidderAtPosition(1)).to.equal(addr2.address);
+		await expect(cosmicGameProxy.getBidderAtPosition(2)).to.be.revertedWith("Position out of bounds");
+	});
 });

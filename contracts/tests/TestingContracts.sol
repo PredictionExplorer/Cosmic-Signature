@@ -7,6 +7,7 @@ import { IStakingWalletCST } from "../production/interfaces/IStakingWalletCST.so
 import { StakingWalletCST } from "../production/StakingWalletCST.sol";
 import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
 import { RaffleWallet } from "../production/RaffleWallet.sol";
+import { CharityWallet } from "../production/CharityWallet.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "../production/CosmicSignature.sol";
@@ -45,6 +46,13 @@ contract BrokenCharity {
 	uint256 counter;
 	receive() external payable {
 		require(false, "Test deposit failed");
+	}
+}
+contract BrokenCharityWallet is CharityWallet {
+	// used to test revert() statements for charity deposits
+	uint256 counter;
+	function setCharityToZeroAddress() external {
+		charityAddress = address(0);
 	}
 }
 contract BrokenStaker {
