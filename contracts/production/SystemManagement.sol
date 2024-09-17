@@ -62,43 +62,43 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 	}
 
 	function setRandomWalk(address _randomWalk) external override onlyOwner onlyMaintenance {
-		require(_randomWalk != address(0), "Invalid address");
+		require(_randomWalk != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		randomWalk = _randomWalk;
 		emit RandomWalkAddressChanged(_randomWalk);
 	}
 
 	function setRaffleWallet(address _raffleWallet) external override onlyOwner onlyMaintenance {
-		require(_raffleWallet != address(0), "Invalid address");
+		require(_raffleWallet != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		raffleWallet = _raffleWallet;
 		emit RaffleWalletAddressChanged(_raffleWallet);
 	}
 
 	function setStakingWalletCST(IStakingWalletCST _stakingWalletCST) external override onlyOwner onlyMaintenance {
-		require(address(_stakingWalletCST) != address(0), "Invalid address");
+		require(address(_stakingWalletCST) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		stakingWalletCST = StakingWalletCST(address(_stakingWalletCST));
 		emit StakingWalletCSTAddressChanged(_stakingWalletCST);
 	}
 
 	function setStakingWalletRWalk(address _stakingWalletRWalk) external override onlyOwner onlyMaintenance {
-		require(_stakingWalletRWalk != address(0), "Invalid address");
+		require(_stakingWalletRWalk != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		stakingWalletRWalk = _stakingWalletRWalk;
 		emit StakingWalletRWalkAddressChanged(_stakingWalletRWalk);
 	}
 
 	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyMaintenance {
-		require(_marketingWallet != address(0), "Invalid address");
+		require(_marketingWallet != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		marketingWallet = _marketingWallet;
 		emit MarketingWalletAddressChanged(_marketingWallet);
 	}
 
 	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyMaintenance {
-		require(address(_token) != address(0), "Invalid address");
+		require(address(_token) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		token = CosmicToken(address(_token));
 		emit CosmicTokenAddressChanged(_token);
 	}
 
 	function setNftContract(ICosmicSignature _nft) external override onlyOwner onlyMaintenance {
-		require(address(_nft) != address(0), "Invalid address");
+		require(address(_nft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		nft = CosmicSignature(address(_nft));
 		emit CosmicSignatureAddressChanged(_nft);
 	}
