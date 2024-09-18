@@ -1,6 +1,6 @@
 // #region
 
-"use strict";
+ "use strict";
 
 // #endregion
 // #region
