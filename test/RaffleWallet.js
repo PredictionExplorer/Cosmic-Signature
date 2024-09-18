@@ -1,12 +1,12 @@
-const { expect } = require("chai");
 const hre = require("hardhat");
+const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("RaffleWallet", function () {
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		[contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -44,7 +44,7 @@ describe("RaffleWallet", function () {
 		],
 	};
 	it("deposit() works as expected", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -66,18 +66,18 @@ describe("RaffleWallet", function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		const NewRaffleWallet = await ethers.getContractFactory('RaffleWallet');
+		const NewRaffleWallet = await hre.ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);
 		await newRaffleWallet.waitForDeployment();
-		await expect(newRaffleWallet.deposit(ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(newRaffleWallet.deposit(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
 		await expect(newRaffleWallet.deposit(addr1.address)).to.revertedWithCustomError(contractErrors, "NonZeroValueRequired");
 		await expect(newRaffleWallet.connect(addr1).deposit(addr1.address,{value: 1000000n})).to.revertedWithCustomError(contractErrors, "DepositFromUnauthorizedSender");
 		expect(newRaffleWallet.connect(owner).deposit({value:1000000n})).not.to.be.reverted;
 	});
 	it("withdraw() works as expected", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -99,9 +99,9 @@ describe("RaffleWallet", function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		const NewRaffleWallet = await ethers.getContractFactory('RaffleWallet');
+		const NewRaffleWallet = await hre.ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);
 		await newRaffleWallet.waitForDeployment();
 		await newRaffleWallet.connect(owner).deposit(addr1.address,{value: 1000n});
