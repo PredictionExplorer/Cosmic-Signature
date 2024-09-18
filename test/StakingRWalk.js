@@ -276,6 +276,8 @@ describe("Staking RandomWalk tests", function () {
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 
+		await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk,"NoTokensStaked");
+
 		let numSigners = 20;
 		let numLoops = 50;
 		let randomSeed = 11235813; // fib

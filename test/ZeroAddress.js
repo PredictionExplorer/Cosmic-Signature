@@ -2,7 +2,7 @@ const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
-const { basicDeployment } = require("../src/Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Zero-address checking", function () {
 	// We define a fixture to reuse the same setup in every test.
@@ -64,6 +64,32 @@ describe("Zero-address checking", function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(charityWallet.setCharity(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
+	it("Shouldn't be possible to set a zero-address for charity in CosmicGame", async function () {
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+			bidLogic
+		} = await basicDeploymentAdvanced(
+			'SpecialCosmicGame',
+			owner,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			false
+		);
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		await expect(cosmicGameProxy.setCharity(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+	});
 	it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
 		const {
 			cosmicGameProxy,
@@ -102,6 +128,11 @@ describe("Zero-address checking", function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
 		await expect(CosmicSignature.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+	});
+	it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
+		await expect(MarketingWallet.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy RaffleWallet with zero-address-ed parameters", async function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
