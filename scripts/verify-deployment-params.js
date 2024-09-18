@@ -9,7 +9,7 @@ async function main() {
 	let activationTime = await cosmicGameProxy.activationTime();
 	let randomWalkAddr = await cosmicGameProxy.randomWalk();
 	let charityAddr = await cosmicGameProxy.charity();
-	let charityContract = await ethers.getContractAt("CharityWallet", charityAddr);
+	let charityContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
 	let charityContractOwner = await charityContract.owner();
 	let charityDonationsReceiver = await charityContract.charityAddress();
 

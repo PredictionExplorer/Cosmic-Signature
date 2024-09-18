@@ -6,7 +6,7 @@ async function getCosmicGameProxyContract() {
 		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
+	let cosmicGameProxy = await hre.ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
 
@@ -28,7 +28,7 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 	let stakingWalletAddr = await cosmicGameProxy.stakingWalletRWalk();
-	let stakingWalletRWalk = await ethers.getContractAt("StakingWalletRWalk",stakingWalletAddr);
+	let stakingWalletRWalk = await hre.ethers.getContractAt("StakingWalletRWalk",stakingWalletAddr);
 	console.log("staking wallet");console.log(stakingWalletAddr);
 	try {
 		await stakingWalletRWalk.connect(testingAcct).setMinStakePeriod(period);

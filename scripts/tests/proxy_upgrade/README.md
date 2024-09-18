@@ -17,7 +17,7 @@ The bidder now sends transaction for any amount in `msg.value`, that is multiple
 The call to `bid()` function must now be done in a new way:
 
     let bidParams = {msg:'bid test',rwalk:-1,'openbid':true};
-    let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
+    let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
     let bidPrice = await cosmicGameProxy.getBidPrice();
     await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice.mul(multiplier), gasLimit: 30000000 }); 
 

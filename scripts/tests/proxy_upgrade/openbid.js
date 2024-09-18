@@ -14,7 +14,7 @@ async function getCosmicGameProxyContract(contractName) {
 		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await ethers.getContractAt(contractName, cosmicGameProxyAddr);
+	let cosmicGameProxy = await hre.ethers.getContractAt(contractName, cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
 
@@ -31,7 +31,7 @@ async function main() {
 
 	let multiplier = await cosmicGameProxy.timesBidPrice()
 	let bidParams = {msg:'open bid',rwalk:-1,'openbid':true};
-	let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
+	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	console.log("bidPrice before: "+bidPrice);
 	await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice * multiplier, gasLimit: 30000000 });

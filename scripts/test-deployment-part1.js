@@ -3,6 +3,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
+
 const bidParamsEncoding = {
 	type: "tuple(string,int256)",
 	name: "bidparams",
@@ -14,7 +15,7 @@ const bidParamsEncoding = {
 async function bid_simple(testingAcct, cosmicGameProxy) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	let bidParams = { msg: "test bid", rwalk: -1 };
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	let tx = await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice });
 	let receipt = await tx.wait();
 	let topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
@@ -27,9 +28,9 @@ async function bid_simple(testingAcct, cosmicGameProxy) {
 async function bid_randomwalk(testingAcct, cosmicGameProxy, tokenId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	let bidParams = { msg: "rwalk bid", rwalk: tokenId };
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy.connect(testingAcct).bid(params,{value:bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
@@ -43,11 +44,11 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 
 	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	await randomWalk.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
 
 	let bidParams = { msg: "donate bid", rwalk: -1 };
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
 		.bidAndDonateNFT(params, randomWalk.address, donatedTokenId, { value: bidPrice });
@@ -70,11 +71,11 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 
 	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	await randomWalk.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
 
 	let bidParams = { msg: "donate nft rwalk bid", rwalk: tokenIdBidding };
-	let params = ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
+	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
 		.bidAndDonateNFT(params, randomWalk.address, donatedTokenId,{value:bidPrice});

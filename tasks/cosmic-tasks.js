@@ -1,5 +1,7 @@
+const hre = require("hardhat");
 const { basicDeployment } = require("../src/Deploy.js");
 const fs = require("fs");
+
 task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) => {
 	let configFile = args.deployconfig;
 	if (typeof configFile === "undefined" || configFile.length == 0) {
@@ -42,7 +44,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	console.log("contracts deployed");
 	if (config_params.donateToContract == true) {
 		let ethValue = "2";
-		let donationAmount = ethers.parseEther(ethValue);
+		let donationAmount = hre.ethers.parseEther(ethValue);
 		await cosmicGameProxy.connect(deployerAcct).donate({value:donationAmount});
 		console.log("Donated "+ethValue+" ETH to contract");
 	}

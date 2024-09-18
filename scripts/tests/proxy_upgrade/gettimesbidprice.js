@@ -5,7 +5,7 @@ async function getCosmicGameProxyContract(contractName) {
 		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await ethers.getContractAt(contractName, cosmicGameProxyAddr);
+	let cosmicGameProxy = await hre.ethers.getContractAt(contractName, cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
 

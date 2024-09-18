@@ -5,11 +5,11 @@ const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function set_parameters(testingAcct, cosmicGameProxy) {
-	let nanoseconds = ethers.BigNumber.from("180000000000");
+	let nanoseconds = hre.ethers.BigNumber.from("180000000000");
 	await cosmicGameProxy.connect(testingAcct).setNanoSecondsExtra(nanoseconds);
-	let initialseconds = ethers.BigNumber.from("60");
+	let initialseconds = hre.ethers.BigNumber.from("60");
 	await cosmicGameProxy.connect(testingAcct).setInitialSecondsUntilPrize(initialseconds);
-	let timeout = ethers.BigNumber.from("90");
+	let timeout = hre.ethers.BigNumber.from("90");
 	await cosmicGameProxy.connect(testingAcct).setTimeoutClaimPrize(timeout);
 	console.log("Nanoseconds extra = " + nanoseconds);
 	console.log("Initial seconds = " + initialseconds);
