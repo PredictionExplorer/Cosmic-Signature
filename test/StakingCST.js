@@ -1,5 +1,5 @@
 const { time, loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
-const { ethers } = require('hardhat');
+const { ethers } = require("hardhat");
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 const { expect } = require('chai');
 const SKIP_LONG_TESTS = '1';
@@ -738,8 +738,8 @@ describe('Staking CST tests', function () {
 		await ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 		await ethers.provider.send('evm_mine');
 
+		// todo-0 This fails.
 		await expect(cosmicGameProxy.claimPrize()).not.to.be.reverted;	
-
 	});
 	it('Changing charity address works', async function () {
 		const {

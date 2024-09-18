@@ -1,12 +1,12 @@
-const { expect } = require("chai");
 const hre = require("hardhat");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { expect } = require("chai");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("RaffleWallet", function () {
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		[contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
