@@ -66,12 +66,12 @@ describe("RaffleWallet", function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		const NewRaffleWallet = await ethers.getContractFactory('RaffleWallet');
+		const NewRaffleWallet = await hre.ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);
 		await newRaffleWallet.waitForDeployment();
-		await expect(newRaffleWallet.deposit(ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(newRaffleWallet.deposit(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
 		await expect(newRaffleWallet.deposit(addr1.address)).to.revertedWithCustomError(contractErrors, "NonZeroValueRequired");
 		await expect(newRaffleWallet.connect(addr1).deposit(addr1.address,{value: 1000000n})).to.revertedWithCustomError(contractErrors, "DepositFromUnauthorizedSender");
 		expect(newRaffleWallet.connect(owner).deposit({value:1000000n})).not.to.be.reverted;
@@ -99,7 +99,7 @@ describe("RaffleWallet", function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		const NewRaffleWallet = await ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);
