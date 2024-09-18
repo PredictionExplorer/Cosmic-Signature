@@ -3,6 +3,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
+
 async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 

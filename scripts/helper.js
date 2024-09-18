@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+
 async function getCosmicGameProxyContract() {
 	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
