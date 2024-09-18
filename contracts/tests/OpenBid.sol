@@ -127,7 +127,7 @@ contract CosmicGameOpenBid is
 		revert("Function does not exist");
 	}
 
-	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+	function _authorizeUpgrade(address newImplementation) internal override {
 	}
 
 	function upgradeTo(address _newImplementation) public override onlyOwner {

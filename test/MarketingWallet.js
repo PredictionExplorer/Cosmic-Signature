@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("MarketingWallet", function () {

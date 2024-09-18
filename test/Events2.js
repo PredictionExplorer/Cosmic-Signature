@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 // const { ethers } = require("hardhat");
 const hre = require("hardhat");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Events2", function () {

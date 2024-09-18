@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
-const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Cosmic Set1", function () {
 	// We define a fixture to reuse the same setup in every test.
