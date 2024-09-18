@@ -77,7 +77,7 @@ describe("RaffleWallet", function () {
 		expect(newRaffleWallet.connect(owner).deposit({value:1000000n})).not.to.be.reverted;
 	});
 	it("withdraw() works as expected", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -101,7 +101,7 @@ describe("RaffleWallet", function () {
 		);
 		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		const NewRaffleWallet = await ethers.getContractFactory('RaffleWallet');
+		const NewRaffleWallet = await hre.ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);
 		await newRaffleWallet.waitForDeployment();
 		await newRaffleWallet.connect(owner).deposit(addr1.address,{value: 1000n});
