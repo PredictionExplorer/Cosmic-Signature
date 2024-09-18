@@ -44,7 +44,7 @@ describe("MarketingWallet", function () {
 		],
 	};
 	it("setTokenContract() emits CosmicTokenAddressChanged event correctly()", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -66,14 +66,14 @@ describe("MarketingWallet", function () {
 			true,
 			false
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		await expect(marketingWallet.setTokenContract(ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
 		await expect(marketingWallet.connect(addr1).setTokenContract(addr1.address)).to.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
