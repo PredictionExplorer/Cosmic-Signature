@@ -350,7 +350,7 @@ describe("Events", function () {
 			.withArgs(percentage);
 		expect((await cosmicGameProxy.rafflePercentage()).toString()).to.equal(percentage.toString());
 
-		var num_winners = 11n;
+		const num_winners = 11n;
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleETHWinnersBidding(num_winners))
 			.to.emit(cosmicGameProxy, "NumRaffleETHWinnersBiddingChanged")
 			.withArgs(num_winners);
@@ -398,43 +398,43 @@ describe("Events", function () {
 			.withArgs(testAcct.address);
 		expect(await cosmicGameProxy.nft()).to.equal(testAcct.address);
 
-		var time_increase = 1001n;
+		const time_increase = 1001n;
 		await expect(cosmicGameProxy.connect(owner).setTimeIncrease(time_increase))
 			.to.emit(cosmicGameProxy, "TimeIncreaseChanged")
 			.withArgs(time_increase);
 		expect((await cosmicGameProxy.timeIncrease()).toString()).to.equal(time_increase.toString());
 
-		var timeout_claim_prize = 1003n;
+		const timeout_claim_prize = 1003n;
 		await expect(cosmicGameProxy.connect(owner).setTimeoutClaimPrize(timeout_claim_prize))
 			.to.emit(cosmicGameProxy, "TimeoutClaimPrizeChanged")
 			.withArgs(timeout_claim_prize);
 		expect((await cosmicGameProxy.timeoutClaimPrize()).toString()).to.equal(timeout_claim_prize.toString());
 
-		var price_increase = 1002n;
+		const price_increase = 1002n;
 		await expect(cosmicGameProxy.connect(owner).setPriceIncrease(price_increase))
 			.to.emit(cosmicGameProxy, "PriceIncreaseChanged")
 			.withArgs(price_increase);
 		expect((await cosmicGameProxy.priceIncrease()).toString()).to.equal(price_increase.toString());
 
-		var nanoseconds = 1003n;
+		const nanoseconds = 1003n;
 		await expect(cosmicGameProxy.connect(owner).setNanoSecondsExtra(nanoseconds))
 			.to.emit(cosmicGameProxy, "NanoSecondsExtraChanged")
 			.withArgs(nanoseconds);
 		expect((await cosmicGameProxy.nanoSecondsExtra()).toString()).to.equal(nanoseconds.toString());
 
-		var initialseconds = 1004n;
+		const initialseconds = 1004n;
 		await expect(cosmicGameProxy.connect(owner).setInitialSecondsUntilPrize(initialseconds))
 			.to.emit(cosmicGameProxy, "InitialSecondsUntilPrizeChanged")
 			.withArgs(initialseconds);
 		expect((await cosmicGameProxy.initialSecondsUntilPrize()).toString()).to.equal(initialseconds.toString());
 
-		var bidamount = 1005n;
+		const bidamount = 1005n;
 		await expect(cosmicGameProxy.connect(owner).updateInitialBidAmountFraction(bidamount))
 			.to.emit(cosmicGameProxy, "InitialBidAmountFractionChanged")
 			.withArgs(bidamount);
 		expect((await cosmicGameProxy.initialBidAmountFraction()).toString()).to.equal(bidamount.toString());
 
-		var activationtime = 1006n;
+		const activationtime = 1006n;
 		await expect(cosmicGameProxy.connect(owner).setActivationTime(activationtime))
 			.to.emit(cosmicGameProxy, "ActivationTimeChanged")
 			.withArgs(activationtime);
