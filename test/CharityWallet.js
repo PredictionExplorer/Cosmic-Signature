@@ -58,7 +58,7 @@ describe("CharityWallet tests", function () {
 	});
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		var transferOwnership = false;
+		const transferOwnership = false;
 		const {
 			cosmicGameProxy,
 			cosmicToken,
