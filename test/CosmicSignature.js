@@ -2,7 +2,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("CosmicSignature tests", function () {
 	// We define a fixture to reuse the same setup in every test.

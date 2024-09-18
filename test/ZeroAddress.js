@@ -2,7 +2,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 const { ethers } = require("hardhat");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src//Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Zero-address checking", function () {
 	// We define a fixture to reuse the same setup in every test.
