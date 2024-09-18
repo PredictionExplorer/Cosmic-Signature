@@ -155,8 +155,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 		// Distribute token rewards
 		// try
-		// todo-0 Can this, realistically, fail?
-		// todo-0 This can't, realistically, overflow, right?
+		// [ToDo-202409245-0]
+		// Can this, realistically, fail?
+		// This can't, realistically, overflow, right?
+		// [/ToDo-202409245-0]
 		token.mint(/*lastBidder*/ msg.sender, tokenReward);
 		// {
 		// } catch {
@@ -168,8 +170,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// 		);
 		// }
 		// try
-		// todo-0 Can this, realistically, fail?
-		// todo-0 This can't, realistically, overflow, right?
+		// ToDo-202409245-0 applies.
 		token.mint(marketingWallet, marketingReward);
 		// {
 		// } catch {
@@ -235,7 +236,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		uint256 price = getCurrentBidPriceCST();
 
 		// // [Comment-202409181]
-		// // This validation is unnecessary, given that `token.burn` caled near Comment-202409177 is going to perform it too.
+		// // This validation is unnecessary, given that `token.burn` called near Comment-202409177 is going to perform it too.
 		// // [/Comment-202409181]
 		// require(
 		// 	userBalance >= price,

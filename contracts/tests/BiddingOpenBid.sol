@@ -175,8 +175,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 
 		// Distribute token rewards
 		// try
-		// todo-0 Can this, realistically, fail?
-		// todo-0 This can't, realistically, overflow, right?
+		// ToDo-202409245-0 applies.
 		token.mint(/*lastBidder*/ msg.sender, tokenReward);
 		// {
 		// } catch {
@@ -188,8 +187,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		// 		);
 		// }
 		// try
-		// todo-0 Can this, realistically, fail?
-		// todo-0 This can't, realistically, overflow, right?
+		// ToDo-202409245-0 applies.
 		token.mint(marketingWallet, marketingReward);
 		// {
 		// } catch {

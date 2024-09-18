@@ -1,4 +1,5 @@
 // Used to check the three main fields of deployed contracts: activationTime, charityAddress and randomWalk address
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");

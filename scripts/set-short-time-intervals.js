@@ -1,4 +1,5 @@
 // Sets short time intervals to avoid waiting for running tests
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");

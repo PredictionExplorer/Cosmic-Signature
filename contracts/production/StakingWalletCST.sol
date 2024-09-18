@@ -72,12 +72,12 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	// /// @notice Accumulated modulo from ETH deposits
 	// /// @dev
 	// /// [Comment-202409208]
-	// /// Issue. I dislike this.
-	// /// Relevant logic counts orders of magnitude less money than it costs gas-wise.
-	// /// So I have eliminated both `modulo` and `moduloToCharity`.
-	// /// I also eliminated `charity` (as well as `setCharity`), because it would rarely, if ever, be used,
-	// /// but it would cost us some gas to update it.
-	// /// Instead, I added the `transferRemainingBalanceToCharity` function.
+	// /// Issue. This is questionable.
+	// /// Relevant logic counts and tries to handle correctly orders of magnitude less money than it costs gas-wise.
+	// /// So I have eliminated `modulo`.
+	// /// I also eliminated `charity` because it would rarely, if ever, be used, but would cost us some gas to update.
+	// /// Consequently, I eliminated `moduloToCharity`, `setCharity`, and some other entities, such as related events.
+	// /// Instead, I added the `transferRemainingBalanceToCharity` function, as a minimalistic replacement for all of the above.
 	// /// Comment-202409213 relates.
 	// /// [/Comment-202409208]
 	// uint256 public modulo;
@@ -309,7 +309,8 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		return stakeActions[uint256(actionId)].nftOwner;
 	}
 
-	/// @dev todo-1 `receive` would be cheaper gas-wise, right?
+	/// @dev todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
+	/// todo-1 It would probably be cheaper gas-wise.
 	function depositIfPossible() external payable override {
 		require(
 			msg.sender == game,
@@ -395,7 +396,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		// [Comment-202409213]
 		// The caller shall wait until everybody withdraws their NFTs.
 		// Although it's unlikely to ever happen.
-		// But, as mentioned in Comment-202409208, any better solution would cost too much gas.
+		// But, as mentioned in Comment-202409208, any better solution wouldn't be worth the gas.
 		// [/Comment-202409213]
 		require(numStakedNFTs == 0, CosmicGameErrors.InvalidOperationInCurrentState());
 

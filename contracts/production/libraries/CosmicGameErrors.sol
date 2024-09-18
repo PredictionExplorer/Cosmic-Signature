@@ -38,11 +38,11 @@ library CosmicGameErrors {
 	/// @param valueMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
 	error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueMinLimit);
 
-	/// @notice Thrown when the bidder has insufficient CST balance
-	/// @param errStr Description of the error
-	/// @param requiredAmount The required CST amount
-	/// @param senderBalance The actual balance of the sender
-	error InsufficientCSTBalance(string errStr, uint256 requiredAmount, uint256 senderBalance);
+	// /// @notice Thrown when the bidder has insufficient CST balance
+	// /// @param errStr Description of the error
+	// /// @param requiredAmount The required CST amount
+	// /// @param senderBalance The actual balance of the sender
+	// error InsufficientCSTBalance(string errStr, uint256 requiredAmount, uint256 senderBalance);
 
 	/// @notice Thrown when an invalid bidder query offset is provided
 	/// @param errStr Description of the error

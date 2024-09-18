@@ -1,9 +1,10 @@
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+
 const SKIP_LONG_TESTS = "1";
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Cosmic Set1", function () {
 	// We define a fixture to reuse the same setup in every test.
@@ -11,7 +12,7 @@ describe("Cosmic Set1", function () {
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		[contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -45,11 +46,11 @@ describe("Cosmic Set1", function () {
 		],
 	};
 	it("donateWithInfo() works as expected", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-		let donationAmount = ethers.parseEther("10");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		let donationAmount = hre.ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
 		let numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
@@ -64,10 +65,10 @@ describe("Cosmic Set1", function () {
 		expect(numDonationInfoRecs).to.equal(2);
 	});
 	it("donateNFT() without making a bid works", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		const contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(owner).mint({ value: mintPrice });

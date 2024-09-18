@@ -94,14 +94,15 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		} catch (bytes memory errorDetails) {
 			bool unexpectedErrorOccurred;
 			// [ToDo-202409226-0]
-			// Nick, you might wan to develop tests for all these cases:
-			//    errorDetails.length == 32 && the InvalidOperationInCurrentState error occurred
-			//    errorDetails.length == 32 && some other error occurred
-			//    errorDetails.length != 32
+			// Nick, you might want to develop tests for all these cases:
+			//    errorDetails.length == 4 && the InvalidOperationInCurrentState error occurred
+			//    errorDetails.length == 4 && some other error occurred
+			//    errorDetails.length != 4
+			// Then remove this ToDo and all mentionings of it.
 			// [/ToDo-202409226-0]
-			if (errorDetails.length == 32) {
+			if (errorDetails.length == 4) {
 				bytes4 errorSelector;
-				assembly { errorSelector := mload(errorDetails) }
+				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
 				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.InvalidOperationInCurrentState.selector;
 			} else {
 				unexpectedErrorOccurred = true;
@@ -145,8 +146,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			// try
-			// todo-0 Can this, realistically, fail?
-			// todo-0 This can't, realistically, overflow, right?
+			// ToDo-202409245-0 applies.
 			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
 			token.mint(enduranceChampion, erc20TokenReward);
 			// {
@@ -161,8 +161,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			uint256 tokenId = nft.mint(stellarSpender, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
 			// try
-			// todo-0 Can this, realistically, fail?
-			// todo-0 This can't, realistically, overflow, right?
+			// ToDo-202409245-0 applies.
 			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
 			token.mint(stellarSpender, erc20TokenReward);
 			// {

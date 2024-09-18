@@ -1,8 +1,9 @@
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+
 const SKIP_LONG_TESTS = "0";
 
 describe("CharityWallet tests", function () {
@@ -11,7 +12,7 @@ describe("CharityWallet tests", function () {
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		[contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -47,17 +48,17 @@ describe("CharityWallet tests", function () {
 	it("CharityWallet is sending the right amount", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		let amountSent = ethers.parseUnits("9",18);
+		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		let amountSent = hre.ethers.parseUnits("9",18);
 		let receiver = await charityWallet.charityAddress();
 		await addr2.sendTransaction({ to: await charityWallet.getAddress(), value: amountSent });
-		let balanceBefore = await ethers.provider.getBalance(receiver);
+		let balanceBefore = await hre.ethers.provider.getBalance(receiver);
 		await charityWallet.send();
-		let balanceAfter = await ethers.provider.getBalance(receiver);
+		let balanceAfter = await hre.ethers.provider.getBalance(receiver);
 		expect(balanceAfter).to.equal(balanceBefore+amountSent);
 	});
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		var transferOwnership = false;
 		const {
 			cosmicGameProxy,
@@ -71,17 +72,17 @@ describe("CharityWallet tests", function () {
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
 
-		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
+		const BrokenCharity = await hre.ethers.getContractFactory("BrokenCharity");
 		let brokenCharity = await BrokenCharity.deploy();
 		await brokenCharity.waitForDeployment();
 
-		await owner.sendTransaction({ to: await charityWallet.getAddress(), value: ethers.parseUnits("3",18)});
+		await owner.sendTransaction({ to: await charityWallet.getAddress(), value: hre.ethers.parseUnits("3",18)});
 		await charityWallet.setCharity(await brokenCharity.getAddress());
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		let = contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(charityWallet.send()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 
 
-		const BrokenCharityWallet = await ethers.getContractFactory("BrokenCharityWallet");
+		const BrokenCharityWallet = await hre.ethers.getContractFactory("BrokenCharityWallet");
 		let brokenCharityWallet = await BrokenCharityWallet.deploy();
 		await brokenCharityWallet.waitForDeployment();
 		await brokenCharityWallet.setCharityToZeroAddress();
@@ -93,33 +94,33 @@ describe("CharityWallet tests", function () {
 		if (SKIP_LONG_TESTS == "1") return;
 		const forward_blocks = async n => {
 			for (let i = 0; i < n; i++) {
-				await ethers.provider.send("evm_mine");
+				await hre.ethers.provider.send("evm_mine");
 			}
 		};
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let tx, receipt, log, parsed_log, bidPrice, winner, donationAmount;
 
-		donationAmount = ethers.parseEther("10");
+		donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 
 		let voting_delay = await cosmicDAO.votingDelay();

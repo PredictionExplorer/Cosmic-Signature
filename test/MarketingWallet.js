@@ -1,12 +1,12 @@
-const { expect } = require("chai");
 const hre = require("hardhat");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { expect } = require("chai");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("MarketingWallet", function () {
 	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		[contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -44,7 +44,7 @@ describe("MarketingWallet", function () {
 		],
 	};
 	it("setTokenContract() emits CosmicTokenAddressChanged event correctly()", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -66,13 +66,13 @@ describe("MarketingWallet", function () {
 			true,
 			false
 		);
-		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		await expect(marketingWallet.setTokenContract(ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
 		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -85,17 +85,17 @@ describe("MarketingWallet", function () {
 			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-		const contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		const BidderContract = await ethers.getContractFactory('BidderContract');
+		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cBidder.doBid({ value: bidPrice });
 
-		const marketingReward = ethers.parseEther('15');
-		await expect(marketingWallet.send(marketingReward,ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		const marketingReward = hre.ethers.parseEther('15');
+		await expect(marketingWallet.send(marketingReward,hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 		await expect(marketingWallet.send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
 		await marketingWallet.send(marketingReward,addr1);
 		await marketingWallet.setTokenContract(await cBidder.getAddress());

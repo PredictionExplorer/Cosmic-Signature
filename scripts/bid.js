@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+
 const bidParamsEncoding = {
 	type: "tuple(string,int256)",
 	name: "bidparams",
