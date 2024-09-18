@@ -44,7 +44,7 @@ describe("RaffleWallet", function () {
 		],
 	};
 	it("deposit() works as expected", async function () {
-		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
