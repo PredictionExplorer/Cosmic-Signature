@@ -1,4 +1,9 @@
-const hre = require("hardhat");
+// [Comment-202409255]
+// Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
+// So we must do things differently here.
+// [/Comment-202409255]
+// const hre = require("hardhat");
+const { HardhatContext } = require("hardhat/internal/context");
 
 const basicDeployment = async function (
 	deployerAcct,
@@ -27,11 +32,15 @@ const basicDeploymentAdvanced = async function (
 	transferOwnership,
 	switchToRuntime,
 ) {
-	let cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
 	if (switchToRuntime === undefined) {
 		console.error("switchToRuntime is not set");
 		process.exit(1);
 	}
+
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	let cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
 	let CosmicGame = await hre.ethers.getContractFactory(cgpName);
 	cosmicGameProxy = await hre.upgrades.deployProxy(
 		CosmicGame,
@@ -40,7 +49,7 @@ const basicDeploymentAdvanced = async function (
 			kind: "uups"
 		}
 	);
-	cosmicGameProxyAddr = await cosmicGameProxy.getAddress();
+	const cosmicGameProxyAddr = await cosmicGameProxy.getAddress();
 	let cosmicGameAddr = await cosmicGameProxy.runner.provider.getStorage(cosmicGameProxyAddr,'0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc');
 	let cosmicGame = await CosmicGame.attach(cosmicGameProxyAddr);
 	let CosmicToken = await hre.ethers.getContractFactory("CosmicToken");

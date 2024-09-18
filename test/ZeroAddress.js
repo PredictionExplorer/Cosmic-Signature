@@ -9,8 +9,7 @@ describe("Zero-address checking", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -61,7 +60,7 @@ describe("Zero-address checking", function () {
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(charityWallet.setCharity(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
@@ -79,7 +78,7 @@ describe("Zero-address checking", function () {
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
@@ -92,7 +91,7 @@ describe("Zero-address checking", function () {
 		// await expect(StakingWalletCST.deploy(addr1.address, addr2.address, hre.ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy StakingWalletRWalk with zero-address-ed parameters", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		const StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
 		await expect(StakingWalletRWalk.deploy(hre.ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");

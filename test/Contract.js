@@ -14,8 +14,7 @@ describe("Contract", function () {
 		],
 	};
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -47,7 +46,7 @@ describe("Contract", function () {
 			deployCosmic,
 		);
 
-		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		let bidderContract = await BidderContract.connect(owner).deploy(await cosmicGameProxy.getAddress());
 		await bidderContract.waitForDeployment();
@@ -119,7 +118,7 @@ describe("Contract", function () {
 			deployCosmic,
 		);
 
-		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const BNonRec = await hre.ethers.getContractFactory("BidCNonRecv");
 		let bnonrec = await BNonRec.connect(owner).deploy(await cosmicGameProxy.getAddress());
 		await bnonrec.waitForDeployment();

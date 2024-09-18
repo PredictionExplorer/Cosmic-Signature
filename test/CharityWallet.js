@@ -11,8 +11,7 @@ describe("CharityWallet tests", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -48,7 +47,7 @@ describe("CharityWallet tests", function () {
 	it("CharityWallet is sending the right amount", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let amountSent = hre.ethers.parseUnits("9",18);
 		let receiver = await charityWallet.charityAddress();
 		await addr2.sendTransaction({ to: await charityWallet.getAddress(), value: amountSent });
@@ -58,7 +57,7 @@ describe("CharityWallet tests", function () {
 		expect(balanceAfter).to.equal(balanceBefore+amountSent);
 	});
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		var transferOwnership = false;
 		const {
 			cosmicGameProxy,
@@ -99,7 +98,7 @@ describe("CharityWallet tests", function () {
 		};
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let tx, receipt, log, parsed_log, bidPrice, winner, donationAmount;
 

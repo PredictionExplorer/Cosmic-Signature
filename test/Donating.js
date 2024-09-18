@@ -4,15 +4,14 @@ const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-const SKIP_LONG_TESTS = "1";
+const SKIP_LONG_TESTS = "0";
 
 describe("Cosmic Set1", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -46,7 +45,7 @@ describe("Cosmic Set1", function () {
 		],
 	};
 	it("donateWithInfo() works as expected", async function () {
-		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
@@ -65,7 +64,7 @@ describe("Cosmic Set1", function () {
 		expect(numDonationInfoRecs).to.equal(2);
 	});
 	it("donateNFT() without making a bid works", async function () {
-		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");

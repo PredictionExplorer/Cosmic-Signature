@@ -6,8 +6,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 describe("Events2", function () {
 	// const INITIAL_AMOUNT = hre.ethers.parseEther("10");
 	async function deployCosmic() {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,

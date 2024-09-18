@@ -1,5 +1,6 @@
-const hre = require("hardhat");
+// Comment-202409255 relates.
 const { basicDeployment } = require("../src/Deploy.js");
+
 const fs = require("fs");
 
 task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) => {

@@ -4,15 +4,14 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-// const SKIP_LONG_TESTS = "1";
+const SKIP_LONG_TESTS = "0";
 
 describe("Bid time accounting", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -57,7 +56,7 @@ describe("Bid time accounting", function () {
 		],
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
-		[owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
@@ -95,7 +94,7 @@ describe("Bid time accounting", function () {
 		expect(maxbaddr).to.equal(addr2.address);
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
@@ -231,7 +230,7 @@ describe("Bid time accounting", function () {
 		expect(stellarSpender).to.equal(addr3.address);
 	});
 	it("Endurance Champion selection is correct for a specific use case", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
 			cosmicGame,
 			cosmicToken,

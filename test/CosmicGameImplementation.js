@@ -16,8 +16,7 @@ describe("CosmicGameImplementation", function () {
 		],
 	};
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -122,7 +121,7 @@ describe("CosmicGameImplementation", function () {
 	it("Long term bidding with CST doesn't produce irregularities", async function () {
 		if (SKIP_LONG_TESTS == "1") return;
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3,addr4,addr5, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3,addr4,addr5, ...addrs] = await hre.ethers.getSigners();
 		let timeBump = 24*3600;
 		let balance,cstPrice;
 		let numIterationsMain = 30;

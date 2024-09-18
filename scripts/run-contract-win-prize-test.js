@@ -8,7 +8,7 @@ async function main() {
 	let cosmicGameProxy = await hre.ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 
-	[owner, addr1, addr2] = await hre.ethers.getSigners();
+	const [owner, addr1, addr2] = await hre.ethers.getSigners();
 	await cosmicGameProxy.connect(owner).bid("owner bids", { value: bidPrice });
 	bidPrice = await cosmicGameProxy.getBidPrice();
 	await cosmicGameProxy.connect(addr1).bid("addr1 bids", { value: bidPrice });

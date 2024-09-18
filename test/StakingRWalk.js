@@ -4,12 +4,11 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-const SKIP_LONG_TESTS = "1";
+const SKIP_LONG_TESTS = "0";
 
 describe("Staking RandomWalk tests", function () {
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -60,7 +59,7 @@ describe("Staking RandomWalk tests", function () {
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
@@ -109,7 +108,7 @@ describe("Staking RandomWalk tests", function () {
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
@@ -137,7 +136,7 @@ describe("Staking RandomWalk tests", function () {
 		await expect(newStakingWalletRWalk.connect(addr1).unstake(0)).to.be.revertedWithCustomError(contractErrors,"AccessError");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -207,7 +206,7 @@ describe("Staking RandomWalk tests", function () {
 		expect(numTokens).to.equal(0);
 	});
 	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -337,7 +336,7 @@ describe("Staking RandomWalk tests", function () {
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");

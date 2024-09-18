@@ -5,8 +5,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 
 describe("MarketingWallet", function () {
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -44,7 +43,7 @@ describe("MarketingWallet", function () {
 		],
 	};
 	it("setTokenContract() emits CosmicTokenAddressChanged event correctly()", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -72,7 +71,7 @@ describe("MarketingWallet", function () {
 		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,

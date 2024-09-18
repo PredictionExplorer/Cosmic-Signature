@@ -7,7 +7,7 @@ const { expect } = require('chai');
 const { basicDeployment, basicDeploymentAdvanced } = require('../src/Deploy.js');
 // const { toUtf8Bytes } = require('@ethersproject/strings');
 
-// const SKIP_LONG_TESTS = '1';
+const SKIP_LONG_TESTS = "0";
 
 describe('Staking CST tests', function () {
 	// todo-1 `deployerAcct` wasn't used, so I have commented it out. Do the same in other tests.
