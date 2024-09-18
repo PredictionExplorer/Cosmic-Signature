@@ -1,27 +1,33 @@
 // todo-1 Is license supposed to be the same in all files? Currently it's not.
+// todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
-/// @dev This contract has already been deployed, so it makes little sense to refactor it.
+/// @dev
+/// [Comment-202409149]
+/// This contract has already been deployed, so it makes little sense to refactor it.
+/// todo-0 Compare this to an old version to make sure I didn't mess anything up.
+/// [/Comment-202409149]
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 
-	// todo-1 We never change this.
-	// todo-1 Should this be a `constant`?
-	uint256 public saleTime = 1636675200; // November 11 2021 19:00 New York Time
-	// todo-1 Rewrite this as `(1 ETHER) / 1_000`?
-	uint256 public price = 10 ** 15; // Price starts at .001 eth
+	/// @notice November 11 2021 19:00 New York Time
+	/// @dev Issue. Should this be a `constant`? But see Comment-202409149.
+	uint256 public saleTime = 1_636_675_200;
+
+	/// @notice Price starts at 0.001 ETH
+	uint256 public price = 0.001 ether;
 
 	/// @notice How long to wait until the last minter can withdraw (30 days)
-	// todo-1 Should this be in `CosmicGameConstants`?
-	uint256 public constant withdrawalWaitSeconds = 60 * 60 * 24 * 30;
+	uint256 public constant withdrawalWaitSeconds = 30 * CosmicGameConstants.SECONDS_PER_DAY;
 
-	// Seeds
+	/// @notice Seeds
 	mapping(uint256 => bytes32) public seeds;
 
 	mapping(uint256 => string) public tokenNames;
@@ -30,23 +36,29 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	mapping(uint256 => uint256) public withdrawalNums;
 	mapping(uint256 => uint256) public withdrawalAmounts;
 
-	// Entropy
+	/// @notice Entropy
 	bytes32 public entropy;
 
 	address public lastMinter = address(0);
-	// todo-0 Slither: RandomWalkNFT.lastMintTime is set pre-construction with a non-constant function or state variable: saleTime
+
+	/// @dev Issue. Slither: RandomWalkNFT.lastMintTime is set pre-construction with a non-constant function or state variable: saleTime
 	uint256 public lastMintTime = saleTime;
+
 	uint256 public nextTokenId = 0;
 
+	/// @notice The base URI for token metadata
 	string private _baseTokenURI;
 
-	// IPFS link to the Python script that generates images and videos for each NFT based on seed.
-	// todo-1 Should this be a `constant`?
+	/// @notice IPFS link to the Python script that generates images and videos for each NFT based on seed.
+	/// @dev Issue. Should this be a `constant`? But see Comment-202409149.
 	string public tokenGenerationScript = "ipfs://QmP7Z8VbQLpytzXnceeAAc4D5tX39XVzoEeUZwEK8aPk8W";
 
 	// #endregion
 
-	// ToDo-202408114-1 applies.
+	// [ToDo-202408114-1]
+	// `Ownable` `constructor` and `__Ownable_init` now require a nonzero `initialOwner`.
+	// I have provided a simple one, but this implementation is to be revisited everywhere this ToDo is referenced.
+	// [/ToDo-202408114-1]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(msg.sender) {
 		entropy = keccak256(
 			abi.encode(
@@ -57,8 +69,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		);
 	}
 
-	function setBaseURI(string memory baseURI) public override onlyOwner {
-		_baseTokenURI = baseURI;
+	function setBaseURI(string memory value) external override onlyOwner {
+		_baseTokenURI = value;
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
@@ -68,17 +80,10 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		emit TokenNameEvent(tokenId, name);
 	}
 
-	// /// @return The base URI for token metadata
-	// /// @dev
-	// /// [ToDo-202408241-1]
-	// /// Should this be `private`?
-	// /// Does this really need to be `virtual`?
-	// /// Does this belong to `MyERC721Enumerable`?
-	// /// But we don't even use this. So I have commented this out for now.
-	// /// [/ToDo-202408241-1]
-	// function _baseURI() internal view virtual override returns (string memory) {
-	// 	return _baseTokenURI;
-	// }
+	/// @return The base URI for token metadata
+	function _baseURI() internal view override returns (string memory) {
+		return _baseTokenURI;
+	}
 
 	function getMintPrice() public view override returns (uint256) {
 		return (price * 10011) / 10000;

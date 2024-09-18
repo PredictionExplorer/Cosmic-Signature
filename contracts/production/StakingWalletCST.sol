@@ -66,8 +66,10 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	/// @notice Reference to the CosmicGame contract
 	address public game;
 
-	/// @dev Precision factor for calculations
-	uint256 private constant PRECISION = 1e18;
+	// /// @dev Precision factor for calculations
+	// /// Was this intended to be somethig similar to `CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT`?
+	// uint256 private constant PRECISION = 1 ether;
+	
 	/// @dev Counter for actions to replace block.timestamp
 	uint256 private actionCounter;
 

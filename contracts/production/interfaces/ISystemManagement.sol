@@ -63,10 +63,16 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	/// @param _priceIncrease The new price increase factor
    function setPriceIncrease(uint256 _priceIncrease) external;
 
+	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external;
+
+	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;
+
 	/// @notice Set the initial seconds until prize
 	/// @dev Only callable by the contract owner
 	/// @param _initialSecondsUntilPrize The new initial seconds until prize
    function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external;
+
+	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external;
 
 	/// @notice Set the timeout for claiming prize
 	/// @dev Only callable by the contract owner
@@ -84,6 +90,7 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
    function setMarketingReward(uint256 _marketingReward) external;
 
 	/// @notice Set the maximum message length
+	/// Comment-202409143 applies.
 	/// @dev Only callable by the contract owner
 	/// @param _maxMessageLength The new maximum message length
    function setMaxMessageLength(uint256 _maxMessageLength) external;

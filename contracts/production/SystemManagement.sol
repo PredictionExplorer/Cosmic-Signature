@@ -123,18 +123,31 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit TimeIncreaseChanged(_timeIncrease);
 	}
 
-	function setPriceIncrease(uint256 _priceIncrease) external override onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
+	function setPriceIncrease(uint256 _priceIncrease) external override onlyOwner onlyMaintenance {
 		priceIncrease = _priceIncrease;
 		emit PriceIncreaseChanged(_priceIncrease);
 	}
 
-	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external onlyOwner onlyMaintenance {
+	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyMaintenance {
+		// This ensures that SMTChecker won't flag the logic or an `assert` near Comment-202409163 or Comment-202409162.
+		// We probably don't need a `require` to enforce this condition.
+		// #enable_asserts assert(newStartingBidPriceCSTMinLimit <= type(uint256).max / CosmicGameConstants.MILLION);
+
+		require(
+			newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
+			CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+				"Provided starting bid price in CST min limit is too small",
+				newStartingBidPriceCSTMinLimit,
+				CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
+			)
+		);
+		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
+		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
+	}
+
+	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external override onlyOwner onlyMaintenance {
 		nanoSecondsExtra = newNanoSecondsExtra;
-		emit NanoSecondsExtraChanged(nanoSecondsExtra);
+		emit NanoSecondsExtraChanged(newNanoSecondsExtra);
 	}
 
 	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external override onlyOwner onlyMaintenance {
@@ -142,7 +155,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit InitialSecondsUntilPrizeChanged(_initialSecondsUntilPrize);
 	}
 
-	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external onlyOwner onlyMaintenance {
+	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external override onlyOwner onlyMaintenance {
 		initialBidAmountFraction = newInitialBidAmountFraction;
 		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
 	}

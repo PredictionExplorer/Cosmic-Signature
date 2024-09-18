@@ -11,9 +11,9 @@ import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
 import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
 import { CosmicGameStorage } from "../production/CosmicGameStorage.sol";
+import { SystemManagement } from "../production/SystemManagement.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
-import { SystemManagement } from "../production/SystemManagement.sol";
 
 abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding  {
 
@@ -105,7 +105,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 			}
 		}
 
-		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + (paidBidPrice);
+		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + paidBidPrice;
 		if (bidderInfo[roundNum][msg.sender].totalSpent > stellarSpenderAmount) {
 			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpent;
 			stellarSpender = msg.sender;
@@ -160,8 +160,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 
 		if (lastBidder == address(0)) {
 			// First bid of the round
-			// ToDo-202408116-0 applies.
-			prizeTime = block.timestamp + (initialSecondsUntilPrize);
+			prizeTime = block.timestamp + initialSecondsUntilPrize;
 		}
 
 		_updateEnduranceChampion();
@@ -172,8 +171,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numParticipants] = lastBidder;
-		// ToDo-202408116-0 applies.
-		numRaffleParticipants[roundNum] = numParticipants + (1);
+		numRaffleParticipants[roundNum] = numParticipants + 1;
 
 		// Distribute token rewards
 		try token.mint(lastBidder, tokenReward) {
@@ -199,19 +197,15 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 	}
 
 	function getBidPrice() public view override returns (uint256) {
-		// ToDo-202408116-0 applies.
-		return bidPrice * (priceIncrease) / (CosmicGameConstants.MILLION);
+		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		// ToDo-202408116-0 applies.
-		uint256 secondsAdded = nanoSecondsExtra / (1_000_000_000);
-		// ToDo-202408116-0 applies.
-		prizeTime = Math.max(prizeTime, block.timestamp) + (secondsAdded);
-		// ToDo-202408116-0 applies.
-		nanoSecondsExtra = nanoSecondsExtra * (timeIncrease) / (CosmicGameConstants.MILLION);
+		uint256 secondsAdded = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
 	}
 
 	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
@@ -237,51 +231,72 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 				numParticipants
 			)
 		);
-		// ToDo-202408116-0 applies.
-		uint256 offset = numParticipants - (_positionFromEnd) - (1);
+		uint256 offset = numParticipants - _positionFromEnd - 1;
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
+		// uint256 userBalance = token.balanceOf(msg.sender);
 
-		uint256 userBalance = IERC20(token).balanceOf(msg.sender);
-		uint256 price = currentCSTPrice();
-		require(
-			userBalance >= price,
-			CosmicGameErrors.InsufficientCSTBalance(
-				"Insufficient CST token balance to make a bid with CST",
-				price,
-				userBalance
-			)
-		);
+		// Comment-202409179 applies.
+		uint256 price = getCurrentBidPriceCST();
 
-		// Double the starting CST price for the next auction, with a minimum of 100 CST
-		// ToDo-202408116-0 applies.
-		startingBidPriceCST = Math.max(100e18, price) * (2);
-		lastCSTBidTime = block.timestamp;
+		// // Comment-202409181 applies.
+		// require(
+		// 	userBalance >= price,
+		// 	CosmicGameErrors.InsufficientCSTBalance(
+		// 		"Insufficient CST token balance to make a bid with CST",
+		// 		price,
+		// 		userBalance
+		// 	)
+		// );
 
-		// Burn the CST tokens used for bidding
+		// Comment-202409177 applies.
 		token.burn(msg.sender, price);
 
+		// Comment-202409163 applies.
+		uint256 newStartingBidPriceCST;
+		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
+			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
+		}
+		else {
+			// #enable_smtchecker /*
+			unchecked
+			// #enable_smtchecker */
+			{
+				newStartingBidPriceCST = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
+			}
+			newStartingBidPriceCST = Math.max(newStartingBidPriceCST, startingBidPriceCSTMinLimit);
+		}
+		startingBidPriceCST = newStartingBidPriceCST;
+		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
+		
+		lastCSTBidTime = block.timestamp;
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
+
+		// Comment-202409182 applies.
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 
-	function currentCSTPrice() public view override returns (uint256) {
+	function getCurrentBidPriceCST() public view override returns (uint256) {
 		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
-		// ToDo-202408116-0 applies.
-		uint256 fraction = uint256(1e6) - ((uint256(1e6) * (secondsElapsed)) / (duration));
-		// ToDo-202408116-0 applies.
-		return (fraction * (startingBidPriceCST)) / (1e6);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
+
+			// Comment-202409162 applies.
+			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+		}
 	}
 
 	function auctionDuration() public view override returns (uint256, uint256) {
-		// ToDo-202408116-0 applies.
-		uint256 secondsElapsed = block.timestamp - (lastCSTBidTime);
+		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
 		return (secondsElapsed, CSTAuctionLength);
 	}
 
@@ -306,5 +321,4 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		timesBidPrice = _value;
 		emit TimesBidPriceChangedEvent(_value);
 	}
-
 }

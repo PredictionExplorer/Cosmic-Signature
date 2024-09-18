@@ -39,7 +39,6 @@ contract CosmicGame is
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
-	// using SafeERC20Upgradeable for IERC20Upgradeable;
 	// todo-0 Should we use this for `ERC20` instead, to give SMTChecker more info?
 	// todo-0 But it won't compile then, right?
 	using SafeERC20 for IERC20;
@@ -63,7 +62,12 @@ contract CosmicGame is
 		// Initialize state variables
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
-		startingBidPriceCST = 100e18;
+		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
+		// [ToDo-202409199-0]
+		// It's very likely a bug that we assign a twice smaller value here.
+		// Waiting for Taras to comment on the issue.
+		// [/ToDo-202409199-0]
+		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
 		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
 		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;

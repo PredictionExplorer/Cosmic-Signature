@@ -29,6 +29,12 @@ library CosmicGameErrors {
 	/// @param randomWalkTokenId The ID of the RandomWalk NFT
 	error UsedRandomWalkNFT(string errStr, uint256 randomWalkTokenId);
 
+	/// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
+	/// @param errStr Description of the error
+	/// @param providedValue The actual provided value
+	/// @param valueMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
+	error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueMinLimit);
+
 	/// @notice Thrown when the bidder has insufficient CST balance
 	/// @param errStr Description of the error
 	/// @param requiredAmount The required CST amount

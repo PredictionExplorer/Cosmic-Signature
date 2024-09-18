@@ -25,8 +25,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	/// @notice Total number of tokens minted
 	uint256 public numTokens = 0;
 
-	/// @notice Base URI for token metadata
-	/// todo-0 Slither is saying that this is never used.
+	/// @notice The base URI for token metadata
 	string private _baseTokenURI;
 
 	/// @notice Address of the CosmicGameProxy contract.
@@ -52,9 +51,9 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 		emit TokenGenerationScriptURLEvent(newTokenGenerationScriptURL);
 	}
 
-	function setBaseURI(string memory baseURI) external override onlyOwner {
-		_baseTokenURI = baseURI;
-		emit BaseURIEvent(baseURI);
+	function setBaseURI(string memory value) external override onlyOwner {
+		_baseTokenURI = value;
+		emit BaseURIEvent(value);
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) external override {
@@ -89,7 +88,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 		return tokenId;
 	}
 
-	function _baseURI() internal view virtual override returns (string memory) {
+	/// @return The base URI for token metadata
+	function _baseURI() internal view override returns (string memory) {
 		return _baseTokenURI;
 	}
 }

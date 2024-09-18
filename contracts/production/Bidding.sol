@@ -11,9 +11,9 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
-import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
@@ -183,9 +183,9 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		uint256 secondsAdded = nanoSecondsExtra / 1_000_000_000;
+		uint256 secondsAdded = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MILLION;
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
 	}
 
 	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
@@ -217,41 +217,75 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
-		uint256 userBalance = token.balanceOf(msg.sender);
-		uint256 price = currentCSTPrice();
-		require(
-			userBalance >= price,
-			CosmicGameErrors.InsufficientCSTBalance(
-				"Insufficient CST token balance to make a bid with CST",
-				price,
-				userBalance
-			)
-		);
+		// uint256 userBalance = token.balanceOf(msg.sender);
 
-		// Double the starting CST price for the next auction, with a minimum of 100 CST
-		// todo-0 Use `unchecked` here?
-		// todo-0 Magic number hardcoded.
-		// todo-0 Find all "e18".
-		// todo-0 could you update the code with constant labels? for 100e18 we need a new constant,
-		// todo-0 and it should actually be parametrizable, so we need to add a new state variable and copy it during initializer().
-		// todo-0 (just like everything else, for example percentages)
-		startingBidPriceCST = Math.max(100e18, price) * 2;
-		lastCSTBidTime = block.timestamp;
+		// [Comment-202409179]
+		// This can be zero.
+		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
+		// We are OK with that.
+		// [/Comment-202409179]
+		uint256 price = getCurrentBidPriceCST();
 
+		// // [Comment-202409181]
+		// // This validation is unnecessary, given that `token.burn` caled near Comment-202409177 is going to perform it too.
+		// // [/Comment-202409181]
+		// require(
+		// 	userBalance >= price,
+		// 	CosmicGameErrors.InsufficientCSTBalance(
+		// 		"Insufficient CST token balance to make a bid with CST",
+		// 		price,
+		// 		userBalance
+		// 	)
+		// );
+
+		// [Comment-202409177]
 		// Burn the CST tokens used for bidding
+		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 
+		// [Comment-202409163]
+		// Doubling the starting CST price for the next CST bid, while enforcing a minimum.
+		// This logic avoids an overfow, both here and near Comment-202409162.
+		// [/Comment-202409163]
+		uint256 newStartingBidPriceCST;
+		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
+			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
+		}
+		else {
+			// #enable_smtchecker /*
+			unchecked
+			// #enable_smtchecker */
+			{
+				newStartingBidPriceCST = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
+			}
+			newStartingBidPriceCST = Math.max(newStartingBidPriceCST, startingBidPriceCSTMinLimit);
+		}
+		startingBidPriceCST = newStartingBidPriceCST;
+		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
+
+		lastCSTBidTime = block.timestamp;
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
+
+		// [Comment-202409182]
+		// The cast of `price` to a signed integer can't overflow, thanks to the logic near Comment-202409163.
+		// [/Comment-202409182]
 		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
 	}
 
-	function currentCSTPrice() public view override returns (uint256) {
+	function getCurrentBidPriceCST() public view override returns (uint256) {
 		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
 		if (secondsElapsed >= duration) {
 			return 0;
 		}
-		uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
-		return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
+
+			// [Comment-202409162/]
+			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+		}
 	}
 
 	function auctionDuration() public view override returns (uint256, uint256) {

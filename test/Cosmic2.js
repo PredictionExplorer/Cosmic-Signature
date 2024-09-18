@@ -1,5 +1,5 @@
 const { time, loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
-const { ethers } = require('hardhat');
+const { ethers } = require("hardhat");
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 const { expect } = require('chai');
 const SKIP_LONG_TESTS = '1';
@@ -339,6 +339,9 @@ describe('Cosmic Set2', function () {
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
+		// // todo-0 Uncomment this when fixing ToDo-202409199-0.
+		// bidPrice = await cosmicGameProxy.getBidPrice();
+		// await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -349,8 +352,10 @@ describe('Cosmic Set2', function () {
 		await ethers.provider.send('evm_mine');
 		await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 
-		let cstPrice = await cosmicGameProxy.currentCSTPrice();
+		let cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
 		expect(cstPrice.toString()).to.equal('200000000000000000000');
+		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
+		// expect(cstPrice.toString()).to.equal('214831600000000000000');
 
 		let tx = await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
 		let receipt = await tx.wait();
@@ -359,6 +364,8 @@ describe('Cosmic Set2', function () {
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
 		expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
+		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
+		// expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
 		expect(args.bidPrice.toString()).to.equal("-1");
 		expect(args.lastBidder).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');

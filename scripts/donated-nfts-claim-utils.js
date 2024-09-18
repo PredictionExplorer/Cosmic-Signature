@@ -3,6 +3,7 @@
 // 	- without PRIVKEY environment variable set -> only lists donated tokens per round
 // 	- with PRIVKEY environment variable set -> generates claimManyDonatedNFTs() calls per prize
 // (note: only for unclaimed tokens)
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");

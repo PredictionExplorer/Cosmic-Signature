@@ -1,7 +1,7 @@
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
-const { basicDeployment,basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 const SKIP_LONG_TESTS = "0";
 
 describe("CosmicGameImplementation", function () {
@@ -131,7 +131,7 @@ describe("CosmicGameImplementation", function () {
 			while (true) {
 				bidPrice = await cosmicGameProxy.getBidPrice();
 				balance = await cosmicToken.balanceOf(owner.address);
-				cstPrice = await cosmicGameProxy.currentCSTPrice();
+				cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
 				await cosmicGameProxy.bid(params, { value: bidPrice });
 				if (balance > cstPrice) {
 					break;

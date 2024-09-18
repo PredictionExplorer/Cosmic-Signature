@@ -28,6 +28,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	uint256 public roundNum;
 	uint256 public bidPrice;
+	uint256 public startingBidPriceCSTMinLimit;
 	uint256 public startingBidPriceCST;
 	uint256 public nanoSecondsExtra;
 	uint256 public timeIncrease;
@@ -78,7 +79,13 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	uint256 public tokenReward;
 	uint256 public erc20RewardMultiplier;
 	uint256 public marketingReward;
+
+	/// @notice
+	/// [Comment-202409143]
+	/// This limits the number of bytes, which can be fewer UTF-8 characters.
+	/// [/Comment-202409143]
 	uint256 public maxMessageLength;
+
 	uint256 public systemMode;
 
 	// #endregion

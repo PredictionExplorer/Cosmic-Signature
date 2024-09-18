@@ -1,4 +1,5 @@
 // Confirms that deployed contracts are fully operational
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
@@ -16,7 +17,7 @@ async function mint_random_walk_token(testingAcct, randomWalk) {
 }
 async function mint_random_walks(testingAcct, cosmicGameProxy) {
 	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	let output = "";
 	for (let i = 0; i < numRWalkToMint; i++) {
 		if (output.length > 0) {

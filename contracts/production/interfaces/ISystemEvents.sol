@@ -71,6 +71,10 @@ interface ISystemEvents {
 	/// @param newPriceIncrease The new price increase value
 	event PriceIncreaseChanged(uint256 newPriceIncrease);
 
+	/// @notice Emitted when the CST bid price min limit is changed
+	/// @param newStartingBidPriceCSTMinLimit The new value
+	event StartingBidPriceCSTMinLimitChanged(uint256 newStartingBidPriceCSTMinLimit);
+
 	/// @notice Emitted when the nano seconds extra is changed
 	/// @param newNanoSecondsExtra The new nano seconds extra value
 	event NanoSecondsExtraChanged(uint256 newNanoSecondsExtra);
@@ -118,6 +122,4 @@ interface ISystemEvents {
 	/// @notice Emitted when the staking percentage is changed
 	/// @param newStakingPercentage The new staking percentage
 	event StakingPercentageChanged(uint256 newStakingPercentage);
-
-
 }

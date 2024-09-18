@@ -1,14 +1,16 @@
 // Used to check the three main fields of deployed contracts: activationTime, charityAddress and randomWalk address
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
+
 async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
 	let activationTime = await cosmicGameProxy.activationTime();
 	let randomWalkAddr = await cosmicGameProxy.randomWalk();
 	let charityAddr = await cosmicGameProxy.charity();
-	let charityContract = await ethers.getContractAt("CharityWallet", charityAddr);
+	let charityContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
 	let charityContractOwner = await charityContract.owner();
 	let charityDonationsReceiver = await charityContract.charityAddress();
 
