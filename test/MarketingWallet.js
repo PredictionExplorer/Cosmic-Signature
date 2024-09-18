@@ -86,17 +86,17 @@ describe("MarketingWallet", function () {
 			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		const BidderContract = await ethers.getContractFactory('BidderContract');
+		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
 		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cBidder.doBid({ value: bidPrice });
 
-		const marketingReward = ethers.parseEther('15');
-		await expect(marketingWallet.send(marketingReward,ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		const marketingReward = hre.ethers.parseEther('15');
+		await expect(marketingWallet.send(marketingReward,hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 		await expect(marketingWallet.connect(addr1).send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		await marketingWallet.send(marketingReward,addr1);
 		await marketingWallet.setTokenContract(await cBidder.getAddress());
