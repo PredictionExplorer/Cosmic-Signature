@@ -149,7 +149,6 @@ describe('Staking CST tests', function () {
 		await ethers.provider.send('evm_increaseTime', [6000]);
 		await ethers.provider.send('evm_mine');
 		await newStakingWalletCST.unstake(0);
-
 		await expect(newStakingWalletCST.unstake(0)).to.be.revertedWithCustomError(
 			contractErrors,
 			'TokenAlreadyUnstaked'
@@ -325,6 +324,10 @@ describe('Staking CST tests', function () {
 
 		await cosmicGameProxy.depositStakingCST({ value: ethers.parseEther('2') });
 		await newStakingWalletCST.unstake(0);
+		await expect(newStakingWalletCST.claimManyRewards([0],[0,0])).to.be.revertedWithCustomError(
+			newStakingWalletCST,
+			"IncorrectArrayArguments"
+		);
 		await newStakingWalletCST.claimManyRewards([0], [0]);
 		await expect(newStakingWalletCST.claimManyRewards([0], [0])).to.be.revertedWithCustomError(
 			contractErrors,
@@ -761,7 +764,11 @@ describe('Staking CST tests', function () {
 		let charityAddr = await stakingWalletCST.charity();
 		expect(charityAddr).to.equal(addr3.address);
 		await expect(stakingWalletCST.connect(addr1).setCharity(addr2.address))
-			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
+			.to.be.revertedWithCustomError(stakingWalletCST,"OwnableUnauthorizedAccount");
+		await expect(stakingWalletCST.setCharity(ethers.ZeroAddress))
+			.to.be.revertedWithCustomError(stakingWalletCST,"ZeroAddress");
+		await expect(stakingWalletCST.setCharity(addr3.address))
+			.to.be.revertedWithCustomError(stakingWalletCST,"AddressAlreadySet");
 	});
 	it('Internal staker state variables for checking uniquness are correctly set', async function () {
 		[owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -793,21 +800,21 @@ describe('Staking CST tests', function () {
 		await cosmicGameProxy.setActivationTime(actTimeStamp);
 		await cosmicGameProxy.setRuntimeMode();
 
-		let sampleTokenId = 33;
+		let sampleTokenId = 33n;
 		let tokenStaked = await newStakingWalletCST.isTokenStaked(sampleTokenId);
 		expect(tokenStaked).to.equal(false);
-		await newStakingWalletCST.insertToken(sampleTokenId, 0);
+		await newStakingWalletCST.doInsertToken(sampleTokenId, 0n);
 		let tokenIndexCheck = await newStakingWalletCST.tokenIndices(sampleTokenId);
 		expect(tokenIndexCheck).to.equal(1);
 		let tokenIdCheck = await newStakingWalletCST.stakedTokens(Number(tokenIndexCheck) - 1);
 		expect(tokenIdCheck).to.equal(sampleTokenId);
-		await expect(newStakingWalletCST.insertToken(sampleTokenId, 0)).to.be.revertedWithCustomError(
+		await expect(newStakingWalletCST.doInsertToken(sampleTokenId, 0n)).to.be.revertedWithCustomError(
 			contractErrors,
 			'TokenAlreadyInserted'
 		);
 
-		await newStakingWalletCST.removeToken(sampleTokenId);
-		await expect(newStakingWalletCST.removeToken(sampleTokenId)).to.be.revertedWithCustomError(
+		await newStakingWalletCST.doRemoveToken(sampleTokenId);
+		await expect(newStakingWalletCST.doRemoveToken(sampleTokenId)).to.be.revertedWithCustomError(
 			contractErrors,
 			'TokenAlreadyDeleted'
 		);
@@ -832,7 +839,7 @@ describe('Staking CST tests', function () {
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 
-		await expect(newStakingWalletCST.insertToken(0, 0)).to.be.revertedWithCustomError(
+		await expect(newStakingWalletCST.doInsertToken(0, 0)).to.be.revertedWithCustomError(
 			contractErrors,
 			'TokenAlreadyInserted'
 		);
@@ -843,7 +850,7 @@ describe('Staking CST tests', function () {
 		await expect(newStakingWalletCST.unstake(0)).not.to.be.reverted;
 		numTokens = await newStakingWalletCST.numTokensStaked();
 		expect(numTokens).to.equal(0);
-		await expect(newStakingWalletCST.removeToken(0)).to.be.revertedWithCustomError(
+		await expect(newStakingWalletCST.doRemoveToken(0)).to.be.revertedWithCustomError(
 			contractErrors,
 			'TokenAlreadyDeleted'
 		);
@@ -994,7 +1001,17 @@ describe('Staking CST tests', function () {
 		expect(parsed_log.args.amount).to.equal(previousStakingAmount);
 		expect(parsed_log.args.modulo).to.equal(moduloInRound);
 
-		await stakingWalletCST.moduloToCharity();
+		const BrokenCharity = await ethers.getContractFactory("BrokenCharity");
+		let brokenCharity = await BrokenCharity.deploy();
+		await brokenCharity.waitForDeployment();
+
+		await stakingWalletCST.setCharity(await brokenCharity.getAddress());
+		await expect(stakingWalletCST.moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCST,"FundTransferFailed");
+		await stakingWalletCST.setCharity(addr3.address);
+		await expect(stakingWalletCST.moduloToCharity()).not.to.be.reverted;
+		await expect(stakingWalletCST.connect(addr1).moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCST,"OwnableUnauthorizedAccount");
+		await expect(stakingWalletCST.moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCST,"ModuloIsZero");
+
 	});
 	it('The random picking of winner from StakingWallet is really random', async function () {
 		let signers = await ethers.getSigners();
@@ -1107,8 +1124,9 @@ describe('Staking CST tests', function () {
 		const CosmicSignature = await ethers.getContractFactory('CosmicSignature');
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		await newCosmicSignature.mint(owner.address, 0);
+		await newCosmicSignature.mint(owner.address, 0);
 
-		const StakingWalletCST = await ethers.getContractFactory('StakingWalletCST');
+		const StakingWalletCST = await ethers.getContractFactory('TestStakingWalletCST');
 		let newStakingWalletCST = await StakingWalletCST.deploy(
 			await newCosmicSignature.getAddress(),
 			await cosmicGameProxy.getAddress(),
@@ -1127,5 +1145,74 @@ describe('Staking CST tests', function () {
 		await newStakingWalletCST.unstake(0);
 
 		await expect(newStakingWalletCST.stake(0)).to.be.revertedWithCustomError(contractErrors, 'OneTimeStaking');
+
+		await newStakingWalletCST.doInsertToken(1n,1n);
+		await expect(newStakingWalletCST.doInsertToken(1n,1n)).to.be.revertedWithCustomError(contractErrors,'TokenAlreadyInserted');
+		await expect(newStakingWalletCST.doRemoveToken(0n)).to.be.revertedWithCustomError(contractErrors,'TokenAlreadyDeleted');
+	});
+	it("Deposits with value=0 do not create irregularities in StakingWalletCST", async function () {
+		[owner, addr1, addr2, addr3] = await ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+			bidLogic
+		} = await basicDeploymentAdvanced(
+			'SpecialCosmicGame',
+			owner,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			false
+		);
+		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+
+		const CosmicSignature = await ethers.getContractFactory('CosmicSignature');
+		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.mint(owner.address, 0);
+		await newCosmicSignature.mint(owner.address, 0);
+		await newCosmicSignature.mint(owner.address, 0);
+
+		const StakingWalletCST = await ethers.getContractFactory('StakingWalletCST');
+		let newStakingWalletCST = await StakingWalletCST.deploy(
+			await newCosmicSignature.getAddress(),
+			owner.address,
+			owner.address
+		);
+		await newStakingWalletCST.waitForDeployment();
+		await newCosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
+		await cosmicGameProxy.setStakingWalletCST(await newStakingWalletCST.getAddress());
+		await cosmicGameProxy.setRuntimeMode();
+
+		let tx = await newStakingWalletCST.stake(0);
+		let receipt = await tx.wait();
+		let topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
+		let unstakeTime = log.args.unstakeTime;
+		let numStakedNFTs = await newStakingWalletCST.numStakedNFTs();
+		expect(numStakedNFTs).to.equal(1);
+		await ethers.provider.send('evm_increaseTime', [6000]);
+		await ethers.provider.send('evm_mine');
+		await newStakingWalletCST.deposit(); //msg.value = 0
+		await newStakingWalletCST.unstake(0);
+		await ethers.provider.send('evm_increaseTime', [100]);
+		await ethers.provider.send('evm_mine');
+		await expect(newStakingWalletCST.claimManyRewards([0], [0])).not.to.be.reverted;
+
+		await newStakingWalletCST.stake(1);
+		await newStakingWalletCST.stake(2);
+		await ethers.provider.send('evm_increaseTime', [6000]);
+		await ethers.provider.send('evm_mine');
+		await newStakingWalletCST.deposit(); //msg.value = 0
+		await expect(newStakingWalletCST.unstakeClaim(1,1)).not.to.be.reverted;
 	});
 });
