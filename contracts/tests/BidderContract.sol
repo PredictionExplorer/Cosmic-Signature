@@ -79,6 +79,10 @@ contract BidderContract is IERC721Receiver {
 	function doClaim() external {
 		cosmicGame.claimPrize();
 	}
+	function withdrawRaffleReward(address destination) external {
+		RaffleWallet raffleWallet = RaffleWallet(destination);
+		raffleWallet.withdraw();
+	}
 	function withdrawAll() external {
 		RaffleWallet raffleWallet = RaffleWallet(cosmicGame.raffleWallet());
 		uint bal = raffleWallet.balances(address(this));
