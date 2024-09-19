@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const SKIP_LONG_TESTS = "1";
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-describe("Cosmic Set1", function () {
+describe("Donation tests", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
@@ -79,5 +79,64 @@ describe("Cosmic Set1", function () {
 		let details = await cosmicGameProxy.getDonatedNFTDetails(0);
 		expect(details[0]).to.equal(await randomWalkNFT.getAddress());
 		await expect(cosmicGameProxy.getDonatedNFTDetails(1)).to.be.revertedWith("Invalid donated NFT index");
+	});
+	it("Should not be possible to donate 0 value", async function () {
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		await expect(cosmicGameProxy.connect(addr1).donate()).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
+	});
+	it("claimManyDonatedNFTs() works properly", async function () {
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
+		let bidPrice = await cosmicGameProxy.getBidPrice();
+		let mintPrice = await randomWalkNFT.getMintPrice();
+		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
+		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let tx = await cosmicGameProxy
+			.connect(addr1)
+			.bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
+		let receipt = await tx.wait();
+		let topic_sig = cosmicGameProxy.interface.getEvent("NFTDonationEvent").topicHash;
+		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		let parsed_log = cosmicGameProxy.interface.parseLog(log);
+		expect(parsed_log.args.donor).to.equal(addr1.address);
+		expect(parsed_log.args.tokenId).to.equal(0);
+
+		bidPrice = await cosmicGameProxy.getBidPrice();
+		mintPrice = await randomWalkNFT.getMintPrice();
+		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
+		bidParams = { msg: "", rwalk: -1 };
+		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		await cosmicGameProxy.connect(addr1).bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 1, { value: bidPrice });
+
+		let prizeTime = await cosmicGameProxy.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)+100]);
+		await ethers.provider.send("evm_mine");
+		await expect(cosmicGameProxy.connect(addr1).claimPrize()).not.to.be.reverted;
+
+		tx = await cosmicGameProxy.connect(addr1).claimManyDonatedNFTs([0, 1]);
+		receipt = await tx.wait();
+		topic_sig = cosmicGameProxy.interface.getEvent("DonatedNFTClaimedEvent").topicHash;
+		let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		expect(event_logs.length).to.equal(2);
+		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
+		expect(parsed_log.args.tokenId).to.equal(0);
+		expect(parsed_log.args.winner).to.equal(addr1.address);
+		expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(await randomWalkNFT.getAddress());
+		expect(parsed_log.args.round).to.equal(0);
+		expect(parsed_log.args.index).to.equal(0);
+
+		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[1]);
+		expect(parsed_log.args.tokenId).to.equal(1);
+		expect(parsed_log.args.winner).to.equal(addr1.address);
+		expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(await randomWalkNFT.getAddress());
+		expect(parsed_log.args.round).to.equal(0);
+		expect(parsed_log.args.index).to.equal(1);
 	});
 });

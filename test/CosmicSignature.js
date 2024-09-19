@@ -128,4 +128,19 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature.connect(addr1).setTokenName(token_id, "012345678901234567890123456789012"),
 		).to.be.revertedWithCustomError(contractErrors,"TokenNameLength");
 	});
+	it("BaseURI/TokenURI works", async function () {
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		let bidPrice = await cosmicGameProxy.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		let prizeTime = await cosmicGameProxy.timeUntilPrize();
+		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		let tx = await cosmicGameProxy.connect(addr1).claimPrize();
+		let receipt = await tx.wait();
+		await cosmicSignature.connect(owner).setBaseURI("somebase/");
+		expect(await cosmicSignature.tokenURI(0n)).to.equal("somebase/0");
+	});
 })
