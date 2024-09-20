@@ -76,7 +76,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	// /// Relevant logic counts and tries to handle correctly orders of magnitude less money than it costs gas-wise.
 	// /// So I have eliminated `modulo`.
 	// /// I also eliminated `charity` because it would rarely, if ever, be used, but would cost us some gas to update.
-	// /// Consequently, I eliminated `moduloToCharity`, `setCharity`, and some other entities, such as related events.
+	// /// Consequently, I eliminated `moduloToCharity`, `setCharity`, as well as related events and errors.
 	// /// Instead, I added the `transferRemainingBalanceToCharity` function, as a minimalistic replacement for all of the above.
 	// /// Comment-202409213 relates.
 	// /// [/Comment-202409208]
@@ -311,6 +311,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	/// @dev todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
 	/// todo-1 It would probably be cheaper gas-wise.
+	/// todo-1 Or at least write comments.
 	function depositIfPossible() external payable override {
 		require(
 			msg.sender == game,

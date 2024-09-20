@@ -22,7 +22,7 @@ describe("CharityWallet tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
 		return {
 			cosmicGameProxy,
@@ -77,7 +77,7 @@ describe("CharityWallet tests", function () {
 
 		await owner.sendTransaction({ to: await charityWallet.getAddress(), value: hre.ethers.parseUnits("3",18)});
 		await charityWallet.setCharity(await brokenCharity.getAddress());
-		let = contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(charityWallet.send()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 
 

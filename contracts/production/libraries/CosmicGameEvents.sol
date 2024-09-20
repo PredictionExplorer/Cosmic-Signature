@@ -2,10 +2,6 @@
 pragma solidity 0.8.26;
 
 library CosmicGameEvents {
-	/// @notice This is similar to `CosmicGameErrors.ERC20TransferFailed`
-	/// @dev todo-1 Make sure we use this. Otherwie comment this out.
-	event ERC20TransferFailed(string errStr, address indexed receiver, uint256 tokenAmount);
-
 	/// @notice This is similar to `CosmicGameErrors.FundTransferFailed`
 	/// @dev todo-1 Here and in `CosmicGameErrors.FundTransferFailed`, maybe swap `amount` and `destination`.
 	/// todo-1 Make sure we use this. Otherwie comment this out.
@@ -19,4 +15,8 @@ library CosmicGameEvents {
 	/// todo-1 Do we really need the word "Event" at the end? If we do all events should be named like this.
 	/// ToDo-202409212-1 relates.
 	event FundsTransferredToCharityEvent(uint256 amount, address indexed charityAddress);
+
+	/// @notice This is similar to `CosmicGameErrors.ERC20TransferFailed`
+	/// @dev todo-1 Make sure we use this. Otherwie comment this out.
+	event ERC20TransferFailed(string errStr, address indexed receiver, uint256 tokenAmount);
 }

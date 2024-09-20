@@ -1,3 +1,4 @@
+// todo-1 Add this to all tests.
 "use strict";
 
 const hre = require("hardhat");
@@ -686,7 +687,7 @@ describe('Staking CST tests', function () {
 	});
 
 	// // [Comment-202409209]
-	// // This test no longer makes sense due to refactorings outlined in Comment-202409208.
+	// // This test no longer makes sense due to refactorings described in Comment-202409208.
 	// // todo-0 Nick, you might want to develop similar tests (possibly uncomment and modify those I commented out)
 	// // todo-0 for the cases listed in ToDo-202409226-0.
 	// // [/Comment-202409209]
@@ -724,7 +725,7 @@ describe('Staking CST tests', function () {
 	// 	const StakingWalletCST = await hre.ethers.getContractFactory('StakingWalletCST');
 	// 	const newStakingWalletCST = await StakingWalletCST.deploy(
 	// 		await newCosmicSignature.getAddress(),
-	// 		await brokenStakingWalletCST.getAddress()
+	// 		await brokenStakingWalletCST.getAddress(),
 	//			// todo-9 The 3rd parameter no longer exists.
 	// 		addr1.address
 	// 	);
@@ -1045,7 +1046,7 @@ describe('Staking CST tests', function () {
 		const NewStakingWalletCST = await hre.ethers.getContractFactory('StakingWalletCST');
 		const newStakingWalletCST = await NewStakingWalletCST.deploy(
 			await newCosmicSignature.getAddress(),
-			await cosmicGameProxy.getAddress(),
+			await cosmicGameProxy.getAddress()
 			// await charityWallet.getAddress()
 		);
 		await newStakingWalletCST.waitForDeployment();
@@ -1136,7 +1137,7 @@ describe('Staking CST tests', function () {
 		const StakingWalletCST = await hre.ethers.getContractFactory('StakingWalletCST');
 		const newStakingWalletCST = await StakingWalletCST.deploy(
 			await newCosmicSignature.getAddress(),
-			await cosmicGameProxy.getAddress(),
+			await cosmicGameProxy.getAddress()
 			// await cBidder.getAddress()
 		);
 		await newStakingWalletCST.waitForDeployment();

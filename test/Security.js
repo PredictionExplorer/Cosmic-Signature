@@ -53,7 +53,7 @@ describe("Security", function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice }); // this works
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -74,7 +74,7 @@ describe("Security", function () {
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		await hre.ethers.provider.send("evm_mine"); // begin
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
+		const prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 1]);
 		await hre.ethers.provider.send("evm_mine");
 		let prizeAmount = await cosmicGameProxy.prizeAmount();

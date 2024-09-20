@@ -86,6 +86,11 @@ contract BidderContract is IERC721Receiver {
 			raffleWallet.withdraw();
 		}
 		CosmicSignature nft = cosmicGame.nft();
+		// todo-1 Review all calls to `call`.
+		// todo-1 I didn't replace those with high level calls when it's used simply to send funds.
+		// todo-1 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
+		// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
+		// todo-1 In any case, write comments.
 		(bool success, ) = creator.call{ value: address(this).balance }("");
 		success = false;
 		uint256 totalSupply = nft.totalSupply();

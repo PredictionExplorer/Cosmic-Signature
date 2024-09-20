@@ -50,12 +50,21 @@ interface IStakingWalletCST {
 		// uint256 modulo
 	);
 
+	// /// @notice Emitted when a deposit is sent to charity
+	// /// @param amount Amount sent to charity
+	// /// @param charityAddress Address of the charity
+	// /// @dev I replaced this with `CosmicGameEvents.FundsTransferredToCharityEvent`.
+	// /// todo-1 Remove this garbage.
+	// event CharityDepositEvent(uint256 amount, address charityAddress);
+
 	// /// @notice Emitted when the charity address is updated
 	// /// @param newCharityAddress New address of the charity
+	// /// @dev Comment-202409208 relates and/or applies.
 	// event CharityUpdatedEvent(address indexed newCharityAddress);
 
 	// /// @notice Emitted when accumulated modulo is sent to charity
 	// /// @param amount Amount of modulo sent to charity
+	// /// @dev Comment-202409208 relates and/or applies.
 	// event ModuloSentToCharityEvent(uint256 amount);
 
 	/// @notice Stakes a single token
@@ -133,6 +142,9 @@ interface IStakingWalletCST {
 	// /// @dev Comment-202409208 relates and/or applies.
 	// function moduloToCharity() external;
 
-	/// @dev Comment-202409208 relates and/or applies.
+	/// @dev If this was to make a transfer to an internally stored charity address,
+	/// it would probably be unnecessary for this to be `onlyOwner`.
+	/// Comment-202409273 relates.
+	/// Comment-202409208 relates and/or applies.
 	function transferRemainingBalanceToCharity(address charityAddress_) external;
 }

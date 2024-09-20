@@ -23,7 +23,7 @@ describe("Bid time accounting", function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
 		return {
 			cosmicGameProxy,
@@ -66,7 +66,7 @@ describe("Bid time accounting", function () {
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
@@ -109,7 +109,7 @@ describe("Bid time accounting", function () {
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
@@ -186,7 +186,7 @@ describe("Bid time accounting", function () {
 		let sumPrice;
 		// let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("1000");
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.bid(params, { value: bidPrice })
@@ -243,7 +243,7 @@ describe("Bid time accounting", function () {
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
-		} = await basicDeploymentAdvanced("CosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeploymentAdvanced("CosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
 		// test case description:
 		// first bid is made by owner, to initialize all the variables, duration of 1000 seconds
@@ -255,7 +255,7 @@ describe("Bid time accounting", function () {
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
 
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGame.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);

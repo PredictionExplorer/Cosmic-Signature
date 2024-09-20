@@ -20,7 +20,7 @@ describe("Cosmic Set1", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
 		return {
 			cosmicGameProxy,
@@ -58,7 +58,7 @@ describe("Cosmic Set1", function () {
 		expect(await cosmicGameProxy.prizeAmount()).to.equal((donationAmount * 25n)/100n);
 		let echamp = await cosmicGameProxy.currentEnduranceChampion();
 		expect(echamp[0]).to.equal(hre.ethers.ZeroAddress);
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: 1 })).to.be.revertedWithCustomError(contractErrors,"BidPrice");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -203,7 +203,7 @@ describe("Cosmic Set1", function () {
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		// switch to another account and attempt to use tokenId=0 which we don't own
-		var bidParams = { msg: "hello", rwalk: 0 };
+		let bidParams = { msg: "hello", rwalk: 0 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"IncorrectERC721TokenOwner");
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })); //tokenId=0
@@ -234,7 +234,7 @@ describe("Cosmic Set1", function () {
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
@@ -252,7 +252,7 @@ describe("Cosmic Set1", function () {
 		}
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		var bidParams = { msg: longMsg, rwalk: -1 };
+		let bidParams = { msg: longMsg, rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"BidMessageLengthOverflow");
 	});
@@ -430,7 +430,7 @@ describe("Cosmic Set1", function () {
 		let numRaffleParticipants = await cosmicGameProxy.numRaffleParticipants(roundNum);
 		expect(numRaffleParticipants).to.equal(0);
 
-		var unique_winners = [];
+		const unique_winners = [];
 		for (let i = 0; i < deposit_logs.length; i++) {
 			let wlog = raffleWallet.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
@@ -679,7 +679,7 @@ describe("Cosmic Set1", function () {
 		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.bid(params, { value: bidPrice })).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,2n);
-		await expect(cosmicGameProxy.bidAndDonateNFT(params,owner.address,0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,2n);
+		await expect(cosmicGameProxy.bidAndDonateNFT(params, owner.address, 0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicGameProxy, "SystemMode").withArgs(revertStr,2n);
 		await expect(cosmicGameProxy.bidWithCST("")).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,2n);
 		await expect(cosmicGameProxy.claimPrize()).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,2);
 		await expect(cosmicGameProxy.claimDonatedNFT(0)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,2n);

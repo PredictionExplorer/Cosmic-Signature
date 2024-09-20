@@ -73,7 +73,7 @@ const basicDeploymentAdvanced = async function (
 	await charityWallet.waitForDeployment();
 	let charityWalletAddr = await charityWallet.getAddress();
 	if (charityAddr.length == 0) {
-		let [owner, otherAccount] = await hre.ethers.getSigners();
+		const [owner, otherAccount] = await hre.ethers.getSigners();
 		charityAddr = otherAccount.address;
 	}
 	await charityWallet.setCharity(charityAddr);

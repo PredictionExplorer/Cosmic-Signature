@@ -83,11 +83,11 @@ describe("MarketingWallet", function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();

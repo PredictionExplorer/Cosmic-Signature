@@ -265,6 +265,7 @@ library CosmicGameErrors {
 
 	// /// @notice Thrown when the modulo is zero when it shouldn't be
 	// /// @param errStr Description of the error
+	// /// @dev Comment-202409208 relates and/or applies.
 	// error ModuloIsZero(string errStr);
 
 	/// @notice Thrown when attempting to insert an already inserted token

@@ -106,7 +106,7 @@ describe("Events", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
 			await loadFixture(deployCosmic);
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
-		let = contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 
 		let mintPrice = await randomWalkNFT.getMintPrice();
@@ -265,9 +265,9 @@ describe("Events", function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame",owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
-		let = contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		const sevenDays = 7 * 24 * 60 * 60;
 
@@ -332,7 +332,7 @@ describe("Events", function () {
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 
-		var percentage = 11n;
+		let percentage = 11n;
 		await expect(cosmicGameProxy.connect(owner).setCharityPercentage(percentage))
 			.to.emit(cosmicGameProxy, "CharityPercentageChanged")
 			.withArgs(percentage);

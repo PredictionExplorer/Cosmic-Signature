@@ -178,7 +178,6 @@ contract SpecialCosmicGame is CosmicGame {
 		stakingWalletCST.depositIfPossible{ value: msg.value }();
 	}
 	function mintCST(address to, uint256 roundNum) external {
-		// SMTChecker doesn't support low level calls, but maybe it doesn't matter in this test code.
 		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
 
 		if (!success) {
@@ -198,6 +197,11 @@ contract TestStakingWalletCST is StakingWalletCST {
 	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) StakingWalletCST(nft_, game_ /* , charity_ */) {}
 
 	function insertToken(uint256 tokenId, uint256 actionId) external {
+		// // [Comment-202409274]
+		// // Issue. The code must be copied from parent by hand (after every update), since parent have them as `internal`.
+		// // todo-9 Reference this comment near the code to be copied.
+		// // Issue. But why can't we just call the inherited function here? We now do it and it seems to work.
+		// // [/Comment-202409274]
 		// require(
 		// 	!isTokenStaked(tokenId),
 		// 	CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
@@ -210,6 +214,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 	}
 
 	function removeToken(uint256 tokenId) external {
+		// // Comment-202409274 applies.
 		// require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
 		// uint256 index = tokenIndices[tokenId];
 		// uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
@@ -227,6 +232,7 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
 	function insertToken(uint256 tokenId, uint256 actionId) external {
+		// // Comment-202409274 applies.
 		// require(
 		// 	!isTokenStaked(tokenId),
 		// 	CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
@@ -239,6 +245,7 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 	}
 
 	function removeToken(uint256 tokenId) external {
+		// // Comment-202409274 applies.
 		// require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
 		// uint256 index = tokenIndices[tokenId];
 		// uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];

@@ -63,7 +63,7 @@ describe("Staking RandomWalk tests", function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-		// let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		// const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		// await cBidder.waitForDeployment();
 
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
@@ -112,7 +112,7 @@ describe("Staking RandomWalk tests", function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-		// let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		// const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		// await cBidder.waitForDeployment();
 
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
@@ -231,7 +231,7 @@ describe("Staking RandomWalk tests", function () {
 		}
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		var bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.bid(params, { value: bidPrice });
 
@@ -252,7 +252,7 @@ describe("Staking RandomWalk tests", function () {
 
 	})
 	it("The random picking of winner from StakingWalletRWalk is really random", async function () {
-		let signers = await hre.ethers.getSigners();
+		const signers = await hre.ethers.getSigners();
 		let owner = signers[0];
 		const {
 			cosmicGameProxy,
@@ -340,7 +340,7 @@ describe("Staking RandomWalk tests", function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-		// let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		// const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		// await cBidder.waitForDeployment();
 
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");

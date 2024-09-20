@@ -83,11 +83,13 @@ describe("Zero-address checking", function () {
 		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy StakingWalletCST with zero-address-ed parameters", async function () {
-		const [owner, addr1 /* , addr2 */ /* , addr3 */] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		const StakingWalletCST = await hre.ethers.getContractFactory("StakingWalletCST");
 		await expect(StakingWalletCST.deploy(hre.ethers.ZeroAddress, addr1.address, /*addr2.address,*/ {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 		await expect(StakingWalletCST.deploy(owner.address, hre.ethers.ZeroAddress, /*addr2.address,*/ {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+
+		// // Comment-202409209 applies.
 		// await expect(StakingWalletCST.deploy(addr1.address, addr2.address, hre.ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy StakingWalletRWalk with zero-address-ed parameters", async function () {

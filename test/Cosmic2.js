@@ -10,6 +10,8 @@ describe('Cosmic Set2', function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
+	// todo-0 Review all calls to function named like this.
+	// todo-0 Make sure the returned objects are assigned to the same named objects in the calling function.
 	async function deployCosmic(deployerAcct) {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
@@ -108,7 +110,7 @@ describe('Cosmic Set2', function () {
 		// for paying gas price since it is accounted on the EOA that sends the TX,
 		// and this will guarantee clean calculations
 		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
-		let cBidder = await BidderContract.deploy(cosmicGameAddr);
+		const cBidder = await BidderContract.deploy(cosmicGameAddr);
 		await cBidder.waitForDeployment();
 		let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let amountSent = hre.ethers.parseEther('2');
@@ -131,7 +133,7 @@ describe('Cosmic Set2', function () {
 		// for paying gas price since it is accounted on the EOA that sends the TX,
 		// and this will guarantee clean calculations
 		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
-		let cBidder = await BidderContract.deploy(cosmicGameAddr);
+		const cBidder = await BidderContract.deploy(cosmicGameAddr);
 		await cBidder.waitForDeployment();
 		let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let amountSent = hre.ethers.parseUnits('1',15);
@@ -171,7 +173,7 @@ describe('Cosmic Set2', function () {
 		sysMode = await cosmicGameProxy.systemMode();
 		expect(sysMode.toString()).to.equal('1');
 
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
+		const prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 		await hre.ethers.provider.send('evm_mine');
 		await cosmicGameProxy.connect(addr1).claimPrize();
@@ -677,7 +679,7 @@ describe('Cosmic Set2', function () {
 			true,
 			true
 		);
-		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		await expect(cosmicGameProxy.initialize(owner.address)).revertedWithCustomError(cosmicGameProxy,"InvalidInitialization");
 	})
@@ -701,7 +703,7 @@ describe('Cosmic Set2', function () {
 			true,
 			true
 		);
-		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		await expect(cosmicGameProxy.connect(addr2).upgradeTo(addr1.address)).revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 	})
@@ -722,7 +724,7 @@ describe('Cosmic Set2', function () {
 		
 		let donationAmount = hre.ethers.parseEther('10');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		var bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { msg: '', rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
