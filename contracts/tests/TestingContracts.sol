@@ -60,7 +60,8 @@ contract BrokenCharityWallet is CharityWallet {
 }
 
 /// @notice Used to test `revert` statements in `StakingWalletCST`
-contract BrokenStakingWalletCST {
+/// @dev todo-1 This contract name is confising. Make sense to rename it to `BrokenStakingWalletCST`?
+contract BrokenStaker {
 	StakingWalletCST private stakingWalletCST;
 	bool private blockDeposits = false;
 

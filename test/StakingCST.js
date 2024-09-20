@@ -649,17 +649,17 @@ describe('Staking CST tests', function () {
 		await newCosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 		await newCosmicSignature.connect(addr1).setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 
-		const BrokenStakingWalletCST = await hre.ethers.getContractFactory('BrokenStakingWalletCST');
-		const brokenStakingWalletCST = await BrokenStakingWalletCST.deploy();
-		await brokenStakingWalletCST.waitForDeployment();
-		await brokenStakingWalletCST.setStakingWallet(await newStakingWalletCST.getAddress());
-		await brokenStakingWalletCST.doSetApprovalForAll(await newCosmicSignature.getAddress());
+		const BrokenStaker = await hre.ethers.getContractFactory('BrokenStaker');
+		const brokenStaker = await BrokenStaker.deploy();
+		await brokenStaker.waitForDeployment();
+		await brokenStaker.setStakingWallet(await newStakingWalletCST.getAddress());
+		await brokenStaker.doSetApprovalForAll(await newCosmicSignature.getAddress());
 		await newCosmicSignature.setApprovalForAll(await stakingWalletCST.getAddress(), true);
 
-		await newCosmicSignature.mint(await brokenStakingWalletCST.getAddress(), 0);
+		await newCosmicSignature.mint(await brokenStaker.getAddress(), 0);
 		await newCosmicSignature.mint(addr1.address, 0);
 
-		let tx = await brokenStakingWalletCST.doStake(0);
+		let tx = await brokenStaker.doStake(0);
 		let receipt = await tx.wait();
 		let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -677,10 +677,10 @@ describe('Staking CST tests', function () {
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 
-		await brokenStakingWalletCST.doUnstake(0);
-		await brokenStakingWalletCST.startBlockingDeposits();
+		await brokenStaker.doUnstake(0);
+		await brokenStaker.startBlockingDeposits();
 
-		await expect(brokenStakingWalletCST.doClaimReward(0, 0)).to.be.revertedWithCustomError(
+		await expect(brokenStaker.doClaimReward(0, 0)).to.be.revertedWithCustomError(
 			contractErrors,
 			'FundTransferFailed'
 		);
@@ -718,31 +718,31 @@ describe('Staking CST tests', function () {
 	// 	const newCosmicSignature = await CosmicSignature.deploy(owner.address);
 	// 	newCosmicSignature.waitForDeployment();
 	//
-	// 	const BrokenStakingWalletCST = await hre.ethers.getContractFactory('BrokenStakingWalletCST');
-	// 	const brokenStakingWalletCST = await BrokenStakingWalletCST.deploy();
-	// 	await brokenStakingWalletCST.waitForDeployment();
+	// 	const BrokenStaker = await hre.ethers.getContractFactory('BrokenStaker');
+	// 	const brokenStaker = await BrokenStaker.deploy();
+	// 	await brokenStaker.waitForDeployment();
 	//
 	// 	const StakingWalletCST = await hre.ethers.getContractFactory('StakingWalletCST');
 	// 	const newStakingWalletCST = await StakingWalletCST.deploy(
 	// 		await newCosmicSignature.getAddress(),
-	// 		await brokenStakingWalletCST.getAddress(),
+	// 		await brokenStaker.getAddress(),
 	//			// todo-9 The 3rd parameter no longer exists.
 	// 		addr1.address
 	// 	);
 	// 	await newStakingWalletCST.waitForDeployment();
-	// 	await brokenStakingWalletCST.setStakingWallet(await newStakingWalletCST.getAddress());
-	// 	await brokenStakingWalletCST.doSetApprovalForAll(await newCosmicSignature.getAddress());
-	// 	await brokenStakingWalletCST.startBlockingDeposits();
+	// 	await brokenStaker.setStakingWallet(await newStakingWalletCST.getAddress());
+	// 	await brokenStaker.doSetApprovalForAll(await newCosmicSignature.getAddress());
+	// 	await brokenStaker.startBlockingDeposits();
 	//
 	// 	await cosmicGameProxy.setStakingWalletCST(await newStakingWalletCST.getAddress());
 	// 	await newCosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 	// 	await newCosmicSignature.connect(addr1).setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 	//
-	// 	await cosmicGameProxy.setStakingWalletCST(brokenStakingWalletCST);
+	// 	await cosmicGameProxy.setStakingWalletCST(brokenStaker);
 	// 	await cosmicGameProxy.setRuntimeMode();
 	//
 	// 	await newCosmicSignature.setApprovalForAll(await stakingWalletCST.getAddress(), true);
-	// 	await newCosmicSignature.mint(await brokenStakingWalletCST.getAddress(), 0);
+	// 	await newCosmicSignature.mint(await brokenStaker.getAddress(), 0);
 	// 	await newCosmicSignature.mint(addr1.address, 0);
 	//
 	// 	await newStakingWalletCST.connect(addr1).stake(1); // we need to stake, otherwise the deposit would be rejected
