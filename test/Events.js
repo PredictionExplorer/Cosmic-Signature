@@ -350,7 +350,7 @@ describe("Events", function () {
 			.withArgs(percentage);
 		expect((await cosmicGameProxy.rafflePercentage()).toString()).to.equal(percentage.toString());
 
-		const num_winners = 11n;
+		let num_winners = 11n;
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleETHWinnersBidding(num_winners))
 			.to.emit(cosmicGameProxy, "NumRaffleETHWinnersBiddingChanged")
 			.withArgs(num_winners);

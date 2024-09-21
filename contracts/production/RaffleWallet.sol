@@ -21,9 +21,9 @@ contract RaffleWallet is Ownable, IRaffleWallet {
 	}
 
 	function deposit(address winner) external payable override {
-		// todo-1 Given that only `game` may call us, can this validation fail?
+		// todo-1 Given that only `game` may call us, can this validation fail? But maybe we should make it anyway?
 		require(winner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		// todo-1 Given that only `game` may call us, can this validation fail?
+		// todo-1 Given that only `game` may call us, can this validation fail? But maybe we should make it anyway?
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("No ETH has been sent."));
 		// todo-1 Make this validatiopn first?
 		require(

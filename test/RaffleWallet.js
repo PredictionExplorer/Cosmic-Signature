@@ -5,8 +5,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 
 describe("RaffleWallet", function () {
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -66,7 +65,7 @@ describe("RaffleWallet", function () {
 			true,
 			true
 		);
-		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		const NewRaffleWallet = await hre.ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);
@@ -99,7 +98,7 @@ describe("RaffleWallet", function () {
 			true,
 			true
 		);
-		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		const NewRaffleWallet = await hre.ethers.getContractFactory('RaffleWallet');
 		let newRaffleWallet = await NewRaffleWallet.deploy(owner.address);

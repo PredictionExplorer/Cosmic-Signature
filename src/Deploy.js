@@ -104,8 +104,8 @@ const basicDeploymentAdvanced = async function (
 	let StakingWalletCST = await hre.ethers.getContractFactory("StakingWalletCST");
 	let stakingWalletCST = await StakingWalletCST.connect(deployerAcct).deploy(
 		await cosmicSignature.getAddress(),
-		cosmicGameProxyAddr,
-		// charityAddr,
+		cosmicGameProxyAddr
+		// charityAddr
 	);
 	await stakingWalletCST.waitForDeployment();
 	let stakingWalletCSTAddr = await stakingWalletCST.getAddress();
