@@ -9,8 +9,7 @@ describe("CosmicSignature tests", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		const [contractDeployerAcct] = await ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -127,5 +126,20 @@ describe("CosmicSignature tests", function () {
 		await expect(
 			cosmicSignature.connect(addr1).setTokenName(token_id, "012345678901234567890123456789012"),
 		).to.be.revertedWithCustomError(contractErrors,"TokenNameLength");
+	});
+	it("BaseURI/TokenURI works", async function () {
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+			await loadFixture(deployCosmic);
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		let bidPrice = await cosmicGameProxy.getBidPrice();
+		let bidParams = { msg: "", rwalk: -1 };
+		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		let prizeTime = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		let tx = await cosmicGameProxy.connect(addr1).claimPrize();
+		let receipt = await tx.wait();
+		await cosmicSignature.connect(owner).setBaseURI("somebase/");
+		expect(await cosmicSignature.tokenURI(0n)).to.equal("somebase/0");
 	});
 })

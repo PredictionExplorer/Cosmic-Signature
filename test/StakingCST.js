@@ -1,16 +1,17 @@
-// todo-1 Add this to all tests.
+// todo-1 Add this to all ".js" files".
 "use strict";
 
 const hre = require("hardhat");
 const { time, loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 // const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 const { expect } = require('chai');
-const { basicDeployment, basicDeploymentAdvanced } = require('../src/Deploy.js');
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 // const { toUtf8Bytes } = require('@ethersproject/strings');
 
 const SKIP_LONG_TESTS = "0";
 
 describe('Staking CST tests', function () {
+	// ToDo-202410075-0 applies.
 	// todo-1 `deployerAcct` wasn't used, so I have commented it out. Do the same in other tests.
 	async function deployCosmic(/*deployerAcct*/) {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
@@ -25,21 +26,21 @@ describe('Staking CST tests', function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-			cosmicGameImplementation
+			cosmicGame,
 		} = await basicDeployment(contractDeployerAcct, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 
 		return {
-			cosmicGameProxy: cosmicGameProxy,
+			cosmicGameProxy,
 			cosmicToken,
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-			cosmicGameImplementation
+			cosmicGameImplementation: cosmicGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -57,8 +58,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -81,8 +82,8 @@ describe('Staking CST tests', function () {
 	// 		cosmicSignature,
 	// 		charityWallet,
 	// 		cosmicDAO,
-	// 		randomWalkNFT,
 	// 		raffleWallet,
+	// 		randomWalkNFT,
 	// 		stakingWalletCST,
 	// 		stakingWalletRWalk,
 	// 		marketingWallet,
@@ -118,8 +119,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -177,8 +178,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -225,8 +226,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -286,8 +287,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -351,8 +352,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -411,8 +412,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -476,8 +477,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -546,8 +547,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -622,8 +623,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
 			randomWalkNFT,
+			raffleWallet,
 			stakingWalletCST,
 			stakingWalletRWalk
 		} = await basicDeploymentAdvanced(
@@ -771,8 +772,8 @@ describe('Staking CST tests', function () {
 	// 		cosmicSignature,
 	// 		charityWallet,
 	// 		cosmicDAO,
-	// 		randomWalkNFT,
 	// 		raffleWallet,
+	// 		randomWalkNFT,
 	// 		stakingWalletCST,
 	// 		stakingWalletRWalk,
 	// 		marketingWallet,
@@ -963,7 +964,9 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCST,
-	// 		stakingWalletRWalk
+	// 		stakingWalletRWalk,
+	// 		marketingWallet,
+	// 		bidLogic
 	// 	} = await loadFixture(deployCosmic);
 	//
 	// 	let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -1132,8 +1135,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
@@ -1183,8 +1186,8 @@ describe('Staking CST tests', function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			randomWalkNFT,
 			raffleWallet,
+			randomWalkNFT,
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
