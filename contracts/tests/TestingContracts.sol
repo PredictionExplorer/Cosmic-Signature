@@ -197,65 +197,36 @@ contract TestStakingWalletCST is StakingWalletCST {
 	// todo-1 At least explain in a comment.
 	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) StakingWalletCST(nft_, game_ /* , charity_ */) {}
 
-	function insertToken(uint256 tokenId, uint256 actionId) external {
-		// // [Comment-202409274]
-		// // Issue. The code must be copied from parent by hand (after every update), since parent have them as `internal`.
-		// // todo-9 Reference this comment near the code to be copied.
-		// // Issue. But why can't we just call the inherited function here? We now do it and it seems to work.
-		// // [/Comment-202409274]
-		// require(
-		// 	!isTokenStaked(tokenId),
-		// 	CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
-		// );
-		// stakedTokens.push(tokenId);
-		// tokenIndices[tokenId] = stakedTokens.length;
-		// lastActionIds[tokenId] = int256(actionId);
-
-		_insertToken(tokenId, actionId);
+	function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
+		_insertToken(_tokenId,_actionId);
 	}
-
-	function removeToken(uint256 tokenId) external {
-		// // Comment-202409274 applies.
-		// require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
-		// uint256 index = tokenIndices[tokenId];
-		// uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		// stakedTokens[index - 1] = lastTokenId;
-		// tokenIndices[lastTokenId] = index;
-		// delete tokenIndices[tokenId];
-		// stakedTokens.pop();
-		// lastActionIds[tokenId] = -1;
-
-		_removeToken(tokenId);
+	function doRemoveToken(uint256 _tokenId) external {
+		_removeToken(_tokenId);
 	}
 }
 
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
+	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
 	function insertToken(uint256 tokenId, uint256 actionId) external {
-		// // Comment-202409274 applies.
-		// require(
-		// 	!isTokenStaked(tokenId),
-		// 	CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
-		// );
-		// stakedTokens.push(tokenId);
-		// tokenIndices[tokenId] = stakedTokens.length;
-		// lastActionIds[tokenId] = int256(actionId);
-
-		_insertToken(tokenId, actionId);
+		require(
+			!isTokenStaked(tokenId),
+			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
+		);
+		stakedTokens.push(tokenId);
+		tokenIndices[tokenId] = stakedTokens.length;
+		lastActionIds[tokenId] = int256(actionId);
 	}
 
 	function removeToken(uint256 tokenId) external {
-		// // Comment-202409274 applies.
-		// require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
-		// uint256 index = tokenIndices[tokenId];
-		// uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		// stakedTokens[index - 1] = lastTokenId;
-		// tokenIndices[lastTokenId] = index;
-		// delete tokenIndices[tokenId];
-		// stakedTokens.pop();
-		// lastActionIds[tokenId] = -1;
-
-		_removeToken(tokenId);
+		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
+		uint256 index = tokenIndices[tokenId];
+		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
+		stakedTokens[index - 1] = lastTokenId;
+		tokenIndices[lastTokenId] = index;
+		delete tokenIndices[tokenId];
+		stakedTokens.pop();
+		lastActionIds[tokenId] = -1;
 	}
 }
