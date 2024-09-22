@@ -548,6 +548,11 @@ describe("Cosmic Set1", function () {
 		await cosmicGameProxy.connect(owner).setRoundStartCSTAuctionLength(3600n);
 		expect(await cosmicGameProxy.RoundStartCSTAuctionLength()).to.equal(3600n);
 
+		await expect(cosmicGameProxy.connect(addr1).setStartingBidPriceCSTMinLimit(hre.ethers.parseEther("111"))).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
+		await cosmicGameProxy.connect(owner).setStartingBidPriceCSTMinLimit(hre.ethers.parseEther("111"));
+		expect(await cosmicGameProxy.startingBidPriceCSTMinLimit()).to.equal(hre.ethers.parseEther("111"));
+		await expect(cosmicGameProxy.connect(owner).setStartingBidPriceCSTMinLimit(111n)).to.be.revertedWithCustomError(cosmicGameProxy,"ProvidedStartingBidPriceCSTMinLimitIsTooSmall");
+
 		await expect(cosmicGameProxy.connect(addr1).setTokenReward(11n)).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await cosmicGameProxy.connect(owner).setTokenReward(1234567890n);
 		expect(await cosmicGameProxy.tokenReward()).to.equal(1234567890n);

@@ -208,25 +208,10 @@ contract TestStakingWalletCST is StakingWalletCST {
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
-	// note: functions must be copied from parent by hand (after every update), since parent have them as 'internal'
-	function insertToken(uint256 tokenId, uint256 actionId) external {
-		require(
-			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
-		);
-		stakedTokens.push(tokenId);
-		tokenIndices[tokenId] = stakedTokens.length;
-		lastActionIds[tokenId] = int256(actionId);
+	function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
+		_insertToken(_tokenId,_actionId);
 	}
-
-	function removeToken(uint256 tokenId) external {
-		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
-		uint256 index = tokenIndices[tokenId];
-		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		stakedTokens[index - 1] = lastTokenId;
-		tokenIndices[lastTokenId] = index;
-		delete tokenIndices[tokenId];
-		stakedTokens.pop();
-		lastActionIds[tokenId] = -1;
+	function doRemoveToken(uint256 _tokenId) external {
+		_removeToken(_tokenId);
 	}
 }

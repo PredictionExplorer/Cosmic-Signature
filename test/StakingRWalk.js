@@ -160,15 +160,15 @@ describe("Staking RandomWalk tests", function () {
 		let sampleTokenId = 33;
 		let tokenStaked = await newStakingWalletRWalk.isTokenStaked(sampleTokenId);
 		expect(tokenStaked).to.equal(false);
-		await newStakingWalletRWalk.insertToken(sampleTokenId,0);
+		await newStakingWalletRWalk.doInsertToken(sampleTokenId,0);
 		let tokenIndexCheck = await newStakingWalletRWalk.tokenIndices(sampleTokenId);
 		expect(tokenIndexCheck).to.equal(1);
 		let tokenIdCheck = await newStakingWalletRWalk.stakedTokens(Number(tokenIndexCheck)-1);
 		expect(tokenIdCheck).to.equal(sampleTokenId);
-		await expect(newStakingWalletRWalk.insertToken(sampleTokenId,0)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyInserted");
+		await expect(newStakingWalletRWalk.doInsertToken(sampleTokenId,0)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyInserted");
 
-		await newStakingWalletRWalk.removeToken(sampleTokenId);
-		await expect(newStakingWalletRWalk.removeToken(owner.address)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyDeleted");
+		await newStakingWalletRWalk.doRemoveToken(sampleTokenId);
+		await expect(newStakingWalletRWalk.doRemoveToken(owner.address)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyDeleted");
 		await randomWalkNFT.setApprovalForAll(await newStakingWalletRWalk.getAddress(), true);
 		async function mint_rwalk(a) {
 			let tokenPrice = await randomWalkNFT.getMintPrice();

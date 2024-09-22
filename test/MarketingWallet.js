@@ -96,6 +96,7 @@ describe("MarketingWallet", function () {
 
 		const marketingReward = hre.ethers.parseEther('15');
 		await expect(marketingWallet.send(marketingReward,hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		await expect(marketingWallet.send(0n,addr1.address)).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
 		await expect(marketingWallet.connect(addr1).send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		await marketingWallet.send(marketingReward,addr1);
 		await marketingWallet.setTokenContract(await cBidder.getAddress());
