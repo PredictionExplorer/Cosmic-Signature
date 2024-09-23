@@ -114,7 +114,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// Endurance Champion Prize
 		if (enduranceChampion != address(0)) {
 			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
-			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
+			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			try token.mint(enduranceChampion, erc20TokenReward) {
 			} catch  {
 			}
@@ -124,7 +124,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// Stellar Spender Prize
 		if (stellarSpender != address(0)) {
 			uint256 tokenId = nft.mint(stellarSpender, roundNum);
-			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum];
+			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			try token.mint(stellarSpender, erc20TokenReward) {
 			} catch  {
 			}
