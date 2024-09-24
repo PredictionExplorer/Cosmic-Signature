@@ -5,8 +5,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 
 describe("MarketingWallet", function () {
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -44,7 +43,7 @@ describe("MarketingWallet", function () {
 		],
 	};
 	it("setTokenContract() emits CosmicTokenAddressChanged event correctly()", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -66,14 +65,14 @@ describe("MarketingWallet", function () {
 			true,
 			false
 		);
-		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
 		await expect(marketingWallet.connect(addr1).setTokenContract(addr1.address)).to.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -85,11 +84,11 @@ describe("MarketingWallet", function () {
 			stakingWalletCST,
 			stakingWalletRWalk,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
-		let cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
+		const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -109,6 +108,5 @@ describe("MarketingWallet", function () {
 
 		let balanceAfter = await cosmicToken.balanceOf(addr1);
 		expect(balanceAfter).to.equal(marketingReward);
-
 	});
 });

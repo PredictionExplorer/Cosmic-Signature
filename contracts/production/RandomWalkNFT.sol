@@ -1,4 +1,5 @@
 // todo-1 Is license supposed to be the same in all files? Currently it's not.
+// todo-1 Near `IRandomWalkNFT`, I specified a different license.
 // todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT
 

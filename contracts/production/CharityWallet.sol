@@ -28,6 +28,7 @@ contract CharityWallet is Ownable, ICharityWallet {
 	function send() external override {
 		require(charityAddress != address(0), CosmicGameErrors.ZeroAddress("Charity address not set."));
 		uint256 amount = address(this).balance;
+		// todo-1 See Comment-202409215.
 		require(amount > 0, CosmicGameErrors.ZeroBalance("No funds to send."));
 
 		(bool success, ) = charityAddress.call{ value: amount }("");

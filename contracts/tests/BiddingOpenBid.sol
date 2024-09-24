@@ -170,28 +170,34 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numParticipants] = lastBidder;
+		raffleParticipants[roundNum][numParticipants] = /*lastBidder*/ msg.sender;
 		numRaffleParticipants[roundNum] = numParticipants + 1;
 
 		// Distribute token rewards
-		try token.mint(lastBidder, tokenReward) {
-		} catch {
-			revert
-				CosmicGameErrors.ERC20Mint(
-					"CosmicToken mint() failed to mint reward tokens for the bidder.",
-					lastBidder,
-					tokenReward
-				);
-		}
-		try token.mint(marketingWallet, marketingReward) {
-		} catch {
-			revert
-				CosmicGameErrors.ERC20Mint(
-					"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
-					address(marketingWallet),
-					marketingReward
-				);
-		}
+		// try
+		// ToDo-202409245-0 applies.
+		token.mint(/*lastBidder*/ msg.sender, tokenReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken mint() failed to mint reward tokens for the bidder.",
+		// 			/*lastBidder*/ msg.sender,
+		// 			tokenReward
+		// 		);
+		// }
+		// try
+		// ToDo-202409245-0 applies.
+		token.mint(marketingWallet, marketingReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
+		// 			address(marketingWallet),
+		// 			marketingReward
+		// 		);
+		// }
 
 		_pushBackPrizeTime();
 	}

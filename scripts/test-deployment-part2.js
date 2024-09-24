@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function claim_raffle_eth(testingAcct, raffleWallet, event_logs) {
-	var unique_winners = [];
+	const unique_winners = [];
 	for (let i = 0; i < event_logs.length; i++) {
 		let wlog = raffleWallet.interface.parseLog(event_logs[i]);
 		let winner = wlog.args.winner;

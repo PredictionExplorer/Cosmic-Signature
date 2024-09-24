@@ -150,28 +150,37 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
 
 		uint256 numParticipants = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numParticipants] = lastBidder;
+		raffleParticipants[roundNum][numParticipants] = /*lastBidder*/ msg.sender;
 		numRaffleParticipants[roundNum] = numParticipants + 1;
 
 		// Distribute token rewards
-		try token.mint(lastBidder, tokenReward) {
-		} catch {
-			revert
-				CosmicGameErrors.ERC20Mint(
-					"CosmicToken mint() failed to mint reward tokens for the bidder.",
-					lastBidder,
-					tokenReward
-				);
-		}
-		try token.mint(marketingWallet, marketingReward) {
-		} catch {
-			revert
-				CosmicGameErrors.ERC20Mint(
-					"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
-					address(marketingWallet),
-					marketingReward
-				);
-		}
+		// try
+		// [ToDo-202409245-0]
+		// Can this, realistically, fail?
+		// This can't, realistically, overflow, right?
+		// [/ToDo-202409245-0]
+		token.mint(/*lastBidder*/ msg.sender, tokenReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken mint() failed to mint reward tokens for the bidder.",
+		// 			/*lastBidder*/ msg.sender,
+		// 			tokenReward
+		// 		);
+		// }
+		// try
+		// ToDo-202409245-0 applies.
+		token.mint(marketingWallet, marketingReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
+		// 			address(marketingWallet),
+		// 			marketingReward
+		// 		);
+		// }
 
 		_pushBackPrizeTime();
 	}
@@ -227,7 +236,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		uint256 price = getCurrentBidPriceCST();
 
 		// // [Comment-202409181]
-		// // This validation is unnecessary, given that `token.burn` caled near Comment-202409177 is going to perform it too.
+		// // This validation is unnecessary, given that `token.burn` called near Comment-202409177 is going to perform it too.
 		// // [/Comment-202409181]
 		// require(
 		// 	userBalance >= price,

@@ -1,17 +1,17 @@
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
-const SKIP_LONG_TESTS = "1";
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+
+const SKIP_LONG_TESTS = "0";
 
 describe("Donation tests", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -22,7 +22,7 @@ describe("Donation tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
 		return {
 			cosmicGameProxy,
@@ -45,11 +45,11 @@ describe("Donation tests", function () {
 		],
 	};
 	it("donateWithInfo() works as expected", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
-		let donationAmount = ethers.parseEther("10");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		let donationAmount = hre.ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
 		let numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
@@ -66,10 +66,10 @@ describe("Donation tests", function () {
 		await expect(cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: 0n})).to.be.revertedWithCustomError(cosmicGameProxy,"NonZeroValueRequired");
 	});
 	it("donateNFT() without making a bid works", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(owner).mint({ value: mintPrice });
@@ -83,21 +83,21 @@ describe("Donation tests", function () {
 	it("Should not be possible to donate 0 value", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(cosmicGameProxy.connect(addr1).donate()).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
 	});
 	it("claimManyDonatedNFTs() works properly", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)
 			.bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
@@ -112,12 +112,12 @@ describe("Donation tests", function () {
 		mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		bidParams = { msg: "", rwalk: -1 };
-		params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 1, { value: bidPrice });
 
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)+100]);
-		await ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+100]);
+		await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).not.to.be.reverted;
 
 		tx = await cosmicGameProxy.connect(addr1).claimManyDonatedNFTs([0, 1]);
