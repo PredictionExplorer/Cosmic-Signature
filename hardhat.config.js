@@ -15,6 +15,7 @@ const helpersModule = require("./src/Helpers.js");
 // Doing so will eliminate the risk of Hardhat Preprocessor bugs breaking things.
 // If you forget to, we will throw an error near Comment-202408261.
 // Comment-202408155 relates.
+// Comment-202410099 relates.
 const ENABLE_HARDHAT_PREPROCESSOR = helpersModule.parseBooleanEnvironmentVariable("ENABLE_HARDHAT_PREPROCESSOR", false);
 
 // Comment-202408156 relates.
@@ -23,12 +24,18 @@ const ENABLE_HARDHAT_PREPROCESSOR = helpersModule.parseBooleanEnvironmentVariabl
 // [/Comment-202408155]
 const ENABLE_ASSERTS = ENABLE_HARDHAT_PREPROCESSOR && helpersModule.parseBooleanEnvironmentVariable("ENABLE_ASSERTS", false);
 
+// Allowed values:
+//    0 = disabled.
+//    1 = only preprocess the code for SMTChecker.
+//    2 = fully enabled, meaning also run SMTChecker.
 // [Comment-202408156]
 // When enabling SMTChecker, you typically need to enable asserts as well.
 // [/Comment-202408156]
-// Comment-202408155 applies.
+// [Comment-202410099]
+// This is ignored and treated as zero when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// [/Comment-202410099]
 // Comment-202408173 relates.
-const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR && helpersModule.parseBooleanEnvironmentVariable("ENABLE_SMTCHECKER", false);
+const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseIntegerEnvironmentVariable("ENABLE_SMTCHECKER", 0) : 0;
 
 // #endregion
 // #region
@@ -75,12 +82,12 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.8a97fa7a.Linux.g+
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
 
-	// if (( ! ENABLE_SMTCHECKER ) && ( ! ENABLE_ASSERTS )) {
-	// 	// [Comment-202409025/]
-	// 	console.warn("Warning. Neither SMTChecker nor asserts are enabled. Is it intentional?");
-	// }
+	if (ENABLE_SMTCHECKER <= 0 && ( ! ENABLE_ASSERTS )) {
+		// [Comment-202409025/]
+		console.warn("Warning. Neither SMTChecker nor asserts are enabled. Assuming it's intentional.");
+	}
 
-	if (ENABLE_SMTCHECKER && ( ! ENABLE_ASSERTS )) {
+	if (ENABLE_SMTCHECKER > 0 && ( ! ENABLE_ASSERTS )) {
 		console.warn("Warning. SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
 } else {
@@ -218,7 +225,7 @@ function createSolidityLinePreProcessingRegExp()
 	const regExpPatternPart1 =
 		(ENABLE_ASSERTS ? "enable_asserts" : "disable_asserts") +
 		"|" +
-		(ENABLE_SMTCHECKER ? "enable_smtchecker" : "disable_smtchecker");
+		((ENABLE_SMTCHECKER > 0) ? "enable_smtchecker" : "disable_smtchecker");
 	const regExpPatternPart2 = `\\/\\/[ \\t]*\\#(?:${regExpPatternPart1})(?: |\\b)`;
 	const regExpPattern = `^([ \\t]*)${regExpPatternPart2}(?:[ \\t]*${regExpPatternPart2})*`;
 	const regExp = new RegExp(regExpPattern, "s");
@@ -312,7 +319,7 @@ const hardhatUserConfig = {
 					settings:
 					{
 						enableAsserts: ENABLE_ASSERTS,
-						enableSMTChecker: ENABLE_SMTCHECKER,
+						enableSMTChecker: ENABLE_SMTCHECKER > 0,
 					},
 
 					// // This undocumented parameter appears to make it possible to specify what files to preprocess.
@@ -388,7 +395,7 @@ const hardhatUserConfig = {
 // #endregion
 // #region
 
-if (ENABLE_SMTCHECKER) {
+if (ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
 	// @ts-ignore Property is possibly undefined. Property doesn't exist.

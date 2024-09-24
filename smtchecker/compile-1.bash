@@ -26,7 +26,7 @@
 	if [ ${OutcomeCode} -lt 2 ]; then
 		export ENABLE_HARDHAT_PREPROCESSOR='true'
 		export ENABLE_ASSERTS='true'
-		export ENABLE_SMTCHECKER='true'
+		export ENABLE_SMTCHECKER='2'
 
 		# Comment-202409012 applies.
 		# Slither executes the cleans in this order. We do the same.
