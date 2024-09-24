@@ -9,12 +9,15 @@ import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
 import { RaffleWallet } from "../production/RaffleWallet.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
+import { Bidding } from "../production/Bidding.sol";
+import { NFTDonations } from "../production/NFTDonations.sol";
 import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "../production/CosmicSignature.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract BrokenToken {
 	// used to test revert() statements in token transfers in claimPrize() function
@@ -193,5 +196,49 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 	}
 	function doRemoveToken(uint256 _tokenId) external {
 		_removeToken(_tokenId);
+	}
+}
+contract MaliciousToken1 is ERC721 {
+
+	// sends donateNFT() inside a call to transfer a token, generating reentrant function call
+	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
+
+	}
+	function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
+		// the following call should revert
+		(bool success, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector,address(this),0));
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
+}
+contract MaliciousToken2 is ERC721 {
+	address game;
+	// sends bidAndDonateNFT() inside a call to transfer a token, generating reentrant function call
+	constructor(address game_,string memory name_, string memory symbol_) ERC721(name_,symbol_) {
+		game = game_;
+	}
+	function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
+		uint256 price = Bidding(payable(address(game))).getBidPrice();
+		CosmicGame.BidParams memory defaultParams;
+		defaultParams.message = "";
+		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
+		// the following call should revert
+		(bool success, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(CosmicGame.bidAndDonateNFT.selector,param_data,address(this),0));
+		if (!success) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
 	}
 }

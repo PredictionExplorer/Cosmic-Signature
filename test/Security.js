@@ -12,13 +12,36 @@ describe("Security", function () {
 			{ name: "rwalk", type: "int256" },
 		],
 	};
-	async function deployCosmic() {
+	async function deployCosmic(deployerAcct) {
 		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await basicDeployment(contractDeployerAcct, "", 0, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
+		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+			cosmicGameImplementation
+		} = await basicDeployment(contractDeployerAcct, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 
-		return { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet };
+		return {
+			cosmicGameProxy: cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			randomWalkNFT,
+			raffleWallet,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+			cosmicGameImplementation
+		};
 	}
 	it("Vulnerability to claimPrize() multiple times", async function () {
 		[contractDeployerAcct] = await ethers.getSigners();
@@ -80,5 +103,55 @@ describe("Security", function () {
 		let prizeAmount = await cosmicGameProxy.prizeAmount();
 		let balance_before = await ethers.provider.getBalance(addr1);
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"NoLastBidder");
+	});
+	it("donateNFT() function is confirmed to be non-reentrant", async function () {
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+
+		let donationAmount = ethers.parseEther("10");
+		await cosmicGameProxy.donate({ value: donationAmount });
+
+		const MaliciousToken = await ethers.getContractFactory('MaliciousToken1');
+		let maliciousToken = await MaliciousToken.deploy('Bad Token','BAD');
+		await maliciousToken.waitForDeployment();
+
+		await expect(cosmicGameProxy.connect(owner).donateNFT(await maliciousToken.getAddress(),0)).to.be.revertedWithCustomError(cosmicGameProxy,'ReentrancyGuardReentrantCall');
+	});
+	it("bidAnddonateNFT() function is confirmed to be non-reentrant", async function () {
+		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		let = contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+
+		let donationAmount = ethers.parseEther("10");
+		await cosmicGameProxy.donate({ value: donationAmount });
+
+		const MaliciousToken = await ethers.getContractFactory('MaliciousToken2');
+		let maliciousToken = await MaliciousToken.deploy(await cosmicGameProxy.getAddress(),'Bad Token','BAD');
+		await maliciousToken.waitForDeployment();
+
+		await expect(cosmicGameProxy.connect(owner).donateNFT(await maliciousToken.getAddress(),0)).to.be.revertedWithCustomError(cosmicGameProxy,'ReentrancyGuardReentrantCall');
 	});
 });
