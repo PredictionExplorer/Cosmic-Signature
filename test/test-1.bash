@@ -29,14 +29,18 @@
 		fi
 	fi
 
+	# Preprocessor, asserts, preprocess for SMTChecker, don't run SMTChecker.
+	SafeTryHardhatTest 'true' 'true' '1'
+
 	# Preprocessor, asserts, no SMTChecker.
-	SafeTryHardhatTest 'true' 'true' 'false'
+	SafeTryHardhatTest 'true' 'true' '0'
 
 	# Preprocessor, no asserts, no SMTChecker.
-	# This combination of arguments used to generate a warning near Comment-202409025, but not any more.
-	SafeTryHardhatTest 'true' 'false' 'false'
+	# This combination of arguments generates a warning near Comment-202409025.
+	SafeTryHardhatTest 'true' 'false' '0'
 
 	# No preprocessor.
 	# Comment-202408155 relates and/or applies.
-	SafeTryHardhatTest 'false' 'false' 'false'
+	# Comment-202410099 relates and/or applies.
+	SafeTryHardhatTest 'false' 'false' '0'
 )

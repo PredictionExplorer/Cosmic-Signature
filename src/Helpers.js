@@ -30,8 +30,35 @@ function parseBooleanEnvironmentVariable(environmentVariableName, defaultValue) 
 }
 
 // #endregion
+// #region parseIntegerEnvironmentVariable
+
+/**
+ * @param {string} environmentVariableName
+ * @param {number} defaultValue
+ * @returns {number}
+ * @throws {Error}
+ */
+function parseIntegerEnvironmentVariable(environmentVariableName, defaultValue) {
+	const rawValue = process.env[environmentVariableName];
+
+	if(rawValue === undefined)
+	{
+		return defaultValue;
+	}
+
+	const value = parseInt(rawValue);
+
+	if(isNaN(value))
+	{
+		throw new Error(`Invalid value for environment variable ${environmentVariableName}: "${rawValue}". Expected an integer.`);
+	}
+	
+	return value;
+}
+
+// #endregion
 // #region
 
-module.exports = { parseBooleanEnvironmentVariable };
+module.exports = { parseBooleanEnvironmentVariable, parseIntegerEnvironmentVariable };
 
 // #endregion
