@@ -198,7 +198,7 @@ describe("Events", function () {
 			.to.emit(bidLogic, "BidEvent")
 			.withArgs(addr1.address, 0, bidPrice, -1, -1, 2000090000, "simple text");
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [2100000000]);
-		var mintPrice = await randomWalkNFT.getMintPrice();
+		const mintPrice = await randomWalkNFT.getMintPrice();
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		bidParams = { msg: "random walk", rwalk: 0 };
@@ -222,7 +222,7 @@ describe("Events", function () {
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let rwalkBidPrice = bidPrice / 2n;
-		var mintPrice = await randomWalkNFT.getMintPrice();
+		const mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
 		let bidParams = { msg: "random walk", rwalk: 0 };

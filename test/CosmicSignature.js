@@ -44,7 +44,7 @@ describe("CosmicSignature tests", function () {
 	};
 	it("mint() function works properly", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		var transferOwnership = false;
+		const transferOwnership = false;
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -72,7 +72,7 @@ describe("CosmicSignature tests", function () {
 	})
 	it("setTokenGenerationScriptURL() works as expected", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		var transferOwnership = false;
+		const transferOwnership = false;
 		const {
 			cosmicGameProxy,
 			cosmicToken,
