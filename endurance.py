@@ -5,142 +5,193 @@ class BidProcessor:
         self._prev_bid_time = None
         self._prev_bid_name = None
 
-        self._endurance_champion = None
-        self._chrono_warrior = None
-
-        self._prev_endurance_champion = None
+        self._current_endurance_champion = None
+        self._previous_endurance_champion = None
+        self._previous_endurance_length = None
         self._prev_prev_endurance_length = None
 
-        self._game_ended = False
+        self._current_chrono_warrior = None
         self._game_end_time = None
 
     def bid(self, name, time):
-        if self._game_ended:
-            raise Exception("Cannot accept new bids after the game has ended.")
-
         if self._prev_bid_time is None:
-            # First bid
+            # First bid, initialize previous bid info
             self._prev_bid_time = time
             self._prev_bid_name = name
             return
 
-        # Calculate endurance length of previous bid
+        # Calculate the endurance length
         endurance_length = time - self._prev_bid_time
 
-        # Update endurance champion if necessary
-        if (self._endurance_champion is None) or (endurance_length > self._endurance_champion['endurance_length']):
-            # Before updating, handle chrono warrior for the previous endurance champion
-            self._update_chrono_warrior()
+        if self._current_endurance_champion is None:
+            # First endurance champion
+            self._current_endurance_champion = {
+                'endurance_start_time': self._prev_bid_time,
+                'endurance_length': endurance_length,
+                'name': self._prev_bid_name
+            }
+            self._prev_prev_endurance_length = None  # No previous endurance length
+        elif endurance_length > self._current_endurance_champion['endurance_length']:
+            # New endurance champion found
 
-            # Update previous endurance length
-            self._prev_prev_endurance_length = self._endurance_champion['endurance_length'] if self._endurance_champion else None
+            # Update previous previous endurance length
+            self._prev_prev_endurance_length = self._previous_endurance_length
 
-            # Update previous endurance champion
-            self._prev_endurance_champion = self._endurance_champion
+            # Update previous endurance champion info
+            self._previous_endurance_champion = self._current_endurance_champion.copy()
+            self._previous_endurance_length = self._current_endurance_champion['endurance_length']
 
-            # Set new endurance champion
-            self._endurance_champion = {
+            # Update current endurance champion
+            self._current_endurance_champion = {
                 'endurance_start_time': self._prev_bid_time,
                 'endurance_length': endurance_length,
                 'name': self._prev_bid_name
             }
 
-        # Update previous bid
+            # Compute chrono length for previous endurance champion
+            self._update_chrono_warrior()
+        else:
+            # No new endurance champion
+            pass
+
+        # Update previous bid info
         self._prev_bid_time = time
         self._prev_bid_name = name
 
-    def end_game(self, game_end_time):
-        if self._game_ended:
-            raise Exception("Game has already ended.")
-
-        self._game_ended = True
-        self._game_end_time = game_end_time
-
-        if self._prev_bid_time is None:
-            # No bids
+    def _update_chrono_warrior(self):
+        if self._previous_endurance_champion is None:
+            # There's no previous endurance champion to compute chrono warrior
             return
 
-        # Calculate endurance length of last bid
+        # Compute chrono_start_time for the previous endurance champion
+        if self._prev_prev_endurance_length is None:
+            # Previous endurance champion is the first one
+            chrono_start_time = self._previous_endurance_champion['endurance_start_time']
+        else:
+            chrono_start_time = self._previous_endurance_champion['endurance_start_time'] + self._prev_prev_endurance_length
+
+        # Compute chrono_end_time
+        # Since we have a new endurance champion, the chrono_end_time is calculated based on the current endurance champion's start time
+        chrono_end_time = self._current_endurance_champion['endurance_start_time'] + self._previous_endurance_champion['endurance_length']
+
+        # Compute chrono_length
+        chrono_length = chrono_end_time - chrono_start_time
+
+        # Update chrono warrior if necessary
+        if (self._current_chrono_warrior is None) or (chrono_length > self._current_chrono_warrior['chrono_length']):
+            self._current_chrono_warrior = {
+                'name': self._previous_endurance_champion['name'],
+                'chrono_start_time': chrono_start_time,
+                'chrono_end_time': chrono_end_time,
+                'chrono_length': chrono_length
+            }
+
+    def end_game(self, game_end_time):
+        self._game_end_time = game_end_time
+
+        # Calculate endurance length for the last bid
         endurance_length = game_end_time - self._prev_bid_time
 
-        # Update endurance champion if necessary
-        if (self._endurance_champion is None) or (endurance_length > self._endurance_champion['endurance_length']):
-            # Before updating, handle chrono warrior for the previous endurance champion
-            self._update_chrono_warrior(final=True)
+        if self._current_endurance_champion is None:
+            # **Case 1**: Only one bid in the game
+            # The last bid is the first and only endurance champion and chrono warrior
+            self._current_endurance_champion = {
+                'name': self._prev_bid_name,
+                'endurance_start_time': self._prev_bid_time,
+                'endurance_length': endurance_length
+            }
+            self._current_chrono_warrior = {
+                'name': self._prev_bid_name,
+                'chrono_start_time': self._prev_bid_time,
+                'chrono_end_time': game_end_time,
+                'chrono_length': endurance_length
+            }
+        elif endurance_length > self._current_endurance_champion['endurance_length']:
+            # **Case 2**: Last bid becomes the new endurance champion
+            # Save previous endurance champion
+            self._prev_prev_endurance_length = self._previous_endurance_length
+            self._previous_endurance_length = self._current_endurance_champion['endurance_length']
+            self._previous_endurance_champion = self._current_endurance_champion.copy()
 
-            # Update previous endurance length
-            self._prev_prev_endurance_length = self._endurance_champion['endurance_length'] if self._endurance_champion else None
-
-            # Update previous endurance champion
-            self._prev_endurance_champion = self._endurance_champion
-
-            # Set new endurance champion
-            self._endurance_champion = {
+            # Update current endurance champion
+            self._current_endurance_champion = {
                 'name': self._prev_bid_name,
                 'endurance_start_time': self._prev_bid_time,
                 'endurance_length': endurance_length
             }
 
-            # Handle chrono warrior for the last endurance champion
-            self._update_chrono_warrior(final=True)
-        else:
-            # Finalize the chrono warrior calculation
-            self._update_chrono_warrior(final=True)
+            # Compute chrono warriors for previous and current endurance champions
 
-    def _update_chrono_warrior(self, final=False):
-        # If there's no previous endurance champion, use the current one
-        if self._prev_endurance_champion is None and self._endurance_champion is not None:
-            # Only one endurance champion so far
-            ec = self._endurance_champion
+            # For previous endurance champion
+            if self._prev_prev_endurance_length is None:
+                chrono_start_time_prev = self._previous_endurance_champion['endurance_start_time']
+            else:
+                chrono_start_time_prev = self._previous_endurance_champion['endurance_start_time'] + self._prev_prev_endurance_length
 
-            # Compute chrono_start_time
-            chrono_start_time = ec['endurance_start_time']
+            chrono_end_time_prev = self._current_endurance_champion['endurance_start_time'] + self._previous_endurance_champion['endurance_length']
+            chrono_length_prev = chrono_end_time_prev - chrono_start_time_prev
 
-            # Compute chrono_end_time
-            chrono_end_time = self._game_end_time if final else self._prev_bid_time + ec['endurance_length']
-
-            # Compute chrono_length
-            chrono_length = chrono_end_time - chrono_start_time
+            # For current endurance champion
+            chrono_start_time_curr = self._current_endurance_champion['endurance_start_time'] + self._previous_endurance_champion['endurance_length']
+            chrono_end_time_curr = game_end_time
+            chrono_length_curr = chrono_end_time_curr - chrono_start_time_curr
 
             # Update chrono warrior
-            self._chrono_warrior = {
-                'name': ec['name'],
-                'chrono_start_time': chrono_start_time,
-                'chrono_end_time': chrono_end_time,
-                'chrono_length': chrono_length
-            }
-        elif self._prev_endurance_champion is not None:
-            # Compute chrono_start_time
-            if self._prev_prev_endurance_length is None:
-                # First endurance champion
-                chrono_start_time = self._prev_endurance_champion['endurance_start_time']
+            potential_chrono_warriors = [
+                self._current_chrono_warrior,
+                {
+                    'name': self._previous_endurance_champion['name'],
+                    'chrono_start_time': chrono_start_time_prev,
+                    'chrono_end_time': chrono_end_time_prev,
+                    'chrono_length': chrono_length_prev
+                },
+                {
+                    'name': self._current_endurance_champion['name'],
+                    'chrono_start_time': chrono_start_time_curr,
+                    'chrono_end_time': chrono_end_time_curr,
+                    'chrono_length': chrono_length_curr
+                }
+            ]
+            self._current_chrono_warrior = max(
+                (cw for cw in potential_chrono_warriors if cw is not None),
+                key=lambda cw: cw['chrono_length']
+            )
+        else:
+            # **Case 3**: Last bid does not become a new endurance champion
+            # Compute chrono length for current endurance champion
+            if self._previous_endurance_length is None:
+                # Is this possible?
+                chrono_start_time = self._current_endurance_champion['endurance_start_time']
             else:
-                chrono_start_time = self._prev_endurance_champion['endurance_start_time'] + self._prev_prev_endurance_length
+                chrono_start_time = self._current_endurance_champion['endurance_start_time'] + self._previous_endurance_length
 
-            # Compute chrono_end_time
-            chrono_end_time = self._game_end_time if final else self._prev_bid_time + self._prev_endurance_champion['endurance_length']
-
-            # Compute chrono_length
+            endurance_end_time = self._current_endurance_champion['endurance_start_time'] + self._current_endurance_champion['endurance_length']
+            chrono_end_time = game_end_time
             chrono_length = chrono_end_time - chrono_start_time
 
             # Update chrono warrior if necessary
-            if (self._chrono_warrior is None) or (chrono_length > self._chrono_warrior['chrono_length']):
-                self._chrono_warrior = {
-                    'name': self._prev_endurance_champion['name'],
+            if (self._current_chrono_warrior is None) or (chrono_length > self._current_chrono_warrior['chrono_length']):
+                self._current_chrono_warrior = {
+                    'name': self._current_endurance_champion['name'],
                     'chrono_start_time': chrono_start_time,
                     'chrono_end_time': chrono_end_time,
                     'chrono_length': chrono_length
                 }
+            else:
+                # Extend current chrono warrior's end time to game end time if necessary
+                if False and self._current_chrono_warrior['chrono_end_time'] < game_end_time:
+                    self._current_chrono_warrior['chrono_end_time'] = game_end_time
+                    self._current_chrono_warrior['chrono_length'] = game_end_time - self._current_chrono_warrior['chrono_start_time']
 
     def get_endurance_champion(self):
-        if not self._game_ended:
-            raise Exception("Game has not ended yet.")
-        return self._endurance_champion.copy() if self._endurance_champion else None
+        assert self._game_end_time is not None, "Game has not ended yet."
+        return self._current_endurance_champion.copy()
 
     def get_chrono_warrior(self):
-        if not self._game_ended:
-            raise Exception("Game has not ended yet.")
-        return self._chrono_warrior.copy() if self._chrono_warrior else None
+        assert self._game_end_time is not None, "Game has not ended yet."
+        return self._current_chrono_warrior.copy()
+
+
 
 def endurance_chrono(bid_times, game_end_time):
     endurance_champions = []
@@ -203,21 +254,24 @@ def stream(bid_times, game_end_time):
     return bp.get_endurance_champion(), bp.get_chrono_warrior()
 
 def main():
-    TIME_RANGE = 10
-    NUM_BIDS = 3
-    for _ in range(10):
+    TIME_RANGE = 100
+    NUM_BIDS = 100
+    for _ in range(10000):
         bid_times = []
         cur_time = random.randint(1, TIME_RANGE)
         for i in range(NUM_BIDS):
             cur_time += random.randint(1, TIME_RANGE)
             bid_times.append((cur_time, chr(ord('a') + i)))
         game_end_time = cur_time + random.randint(1, TIME_RANGE)
-        print(bid_times, game_end_time)
 
         two_pass_result = endurance_chrono(bid_times, game_end_time)
         stream_result = stream(bid_times, game_end_time)
-        print(two_pass_result)
-        print(stream_result)
-        assert(two_pass_result == stream_result)
+        if two_pass_result != stream_result:
+            print(bid_times, game_end_time)
+            print(two_pass_result)
+            print(stream_result)
+            break
+    else:
+        print("All tests passed")
 
 main()
