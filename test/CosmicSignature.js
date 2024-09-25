@@ -1,5 +1,5 @@
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
@@ -9,7 +9,7 @@ describe("CosmicSignature tests", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		const [contractDeployerAcct] = await ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -43,8 +43,8 @@ describe("CosmicSignature tests", function () {
 		],
 	};
 	it("mint() function works properly", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		var transferOwnership = false;
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const transferOwnership = false;
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -61,18 +61,18 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature.connect(addr1).mint(addr1.address, 0n),
 		).to.be.revertedWithCustomError(cosmicSignature,"NoMintPrivileges");
 	
-		const NewCosmicSignature = await ethers.getContractFactory("CosmicSignature");
+		const NewCosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await NewCosmicSignature.deploy(owner.address);
 		await newCosmicSignature.waitForDeployment();
 
 		await expect(
-			cosmicSignature.connect(owner).mint(ethers.ZeroAddress, 0n),
+			cosmicSignature.connect(owner).mint(hre.ethers.ZeroAddress, 0n),
 		).to.be.revertedWithCustomError(cosmicSignature,"ZeroAddress");
 
 	})
 	it("setTokenGenerationScriptURL() works as expected", async function () {
-		[owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
-		var transferOwnership = false;
+		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const transferOwnership = false;
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -90,15 +90,15 @@ describe("CosmicSignature tests", function () {
 		await expect(cosmicSignature.connect(addr1).setTokenGenerationScriptURL("none")).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 	})
 	it("Should be possible to setTokenName()", async function () {
-		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: "", rwalk: -1 };
-		let params = ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		let tx = await cosmicGameProxy.connect(addr1).claimPrize();
 		let receipt = await tx.wait();
 		let topic_sig = cosmicSignature.interface.getEvent("MintEvent").topicHash;
@@ -118,7 +118,7 @@ describe("CosmicSignature tests", function () {
 		let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
 		expect(remote_token_name).to.equal("name 0");
 
-		let = contractErrors = await ethers.getContractFactory("CosmicGameErrors");
+		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(cosmicSignature.connect(addr2).setTokenName(token_id, "name 000")).to.be.revertedWithCustomError(
 			contractErrors,
 			"OwnershipError"
