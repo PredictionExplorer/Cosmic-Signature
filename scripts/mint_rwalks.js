@@ -3,6 +3,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
+
 const numRWalkToMint = 4;
 
 async function mint_random_walk_token(testingAcct, randomWalk) {

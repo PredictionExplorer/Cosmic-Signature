@@ -23,6 +23,7 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 		_mint(to, amount);
 	}
 
+	// todo-1 Bug: it looks like anybody can burn someone's tokens. Make this `onlyOwner`?
 	function burn(address account, uint256 amount) override public {
 		_burn(account, amount);
 	}

@@ -6,8 +6,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 describe("Events2", function () {
 	// const INITIAL_AMOUNT = hre.ethers.parseEther("10");
 	async function deployCosmic() {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -45,9 +44,9 @@ describe("Events2", function () {
 		],
 	};
 	it("Number of Raffle events match the configuration", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet, stakingWalletCST, stakingWalletRWalk } =
 			await loadFixture(deployCosmic);
-		[owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 
 		// we need to mint RWalk tokens for all bidders that participate to avoid missing events
 		let tokenPrice = await randomWalkNFT.getMintPrice();

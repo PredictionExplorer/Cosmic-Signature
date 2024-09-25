@@ -29,15 +29,25 @@
 
 		"strict": true,
 
-		// These lints would be difficult to fix, so disabling them
+		// [Comment-202409224]
+		// These lints would be difficult to fix, so disabling them.
+		// [/Comment-202409224]
 		"noImplicitAny": false,
+
+		// Comment-202409224 applies.
+		// [Comment-202409225]
+		// This conflicts with `exactOptionalPropertyTypes`, so I have commented it out.
+		// [/Comment-202409225]
+		"strictNullChecks": false,
 
 		// // Issue. I see too many unused locals and parameters, so let's disable these lints for now.
 		// // ToDo-1 But consider re-enabling them.
 		// "noUnusedLocals": true,
 		// "noUnusedParameters": true,
 
-		"exactOptionalPropertyTypes": true,
+		// // Comment-202409225 relates and/or applies.
+		// "exactOptionalPropertyTypes": true,
+
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedIndexedAccess": true,

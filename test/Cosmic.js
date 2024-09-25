@@ -1,5 +1,5 @@
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { ethers } = require("hardhat");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
@@ -9,8 +9,7 @@ describe("CosmicGame", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmic(deployerAcct) {
-		let contractDeployerAcct;
-		[contractDeployerAcct] = await ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -21,7 +20,7 @@ describe("CosmicGame", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
 		return {
 			cosmicGameProxy,
@@ -50,7 +49,7 @@ describe("CosmicGame", function () {
 		expect(await cosmicToken.totalSupply()).to.equal(0);
 	});
 	it("Fallback function works", async function () {
-		[contractDeployerAcct] = await ethers.getSigners();
+		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -69,9 +68,9 @@ describe("CosmicGame", function () {
 			true,
 			true
 		);
-		let = contractErrors = await ethers.getContractFactory('CosmicGameErrors');
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 		await expect(
-			ethers.provider.call({
+			hre.ethers.provider.call({
 				to:  await cosmicGameProxy.getAddress(),
 				data: "0xffffffff", // non-existent selector
 			})
@@ -91,7 +90,7 @@ describe("CosmicGame", function () {
 			cosmicGameImplementation,
 		} = await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		const [owner, otherAccount] = await ethers.getSigners();
+		const [owner, otherAccount] = await hre.ethers.getSigners();
 		await owner.sendTransaction({
 			to: await cosmicGameProxy.getAddress(),
 			value: bidPrice,

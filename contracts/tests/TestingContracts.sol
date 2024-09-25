@@ -16,7 +16,7 @@ import { CosmicSignature } from "../production/CosmicSignature.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
-import { IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract BrokenToken {
@@ -30,6 +30,7 @@ contract BrokenToken {
 		return 1;
 	}
 }
+
 contract BrokenERC20 {
 	// used to test revert() statements in CosmicGameImplementation contract
 	uint256 counter;
@@ -44,35 +45,45 @@ contract BrokenERC20 {
 		}
 	}
 }
+
+/// @notice Used to test `revert` statements for charity deposits
 contract BrokenCharity {
-	// used to test revert() statements for charity deposits
-	uint256 counter;
+	// uint256 private counter;
 	receive() external payable {
 		require(false, "Test deposit failed");
 	}
 }
+
+/// @notice used to test revert() statements for charity deposits
 contract BrokenCharityWallet is CharityWallet {
-	// used to test revert() statements for charity deposits
-	uint256 counter;
+	// uint256 counter;
 	function setCharityToZeroAddress() external {
 		charityAddress = address(0);
 	}
 }
-contract BrokenStaker {
-	// used to test revert() statements in StakingWallet
-	bool blockDeposits = false;
-	StakingWalletCST stakingWalletCST;
 
-	constructor() {	}
+/// @notice Used to test `revert` statements in `StakingWalletCST`
+/// @dev todo-1 This contract name is confising. Make sense to rename it to `BrokenStakingWalletCST`?
+contract BrokenStaker {
+	StakingWalletCST private stakingWalletCST;
+	bool private blockDeposits = false;
+
+	constructor() {}
 
 	receive() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
 
-	function deposit() external payable {
-		/// we don't call it doDeposit() because this method is called from CosmicGame.sol
+	// /// @dev we don't call it doDeposit() because this method is called from CosmicGame.sol
+	// function deposit() external payable {
+	// 	require(!blockDeposits, "I am not accepting deposits");
+	// 	stakingWalletCST.deposit();
+	// }
+
+	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicGame.sol
+	function depositIfPossible() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
-		stakingWalletCST.deposit();
+		stakingWalletCST.depositIfPossible();
 	}
 
 	function doStake(uint256 tokenId) external {
@@ -94,13 +105,16 @@ contract BrokenStaker {
 	function startBlockingDeposits() external {
 		blockDeposits = true;
 	}
-	function setStakingWallet(address sw_) external {
-		stakingWalletCST = StakingWalletCST(sw_);
+
+	function setStakingWallet(IStakingWalletCST sw_) external {
+		stakingWalletCST = StakingWalletCST(address(sw_));
 	}
+
 	function doSetApprovalForAll(address nft_) external {
 		IERC721(nft_).setApprovalForAll(address(stakingWalletCST), true);
 	}
 }
+
 contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
@@ -127,6 +141,7 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 		selfdestruct(payable(this.owner()));
 	}
 }
+
 contract SpecialCosmicGame is CosmicGame {
 	// special CosmicGame contract to be used in unit tests to create special test setups
 
@@ -149,21 +164,24 @@ contract SpecialCosmicGame is CosmicGame {
 		activationTime = newActivationTime;
 		lastCSTBidTime = activationTime;
 	}
-	function depositStakingCST() external payable {
-		(bool success, ) = address(stakingWalletCST).call{ value: msg.value }(
-			abi.encodeWithSelector(StakingWalletCST.deposit.selector)
-		);
-		if (!success) {
-			assembly {
-				let ptr := mload(0x40)
-				let size := returndatasize()
-				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
-			}
-		}
+	// function depositStakingCST() external payable {
+	//		// todo-9 Should we make a high level call here?
+	// 	(bool success, ) = address(stakingWalletCST).call{ value: msg.value }(
+	// 		abi.encodeWithSelector(StakingWalletCST.deposit.selector)
+	// 	);
+	// 	if (!success) {
+	// 		assembly {
+	// 			let ptr := mload(0x40)
+	// 			let size := returndatasize()
+	// 			returndatacopy(ptr, 0, size)
+	// 			revert(ptr, size)
+	// 		}
+	// 	}
+	// }
+	function depositStakingCSTIfPossible() external payable {
+		stakingWalletCST.depositIfPossible{ value: msg.value }();
 	}
 	function mintCST(address to, uint256 roundNum) external {
-		// SMTChecker doesn't support low level calls, but maybe it doesn't matter in this test code.
 		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
 
 		if (!success) {
@@ -176,10 +194,11 @@ contract SpecialCosmicGame is CosmicGame {
 		}
 	}
 }
+
 contract TestStakingWalletCST is StakingWalletCST {
 	// todo-1 Is `nft_` the same as `game_.nft()`?
 	// todo-1 At least explain in a comment.
-	constructor(CosmicSignature nft_, address game_, address charity_) StakingWalletCST(nft_, game_, charity_) {}
+	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) StakingWalletCST(nft_, game_ /* , charity_ */) {}
 
 	function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
 		_insertToken(_tokenId,_actionId);
@@ -188,6 +207,7 @@ contract TestStakingWalletCST is StakingWalletCST {
 		_removeToken(_tokenId);
 	}
 }
+
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
@@ -198,6 +218,7 @@ contract TestStakingWalletRWalk is StakingWalletRWalk {
 		_removeToken(_tokenId);
 	}
 }
+
 contract MaliciousToken1 is ERC721 {
 
 	// sends donateNFT() inside a call to transfer a token, generating reentrant function call
@@ -217,6 +238,7 @@ contract MaliciousToken1 is ERC721 {
 		}
 	}
 }
+
 contract MaliciousToken2 is ERC721 {
 	address game;
 	// sends bidAndDonateNFT() inside a call to transfer a token, generating reentrant function call
