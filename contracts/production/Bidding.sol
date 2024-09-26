@@ -294,6 +294,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 			// [Comment-202409162/]
 			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+
+			// // todo-0 Nick, you might want to refactopr the above this way.
+			// // todo-0 Remember to fix relevant code and comments.
+			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * secondsElapsed / duration);
 		}
 	}
 
