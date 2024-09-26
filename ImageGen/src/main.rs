@@ -1,3 +1,4 @@
+// Import external crates
 extern crate nalgebra as na;
 use na::Vector3;
 
@@ -5,6 +6,76 @@ use rayon::prelude::*;
 
 use sha3::{Digest, Sha3_256};
 
+use clap::Parser;
+
+use std::f64::{INFINITY, NEG_INFINITY};
+
+use image::{ImageBuffer, Rgb};
+use imageproc::drawing::draw_filled_circle_mut;
+
+use palette::{FromColor, Hsl, Srgb};
+
+use rustfft::num_complex::Complex;
+use rustfft::FftPlanner;
+
+use statrs::statistics::Statistics;
+
+use hex;
+
+// For spawning processes (ffmpeg)
+use std::io::Write;
+use std::process::{Command, Stdio};
+
+/// Simple program to simulate and visualize the three-body problem
+#[derive(Parser, Debug)]
+#[command(author, version, about = "Program to simulate and visualize the three-body problem")]
+struct Args {
+    /// Seed for the random number generator (hexadecimal string)
+    #[arg(long, default_value = "00")]
+    seed: String,
+
+    /// Base name for the output files (image and video)
+    #[arg(long, default_value = "output")]
+    file_name: String,
+
+    /// Number of simulation steps
+    #[arg(long, default_value_t = 1_000_000)]
+    num_steps: usize,
+
+    /// Number of simulations to run when searching for the best trajectory
+    #[arg(long, default_value_t = 10_000)]
+    num_sims: usize,
+
+    /// Maximum initial position value
+    #[arg(long, default_value_t = 250.0)]
+    location: f64,
+
+    /// Maximum initial velocity value
+    #[arg(long, default_value_t = 2.0)]
+    velocity: f64,
+
+    /// Minimum mass of the bodies
+    #[arg(long, default_value_t = 100.0)]
+    min_mass: f64,
+
+    /// Maximum mass of the bodies
+    #[arg(long, default_value_t = 300.0)]
+    max_mass: f64,
+
+    /// Avoid applying visual effects (e.g., Gaussian blur)
+    #[arg(long, default_value_t = false)]
+    avoid_effects: bool,
+
+    /// Do not generate video output
+    #[arg(long, default_value_t = false)]
+    no_video: bool,
+
+    /// Use a special color for the visualization (gold, bronze, silver, white)
+    #[arg(long, value_parser = ["gold", "bronze", "silver", "white"])]
+    special_color: Option<String>,
+}
+
+/// Custom random number generator based on SHA3-256 hashing
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
     seed: Vec<u8>,
@@ -17,6 +88,7 @@ pub struct Sha3RandomByteStream {
 }
 
 impl Sha3RandomByteStream {
+    /// Create a new random byte stream with the given seed and parameters
     pub fn new(seed: &Vec<u8>, min_mass: f64, max_mass: f64, location: f64, velocity: f64) -> Self {
         let mut hasher = Sha3_256::new();
         let cloned_seed = seed.clone();
@@ -25,8 +97,10 @@ impl Sha3RandomByteStream {
         Self { hasher, seed: cloned_seed, buffer, index: 0, min_mass, max_mass, location, velocity }
     }
 
+    /// Generate the next random byte
     pub fn next_byte(&mut self) -> u8 {
         if self.index >= self.buffer.len() {
+            // Refill the buffer by hashing the seed and the previous buffer
             self.hasher.update(&self.seed);
             self.hasher.update(&self.buffer);
             self.buffer = self.hasher.finalize_reset().to_vec();
@@ -38,6 +112,7 @@ impl Sha3RandomByteStream {
         byte
     }
 
+    /// Generate the next random u64 value
     pub fn next_u64(&mut self) -> u64 {
         let mut bytes = [0u8; 8];
         for i in 0..8 {
@@ -46,43 +121,37 @@ impl Sha3RandomByteStream {
         u64::from_le_bytes(bytes)
     }
 
+    /// Generate the next random f64 value between 0.0 and 1.0
     pub fn next_f64(&mut self) -> f64 {
         let value: u64 = self.next_u64();
         let max_value = u64::MAX;
         (value as f64) / (max_value as f64)
     }
 
+    /// Generate a random f64 value within a specified range
     pub fn gen_range(&mut self, min: f64, max: f64) -> f64 {
         let num = self.next_f64();
         let range = max - min;
-        let value = num * range + min;
-        value
+        num * range + min
     }
 
+    /// Generate a random mass within the specified mass range
     pub fn random_mass(&mut self) -> f64 {
-        // 100 - 300
         self.gen_range(self.min_mass, self.max_mass)
     }
 
+    /// Generate a random location within the specified range
     pub fn random_location(&mut self) -> f64 {
-        // let n = 250.0;
         self.gen_range(-self.location, self.location)
     }
 
+    /// Generate a random velocity within the specified range
     pub fn random_velocity(&mut self) -> f64 {
         self.gen_range(-self.velocity, self.velocity)
     }
-
-    pub fn is_white(&mut self) -> bool {
-        const CHANCE_WHITE: f64 = 0.1;
-        if self.gen_range(0.0, 1.0) < CHANCE_WHITE {
-            return true;
-        } else {
-            return false;
-        }
-    }
 }
 
+/// Represents a celestial body in the simulation
 #[derive(Clone)]
 struct Body {
     mass: f64,
@@ -91,25 +160,34 @@ struct Body {
     acceleration: Vector3<f64>,
 }
 
+// Gravitational constant (arbitrary units)
 const G: f64 = 9.8;
 
 impl Body {
+    /// Create a new body with specified mass, position, and velocity
     fn new(mass: f64, position: Vector3<f64>, velocity: Vector3<f64>) -> Body {
         Body { mass, position, velocity, acceleration: Vector3::zeros() }
     }
 
+    /// Update the body's acceleration based on another body's mass and position
     fn update_acceleration(&mut self, other_mass: f64, other_position: Vector3<f64>) {
         let dir: Vector3<f64> = self.position - other_position;
         let mag = dir.norm();
-        self.acceleration += -G * other_mass * dir / (mag * mag * mag);
+        // Avoid division by zero or extremely small values
+        if mag > 1e-10 {
+            self.acceleration += -G * other_mass * dir / (mag * mag * mag);
+        }
     }
 
+    /// Reset the body's acceleration to zero
     fn reset_acceleration(&mut self) {
         self.acceleration = Vector3::zeros();
     }
 }
 
+/// Perform one step of Verlet integration for all bodies
 fn verlet_step(bodies: &mut [Body], dt: f64) {
+    // First loop: calculate accelerations based on positions
     for i in 0..bodies.len() {
         bodies[i].reset_acceleration();
         for j in 0..bodies.len() {
@@ -119,12 +197,14 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
         }
     }
 
-    for i in 0..bodies.len() {
-        bodies[i].position =
-            bodies[i].position + bodies[i].velocity * dt + 0.5 * bodies[i].acceleration * (dt * dt);
+    // Update positions based on velocities and accelerations
+    for body in bodies.iter_mut() {
+        body.position = body.position + body.velocity * dt + 0.5 * body.acceleration * (dt * dt);
     }
 
+    // Second loop: recalculate accelerations with updated positions
     for i in 0..bodies.len() {
+        bodies[i].reset_acceleration();
         for j in 0..bodies.len() {
             if i != j {
                 bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
@@ -132,18 +212,28 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
         }
     }
 
-    for i in 0..bodies.len() {
-        bodies[i].velocity = bodies[i].velocity + 0.5 * bodies[i].acceleration * dt;
+    // Update velocities based on the average acceleration
+    for body in bodies.iter_mut() {
+        body.velocity = body.velocity + 0.5 * body.acceleration * dt;
     }
 }
 
-use std::f64::{INFINITY, NEG_INFINITY};
+/// Simulate the bodies over a number of steps and return their positions
+fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
+    let dt = 0.001;
 
-use image::{ImageBuffer, Rgb};
-use imageproc::drawing::draw_filled_circle_mut;
+    let mut positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
 
-use palette::{FromColor, Hsl, Srgb};
+    for step in 0..num_steps {
+        for (i, body) in bodies.iter().enumerate() {
+            positions[i][step] = body.position;
+        }
+        verlet_step(&mut bodies, dt);
+    }
+    positions
+}
 
+/// Generate a color sequence based on a random walk in hue for a single body
 fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
     let mut hue = rng.gen_range(0.0, 360.0);
@@ -160,35 +250,44 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
             hue -= 360.0;
         }
         let hsl = Hsl::new(hue, 1.0, 0.5);
-        let my_new_rgb = Srgb::from_color(hsl);
-
-        let r = (my_new_rgb.red * 255.0) as u8;
-        let g = (my_new_rgb.green * 255.0) as u8;
-        let b = (my_new_rgb.blue * 255.0) as u8;
-
-        let line_color: Rgb<u8> = Rgb([r, g, b]);
-        colors.push(line_color);
+        let rgb = Srgb::from_color(hsl);
+        let r = (rgb.red * 255.0) as u8;
+        let g = (rgb.green * 255.0) as u8;
+        let b = (rgb.blue * 255.0) as u8;
+        colors.push(Rgb([r, g, b]));
     }
     colors
 }
 
-fn get_white_color_walk(len: usize) -> Vec<Rgb<u8>> {
-    let mut colors = Vec::new();
-    const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
-    for _ in 0..len {
-        colors.push(WHITE_COLOR);
-    }
-    colors
+/// Generate a color sequence with the specified special color
+fn get_special_color_walk(color_name: &str, len: usize) -> Vec<Rgb<u8>> {
+    let rgb_color = match color_name.to_lowercase().as_str() {
+        "gold" => Rgb([255, 215, 0]),     // Bright gold color
+        "bronze" => Rgb([205, 127, 50]),  // Bright bronze color
+        "silver" => Rgb([192, 192, 192]), // Bright silver color
+        "white" => Rgb([255, 255, 255]),  // Pure white color
+        _ => Rgb([255, 255, 255]),        // Default to white if unknown
+    };
+
+    vec![rgb_color; len]
 }
 
-fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize, special: bool) -> Vec<Vec<Rgb<u8>>> {
+/// Generate color sequences for all three bodies
+fn get_3_colors(
+    rng: &mut Sha3RandomByteStream,
+    len: usize,
+    special_color: Option<&str>,
+) -> Vec<Vec<Rgb<u8>>> {
     let mut colors = Vec::new();
-    if special {
-        let white_color = get_white_color_walk(len);
-        colors.push(white_color.clone());
-        colors.push(white_color.clone());
-        colors.push(white_color.clone());
+
+    if let Some(color_name) = special_color {
+        // Use the special color for all bodies
+        let special_color_walk = get_special_color_walk(color_name, len);
+        colors.push(special_color_walk.clone());
+        colors.push(special_color_walk.clone());
+        colors.push(special_color_walk.clone());
     } else {
+        // Generate random color walks for each body
         for _ in 0..3 {
             let c = get_single_color_walk(rng, len);
             colors.push(c);
@@ -197,8 +296,9 @@ fn get_3_colors(rng: &mut Sha3RandomByteStream, len: usize, special: bool) -> Ve
     colors
 }
 
+/// Convert positions to fit within the range [0.0, 1.0] for plotting
 fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
-    // we want to convert the positions to a range of 0.0 to 1.0
+    // Find min and max coordinates
     let (mut min_x, mut min_y) = (INFINITY, INFINITY);
     let (mut max_x, mut max_y) = (NEG_INFINITY, NEG_INFINITY);
 
@@ -223,6 +323,8 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
             }
         }
     }
+
+    // Center and scale positions
     let x_center = (max_x + min_x) / 2.0;
     let y_center = (max_y + min_y) / 2.0;
 
@@ -230,7 +332,7 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     let y_range = max_y - min_y;
 
     let mut range = if x_range > y_range { x_range } else { y_range };
-    range *= 1.1;
+    range *= 1.1; // Add some padding
 
     min_x = x_center - (range / 2.0);
     min_y = y_center - (range / 2.0);
@@ -243,6 +345,7 @@ fn convert_positions(positions: &mut Vec<Vec<Vector3<f64>>>, hide: &Vec<bool>) {
     }
 }
 
+/// Plot positions and generate frames for visualization
 fn plot_positions(
     positions: &mut Vec<Vec<Vector3<f64>>>,
     frame_size: u32,
@@ -254,6 +357,7 @@ fn plot_positions(
     avoid_effects: bool,
     one_frame: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+    // Convert positions to [0.0, 1.0] range
     convert_positions(positions, hide);
 
     let mut frames = Vec::new();
@@ -262,11 +366,14 @@ fn plot_positions(
 
     const BACKGROUND_COLOR: Rgb<u8> = Rgb([0u8, 0u8, 0u8]);
     const WHITE_COLOR: Rgb<u8> = Rgb([255, 255, 255]);
+
     loop {
+        // Create a new image with background color
         let mut img = ImageBuffer::from_fn(frame_size, frame_size, |_, _| BACKGROUND_COLOR);
 
         let mut snake_starts: [usize; 3] = [0, 0, 0];
 
+        // Draw the trajectories
         for body_idx in 0..positions.len() {
             if hide[body_idx] {
                 continue;
@@ -274,6 +381,7 @@ fn plot_positions(
 
             let mut total_dist: f64 = 0.0;
             let mut idx = snake_end;
+            // Determine the start index based on the snake length
             loop {
                 if idx <= 1 || total_dist > snake_lens[body_idx] {
                     break;
@@ -282,17 +390,18 @@ fn plot_positions(
                 let y1 = positions[body_idx][idx][1];
                 let x2 = positions[body_idx][idx - 1][0];
                 let y2 = positions[body_idx][idx - 1][1];
-                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt(); // TODO: use distance function in the struct
+                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
                 total_dist += dist;
                 idx -= 1;
             }
             snake_starts[body_idx] = idx;
 
+            // Draw the trajectory segments
             for i in snake_starts[body_idx]..snake_end {
                 let x = positions[body_idx][i][0];
                 let y = positions[body_idx][i][1];
 
-                // Scale and shift positions to fit within the image dimensions
+                // Scale positions to image dimensions
                 let xp = (x * frame_size as f64).round();
                 let yp = (y * frame_size as f64).round();
 
@@ -301,8 +410,10 @@ fn plot_positions(
         }
 
         if !avoid_effects {
+            // Apply Gaussian blur for visual effect
             img = imageproc::filter::gaussian_blur_f32(&img.clone(), 6.0);
-            //let mut blurred_img = img.clone();
+
+            // Redraw the bodies on top of the blurred image
             for body_idx in 0..positions.len() {
                 if hide[body_idx] {
                     continue;
@@ -312,7 +423,7 @@ fn plot_positions(
                     let x = positions[body_idx][i][0];
                     let y = positions[body_idx][i][1];
 
-                    // Scale and shift positions to fit within the image dimensions
+                    // Scale positions to image dimensions
                     let xp = (x * frame_size as f64).round();
                     let yp = (y * frame_size as f64).round();
 
@@ -328,111 +439,16 @@ fn plot_positions(
         if snake_end >= positions[0].len() {
             break;
         }
-    }
 
-    return frames;
-}
-
-extern crate rustfft;
-use rustfft::num_complex::Complex;
-use rustfft::FftPlanner;
-
-fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
-    let n = input.len();
-
-    // Create an FFT planner
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(n);
-
-    // Create complex input
-    let mut complex_input: Vec<Complex<f64>> =
-        input.iter().map(|&val| Complex::new(val, 0.0)).collect();
-
-    // Perform the FFT
-    fft.process(&mut complex_input);
-
-    complex_input
-}
-
-use statrs::statistics::Statistics;
-
-fn analyze_trajectories(
-    m1: f64,
-    m2: f64,
-    m3: f64,
-    positions: &Vec<Vec<Vector3<f64>>>,
-) -> (f64, f64, f64) {
-    let chaos = non_chaoticness(m1, m2, m3, &positions);
-    let avg_area = triangle_area(&positions);
-    let total_dist = calculate_total_distance(&positions);
-    return (chaos, avg_area, total_dist);
-    //(chaos * chaos * (1.0 / avg_area)).sqrt()
-}
-
-fn calculate_total_distance(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
-    let mut new_positions = positions.clone();
-    //let hide = vec![false, false, false];
-    convert_positions(&mut new_positions, &vec![false, false, false]);
-
-    let mut total_dist = 0.0;
-    for body_idx in 0..new_positions.len() {
-        for step_idx in 1..new_positions[body_idx].len() {
-            let x1 = positions[body_idx][step_idx][0];
-            let y1 = positions[body_idx][step_idx][1];
-            let x2 = positions[body_idx][step_idx - 1][0];
-            let y2 = positions[body_idx][step_idx - 1][1];
-            let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
-            total_dist += dist;
+        if one_frame {
+            break;
         }
     }
-    total_dist
+
+    frames
 }
 
-fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
-    // The lower, the better
-    let mut r1: Vec<f64> = vec![0.0; positions[0].len()];
-    let mut r2: Vec<f64> = vec![0.0; positions[0].len()];
-    let mut r3: Vec<f64> = vec![0.0; positions[0].len()];
-
-    for i in 0..positions[0].len() {
-        let p1 = positions[0][i];
-        let p2 = positions[1][i];
-        let p3 = positions[2][i];
-
-        let center_of_mass1 = (m2 * p2 + m3 * p3) / (m2 + m3);
-        let center_of_mass2 = (m1 * p1 + m3 * p3) / (m1 + m3);
-        let center_of_mass3 = (m2 * p2 + m1 * p1) / (m2 + m1);
-
-        let dist1 = p1 - center_of_mass1;
-        let dist2 = p2 - center_of_mass2;
-        let dist3 = p3 - center_of_mass3;
-
-        r1[i] = dist1.norm();
-        r2[i] = dist2.norm();
-        r3[i] = dist3.norm();
-    }
-
-    let result1 = fourier_transform(&r1);
-    let result2 = fourier_transform(&r2);
-    let result3 = fourier_transform(&r3);
-
-    let absolute1: Vec<f64> = result1.iter().map(|&val| (val.norm())).collect();
-
-    let absolute2: Vec<f64> = result2.iter().map(|&val| (val.norm())).collect();
-
-    let absolute3: Vec<f64> = result3.iter().map(|&val| (val.norm())).collect();
-
-    let final_result1 = absolute1.std_dev().sqrt();
-    let final_result2 = absolute2.std_dev().sqrt();
-    let final_result3 = absolute3.std_dev().sqrt();
-
-    (final_result1 + final_result2 + final_result3) / 3.0
-}
-
-use image::DynamicImage;
-use std::io::Write;
-use std::process::{Command, Stdio};
-
+/// Create a video from frames stored in memory using ffmpeg
 fn create_video_from_frames_in_memory(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
@@ -462,7 +478,7 @@ fn create_video_from_frames_in_memory(
     let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed to open ffmpeg stdin");
 
     for frame in frames {
-        let dyn_image = DynamicImage::ImageRgb8(frame.clone());
+        let dyn_image = image::DynamicImage::ImageRgb8(frame.clone());
         dyn_image
             .write_to(ffmpeg_stdin, image::ImageOutputFormat::Png)
             .expect("Failed to write frame to ffmpeg stdin");
@@ -477,40 +493,96 @@ fn create_video_from_frames_in_memory(
     }
 }
 
-fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
-    let dt = 0.001;
-
-    let mut positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
-
-    for step in 0..num_steps {
-        for (i, body) in bodies.iter().enumerate() {
-            positions[i][step] = body.position;
-        }
-        verlet_step(&mut bodies, dt);
-    }
-    positions
+/// Analyze the trajectories to compute chaos, average area, and total distance
+fn analyze_trajectories(
+    m1: f64,
+    m2: f64,
+    m3: f64,
+    positions: &Vec<Vec<Vector3<f64>>>,
+) -> (f64, f64, f64) {
+    let chaos = non_chaoticness(m1, m2, m3, &positions);
+    let avg_area = triangle_area(&positions);
+    let total_dist = calculate_total_distance(&positions);
+    (chaos, avg_area, total_dist)
 }
 
-fn triangle_area(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
-    // calculate what percentage of screen is occupied by the 3 bodies
+/// Calculate the non-chaoticness metric of the trajectories
+fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
+    // The lower, the less chaotic
+    let mut r1: Vec<f64> = vec![0.0; positions[0].len()];
+    let mut r2: Vec<f64> = vec![0.0; positions[0].len()];
+    let mut r3: Vec<f64> = vec![0.0; positions[0].len()];
 
+    for i in 0..positions[0].len() {
+        let p1 = positions[0][i];
+        let p2 = positions[1][i];
+        let p3 = positions[2][i];
+
+        let center_of_mass1 = (m2 * p2 + m3 * p3) / (m2 + m3);
+        let center_of_mass2 = (m1 * p1 + m3 * p3) / (m1 + m3);
+        let center_of_mass3 = (m1 * p1 + m2 * p2) / (m1 + m2);
+
+        let dist1 = p1 - center_of_mass1;
+        let dist2 = p2 - center_of_mass2;
+        let dist3 = p3 - center_of_mass3;
+
+        r1[i] = dist1.norm();
+        r2[i] = dist2.norm();
+        r3[i] = dist3.norm();
+    }
+
+    let result1 = fourier_transform(&r1);
+    let result2 = fourier_transform(&r2);
+    let result3 = fourier_transform(&r3);
+
+    let absolute1: Vec<f64> = result1.iter().map(|val| val.norm()).collect();
+    let absolute2: Vec<f64> = result2.iter().map(|val| val.norm()).collect();
+    let absolute3: Vec<f64> = result3.iter().map(|val| val.norm()).collect();
+
+    let final_result1 = absolute1.std_dev().sqrt();
+    let final_result2 = absolute2.std_dev().sqrt();
+    let final_result3 = absolute3.std_dev().sqrt();
+
+    (final_result1 + final_result2 + final_result3) / 3.0
+}
+
+/// Perform Fourier transform on a time series
+fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
+    let n = input.len();
+
+    // Create an FFT planner
+    let mut planner = FftPlanner::new();
+    let fft = planner.plan_fft_forward(n);
+
+    // Create complex input
+    let mut complex_input: Vec<Complex<f64>> =
+        input.iter().map(|&val| Complex::new(val, 0.0)).collect();
+
+    // Perform the FFT
+    fft.process(&mut complex_input);
+
+    complex_input
+}
+
+/// Calculate the average area of the triangle formed by the three bodies over time
+fn triangle_area(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
     let mut new_positions = positions.clone();
-    //let hide = vec![false, false, false];
+    // No bodies are hidden for this calculation
     convert_positions(&mut new_positions, &vec![false, false, false]);
 
     let mut result = 0.0;
     let mut total_num = 0.0;
 
     for step in 0..new_positions[0].len() {
-        // (1/2) * |x1(y2 − y3) + x2(y3 − y1) + x3(y1 − y2)|
-        let y_diff_p2_p3 = new_positions[1][step][1] - new_positions[2][step][1];
-        let y_diff_p3_p1 = new_positions[2][step][1] - new_positions[0][step][1];
-        let y_diff_p1_p2 = new_positions[0][step][1] - new_positions[1][step][1];
-        let area = 0.5
-            * ((new_positions[0][step][0] * y_diff_p2_p3
-                + new_positions[1][step][0] * y_diff_p3_p1
-                + new_positions[2][step][0] * y_diff_p1_p2)
-                .abs());
+        // Calculate the area using the shoelace formula
+        let x1 = new_positions[0][step][0];
+        let y1 = new_positions[0][step][1];
+        let x2 = new_positions[1][step][0];
+        let y2 = new_positions[1][step][1];
+        let x3 = new_positions[2][step][0];
+        let y3 = new_positions[2][step][1];
+
+        let area = 0.5 * ((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)).abs());
 
         result += area;
         total_num += 1.0;
@@ -518,6 +590,21 @@ fn triangle_area(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
     result / total_num
 }
 
+/// Calculate the total distance traveled by all bodies
+fn calculate_total_distance(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
+    let mut total_dist = 0.0;
+    for body_idx in 0..positions.len() {
+        for step_idx in 1..positions[body_idx].len() {
+            let p1 = positions[body_idx][step_idx];
+            let p0 = positions[body_idx][step_idx - 1];
+            let dist = (p1 - p0).norm();
+            total_dist += dist;
+        }
+    }
+    total_dist
+}
+
+/// Run multiple simulations and select the one with the best characteristics
 fn get_best(
     rng: &mut Sha3RandomByteStream,
     num_iters: usize,
@@ -546,7 +633,8 @@ fn get_best(
         many_bodies.push(bodies);
     }
 
-    let mut results_par = vec![(0.0, 0., 0.0); many_bodies.len()];
+    // Analyze trajectories in parallel
+    let mut results_par = vec![(0.0, 0.0, 0.0); many_bodies.len()];
     many_bodies
         .par_iter()
         .map(|bodies| {
@@ -558,14 +646,14 @@ fn get_best(
         })
         .collect_into_vec(&mut results_par);
 
-    // sort the list and keep the indeces
+    // Sort the simulations based on the chaos metric
     let mut indexed_pairs: Vec<(usize, (f64, f64, f64))> =
         results_par.clone().into_iter().enumerate().collect();
 
-    // Sort by the (f64, f64) pairs
+    // Sort by the chaos metric (the lower, the better)
     indexed_pairs.sort_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap());
 
-    const N: usize = 50;
+    const N: usize = 50; // Number of top simulations to consider
     let mut best_idx = 0;
     let mut best_result = f64::NEG_INFINITY;
     for i in 0..N {
@@ -578,69 +666,22 @@ fn get_best(
 
     let bodies = &many_bodies[best_idx];
     println!(
-        "mass: {} {} {} pos: {} {} | {} {} | {} {}",
-        bodies[0].mass,
-        bodies[1].mass,
-        bodies[2].mass,
-        bodies[0].position[0],
-        bodies[0].position[1],
-        bodies[1].position[0],
-        bodies[1].position[1],
-        bodies[2].position[0],
-        bodies[2].position[1]
+        "Selected simulation with masses: {:.2}, {:.2}, {:.2}",
+        bodies[0].mass, bodies[1].mass, bodies[2].mass
     );
     let result = get_positions(bodies.clone(), num_steps_video);
     let avg_area = results_par[best_idx].1;
     let total_distance = results_par[best_idx].2;
-    println!("Area: {}", avg_area);
-    println!("Dist: {}", total_distance);
+    println!("Average triangle area: {:.6}", avg_area);
+    println!("Total distance traveled: {:.6}", total_distance);
     result
 }
 
-use clap::Parser;
-
-/// Simple program to greet a person
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[arg(long, default_value = "00")]
-    seed: String,
-
-    #[arg(long, default_value = "output")]
-    file_name: String,
-
-    #[arg(long, default_value_t = 1_000_000)]
-    num_steps: usize,
-
-    #[arg(long, default_value_t = 10_000)]
-    num_sims: usize,
-
-    #[arg(long, default_value_t = 250.0)]
-    location: f64,
-
-    #[arg(long, default_value_t = 2.0)]
-    velocity: f64,
-
-    #[arg(long, default_value_t = 100.0)]
-    min_mass: f64,
-
-    #[arg(long, default_value_t = 300.0)]
-    max_mass: f64,
-
-    #[arg(long, default_value_t = false)]
-    avoid_effects: bool,
-
-    #[arg(long, default_value_t = false)]
-    special: bool,
-
-    #[arg(long, default_value_t = false)]
-    no_video: bool,
-}
-
-use hex;
-
 fn main() {
+    // Parse command-line arguments
     let args = Args::parse();
+
+    // Process the seed argument
     let string_seed = if args.seed.starts_with("0x") {
         args.seed[2..].to_string()
     } else {
@@ -648,6 +689,7 @@ fn main() {
     };
     let seed = hex::decode(string_seed).expect("Invalid hexadecimal string");
 
+    // Initialize the random byte stream
     let mut byte_stream = Sha3RandomByteStream::new(
         &seed,
         args.min_mass,
@@ -658,38 +700,43 @@ fn main() {
 
     let steps = args.num_steps;
 
-    // Determine the hide vector based on the special flag
-    let hide = if args.special {
-        vec![false, true, true]
+    // Determine which bodies to hide based on the special_color flag
+    let hide = if args.special_color.is_some() {
+        vec![false, true, true] // Only show the first body
     } else {
+        // Randomly decide which bodies to hide
         let random_val = byte_stream.gen_range(0.0, 1.0);
         if random_val < 1.0 / 3.0 {
-            vec![false, false, false] // 1/3 chance to hide none
+            vec![false, false, false] // Show all bodies
         } else if random_val < 2.0 / 3.0 {
-            vec![false, false, true] // 1/3 chance to hide none
+            vec![false, false, true] // Hide one body
         } else {
-            vec![false, true, true] // 1/3 chance to hide none
+            vec![false, true, true] // Hide two bodies
         }
     };
 
+    // Run simulations and get the best trajectory
     let mut positions = get_best(&mut byte_stream, args.num_sims, steps, steps);
 
-    let colors = get_3_colors(&mut byte_stream, steps, args.special);
+    // Generate colors for the bodies
+    let colors = get_3_colors(&mut byte_stream, steps, args.special_color.as_deref());
 
     let s: &str = args.file_name.as_str();
     let file_name = format!("vids/{}.mp4", s);
-    println!("done simulating");
+    println!("Simulation complete.");
 
+    // Set initial length and frame parameters
     let init_len: usize = 0;
     const NUM_SECONDS: usize = 30;
     let target_length = 60 * NUM_SECONDS;
     let steps_per_frame: usize = steps / target_length;
     const FRAME_SIZE: u32 = 1600;
 
+    // Set snake lengths (tail lengths) for video and image
     let random_vid_snake_len = 1.0;
     let random_pic_snake_len = 5.0;
 
-    let vid_snake_lens = if args.special {
+    let vid_snake_lens = if args.special_color.is_some() {
         [random_vid_snake_len, random_vid_snake_len, random_vid_snake_len]
     } else {
         [
@@ -699,7 +746,7 @@ fn main() {
         ]
     };
 
-    let pic_snake_lens = if args.special {
+    let pic_snake_lens = if args.special_color.is_some() {
         [random_pic_snake_len, random_pic_snake_len, random_pic_snake_len]
     } else {
         [
@@ -709,6 +756,7 @@ fn main() {
         ]
     };
 
+    // Generate the final image
     let pic_frames = plot_positions(
         &mut positions,
         FRAME_SIZE,
@@ -718,7 +766,7 @@ fn main() {
         &colors,
         steps_per_frame,
         args.avoid_effects,
-        true,
+        true, // Generate only one frame
     );
     let last_frame = pic_frames[pic_frames.len() - 1].clone();
     if let Err(e) = last_frame.save(format!("pics/{}.png", s)) {
@@ -727,6 +775,7 @@ fn main() {
         println!("Image saved successfully.");
     }
 
+    // Generate the video if not skipped
     if !args.no_video {
         let frames = plot_positions(
             &mut positions,
@@ -737,10 +786,10 @@ fn main() {
             &colors,
             steps_per_frame,
             args.avoid_effects,
-            false,
+            false, // Generate multiple frames for video
         );
 
         create_video_from_frames_in_memory(&frames, &file_name, 60);
-        println!("done creating video");
+        println!("Video creation complete.");
     }
 }

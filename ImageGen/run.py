@@ -29,16 +29,16 @@ def main():
     possible_velocities = [2]
     possible_min_mass = [100]
     possible_max_mass = [300]
-    possible_special = [True, False]
+    possible_special = [None, "gold", "bronze", "silver", "white"]
 
-    seed = '0x4450'
+    seed = '0x6789'
 
     values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass, possible_special]
 
     for num_steps, location, velocity, min_mass, max_mass, special in itertools.product(*values):
 
         for i in range(N):
-            file_name = f'{num_steps:08}_{location:03}_{velocity:02}_{min_mass:03}_{max_mass:03}_{seed}{i:06}_{"sp" if special else "nm"}'
+            file_name = f'{num_steps:08}_{location:03}_{velocity:02}_{min_mass:03}_{max_mass:03}_{seed}{i:06}_{special if special else "nm"}'
 
             if os.path.isfile(f'vids/{file_name}.mp4'):
                 continue
@@ -73,7 +73,10 @@ def main():
             cur.append(str(1000))
 
             if special:
-                cur.append('--special')
+                cur.append('--special-color')
+                cur.append(special)
+
+            print(cur)
 
             parameters.append(cur)
 
