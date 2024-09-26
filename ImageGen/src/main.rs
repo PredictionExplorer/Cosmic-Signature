@@ -244,65 +244,41 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
 
 /// Generate a color sequence based on a random walk in hue for a single body
 fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<u8>> {
-    let mut colors = Vec::with_capacity(len);
+    let mut colors = Vec::new();
     let mut hue = rng.gen_range(0.0, 360.0);
     for _ in 0..len {
-        let delta = if rng.next_byte() & 1 == 0 { 0.1 } else { -0.1 };
-        hue = (hue + delta).rem_euclid(360.0);
+        if rng.next_byte() & 1 == 0 {
+            hue += 0.1;
+        } else {
+            hue -= 0.1;
+        }
+        if hue < 0.0 {
+            hue += 360.0;
+        }
+        if hue > 360.0 {
+            hue -= 360.0;
+        }
         let hsl = Hsl::new(hue, 1.0, 0.5);
         let rgb = Srgb::from_color(hsl);
-        let r = (rgb.red * 255.0).clamp(0.0, 255.0) as u8;
-        let g = (rgb.green * 255.0).clamp(0.0, 255.0) as u8;
-        let b = (rgb.blue * 255.0).clamp(0.0, 255.0) as u8;
+        let r = (rgb.red * 255.0) as u8;
+        let g = (rgb.green * 255.0) as u8;
+        let b = (rgb.blue * 255.0) as u8;
         colors.push(Rgb([r, g, b]));
     }
     colors
 }
 
-/// Generate a color sequence with variation around the specified special color
-fn get_special_color_walk(
-    color_name: &str,
-    len: usize,
-    rng: &mut Sha3RandomByteStream,
-) -> Vec<Rgb<u8>> {
-    let (base_hue, base_saturation, base_lightness) = match color_name.to_lowercase().as_str() {
-        "gold" => (51.0, 1.0, 0.5),    // Gold color in HSL (hue in degrees)
-        "bronze" => (30.0, 0.75, 0.5), // Bronze color in HSL
-        "silver" => (0.0, 0.0, 0.75),  // Silver is light gray
-        "white" => (0.0, 0.0, 1.0),    // White color in HSL
-        _ => (0.0, 0.0, 1.0),          // Default to white if unknown
+/// Generate a color sequence with the specified special color
+fn get_special_color_walk(color_name: &str, len: usize) -> Vec<Rgb<u8>> {
+    let rgb_color = match color_name.to_lowercase().as_str() {
+        "gold" => Rgb([255, 215, 0]),     // Bright gold color
+        "bronze" => Rgb([205, 127, 50]),  // Bright bronze color
+        "silver" => Rgb([192, 192, 192]), // Bright silver color
+        "white" => Rgb([255, 255, 255]),  // Pure white color
+        _ => Rgb([255, 255, 255]),        // Default to white if unknown
     };
 
-    let mut colors = Vec::with_capacity(len);
-    let mut hue = base_hue;
-
-    for _ in 0..len {
-        // For colors with hue, vary the hue slightly
-        if base_saturation > 0.0 {
-            // Randomly adjust the hue within a small range
-            let delta = rng.gen_range(-1.0, 1.0); // Adjust hue by -1 to 1 degree
-            hue = (hue + delta).rem_euclid(360.0);
-        }
-
-        // For silver and white, we can vary lightness slightly
-        let lightness = if base_saturation == 0.0 {
-            let delta = rng.gen_range(-0.05, 0.05); // Adjust lightness by -0.05 to 0.05
-            (base_lightness + delta).clamp(0.7, 1.0)
-        } else {
-            base_lightness
-        };
-
-        let hsl = Hsl::new(hue, base_saturation, lightness);
-        let rgb = Srgb::from_color(hsl);
-
-        let r = (rgb.red * 255.0).clamp(0.0, 255.0) as u8;
-        let g = (rgb.green * 255.0).clamp(0.0, 255.0) as u8;
-        let b = (rgb.blue * 255.0).clamp(0.0, 255.0) as u8;
-
-        colors.push(Rgb([r, g, b]));
-    }
-
-    colors
+    vec![rgb_color; len]
 }
 
 /// Generate color sequences for all three bodies
@@ -314,8 +290,8 @@ fn get_3_colors(
     let mut colors = Vec::new();
 
     if let Some(color_name) = special_color {
-        // Use the special color with variation for all bodies
-        let special_color_walk = get_special_color_walk(color_name, len, rng);
+        // Use the special color for all bodies
+        let special_color_walk = get_special_color_walk(color_name, len);
         colors.push(special_color_walk.clone());
         colors.push(special_color_walk.clone());
         colors.push(special_color_walk.clone());
