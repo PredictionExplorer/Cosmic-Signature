@@ -22,13 +22,15 @@ use statrs::statistics::Statistics;
 
 use hex;
 
-// For spawning processes (ffmpeg)
-use std::io::Write;
 use std::process::{Command, Stdio};
 
-/// Simple program to simulate and visualize the three-body problem
+/// Program to simulate and visualize the three-body problem
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Program to simulate and visualize the three-body problem")]
+#[command(
+    author,
+    version,
+    about = "Simulate and visualize the three-body problem with customizable options."
+)]
 struct Args {
     /// Seed for the random number generator (hexadecimal string)
     #[arg(long, default_value = "00")]
@@ -170,8 +172,8 @@ impl Body {
     }
 
     /// Update the body's acceleration based on another body's mass and position
-    fn update_acceleration(&mut self, other_mass: f64, other_position: Vector3<f64>) {
-        let dir: Vector3<f64> = self.position - other_position;
+    fn update_acceleration(&mut self, other_mass: f64, other_position: &Vector3<f64>) {
+        let dir: Vector3<f64> = self.position - *other_position;
         let mag = dir.norm();
         // Avoid division by zero or extremely small values
         if mag > 1e-10 {
@@ -188,33 +190,40 @@ impl Body {
 /// Perform one step of Verlet integration for all bodies
 fn verlet_step(bodies: &mut [Body], dt: f64) {
     // First loop: calculate accelerations based on positions
-    for i in 0..bodies.len() {
-        bodies[i].reset_acceleration();
-        for j in 0..bodies.len() {
+    // Collect positions and masses to avoid borrowing issues
+    let positions: Vec<Vector3<f64>> = bodies.iter().map(|body| body.position).collect();
+    let masses: Vec<f64> = bodies.iter().map(|body| body.mass).collect();
+
+    for (i, body) in bodies.iter_mut().enumerate() {
+        body.reset_acceleration();
+        for (j, &other_position) in positions.iter().enumerate() {
             if i != j {
-                bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
+                body.update_acceleration(masses[j], &other_position);
             }
         }
     }
 
     // Update positions based on velocities and accelerations
     for body in bodies.iter_mut() {
-        body.position = body.position + body.velocity * dt + 0.5 * body.acceleration * (dt * dt);
+        body.position = body.position + body.velocity * dt + 0.5 * body.acceleration * dt * dt;
     }
 
     // Second loop: recalculate accelerations with updated positions
-    for i in 0..bodies.len() {
-        bodies[i].reset_acceleration();
-        for j in 0..bodies.len() {
+    // Collect updated positions
+    let positions: Vec<Vector3<f64>> = bodies.iter().map(|body| body.position).collect();
+
+    for (i, body) in bodies.iter_mut().enumerate() {
+        body.reset_acceleration();
+        for (j, &other_position) in positions.iter().enumerate() {
             if i != j {
-                bodies[i].update_acceleration(bodies[j].mass, bodies[j].position);
+                body.update_acceleration(masses[j], &other_position);
             }
         }
     }
 
     // Update velocities based on the average acceleration
     for body in bodies.iter_mut() {
-        body.velocity = body.velocity + 0.5 * body.acceleration * dt;
+        body.velocity = body.velocity + body.acceleration * dt;
     }
 }
 
@@ -235,41 +244,65 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
 
 /// Generate a color sequence based on a random walk in hue for a single body
 fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<u8>> {
-    let mut colors = Vec::new();
+    let mut colors = Vec::with_capacity(len);
     let mut hue = rng.gen_range(0.0, 360.0);
     for _ in 0..len {
-        if rng.next_byte() & 1 == 0 {
-            hue += 0.1;
-        } else {
-            hue -= 0.1;
-        }
-        if hue < 0.0 {
-            hue += 360.0;
-        }
-        if hue > 360.0 {
-            hue -= 360.0;
-        }
+        let delta = if rng.next_byte() & 1 == 0 { 0.1 } else { -0.1 };
+        hue = (hue + delta).rem_euclid(360.0);
         let hsl = Hsl::new(hue, 1.0, 0.5);
         let rgb = Srgb::from_color(hsl);
-        let r = (rgb.red * 255.0) as u8;
-        let g = (rgb.green * 255.0) as u8;
-        let b = (rgb.blue * 255.0) as u8;
+        let r = (rgb.red * 255.0).clamp(0.0, 255.0) as u8;
+        let g = (rgb.green * 255.0).clamp(0.0, 255.0) as u8;
+        let b = (rgb.blue * 255.0).clamp(0.0, 255.0) as u8;
         colors.push(Rgb([r, g, b]));
     }
     colors
 }
 
-/// Generate a color sequence with the specified special color
-fn get_special_color_walk(color_name: &str, len: usize) -> Vec<Rgb<u8>> {
-    let rgb_color = match color_name.to_lowercase().as_str() {
-        "gold" => Rgb([255, 215, 0]),     // Bright gold color
-        "bronze" => Rgb([205, 127, 50]),  // Bright bronze color
-        "silver" => Rgb([192, 192, 192]), // Bright silver color
-        "white" => Rgb([255, 255, 255]),  // Pure white color
-        _ => Rgb([255, 255, 255]),        // Default to white if unknown
+/// Generate a color sequence with variation around the specified special color
+fn get_special_color_walk(
+    color_name: &str,
+    len: usize,
+    rng: &mut Sha3RandomByteStream,
+) -> Vec<Rgb<u8>> {
+    let (base_hue, base_saturation, base_lightness) = match color_name.to_lowercase().as_str() {
+        "gold" => (51.0, 1.0, 0.5),    // Gold color in HSL (hue in degrees)
+        "bronze" => (30.0, 0.75, 0.5), // Bronze color in HSL
+        "silver" => (0.0, 0.0, 0.75),  // Silver is light gray
+        "white" => (0.0, 0.0, 1.0),    // White color in HSL
+        _ => (0.0, 0.0, 1.0),          // Default to white if unknown
     };
 
-    vec![rgb_color; len]
+    let mut colors = Vec::with_capacity(len);
+    let mut hue = base_hue;
+
+    for _ in 0..len {
+        // For colors with hue, vary the hue slightly
+        if base_saturation > 0.0 {
+            // Randomly adjust the hue within a small range
+            let delta = rng.gen_range(-1.0, 1.0); // Adjust hue by -1 to 1 degree
+            hue = (hue + delta).rem_euclid(360.0);
+        }
+
+        // For silver and white, we can vary lightness slightly
+        let lightness = if base_saturation == 0.0 {
+            let delta = rng.gen_range(-0.05, 0.05); // Adjust lightness by -0.05 to 0.05
+            (base_lightness + delta).clamp(0.7, 1.0)
+        } else {
+            base_lightness
+        };
+
+        let hsl = Hsl::new(hue, base_saturation, lightness);
+        let rgb = Srgb::from_color(hsl);
+
+        let r = (rgb.red * 255.0).clamp(0.0, 255.0) as u8;
+        let g = (rgb.green * 255.0).clamp(0.0, 255.0) as u8;
+        let b = (rgb.blue * 255.0).clamp(0.0, 255.0) as u8;
+
+        colors.push(Rgb([r, g, b]));
+    }
+
+    colors
 }
 
 /// Generate color sequences for all three bodies
@@ -281,8 +314,8 @@ fn get_3_colors(
     let mut colors = Vec::new();
 
     if let Some(color_name) = special_color {
-        // Use the special color for all bodies
-        let special_color_walk = get_special_color_walk(color_name, len);
+        // Use the special color with variation for all bodies
+        let special_color_walk = get_special_color_walk(color_name, len, rng);
         colors.push(special_color_walk.clone());
         colors.push(special_color_walk.clone());
         colors.push(special_color_walk.clone());
@@ -471,7 +504,7 @@ fn create_video_from_frames_in_memory(
         .arg("yuv420p")
         .arg(output_file)
         .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
+        .stdout(Stdio::null())
         .stderr(Stdio::piped());
 
     let mut ffmpeg = command.spawn().expect("Failed to spawn ffmpeg process");
@@ -484,7 +517,8 @@ fn create_video_from_frames_in_memory(
             .expect("Failed to write frame to ffmpeg stdin");
     }
 
-    ffmpeg_stdin.flush().expect("Failed to flush ffmpeg stdin");
+    // Close the stdin to signal ffmpeg that we are done
+    drop(ffmpeg.stdin.take());
 
     let output = ffmpeg.wait_with_output().expect("Failed to wait on ffmpeg process");
 
@@ -500,9 +534,9 @@ fn analyze_trajectories(
     m3: f64,
     positions: &Vec<Vec<Vector3<f64>>>,
 ) -> (f64, f64, f64) {
-    let chaos = non_chaoticness(m1, m2, m3, &positions);
-    let avg_area = triangle_area(&positions);
-    let total_dist = calculate_total_distance(&positions);
+    let chaos = non_chaoticness(m1, m2, m3, positions);
+    let avg_area = triangle_area(positions);
+    let total_dist = calculate_total_distance(positions);
     (chaos, avg_area, total_dist)
 }
 
@@ -611,31 +645,31 @@ fn get_best(
     num_steps_sim: usize,
     num_steps_video: usize,
 ) -> Vec<Vec<Vector3<f64>>> {
-    let mut many_bodies: Vec<Vec<Body>> = vec![];
-    for _ in 0..num_iters {
-        let body1 = Body::new(
-            rng.random_mass(),
-            Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(0.0, 0.0, rng.random_velocity()),
-        );
-        let body2 = Body::new(
-            rng.random_mass(),
-            Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(0.0, 0.0, rng.random_velocity()),
-        );
-        let body3 = Body::new(
-            rng.random_mass(),
-            Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-            Vector3::new(0.0, 0.0, rng.random_velocity()),
-        );
+    // Generate initial conditions
+    let many_bodies: Vec<Vec<Body>> = (0..num_iters)
+        .map(|_| {
+            let body1 = Body::new(
+                rng.random_mass(),
+                Vector3::new(rng.random_location(), rng.random_location(), 0.0),
+                Vector3::new(0.0, 0.0, rng.random_velocity()),
+            );
+            let body2 = Body::new(
+                rng.random_mass(),
+                Vector3::new(rng.random_location(), rng.random_location(), 0.0),
+                Vector3::new(0.0, 0.0, rng.random_velocity()),
+            );
+            let body3 = Body::new(
+                rng.random_mass(),
+                Vector3::new(rng.random_location(), rng.random_location(), 0.0),
+                Vector3::new(0.0, 0.0, rng.random_velocity()),
+            );
 
-        let bodies = vec![body1, body2, body3];
-        many_bodies.push(bodies);
-    }
+            vec![body1, body2, body3]
+        })
+        .collect();
 
     // Analyze trajectories in parallel
-    let mut results_par = vec![(0.0, 0.0, 0.0); many_bodies.len()];
-    many_bodies
+    let results_par: Vec<(f64, f64, f64)> = many_bodies
         .par_iter()
         .map(|bodies| {
             let m1 = bodies[0].mass;
@@ -644,11 +678,11 @@ fn get_best(
             let positions = get_positions(bodies.clone(), num_steps_sim);
             analyze_trajectories(m1, m2, m3, &positions)
         })
-        .collect_into_vec(&mut results_par);
+        .collect();
 
     // Sort the simulations based on the chaos metric
     let mut indexed_pairs: Vec<(usize, (f64, f64, f64))> =
-        results_par.clone().into_iter().enumerate().collect();
+        results_par.into_iter().enumerate().collect();
 
     // Sort by the chaos metric (the lower, the better)
     indexed_pairs.sort_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap());
@@ -656,7 +690,7 @@ fn get_best(
     const N: usize = 50; // Number of top simulations to consider
     let mut best_idx = 0;
     let mut best_result = f64::NEG_INFINITY;
-    for i in 0..N {
+    for i in 0..N.min(indexed_pairs.len()) {
         let (original_index, (_chaos, avg_area, _total_dist)) = indexed_pairs[i];
         if avg_area > best_result {
             best_result = avg_area;
@@ -670,8 +704,8 @@ fn get_best(
         bodies[0].mass, bodies[1].mass, bodies[2].mass
     );
     let result = get_positions(bodies.clone(), num_steps_video);
-    let avg_area = results_par[best_idx].1;
-    let total_distance = results_par[best_idx].2;
+    let avg_area = indexed_pairs.iter().find(|&&(idx, _)| idx == best_idx).unwrap().1 .1;
+    let total_distance = indexed_pairs.iter().find(|&&(idx, _)| idx == best_idx).unwrap().1 .2;
     println!("Average triangle area: {:.6}", avg_area);
     println!("Total distance traveled: {:.6}", total_distance);
     result
