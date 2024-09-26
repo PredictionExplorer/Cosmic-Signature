@@ -638,7 +638,40 @@ fn calculate_total_distance(positions: &Vec<Vec<Vector3<f64>>>) -> f64 {
     total_dist
 }
 
-/// Run multiple simulations and select the one with the best characteristics
+/// Calculate the total kinetic and potential energy of the system
+fn calculate_total_energy(bodies: &Vec<Body>) -> f64 {
+    let mut total_ke = 0.0; // Total kinetic energy
+    let mut total_pe = 0.0; // Total potential energy
+
+    // Calculate kinetic energy
+    for body in bodies {
+        let speed_squared = body.velocity.norm_squared();
+        total_ke += 0.5 * body.mass * speed_squared;
+    }
+
+    // Calculate potential energy
+    for i in 0..bodies.len() {
+        for j in (i + 1)..bodies.len() {
+            let r = (bodies[i].position - bodies[j].position).norm();
+            // Avoid division by zero
+            if r > 1e-10 {
+                total_pe += -G * bodies[i].mass * bodies[j].mass / r;
+            }
+        }
+    }
+
+    total_ke + total_pe
+}
+
+/// Calculate the total angular momentum vector of the system
+fn calculate_total_angular_momentum(bodies: &Vec<Body>) -> Vector3<f64> {
+    let mut total_l = Vector3::zeros();
+    for body in bodies {
+        total_l += body.mass * body.position.cross(&body.velocity);
+    }
+    total_l
+}
+
 fn get_best(
     rng: &mut Sha3RandomByteStream,
     num_iters: usize,
@@ -650,65 +683,90 @@ fn get_best(
         .map(|_| {
             let body1 = Body::new(
                 rng.random_mass(),
-                Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-                Vector3::new(0.0, 0.0, rng.random_velocity()),
+                Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+                Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
             );
             let body2 = Body::new(
                 rng.random_mass(),
-                Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-                Vector3::new(0.0, 0.0, rng.random_velocity()),
+                Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+                Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
             );
             let body3 = Body::new(
                 rng.random_mass(),
-                Vector3::new(rng.random_location(), rng.random_location(), 0.0),
-                Vector3::new(0.0, 0.0, rng.random_velocity()),
+                Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+                Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
             );
-
             vec![body1, body2, body3]
         })
         .collect();
 
     // Analyze trajectories in parallel
-    let results_par: Vec<(f64, f64, f64)> = many_bodies
+    let results_par: Vec<Option<(f64, f64, f64, usize)>> = many_bodies
         .par_iter()
-        .map(|bodies| {
-            let m1 = bodies[0].mass;
-            let m2 = bodies[1].mass;
-            let m3 = bodies[2].mass;
-            let positions = get_positions(bodies.clone(), num_steps_sim);
-            analyze_trajectories(m1, m2, m3, &positions)
+        .enumerate()
+        .map(|(index, bodies)| {
+            // Calculate total energy and angular momentum
+            let total_energy = calculate_total_energy(bodies);
+            let total_angular_momentum = calculate_total_angular_momentum(bodies);
+            let angular_momentum_magnitude = total_angular_momentum.norm();
+
+            // Apply filtering criteria
+            if total_energy >= 0.0 || angular_momentum_magnitude < 1e-3 {
+                // Discard this simulation
+                None
+            } else {
+                // Proceed with analysis
+                let m1 = bodies[0].mass;
+                let m2 = bodies[1].mass;
+                let m3 = bodies[2].mass;
+                let positions = get_positions(bodies.clone(), num_steps_sim);
+                let (chaos, avg_area, total_dist) = analyze_trajectories(m1, m2, m3, &positions);
+                Some((chaos, avg_area, total_dist, index))
+            }
         })
         .collect();
 
-    // Sort the simulations based on the chaos metric
-    let mut indexed_pairs: Vec<(usize, (f64, f64, f64))> =
-        results_par.into_iter().enumerate().collect();
+    // Filter out None values
+    let mut valid_results: Vec<(f64, f64, f64, usize)> =
+        results_par.into_iter().filter_map(|x| x).collect();
 
-    // Sort by the chaos metric (the lower, the better)
-    indexed_pairs.sort_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap());
+    // Check if we have any valid simulations
+    if valid_results.is_empty() {
+        panic!("No valid simulations found with the given criteria.");
+    }
+
+    // Sort by chaos metric (lower is better)
+    valid_results.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     const N: usize = 50; // Number of top simulations to consider
-    let mut best_idx = 0;
+    let num_candidates = N.min(valid_results.len());
     let mut best_result = f64::NEG_INFINITY;
-    for i in 0..N.min(indexed_pairs.len()) {
-        let (original_index, (_chaos, avg_area, _total_dist)) = indexed_pairs[i];
+    let mut best_index = None;
+
+    for i in 0..num_candidates {
+        let (_chaos, avg_area, _total_dist, index) = valid_results[i];
         if avg_area > best_result {
             best_result = avg_area;
-            best_idx = original_index;
+            best_index = Some(index);
         }
     }
 
-    let bodies = &many_bodies[best_idx];
-    println!(
-        "Selected simulation with masses: {:.2}, {:.2}, {:.2}",
-        bodies[0].mass, bodies[1].mass, bodies[2].mass
-    );
-    let result = get_positions(bodies.clone(), num_steps_video);
-    let avg_area = indexed_pairs.iter().find(|&&(idx, _)| idx == best_idx).unwrap().1 .1;
-    let total_distance = indexed_pairs.iter().find(|&&(idx, _)| idx == best_idx).unwrap().1 .2;
-    println!("Average triangle area: {:.6}", avg_area);
-    println!("Total distance traveled: {:.6}", total_distance);
-    result
+    if let Some(index) = best_index {
+        let bodies = &many_bodies[index];
+        println!(
+            "Selected simulation with masses: {:.2}, {:.2}, {:.2}",
+            bodies[0].mass, bodies[1].mass, bodies[2].mass
+        );
+        println!("Total Energy: {:.6}", calculate_total_energy(bodies));
+        println!(
+            "Total Angular Momentum Magnitude: {:.6}",
+            calculate_total_angular_momentum(bodies).norm()
+        );
+        println!("Average triangle area: {:.6}", best_result);
+        return get_positions(bodies.clone(), num_steps_video);
+    } else {
+        panic!("No suitable simulation found after applying selection criteria.");
+    }
 }
 
 fn main() {
@@ -735,9 +793,7 @@ fn main() {
     let steps = args.num_steps;
 
     // Determine which bodies to hide based on the special_color flag
-    let hide = if args.special_color.is_some() {
-        vec![false, true, true] // Only show the first body
-    } else {
+    let hide = {
         // Randomly decide which bodies to hide
         let random_val = byte_stream.gen_range(0.0, 1.0);
         if random_val < 1.0 / 3.0 {
