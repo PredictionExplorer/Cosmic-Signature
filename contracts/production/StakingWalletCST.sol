@@ -10,8 +10,6 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
 
 /// @dev Implements staking, unstaking, and reward distribution mechanisms for CST NFTs
-/// todo-1 There is no word "NFT" in this contract name, while the word "CST" doesn't appear to be very relevant
-/// todo-1 ("ETH" would be more relevant). Rename?
 contract StakingWalletCST is Ownable, IStakingWalletCST {
 	// #region Data Types
 
