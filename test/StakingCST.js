@@ -1243,4 +1243,64 @@ describe('Staking CST tests', function () {
 		await expect(newStakingWalletCST.depositIfPossible()).not.to.be.reverted; //msg.value = 0
 		await expect(newStakingWalletCST.unstakeClaim(1,1)).not.to.be.reverted;
 	});
+	it("User can't claim rewards on his second deposit", async function () {
+		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const {
+			cosmicGameProxy,
+			cosmicToken,
+			cosmicSignature,
+			charityWallet,
+			cosmicDAO,
+			raffleWallet,
+			randomWalkNFT,
+			stakingWalletCST,
+			stakingWalletRWalk,
+			marketingWallet,
+			bidLogic
+		} = await basicDeploymentAdvanced(
+			'SpecialCosmicGame',
+			owner,
+			'',
+			0,
+			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			true,
+			false
+		);
+		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+
+		const CosmicSignature = await hre.ethers.getContractFactory('CosmicSignature');
+		const newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		await newCosmicSignature.mint(owner.address, 0);
+		await newCosmicSignature.mint(owner.address, 0);
+
+		const StakingWalletCST = await hre.ethers.getContractFactory('StakingWalletCST');
+		const newStakingWalletCST = await StakingWalletCST.deploy(
+			await newCosmicSignature.getAddress(),
+			await cosmicGameProxy.getAddress()
+		);
+		await newStakingWalletCST.waitForDeployment();
+		await newCosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
+		await cosmicGameProxy.setStakingWalletCST(await newStakingWalletCST.getAddress());
+		await cosmicGameProxy.setRuntimeMode();
+
+		await newStakingWalletCST.stake(0);
+
+		await hre.ethers.provider.send('evm_increaseTime', [600]);
+		await hre.ethers.provider.send('evm_mine');
+
+		await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
+		await newStakingWalletCST.unstake(0);
+		await newStakingWalletCST.claimManyRewards([0], [0]);
+
+		await newStakingWalletCST.stake(1);
+
+		await hre.ethers.provider.send('evm_increaseTime', [600]);
+		await hre.ethers.provider.send('evm_mine');
+
+		await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('3') });
+
+		await newStakingWalletCST.unstake(1);
+		let depositId = 1n;		// 1 because it is a new deposit, User want's to claim rewards on its second deposit
+		await expect(newStakingWalletCST.claimManyRewards([1], [depositId])).not.to.be.reverted;
+	});
 });
