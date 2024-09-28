@@ -33,9 +33,9 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	/// @param _stakingWalletCST The new CST staking wallet address
    function setStakingWalletCST(IStakingWalletCST _stakingWalletCST) external;
 
-	/// @notice Set the RWalk staking wallet address
+	/// @notice Set the RandomWalk staking wallet address
 	/// @dev Only callable by the contract owner
-	/// @param _stakingWalletRWalk The new RWalk staking wallet address
+	/// @param _stakingWalletRWalk The new RandomWalk staking wallet address
    function setStakingWalletRWalk(address _stakingWalletRWalk) external;
 
 	/// @notice Set the marketing wallet address

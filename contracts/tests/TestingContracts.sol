@@ -107,12 +107,16 @@ contract BrokenStaker {
 		blockDeposits = true;
 	}
 
-	function setStakingWallet(IStakingWalletCST sw_) external {
+	function stopBlockingDeposits() external {
+		blockDeposits = false;
+	}
+
+	function setStakingWalletCST(IStakingWalletCST sw_) external {
 		stakingWalletCST = StakingWalletCST(address(sw_));
 	}
 
-	function doSetApprovalForAll(address nft_) external {
-		IERC721(nft_).setApprovalForAll(address(stakingWalletCST), true);
+	function doSetApprovalForAll(IERC721 nft_) external {
+		nft_.setApprovalForAll(address(stakingWalletCST), true);
 	}
 }
 
@@ -179,8 +183,9 @@ contract SpecialCosmicGame is CosmicGame {
 	// 		}
 	// 	}
 	// }
-	function depositStakingCSTIfPossible(uint256 roundNum_) external payable {
-		stakingWalletCST.depositIfPossible{ value: msg.value }(roundNum_);
+	function depositStakingCSTIfPossible() external payable {
+		// todo-0 I added the passing of `roundNum`. Is it correct?
+		stakingWalletCST.depositIfPossible{ value: msg.value }(roundNum);
 	}
 	function mintCST(address to, uint256 roundNum) external {
 		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
@@ -196,19 +201,16 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 }
 
-// todo-0 I have commented this out because the `StakingWalletCST._insertToken` and `StakingWalletCST._removeToken` functions no longer exist.
-// contract TestStakingWalletCST is StakingWalletCST {
-// 	// todo-1 Is `nft_` the same as `game_.nft()`?
-// 	// todo-1 At least explain in a comment.
-// 	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) StakingWalletCST(nft_, game_ /* , charity_ */) {}
-//
-// 	function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
-// 		_insertToken(_tokenId,_actionId);
-// 	}
-// 	function doRemoveToken(uint256 _tokenId) external {
-// 		_removeToken(_tokenId);
-// 	}
-// }
+contract TestStakingWalletCST is StakingWalletCST {
+	constructor(CosmicSignature nft_, address game_) StakingWalletCST(nft_, game_) {}
+
+	// function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
+	// 	_insertToken(_tokenId,_actionId);
+	// }
+	// function doRemoveToken(uint256 _tokenId) external {
+	// 	_removeToken(_tokenId);
+	// }
+}
 
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}

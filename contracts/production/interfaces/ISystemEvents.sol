@@ -27,8 +27,8 @@ interface ISystemEvents {
 	/// @param newStakingWalletCST The new CST staking wallet address
 	event StakingWalletCSTAddressChanged(IStakingWalletCST newStakingWalletCST);
 
-	/// @notice Emitted when the RWalk staking wallet address is changed
-	/// @param newStakingWalletRWalk The new RWalk staking wallet address
+	/// @notice Emitted when the RandomWalk staking wallet address is changed
+	/// @param newStakingWalletRWalk The new RandomWalk staking wallet address
 	event StakingWalletRWalkAddressChanged(address newStakingWalletRWalk);
 
 	/// @notice Emitted when the marketing wallet address is changed

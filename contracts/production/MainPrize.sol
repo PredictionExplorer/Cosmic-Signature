@@ -94,7 +94,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		} catch (bytes memory errorDetails) {
 			// [ToDo-202409226-0]
 			// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred` to `true` or `false`.
-			// Then remove this ToDo and all mentionings of it.
+			// Then remove this ToDo and all mentionings of it elsewhere in the codebase.
 			// [/ToDo-202409226-0]
 			bool unexpectedErrorOccurred;
 			
@@ -110,7 +110,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			if (unexpectedErrorOccurred) {
 				revert
 					CosmicGameErrors.FundTransferFailed(
-						"Transfer to staking wallet failed.",
+						"Transfer to StakingWalletCST failed.",
 						stakingAmount_,
 						address(stakingWalletCST)
 					);

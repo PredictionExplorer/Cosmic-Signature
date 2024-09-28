@@ -56,14 +56,14 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	/// Although, if they also unstake it before the next deposit it would be unnecessary to create a new item,
 	/// but we will anyway create one, which is probably not too bad.
 	/// [Comment-202410168]
-	/// The initial value doesn't matter because before we evaluate this we will assign to this.
+	/// The initial value doesn't matter because before we get a chance to evaluate this we will assign to this.
 	/// [/Comment-202410168]
 	/// To minimize gas fees, we never assign zero to this, and therefore this is not a `bool`.
 	uint256 private _NFTWasStakedAfterPrevETHDeposit = 2;
 
 	/// @notice This contains IDs of NFTs that have ever been used for staking.
 	/// @dev Idea. Item value should be an enum NFTStakingStatusCode: NeverStaked, Staked, Unstaked.
-	mapping(uint256 tokenId => bool tokenWasUsed) public usedTokens;
+	mapping(uint256 tokenId => bool tokenWasUsed) private _usedTokens;
 
 	/// @notice `ETHDepositIndex` is 1-based.
 	mapping(uint256 ETHDepositIndex => ETHDeposit) public ETHDeposits;
@@ -84,7 +84,9 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	/// @param nft_ The `CosmicSignature` NFT contract address.
 	/// @param game_ The `CosmicGame` contract address.
 	/// @dev ToDo-202408114-1 applies.
-	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) Ownable(msg.sender) {
+	/// todo-1 Is `nft_` the same as `game_.nft()`?
+	/// todo-1 At least explain in a comment.
+	constructor(CosmicSignature nft_, address game_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
 		require(game_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
 		nft = nft_;
@@ -102,7 +104,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	function stake(uint256 tokenId_) public override {
 		require(
-			( ! usedTokens[tokenId_] ),
+			( ! _usedTokens[tokenId_] ),
 			CosmicGameErrors.OneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", tokenId_)
 		);
 
@@ -117,8 +119,11 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		stakeActions[newStakeActionId_] = newStakeAction_;
 		uint256 newNumStakedNFTs_ = _numStakedNFTs + 1;
 		_numStakedNFTs = newNumStakedNFTs_;
+
+		// Comment-202410168 relates.
 		_NFTWasStakedAfterPrevETHDeposit = 2;
-		usedTokens[tokenId_] = true;
+
+		_usedTokens[tokenId_] = true;
 		nft.transferFrom(msg.sender, address(this), tokenId_);
 		emit StakeActionEvent(newStakeActionId_, tokenId_, msg.sender, newNumStakedNFTs_);
 		
@@ -177,7 +182,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	}
 
 	function wasTokenUsed(uint256 tokenId_) external view override returns (bool) {
-		return usedTokens[tokenId_];
+		return _usedTokens[tokenId_];
 	}
 
 	/// @dev todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
@@ -291,10 +296,17 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	function _unstake(uint256 stakeActionId_) private returns (uint256) {
 		StakeAction memory stakeAction_ = stakeActions[stakeActionId_];
-		require(
-			msg.sender == stakeAction_.nftOwnerAddress,
-			CosmicGameErrors.AccessError("Only the owner can unstake.", stakeActionId_, msg.sender)
-		);
+
+		if (msg.sender != stakeAction_.nftOwnerAddress) {
+			if (stakeAction_.nftOwnerAddress != address(0)) {
+				revert CosmicGameErrors.AccessError("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
+			} else {
+				// [Comment-202410182]
+				// It's also possible that this NFT has never been staked, but we have no knowledge about that.
+				// [/Comment-202410182]
+				revert CosmicGameErrors.TokenAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_);
+			}
+		}
 
 		// #region Assertions
 		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
@@ -348,6 +360,11 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		// // [Comment-202409215]
 		// // It's unnecessary to spend gas on this validation.
 		// // [/Comment-202409215]
+		// // This will be zero in 2 cases:
+		// // 1. Someone stakes and before we receive anotehr deposit unstakes their NFT.
+		// // 2. All deposits we received while this stake was active
+		// //    were too small for the formula near Comment-202410161 to produce a nonzero.
+		// //    Although that's probably unlikely to happen.
 		// if (rewardAmount_ > 0)
 
 		{

@@ -49,7 +49,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 
 	/// @notice This contains IDs of NFTs that have ever been used for staking.
 	/// @dev Idea. Item value should be an enum NFTStakingStatusCode: NeverStaked, Staked, Unstaked.
-	mapping(uint256 tokenId => bool tokenWasUsed) public usedTokens;
+	mapping(uint256 tokenId => bool tokenWasUsed) private _usedTokens;
 
 	/// @notice Currently staked NFT IDs
 	/// todo-0 Make sense to either convert this to `mapping` or eliminate `_numStakedNFTs`?
@@ -95,10 +95,10 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 
 	function stake(uint256 _tokenId) public override {
 		require(
-			( ! usedTokens[_tokenId] ),
+			( ! _usedTokens[_tokenId] ),
 			CosmicGameErrors.OneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", _tokenId)
 		);
-		usedTokens[_tokenId] = true;
+		_usedTokens[_tokenId] = true;
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
 		_insertToken(_tokenId, numStakeActions);
 		stakeActions[numStakeActions].tokenId = _tokenId;
@@ -109,7 +109,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		emit StakeActionEvent(numStakeActions - 1, _tokenId, _numStakedNFTs, msg.sender);
 
 		// #region Assertions
-		// #enable_asserts assert(usedTokens[_tokenId] == true);
+		// #enable_asserts assert(wasTokenUsed(_tokenId));
 		// #enable_asserts assert(stakeActions[numStakeActions - 1].tokenId == _tokenId);
 		// #enable_asserts assert(stakeActions[numStakeActions - 1].owner == msg.sender);
 		// #enable_asserts assert(stakeActions[numStakeActions - 1].stakeTime == block.timestamp);
@@ -134,11 +134,12 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	function unstake(uint256 stakeActionId) public override {
 		require(
 			stakeActions[stakeActionId].unstakeTime == 0,
-			CosmicGameErrors.TokenAlreadyUnstaked("Token has already been unstaked.", stakeActionId)
+			// todo-0 Comment-202410182 applies or at least relates?
+			CosmicGameErrors.TokenAlreadyUnstaked("NFT has already been unstaked.", stakeActionId)
 		);
 		require(
 			stakeActions[stakeActionId].owner == msg.sender,
-			CosmicGameErrors.AccessError("Only the owner can unstake.", stakeActionId, msg.sender)
+			CosmicGameErrors.AccessError("Only NFT owner is permitted to unstake it.", stakeActionId, msg.sender)
 		);
 		uint256 tokenId = stakeActions[stakeActionId].tokenId;
 		_removeToken(tokenId);
@@ -169,7 +170,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	}
 
 	function wasTokenUsed(uint256 _tokenId) public view override returns (bool) {
-		return usedTokens[_tokenId];
+		return _usedTokens[_tokenId];
 	}
 
 	function isTokenStaked(uint256 tokenId) public view override returns (bool) {
@@ -180,7 +181,6 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		// #region Assertions
 		// todo-1 Given this equality, why do we need to store `_numStakedNFTs` separately? To save gas?
 		// todo-1 At least explain this in a comment near `_numStakedNFTs`.
-		// todo-1 The same applies to `StakingWalletCST`.
 		// #enable_asserts assert(stakedTokens.length == _numStakedNFTs);
 		// #endregion
 

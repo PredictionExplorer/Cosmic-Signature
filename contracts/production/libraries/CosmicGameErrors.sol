@@ -225,11 +225,11 @@ library CosmicGameErrors {
 	/// @param actionId The ID of the stake action
 	error TokenNotUnstaked(string errStr, uint256 actionId);
 
-	/// @notice Thrown when attempting to claim an already claimed deposit
-	/// @param errStr Description of the error
-	/// @param actionId The ID of the stake action
-	/// @param depositId The ID of the deposit
-	error DepositAlreadyClaimed(string errStr, uint256 actionId, uint256 depositId);
+	// /// @notice Thrown when attempting to claim an already claimed deposit
+	// /// @param errStr Description of the error
+	// /// @param actionId The ID of the stake action
+	// /// @param depositId The ID of the deposit
+	// error DepositAlreadyClaimed(string errStr, uint256 actionId, uint256 depositId);
 
 	// /// @notice Thrown when a deposit is outside the staking window
 	// /// @param errStr Description of the error

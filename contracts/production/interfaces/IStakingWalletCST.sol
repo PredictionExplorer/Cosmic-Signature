@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-/// @title A staking wallet for Cosmic Signature Tokens.
+/// @title Staking wallet for Cosmic Signature Tokens.
 /// @author Cosmic Game Development Team
 /// @notice A contract implementing this interface allows users to stake their Cosmic Signature Tokens (CST) and earn rewards.
-/// @dev Supports staking, unstaking, and reward distribution mechanisms for CST NFTs.
+/// @dev Supports CST NFT staking and unstaking, as well as staker reward distribution.
 /// todo-0 Isn't our fungible token named Cosmic Signature Token? But here we are talking about Cosmic Signature NFTs, right?
 /// todo-0 Rename to `IStakingWalletCSNFT` or `IStakingWalletCSTNFT`?
 /// todo-0 Also rename the contract implementing this interface.
@@ -66,9 +66,8 @@ interface IStakingWalletCST {
 	/// @dev
 	/// [Comment-202410142]
 	/// `unstakeMany` gas fee can potentially exceed the gas max limit per transaction imposed by Arbitrum.
-	/// In that case, the frontend must disallow calling it.
+	/// In that case, the frontend must prohibit calling it.
 	/// At the same time, it appears to be safe to assume that `unstake` gas fee cannot exceed the limit.
-	/// todo-0 Tell Nick about this comment.
 	/// [/Comment-202410142]
 	function unstakeMany(uint256[] memory stakeActionIds_) external;
 
