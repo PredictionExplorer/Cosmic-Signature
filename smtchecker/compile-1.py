@@ -5,14 +5,12 @@ import time
 
 def run_command(command):
     try:
-        subprocess.run(command, check=True, shell=True)
+        subprocess.run(command, check = True, shell = True)
         return True
     except subprocess.CalledProcessError:
         return False
 
 def main():
-    outcome_code = 0
-
     # Generate unique ID
     unique_id_number = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
@@ -29,18 +27,25 @@ def main():
     os.environ['ENABLE_SMTCHECKER'] = '2'
 
     # Run Hardhat clean commands
+    # Comment-202409012 applies.
+    # Slither executes the cleans in this order. We do the same.
     if not run_command('npx hardhat clean && npx hardhat clean --global'):
         print('Error 202409015.')
         return 2
 
+    # [Comment-202409014]
+    # This folder name exists in multiple places.
+    # [/Comment-202409014]
+    smt_checker_output_folder_name = 'smtchecker/compile-1-output'
+
     # Create output directory
-    smt_checker_output_folder = 'smtchecker/compile-1-output'
-    os.makedirs(smt_checker_output_folder, exist_ok=True)
+    os.makedirs(smt_checker_output_folder_name, exist_ok = True)
+
+    output_file_name = f"{smt_checker_output_folder_name}/{unique_id_number}.txt"
 
     # Run Hardhat compile
-    output_file = f"{smt_checker_output_folder}/{unique_id_number}.txt"
     start_time = time.time()
-    result = run_command(f'npx hardhat compile --force > "{output_file}" 2>&1')
+    result = run_command(f'npx hardhat compile --force >> "{output_file_name}" 2>&1')
     end_time = time.time()
 
     print(f"Compilation took {end_time - start_time:.2f} seconds")
