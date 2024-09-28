@@ -204,7 +204,9 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		ETHDeposit memory newETHDeposit_;
 		uint256 newNumETHDeposits_ = numETHDeposits;
 
+		// Comment-202410168 relates.
 		if (_NFTWasStakedAfterPrevETHDeposit >= 2) {
+
 			_NFTWasStakedAfterPrevETHDeposit = 1;
 
 			// If we executed logic near Comment-202410166, it's possible that an `ETHDeposits` item already exists at this position.
