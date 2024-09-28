@@ -28,7 +28,7 @@ contract RaffleWallet is Ownable, IRaffleWallet {
 		// todo-1 Make this validatiopn first?
 		require(
 			msg.sender == game,
-			CosmicGameErrors.DepositFromUnauthorizedSender("Only CosmicGame is allowed to deposit.", msg.sender)
+			CosmicGameErrors.DepositFromUnauthorizedSender("Only CosmicGame is permitted to deposit.", msg.sender)
 		);
 		// todo-1 Can this really overflow?
 		balances[winner] += msg.value;

@@ -68,6 +68,7 @@ describe('Staking CST tests', function () {
 		// const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
+		// todo-0 Pass `roundNum_`.
 		await expect(stakingWalletCST.depositIfPossible({ value: hre.ethers.parseEther('2') })).to.be.revertedWithCustomError(
 			contractErrors,
 			'DepositFromUnauthorizedSender'
@@ -165,7 +166,9 @@ describe('Staking CST tests', function () {
 		);
 		expect(await newStakingWalletCST.wasTokenUsed(0)).to.equal(true);
 
+		// todo-0 Pass `roundNum_`.
 		await expect(newStakingWalletCST.depositIfPossible({ value: hre.ethers.parseEther('1') })).not.to.be.reverted;
+		// todo-0 Pass `roundNum_`.
 		await expect(newStakingWalletCST.depositIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 		expect(await newStakingWalletCST.numETHDeposits()).to.equal(1n);
 		const d = await newStakingWalletCST.ETHDeposits(0);
@@ -268,10 +271,11 @@ describe('Staking CST tests', function () {
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 		const unstakeTime = log.args.unstakeTime;
-		const numStakedNFTs = await newStakingWalletCST.numStakedNFTs();
+		const numStakedNFTs = await newStakingWalletCST.numTokensStaked();
 		expect(numStakedNFTs).to.equal(1);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
+		// todo-0 Pass `roundNum_`.
 		await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 
 		await expect(newStakingWalletCST.claimManyRewards([0], [0])).to.be.revertedWithCustomError(
@@ -332,6 +336,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
 
+		// todo-0 Pass `roundNum_`.
 		await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 		await expect(newStakingWalletCST.unstake(0)).not.to.be.reverted;
 		await expect(newStakingWalletCST.claimManyRewards([0],[0,0])).to.be.revertedWithCustomError(
@@ -397,6 +402,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
 
+		// todo-0 Pass `roundNum_`.
 		await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 		await newStakingWalletCST.unstake(0);
 		await expect(newStakingWalletCST.connect(addr1).claimManyRewards([0], [0])).to.be.revertedWithCustomError(
@@ -451,6 +457,7 @@ describe('Staking CST tests', function () {
 		await newCosmicSignature.connect(addr1).setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 
 		await newStakingWalletCST.connect(addr1).stake(1);
+		// todo-0 Pass `roundNum_`.
 		await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 		await hre.ethers.provider.send('evm_mine');
 		const tx = await newStakingWalletCST.stake(0);
@@ -528,6 +535,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await newStakingWalletCST.unstake(0);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
+		// todo-0 Pass `roundNum_`.
 		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
@@ -598,6 +606,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 
 		await newStakingWalletCST.unstake(0);
+		// todo-0 Pass `roundNum_`.
 		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
@@ -674,6 +683,7 @@ describe('Staking CST tests', function () {
 		await newStakingWalletCST.connect(addr1).stake(1); // we need to stake, otherwise the deposit would be rejected
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 
+		// todo-0 Pass `roundNum_`.
 		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
@@ -692,6 +702,7 @@ describe('Staking CST tests', function () {
 
 	// // [Comment-202409209]
 	// // This test no longer makes sense due to refactorings described in Comment-202409208.
+	// // todo-0 I have now removed that comment. It was about the elimination of `modulo` and `charity`. So revisit this comment.
 	// // todo-0 Nick, you might want to develop similar tests (possibly uncomment and modify those I commented out)
 	// // todo-0 for the cases listed in ToDo-202409226-0.
 	// // [/Comment-202409209]
@@ -1107,7 +1118,8 @@ describe('Staking CST tests', function () {
 			const numSamples = 1000;
 			for (let i = 0; i < numSamples; i++) {
 				const r = Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, "0")
-				const luckyAddr = await newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0x'+r));
+				const luckyAddr = await newStakingWalletRWalk.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
+				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {
 					numToks = 0;
@@ -1226,10 +1238,11 @@ describe('Staking CST tests', function () {
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 		let unstakeTime = log.args.unstakeTime;
-		let numStakedNFTs = await newStakingWalletCST.numStakedNFTs();
+		let numStakedNFTs = await newStakingWalletCST.numTokensStaked();
 		expect(numStakedNFTs).to.equal(1);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
+		// todo-0 Pass `roundNum_`.
 		await expect(newStakingWalletCST.depositIfPossible()).not.to.be.reverted; //msg.value = 0
 		await newStakingWalletCST.unstake(0);
 		await hre.ethers.provider.send('evm_increaseTime', [100]);
@@ -1240,6 +1253,7 @@ describe('Staking CST tests', function () {
 		await newStakingWalletCST.stake(2);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
+		// todo-0 Pass `roundNum_`.
 		await expect(newStakingWalletCST.depositIfPossible()).not.to.be.reverted; //msg.value = 0
 		await expect(newStakingWalletCST.unstakeClaim(1,1)).not.to.be.reverted;
 	});
@@ -1288,6 +1302,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [600]);
 		await hre.ethers.provider.send('evm_mine');
 
+		// todo-0 Pass `roundNum_`.
 		await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 		await newStakingWalletCST.unstake(0);
 		await newStakingWalletCST.claimManyRewards([0], [0]);
@@ -1297,6 +1312,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [600]);
 		await hre.ethers.provider.send('evm_mine');
 
+		// todo-0 Pass `roundNum_`.
 		await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('3') });
 
 		await newStakingWalletCST.unstake(1);

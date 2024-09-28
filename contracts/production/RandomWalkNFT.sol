@@ -125,9 +125,9 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 		// Token that trigerred the withdrawal
 		uint256 tokenId = nextTokenId - 1;
-		uint256 amount = withdrawalAmount();
 
-		numWithdrawals += 1;
+		uint256 amount = withdrawalAmount();
+		++ numWithdrawals;
 		withdrawalNums[tokenId] = numWithdrawals;
 		withdrawalAmounts[tokenId] = amount;
 
@@ -143,16 +143,15 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 	function mint() public payable override {
 		uint256 newPrice = getMintPrice();
+		
 		require(msg.value >= newPrice, "The value submitted with this transaction is too low.");
 		require(block.timestamp >= saleTime, "The sale is not open yet.");
 
 		lastMinter = _msgSender();
 		lastMintTime = block.timestamp;
-
 		price = newPrice;
 		uint256 tokenId = nextTokenId;
-		nextTokenId += 1;
-
+		++ nextTokenId;
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number), tokenId, lastMinter));
 		seeds[tokenId] = entropy;
 		_safeMint(lastMinter, tokenId);

@@ -5,6 +5,7 @@ pragma solidity 0.8.26;
 /// @title Staking wallet for RandomWalk NFTs
 /// @author Cosmic Game Development Team
 /// @notice A contract implementing this interface allows users to stake their RandomWalk NFTs
+/// @dev Supports staking, unstaking, and random staker selection for RandomWalk NFTs
 interface IStakingWalletRWalk {
 	/// @notice Emitted when a token is staked
 	/// @param actionId The ID of the stake action
@@ -76,33 +77,6 @@ interface IStakingWalletRWalk {
 
 	/// @notice Picks a random staker based on the provided entropy
 	/// @param entropy Random bytes used to select a staker
-	/// @return Address of the randomly selected staker
-	function pickRandomStaker(bytes32 entropy) external view returns (address);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	/// @return Address of the randomly selected staker, or zero if there are no staked NFTs
+	function pickRandomStakerIfPossible(bytes32 entropy) external view returns (address);
 }

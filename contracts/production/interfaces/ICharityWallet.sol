@@ -44,8 +44,7 @@ interface ICharityWallet {
 	/// [Comment-202409273]
 	/// This function is intentionally not restricted to `onlyOwner` to ensure transparency
 	/// and allow regular donations. It can be called by anyone at any time.
-	/// todo-1 Should this be `payable`? Then someone would have an option to send some ETH and then send everything to charity.
-	/// todo-1 Do we need an oveload of this accepting the amount to send?
+	/// todo-1 Do we need an oveload of this accepting an amount to send?
 	/// [/Comment-202409273]
 	function send() external;
 }

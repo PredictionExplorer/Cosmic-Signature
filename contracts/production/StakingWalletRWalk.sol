@@ -8,7 +8,9 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletRWalk } from "./interfaces/IStakingWalletRWalk.sol";
 
-/// @dev Implements staking, unstaking, and random staker selection for RandomWalk NFTs
+/// todo-0 I have refactored `StakingWalletCST` and its interface. Do the same here.
+/// todo-0 Nick is saying that both wallets should, ideally, reuse the functionality.
+/// todo-0 Keep in mind that some functionality cannot be eliminated here.
 contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	// #region Data Types
 
@@ -17,13 +19,17 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	struct StakeAction {
 		uint256 tokenId;
 		address owner;
+		// todo-0 Eliminate?
 		uint256 stakeTime;
+		// todo-0 Eliminate?
 		uint256 unstakeTime;
+		// todo-0 Eliminate?
 		mapping(uint256 => bool) depositClaimed;
 	}
 
 	/// @notice Represents an ETH deposit for reward distribution
 	/// @dev Stores details about each ETH deposit event
+	/// todo-0 Eliminate?
 	struct ETHDeposit {
 		uint256 depositTime;
 		uint256 depositAmount;
@@ -33,30 +39,40 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	// #endregion
 	// #region State
 
-	/// @notice Mapping of stake action ID to StakeAction
-	mapping(uint256 => StakeAction) public stakeActions;
-	/// @notice Total number of stake actions
-	uint256 public numStakeActions;
-	/// @notice Mapping to track if a token has been used for staking
-	mapping(uint256 => bool) public usedTokens;
-
-	/// @notice Array of currently staked token IDs
-	uint256[] public stakedTokens;
-	/// @notice Mapping of token ID to its index in stakedTokens array
-	mapping(uint256 => uint256) public tokenIndices;
-	/// @notice Mapping of token ID to its last action ID
-	mapping(uint256 => int256) public lastActionIds;
-
-	/// @notice Mapping of deposit ID to ETHDeposit
-	mapping(uint256 => ETHDeposit) public ETHDeposits;
-	/// @notice Total number of ETH deposits
-	uint256 public numETHDeposits;
-
-	/// @notice Current number of staked NFTs
-	uint256 public numStakedNFTs;
-
 	/// @notice Reference to the RandomWalkNFT contract
 	RandomWalkNFT public randomWalk;
+
+	mapping(uint256 stakeActionId => StakeAction) public stakeActions;
+
+	/// @notice The total number of stake actions
+	uint256 public numStakeActions;
+
+	/// @notice This contains IDs of NFTs that have ever been used for staking.
+	/// @dev Idea. Item value should be an enum NFTStakingStatusCode: NeverStaked, Staked, Unstaked.
+	mapping(uint256 tokenId => bool tokenWasUsed) public usedTokens;
+
+	/// @notice Currently staked NFT IDs
+	/// todo-0 Make sense to either convert this to `mapping` or eliminate `_numStakedNFTs`?
+	/// todo-0 A `mapping` could be cheaper gas-wise.
+	/// todo-0 Don't eliminate this because this is used by the logic.
+	uint256[] public stakedTokens;
+
+	/// @notice The current number of staked NFTs.
+	uint256 private _numStakedNFTs;
+
+	/// @notice Mapping of NFT ID to its index in the `stakedTokens` array
+	/// The index is 1-based.
+	mapping(uint256 => uint256) public tokenIndices;
+
+	/// @notice Mapping of NFT ID to its last action ID
+	mapping(uint256 => int256) public lastActionIds;
+
+	/// todo-0 Eliminate?
+	mapping(uint256 ETHDepositIndex => ETHDeposit) public ETHDeposits;
+
+	/// @notice The total number of ETH deposits
+	/// todo-0 Eliminate?
+	uint256 public numETHDeposits;
 
 	// #endregion
 
@@ -72,15 +88,15 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 
 		// #region Assertions
 		// #enable_asserts assert(address(randomWalk) == address(rwalk_));
-		// #enable_asserts assert(numStakedNFTs == 0);
+		// #enable_asserts assert(_numStakedNFTs == 0);
 		// #enable_asserts assert(numStakeActions == 0);
 		// #endregion
 	}
 
 	function stake(uint256 _tokenId) public override {
 		require(
-			!usedTokens[_tokenId],
-			CosmicGameErrors.OneTimeStaking("Staking/unstaking token is allowed only once", _tokenId)
+			( ! usedTokens[_tokenId] ),
+			CosmicGameErrors.OneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", _tokenId)
 		);
 		usedTokens[_tokenId] = true;
 		randomWalk.transferFrom(msg.sender, address(this), _tokenId);
@@ -89,8 +105,8 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		stakeActions[numStakeActions].owner = msg.sender;
 		stakeActions[numStakeActions].stakeTime = block.timestamp;
 		numStakeActions += 1;
-		numStakedNFTs += 1;
-		emit StakeActionEvent(numStakeActions - 1, _tokenId, numStakedNFTs, msg.sender);
+		_numStakedNFTs += 1;
+		emit StakeActionEvent(numStakeActions - 1, _tokenId, _numStakedNFTs, msg.sender);
 
 		// #region Assertions
 		// #enable_asserts assert(usedTokens[_tokenId] == true);
@@ -98,20 +114,20 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		// #enable_asserts assert(stakeActions[numStakeActions - 1].owner == msg.sender);
 		// #enable_asserts assert(stakeActions[numStakeActions - 1].stakeTime == block.timestamp);
 		// #enable_asserts assert(isTokenStaked(_tokenId));
-		// #enable_asserts assert(numStakedNFTs > 0);
+		// #enable_asserts assert(_numStakedNFTs > 0);
 		// #enable_asserts assert(lastActionIdByTokenId(_tokenId) == int256(numStakeActions - 1));
 		// #endregion
 	}
 
 	function stakeMany(uint256[] memory ids) external override {
-		// #enable_asserts uint256 initialStakedNFTs = numStakedNFTs;
+		// #enable_asserts uint256 initialStakedNFTs = _numStakedNFTs;
 
 		for (uint256 i = 0; i < ids.length; i++) {
 			stake(ids[i]);
 		}
 
 		// #region Assertions
-		// #enable_asserts assert(numStakedNFTs == initialStakedNFTs + ids.length);
+		// #enable_asserts assert(_numStakedNFTs == initialStakedNFTs + ids.length);
 		// #endregion
 	}
 
@@ -128,27 +144,27 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		_removeToken(tokenId);
 		randomWalk.transferFrom(address(this), msg.sender, tokenId);
 		stakeActions[stakeActionId].unstakeTime = block.timestamp;
-		numStakedNFTs -= 1;
-		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
+		_numStakedNFTs -= 1;
+		emit UnstakeActionEvent(stakeActionId, tokenId, _numStakedNFTs, msg.sender);
 
 		// #region Assertions
 		// #enable_asserts assert(stakeActions[stakeActionId].unstakeTime != 0);
 		// #enable_asserts assert(!isTokenStaked(tokenId));
 		// #enable_asserts assert(lastActionIdByTokenId(tokenId) == -2);
-		// #enable_asserts assert(numStakedNFTs < numStakeActions);
-		// #enable_asserts assert(stakedTokens.length == numStakedNFTs);
+		// #enable_asserts assert(_numStakedNFTs < numStakeActions);
+		// #enable_asserts assert(stakedTokens.length == _numStakedNFTs);
 		// #endregion
 	}
 
 	function unstakeMany(uint256[] memory ids) external override {
-		// #enable_asserts uint256 initialStakedNFTs = numStakedNFTs;
+		// #enable_asserts uint256 initialStakedNFTs = _numStakedNFTs;
 
 		for (uint256 i = 0; i < ids.length; i++) {
 			unstake(ids[i]);
 		}
 
 		// #region Assertions
-		// #enable_asserts assert(numStakedNFTs == initialStakedNFTs - ids.length);
+		// #enable_asserts assert(_numStakedNFTs == initialStakedNFTs - ids.length);
 		// #endregion
 	}
 
@@ -162,10 +178,10 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 
 	function numTokensStaked() public view override returns (uint256) {
 		// #region Assertions
-		// todo-1 Given this equality, why do we need to store `numStakedNFTs` separately? To save gas?
-		// todo-1 At least explain this in a comment near `numStakedNFTs`.
+		// todo-1 Given this equality, why do we need to store `_numStakedNFTs` separately? To save gas?
+		// todo-1 At least explain this in a comment near `_numStakedNFTs`.
 		// todo-1 The same applies to `StakingWalletCST`.
-		// #enable_asserts assert(stakedTokens.length == numStakedNFTs);
+		// #enable_asserts assert(stakedTokens.length == _numStakedNFTs);
 		// #endregion
 
 		return stakedTokens.length;
@@ -187,8 +203,12 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		return stakeActions[uint256(actionId)].owner;
 	}
 
-	function pickRandomStaker(bytes32 entropy) public view override returns (address) {
-		require(stakedTokens.length > 0, CosmicGameErrors.NoTokensStaked("There are no RandomWalk tokens staked."));
+	function pickRandomStakerIfPossible(bytes32 entropy) public view override returns (address) {
+		// require(stakedTokens.length > 0, CosmicGameErrors.NoTokensStaked("There are no RandomWalk NFTs staked."));
+		if (stakedTokens.length == 0) {
+			return address(0);
+		}
+
 		uint256 luckyTokenId = stakedTokens[uint256(entropy) % stakedTokens.length];
 		int256 actionId = lastActionIds[luckyTokenId];
 		return stakeActions[uint256(actionId)].owner;
@@ -201,7 +221,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	function _insertToken(uint256 tokenId, uint256 actionId) internal {
 		require(
 			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
+			CosmicGameErrors.TokenAlreadyInserted("NFT is already in the list.", tokenId, actionId)
 		);
 		stakedTokens.push(tokenId);
 		tokenIndices[tokenId] = stakedTokens.length;
@@ -219,7 +239,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	/// @dev Internal function to manage staked tokens
 	/// @param tokenId ID of the token to remove
 	function _removeToken(uint256 tokenId) internal {
-		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
+		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("NFT is not in the list.", tokenId));
 		uint256 index = tokenIndices[tokenId];
 		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
 		stakedTokens[index - 1] = lastTokenId;
