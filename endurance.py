@@ -1,4 +1,5 @@
 import random
+import json
 
 class BidProcessor:
     def __init__(self):
@@ -254,18 +255,26 @@ def stream(bid_times, game_end_time):
     return bp.get_endurance_champion(), bp.get_chrono_warrior()
 
 def main():
-    TIME_RANGE = 100
-    NUM_BIDS = 100
-    for _ in range(10000):
+    test_cases = []
+    TIME_RANGE = 1000
+    MAX_NUM_BIDS = 100
+    NUM_TEST_CASES = 10000
+    for _ in range(NUM_TEST_CASES):
+        test_case = {}
         bid_times = []
         cur_time = random.randint(1, TIME_RANGE)
-        for i in range(NUM_BIDS):
+        num_bids = random.randint(1, MAX_NUM_BIDS)
+        for i in range(num_bids):
             cur_time += random.randint(1, TIME_RANGE)
-            bid_times.append((cur_time, chr(ord('a') + i)))
+            bid_times.append((cur_time, chr(ord('a') + random.randint(0, 25))))
         game_end_time = cur_time + random.randint(1, TIME_RANGE)
+        test_case["bid_times"] = bid_times
+        test_case["game_end_time"] = game_end_time
 
         two_pass_result = endurance_chrono(bid_times, game_end_time)
         stream_result = stream(bid_times, game_end_time)
+        test_case["result"] = {"endurance_champion": stream_result[0], "chrono_warrior": stream_result[1]}
+        test_cases.append(test_case)
         if two_pass_result != stream_result:
             print(bid_times, game_end_time)
             print(two_pass_result)
@@ -273,5 +282,8 @@ def main():
             break
     else:
         print("All tests passed")
+
+    with open("endurance_test_cases.json", "w") as f:
+        json.dump(test_cases, f, indent=4)
 
 main()
