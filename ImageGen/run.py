@@ -29,9 +29,9 @@ def main():
     possible_velocities = [2]
     possible_min_mass = [100]
     possible_max_mass = [300]
-    possible_special = [None, "gold", "bronze", "silver", "white"]
+    possible_special = [None, "gold", "bronze", "white", "emerald", "sapphire", "quartz", "amethyst", "topaz", "turquoise", "aqua", "fuchsia"]
 
-    seed = '0x6789'
+    seed = '0x775500'
 
     values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass, possible_special]
 

@@ -73,7 +73,7 @@ struct Args {
     no_video: bool,
 
     /// Use a special color for the visualization (gold, bronze, silver, white)
-    #[arg(long, value_parser = ["gold", "bronze", "silver", "white"])]
+    #[arg(long, value_parser = ["gold", "bronze", "white", "emerald", "sapphire", "quartz", "amethyst", "topaz", "turquoise", "aqua", "fuchsia"])]
     special_color: Option<String>,
 }
 
@@ -271,11 +271,18 @@ fn get_single_color_walk(rng: &mut Sha3RandomByteStream, len: usize) -> Vec<Rgb<
 /// Generate a color sequence with the specified special color
 fn get_special_color_walk(color_name: &str, len: usize) -> Vec<Rgb<u8>> {
     let rgb_color = match color_name.to_lowercase().as_str() {
-        "gold" => Rgb([255, 215, 0]),     // Bright gold color
-        "bronze" => Rgb([205, 127, 50]),  // Bright bronze color
-        "silver" => Rgb([192, 192, 192]), // Bright silver color
-        "white" => Rgb([255, 255, 255]),  // Pure white color
-        _ => Rgb([255, 255, 255]),        // Default to white if unknown
+        "gold" => Rgb([255, 215, 0]),    // Bright gold color
+        "bronze" => Rgb([205, 127, 50]), // Bright bronze color
+        "white" => Rgb([255, 255, 255]), // Pure white color
+        "emerald" => Rgb([144, 255, 182]),
+        "sapphire" => Rgb([70, 130, 255]),
+        "quartz" => Rgb([255, 205, 220]),
+        "amethyst" => Rgb([205, 133, 255]),
+        "topaz" => Rgb([255, 205, 133]),
+        "turquoise" => Rgb([133, 255, 205]),
+        "aqua" => Rgb([0, 255, 255]),
+        "fuchsia" => Rgb([255, 0, 128]),
+        _ => Rgb([255, 255, 255]), // Default to white if unknown
     };
 
     vec![rgb_color; len]
