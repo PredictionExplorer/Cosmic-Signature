@@ -136,5 +136,6 @@ contract CosmicGame is
 	function upgradeTo(address _newImplementation) public override onlyOwner {
 		 _authorizeUpgrade(_newImplementation);
 		 StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
+		 emit ERC1967Utils.Upgraded(_newImplementation);
 	}
 }
