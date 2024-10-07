@@ -85,8 +85,9 @@ interface IStakingWalletCST {
 	/// Otherwise a malicious actor could attempt to DoS us.
 	/// The deposited amount isn't supposed to be zero, but a zero depsit would not break things,
 	/// although the behavior would not necessarily be perfect.
-	/// The implementation is not designed to handle the case when there are no staked NFTs,
-	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoTokensStaked` error.
+	/// This function is not designed to handle the case when there are no staked NFTs, which is why it's named "if possible",
+	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoTokensStaked` error,
+	/// which the depositing contract must be prepared to handle (it is, indeed, prepared).
 	function depositIfPossible(uint256 roundNum_) external payable;
 
 	/// @notice If eventually all stakers unstake their NFTs and receive their reward payments,

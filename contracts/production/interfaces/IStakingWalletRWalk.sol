@@ -78,5 +78,6 @@ interface IStakingWalletRWalk {
 	/// @notice Picks a random staker based on the provided entropy
 	/// @param entropy Random bytes used to select a staker
 	/// @return Address of the randomly selected staker, or zero if there are no staked NFTs
+	/// @dev this function is named "if possible" because it does nothing when there are no staked NFTs.
 	function pickRandomStakerIfPossible(bytes32 entropy) external view returns (address);
 }
