@@ -22,7 +22,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	/// @notice Entropy used for generating random seeds
 	bytes32 public entropy;
 
-	/// @notice Total number of tokens minted
+	/// @notice The total number of tokens minted
 	uint256 public numTokens = 0;
 
 	/// @notice The base URI for token metadata
@@ -73,17 +73,16 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 		require(owner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		require(
 			_msgSender() == cosmicGameProxyContract,
-			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract can mint.", msg.sender)
+			// todo-1 We no longer have a contract named CosmicGameProxy, right? Rephrase?
+			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract is permitted to mint.", msg.sender)
 		);
 
 		uint256 tokenId = numTokens;
-		numTokens += 1;
-
+		++ numTokens;
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), tokenId, owner));
 		seeds[tokenId] = entropy;
 		// todo-1 We use safeMint to mint a Random Walk NFT? Why not here? At least explain in a comment.
 		_mint(owner, tokenId);
-
 		emit MintEvent(tokenId, owner, roundNum, entropy);
 		return tokenId;
 	}

@@ -81,9 +81,9 @@ contract BrokenStaker {
 	// }
 
 	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicGame.sol
-	function depositIfPossible() external payable {
+	function depositIfPossible(uint256 roundNum_) external payable {
 		require(!blockDeposits, "I am not accepting deposits");
-		stakingWalletCST.depositIfPossible();
+		stakingWalletCST.depositIfPossible(roundNum_);
 	}
 
 	function doStake(uint256 tokenId) external {
@@ -94,24 +94,29 @@ contract BrokenStaker {
 		stakingWalletCST.unstake(actionId);
 	}
 
-	function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
-		uint256[] memory actions = new uint256[](1);
-		uint256[] memory deposits = new uint256[](1);
-		actions[0] = stakeActionId;
-		deposits[0] = depositId;
-		stakingWalletCST.claimManyRewards(actions, deposits);
-	}
+	// todo-0 I have commented this out because the `StakingWalletCST.claimManyRewards` function no longer exists.
+	// function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
+	// 	uint256[] memory actions = new uint256[](1);
+	// 	uint256[] memory deposits = new uint256[](1);
+	// 	actions[0] = stakeActionId;
+	// 	deposits[0] = depositId;
+	// 	stakingWalletCST.claimManyRewards(actions, deposits);
+	// }
 
 	function startBlockingDeposits() external {
 		blockDeposits = true;
 	}
 
-	function setStakingWallet(IStakingWalletCST sw_) external {
+	function stopBlockingDeposits() external {
+		blockDeposits = false;
+	}
+
+	function setStakingWalletCST(IStakingWalletCST sw_) external {
 		stakingWalletCST = StakingWalletCST(address(sw_));
 	}
 
-	function doSetApprovalForAll(address nft_) external {
-		IERC721(nft_).setApprovalForAll(address(stakingWalletCST), true);
+	function doSetApprovalForAll(IERC721 nft_) external {
+		nft_.setApprovalForAll(address(stakingWalletCST), true);
 	}
 }
 
@@ -179,7 +184,8 @@ contract SpecialCosmicGame is CosmicGame {
 	// 	}
 	// }
 	function depositStakingCSTIfPossible() external payable {
-		stakingWalletCST.depositIfPossible{ value: msg.value }();
+		// todo-0 I added the passing of `roundNum`. Is it correct?
+		stakingWalletCST.depositIfPossible{ value: msg.value }(roundNum);
 	}
 	function mintCST(address to, uint256 roundNum) external {
 		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
@@ -196,16 +202,14 @@ contract SpecialCosmicGame is CosmicGame {
 }
 
 contract TestStakingWalletCST is StakingWalletCST {
-	// todo-1 Is `nft_` the same as `game_.nft()`?
-	// todo-1 At least explain in a comment.
-	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) StakingWalletCST(nft_, game_ /* , charity_ */) {}
+	constructor(CosmicSignature nft_, address game_) StakingWalletCST(nft_, game_) {}
 
-	function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
-		_insertToken(_tokenId,_actionId);
-	}
-	function doRemoveToken(uint256 _tokenId) external {
-		_removeToken(_tokenId);
-	}
+	// function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
+	// 	_insertToken(_tokenId,_actionId);
+	// }
+	// function doRemoveToken(uint256 _tokenId) external {
+	// 	_removeToken(_tokenId);
+	// }
 }
 
 contract TestStakingWalletRWalk is StakingWalletRWalk {

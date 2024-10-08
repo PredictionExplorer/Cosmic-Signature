@@ -90,27 +90,27 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		_distributeRafflePrizes(raffleAmount_);
 
 		// Staking
-		try stakingWalletCST.depositIfPossible{ value: stakingAmount_ }() {
+		try stakingWalletCST.depositIfPossible{ value: stakingAmount_ }(roundNum) {
 		} catch (bytes memory errorDetails) {
-			bool unexpectedErrorOccurred;
 			// [ToDo-202409226-0]
-			// Nick, you might want to develop tests for all these cases:
-			//    errorDetails.length == 4 && the InvalidOperationInCurrentState error occurred
-			//    errorDetails.length == 4 && some other error occurred
-			//    errorDetails.length != 4
-			// Then remove this ToDo and all mentionings of it.
+			// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred` to `true` or `false`.
+			// Then remove this ToDo and all mentionings of it elsewhere in the codebase.
 			// [/ToDo-202409226-0]
-			if (errorDetails.length == 4) {
+			bool unexpectedErrorOccurred;
+			
+			// [Comment-202410149/]
+			if (errorDetails.length == 100) {
+
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
-				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.InvalidOperationInCurrentState.selector;
+				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoTokensStaked.selector;
 			} else {
 				unexpectedErrorOccurred = true;
 			}
 			if (unexpectedErrorOccurred) {
 				revert
 					CosmicGameErrors.FundTransferFailed(
-						"Transfer to staking wallet failed.",
+						"Transfer to StakingWalletCST failed.",
 						stakingAmount_,
 						address(stakingWalletCST)
 					);
@@ -133,6 +133,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// which would inflict damage if we ignore that error.
 		// todo-1 Can/should we specify how much gas an untrusted external call is allowed to use?
 		// todo-1 Can/should we forward all gas to trusted external calls?
+		// todo-1 But a malitios winner also can exploit stack overflow. Can we find out what error happened?
 		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, /*winner*/ msg.sender));
 	}
@@ -200,13 +201,18 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, tokenId, i, false, false);
 		}
 
-		// Distribute NFTs to random RandomWalkNFT stakers
-		uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numTokensStaked();
-		if (numStakedTokensRWalk > 0) {
+		// Distribute CST NFTs to random RandomWalk NFT stakers
+		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numTokensStaked();
+		// if (numStakedTokensRWalk > 0)
+		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateEntropy();
-				// todo-0 Make `stakingWalletRWalk` strongly typed.
-				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStaker(raffleEntropy);
+				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStakerIfPossible(raffleEntropy);
+
+				if (rwalkWinner == address(0)) {
+					break;
+				}
+
 				uint256 tokenId = nft.mint(rwalkWinner, roundNum);
 				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
 			}
@@ -215,6 +221,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 	/// @notice Update the entropy used for random selection
 	/// @dev This function updates the entropy using the current block information
+	/// Issue. Ideally, this should return the updated value so that the caller didn't have to spend gas to read it from the storage.
 	function _updateEntropy() internal {
 		// #enable_smtchecker /*
 		unchecked

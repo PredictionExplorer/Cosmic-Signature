@@ -276,7 +276,9 @@ describe("Staking RandomWalk tests", function () {
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 
-		await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk,"NoTokensStaked");
+		// await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk,"NoTokensStaked");
+		const luckyAddr = await newStakingWalletRWalk.pickRandomStakerIfPossible(hre.ethers.hashMessage('0xffff'));
+		expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
 
 		let numSigners = 20;
 		let numLoops = 50;
@@ -303,7 +305,8 @@ describe("Staking RandomWalk tests", function () {
 			let numSamples = 300;
 			for (let i=0; i<numSamples; i++) {
 				let r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
-				let luckyAddr = await newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0x'+r));
+				let luckyAddr = await newStakingWalletRWalk.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
+				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {
 					numToks = 0;

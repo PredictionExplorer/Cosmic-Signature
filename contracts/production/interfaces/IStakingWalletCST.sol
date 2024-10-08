@@ -1,150 +1,112 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-/// @title A staking wallet for Cosmic Signature Tokens
+/// @title Staking wallet for Cosmic Signature Tokens.
 /// @author Cosmic Game Development Team
-/// @notice A contract implementing this interface allows users to stake their Cosmic Signature Tokens (CST) and earn rewards
+/// @notice A contract implementing this interface allows users to stake their Cosmic Signature Tokens (CST) and earn rewards.
+/// @dev Supports CST NFT staking and unstaking, as well as staker reward distribution.
+/// todo-0 Isn't our fungible token named Cosmic Signature Token? But here we are talking about Cosmic Signature NFTs, right?
+/// todo-0 Rename to `IStakingWalletCSNFT` or `IStakingWalletCSTNFT`?
+/// todo-0 Also rename the contract implementing this interface.
+/// todo-0 Fix the above comments too.
+///
+/// If I was to implement incremental reward payouts, I would mostly keep the current functions and events.
+/// In addition, I would add a `bool` flag to `UnstakeActionEvent` for whether all rewards have been paid to the staker.
+/// In case it equals `false`, the staker would have an option to call a designated incremental reward payout function
+/// that would process another 20K or so (configurable) deposits. This logic would be in part similar to the old `claimManyRewards`.
 interface IStakingWalletCST {
-	/// @notice Emitted when a token is staked
-	/// @param actionId The ID of the stake action
-	/// @param tokenId The ID of the staked token
-	/// @param totalNFTs Total number of staked NFTs after this action
-	/// @param staker Address of the staker
+	/// @notice Emitted when an NFT is staked.
+	/// @param stakeActionId Stake action ID.
+	/// @param tokenId Staked NFT ID.
+	/// @param stakerAddress Staker (NFT owner) address.
+	/// @param numStakedNFTs Staked NFT count after this action.
 	event StakeActionEvent(
-		uint256 indexed actionId,
+		uint256 indexed stakeActionId,
 		uint256 indexed tokenId,
-		uint256 totalNFTs,
-		address indexed staker
+		address indexed stakerAddress,
+		uint256 numStakedNFTs
 	);
 
-	/// @notice Emitted when a token is unstaked
-	/// @param actionId The ID of the unstake action
-	/// @param tokenId The ID of the unstaked token
-	/// @param totalNFTs Total number of staked NFTs after this action
-	/// @param staker Address of the staker
+	/// @notice Emitted when an NFT is unstaked.
+	/// @param stakeActionId Stake action ID.
+	/// @param tokenId Staked NFT ID.
+	/// @param stakerAddress Staker (NFT owner) address.
+	/// @param numStakedNFTs Staked NFT count after this action.
+	/// @param rewardAmount Reward amount paid to the staker.
 	event UnstakeActionEvent(
-		uint256 indexed actionId,
+		uint256 indexed stakeActionId,
 		uint256 indexed tokenId,
-		uint256 totalNFTs,
-		address indexed staker
-	);
-
-	/// @notice Emitted when a reward is claimed
-	/// @param actionId The ID of the stake action
-	/// @param depositId The ID of the ETH deposit
-	/// @param reward Amount of reward claimed
-	/// @param staker Address of the staker claiming the reward
-	event ClaimRewardEvent(uint256 indexed actionId, uint256 indexed depositId, uint256 reward, address indexed staker);
-
-	/// @notice Emitted when an ETH deposit is made
-	/// @param depositTime Timestamp of the deposit
-	/// @param depositNum Deposit number
-	/// @param numStakedNFTs Number of staked NFTs at the time of deposit
-	/// @param amount Amount of ETH deposited
-	/// // param modulo Accumulated modulo after this deposit
-	event EthDepositEvent(
-		uint256 indexed depositTime,
-		uint256 depositNum,
+		address indexed stakerAddress,
 		uint256 numStakedNFTs,
-		uint256 amount
-		// uint256 modulo
+		uint256 rewardAmount
 	);
 
-	// /// @notice Emitted when a deposit is sent to charity
-	// /// @param amount Amount sent to charity
-	// /// @param charityAddress Address of the charity
-	// /// @dev I replaced this with `CosmicGameEvents.FundsTransferredToCharityEvent`.
-	// /// todo-1 Remove this garbage.
-	// event CharityDepositEvent(uint256 amount, address charityAddress);
+	/// @notice Emitted when an ETH deposit is received.
+	/// @param roundNum Bidding round number.
+	/// @param depositIndex `ETHDeposit` instance index in `ETHDeposits` (1-based).
+	/// @param depositId `ETHDeposit` instance ID.
+	/// @param depositAmount The deposited ETH amount.
+	/// @param numStakedNFTs The current staked NFT count.
+	event EthDepositEvent(
+		uint256 indexed roundNum,
+		uint256 depositIndex,
+		uint256 depositId,
+		uint256 depositAmount,
+		uint256 numStakedNFTs
+	);
 
-	// /// @notice Emitted when the charity address is updated
-	// /// @param newCharityAddress New address of the charity
-	// /// @dev Comment-202409208 relates and/or applies.
-	// event CharityUpdatedEvent(address indexed newCharityAddress);
+	/// @notice Stakes an NFT.
+	/// @param tokenId_ NFT to stake ID.
+	function stake(uint256 tokenId_) external;
 
-	// /// @notice Emitted when accumulated modulo is sent to charity
-	// /// @param amount Amount of modulo sent to charity
-	// /// @dev Comment-202409208 relates and/or applies.
-	// event ModuloSentToCharityEvent(uint256 amount);
+	/// @notice Stakes multiple NFTs.
+	/// @param tokenIds_ NFT to stake IDs.
+	function stakeMany(uint256[] memory tokenIds_) external;
 
-	/// @notice Stakes a single token
-	/// @param _tokenId ID of the token to stake
-	function stake(uint256 _tokenId) external;
+	/// @notice Unstakes an NFT and pays its reward to the staker.
+	/// @param stakeActionId_ Stake action ID.
+	/// @dev Comment-202410142 applies.
+	function unstake(uint256 stakeActionId_) external;
 
-	/// @notice Stakes multiple tokens
-	/// @param ids Array of token IDs to stake
-	function stakeMany(uint256[] memory ids) external;
+	/// @notice Unstakes multiple NFTs and pays their rewards to the staker.
+	/// @param stakeActionIds_ Stake action IDs.
+	/// @dev
+	/// [Comment-202410142]
+	/// `unstakeMany` gas fee can potentially exceed the gas max limit per transaction imposed by Arbitrum.
+	/// In that case, the frontend must prohibit calling it.
+	/// At the same time, it appears to be safe to assume that `unstake` gas fee cannot exceed the limit.
+	/// [/Comment-202410142]
+	function unstakeMany(uint256[] memory stakeActionIds_) external;
 
-  	/// @notice Unstakes a single token
-	/// @param stakeActionId ID of the stake action to unstake
-	function unstake(uint256 stakeActionId) external;
-
-	/// @notice Unstakes multiple tokens
-	/// @param ids Array of stake action IDs to unstake
-	function unstakeMany(uint256[] memory ids) external;
-
-	/// @notice Claims rewards for multiple stake actions and deposits
-	/// @param actions Array of stake action IDs
-	/// @param deposits Array of deposit IDs
-	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external;
-
-	/// @notice Unstakes a token and claims its reward in a single transaction
-	/// @param stakeActionId ID of the stake action
-	/// @param ETHDepositId ID of the ETH deposit for reward calculation
-	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) external;
-
-	/// @notice Unstakes multiple tokens and claims their rewards in a single transaction
-	/// @param unstake_actions Array of stake action IDs to unstake
-	/// @param claim_actions Array of stake action IDs for claiming rewards
-	/// @param claim_deposits Array of deposit IDs for claiming rewards
-	function unstakeClaimMany(
-		uint256[] memory unstake_actions,
-		uint256[] memory claim_actions,
-		uint256[] memory claim_deposits
-	) external;
-
-	/// @notice Checks if a token has been used for staking
-	/// @param _tokenId ID of the token to check
-	/// @return True if the token has been used, false otherwise
-	function wasTokenUsed(uint256 _tokenId) external view returns (bool);
-
-	/// @notice Checks if a token is currently staked
-	/// @param tokenId ID of the token to check
-	/// @return True if the token is staked, false otherwise
-	function isTokenStaked(uint256 tokenId) external view returns (bool);
-
-	/// @notice Returns the number of currently staked tokens
-	/// @return Number of staked tokens
+	/// @return The current staked NFT count.
 	function numTokensStaked() external view returns (uint256);
 
-	/// @notice Gets the last action ID for a given token
-	/// @param tokenId ID of the token to check
-	/// @return Last action ID for the token, -2 if never staked, -1 if unstaked
-	function lastActionIdByTokenId(uint256 tokenId) external view returns (int256);
+	/// @notice Checks if an NFT has been used for staking.
+	/// @param tokenId_ NFT ID.
+	/// @return `true` if the given NFT has been used, `false` otherwise.
+	function wasTokenUsed(uint256 tokenId_) external view returns (bool);
 
-	/// @notice Gets the staker's address for a given token
-	/// @param tokenId ID of the token to check
-	/// @return Address of the staker, address(0) if not staked
-	function stakerByTokenId(uint256 tokenId) external view returns (address);
+	/// @notice Receives an ETH deposit to be distributed to stakers.
+	/// @param roundNum_ Bidding round number.
+	/// @dev Only callable by the `CosmicGame` contract.
+	/// Otherwise a malicious actor could attempt to DoS us.
+	/// The deposited amount isn't supposed to be zero, but a zero depsit would not break things,
+	/// although the behavior would not necessarily be perfect.
+	/// This function is not designed to handle the case when there are no staked NFTs, which is why it's named "if possible",
+	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoTokensStaked` error,
+	/// which the depositing contract must be prepared to handle (it is, indeed, prepared).
+	function depositIfPossible(uint256 roundNum_) external payable;
 
-	/// @notice Deposits ETH for reward distribution
-	/// @dev Only callable by the CosmicGame contract
-	/// The implementation is not designed to handle the case when there are no staked NFTs,
-	/// so it reverts the transaction with the `CosmicGameErrors.InvalidOperationInCurrentState` error.
-	function depositIfPossible() external payable;
-
-	// /// @notice Sets a new charity address
-	// /// @param newCharityAddress Address of the new charity
-	// /// @dev Comment-202409208 relates and/or applies.
-	// function setCharity(address newCharityAddress) external;
-
-	// /// @notice Sends accumulated modulo to charity
-	// /// @dev Comment-202409208 relates and/or applies.
-	// function moduloToCharity() external;
-
-	/// @dev If this was to make a transfer to an internally stored charity address,
-	/// it would probably be unnecessary for this to be `onlyOwner`.
-	/// Comment-202409273 relates.
-	/// Comment-202409208 relates and/or applies.
-	function transferRemainingBalanceToCharity(address charityAddress_) external;
+	/// @notice If eventually all stakers unstake their NFTs and receive their reward payments,
+	/// the `owner()` of this contract has an option to call this function
+	/// to reset contract state and/or to transfer a small remaining balance to charity
+	/// (or to the owner themselves -- to recoup the transaction fees).
+	/// @dev Why the balance can remain a nonzero after all payouts have been made?
+	/// Our logic is simple, but it can lose some weis.
+	/// The loss happens when we discard a division remainder near Comment-202410161.
+	/// Any better logic would require orders of magnitude more weis in transaction fees.
+	/// As mentioned above, only `owner()` is permitted to call this function. But if it was making a transfer
+	/// to an internally stored charity address, it would probably make sense to let anybody call it,
+	/// which is the case for functions near Comment-202409273.
+	function tryPerformMaintenance(bool resetState_, address charityAddress_) external returns (bool);
 }

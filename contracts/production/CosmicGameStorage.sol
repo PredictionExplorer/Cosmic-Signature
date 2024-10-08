@@ -19,6 +19,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	CosmicToken public token;
 	address public raffleWallet;
 	StakingWalletCST public stakingWalletCST;
+	// todo-0 Make this strongly typed.
 	address public stakingWalletRWalk;
 	address public marketingWallet;
 	address public charity;

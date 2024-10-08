@@ -1,90 +1,77 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
 
-/// @dev Implements staking, unstaking, and reward distribution mechanisms for CST NFTs
 contract StakingWalletCST is Ownable, IStakingWalletCST {
 	// #region Data Types
 
-	/// @notice Represents a staking action for a token
-	/// @dev Stores details about each staking event
+	/// @notice Stores details about an NFT staking action.
 	struct StakeAction {
 		uint256 tokenId;
-		address nftOwner;
-		uint256 stakeTime;
-		uint256 unstakeTime;
-		mapping(uint256 => bool) depositClaimed;
+		address nftOwnerAddress;
+
+		// A past version used to have a variable here that specified rewards from what deposits have not been claimed yet.
+		// If you need to resurrect that feature revisit the logic near Comment-202410171.
 	}
 
-	/// @notice Represents an ETH deposit for reward distribution
-	/// @dev Stores details about each ETH deposit event
+	/// @notice Stores details about an ETH deposit.
+	/// Multiple deposits can be aggregated in a single `ETHDeposit` instance.
+	/// To minimize transaction fees, this fits in a single storage slot.
 	struct ETHDeposit {
-		uint256 depositTime;
-		uint256 depositAmount;
-		uint256 numStaked;
+		/// @dev
+		/// [Comment-202410117]
+		/// This is populated from `StakingWalletCST._actionCounter`.
+		/// [/Comment-202410117]
+		/// This is populated when creating an `ETHDeposit` instance.
+		/// This is not updated when adding another deposit to the last `ETHDeposit` instance.
+		uint64 depositId;
+
+		uint192 rewardAmountPerStakedNFT;
 	}
 
 	// #endregion
 	// #region State
 
-	/// @notice Reference to the CosmicSignature NFT contract
+	/// @notice The `CosmicSignature` NFT contract address.
 	CosmicSignature public nft;
 
-	/// @notice Reference to the CosmicGame contract
+	/// @notice The `CosmicGame` contract address.
 	address public game;
 
-	/// @notice Mapping of stake action ID to StakeAction
-	mapping(uint256 => StakeAction) public stakeActions;
+	/// @notice Info about currently staked NFTs.
+	/// @dev Comment-202410117 applies to `stakeActionId`.
+	mapping(uint256 stakeActionId => StakeAction) public stakeActions;
 
-	/// @notice Total number of stake actions
-	uint256 public numStakeActions;
+	/// @notice The current number of staked NFTs.
+	uint256 private _numStakedNFTs;
 
-	/// @notice Mapping to track if a token has been used for staking
-	mapping(uint256 => bool) public usedTokens;
+	/// @notice This indicates whether a staking action has occurred after the last ETH deposit.
+	/// 1 means false; 2 means true.
+	/// @dev If someone stakes an NFT we will need to create a new `ETHDeposits` item on the next deposit.
+	/// Although, if they also unstake it before the next deposit it would be unnecessary to create a new item,
+	/// but we will anyway create one, which is probably not too bad.
+	/// [Comment-202410168]
+	/// The initial value doesn't matter because before we get a chance to evaluate this we will assign to this.
+	/// [/Comment-202410168]
+	/// To minimize gas fees, we never assign zero to this, and therefore this is not a `bool`.
+	uint256 private _NFTWasStakedAfterPrevETHDeposit = 2;
 
-	/// @notice Array of currently staked token IDs
-	uint256[] public stakedTokens;
+	/// @notice This contains IDs of NFTs that have ever been used for staking.
+	/// @dev Idea. Item value should be an enum NFTStakingStatusCode: NeverStaked, Staked, Unstaked.
+	mapping(uint256 tokenId => bool tokenWasUsed) private _usedTokens;
 
-	/// @notice Current number of staked NFTs
-	uint256 public numStakedNFTs;
+	/// @notice `ETHDepositIndex` is 1-based.
+	mapping(uint256 ETHDepositIndex => ETHDeposit) public ETHDeposits;
 
-	/// @notice Mapping of token ID to its index in stakedTokens array
-	mapping(uint256 => uint256) public tokenIndices;
-
-	/// @notice Mapping of token ID to its last action ID
-	mapping(uint256 => int256) public lastActionIds;
-
-	/// @notice Mapping of deposit ID to ETHDeposit
-	mapping(uint256 => ETHDeposit) public ETHDeposits;
-
-	/// @notice Total number of ETH deposits
+	/// @notice `ETHDeposits` item count.
 	uint256 public numETHDeposits;
 
-	// /// @notice Accumulated modulo from ETH deposits
-	// /// @dev
-	// /// [Comment-202409208]
-	// /// Issue. This is questionable.
-	// /// Relevant logic counts and tries to handle correctly orders of magnitude less money than it costs gas-wise.
-	// /// So I have eliminated `modulo`.
-	// /// I also eliminated `charity` because it would rarely, if ever, be used, but would cost us some gas to update.
-	// /// Consequently, I eliminated `moduloToCharity`, `setCharity`, as well as related events and errors.
-	// /// Instead, I added the `transferRemainingBalanceToCharity` function, as a minimalistic replacement for all of the above.
-	// /// Comment-202409213 relates.
-	// /// [/Comment-202409208]
-	// uint256 public modulo;
-
-	// /// @notice Address of the charity to receive funds when no NFTs are staked
-	// /// @dev Comment-202409208 relates and/or applies.
-	// address public charity;
-
-	/// @dev Counter for actions to replace block.timestamp
+	/// @dev This is used to generate monotonic unique IDs.
 	uint256 private _actionCounter;
 
 	// /// @dev Precision factor for calculations
@@ -93,431 +80,305 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	// #endregion
 
-	/// @notice Initializes the StakingWalletCST contract
-	/// @param nft_ Reference to the CosmicSignature NFT contract
-	/// @param game_ Address of the CosmicGame contract
-	/// // param charity_ Address of the charity
-	/// @dev ToDo-202408114-1 applies
-	constructor(CosmicSignature nft_, address game_ /* , address charity_ */) Ownable(msg.sender) {
+	/// @notice Initializes a newly deployed `StakingWalletCST` contract.
+	/// @param nft_ The `CosmicSignature` NFT contract address.
+	/// @param game_ The `CosmicGame` contract address.
+	/// @dev ToDo-202408114-1 applies.
+	/// todo-1 Is `nft_` the same as `game_.nft()`?
+	/// todo-1 At least explain in a comment.
+	constructor(CosmicSignature nft_, address game_) Ownable(msg.sender) {
 		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
 		require(game_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
-		// require(charity_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for charity."));
 		nft = nft_;
 		game = game_;
-		// charity = charity_;
 
 		// #region Assertions
 		// #enable_asserts assert(address(nft) == address(nft_));
 		// #enable_asserts assert(game == game_);
-		// #enable_asserts assert(numStakeActions == 0);
-		// #enable_asserts assert(numStakedNFTs == 0);
+		// #enable_asserts assert(_numStakedNFTs == 0);
+		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 2);
 		// #enable_asserts assert(numETHDeposits == 0);
-		// // #enable_asserts assert(modulo == 0);
-		// // #enable_asserts assert(charity == charity_);
 		// #enable_asserts assert(_actionCounter == 0);
 		// #endregion
 	}
 
-	function stake(uint256 _tokenId) public override {
+	function stake(uint256 tokenId_) public override {
 		require(
-			!usedTokens[_tokenId],
-			CosmicGameErrors.OneTimeStaking("Staking/unstaking token is allowed only once", _tokenId)
+			( ! _usedTokens[tokenId_] ),
+			CosmicGameErrors.OneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", tokenId_)
 		);
 
-		// #enable_asserts uint256 initialNumStakeActions = numStakeActions;
-		// #enable_asserts uint256 initialNumStakedNFTs = numStakedNFTs;
-
-		usedTokens[_tokenId] = true;
-		_insertToken(_tokenId, numStakeActions);
-		stakeActions[numStakeActions].tokenId = _tokenId;
-		stakeActions[numStakeActions].nftOwner = msg.sender;
-		stakeActions[numStakeActions].stakeTime = _actionCounter;
-		++ numStakeActions;
-		++ numStakedNFTs;
-
-		nft.transferFrom(msg.sender, address(this), _tokenId);
-		++ _actionCounter;
-		emit StakeActionEvent(numStakeActions - 1, _tokenId, numStakedNFTs, msg.sender);
-
 		// #region Assertions
-		// #enable_asserts assert(usedTokens[_tokenId]);
-		// #enable_asserts assert(numStakeActions == initialNumStakeActions + 1);
-		// #enable_asserts assert(numStakedNFTs == initialNumStakedNFTs + 1);
-		// #enable_asserts assert(stakeActions[numStakeActions - 1].tokenId == _tokenId);
-		// #enable_asserts assert(stakeActions[numStakeActions - 1].nftOwner == msg.sender);
-		// #enable_asserts assert(isTokenStaked(_tokenId));
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #endregion
+
+		StakeAction memory newStakeAction_;
+		newStakeAction_.tokenId = tokenId_;
+		newStakeAction_.nftOwnerAddress = msg.sender;
+		uint256 newStakeActionId_ = ( ++ _actionCounter );
+		stakeActions[newStakeActionId_] = newStakeAction_;
+		uint256 newNumStakedNFTs_ = _numStakedNFTs + 1;
+		_numStakedNFTs = newNumStakedNFTs_;
+
+		// Comment-202410168 relates.
+		_NFTWasStakedAfterPrevETHDeposit = 2;
+
+		_usedTokens[tokenId_] = true;
+		nft.transferFrom(msg.sender, address(this), tokenId_);
+		emit StakeActionEvent(newStakeActionId_, tokenId_, msg.sender, newNumStakedNFTs_);
+		
+		// #region Assertions
+		// #enable_asserts assert(nft.ownerOf(tokenId_) == address(this));
+		// #enable_asserts assert(stakeActions[newStakeActionId_].tokenId == tokenId_);
+		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == msg.sender);
+		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ + 1);
+		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 2);
+
+		// // todo-1 For some reason, this fails to compile without `this.`. To be revisited.
+		// #enable_asserts assert(this.wasTokenUsed(tokenId_));
+
+		// #enable_asserts assert(_actionCounter > 0);
 		// #endregion
 	}
 
-	function stakeMany(uint256[] memory ids) external override {
-		// #enable_asserts uint256 initialNumStakedNFTs = numStakedNFTs;
+	function stakeMany(uint256[] memory tokenIds_) external override {
+		// #region Assertions
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #endregion
 
-		for (uint256 i = 0; i < ids.length; i++) {
-			stake(ids[i]);
+		for ( uint256 NFTIdIndex_ = 0; NFTIdIndex_ < tokenIds_.length; ++ NFTIdIndex_ ) {
+			stake(tokenIds_[NFTIdIndex_]);
 		}
 
 		// #region Assertions
-		// #enable_asserts assert(numStakedNFTs == initialNumStakedNFTs + ids.length);
+		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ + tokenIds_.length);
 		// #endregion
 	}
 
-	function unstake(uint256 stakeActionId) public override {
-		require(
-			stakeActions[stakeActionId].unstakeTime == 0,
-			CosmicGameErrors.TokenAlreadyUnstaked("Token has already been unstaked.", stakeActionId)
-		);
-		require(
-			stakeActions[stakeActionId].nftOwner == msg.sender,
-			CosmicGameErrors.AccessError("Only the owner can unstake.", stakeActionId, msg.sender)
-		);
+	function unstake(uint256 stakeActionId_) external override {
+		uint256 rewardAmount_ = _unstake(stakeActionId_);
+		_payReward(rewardAmount_);
+	}
 
-		// #enable_asserts uint256 initialNumStakedNFTs = numStakedNFTs;
+	function unstakeMany(uint256[] memory stakeActionIds_) external override {
+		// #region Assertions
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #endregion
 
-		uint256 tokenId = stakeActions[stakeActionId].tokenId;
-		_removeToken(tokenId);
-		stakeActions[stakeActionId].unstakeTime = _actionCounter;
-		-- numStakedNFTs;
-
-		nft.transferFrom(address(this), msg.sender, tokenId);
-		++ _actionCounter;
-		emit UnstakeActionEvent(stakeActionId, tokenId, numStakedNFTs, msg.sender);
+		uint256 rewardAmount_ = 0;
+		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
+			rewardAmount_ += _unstake(stakeActionIds_[stakeActionIdIndex_]);
+		}
+		_payReward(rewardAmount_);
 
 		// #region Assertions
-		// #enable_asserts assert(stakeActions[stakeActionId].unstakeTime > 0);
-		// #enable_asserts assert(!isTokenStaked(tokenId));
-		// #enable_asserts assert(numStakedNFTs == initialNumStakedNFTs - 1);
+		// Comment-202410159 applies to Comment-202410158.
+		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ - stakeActionIds_.length);
 		// #endregion
 	}
 
-	function unstakeMany(uint256[] memory ids) external override {
-		// #enable_asserts uint256 initialNumStakedNFTs = numStakedNFTs;
-
-		for (uint256 i = 0; i < ids.length; i++) {
-			unstake(ids[i]);
-		}
-
-		// #region Assertions
-		// #enable_asserts assert(numStakedNFTs == initialNumStakedNFTs - ids.length);
-		// #endregion
+	function numTokensStaked() external view override returns (uint256) {
+		return _numStakedNFTs;
 	}
 
-	function claimManyRewards(uint256[] memory actions, uint256[] memory deposits) external override {
-		require(
-			actions.length == deposits.length,
-			CosmicGameErrors.IncorrectArrayArguments(
-				"Array arguments must be of the same length.",
-				actions.length,
-				deposits.length
-			)
-		);
-		// #enable_asserts uint256 initialBalance = address(this).balance;
-		uint256 totalReward = 0;
-		for (int256 i = int256(actions.length) - 1; i >= 0; i--) {
-			totalReward += _calculateReward(actions[uint256(i)], deposits[uint256(i)]);
-		}
-		if (totalReward > 0) {
-			(bool success, ) = msg.sender.call{ value: totalReward }("");
-			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", totalReward, msg.sender));
-		}
-
-		// #region Assertions
-		// #enable_asserts assert((initialBalance - totalReward) == address(this).balance);
-		// #endregion
-	}
-
-	function unstakeClaim(uint256 stakeActionId, uint256 ETHDepositId) public override {
-		// #enable_asserts uint256 initialBalance = address(this).balance;
-		unstake(stakeActionId);
-		uint256 reward = _calculateReward(stakeActionId, ETHDepositId);
-		if (reward > 0) {
-			(bool success, ) = msg.sender.call{ value: reward }("");
-			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", reward, msg.sender));
-		}
-
-		// #region Assertions
-		// #enable_asserts assert(address(this).balance == initialBalance - reward);
-		// #enable_asserts assert(!isTokenStaked(stakeActions[stakeActionId].tokenId));
-		// #endregion
-	}
-
-	function unstakeClaimMany(
-		uint256[] memory unstake_actions,
-		uint256[] memory claim_actions,
-		uint256[] memory claim_deposits
-	) external override {
-		// #enable_asserts uint256 initialBalance = address(this).balance;
-		// #enable_asserts uint256 initialNumStakedNFTs = numStakedNFTs;
-
-		for (uint256 i = 0; i < unstake_actions.length; i++) {
-			unstake(unstake_actions[i]);
-		}
-		require(
-			claim_actions.length == claim_deposits.length,
-			CosmicGameErrors.IncorrectArrayArguments(
-				"Claim array arguments must be of the same length.",
-				claim_actions.length,
-				claim_deposits.length
-			)
-		);
-		uint256 totalReward = 0;
-		for (int256 i = int256(claim_actions.length) - 1; i >= 0; i--) {
-			totalReward += _calculateReward(claim_actions[uint256(i)], claim_deposits[uint256(i)]);
-		}
-		if (totalReward > 0) {
-			(bool success, ) = msg.sender.call{ value: totalReward }("");
-			require(success, CosmicGameErrors.FundTransferFailed("Reward transfer failed.", totalReward, msg.sender));
-		}
-
-		// #region Assertions
-		// #enable_asserts assert(address(this).balance == initialBalance - totalReward);
-		// #enable_asserts assert(numStakedNFTs == initialNumStakedNFTs - unstake_actions.length);
-		// #endregion
-	}
-
-	function wasTokenUsed(uint256 _tokenId) public view override returns (bool) {
-		return usedTokens[_tokenId];
-	}
-
-	function isTokenStaked(uint256 tokenId) public view override returns (bool) {
-		return tokenIndices[tokenId] != 0;
-	}
-
-	function numTokensStaked() public view override returns (uint256) {
-		// #region Assertions
-		// #enable_asserts assert(stakedTokens.length == numStakedNFTs);
-		// #endregion
-
-		// todo-1 Would it be more efficient to return `numStakedNFTs`?
-		return stakedTokens.length;
-	}
-
-	function lastActionIdByTokenId(uint256 tokenId) public view override returns (int256) {
-		uint256 tokenIndex = tokenIndices[tokenId];
-		if (tokenIndex == 0) {
-			return -2;
-		}
-		return lastActionIds[tokenId];
-	}
-
-	function stakerByTokenId(uint256 tokenId) public view override returns (address) {
-		int256 actionId = lastActionIdByTokenId(tokenId);
-		if (actionId < 0) {
-			return address(0);
-		}
-		return stakeActions[uint256(actionId)].nftOwner;
+	function wasTokenUsed(uint256 tokenId_) external view override returns (bool) {
+		return _usedTokens[tokenId_];
 	}
 
 	/// @dev todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
-	function depositIfPossible() external payable override {
+	/// todo-1 But in this particular case `receive` won't serve our needs.
+	function depositIfPossible(uint256 roundNum_) external payable override {
 		require(
 			msg.sender == game,
-			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract can deposit.", msg.sender)
+			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract is permitted to make a deposit.", msg.sender)
 		);
 
-		// // #enable_asserts uint256 initialModulo = modulo;
-		// #enable_asserts uint256 initialNumETHDeposits = numETHDeposits;
+		uint256 numStakedNFTsCopy_ = _numStakedNFTs;
 
-		if (numStakedNFTs == 0) {
-			// (bool success_, ) = charity.call{ value: msg.value }("");
-			// if (success_) {
-			// 	emit CosmicGameEvents.FundsTransferredToCharityEvent(msg.value, charity);
-			// } else {
-			// 	emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", msg.value, charity);
-			// 	modulo += msg.value;
-			// }
-			// // todo-9 It would be nice to not skip at least some asserts in this case.
-			// return;
-
-			revert CosmicGameErrors.InvalidOperationInCurrentState();
+		if (numStakedNFTsCopy_ == 0) {
+			// This error description length affects the length we evaluate near Comment-202410149.
+			revert CosmicGameErrors.NoTokensStaked("There are no CST NFTs staked.");
 		}
-
-		if (numETHDeposits > 0 && ETHDeposits[numETHDeposits - 1].numStaked == numStakedNFTs) {
-			ETHDeposits[numETHDeposits - 1].depositAmount += msg.value;
-		} else {
-			ETHDeposits[numETHDeposits].depositTime = _actionCounter;
-			ETHDeposits[numETHDeposits].depositAmount = msg.value;
-			ETHDeposits[numETHDeposits].numStaked = numStakedNFTs;
-			++ numETHDeposits;
-		}
-
-		// modulo += msg.value % numStakedNFTs;
-		++ _actionCounter;
-		emit EthDepositEvent(_actionCounter, numETHDeposits - 1, numStakedNFTs, msg.value /* , modulo */);
 
 		// #region Assertions
-		// // #enable_asserts assert(modulo >= initialModulo);
-		// #enable_asserts assert(numETHDeposits >= initialNumETHDeposits);
+		// #enable_asserts uint256 initialNumETHDeposits_ = numETHDeposits;
+		// #endregion
+
+		ETHDeposit memory newETHDeposit_;
+		uint256 newNumETHDeposits_ = numETHDeposits;
+
+		// Comment-202410168 relates.
+		if (_NFTWasStakedAfterPrevETHDeposit >= 2) {
+
+			_NFTWasStakedAfterPrevETHDeposit = 1;
+
+			// If we executed logic near Comment-202410166, it's possible that an `ETHDeposits` item already exists at this position.
+			// We will overwrite it.
+			++ newNumETHDeposits_;
+			numETHDeposits = newNumETHDeposits_;
+
+			newETHDeposit_.depositId = uint64( ++ _actionCounter );
+
+			// [Comment-202410161/]
+			newETHDeposit_.rewardAmountPerStakedNFT = uint192(msg.value / numStakedNFTsCopy_);
+		} else {
+			newETHDeposit_ = ETHDeposits[newNumETHDeposits_];
+
+			// Comment-202410161 applies.
+			newETHDeposit_.rewardAmountPerStakedNFT += uint192(msg.value / numStakedNFTsCopy_);
+		}
+
+		ETHDeposits[newNumETHDeposits_] = newETHDeposit_;
+		emit EthDepositEvent(roundNum_, newNumETHDeposits_, newETHDeposit_.depositId, msg.value, numStakedNFTsCopy_);
+
+		// #region Assertions
+		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 1);
+		// #enable_asserts assert(ETHDeposits[numETHDeposits].depositId > 0);
+		// #enable_asserts assert(numETHDeposits - initialNumETHDeposits_ <= 1);
 		// #enable_asserts assert(_actionCounter > 0);
 		// #endregion
 	}
 
-	// function setCharity(address newCharityAddress) external override onlyOwner {
-	// 	require(newCharityAddress != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-	//
-	//		// todo-9 Is it really necessary to validate this?
-	//		// todo-9 We don't normally validate similar things.
-	//		// todo-9 If you eliminate this validation, remember to also eliminate respective `assert`.
-	// 	require(charity != newCharityAddress, CosmicGameErrors.AddressAlreadySet("Address already set.", newCharityAddress));
-	//
-	// 	// #enable_asserts address oldCharityAddress = charity;
-	// 	charity = newCharityAddress;
-	// 	emit CharityUpdatedEvent(charity);
-	//
-	// 	// #region Assertions
-	// 	// #enable_asserts assert(charity == newCharityAddress);
-	// 	// #enable_asserts assert(charity != oldCharityAddress);
-	// 	// #endregion
-	// }
+	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns (bool) {
+		// require(charityAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 
-	// // todo-9 Does this really have to be `onlyOwner`?
-	// function moduloToCharity() external override onlyOwner {
-	// 	uint256 amount_ = modulo;
-	//
-	//		// // Comment-202409215 applies.
-	// 	// require(amount_ > 0, CosmicGameErrors.ModuloIsZero("Modulo is zero."));
-	//
-	// 	modulo = 0;
-	//
-	//		// Comment-202409214 applies.
-	// 	(bool success_, ) = charity.call{ value: amount_ }("");
-	//
-	// 	require(success_, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", amount_, charity));
-	// 	emit ModuloSentToCharityEvent(amount_);
-	//
-	// 	// #region Assertions
-	// 	// #enable_asserts assert(modulo == 0);
-	// 	// #endregion
-	// }
+		// [Comment-202410171]
+		// This condition ensures that all rewards have been claimed. It wasn't the case in a past version,
+		// which had another variable named `numStakeActions`.
+		// [/Comment-202410171]
+		require(_numStakedNFTs == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still CST NFTs staked."));
 
-	function transferRemainingBalanceToCharity(address charityAddress_) external override onlyOwner {
-		// [Comment-202409213]
-		// The caller shall wait until everybody withdraws their NFTs.
-		// Although it's unlikely to ever happen.
-		// But, as mentioned in Comment-202409208, any better solution wouldn't be worth the gas.
-		// [/Comment-202409213]
-		require(numStakedNFTs == 0, CosmicGameErrors.InvalidOperationInCurrentState());
+		if (resetState_) {
+			// // This would be unnecessary because of Comment-202410168.
+			// _NFTWasStakedAfterPrevETHDeposit = 2;
 
-		require(charityAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		uint256 amount_ = address(this).balance;
+			// [Comment-202410166]
+			// It's unnecessary to also clear `ETHDeposits`.
+			// [/Comment-202410166]
+			numETHDeposits = 0;
+		}
+
+		if (charityAddress_ != address(0)) {
+			uint256 amount_ = address(this).balance;
+
+			// // Comment-202409215 applies.
+			// if (amount_ > 0)
+
+			{
+				// [Comment-202409214]
+				// There is no reentrancy vulnerability here.
+				// [/Comment-202409214]
+				(bool isSuccess_, ) = charityAddress_.call{ value: amount_ }("");
+
+				// require(isSuccess_, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", amount_, charityAddress_));
+
+				if (isSuccess_) {
+					emit CosmicGameEvents.FundsTransferredToCharityEvent(amount_, charityAddress_);
+
+					// #region Assertions
+					// [Comment-202410159]
+					// Issue. Because we can be reentered near Comment-202409214,
+					// some of these assertions are not necessarily guaranteed to succeed.
+					// [/Comment-202410159]
+					// #enable_asserts assert(address(this).balance == 0);
+					// #endregion
+				} else {
+					emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", amount_, charityAddress_);
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	function _unstake(uint256 stakeActionId_) private returns (uint256) {
+		StakeAction memory stakeAction_ = stakeActions[stakeActionId_];
+
+		if (msg.sender != stakeAction_.nftOwnerAddress) {
+			if (stakeAction_.nftOwnerAddress != address(0)) {
+				revert CosmicGameErrors.AccessError("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
+			} else {
+				// [Comment-202410182]
+				// It's also possible that this NFT has never been staked, but we have no knowledge about that.
+				// [/Comment-202410182]
+				revert CosmicGameErrors.TokenAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_);
+			}
+		}
+
+		// #region Assertions
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #endregion
+
+		uint256 rewardAmount_ = _calculateRewardAmount(stakeActionId_);
+		delete stakeActions[stakeActionId_];
+		uint256 newNumStakedNFTs_ = _numStakedNFTs - 1;
+		_numStakedNFTs = newNumStakedNFTs_;
+		nft.transferFrom(address(this), msg.sender, stakeAction_.tokenId);
+		emit UnstakeActionEvent(stakeActionId_, stakeAction_.tokenId, msg.sender, newNumStakedNFTs_, rewardAmount_);
+
+		// #region Assertions
+		// #enable_asserts assert(nft.ownerOf(stakeAction_.tokenId) == msg.sender);
+		// #enable_asserts assert(stakeActions[stakeActionId_].tokenId == 0);
+		// #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
+		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ - 1);
+		// #endregion
+
+		return rewardAmount_;
+	}
+
+	/// @notice Calculates reward amount for a given stake action.
+	/// @param stakeActionId_ Stake action ID.
+	/// @return The calculated value.
+	/// @dev Issue. It's possible to use binary search to find the oldest `ETHDeposits` item to add.
+	/// It would probably tend to be more gas efficient.
+	/// But I am not going to implement that.
+	function _calculateRewardAmount(uint256 stakeActionId_) private view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 rewardAmount_ = 0;
+			for ( uint256 ETHDepositIndex_ = numETHDeposits; /*ETHDepositIndex_ > 0*/; -- ETHDepositIndex_ ) {
+				ETHDeposit memory ETHDeposit_ = ETHDeposits[ETHDepositIndex_];
+				if (ETHDeposit_.depositId < stakeActionId_) {
+					break;
+				}
+				rewardAmount_ += ETHDeposit_.rewardAmountPerStakedNFT;
+			}
+			return rewardAmount_;
+		}
+	}
+
+	function _payReward(uint256 rewardAmount_) private {
+		// #region Assertions
+		// #enable_asserts uint256 initialBalance_ = address(this).balance;
+		// #endregion
 
 		// // [Comment-202409215]
-		// // It's unnecessary to spend gas to validate this.
+		// // It's unnecessary to spend gas on this validation.
 		// // [/Comment-202409215]
-		// require(amount_ > 0, CosmicGameErrors.InvalidOperationInCurrentState());
+		// // This will be zero in 2 cases:
+		// // 1. Someone stakes and before we receive anotehr deposit unstakes their NFT.
+		// // 2. All deposits we received while this stake was active
+		// //    were too small for the formula near Comment-202410161 to produce a nonzero.
+		// //    Although that's probably unlikely to happen.
+		// if (rewardAmount_ > 0)
 
-		// [Comment-202409214]
-		// It appears to be no reentrancy vulnerability here.
-		// [/Comment-202409214]
-		(bool success_, ) = charityAddress_.call{ value: amount_ }("");
+		{
+			// [Comment-202410158]
+			// Comment-202409214 applies.
+			// [/Comment-202410158]
+			(bool success, ) = msg.sender.call{ value: rewardAmount_ }("");
 
-		require(success_, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", amount_, charityAddress_));
-		emit CosmicGameEvents.FundsTransferredToCharityEvent(amount_, charityAddress_);
-
-		// #region Assertions
-		// #enable_asserts assert(address(this).balance == 0);
-		// #endregion
-	}
-
-	/// @notice Inserts a token into the staked tokens list
-	/// @dev Internal function to manage staked tokens
-	/// @param tokenId ID of the token to insert
-	/// @param actionId ID of the stake action
-	function _insertToken(uint256 tokenId, uint256 actionId) internal {
-		require(
-			!isTokenStaked(tokenId),
-			CosmicGameErrors.TokenAlreadyInserted("Token already in the list.", tokenId, actionId)
-		);
-		// #enable_asserts uint256 stakedTokensInitialLength = stakedTokens.length;
-		stakedTokens.push(tokenId);
-		tokenIndices[tokenId] = stakedTokens.length;
-		lastActionIds[tokenId] = int256(actionId);
+			require(success, CosmicGameErrors.FundTransferFailed("CST NFT staking reward transfer failed.", rewardAmount_, msg.sender));
+		}
 
 		// #region Assertions
-		// #enable_asserts assert(isTokenStaked(tokenId));
-		// #enable_asserts assert(tokenIndices[tokenId] == stakedTokens.length);
-		// #enable_asserts assert(lastActionIds[tokenId] == int256(actionId));
-		// #enable_asserts assert(stakedTokens.length == stakedTokensInitialLength + 1);
+		// Comment-202410159 applies to Comment-202410158.
+		// #enable_asserts assert(address(this).balance == initialBalance_ - rewardAmount_);
 		// #endregion
-	}
-
-	/// @notice Removes a token from the staked tokens list
-	/// @dev Internal function to manage staked tokens
-	/// @param tokenId ID of the token to remove
-	function _removeToken(uint256 tokenId) internal {
-		require(isTokenStaked(tokenId), CosmicGameErrors.TokenAlreadyDeleted("Token is not in the list.", tokenId));
-		uint256 index = tokenIndices[tokenId];
-		uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-		stakedTokens[index - 1] = lastTokenId;
-		tokenIndices[lastTokenId] = index;
-		delete tokenIndices[tokenId];
-		stakedTokens.pop();
-		lastActionIds[tokenId] = -1;
-
-		// #region Assertions
-		// #enable_asserts assert(!isTokenStaked(tokenId));
-		// #enable_asserts assert(tokenIndices[tokenId] == 0);
-		// #enable_asserts assert(lastActionIds[tokenId] == -1);
-		// #endregion
-	}
-
-	/// @notice Calculates the reward for a single stake action and deposit
-	/// @param stakeActionId ID of the stake action
-	/// @param ETHDepositId ID of the ETH deposit
-	/// @return Calculated reward amount
-	function _calculateReward(uint256 stakeActionId, uint256 ETHDepositId) internal returns (uint256) {
-		require(
-			stakeActionId < numStakeActions,
-			CosmicGameErrors.InvalidActionId("Invalid stakeActionId.", stakeActionId)
-		);
-		require(
-			ETHDepositId < numETHDeposits,
-			CosmicGameErrors.InvalidDepositId("Invalid ETHDepositId.", ETHDepositId)
-		);
-		require(
-			stakeActions[stakeActionId].unstakeTime > 0,
-			CosmicGameErrors.TokenNotUnstaked("Token has not been unstaked.", stakeActionId)
-		);
-		require(
-			!stakeActions[stakeActionId].depositClaimed[ETHDepositId],
-			CosmicGameErrors.DepositAlreadyClaimed("This deposit was claimed already.", stakeActionId, ETHDepositId)
-		);
-		require(
-			stakeActions[stakeActionId].nftOwner == msg.sender,
-			CosmicGameErrors.AccessError("Only the owner can claim reward.", stakeActionId, msg.sender)
-		);
-		require(
-			stakeActions[stakeActionId].stakeTime < ETHDeposits[ETHDepositId].depositTime,
-			CosmicGameErrors.DepositOutsideStakingWindow(
-				"You were not staked yet.",
-				stakeActionId,
-				ETHDepositId,
-				stakeActions[stakeActionId].unstakeTime,
-				stakeActions[stakeActionId].stakeTime,
-				ETHDeposits[ETHDepositId].depositTime
-			)
-		);
-		require(
-			stakeActions[stakeActionId].unstakeTime > ETHDeposits[ETHDepositId].depositTime,
-			CosmicGameErrors.DepositOutsideStakingWindow(
-				"You were already unstaked.",
-				stakeActionId,
-				ETHDepositId,
-				stakeActions[stakeActionId].unstakeTime,
-				stakeActions[stakeActionId].stakeTime,
-				ETHDeposits[ETHDepositId].depositTime
-			)
-		);
-		stakeActions[stakeActionId].depositClaimed[ETHDepositId] = true;
-		uint256 amount = ETHDeposits[ETHDepositId].depositAmount / ETHDeposits[ETHDepositId].numStaked;
-		emit ClaimRewardEvent(stakeActionId, ETHDepositId, amount, msg.sender);
-
-		// #region Assertions
-		// #enable_asserts assert(amount <= ETHDeposits[ETHDepositId].depositAmount);
-		// #enable_asserts assert(stakeActions[stakeActionId].depositClaimed[ETHDepositId]);
-		// #endregion
-
-		return amount;
 	}
 }

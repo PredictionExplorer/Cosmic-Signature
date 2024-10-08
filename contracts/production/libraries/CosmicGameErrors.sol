@@ -6,6 +6,16 @@ pragma solidity 0.8.26;
 /// @notice This library contains custom errors used throughout the Cosmic Game contracts
 /// @dev Use these errors to provide more detailed and gas-efficient error handling
 library CosmicGameErrors {
+	// #region Common Errors
+
+	error UnknownError(string errStr);
+
+	/// @notice Thrown when an operation is not possible in the current contract state.
+	/// @param errStr Description of the error
+	/// @dev In .NET, `InvalidOperationException` serves the same purpose.
+	error InvalidOperationInCurrentState(string errStr);
+
+	// #endregion
 	// #region System Errors
 
 	/// @notice Thrown when an action is attempted in an incorrect system mode
@@ -111,10 +121,6 @@ library CosmicGameErrors {
 	// #endregion
 	// #region Game Logic Errors
 
-	/// @notice Thrown when an operation is not possible in the current contract state.
-	/// @dev In .NET, `InvalidOperationException` serves the same purpose. So consider renaming this to `InvalidOperation`.
-	error InvalidOperationInCurrentState();
-
 	/// @notice Thrown when a call to the business logic contract fails
 	/// @param errStr Description of the error
 	/// @param businessLogicAddr The address of the business logic contract
@@ -219,27 +225,27 @@ library CosmicGameErrors {
 	/// @param actionId The ID of the stake action
 	error TokenNotUnstaked(string errStr, uint256 actionId);
 
-	/// @notice Thrown when attempting to claim an already claimed deposit
-	/// @param errStr Description of the error
-	/// @param actionId The ID of the stake action
-	/// @param depositId The ID of the deposit
-	error DepositAlreadyClaimed(string errStr, uint256 actionId, uint256 depositId);
+	// /// @notice Thrown when attempting to claim an already claimed deposit
+	// /// @param errStr Description of the error
+	// /// @param actionId The ID of the stake action
+	// /// @param depositId The ID of the deposit
+	// error DepositAlreadyClaimed(string errStr, uint256 actionId, uint256 depositId);
 
-	/// @notice Thrown when a deposit is outside the staking window
-	/// @param errStr Description of the error
-	/// @param actionId The ID of the stake action
-	/// @param depositId The ID of the deposit
-	/// @param stakeStart The start time of the stake
-	/// @param stakeEnd The end time of the stake
-	/// @param depositDate The date of the deposit
-	error DepositOutsideStakingWindow(
-		string errStr,
-		uint256 actionId,
-		uint256 depositId,
-		uint256 stakeStart,
-		uint256 stakeEnd,
-		uint256 depositDate
-	);
+	// /// @notice Thrown when a deposit is outside the staking window
+	// /// @param errStr Description of the error
+	// /// @param actionId The ID of the stake action
+	// /// @param depositId The ID of the deposit
+	// /// @param stakeStart The start time of the stake
+	// /// @param stakeEnd The end time of the stake
+	// /// @param depositDate The date of the deposit
+	// error DepositOutsideStakingWindow(
+	// 	string errStr,
+	// 	uint256 actionId,
+	// 	uint256 depositId,
+	// 	uint256 stakeStart,
+	// 	uint256 stakeEnd,
+	// 	uint256 depositDate
+	// );
 
 	/// @notice Thrown when an unauthorized address attempts to access a function
 	/// @param errStr Description of the error
@@ -262,11 +268,6 @@ library CosmicGameErrors {
 	/// @param actionsLen The length of the actions array
 	/// @param depositsLen The length of the deposits array
 	error IncorrectArrayArguments(string errStr, uint256 actionsLen, uint256 depositsLen);
-
-	// /// @notice Thrown when the modulo is zero when it shouldn't be
-	// /// @param errStr Description of the error
-	// /// @dev Comment-202409208 relates and/or applies.
-	// error ModuloIsZero(string errStr);
 
 	/// @notice Thrown when attempting to insert an already inserted token
 	/// @param errStr Description of the error

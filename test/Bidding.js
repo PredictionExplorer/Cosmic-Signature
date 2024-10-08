@@ -448,6 +448,7 @@ describe("Bidding tests", function () {
 		let ts = await cosmicSignature.totalSupply();
 		let rn = await cosmicGameProxy.roundNum();
 		let tokensByStaker = {};
+		const stakeActionIds_ = [];
 		for (let i = 0; i < Number(ts); i++) {
 			let ownr = await cosmicSignature.ownerOf(i);
 			let userTokens = tokensByStaker[ownr];
@@ -462,6 +463,8 @@ describe("Bidding tests", function () {
 			receipt = await tx.wait();
 			log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 			parsed_log = stakingWalletCST.interface.parseLog(log);
+			// console.log(log.args.stakeActionId);
+			stakeActionIds_.push(log.args.stakeActionId);
 		}
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -487,15 +490,19 @@ describe("Bidding tests", function () {
 			let rlog = cosmicGameProxy.interface.parseLog(raffle_logs[i]);
 			let winner = rlog.args.winner;
 			let owner = await cosmicSignature.ownerOf(rlog.args.tokenId);
-			let stakerAddr = await stakingWalletCST.stakerByTokenId(rlog.args.tokenId);
-			expect(stakerAddr).to.equal('0x0000000000000000000000000000000000000000');
+			// let stakerAddr = await stakingWalletCST.stakerByTokenId(rlog.args.tokenId);
+			// expect(stakerAddr).to.equal('0x0000000000000000000000000000000000000000');
+			const tokenWasUsed_ = await stakingWalletCST.wasTokenUsed(rlog.args.tokenId);
+			expect(tokenWasUsed_).to.equal(false);
 		}
 		// all the remaining NFTs must have stakerByTokenId() equal to the addr who staked it
 		// also check the correctness of lastActionId map
 		ts = await cosmicSignature.totalSupply();
 		for (let i = 0; i < Number(ts); i++) {
-			let stakerAddr = await stakingWalletCST.stakerByTokenId(i);
-			if (stakerAddr == '0x0000000000000000000000000000000000000000') {
+			// let stakerAddr = await stakingWalletCST.stakerByTokenId(i);
+			// if (stakerAddr == '0x0000000000000000000000000000000000000000') {
+			const tokenWasUsed_ = await stakingWalletCST.wasTokenUsed(i);
+			if ( ! tokenWasUsed_ ) {
 				let ownr = await cosmicSignature.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
 				if (userTokens === undefined) {
@@ -508,39 +515,48 @@ describe("Bidding tests", function () {
 					continue;
 				}
 			}
-			let isStaked = await stakingWalletCST.isTokenStaked(i);
-			expect(isStaked).to.equal(true);
-			let lastActionId = await stakingWalletCST.lastActionIdByTokenId(i);
+			// let isStaked = await stakingWalletCST.isTokenStaked(i);
+			// expect(isStaked).to.equal(true);
+			// let lastActionId = await stakingWalletCST.lastActionIdByTokenId(i);
+			let lastActionId = stakeActionIds_[i];
 			lastActionId = Number(lastActionId);
-			if (lastActionId < 0) {
-				throw 'Invalid action id' + lastActionId;
+			// if (lastActionId < 0) {
+			if (lastActionId <= 0) {
+				throw 'Invalid action id ' + lastActionId;
 			}
 			let stakeActionRecord = await stakingWalletCST.stakeActions(lastActionId);
-			expect(stakeActionRecord.nftOwner).to.equal(stakerAddr);
+			// expect(stakeActionRecord.nftOwnerAddress).to.equal(stakerAddr);
 		}
 		await hre.ethers.provider.send('evm_increaseTime', [3600 * 24 * 60]);
 		await hre.ethers.provider.send('evm_mine');
 		let num_actions;
-		num_actions = await stakingWalletCST.numStakeActions();
+		// num_actions = await stakingWalletCST.numStakeActions();
+		num_actions = await stakingWalletCST.numTokensStaked();
 		for (let i = 0; i < Number(num_actions); i++) {
-			let action_rec = await stakingWalletCST.stakeActions(i);
+			// let action_rec = await stakingWalletCST.stakeActions(i);
+			let action_rec = await stakingWalletCST.stakeActions(stakeActionIds_[i]);
 			action_rec = action_rec.toObject();
-			let ownr = action_rec.nftOwner;
+			let ownr = action_rec.nftOwnerAddress;
 			let owner_signer = await hre.ethers.getSigner(ownr);
 			await hre.ethers.provider.send('evm_increaseTime', [100]);
-			await stakingWalletCST.connect(owner_signer).unstake(i);
+			// await stakingWalletCST.connect(owner_signer).unstake(i);
+			await stakingWalletCST.connect(owner_signer).unstake(stakeActionIds_[i]);
 		}
 		// at this point, all tokens were unstaked
-		num_actions = await stakingWalletCST.numStakeActions();
+		// num_actions = await stakingWalletCST.numStakeActions();
+		num_actions = await stakingWalletCST.numTokensStaked();
+		expect(num_actions).to.equal(0);
 		for (let i = 0; i < Number(num_actions); i++) {
-			let action_rec = await stakingWalletCST.stakeActions(i);
+			// let action_rec = await stakingWalletCST.stakeActions(i);
+			let action_rec = await stakingWalletCST.stakeActions(stakeActionIds_[i]);
 			action_rec = action_rec.toObject();
-			let ownr = action_rec.nftOwner;
+			let ownr = action_rec.nftOwnerAddress;
 			let num_deposits = await stakingWalletCST.numETHDeposits();
 			let owner_signer = await hre.ethers.getSigner(ownr);
 			for (let j = 0; j < Number(num_deposits); j++) {
 				let deposit_rec = await stakingWalletCST.ETHDeposits(j);
-				await stakingWalletCST.connect(owner_signer).claimManyRewards([i], [j]);
+				// // await stakingWalletCST.connect(owner_signer).claimManyRewards([i], [j]);
+				// await stakingWalletCST.connect(owner_signer).claimManyRewards([stakeActionIds_[i]], [j]);
 			}
 		}
 
