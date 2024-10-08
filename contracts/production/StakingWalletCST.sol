@@ -231,7 +231,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		}
 
 		ETHDeposits[newNumETHDeposits_] = newETHDeposit_;
-		emit EthDepositEvent(roundNum_, newETHDeposit_.depositId, msg.value, numStakedNFTsCopy_);
+		emit EthDepositEvent(roundNum_, newNumETHDeposits_, newETHDeposit_.depositId, msg.value, numStakedNFTsCopy_);
 
 		// #region Assertions
 		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 1);

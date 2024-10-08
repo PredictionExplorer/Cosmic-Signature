@@ -9,6 +9,11 @@ pragma solidity 0.8.26;
 /// todo-0 Rename to `IStakingWalletCSNFT` or `IStakingWalletCSTNFT`?
 /// todo-0 Also rename the contract implementing this interface.
 /// todo-0 Fix the above comments too.
+///
+/// If I was to implement incremental reward payouts, I would mostly keep the current functions and events.
+/// In addition, I would add a `bool` flag to `UnstakeActionEvent` for whether all rewards have been paid to the staker.
+/// In case it equals `false`, the staker would have an option to call a designated incremental reward payout function
+/// that would process another 20K or so (configurable) deposits. This logic would be in part similar to the old `claimManyRewards`.
 interface IStakingWalletCST {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.
@@ -38,11 +43,13 @@ interface IStakingWalletCST {
 
 	/// @notice Emitted when an ETH deposit is received.
 	/// @param roundNum Bidding round number.
+	/// @param depositIndex `ETHDeposit` instance index in `ETHDeposits` (1-based).
 	/// @param depositId `ETHDeposit` instance ID.
 	/// @param depositAmount The deposited ETH amount.
 	/// @param numStakedNFTs The current staked NFT count.
 	event EthDepositEvent(
 		uint256 indexed roundNum,
+		uint256 depositIndex,
 		uint256 depositId,
 		uint256 depositAmount,
 		uint256 numStakedNFTs
