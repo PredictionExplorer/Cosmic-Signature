@@ -105,11 +105,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 			}
 		}
 
-		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + paidBidPrice;
-		if (bidderInfo[roundNum][msg.sender].totalSpent > stellarSpenderAmount) {
-			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpent;
-			stellarSpender = msg.sender;
-		}
+		bidderInfo[roundNum][msg.sender].totalSpentETH = bidderInfo[roundNum][msg.sender].totalSpentETH + paidBidPrice;
 
 		if (params.openBid) {
 			bidPrice = msg.value;
@@ -261,6 +257,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		// Comment-202409177 applies.
 		token.burn(msg.sender, price);
 
+		if (bidderInfo[roundNum][msg.sender].totalSpentCST > stellarSpenderAmount) {
+			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpentCST;
+			stellarSpender = msg.sender;
+		}
 		// Comment-202409163 applies.
 		uint256 newStartingBidPriceCST;
 		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
@@ -315,8 +315,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		return raffleParticipants[roundNum][position];
 	}
 
-	function getTotalSpentByBidder(address bidder) public view override returns (uint256) {
-		return bidderInfo[roundNum][bidder].totalSpent;
+	function getTotalSpentByBidder(address bidder) public view override returns (uint256,uint256) {
+		return (bidderInfo[roundNum][bidder].totalSpentETH,bidderInfo[roundNum][bidder].totalSpentCST);
 	}
 
 	function isRandomWalkNFTUsed(uint256 tokenId) public view override returns (bool) {

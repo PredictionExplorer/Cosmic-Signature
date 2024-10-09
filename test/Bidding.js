@@ -82,7 +82,9 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.connect(addr1).bid(params, { value: (bidPrice+1000n) }); // this works
 		const contractBalance = await hre.ethers.provider.getBalance(cosmicGameProxy.getAddress());
 		expect(contractBalance).to.equal(donationAmount+bidPrice);
-		expect(await cosmicGameProxy.getTotalSpentByBidder(addr1.address)).to.equal(bidPrice);
+
+		let spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
+		expect(spent[0]).to.equal(bidPrice);
 
 		await hre.ethers.provider.send("evm_increaseTime",[100]);
 		await hre.ethers.provider.send("evm_mine");
@@ -677,28 +679,55 @@ describe("Bidding tests", function () {
 		bAddr = await cosmicGameProxy.bidderAddress(1,2);
 		expect(bAddr).to.equal(addr1.address);
 	});
-	it('Bid statistics are generating correct values for giving complementary prizes', async function () {
+	it('Bid statistics are generating correct values and StellarSpender addr is assigned correctly', async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWalletCST, stakingWalletRWalk, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
-		let donationAmount = hre.ethers.parseEther('9000');
-		await cosmicGameProxy.donate({ value: donationAmount });
+		let spent,spentEth,spentCst,auctionDuration,auctionLength,cstPrice,tx,topic_sig,receipt,log,evt,bidPriceCst;
+		auctionDuration = await cosmicGameProxy.auctionDuration();
+		auctionLength = auctionDuration[1];
 		let bidParams = { msg: '', rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
+		spentEth = spent[0];
+		expect(spentEth).to.equal(bidPrice);
+		await hre.ethers.provider.send('evm_increaseTime', [Number(auctionLength)-600]); // lower price to pay in CST
 		await hre.ethers.provider.send('evm_mine');
-		await cosmicGameProxy.connect(addr1).claimPrize(); // we need to claim prize because we want updated bidPrice (larger value)
+		tx = await cosmicGameProxy.connect(addr1).bidWithCST("");
+		topic_sig = cosmicGameProxy.interface.getEvent('BidEvent').topicHash;
+		receipt = await tx.wait();
+		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		evt = log.args.toObject();
+		bidPriceCst = evt.numCSTTokens;
+		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
+		spentCst = spent[1];
+		expect(spentCst).to.equal(bidPriceCst);
 
+		// check that CST and ETH are accumulated in statistics
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
+		let totalEthSpent = bidPrice + spentEth;
+		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
+		spentEth = spent[0];
+		expect(spentEth).to.equal(totalEthSpent);
+
+		tx = await cosmicGameProxy.connect(addr1).bidWithCST("");
+		receipt = await tx.wait();
+		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		evt = log.args.toObject();
+		bidPriceCst = evt.numCSTTokens;
+		let totalSpentCst = bidPriceCst + spentCst;
+		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
+		spentCst = spent[1];
+		expect(spentCst).to.equal(totalSpentCst);
+
 		let maxBidderAddr = await cosmicGameProxy.stellarSpender();
 		let maxEthBidderAmount = await cosmicGameProxy.stellarSpenderAmount();
 
+		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
 		expect(maxBidderAddr).to.equal(addr1.address);
-		expect(maxEthBidderAmount).to.equal(bidPrice);
 	});
 	it('It is not possible to bid with CST if balance is not enough', async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWalletCST, stakingWalletRWalk, marketingWallet, cosmicGame, } =

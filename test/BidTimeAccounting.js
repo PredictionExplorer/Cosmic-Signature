@@ -169,66 +169,6 @@ describe("Bid time accounting", function () {
 		expect(maxbtime).to.equal(1000);
 		expect(maxbaddr).to.equal(addr1.address);
 	});
-	it("Stellar spender prize is correctly assigned", async function () {
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
-			await loadFixture(deployCosmic);
-
-		// test case description:
-		// 		all 3 bidders make bids
-		// 		addr1 makes bids for a total of 3 ETH
-		// 		addr2 makes bids for a total of 9 ETH
-		// 		addr3 makes bids for a total of 19 ETH
-		// 		Stellar Spender is assigned to addr3
-		let limitSumAddr1 = hre.ethers.parseEther("3");
-		let limitSumAddr2 = hre.ethers.parseEther("9");
-		let limitSumAddr3 = hre.ethers.parseEther("19");
-		let sumPrice;
-		// let maxbtime,maxbaddr,prevbst,prevbaddr;
-		let donationAmount = hre.ethers.parseEther("1000");
-		let bidParams = { msg: "", rwalk: -1 };
-		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicGameProxy.getBidPrice();
-		await cosmicGameProxy.bid(params, { value: bidPrice })
-		await cosmicGameProxy.donate({ value: donationAmount });
-		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
-		await hre.ethers.provider.send("evm_mine");
-		await cosmicGameProxy.claimPrize();	// we need to skip the first round to rise bidPrice
-
-		let stellarSpender;
-		sumPrice = 0n;
-		while(true) {
-			bidPrice = await cosmicGameProxy.getBidPrice();
-			await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-			sumPrice = sumPrice + bidPrice;
-			if (sumPrice > limitSumAddr1) { break; }
-		
-		}
-		stellarSpender = await cosmicGameProxy.stellarSpender();
-		expect(stellarSpender).to.equal(addr1.address);
-
-		sumPrice = 0n;
-		while(true) {
-			bidPrice = await cosmicGameProxy.getBidPrice();
-			await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
-			sumPrice = sumPrice + bidPrice;
-			if (sumPrice > limitSumAddr2) { break; }
-		
-		}
-		stellarSpender = await cosmicGameProxy.stellarSpender();
-		expect(stellarSpender).to.equal(addr2.address);
-
-		sumPrice = 0n;
-		while(true) {
-			bidPrice = await cosmicGameProxy.getBidPrice();
-			await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
-			sumPrice = sumPrice + bidPrice;
-			if (sumPrice > limitSumAddr3) { break; }
-		}
-		stellarSpender = await cosmicGameProxy.stellarSpender();
-		expect(stellarSpender).to.equal(addr3.address);
-	});
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
@@ -258,19 +198,19 @@ describe("Bid time accounting", function () {
 		let bidParams = { msg: "", rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGame.getBidPrice();
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800080000]);
 		await cosmicGame.connect(owner).bid(params, { value: bidPrice });	// bid1 (owner, for 1,000 seconds
 
 		bidPrice = await cosmicGame.getBidPrice();
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800001000]);
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800081000]);
 		await cosmicGame.connect(addr1).bid(params, { value: bidPrice });	// bid2	(addr1, for 2,000 seconds)
 
 		bidPrice = await cosmicGame.getBidPrice();
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800003000]);
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800083000]);
 		await cosmicGame.connect(addr2).bid(params, { value: bidPrice });	// bid3 (addr2, for 5,000 seconds)
 
 		bidPrice = await cosmicGame.getBidPrice();
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800088000]);
 		await cosmicGame.connect(addr3).bid(params, { value: bidPrice });	// bid4 (close everything)
 
 		let result,champion,duration;

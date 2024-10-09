@@ -22,7 +22,8 @@ library CosmicGameConstants {
 	/// @notice Information about a bidder
 	/// @dev Stores the total amount spent and the time of the last bid
 	struct BidderInfo {
-		uint256 totalSpent;
+		uint256 totalSpentETH;
+		uint256 totalSpentCST;
 		uint256 lastBidTime;
 	}
 

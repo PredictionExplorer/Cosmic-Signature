@@ -66,7 +66,7 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
 	/// @notice Get the total amount spent by a bidder in the current round
 	/// @param bidder The address of the bidder
 	/// @return The total amount spent by the bidder in wei
-   function getTotalSpentByBidder(address bidder) external view returns (uint256);
+   function getTotalSpentByBidder(address bidder) external view returns (uint256,uint256);
 
 	/// @notice Check if a RandomWalk NFT has been used for bidding
 	/// @param tokenId The ID of the RandomWalk NFT

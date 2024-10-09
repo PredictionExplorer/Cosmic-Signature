@@ -92,12 +92,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 			paidBidPrice = newBidPrice;
 		}
 
-		// Update Stellar Spender
-		bidderInfo[roundNum][msg.sender].totalSpent = bidderInfo[roundNum][msg.sender].totalSpent + paidBidPrice;
-		if (bidderInfo[roundNum][msg.sender].totalSpent > stellarSpenderAmount) {
-			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpent;
-			stellarSpender = msg.sender;
-		}
+		// Update bidding statistics 
+		bidderInfo[roundNum][msg.sender].totalSpentETH = bidderInfo[roundNum][msg.sender].totalSpentETH + paidBidPrice;
 
 		bidPrice = newBidPrice;
 
@@ -254,6 +250,12 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 
+		bidderInfo[roundNum][msg.sender].totalSpentCST = bidderInfo[roundNum][msg.sender].totalSpentCST + price;
+		if (bidderInfo[roundNum][msg.sender].totalSpentCST > stellarSpenderAmount) {
+			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpentCST;
+			stellarSpender = msg.sender;
+		}
+
 		// [Comment-202409163]
 		// Doubling the starting CST price for the next CST bid, while enforcing a minimum.
 		// This logic avoids an overfow, both here and near Comment-202409162.
@@ -317,8 +319,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		return raffleParticipants[roundNum][position];
 	}
 
-	function getTotalSpentByBidder(address bidder) public view override returns (uint256) {
-		return bidderInfo[roundNum][bidder].totalSpent;
+	function getTotalSpentByBidder(address bidder) public view override returns (uint256,uint256) {
+		return (bidderInfo[roundNum][bidder].totalSpentETH,bidderInfo[roundNum][bidder].totalSpentCST);
 	}
 
 	function isRandomWalkNFTUsed(uint256 tokenId) public view override returns (bool) {
