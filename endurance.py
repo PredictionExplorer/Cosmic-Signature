@@ -256,18 +256,24 @@ def stream(bid_times, game_end_time):
 
 def main():
     test_cases = []
-    TIME_RANGE = 1000
-    MAX_NUM_BIDS = 100
+    # TIME_RANGE = 1000
+    TIME_RANGE = 20
+    # MAX_NUM_BIDS = 100
+    MAX_NUM_BIDS = 20
     NUM_TEST_CASES = 10000
     for _ in range(NUM_TEST_CASES):
         test_case = {}
         bid_times = []
         cur_time = random.randint(1, TIME_RANGE)
-        num_bids = random.randint(1, MAX_NUM_BIDS)
+        # num_bids = random.randint(1, MAX_NUM_BIDS)
+        num_bids = random.randint(1, random.randint(1, MAX_NUM_BIDS))
         for i in range(num_bids):
-            cur_time += random.randint(1, TIME_RANGE)
-            bid_times.append((cur_time, chr(ord('a') + random.randint(0, 25))))
-        game_end_time = cur_time + random.randint(1, TIME_RANGE)
+            # cur_time += random.randint(1, TIME_RANGE)
+            cur_time += random.randint(0, random.randint(0, TIME_RANGE))
+            # bid_times.append((cur_time, chr(ord('a') + random.randint(0, 25))))
+            bid_times.append((cur_time, chr(ord('a') + random.randint(0, random.randint(0, 25)))))
+        # game_end_time = cur_time + random.randint(1, TIME_RANGE)
+        game_end_time = cur_time + random.randint(0, random.randint(0, TIME_RANGE))
         test_case["bid_times"] = bid_times
         test_case["game_end_time"] = game_end_time
 
