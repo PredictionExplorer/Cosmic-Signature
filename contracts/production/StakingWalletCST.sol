@@ -208,6 +208,8 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 		ETHDeposit memory newETHDeposit_;
 		uint256 newNumETHDeposits_ = numETHDeposits;
+		uint256 newActionCounter_ = _actionCounter + 1;
+		_actionCounter = newActionCounter_;
 
 		// Comment-202410168 relates.
 		if (_NFTWasStakedAfterPrevETHDeposit >= 2) {
@@ -219,7 +221,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 			++ newNumETHDeposits_;
 			numETHDeposits = newNumETHDeposits_;
 
-			newETHDeposit_.depositId = uint64( ++ _actionCounter );
+			newETHDeposit_.depositId = uint64(newActionCounter_);
 
 			// [Comment-202410161/]
 			newETHDeposit_.rewardAmountPerStakedNFT = uint192(msg.value / numStakedNFTsCopy_);
@@ -231,7 +233,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		}
 
 		ETHDeposits[newNumETHDeposits_] = newETHDeposit_;
-		emit EthDepositEvent(roundNum_, newNumETHDeposits_, newETHDeposit_.depositId, msg.value, numStakedNFTsCopy_);
+		emit EthDepositEvent(roundNum_, newActionCounter_, newNumETHDeposits_, newETHDeposit_.depositId, msg.value, numStakedNFTsCopy_);
 
 		// #region Assertions
 		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 1);
