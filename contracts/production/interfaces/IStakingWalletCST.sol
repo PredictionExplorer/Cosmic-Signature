@@ -43,12 +43,17 @@ interface IStakingWalletCST {
 
 	/// @notice Emitted when an ETH deposit is received.
 	/// @param roundNum Bidding round number.
+	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit action.
 	/// @param depositIndex `ETHDeposit` instance index in `ETHDeposits` (1-based).
+	/// It can remain the same as it was in the previous event.
 	/// @param depositId `ETHDeposit` instance ID.
+	/// It can remain the same as it was in the previous event.
+	/// If a new `ETHDeposit` instance was created, `depositId == actionCounter`.
 	/// @param depositAmount The deposited ETH amount.
 	/// @param numStakedNFTs The current staked NFT count.
 	event EthDepositEvent(
 		uint256 indexed roundNum,
+		uint256 actionCounter,
 		uint256 depositIndex,
 		uint256 depositId,
 		uint256 depositAmount,
