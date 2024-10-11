@@ -11,32 +11,32 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
 abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, INFTDonations {
-	function donateNFT(IERC721 nftAddress, uint256 tokenId) external override nonReentrant onlyRuntime  {
-		nftAddress.safeTransferFrom(msg.sender, address(this), tokenId);
+	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRuntime  {
+		nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: nftAddress,
-			tokenId: tokenId,
+			nftId: nftId,
 			round: roundNum,
 			claimed: false
 		});
 		++ numDonatedNFTs;
-		emit NFTDonationEvent(msg.sender, nftAddress, roundNum, tokenId, numDonatedNFTs - 1);
+		emit NFTDonationEvent(msg.sender, nftAddress, roundNum, nftId, numDonatedNFTs - 1);
 	}
 
 	/// @notice Internal function to handle NFT donations
 	/// @dev This function is called by donateNFT and bidAndDonateNFT
 	/// @param _nftAddress Address of the NFT contract
-	/// @param _tokenId ID of the NFT to donate
-	function _donateNFT(IERC721 _nftAddress, uint256 _tokenId) internal {
-		_nftAddress.safeTransferFrom(msg.sender, address(this), _tokenId);
+	/// @param _nftId ID of the NFT to donate
+	function _donateNFT(IERC721 _nftAddress, uint256 _nftId) internal {
+		_nftAddress.safeTransferFrom(msg.sender, address(this), _nftId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: _nftAddress,
-			tokenId: _tokenId,
+			nftId: _nftId,
 			round: roundNum,
 			claimed: false
 		});
 		++ numDonatedNFTs;
-		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _tokenId, numDonatedNFTs - 1);
+		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _nftId, numDonatedNFTs - 1);
 	}
 
 	function claimDonatedNFT(uint256 index) public override onlyRuntime {
@@ -47,9 +47,9 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 		require(winners[donatedNFT.round] == msg.sender, CosmicGameErrors.NonExistentWinner("Only the round winner can claim this NFT",index));
 
 		donatedNFT.claimed = true;
-		donatedNFT.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNFT.tokenId);
+		donatedNFT.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNFT.nftId);
 
-		emit DonatedNFTClaimedEvent(donatedNFT.round, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.tokenId);
+		emit DonatedNFTClaimedEvent(donatedNFT.round, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.nftId);
 	}
 
 	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant onlyRuntime {
@@ -61,6 +61,6 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 	function getDonatedNFTDetails(uint256 index) public view override returns (address, uint256, uint256, bool) {
 		require(index < numDonatedNFTs, "Invalid donated NFT index");
 		CosmicGameConstants.DonatedNFT memory donatedNFT = donatedNFTs[index];
-		return (address(donatedNFT.nftAddress), donatedNFT.tokenId, donatedNFT.round, donatedNFT.claimed);
+		return (address(donatedNFT.nftAddress), donatedNFT.nftId, donatedNFT.round, donatedNFT.claimed);
 	}
 }

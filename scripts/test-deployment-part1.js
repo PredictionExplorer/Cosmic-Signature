@@ -25,11 +25,11 @@ async function bid_simple(testingAcct, cosmicGameProxy) {
 	expect(parsed_log.args.bidPrice).to.equal(bidPrice);
 	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
 }
-async function bid_randomwalk(testingAcct, cosmicGameProxy, tokenId) {
+async function bid_randomwalk(testingAcct, cosmicGameProxy, nftId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	let rwalkAddr = await cosmicGameProxy.randomWalk();
 	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
-	let bidParams = { msg: "rwalk bid", rwalk: tokenId };
+	let bidParams = { msg: "rwalk bid", rwalk: nftId };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy.connect(testingAcct).bid(params,{value:bidPrice});
 	receipt = await tx.wait();
@@ -37,7 +37,7 @@ async function bid_randomwalk(testingAcct, cosmicGameProxy, tokenId) {
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.message).to.equal("rwalk bid");
-	expect(parsed_log.args.randomWalkNFTId).to.equal(tokenId);
+	expect(parsed_log.args.randomWalkNFTId).to.equal(nftId);
 	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
 }
 async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
@@ -65,7 +65,7 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.donor).to.equal(testingAcct.address);
 	expect(parsed_log.args.nftAddress).to.equal(randomWalk.address);
-	expect(parsed_log.args.tokenId).to.equal(donatedTokenId);
+	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
 }
 async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTokenId, tokenIdBidding) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -92,7 +92,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.donor).to.equal(testingAcct.address);
 	expect(parsed_log.args.nftAddress).to.equal(randomWalk.address);
-	expect(parsed_log.args.tokenId).to.equal(donatedTokenId);
+	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
 }
 async function main() {
 	let privKey = process.env.PRIVKEY;

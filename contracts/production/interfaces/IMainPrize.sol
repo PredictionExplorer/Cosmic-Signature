@@ -22,14 +22,14 @@ interface IMainPrize is ICosmicGameStorage, ISystemManagement, IBidStatistics {
 	/// @notice Emitted when an NFT raffle winner is selected
 	/// @param winner The address of the winner
 	/// @param round The round number
-	/// @param tokenId The ID of the NFT won
+	/// @param nftId The ID of the NFT won
 	/// @param winnerIndex The index of the winner
 	/// @param isStaker Whether the winner is a staker
 	/// @param isRWalk Whether the NFT is a RandomWalk NFT
 	event RaffleNFTWinnerEvent(
 		address indexed winner,
 		uint256 indexed round,
-		uint256 indexed tokenId,
+		uint256 indexed nftId,
 		uint256 winnerIndex,
 		bool isStaker,
 		bool isRWalk

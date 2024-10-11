@@ -213,14 +213,14 @@ describe("Bidding tests", function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr1).mint({ value: tokenPrice }); // tokenId=0
+		await randomWalkNFT.connect(addr1).mint({ value: tokenPrice }); // nftId=0
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		// switch to another account and attempt to use tokenId=0 which we don't own
+		// switch to another account and attempt to use nftId=0 which we don't own
 		let bidParams = { msg: "hello", rwalk: 0 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"IncorrectERC721TokenOwner");
-		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })); //tokenId=0
+		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })); //nftId=0
 		await hre.ethers.provider.send("evm_mine");
 		tokenPrice = await randomWalkNFT.getMintPrice();
 		let tx = await randomWalkNFT.connect(owner).mint({ value: tokenPrice });
@@ -236,7 +236,7 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
 		expect(await cosmicGameProxy.isRandomWalkNFTUsed(token_id)).to.equal(true);
 
-		// try to mint again using the same tokenId
+		// try to bid again using the same nftId
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"UsedRandomWalkNFT");
 	});
@@ -354,7 +354,7 @@ describe("Bidding tests", function () {
 		await hre.ethers.provider.send('evm_mine');
 
 		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice }); // tokenId=0
+		await randomWalkNFT.mint({ value: tokenPrice }); // nftId=0
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { msg: 'rwalk bid', rwalk: 0 };
@@ -412,7 +412,7 @@ describe("Bidding tests", function () {
 		await randomWalkNFT.setApprovalForAll(cosmicGameAddr, true);
 		await randomWalkNFT.setApprovalForAll(await cBidder.getAddress(), true);
 		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice }); // tokenId=0
+		await randomWalkNFT.mint({ value: tokenPrice }); // nftId=0
 		const bidPrice = await cosmicGameProxy.getBidPrice();
 		await cBidder.doBidRWalk2(0, { value: amountSent });
 
@@ -446,7 +446,7 @@ describe("Bidding tests", function () {
 			await cosmicGameProxy.connect(addr4).claimPrize();
 		}
 		let tx, receipt, log, parsed_log;
-		let topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		let topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		let ts = await cosmicSignature.totalSupply();
 		let rn = await cosmicGameProxy.roundNum();
 		let tokensByStaker = {};
@@ -491,11 +491,11 @@ describe("Bidding tests", function () {
 		for (let i = 0; i < raffle_logs.length; i++) {
 			let rlog = cosmicGameProxy.interface.parseLog(raffle_logs[i]);
 			let winner = rlog.args.winner;
-			let owner = await cosmicSignature.ownerOf(rlog.args.tokenId);
-			// let stakerAddr = await stakingWalletCST.stakerByTokenId(rlog.args.tokenId);
+			let owner = await cosmicSignature.ownerOf(rlog.args.nftId);
+			// let stakerAddr = await stakingWalletCST.stakerByTokenId(rlog.args.nftId);
 			// expect(stakerAddr).to.equal('0x0000000000000000000000000000000000000000');
-			const tokenWasUsed_ = await stakingWalletCST.wasTokenUsed(rlog.args.tokenId);
-			expect(tokenWasUsed_).to.equal(false);
+			const nftWasUsed_ = await stakingWalletCST.wasNftUsed(rlog.args.nftId);
+			expect(nftWasUsed_).to.equal(false);
 		}
 		// all the remaining NFTs must have stakerByTokenId() equal to the addr who staked it
 		// also check the correctness of lastActionId map
@@ -503,8 +503,8 @@ describe("Bidding tests", function () {
 		for (let i = 0; i < Number(ts); i++) {
 			// let stakerAddr = await stakingWalletCST.stakerByTokenId(i);
 			// if (stakerAddr == '0x0000000000000000000000000000000000000000') {
-			const tokenWasUsed_ = await stakingWalletCST.wasTokenUsed(i);
-			if ( ! tokenWasUsed_ ) {
+			const nftWasUsed_ = await stakingWalletCST.wasNftUsed(i);
+			if ( ! nftWasUsed_ ) {
 				let ownr = await cosmicSignature.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
 				if (userTokens === undefined) {
@@ -533,7 +533,7 @@ describe("Bidding tests", function () {
 		await hre.ethers.provider.send('evm_mine');
 		let num_actions;
 		// num_actions = await stakingWalletCST.numStakeActions();
-		num_actions = await stakingWalletCST.numTokensStaked();
+		num_actions = await stakingWalletCST.numNftsStaked();
 		for (let i = 0; i < Number(num_actions); i++) {
 			// let action_rec = await stakingWalletCST.stakeActions(i);
 			let action_rec = await stakingWalletCST.stakeActions(stakeActionIds_[i]);
@@ -546,17 +546,17 @@ describe("Bidding tests", function () {
 		}
 		// at this point, all tokens were unstaked
 		// num_actions = await stakingWalletCST.numStakeActions();
-		num_actions = await stakingWalletCST.numTokensStaked();
+		num_actions = await stakingWalletCST.numNftsStaked();
 		expect(num_actions).to.equal(0);
 		for (let i = 0; i < Number(num_actions); i++) {
 			// let action_rec = await stakingWalletCST.stakeActions(i);
 			let action_rec = await stakingWalletCST.stakeActions(stakeActionIds_[i]);
 			action_rec = action_rec.toObject();
 			let ownr = action_rec.nftOwnerAddress;
-			let num_deposits = await stakingWalletCST.numETHDeposits();
+			let num_deposits = await stakingWalletCST.numEthDeposits();
 			let owner_signer = await hre.ethers.getSigner(ownr);
 			for (let j = 0; j < Number(num_deposits); j++) {
-				let deposit_rec = await stakingWalletCST.ETHDeposits(j);
+				let deposit_rec = await stakingWalletCST.ethDeposits(j);
 				// // await stakingWalletCST.connect(owner_signer).claimManyRewards([i], [j]);
 				// await stakingWalletCST.connect(owner_signer).claimManyRewards([stakeActionIds_[i]], [j]);
 			}

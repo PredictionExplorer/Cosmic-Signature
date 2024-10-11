@@ -323,7 +323,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		return (bidderInfo[roundNum][bidder].totalSpentETH,bidderInfo[roundNum][bidder].totalSpentCST);
 	}
 
-	function isRandomWalkNFTUsed(uint256 tokenId) public view override returns (bool) {
-		return usedRandomWalkNFTs[tokenId];
+	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
+		return usedRandomWalkNFTs[nftId];
 	}
 }

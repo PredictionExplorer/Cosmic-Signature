@@ -56,17 +56,17 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 		emit BaseURIEvent(value);
 	}
 
-	function setTokenName(uint256 tokenId, string memory name) external override {
+	function setTokenName(uint256 nftId, string memory name) external override {
 		require(
-			_isAuthorized(_ownerOf(tokenId), _msgSender(), tokenId),
-			CosmicGameErrors.OwnershipError("setTokenName caller is not owner nor approved.", tokenId)
+			_isAuthorized(_ownerOf(nftId), _msgSender(), nftId),
+			CosmicGameErrors.OwnershipError("setTokenName caller is not owner nor approved.", nftId)
 		);
 		require(
 			bytes(name).length <= 32,
 			CosmicGameErrors.TokenNameLength("Token name is too long.", bytes(name).length)
 		);
-		tokenNames[tokenId] = name;
-		emit TokenNameEvent(tokenId, name);
+		tokenNames[nftId] = name;
+		emit TokenNameEvent(nftId, name);
 	}
 
 	function mint(address owner, uint256 roundNum) external override returns (uint256) {
@@ -77,14 +77,14 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract is permitted to mint.", msg.sender)
 		);
 
-		uint256 tokenId = numTokens;
+		uint256 nftId = numTokens;
 		++ numTokens;
-		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), tokenId, owner));
-		seeds[tokenId] = entropy;
+		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), nftId, owner));
+		seeds[nftId] = entropy;
 		// todo-1 We use safeMint to mint a Random Walk NFT? Why not here? At least explain in a comment.
-		_mint(owner, tokenId);
-		emit MintEvent(tokenId, owner, roundNum, entropy);
-		return tokenId;
+		_mint(owner, nftId);
+		emit MintEvent(nftId, owner, roundNum, entropy);
+		return nftId;
 	}
 
 	/// @return The base URI for token metadata

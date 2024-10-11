@@ -86,12 +86,13 @@ contract BrokenStaker {
 		stakingWalletCST.depositIfPossible(roundNum_);
 	}
 
-	function doStake(uint256 tokenId) external {
-		stakingWalletCST.stake(tokenId);
+	function doStake(uint256 nftId) external {
+		stakingWalletCST.stake(nftId);
 	}
 
-	function doUnstake(uint256 actionId) external {
-		stakingWalletCST.unstake(actionId);
+	// todo-0 Nick, I added the 2nd param. Tests that call this function are broken now.
+	function doUnstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external {
+		stakingWalletCST.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}
 
 	// todo-0 I have commented this out because the `StakingWalletCST.claimManyRewards` function no longer exists.
@@ -141,7 +142,7 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 		token.transfer(this.owner(), cosmicSupply);
 		for (uint256 i = 0; i < numDonatedNFTs; i++) {
 			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
-			IERC721(dnft.nftAddress).transferFrom(address(this), this.owner(), dnft.tokenId);
+			IERC721(dnft.nftAddress).transferFrom(address(this), this.owner(), dnft.nftId);
 		}
 		selfdestruct(payable(this.owner()));
 	}
@@ -204,22 +205,22 @@ contract SpecialCosmicGame is CosmicGame {
 contract TestStakingWalletCST is StakingWalletCST {
 	constructor(CosmicSignature nft_, address game_) StakingWalletCST(nft_, game_) {}
 
-	// function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
-	// 	_insertToken(_tokenId,_actionId);
+	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+	// 	_insertToken(_nftId, stakeActionId_);
 	// }
-	// function doRemoveToken(uint256 _tokenId) external {
-	// 	_removeToken(_tokenId);
+	// function doRemoveToken(uint256 _nftId) external {
+	// 	_removeToken(_nftId);
 	// }
 }
 
 contract TestStakingWalletRWalk is StakingWalletRWalk {
 	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
 
-	function doInsertToken(uint256 _tokenId,uint256 _actionId) external {
-		_insertToken(_tokenId,_actionId);
+	function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+		_insertToken(_nftId, stakeActionId_);
 	}
-	function doRemoveToken(uint256 _tokenId) external {
-		_removeToken(_tokenId);
+	function doRemoveToken(uint256 _nftId) external {
+		_removeToken(_nftId);
 	}
 }
 
@@ -229,7 +230,7 @@ contract MaliciousToken1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
 
 	}
-	function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
+	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// the following call should revert
 		(bool success, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector,address(this),0));
 		if (!success) {
@@ -249,7 +250,7 @@ contract MaliciousToken2 is ERC721 {
 	constructor(address game_,string memory name_, string memory symbol_) ERC721(name_,symbol_) {
 		game = game_;
 	}
-	function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
+	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		uint256 price = Bidding(payable(address(game))).getBidPrice();
 		CosmicGame.BidParams memory defaultParams;
 		defaultParams.message = "";

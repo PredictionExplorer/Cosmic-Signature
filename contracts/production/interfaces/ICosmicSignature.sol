@@ -10,16 +10,16 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 /// with unique features for the Cosmic Game
 interface ICosmicSignature is IERC721Enumerable {
 	/// @notice Emitted when a token's name is set or changed
-	/// @param tokenId The ID of the token
+	/// @param nftId The ID of the token
 	/// @param newName The new name of the token
-	event TokenNameEvent(uint256 indexed tokenId, string newName);
+	event TokenNameEvent(uint256 indexed nftId, string newName);
 
 	/// @notice Emitted when a new token is minted
-	/// @param tokenId The ID of the newly minted token
+	/// @param nftId The ID of the newly minted token
 	/// @param owner The address that received the token
 	/// @param roundNum The round number in which the token was minted
 	/// @param seed The unique seed generated for the token
-	event MintEvent(uint256 indexed tokenId, address indexed owner, uint256 indexed roundNum, bytes32 seed);
+	event MintEvent(uint256 indexed nftId, address indexed owner, uint256 indexed roundNum, bytes32 seed);
 
 	/// @notice Emitted when the token generation script URL is updated
 	/// @param newURL The new URL for the token generation script
@@ -38,9 +38,9 @@ interface ICosmicSignature is IERC721Enumerable {
    function setBaseURI(string memory value) external;
 
 	/// @notice Allows token owners to set a custom name for their token
-	/// @param tokenId The ID of the token to name
+	/// @param nftId The ID of the token to name
 	/// @param name The custom name to set for the token
-   function setTokenName(uint256 tokenId, string memory name) external;
+   function setTokenName(uint256 nftId, string memory name) external;
 
 	/// @notice Mints a new CosmicSignature token
 	/// @dev Only callable by the CosmicGameProxy contract.

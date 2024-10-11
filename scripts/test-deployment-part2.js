@@ -40,7 +40,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	for (let i = 0; i < event_logs.length; i++) {
 		let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[i]);
-		let ownr = await cosmicSignature.ownerOf(parsed_log.args.tokenId);
+		let ownr = await cosmicSignature.ownerOf(parsed_log.args.nftId);
 		expect(ownr).to.equal(parsed_log.args.winner);
 	}
 

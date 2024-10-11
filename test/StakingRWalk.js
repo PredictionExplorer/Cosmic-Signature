@@ -78,11 +78,11 @@ describe("Staking RandomWalk tests", function () {
 
 		let tx = await newStakingWalletRWalk.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionEvent").topicHash;
+		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionOccurred").topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
 
-		expect(await newStakingWalletRWalk.wasTokenUsed(0)).to.equal(true);
+		expect(await newStakingWalletRWalk.wasNftUsed(0)).to.equal(true);
 		expect(await newStakingWalletRWalk.stakerByTokenId(0)).to.equal(owner.address);
 		expect(await newStakingWalletRWalk.stakerByTokenId(99)).to.equal(hre.ethers.ZeroAddress);
 		expect(await newStakingWalletRWalk.lastActionIdByTokenId(0)).to.equal(0);
@@ -92,7 +92,7 @@ describe("Staking RandomWalk tests", function () {
 		await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRWalk.unstake(0);
 
-		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyUnstaked");
+		await expect(newStakingWalletRWalk.unstake(0)).to.be.revertedWithCustomError(contractErrors, "NftAlreadyUnstaked");
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
@@ -127,13 +127,13 @@ describe("Staking RandomWalk tests", function () {
 
 		let tx = await newStakingWalletRWalk.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionEvent").topicHash;
+		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionOccurred").topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		await hre.ethers.provider.send("evm_mine");
 
-		await expect(newStakingWalletRWalk.connect(addr1).unstake(0)).to.be.revertedWithCustomError(contractErrors,"AccessError");
+		await expect(newStakingWalletRWalk.connect(addr1).unstake(0)).to.be.revertedWithCustomError(contractErrors, "NftStakeActionAccessDenied");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
@@ -185,13 +185,13 @@ describe("Staking RandomWalk tests", function () {
 		let r3 = await mint_rwalk(owner);
 		let tx = await newStakingWalletRWalk.stakeMany([r1,r2,r3]);
 		let receipt = await tx.wait();
-		let topic_sig = newStakingWalletRWalk.interface.getEvent("StakeActionEvent").topicHash;
+		let topic_sig = newStakingWalletRWalk.interface.getEvent("StakeActionOccurred").topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		for (let i=0; i<receipt_logs.length; i++) {
 			let evt = newStakingWalletRWalk.interface.parseLog(receipt_logs[i]);
 		}
 
-		numTokens = await newStakingWalletRWalk.numTokensStaked();
+		numTokens = await newStakingWalletRWalk.numNftsStaked();
 		expect(numTokens).to.equal(3);
 		let isStaked = await newStakingWalletRWalk.isTokenStaked(r1);
 		expect(isStaked).to.equal(true);
@@ -202,7 +202,7 @@ describe("Staking RandomWalk tests", function () {
 
 		await hre.ethers.provider.send("evm_increaseTime", [600+1]);
 		await newStakingWalletRWalk.unstakeMany([r1,r2,r3]);
-		numTokens = await newStakingWalletRWalk.numTokensStaked();
+		numTokens = await newStakingWalletRWalk.numNftsStaked();
 		expect(numTokens).to.equal(0);
 	});
 	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
@@ -276,7 +276,7 @@ describe("Staking RandomWalk tests", function () {
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 
-		// await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk,"NoTokensStaked");
+		// await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk, "NoNftsStaked");
 		const luckyAddr = await newStakingWalletRWalk.pickRandomStakerIfPossible(hre.ethers.hashMessage('0xffff'));
 		expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
 
@@ -292,8 +292,8 @@ describe("Staking RandomWalk tests", function () {
 			for (let j=0; j<numLoops; j++) {
 				let mintPrice = await randomWalkNFT.getMintPrice();
 				await randomWalkNFT.connect(signer).mint({ value: mintPrice });
-				let tokenId = i*numLoops+ j;
-				await newStakingWalletRWalk.connect(signer).stake(tokenId);
+				let nftId = i*numLoops+ j;
+				await newStakingWalletRWalk.connect(signer).stake(nftId);
 			}
 		}
 		// verification algorithm is simple: if from 1000 staked tokens at least
@@ -360,13 +360,13 @@ describe("Staking RandomWalk tests", function () {
 
 		let tx = await newStakingWalletRWalk.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionEvent").topicHash;
+		let topic_sig = stakingWalletRWalk.interface.getEvent("StakeActionOccurred").topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRWalk.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRWalk.unstake(0);
 
-		await expect(newStakingWalletRWalk.stake(0)).to.be.revertedWithCustomError(contractErrors,"OneTimeStaking");
+		await expect(newStakingWalletRWalk.stake(0)).to.be.revertedWithCustomError(contractErrors, "NftOneTimeStaking");
 	});
 });

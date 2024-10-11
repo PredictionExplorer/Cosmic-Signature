@@ -31,7 +31,7 @@ library CosmicGameConstants {
 	/// @dev Stores details about NFTs donated to the game
 	struct DonatedNFT {
 		IERC721 nftAddress;
-		uint256 tokenId;
+		uint256 nftId;
 		uint256 round;
 		bool claimed;
 	}

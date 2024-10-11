@@ -26,11 +26,11 @@ interface ICosmicGame is ICosmicGameStorage, ISystemManagement, IBidStatistics, 
 	/// @dev This function combines bidding and NFT donation
 	/// @param _param_data Encoded bid parameters
 	/// @param nftAddress Address of the NFT contract
-	/// @param tokenId ID of the NFT to donate
+	/// @param nftId ID of the NFT to donate
    function bidAndDonateNFT(
 		bytes calldata _param_data,
 		IERC721 nftAddress,
-		uint256 tokenId
+		uint256 nftId
 	) external payable;
 
 	/// @notice Fallback function to handle incoming ETH transactions

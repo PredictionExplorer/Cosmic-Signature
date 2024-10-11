@@ -149,7 +149,7 @@ describe('Staking CST tests', function () {
 
 		const tx = await newStakingWalletCST.stakeMany([0,1]);
 		const receipt = await tx.wait();
-		const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 
@@ -161,15 +161,15 @@ describe('Staking CST tests', function () {
 		await expect(newStakingWalletCST.unstake(1)).not.to.be.reverted;
 		await expect(newStakingWalletCST.unstake(1)).to.be.revertedWithCustomError(
 			contractErrors,
-			'TokenAlreadyUnstaked'
+			'NftAlreadyUnstaked'
 		);
-		expect(await newStakingWalletCST.wasTokenUsed(0)).to.equal(true);
+		expect(await newStakingWalletCST.wasNftUsed(0)).to.equal(true);
 
 		await expect(newStakingWalletCST.depositIfPossible(0, { value: hre.ethers.parseEther('1') })).not.to.be.reverted;
 		await expect(newStakingWalletCST.depositIfPossible(1, { value: hre.ethers.parseEther('2') })).not.to.be.reverted;
-		expect(await newStakingWalletCST.numETHDeposits()).to.equal(1n);
-		const d = await newStakingWalletCST.ETHDeposits(1);
-		expect(d.rewardAmountPerStakedNFT).to.equal(hre.ethers.parseEther('3'));
+		expect(await newStakingWalletCST.numEthDeposits()).to.equal(1n);
+		const d = await newStakingWalletCST.ethDeposits(1);
+		expect(d.rewardAmountPerStakedNft).to.equal(hre.ethers.parseEther('3'));
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
@@ -207,7 +207,7 @@ describe('Staking CST tests', function () {
 
 		const tx = await newStakingWalletCST.stake(0);
 		const receipt = await tx.wait();
-		const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
@@ -215,7 +215,7 @@ describe('Staking CST tests', function () {
 
 		await expect(newStakingWalletCST.connect(addr1).unstake(1)).to.be.revertedWithCustomError(
 			contractErrors,
-			'AccessError'
+			'NftStakeActionAccessDenied'
 		);
 	});
 	// it("Shouldn't be possible to claim reward without executing unstake()", async function () {
@@ -264,19 +264,19 @@ describe('Staking CST tests', function () {
 	//
 	// 	const tx = await newStakingWalletCST.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
-	// 	const numStakedNFTs = await newStakingWalletCST.numTokensStaked();
-	// 	expect(numStakedNFTs).to.equal(1);
+	// 	const numStakedNfts = await newStakingWalletCST.numNftsStaked();
+	// 	expect(numStakedNfts).to.equal(1);
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	// 	await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 	//
 	// 	await expect(newStakingWalletCST.claimManyRewards([1], [0])).to.be.revertedWithCustomError(
 	// 		contractErrors,
-	// 		'TokenNotUnstaked'
+	// 		'NftNotUnstaked'
 	// 	);
 	// });
 	// it("Shouldn't be possible to claim deposit more than once", async function () {
@@ -325,7 +325,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	const tx = await newStakingWalletCST.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -390,7 +390,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	const tx = await newStakingWalletCST.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -401,7 +401,7 @@ describe('Staking CST tests', function () {
 	// 	await newStakingWalletCST.unstake(1);
 	// 	await expect(newStakingWalletCST.connect(addr1).claimManyRewards([1], [0])).to.be.revertedWithCustomError(
 	// 		contractErrors,
-	// 		'AccessError'
+	// 		'NftStakeActionAccessDenied'
 	// 	);
 	// });
 	// it("Shouldn't be possible to claim deposits made earlier than stakeDate", async function () {
@@ -455,7 +455,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_mine');
 	// 	const tx = await newStakingWalletCST.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 	// 	const block = await hre.ethers.provider.getBlock(receipt.blockNumber);
@@ -517,7 +517,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	let tx = await newStakingWalletCST.stake(0);
 	// 	let receipt = await tx.wait();
-	// 	let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+	// 	let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 	// 	let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	let log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -531,7 +531,7 @@ describe('Staking CST tests', function () {
 	// 	tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 	// 	await expect(tx).not.to.be.reverted;
 	// 	receipt = await tx.wait();
-	// 	topic_sig = newStakingWalletCST.interface.getEvent('EthDepositEvent').topicHash;
+	// 	topic_sig = newStakingWalletCST.interface.getEvent('EthDepositReceived').topicHash;
 	// 	receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 	// 	await expect(newStakingWalletCST.claimManyRewards([1], [0])).to.be.revertedWithCustomError(
@@ -588,7 +588,7 @@ describe('Staking CST tests', function () {
 	
 		let tx = await newStakingWalletCST.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 		// const unstakeTime = log.args.unstakeTime;
@@ -602,30 +602,30 @@ describe('Staking CST tests', function () {
 		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
-		topic_sig = newStakingWalletCST.interface.getEvent('EthDepositEvent').topicHash;
+		topic_sig = newStakingWalletCST.interface.getEvent('EthDepositReceived').topicHash;
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 		// numStakeActions = await newStakingWalletCST.numStakeActions();
-		const numDeposits = await newStakingWalletCST.numETHDeposits();
+		const numDeposits = await newStakingWalletCST.numEthDeposits();
 		// await expect(newStakingWalletCST.claimManyRewards([/*numStakeActions*/ 3], [0])).to.be.revertedWithCustomError(
 		// 	contractErrors,
-		// 	'InvalidActionId'
+		// 	'NftStakeActionInvalidId'
 		// );
 		// await expect(newStakingWalletCST.claimManyRewards([1], [numDeposits])).to.be.revertedWithCustomError(
 		// 	contractErrors,
-		// 	'InvalidDepositId'
+		// 	'EthDepositInvalidId'
 		// );
 		await expect(newStakingWalletCST.unstakeMany([0])).to.be.revertedWithCustomError(
 			contractErrors,
-			'TokenAlreadyUnstaked'
+			'NftAlreadyUnstaked'
 		);
 		await expect(newStakingWalletCST.unstakeMany([3])).to.be.revertedWithCustomError(
 			contractErrors,
-			'TokenAlreadyUnstaked'
+			'NftAlreadyUnstaked'
 		);
 		await expect(newStakingWalletCST.connect(addr1).unstakeMany([10])).to.be.revertedWithCustomError(
 			contractErrors,
-			'TokenAlreadyUnstaked'
+			'NftAlreadyUnstaked'
 		);
 		await expect(newStakingWalletCST.connect(addr1).unstakeMany([2])).not.to.be.reverted;
 	});
@@ -682,7 +682,7 @@ describe('Staking CST tests', function () {
 		let tx = await brokenStaker.doStake(0);
 		await expect(tx).not.to.be.reverted;
 		let receipt = await tx.wait();
-		let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		let topic_sig = newStakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 		// const unstakeTime = log.args.unstakeTime;
@@ -697,7 +697,7 @@ describe('Staking CST tests', function () {
 		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
-		topic_sig = newStakingWalletCST.interface.getEvent('EthDepositEvent').topicHash;
+		topic_sig = newStakingWalletCST.interface.getEvent('EthDepositReceived').topicHash;
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		log = newStakingWalletCST.interface.parseLog(receipt_logs[0]);
 
@@ -716,7 +716,7 @@ describe('Staking CST tests', function () {
 		await expect(newStakingWalletCST.connect(addr1).unstake(2)).not.to.be.reverted;
 		await expect(brokenStaker.doUnstake(1)).to.be.revertedWithCustomError(
 			contractErrors,
-			'TokenAlreadyUnstaked'
+			'NftAlreadyUnstaked'
 		);
 	});
 
@@ -889,7 +889,7 @@ describe('Staking CST tests', function () {
 	// 	await cosmicSignature.setApprovalForAll(await newStakingWalletCST.getAddress(), true);
 	// 	const tx = await newStakingWalletCST.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+	// 	const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 	//
@@ -897,12 +897,12 @@ describe('Staking CST tests', function () {
 	// 		contractErrors,
 	// 		'TokenAlreadyInserted'
 	// 	);
-	// 	let numTokens = await newStakingWalletCST.numTokensStaked();
+	// 	let numTokens = await newStakingWalletCST.numNftsStaked();
 	// 	expect(numTokens).to.equal(1);
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	// 	await expect(newStakingWalletCST.unstake(1)).not.to.be.reverted;
-	// 	numTokens = await newStakingWalletCST.numTokensStaked();
+	// 	numTokens = await newStakingWalletCST.numNftsStaked();
 	// 	expect(numTokens).to.equal(0);
 	// 	await expect(newStakingWalletCST.doRemoveToken(0)).to.be.revertedWithCustomError(
 	// 		contractErrors,
@@ -953,24 +953,24 @@ describe('Staking CST tests', function () {
 			await newCosmicSignature.mint(owner.address, 0);
 		}
 
-		let numStakedNFTs = await newStakingWalletCST.numTokensStaked();
-		expect(numStakedNFTs).to.equal(0);
+		let numStakedNfts = await newStakingWalletCST.numNftsStaked();
+		expect(numStakedNfts).to.equal(0);
 
 		for (let i = 0; i < 10; i++) {
-			const tokenId_ = ((i * 7) + 2) % 10;
-			const tx = await newStakingWalletCST.stake(tokenId_);
+			const nftId_ = ((i * 7) + 2) % 10;
+			const tx = await newStakingWalletCST.stake(nftId_);
 			await expect(tx).not.to.be.reverted;
 			const receipt = await tx.wait();
-			const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+			const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 			const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 			const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 		}
 
-		numStakedNFTs = await newStakingWalletCST.numTokensStaked();
-		expect(numStakedNFTs).to.equal(10);
+		numStakedNfts = await newStakingWalletCST.numNftsStaked();
+		expect(numStakedNfts).to.equal(10);
 
-		for ( let tokenId_ = 0; tokenId_ < 10; ++ tokenId_ ) {
-			const o = await newCosmicSignature.ownerOf(tokenId_);
+		for ( let nftId_ = 0; nftId_ < 10; ++ nftId_ ) {
+			const o = await newCosmicSignature.ownerOf(nftId_);
 			expect(o).to.equal(await newStakingWalletCST.getAddress());
 		}
 
@@ -994,11 +994,11 @@ describe('Staking CST tests', function () {
 		await newStakingWalletCST.unstakeMany([3, 4, 2]);
 		await newStakingWalletCST.unstake(1);
 
-		numStakedNFTs = await newStakingWalletCST.numTokensStaked();
-		expect(numStakedNFTs).to.equal(0);
+		numStakedNfts = await newStakingWalletCST.numNftsStaked();
+		expect(numStakedNfts).to.equal(0);
 
-		for ( let tokenId_ = 0; tokenId_ < 10; ++ tokenId_ ) {
-			const o = await newCosmicSignature.ownerOf(tokenId_);
+		for ( let nftId_ = 0; nftId_ < 10; ++ nftId_ ) {
+			const o = await newCosmicSignature.ownerOf(nftId_);
 			expect(o).to.equal(owner.address);
 		}
 	});
@@ -1071,10 +1071,10 @@ describe('Staking CST tests', function () {
 	// 	const roundNum = await cosmicGameProxy.roundNum();
 	// 	const tx = await cosmicGameProxy.connect(addr3).claimPrize();
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCST.interface.getEvent('EthDepositEvent').topicHash;
+	// 	const topic_sig = stakingWalletCST.interface.getEvent('EthDepositReceived').topicHash;
 	// 	const log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const parsed_log = stakingWalletCST.interface.parseLog(log);
-	// 	const depositRecord = await stakingWalletCST.ETHDeposits(parsed_log.args.depositNum);
+	// 	const depositRecord = await stakingWalletCST.ethDeposits(parsed_log.args.depositNum);
 	// 	const amountInRound = depositRecord.depositAmount / depositRecord.numStaked;
 	// 	const moduloInRound = depositRecord.depositAmount % depositRecord.numStaked;
 	// 	expect(parsed_log.args.amount).to.equal(previousStakingAmount);
@@ -1137,8 +1137,8 @@ describe('Staking CST tests', function () {
 			const signer = signers[i];
 			for (let j = 0; j < numLoops; j++) {
 				await newCosmicSignature.connect(owner).mint(signer.address, 0);
-				const tokenId = i * numLoops + j;
-				await newStakingWalletCST.connect(signer).stake(tokenId);
+				const nftId = i * numLoops + j;
+				await newStakingWalletCST.connect(signer).stake(nftId);
 			}
 		}
 		for (let i = 0; i < numSigners; i++) {
@@ -1146,8 +1146,8 @@ describe('Staking CST tests', function () {
 			for (let j = 0; j < numLoops; j++) {
 				const mintPrice = await randomWalkNFT.getMintPrice();
 				await randomWalkNFT.connect(signer).mint({ value: mintPrice });
-				const tokenId = i * numLoops + j;
-				await newStakingWalletRWalk.connect(signer).stake(tokenId);
+				const nftId = i * numLoops + j;
+				await newStakingWalletRWalk.connect(signer).stake(nftId);
 			}
 		}
 		// verification algorithm is simple: if from 400 staked tokens at least
@@ -1217,13 +1217,13 @@ describe('Staking CST tests', function () {
 
 		const tx = await newStakingWalletCST.stake(0);
 		const receipt = await tx.wait();
-		const topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		const topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
 		await expect(newStakingWalletCST.unstake(1)).not.to.be.reverted;
-		await expect(newStakingWalletCST.stake(0)).to.be.revertedWithCustomError(contractErrors, 'OneTimeStaking');
+		await expect(newStakingWalletCST.stake(0)).to.be.revertedWithCustomError(contractErrors, 'NftOneTimeStaking');
 
 		// await newStakingWalletCST.doInsertToken(1n,1n);
 		// await expect(newStakingWalletCST.doInsertToken(1n,1n)).to.be.revertedWithCustomError(contractErrors,'TokenAlreadyInserted');
@@ -1273,12 +1273,12 @@ describe('Staking CST tests', function () {
 
 		let tx = await newStakingWalletCST.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = stakingWalletCST.interface.getEvent('StakeActionEvent').topicHash;
+		let topic_sig = stakingWalletCST.interface.getEvent('StakeActionOccurred').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletCST.interface.parseLog(receipt_logs[0]);
 		// let unstakeTime = log.args.unstakeTime;
-		let numStakedNFTs = await newStakingWalletCST.numTokensStaked();
-		expect(numStakedNFTs).to.equal(1);
+		let numStakedNfts = await newStakingWalletCST.numNftsStaked();
+		expect(numStakedNfts).to.equal(1);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
 		await expect(newStakingWalletCST.depositIfPossible(0)).not.to.be.reverted; // msg.value = 0

@@ -10,28 +10,37 @@ import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
 contract StakingWalletCST is Ownable, IStakingWalletCST {
 	// #region Data Types
 
-	/// @notice Stores details about an NFT staking action.
-	struct StakeAction {
-		uint256 tokenId;
+	/// @notice Stores details about an NFT stake action.
+	struct _StakeAction {
+		uint256 nftId;
 		address nftOwnerAddress;
 
-		// A past version used to have a variable here that specified rewards from what deposits have not been claimed yet.
-		// If you need to resurrect that feature revisit the logic near Comment-202410171.
+		/// @notice
+		/// [Comment-202410268]
+		/// This index is within `StakingWalletCST.ethDeposits`.
+		/// A nonzero indicates that this NFT has been unstaked and it's likely that rewards from some `_EthDeposit` instances
+		/// have not been paid yet. So the staker has an option to call `StakingWalletCST.payReward`, possibly multiple times,
+		/// to receieve yet to be paid rewards.
+		/// We used the word "likely" because this particular `_EthDeposit` instance has not been evaluated yet.
+		/// Therefore it's actually possible that the staker isn't entitled to get a reward from it,
+		/// let anone from other deposits with lower indexes.
+		/// [/Comment-202410268]
+		uint256 maxUnpaidEthDepositIndex;
 	}
 
 	/// @notice Stores details about an ETH deposit.
-	/// Multiple deposits can be aggregated in a single `ETHDeposit` instance.
+	/// Multiple deposits can be aggregated in a single `_EthDeposit` instance.
 	/// To minimize transaction fees, this fits in a single storage slot.
-	struct ETHDeposit {
+	struct _EthDeposit {
 		/// @dev
 		/// [Comment-202410117]
 		/// This is populated from `StakingWalletCST._actionCounter`.
 		/// [/Comment-202410117]
-		/// This is populated when creating an `ETHDeposit` instance.
-		/// This is not updated when adding another deposit to the last `ETHDeposit` instance.
+		/// This is populated when creating an `_EthDeposit` instance.
+		/// This is not updated when adding another deposit to the last `_EthDeposit` instance.
 		uint64 depositId;
 
-		uint192 rewardAmountPerStakedNFT;
+		uint192 rewardAmountPerStakedNft;
 	}
 
 	// #endregion
@@ -44,32 +53,42 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 	address public game;
 
 	/// @notice Info about currently staked NFTs.
+	/// This also contains unstaked, but not yet fully paid NFTs.
 	/// @dev Comment-202410117 applies to `stakeActionId`.
-	mapping(uint256 stakeActionId => StakeAction) public stakeActions;
+	mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
 
 	/// @notice The current number of staked NFTs.
-	uint256 private _numStakedNFTs;
+	/// In other words, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
+	uint256 private _numStakedNfts;
 
-	/// @notice This indicates whether a staking action has occurred after the last ETH deposit.
+	/// @notice The current number of already unstaked and not yet fully rewarded NFTs.
+	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
+	uint256 public numUnpaidStakeActions;
+
+	/// @notice This indicates whether a stake action has occurred after the last ETH deposit.
 	/// 1 means false; 2 means true.
-	/// @dev If someone stakes an NFT we will need to create a new `ETHDeposits` item on the next deposit.
+	/// @dev If someone stakes an NFT we will need to create a new `ethDeposits` item on the next deposit.
 	/// Although, if they also unstake it before the next deposit it would be unnecessary to create a new item,
 	/// but we will anyway create one, which is probably not too bad.
 	/// [Comment-202410168]
 	/// The initial value doesn't matter because before we get a chance to evaluate this we will assign to this.
 	/// [/Comment-202410168]
 	/// To minimize gas fees, we never assign zero to this, and therefore this is not a `bool`.
-	uint256 private _NFTWasStakedAfterPrevETHDeposit = 2;
+	uint256 private _nftWasStakedAfterPrevEthDeposit = 2;
 
 	/// @notice This contains IDs of NFTs that have ever been used for staking.
 	/// @dev Idea. Item value should be an enum NFTStakingStatusCode: NeverStaked, Staked, Unstaked.
-	mapping(uint256 tokenId => bool tokenWasUsed) private _usedTokens;
+	mapping(uint256 nftId => bool nftWasUsed) private _usedNfts;
 
-	/// @notice `ETHDepositIndex` is 1-based.
-	mapping(uint256 ETHDepositIndex => ETHDeposit) public ETHDeposits;
+	/// @notice `ethDepositIndex` is 1-based.
+	mapping(uint256 ethDepositIndex => _EthDeposit) public ethDeposits;
 
-	/// @notice `ETHDeposits` item count.
-	uint256 public numETHDeposits;
+	/// @notice `ethDeposits` item count.
+	uint256 public numEthDeposits;
+
+	/// @dev A max limit on a max limit.
+	/// This value is quite big, but not too big -- to avoid dealing with possible overflows.
+	uint256 private constant _NUM_ETH_DEPOSITS_TO_EVALUATE_MAX_LIMIT_MAX_LIMIT = type(uint256).max / 256;
 
 	/// @dev This is used to generate monotonic unique IDs.
 	uint256 private _actionCounter;
@@ -95,47 +114,50 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		// #region Assertions
 		// #enable_asserts assert(address(nft) == address(nft_));
 		// #enable_asserts assert(game == game_);
-		// #enable_asserts assert(_numStakedNFTs == 0);
-		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 2);
-		// #enable_asserts assert(numETHDeposits == 0);
+		// #enable_asserts assert(_numStakedNfts == 0);
+		// #enable_asserts assert(numUnpaidStakeActions == 0);
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
+		// #enable_asserts assert(numEthDeposits == 0);
 		// #enable_asserts assert(_actionCounter == 0);
 		// #endregion
 	}
 
-	function stake(uint256 tokenId_) public override {
+	function stake(uint256 nftId_) public override {
 		require(
-			( ! _usedTokens[tokenId_] ),
-			CosmicGameErrors.OneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", tokenId_)
+			( ! _usedNfts[nftId_] ),
+			CosmicGameErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #region Assertions
-		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNfts;
 		// #endregion
 
-		StakeAction memory newStakeAction_;
-		newStakeAction_.tokenId = tokenId_;
-		newStakeAction_.nftOwnerAddress = msg.sender;
-		uint256 newStakeActionId_ = ( ++ _actionCounter );
-		stakeActions[newStakeActionId_] = newStakeAction_;
-		uint256 newNumStakedNFTs_ = _numStakedNFTs + 1;
-		_numStakedNFTs = newNumStakedNFTs_;
+		uint256 newStakeActionId_ = _actionCounter + 1;
+		_actionCounter = newStakeActionId_;
+		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
+		newStakeActionReference_.nftId = nftId_;
+		newStakeActionReference_.nftOwnerAddress = msg.sender;
+		// #enable_asserts assert(newStakeActionReference_.maxUnpaidEthDepositIndex == 0);
+		uint256 newNumStakedNFTs_ = _numStakedNfts + 1;
+		_numStakedNfts = newNumStakedNFTs_;
 
 		// Comment-202410168 relates.
-		_NFTWasStakedAfterPrevETHDeposit = 2;
+		_nftWasStakedAfterPrevEthDeposit = 2;
 
-		_usedTokens[tokenId_] = true;
-		nft.transferFrom(msg.sender, address(this), tokenId_);
-		emit StakeActionEvent(newStakeActionId_, tokenId_, msg.sender, newNumStakedNFTs_);
+		_usedNfts[nftId_] = true;
+		nft.transferFrom(msg.sender, address(this), nftId_);
+		emit StakeActionOccurred(newStakeActionId_, nftId_, msg.sender, newNumStakedNFTs_);
 		
 		// #region Assertions
-		// #enable_asserts assert(nft.ownerOf(tokenId_) == address(this));
-		// #enable_asserts assert(stakeActions[newStakeActionId_].tokenId == tokenId_);
+		// #enable_asserts assert(nft.ownerOf(nftId_) == address(this));
+		// #enable_asserts assert(stakeActions[newStakeActionId_].nftId == nftId_);
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == msg.sender);
-		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ + 1);
-		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 2);
+		// #enable_asserts assert(stakeActions[newStakeActionId_].maxUnpaidEthDepositIndex == 0);
+		// #enable_asserts assert(_numStakedNfts == initialNumStakedNFTs_ + 1);
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
 
 		// // todo-1 For some reason, this fails to compile without `this.`. To be revisited.
-		// #enable_asserts assert(this.wasTokenUsed(tokenId_));
+		// #enable_asserts assert(this.wasNftUsed(nftId_));
 
 		// #enable_asserts assert(_actionCounter > 0);
 		// #endregion
@@ -143,7 +165,7 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 
 	function stakeMany(uint256[] memory tokenIds_) external override {
 		// #region Assertions
-		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNfts;
 		// #endregion
 
 		for ( uint256 NFTIdIndex_ = 0; NFTIdIndex_ < tokenIds_.length; ++ NFTIdIndex_ ) {
@@ -151,38 +173,92 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		}
 
 		// #region Assertions
-		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ + tokenIds_.length);
+		// #enable_asserts assert(_numStakedNfts == initialNumStakedNFTs_ + tokenIds_.length);
 		// #endregion
 	}
 
-	function unstake(uint256 stakeActionId_) external override {
-		uint256 rewardAmount_ = _unstake(stakeActionId_);
+	function unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
+		// This must be positive, which implies that we will pay at least the last deposit on unstake.
+		// As a result, it's correct to not create another deposit after someone unstakes.
+		require(
+			numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= _NUM_ETH_DEPOSITS_TO_EVALUATE_MAX_LIMIT_MAX_LIMIT,
+			CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of allowed range", numEthDepositsToEvaluateMaxLimit_)
+		);
+
+		uint256 rewardAmount_ = _unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 		_payReward(rewardAmount_);
 	}
 
-	function unstakeMany(uint256[] memory stakeActionIds_) external override {
+	function unstakeMany(uint256[] memory stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
 		// #region Assertions
-		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNfts;
 		// #endregion
 
 		uint256 rewardAmount_ = 0;
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
-			rewardAmount_ += _unstake(stakeActionIds_[stakeActionIdIndex_]);
+			rewardAmount_ += _unstake(stakeActionIds_[stakeActionIdIndex_], _NUM_ETH_DEPOSITS_TO_EVALUATE_MAX_LIMIT_MAX_LIMIT);
 		}
 		_payReward(rewardAmount_);
 
 		// #region Assertions
 		// Comment-202410159 applies to Comment-202410158.
-		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ - stakeActionIds_.length);
+		// #enable_asserts assert(_numStakedNfts == initialNumStakedNFTs_ - stakeActionIds_.length);
 		// #endregion
 	}
 
-	function numTokensStaked() external view override returns (uint256) {
-		return _numStakedNFTs;
+	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
+		require(
+			numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= _NUM_ETH_DEPOSITS_TO_EVALUATE_MAX_LIMIT_MAX_LIMIT,
+			CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of llowed range", numEthDepositsToEvaluateMaxLimit_)
+		);
+
+		_StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
+		_StakeAction memory stakeAction_ = stakeActionReference_;
+
+		if (msg.sender != stakeAction_.nftOwnerAddress) {
+			if (stakeAction_.nftOwnerAddress != address(0)) {
+				revert CosmicGameErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to receive staking reward.", stakeActionId_, msg.sender);
+			} else {
+				// Comment-202410182 applies.
+				revert CosmicGameErrors.NftStakingRewardAlreadyPaid("NFT staking reward has already been paid.", stakeActionId_);
+			}
+		}
+		require(
+			stakeAction_.maxUnpaidEthDepositIndex > 0,
+			CosmicGameErrors.NftNotUnstaked("NFT has not been unstaked.", stakeActionId_)
+		);
+
+		// #region Assertions
+		// #enable_asserts uint256 initialNumUnpaidStakeActions_ = numUnpaidStakeActions;
+		// #endregion
+
+		(uint256 rewardAmount_, uint256 maxUnpaidEthDepositIndex_) =
+			_calculateRewardAmount(stakeActionId_, stakeAction_.maxUnpaidEthDepositIndex, numEthDepositsToEvaluateMaxLimit_);
+		stakeActionReference_.maxUnpaidEthDepositIndex = maxUnpaidEthDepositIndex_;
+		if(maxUnpaidEthDepositIndex_ == 0) {
+			delete stakeActionReference_.nftId;
+			delete stakeActionReference_.nftOwnerAddress;
+			-- numUnpaidStakeActions;
+		}
+		emit RewardPaid(stakeActionId_, stakeAction_.nftId, msg.sender, rewardAmount_, maxUnpaidEthDepositIndex_);
+		_payReward(rewardAmount_);
+
+		// #region Assertions
+		// #enable_asserts assert(initialNumUnpaidStakeActions_ - numUnpaidStakeActions <= 1);
+		// #endregion
 	}
 
-	function wasTokenUsed(uint256 tokenId_) external view override returns (bool) {
-		return _usedTokens[tokenId_];
+	function payManyRewards(uint256[] memory stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
+		// todo-0 write code
+		assert(false);
+	}
+
+	function numNftsStaked() external view override returns (uint256) {
+		return _numStakedNfts;
+	}
+
+	function wasNftUsed(uint256 nftId_) external view override returns (bool) {
+		return _usedNfts[nftId_];
 	}
 
 	/// @dev todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
@@ -195,71 +271,67 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 			CosmicGameErrors.DepositFromUnauthorizedSender("Only the CosmicGame contract is permitted to make a deposit.", msg.sender)
 		);
 
-		uint256 numStakedNFTsCopy_ = _numStakedNFTs;
+		uint256 numStakedNftsCopy_ = _numStakedNfts;
 
-		if (numStakedNFTsCopy_ == 0) {
+		if (numStakedNftsCopy_ == 0) {
 			// This error description length affects the length we evaluate near Comment-202410149.
-			revert CosmicGameErrors.NoTokensStaked("There are no CST NFTs staked.");
+			revert CosmicGameErrors.NoNftsStaked("There are no CST NFTs staked.");
 		}
 
 		// #region Assertions
-		// #enable_asserts uint256 initialNumETHDeposits_ = numETHDeposits;
+		// #enable_asserts uint256 initialNumETHDeposits_ = numEthDeposits;
 		// #endregion
 
-		ETHDeposit memory newETHDeposit_;
-		uint256 newNumETHDeposits_ = numETHDeposits;
+		_EthDeposit memory newETHDeposit_;
+		uint256 newNumETHDeposits_ = numEthDeposits;
 		uint256 newActionCounter_ = _actionCounter + 1;
 		_actionCounter = newActionCounter_;
 
 		// Comment-202410168 relates.
-		if (_NFTWasStakedAfterPrevETHDeposit >= 2) {
+		if (_nftWasStakedAfterPrevEthDeposit >= 2) {
 
-			_NFTWasStakedAfterPrevETHDeposit = 1;
+			_nftWasStakedAfterPrevEthDeposit = 1;
 
-			// If we executed logic near Comment-202410166, it's possible that an `ETHDeposits` item already exists at this position.
+			// If we executed logic near Comment-202410166, it's possible that an `ethDeposits` item already exists at this position.
 			// We will overwrite it.
 			++ newNumETHDeposits_;
-			numETHDeposits = newNumETHDeposits_;
+			numEthDeposits = newNumETHDeposits_;
 
 			newETHDeposit_.depositId = uint64(newActionCounter_);
 
 			// [Comment-202410161/]
-			newETHDeposit_.rewardAmountPerStakedNFT = uint192(msg.value / numStakedNFTsCopy_);
+			newETHDeposit_.rewardAmountPerStakedNft = uint192(msg.value / numStakedNftsCopy_);
 		} else {
-			newETHDeposit_ = ETHDeposits[newNumETHDeposits_];
+			newETHDeposit_ = ethDeposits[newNumETHDeposits_];
 
 			// Comment-202410161 applies.
-			newETHDeposit_.rewardAmountPerStakedNFT += uint192(msg.value / numStakedNFTsCopy_);
+			newETHDeposit_.rewardAmountPerStakedNft += uint192(msg.value / numStakedNftsCopy_);
 		}
 
-		ETHDeposits[newNumETHDeposits_] = newETHDeposit_;
-		emit EthDepositEvent(roundNum_, newActionCounter_, newNumETHDeposits_, newETHDeposit_.depositId, msg.value, numStakedNFTsCopy_);
+		ethDeposits[newNumETHDeposits_] = newETHDeposit_;
+		emit EthDepositReceived(roundNum_, newActionCounter_, newNumETHDeposits_, newETHDeposit_.depositId, msg.value, numStakedNftsCopy_);
 
 		// #region Assertions
-		// #enable_asserts assert(_NFTWasStakedAfterPrevETHDeposit == 1);
-		// #enable_asserts assert(ETHDeposits[numETHDeposits].depositId > 0);
-		// #enable_asserts assert(numETHDeposits - initialNumETHDeposits_ <= 1);
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
+		// #enable_asserts assert(ethDeposits[numEthDeposits].depositId > 0);
+		// #enable_asserts assert(numEthDeposits - initialNumETHDeposits_ <= 1);
 		// #enable_asserts assert(_actionCounter > 0);
 		// #endregion
 	}
 
 	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns (bool) {
 		// require(charityAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-
-		// [Comment-202410171]
-		// This condition ensures that all rewards have been claimed. It wasn't the case in a past version,
-		// which had another variable named `numStakeActions`.
-		// [/Comment-202410171]
-		require(_numStakedNFTs == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still CST NFTs staked."));
+		require(_numStakedNfts == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still CST NFTs staked."));
+		require(numUnpaidStakeActions == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still unpaid rewards."));
 
 		if (resetState_) {
 			// // This would be unnecessary because of Comment-202410168.
-			// _NFTWasStakedAfterPrevETHDeposit = 2;
+			// _nftWasStakedAfterPrevEthDeposit = 2;
 
 			// [Comment-202410166]
-			// It's unnecessary to also clear `ETHDeposits`.
+			// It's unnecessary to also clear `ethDeposits`.
 			// [/Comment-202410166]
-			numETHDeposits = 0;
+			numEthDeposits = 0;
 		}
 
 		if (charityAddress_ != address(0)) {
@@ -296,59 +368,118 @@ contract StakingWalletCST is Ownable, IStakingWalletCST {
 		return true;
 	}
 
-	function _unstake(uint256 stakeActionId_) private returns (uint256) {
-		StakeAction memory stakeAction_ = stakeActions[stakeActionId_];
+	function _unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) private returns (uint256) {
+		_StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
+		_StakeAction memory stakeAction_ = stakeActionReference_;
 
 		if (msg.sender != stakeAction_.nftOwnerAddress) {
 			if (stakeAction_.nftOwnerAddress != address(0)) {
-				revert CosmicGameErrors.AccessError("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
+				revert CosmicGameErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
 			} else {
 				// [Comment-202410182]
 				// It's also possible that this NFT has never been staked, but we have no knowledge about that.
 				// [/Comment-202410182]
-				revert CosmicGameErrors.TokenAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_);
+				revert CosmicGameErrors.NftAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_);
 			}
 		}
+		require(
+			stakeAction_.maxUnpaidEthDepositIndex == 0,
+			CosmicGameErrors.NftAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_)
+		);
 
 		// #region Assertions
-		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNFTs;
+		// #enable_asserts uint256 initialNumStakedNFTs_ = _numStakedNfts;
+		// #enable_asserts uint256 initialNumUnpaidStakeActions_ = numUnpaidStakeActions;
 		// #endregion
 
-		uint256 rewardAmount_ = _calculateRewardAmount(stakeActionId_);
-		delete stakeActions[stakeActionId_];
-		uint256 newNumStakedNFTs_ = _numStakedNFTs - 1;
-		_numStakedNFTs = newNumStakedNFTs_;
-		nft.transferFrom(address(this), msg.sender, stakeAction_.tokenId);
-		emit UnstakeActionEvent(stakeActionId_, stakeAction_.tokenId, msg.sender, newNumStakedNFTs_, rewardAmount_);
+		(uint256 rewardAmount_, uint256 maxUnpaidEthDepositIndex_) =
+			_calculateRewardAmount(stakeActionId_, numEthDeposits, numEthDepositsToEvaluateMaxLimit_);
+		if(maxUnpaidEthDepositIndex_ > 0) {
+			stakeActionReference_.maxUnpaidEthDepositIndex = maxUnpaidEthDepositIndex_;
+			++ numUnpaidStakeActions;
+		} else {
+			delete stakeActionReference_.nftId;
+			delete stakeActionReference_.nftOwnerAddress;
+
+			// We have alredy `require`d that `stakeActionReference_.maxUnpaidEthDepositIndex` is zero.
+			// So saving gas by not `delete`ing it.
+		}
+		uint256 newNumStakedNFTs_ = _numStakedNfts - 1;
+		_numStakedNfts = newNumStakedNFTs_;
+		nft.transferFrom(address(this), msg.sender, stakeAction_.nftId);
+		emit UnstakeActionOccurred(stakeActionId_, stakeAction_.nftId, msg.sender, newNumStakedNFTs_, rewardAmount_, maxUnpaidEthDepositIndex_);
 
 		// #region Assertions
-		// #enable_asserts assert(nft.ownerOf(stakeAction_.tokenId) == msg.sender);
-		// #enable_asserts assert(stakeActions[stakeActionId_].tokenId == 0);
-		// #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
-		// #enable_asserts assert(_numStakedNFTs == initialNumStakedNFTs_ - 1);
+		// #enable_asserts assert(nft.ownerOf(stakeAction_.nftId) == msg.sender);
+		// // #enable_asserts assert(stakeActions[stakeActionId_].nftId == 0);
+		// // #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
+		// #enable_asserts assert(_numStakedNfts == initialNumStakedNFTs_ - 1);
+		// #enable_asserts assert(numUnpaidStakeActions - initialNumUnpaidStakeActions_ <= 1);
 		// #endregion
 
 		return rewardAmount_;
 	}
 
+	// todo-0 Return the number of evaluated ETH deposits.
+	// todo-0 Write a comment. This consumes more gas than the other overload.
+	function _calculateRewardAmount(uint256 stakeActionId_, uint256 maxUnpaidEthDepositIndex_, uint256 numEthDepositsToEvaluateMaxLimit_) private view returns (uint256, uint256) {
+		// #region Assertions
+		// #enable_asserts assert(numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= _NUM_ETH_DEPOSITS_TO_EVALUATE_MAX_LIMIT_MAX_LIMIT);
+		// #endregion
+
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// This can underflow. No problem.
+			uint256 newMaxUnpaidEthDepositIndex_ = uint256(int256(maxUnpaidEthDepositIndex_) - int256(numEthDepositsToEvaluateMaxLimit_));
+			
+			// todo-0  < 0  ?
+			if(int256(newMaxUnpaidEthDepositIndex_) <= 0) {
+				return (_calculateRewardAmount(stakeActionId_, maxUnpaidEthDepositIndex_), 0);
+			}
+
+			uint256 rewardAmount_ = 0;
+			uint256 ethDepositIndex_ = maxUnpaidEthDepositIndex_;
+			do {
+				_EthDeposit memory ETHDeposit_ = ethDeposits[ethDepositIndex_];
+
+				// Comment-202410269 applies.
+				// Although at this point `ethDepositIndex_` is guaranteed to be positive.
+				if (ETHDeposit_.depositId < stakeActionId_) {
+
+					break;
+				}
+				rewardAmount_ += ETHDeposit_.rewardAmountPerStakedNft;
+			} while (( -- ethDepositIndex_ ) > newMaxUnpaidEthDepositIndex_);
+			return (rewardAmount_, newMaxUnpaidEthDepositIndex_);
+		}
+	}
+
 	/// @notice Calculates reward amount for a given stake action.
 	/// @param stakeActionId_ Stake action ID.
+	/// todo-0 mention all params
 	/// @return The calculated value.
-	/// @dev Issue. It's possible to use binary search to find the oldest `ETHDeposits` item to add.
+	/// @dev Issue. It's possible to use binary search to find the oldest `ethDeposits` item to add.
 	/// It would probably tend to be more gas efficient.
 	/// But I am not going to implement that.
-	function _calculateRewardAmount(uint256 stakeActionId_) private view returns (uint256) {
+	function _calculateRewardAmount(uint256 stakeActionId_, uint256 maxUnpaidEthDepositIndex_) private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
 			uint256 rewardAmount_ = 0;
-			for ( uint256 ETHDepositIndex_ = numETHDeposits; /*ETHDepositIndex_ > 0*/; -- ETHDepositIndex_ ) {
-				ETHDeposit memory ETHDeposit_ = ETHDeposits[ETHDepositIndex_];
+			for ( uint256 ethDepositIndex_ = maxUnpaidEthDepositIndex_; /*ethDepositIndex_ > 0*/; -- ethDepositIndex_ ) {
+				_EthDeposit memory ETHDeposit_ = ethDeposits[ethDepositIndex_];
+
+				// [Comment-202410269]
+				// This condition is guaranteed to be `true` when `ethDepositIndex_` is zero.
+				// [/Comment-202410269]
 				if (ETHDeposit_.depositId < stakeActionId_) {
+
 					break;
 				}
-				rewardAmount_ += ETHDeposit_.rewardAmountPerStakedNFT;
+				rewardAmount_ += ETHDeposit_.rewardAmountPerStakedNft;
 			}
 			return rewardAmount_;
 		}

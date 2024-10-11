@@ -102,11 +102,11 @@ contract CosmicGame is
 	function bidAndDonateNFT(
 		bytes calldata _param_data,
 		IERC721 nftAddress,
-		uint256 tokenId
+		uint256 nftId
 	) external payable override nonReentrant {
 		
 		_bid(_param_data);
-		_donateNFT(nftAddress, tokenId);
+		_donateNFT(nftAddress, nftId);
 	}
 
 	// Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface

@@ -11,58 +11,74 @@ pragma solidity 0.8.26;
 /// todo-0 Fix the above comments too.
 ///
 /// If I was to implement incremental reward payouts, I would mostly keep the current functions and events.
-/// In addition, I would add a `bool` flag to `UnstakeActionEvent` for whether all rewards have been paid to the staker.
+/// In addition, I would add a `bool` flag to `UnstakeActionOccurred` for whether all rewards have been paid to the staker.
 /// In case it equals `false`, the staker would have an option to call a designated incremental reward payout function
 /// that would process another 20K or so (configurable) deposits. This logic would be in part similar to the old `claimManyRewards`.
 interface IStakingWalletCST {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.
-	/// @param tokenId Staked NFT ID.
+	/// @param nftId Staked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
-	/// @param numStakedNFTs Staked NFT count after this action.
-	event StakeActionEvent(
+	/// @param numStakedNfts Staked NFT count after this action.
+	event StakeActionOccurred(
 		uint256 indexed stakeActionId,
-		uint256 indexed tokenId,
+		uint256 indexed nftId,
 		address indexed stakerAddress,
-		uint256 numStakedNFTs
+		uint256 numStakedNfts
 	);
 
-	/// @notice Emitted when an NFT is unstaked.
+	/// @notice Emitted when an NFT is unstaked and at least a part of the reward is paid to the staker.
 	/// @param stakeActionId Stake action ID.
-	/// @param tokenId Staked NFT ID.
+	/// @param nftId Unstaked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
-	/// @param numStakedNFTs Staked NFT count after this action.
+	/// @param numStakedNfts Staked NFT count after this action.
 	/// @param rewardAmount Reward amount paid to the staker.
-	event UnstakeActionEvent(
+	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
+	event UnstakeActionOccurred(
 		uint256 indexed stakeActionId,
-		uint256 indexed tokenId,
+		uint256 indexed nftId,
 		address indexed stakerAddress,
-		uint256 numStakedNFTs,
-		uint256 rewardAmount
+		uint256 numStakedNfts,
+		uint256 rewardAmount,
+		uint256 maxUnpaidEthDepositIndex
+	);
+
+	/// @notice Emitted when another part of the reward is paid to the staker.
+	/// @param stakeActionId Stake action ID.
+	/// @param nftId Unstaked NFT ID.
+	/// @param stakerAddress Staker (NFT owner) address.
+	/// @param rewardAmount Reward amount paid to the staker.
+	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
+	event RewardPaid(
+		uint256 indexed stakeActionId,
+		uint256 indexed nftId,
+		address indexed stakerAddress,
+		uint256 rewardAmount,
+		uint256 maxUnpaidEthDepositIndex
 	);
 
 	/// @notice Emitted when an ETH deposit is received.
 	/// @param roundNum Bidding round number.
 	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit action.
-	/// @param depositIndex `ETHDeposit` instance index in `ETHDeposits` (1-based).
+	/// @param depositIndex `_EthDeposit` instance index in `ethDeposits` (1-based).
 	/// It can remain the same as it was in the previous event.
-	/// @param depositId `ETHDeposit` instance ID.
+	/// @param depositId `_EthDeposit` instance ID.
 	/// It can remain the same as it was in the previous event.
-	/// If a new `ETHDeposit` instance was created, `depositId == actionCounter`.
+	/// If a new `_EthDeposit` instance was created, `depositId == actionCounter`.
 	/// @param depositAmount The deposited ETH amount.
-	/// @param numStakedNFTs The current staked NFT count.
-	event EthDepositEvent(
+	/// @param numStakedNfts The current staked NFT count.
+	event EthDepositReceived(
 		uint256 indexed roundNum,
 		uint256 actionCounter,
 		uint256 depositIndex,
 		uint256 depositId,
 		uint256 depositAmount,
-		uint256 numStakedNFTs
+		uint256 numStakedNfts
 	);
 
 	/// @notice Stakes an NFT.
-	/// @param tokenId_ NFT to stake ID.
-	function stake(uint256 tokenId_) external;
+	/// @param nftId_ NFT to stake ID.
+	function stake(uint256 nftId_) external;
 
 	/// @notice Stakes multiple NFTs.
 	/// @param tokenIds_ NFT to stake IDs.
@@ -71,7 +87,7 @@ interface IStakingWalletCST {
 	/// @notice Unstakes an NFT and pays its reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
 	/// @dev Comment-202410142 applies.
-	function unstake(uint256 stakeActionId_) external;
+	function unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @notice Unstakes multiple NFTs and pays their rewards to the staker.
 	/// @param stakeActionIds_ Stake action IDs.
@@ -81,15 +97,19 @@ interface IStakingWalletCST {
 	/// In that case, the frontend must prohibit calling it.
 	/// At the same time, it appears to be safe to assume that `unstake` gas fee cannot exceed the limit.
 	/// [/Comment-202410142]
-	function unstakeMany(uint256[] memory stakeActionIds_) external;
+	function unstakeMany(uint256[] memory stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
+
+	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
+
+	function payManyRewards(uint256[] memory stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @return The current staked NFT count.
-	function numTokensStaked() external view returns (uint256);
+	function numNftsStaked() external view returns (uint256);
 
 	/// @notice Checks if an NFT has been used for staking.
-	/// @param tokenId_ NFT ID.
+	/// @param nftId_ NFT ID.
 	/// @return `true` if the given NFT has been used, `false` otherwise.
-	function wasTokenUsed(uint256 tokenId_) external view returns (bool);
+	function wasNftUsed(uint256 nftId_) external view returns (bool);
 
 	/// @notice Receives an ETH deposit to be distributed to stakers.
 	/// @param roundNum_ Bidding round number.
@@ -98,7 +118,7 @@ interface IStakingWalletCST {
 	/// The deposited amount isn't supposed to be zero, but a zero depsit would not break things,
 	/// although the behavior would not necessarily be perfect.
 	/// This function is not designed to handle the case when there are no staked NFTs, which is why it's named "if possible",
-	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoTokensStaked` error,
+	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoNftsStaked` error,
 	/// which the depositing contract must be prepared to handle (it is, indeed, prepared).
 	function depositIfPossible(uint256 roundNum_) external payable;
 

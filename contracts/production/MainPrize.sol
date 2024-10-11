@@ -103,7 +103,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
-				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoTokensStaked.selector;
+				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoNftsStaked.selector;
 			} else {
 				unexpectedErrorOccurred = true;
 			}
@@ -144,7 +144,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// Endurance Champion Prize
 		// todo-0 Can this address really be zero? Maybe just assert this?
 		if (enduranceChampion != address(0)) {
-			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
+			uint256 nftId = nft.mint(enduranceChampion, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
@@ -153,13 +153,13 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// {
 			// } catch {
 			// }
-			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, 0);
+			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, nftId, erc20TokenReward, 0);
 		}
 
 		// Stellar Spender Prize
 		// todo-0 Can this address really be zero? Maybe just assert this?
 		if (stellarSpender != address(0)) {
-			uint256 tokenId = nft.mint(stellarSpender, roundNum);
+			uint256 nftId = nft.mint(stellarSpender, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
@@ -171,7 +171,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			emit StellarSpenderWinnerEvent(
 				stellarSpender,
 				roundNum,
-				tokenId,
+				nftId,
 				erc20TokenReward,
 				stellarSpenderAmount,
 				1
@@ -197,12 +197,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			uint256 tokenId = nft.mint(raffleWinner, roundNum);
-			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, tokenId, i, false, false);
+			uint256 nftId = nft.mint(raffleWinner, roundNum);
+			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, nftId, i, false, false);
 		}
 
 		// Distribute CST NFTs to random RandomWalk NFT stakers
-		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numTokensStaked();
+		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numNftsStaked();
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
@@ -213,8 +213,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 					break;
 				}
 
-				uint256 tokenId = nft.mint(rwalkWinner, roundNum);
-				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
+				uint256 nftId = nft.mint(rwalkWinner, roundNum);
+				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, nftId, i, true, true);
 			}
 		}
 	}
