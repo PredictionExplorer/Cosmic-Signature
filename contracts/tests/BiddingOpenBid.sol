@@ -124,7 +124,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 				(bool success, ) = msg.sender.call{ value: amountToSend }("");
 				require(
 					success,
-					CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend,msg.sender) 
+					CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 				);
 			}
 		}

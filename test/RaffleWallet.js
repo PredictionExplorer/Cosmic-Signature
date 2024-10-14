@@ -14,7 +14,7 @@ describe("RaffleWallet", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation
@@ -28,7 +28,7 @@ describe("RaffleWallet", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation
@@ -52,7 +52,7 @@ describe("RaffleWallet", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic
@@ -85,7 +85,7 @@ describe("RaffleWallet", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic

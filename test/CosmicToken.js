@@ -18,7 +18,7 @@ describe("CosmicToken tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
@@ -31,7 +31,7 @@ describe("CosmicToken tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
 			marketingWallet,
 		};

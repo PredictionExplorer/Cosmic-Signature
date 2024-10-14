@@ -8,9 +8,10 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletRWalk } from "./interfaces/IStakingWalletRWalk.sol";
 
-/// todo-0 I have refactored `StakingWalletCST` and its interface. Do the same here.
+/// todo-0 I have refactored `StakingWalletCosmicSignatureNft` and its interface. Do the same here.
 /// todo-0 Nick is saying that both wallets should, ideally, reuse the functionality.
 /// todo-0 Keep in mind that some functionality cannot be eliminated here.
+/// todo-0 Does this really need to be `Ownable`?
 contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	// #region Data Types
 
@@ -177,7 +178,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 		return tokenIndices[nftId] != 0;
 	}
 
-	function numNftsStaked() public view override returns (uint256) {
+	function numStakedNfts() public view override returns (uint256) {
 		// #region Assertions
 		// todo-1 Given this equality, why do we need to store `_numStakedNfts` separately? To save gas?
 		// todo-1 At least explain this in a comment near `_numStakedNfts`.
@@ -204,7 +205,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	}
 
 	function pickRandomStakerIfPossible(bytes32 entropy) public view override returns (address) {
-		// require(stakedTokens.length > 0, CosmicGameErrors.NoNftsStaked("There are no RandomWalk NFTs staked."));
+		// require(stakedTokens.length > 0, CosmicGameErrors.NoNftsStaked("There are no NFTs staked."));
 		if (stakedTokens.length == 0) {
 			return address(0);
 		}

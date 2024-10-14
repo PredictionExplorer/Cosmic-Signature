@@ -41,7 +41,7 @@ contract RaffleWallet is Ownable, IRaffleWallet {
 		require(balance > 0, CosmicGameErrors.ZeroBalance("Your balance is 0."));
 		balances[msg.sender] = 0;
 		(bool success, ) = msg.sender.call{ value: balance }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer failed.", balance, msg.sender));
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer failed.", msg.sender, balance));
 		emit RaffleWithdrawalEvent(msg.sender, balance);
 	}
 }

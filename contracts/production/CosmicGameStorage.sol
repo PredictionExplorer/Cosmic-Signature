@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
-import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
 abstract contract CosmicGameStorage is ICosmicGameStorage {
@@ -18,7 +18,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	
 	CosmicToken public token;
 	address public raffleWallet;
-	StakingWalletCST public stakingWalletCST;
+	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 	// todo-0 Make this strongly typed.
 	address public stakingWalletRWalk;
 	address public marketingWallet;

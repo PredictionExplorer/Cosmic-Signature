@@ -63,7 +63,7 @@ interface IStakingWalletRWalk {
 
 	/// @notice Returns the number of currently staked tokens
 	/// @return Number of staked tokens
-	function numNftsStaked() external view returns (uint256);
+	function numStakedNfts() external view returns (uint256);
 
 	/// @notice Gets the last action ID for a given token
 	/// @param nftId ID of the token to check

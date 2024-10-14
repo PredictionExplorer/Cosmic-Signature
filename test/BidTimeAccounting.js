@@ -20,7 +20,7 @@ describe("Bid time accounting", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
@@ -33,7 +33,7 @@ describe("Bid time accounting", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 		};
@@ -179,7 +179,7 @@ describe("Bid time accounting", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,

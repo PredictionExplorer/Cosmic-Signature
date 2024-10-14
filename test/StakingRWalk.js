@@ -17,7 +17,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation,
@@ -31,7 +31,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation,
@@ -54,7 +54,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
@@ -103,7 +103,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
@@ -145,7 +145,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation,
@@ -191,7 +191,7 @@ describe("Staking RandomWalk tests", function () {
 			let evt = newStakingWalletRWalk.interface.parseLog(receipt_logs[i]);
 		}
 
-		numTokens = await newStakingWalletRWalk.numNftsStaked();
+		numTokens = await newStakingWalletRWalk.numStakedNfts();
 		expect(numTokens).to.equal(3);
 		let isStaked = await newStakingWalletRWalk.isTokenStaked(r1);
 		expect(isStaked).to.equal(true);
@@ -202,7 +202,7 @@ describe("Staking RandomWalk tests", function () {
 
 		await hre.ethers.provider.send("evm_increaseTime", [600+1]);
 		await newStakingWalletRWalk.unstakeMany([r1,r2,r3]);
-		numTokens = await newStakingWalletRWalk.numNftsStaked();
+		numTokens = await newStakingWalletRWalk.numStakedNfts();
 		expect(numTokens).to.equal(0);
 	});
 	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
@@ -215,7 +215,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation,
@@ -262,7 +262,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			cosmicGameImplementation,
@@ -336,7 +336,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,

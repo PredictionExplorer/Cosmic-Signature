@@ -18,7 +18,7 @@ describe("CosmicSignature tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
@@ -31,7 +31,7 @@ describe("CosmicSignature tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
 			marketingWallet,
 		};
@@ -80,9 +80,9 @@ describe("CosmicSignature tests", function () {
 		expect(await cosmicGameProxy.raffleWallet()).to.equal(testAcct.address);
 
 		testAcct = hre.ethers.Wallet.createRandom();
-		await expect(cosmicGameProxy.connect(owner).setStakingWalletCST(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
-		await cosmicGameProxy.connect(owner).setStakingWalletCST(testAcct.address);
-		expect(await cosmicGameProxy.stakingWalletCST()).to.equal(testAcct.address);
+		await expect(cosmicGameProxy.connect(owner).setStakingWalletCosmicSignatureNft(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
+		await cosmicGameProxy.connect(owner).setStakingWalletCosmicSignatureNft(testAcct.address);
+		expect(await cosmicGameProxy.stakingWalletCosmicSignatureNft()).to.equal(testAcct.address);
 
 		testAcct = hre.ethers.Wallet.createRandom();
 		await expect(cosmicGameProxy.connect(owner).setStakingWalletRWalk(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
@@ -215,7 +215,7 @@ describe("CosmicSignature tests", function () {
 		await expect(cosmicGameProxy.connect(owner).setCharity(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setRandomWalk(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setRaffleWallet(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
-		await expect(cosmicGameProxy.connect(owner).setStakingWalletCST(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
+		await expect(cosmicGameProxy.connect(owner).setStakingWalletCosmicSignatureNft(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setStakingWalletRWalk(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleETHWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleNFTWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
@@ -312,7 +312,7 @@ describe("CosmicSignature tests", function () {
 		.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setMarketingWallet(addr1.address))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setStakingWalletCST(addr1.address))
+		await expect(cosmicGameProxy.connect(addr1).setStakingWalletCosmicSignatureNft(addr1.address))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setStakingWalletRWalk(addr1.address))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
@@ -349,7 +349,7 @@ describe("CosmicSignature tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk
 		} = await basicDeploymentAdvanced(
 			'CosmicGame',

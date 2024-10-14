@@ -18,7 +18,7 @@ describe("CosmicSignature tests", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
@@ -31,7 +31,7 @@ describe("CosmicSignature tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
 			marketingWallet,
 		};
@@ -168,7 +168,7 @@ describe("CosmicSignature tests", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic
@@ -187,8 +187,8 @@ describe("CosmicSignature tests", function () {
 		let charityAddr = await cosmicGameProxy.charity();
 
 		await cosmicGameProxy.mintCST(addr1.address, 0); // mint a token so we can stake
-		await cosmicSignature.connect(addr1).setApprovalForAll(await stakingWalletCST.getAddress(), true);
-		await stakingWalletCST.connect(addr1).stake(0); // we need to stake, otherwise the deposit would be rejected
+		await cosmicSignature.connect(addr1).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
+		await stakingWalletCosmicSignatureNft.connect(addr1).stake(0); // we need to stake, otherwise the deposit would be rejected
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { msg: '', rwalk: -1 };
@@ -214,7 +214,7 @@ describe("CosmicSignature tests", function () {
 		let stakingAmount = await cosmicGameProxy.stakingAmount();
 		let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let balanceCharityBefore = await hre.ethers.provider.getBalance(charityAddr);
-		let balanceStakingBefore = await hre.ethers.provider.getBalance(await stakingWalletCST.getAddress());
+		let balanceStakingBefore = await hre.ethers.provider.getBalance(await stakingWalletCosmicSignatureNft.getAddress());
 		let raffleAmount = await cosmicGameProxy.raffleAmount();
 		let numWinners = await cosmicGameProxy.numRaffleETHWinnersBidding();
 		let amountPerWinner = Number(raffleAmount)/Number(numWinners);
@@ -227,7 +227,7 @@ describe("CosmicSignature tests", function () {
 		let receipt = await tx.wait();
 		let balanceAfter = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let balanceCharityAfter = await hre.ethers.provider.getBalance(charityAddr);
-		let balanceStakingAfter = await hre.ethers.provider.getBalance(await stakingWalletCST.getAddress());
+		let balanceStakingAfter = await hre.ethers.provider.getBalance(await stakingWalletCosmicSignatureNft.getAddress());
 
 		let topic_sig = cosmicGameProxy.interface.getEvent('RaffleETHWinnerEvent').topicHash;
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

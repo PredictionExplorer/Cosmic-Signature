@@ -15,7 +15,7 @@ describe("Events2", function () {
 			cosmicDAO,
 			raffleWallet,
 			randomWalkNFT,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
@@ -29,7 +29,7 @@ describe("Events2", function () {
 			cosmicDAO,
 			randomWalkNFT,
 			raffleWallet,
-			stakingWalletCST,
+			stakingWalletCosmicSignatureNft,
 			stakingWalletRWalk,
 			marketingWallet,
 			bidLogic,
@@ -44,7 +44,7 @@ describe("Events2", function () {
 		],
 	};
 	it("Number of Raffle events match the configuration", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet, stakingWalletCST, stakingWalletRWalk } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet, stakingWalletCosmicSignatureNft, stakingWalletRWalk } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 
@@ -70,8 +70,8 @@ describe("Events2", function () {
 		for (let i = 0; i<Number(ts); i++) {
 			let ownr = await cosmicSignature.ownerOf(i)
 			let owner_signer = await hre.ethers.getSigner(ownr);
-			await cosmicSignature.connect(owner_signer).setApprovalForAll(await stakingWalletCST.getAddress(), true);
-			await stakingWalletCST.connect(owner_signer).stake(i);
+			await cosmicSignature.connect(owner_signer).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
+			await stakingWalletCosmicSignatureNft.connect(owner_signer).stake(i);
 		}
 		ts = await randomWalkNFT.totalSupply();
 		for (let i = 0; i<Number(ts); i++) {

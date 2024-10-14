@@ -9,7 +9,7 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
-import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
@@ -90,7 +90,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		_distributeRafflePrizes(raffleAmount_);
 
 		// Staking
-		try stakingWalletCST.depositIfPossible{ value: stakingAmount_ }(roundNum) {
+		try stakingWalletCosmicSignatureNft.depositIfPossible{ value: stakingAmount_ }(roundNum) {
 		} catch (bytes memory errorDetails) {
 			// [ToDo-202409226-0]
 			// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred` to `true` or `false`.
@@ -99,7 +99,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			bool unexpectedErrorOccurred;
 			
 			// [Comment-202410149/]
-			if (errorDetails.length == 100) {
+			if (errorDetails.length == 96) {
 
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
@@ -110,9 +110,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			if (unexpectedErrorOccurred) {
 				revert
 					CosmicGameErrors.FundTransferFailed(
-						"Transfer to StakingWalletCST failed.",
-						stakingAmount_,
-						address(stakingWalletCST)
+						"Transfer to StakingWalletCosmicSignatureNft failed.",
+						address(stakingWalletCosmicSignatureNft),
+						stakingAmount_
 					);
 			}
 			charityAmount_ += stakingAmount_;
@@ -123,9 +123,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
 		(bool success, ) = charity.call{ value: charityAmount_ }("");
 		if (success) {
-			emit CosmicGameEvents.FundsTransferredToCharityEvent(charityAmount_, charity);
+			emit CosmicGameEvents.FundsTransferredToCharity(charity, charityAmount_);
 		} else {
-			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity);
+			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charity, charityAmount_);
 		}
 
 		// Sending main prize at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
@@ -135,7 +135,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// todo-1 Can/should we forward all gas to trusted external calls?
 		// todo-1 But a malitios winner also can exploit stack overflow. Can we find out what error happened?
 		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, /*winner*/ msg.sender));
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", /*winner*/ msg.sender, prizeAmount_));
 	}
 
 	/// @notice Distribute special prizes to Endurance Champion and Stellar Spender
@@ -201,8 +201,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, nftId, i, false, false);
 		}
 
-		// Distribute CST NFTs to random RandomWalk NFT stakers
-		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numNftsStaked();
+		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
+		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {

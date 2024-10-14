@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-/// @title Staking wallet for Cosmic Signature Tokens.
+/// @title Staking wallet for Cosmic Signature NFTs.
 /// @author Cosmic Game Development Team
 /// @notice A contract implementing this interface allows users to stake their Cosmic Signature Tokens (CST) and earn rewards.
-/// @dev Supports CST NFT staking and unstaking, as well as staker reward distribution.
+/// @dev Supports CosmicSignature NFT staking and unstaking, as well as staker reward distribution.
 /// todo-0 Isn't our fungible token named Cosmic Signature Token? But here we are talking about Cosmic Signature NFTs, right?
-/// todo-0 Rename to `IStakingWalletCSNFT` or `IStakingWalletCSTNFT`?
+/// todo-0 Rename to `IStakingWalletCSNFT` or `IStakingWalletCosmicSignatureNftNFT`?
 /// todo-0 Also rename the contract implementing this interface.
 /// todo-0 Fix the above comments too.
 ///
@@ -14,7 +14,7 @@ pragma solidity 0.8.26;
 /// In addition, I would add a `bool` flag to `UnstakeActionOccurred` for whether all rewards have been paid to the staker.
 /// In case it equals `false`, the staker would have an option to call a designated incremental reward payout function
 /// that would process another 20K or so (configurable) deposits. This logic would be in part similar to the old `claimManyRewards`.
-interface IStakingWalletCST {
+interface IStakingWalletCosmicSignatureNft {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Staked NFT ID.
@@ -81,8 +81,8 @@ interface IStakingWalletCST {
 	function stake(uint256 nftId_) external;
 
 	/// @notice Stakes multiple NFTs.
-	/// @param tokenIds_ NFT to stake IDs.
-	function stakeMany(uint256[] memory tokenIds_) external;
+	/// @param nftIds_ NFT to stake IDs.
+	function stakeMany(uint256[] calldata nftIds_) external;
 
 	/// @notice Unstakes an NFT and pays its reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
@@ -97,14 +97,14 @@ interface IStakingWalletCST {
 	/// In that case, the frontend must prohibit calling it.
 	/// At the same time, it appears to be safe to assume that `unstake` gas fee cannot exceed the limit.
 	/// [/Comment-202410142]
-	function unstakeMany(uint256[] memory stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
+	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	function payManyRewards(uint256[] memory stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
+	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @return The current staked NFT count.
-	function numNftsStaked() external view returns (uint256);
+	function numStakedNfts() external view returns (uint256);
 
 	/// @notice Checks if an NFT has been used for staking.
 	/// @param nftId_ NFT ID.

@@ -150,9 +150,9 @@ library CosmicGameErrors {
 	/// @notice Thrown when an ERC20 token transfer fails
 	/// See also: `CosmicGameEvents.ERC20TransferFailed`
 	/// @param errStr Description of the error
-	/// @param receiver The intended receiver of the tokens
-	/// @param tokenAmount The amount of tokens to transfer
-	error ERC20TransferFailed(string errStr, address receiver, uint256 tokenAmount);
+	/// @param destinationAddress The intended receiver of the tokens
+	/// @param amount The amount of tokens to transfer
+	error ERC20TransferFailed(string errStr, address destinationAddress, uint256 amount);
 
 	/// @notice Thrown when ERC721 token minting fails
 	/// @param errStr Description of the error
@@ -203,9 +203,9 @@ library CosmicGameErrors {
 	/// @notice Thrown when a fund transfer fails
 	/// See also: `CosmicGameEvents.FundTransferFailed`
 	/// @param errStr Description of the error
+	/// @param destinationAddress The intended destination of the funds
 	/// @param amount The amount that failed to transfer
-	/// @param destination The intended destination of the funds
-	error FundTransferFailed(string errStr, uint256 amount, address destination);
+	error FundTransferFailed(string errStr, address destinationAddress, uint256 amount);
 
 	/// @notice Thrown when a deposit is attempted from an unauthorized sender
 	/// @param errStr Description of the error
@@ -215,27 +215,27 @@ library CosmicGameErrors {
 	// #endregion
 	// #region NFT Staking Errors
 
-	/// @notice Thrown when attempting to unstake an already unstaked token
+	/// @notice Thrown when attempting to unstake an already unstaked NFT
 	/// @param errStr Description of the error
-	/// @param stakeActionId The ID of the stake action
+	/// @param stakeActionId NFT stake action ID
 	error NftAlreadyUnstaked(string errStr, uint256 stakeActionId);
 
 	/// @notice Thrown when attempting to claim a reward for a token that hasn't been unstaked
 	/// @param errStr Description of the error
-	/// @param stakeActionId The ID of the stake action
+	/// @param stakeActionId NFT stake action ID
 	error NftNotUnstaked(string errStr, uint256 stakeActionId);
 
 	// /// @notice Thrown when attempting to claim an already claimed deposit
 	// /// @param errStr Description of the error
-	// /// @param stakeActionId The ID of the stake action
+	// /// @param stakeActionId NFT stake action ID
 	// /// @param depositId The ID of the deposit
 	// error DepositAlreadyClaimed(string errStr, uint256 stakeActionId, uint256 depositId);
 
-	error NftStakingRewardAlreadyPaid(string errStr, uint256 stakeActionId);
+	// error NftStakingRewardAlreadyPaid(string errStr, uint256 stakeActionId);
 
 	// /// @notice Thrown when a deposit is outside the staking window
 	// /// @param errStr Description of the error
-	// /// @param stakeActionId The ID of the stake action
+	// /// @param stakeActionId NFT stake action ID
 	// /// @param depositId The ID of the deposit
 	// /// @param stakeStart The start time of the stake
 	// /// @param stakeEnd The end time of the stake
@@ -255,10 +255,10 @@ library CosmicGameErrors {
 	/// @param requester The address of the requester
 	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address requester);
 
-	// /// @notice Thrown when an invalid action ID is provided
-	// /// @param errStr Description of the error
-	// /// @param stakeActionId The invalid action ID
-	// error NftStakeActionInvalidId(string errStr, uint256 stakeActionId);
+	/// @notice Thrown when an invalid NFT stake action ID is provided
+	/// @param errStr Description of the error
+	/// @param stakeActionId The invalid value
+	error NftStakeActionInvalidId(string errStr, uint256 stakeActionId);
 
 	// /// @notice Thrown when an invalid deposit ID is provided
 	// /// @param errStr Description of the error
@@ -275,18 +275,20 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	/// @param nftId The ID of the token
 	/// @param stakeActionId The ID of the action
+	/// @dev todo-0 This is ugly legacy. Comment this out.
 	error TokenAlreadyInserted(string errStr, uint256 nftId, uint256 stakeActionId);
 
 	/// @notice Thrown when attempting to delete an already deleted token
 	/// @param errStr Description of the error
 	/// @param nftId The ID of the token
+	/// @dev todo-0 This is ugly legacy. Comment this out.
 	error TokenAlreadyDeleted(string errStr, uint256 nftId);
 
-	/// @notice Thrown when there are no tokens staked
+	/// @notice Thrown when there are no NFTs staked
 	/// @param errStr Description of the error
 	error NoNftsStaked(string errStr);
 
-	/// @notice Thrown when attempting to stake a token more than once
+	/// @notice Thrown when attempting to stake an NFT more than once
 	/// @param errStr Description of the error
 	/// @param nftId The ID of the token
 	error NftOneTimeStaking(string errStr, uint256 nftId);
