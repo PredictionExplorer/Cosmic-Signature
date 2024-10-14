@@ -215,7 +215,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		// #enable_asserts assert(stakeActions[newStakeActionId_].maxUnpaidEthDepositIndex == 0);
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
-		// #enable_asserts assert(_usedNfts(nftId_));
+		// #enable_asserts assert(_usedNfts[nftId_]);
 		// #enable_asserts assert(_actionCounter > 0);
 
 		// #endregion
@@ -282,9 +282,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		uint256 rewardAmountsSum_ = 0;
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
 			++ numEthDepositsToEvaluateMaxLimit_;
-			(uint256 rewardAmount_, numEthDepositsToEvaluateMaxLimit_) =
+			(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) =
 				_unstake(stakeActionIds_[stakeActionIdIndex_], numEthDepositsToEvaluateMaxLimit_);
 			rewardAmountsSum_ += rewardAmount_;
+			numEthDepositsToEvaluateMaxLimit_ = remainingNumEthDepositsToEvaluateMaxLimit_;
 		}
 		_payReward(rewardAmountsSum_);
 
@@ -338,9 +339,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		uint256 rewardAmountsSum_ = 0;
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
 			++ numEthDepositsToEvaluateMaxLimit_;
-			(uint256 rewardAmount_, numEthDepositsToEvaluateMaxLimit_) =
+			(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) =
 				_preparePayReward(stakeActionIds_[stakeActionIdIndex_], numEthDepositsToEvaluateMaxLimit_);
 			rewardAmountsSum_ += rewardAmount_;
+			numEthDepositsToEvaluateMaxLimit_ = remainingNumEthDepositsToEvaluateMaxLimit_;
 		}
 		_payReward(rewardAmountsSum_);
 	}
@@ -398,13 +400,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		);
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 		if (numStakedNftsCopy_ == 0) {
-			// This error description length affects the length we evaluate near Comment-202410149.
-			// todo-0 Retest that length.
-			// todo-0 Do we have a relevant test? That test is checking that MainPrize sent both charity and staking amopunts to charity.
-			string errorDescription_ = "There are no staked NFTs."
-			// #enable_asserts assert(bytes(errorDescription_).length == 41);
-
-			revert CosmicGameErrors.NoStakedNfts(errorDescription_);
+			// This string length affects the length we evaluate near Comment-202410149 and log near Comment-202410299.
+			revert CosmicGameErrors.NoStakedNfts("There are no staked NFTs.");
 		}
 
 		// #endregion
@@ -742,7 +739,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 
 				// Comment-202410284 applies.
 				// [Comment-202410287/]
-				ethDepositIndex_ = uint256(int256(ethDepositIndex_ - int256(1));
+				ethDepositIndex_ = uint256(int256(ethDepositIndex_) - int256(1));
 				// #enable_asserts assert(int256(ethDepositIndex_) >= -1);
 
 				// #endregion
@@ -820,7 +817,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	///    `address.call`.
 	///    `msg.sender`.
 	///    `CosmicGameErrors.FundTransferFailed`.
-	function static _payReward(uint256 rewardAmount_) private {
+	function _payReward(uint256 rewardAmount_) private {
 		// #region
 
 		// #enable_asserts uint256 initialBalance_ = address(this).balance;
@@ -832,11 +829,13 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		// // It's unnecessary to spend gas on this validation.
 		// // [/Comment-202409215]
 		// // This will be zero in the following cases:
-		// // 1. The staker stakes and before we receive anotehr deposit unstakes their NFT.
-		// // 2. All deposits we received while this stake was active
+		// // 1. The staker stakes and, before we receive anotehr deposit, unstakes their NFT.
+		// // 2. Someone calls `unstakeMany` or `payManyRewards` with an empty array of stake action IDs.
+		// // 3. We evaluated only a single deposit and determined that the staker isn't entitled to it.
+		// //    This case is elaborated in Comment-202410142.
+		// // 4. All deposits we received while this stake was active
 		// //    were too small for the formula near Comment-202410161 to produce a nonzero.
 		// //    Although that's probably unlikely to happen.
-		// // 3. Someone calls `unstakeMany` or `payManyRewards` with an empty array of stake action IDs.
 		// if (rewardAmount_ > 0)
 
 		{

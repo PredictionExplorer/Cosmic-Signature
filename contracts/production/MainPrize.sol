@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -99,12 +100,15 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			bool unexpectedErrorOccurred;
 			
 			// [Comment-202410149/]
-			if (errorDetails.length == 96) {
+			if (errorDetails.length == 100) {
 
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
 				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoStakedNfts.selector;
 			} else {
+				// [Comment-202410299/]
+				// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails.length);
+
 				unexpectedErrorOccurred = true;
 			}
 			if (unexpectedErrorOccurred) {
