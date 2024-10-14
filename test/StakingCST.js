@@ -272,7 +272,7 @@ describe('Staking CST tests', function () {
 	// 	expect(numStakedNfts).to.equal(1);
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	// 	await hre.ethers.provider.send('evm_mine');
-	// 	await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
+	// 	await expect(cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 	//
 	// 	await expect(newStakingWalletCosmicSignatureNft.claimManyRewards([1], [0])).to.be.revertedWithCustomError(
 	// 		contractErrors,
@@ -332,7 +332,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	//
-	// 	await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
+	// 	await expect(cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 	// 	await expect(newStakingWalletCosmicSignatureNft.unstake(1)).not.to.be.reverted;
 	// 	await expect(newStakingWalletCosmicSignatureNft.claimManyRewards([1],[0,0])).to.be.revertedWithCustomError(
 	// 		newStakingWalletCosmicSignatureNft,
@@ -397,7 +397,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	//
-	// 	await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
+	// 	await expect(cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 	// 	await newStakingWalletCosmicSignatureNft.unstake(1);
 	// 	await expect(newStakingWalletCosmicSignatureNft.connect(addr1).claimManyRewards([1], [0])).to.be.revertedWithCustomError(
 	// 		contractErrors,
@@ -451,7 +451,7 @@ describe('Staking CST tests', function () {
 	// 	await newCosmicSignature.connect(addr1).setApprovalForAll(await newStakingWalletCosmicSignatureNft.getAddress(), true);
 	//
 	// 	await newStakingWalletCosmicSignatureNft.connect(addr1).stake(1);
-	// 	await expect(cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
+	// 	await expect(cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') })).not.to.be.reverted;
 	// 	await hre.ethers.provider.send('evm_mine');
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	const receipt = await tx.wait();
@@ -528,7 +528,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	// 	await newStakingWalletCosmicSignatureNft.unstake(1);
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]);
-	// 	tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
+	// 	tx = await cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') });
 	// 	await expect(tx).not.to.be.reverted;
 	// 	receipt = await tx.wait();
 	// 	topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('EthDepositReceived').topicHash;
@@ -599,7 +599,7 @@ describe('Staking CST tests', function () {
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 	
 		await expect(newStakingWalletCosmicSignatureNft.unstake(1)).not.to.be.reverted;
-		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
+		tx = await cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
 		topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('EthDepositReceived').topicHash;
@@ -694,7 +694,7 @@ describe('Staking CST tests', function () {
 
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 
-		tx = await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
+		tx = await cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') });
 		await expect(tx).not.to.be.reverted;
 		receipt = await tx.wait();
 		topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('EthDepositReceived').topicHash;
@@ -1340,7 +1340,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [600]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	//
-	// 	await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('2') });
+	// 	await cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('2') });
 	// 	await newStakingWalletCosmicSignatureNft.unstake(1);
 	// 	await newStakingWalletCosmicSignatureNft.claimManyRewards([1], [0]);
 	//
@@ -1349,7 +1349,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [600]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	//
-	// 	await cosmicGameProxy.depositStakingCSTIfPossible({ value: hre.ethers.parseEther('3') });
+	// 	await cosmicGameProxy.depositToStakingWalletCosmicSignatureNftIfPossible({ value: hre.ethers.parseEther('3') });
 	//
 	// 	await newStakingWalletCosmicSignatureNft.unstake(3);
 	// 	let depositId = 1n;		// 1 because it is a new deposit, User want's to claim rewards on its second deposit

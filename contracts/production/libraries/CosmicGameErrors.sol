@@ -284,9 +284,9 @@ library CosmicGameErrors {
 	/// @dev todo-0 This is ugly legacy. Comment this out.
 	error TokenAlreadyDeleted(string errStr, uint256 nftId);
 
-	/// @notice Thrown when there are no NFTs staked
+	/// @notice Thrown when there are no staked NFTs
 	/// @param errStr Description of the error
-	error NoNftsStaked(string errStr);
+	error NoStakedNfts(string errStr);
 
 	/// @notice Thrown when attempting to stake an NFT more than once
 	/// @param errStr Description of the error

@@ -118,7 +118,7 @@ interface IStakingWalletCosmicSignatureNft {
 	/// The deposited amount isn't supposed to be zero, but a zero depsit would not break things,
 	/// although the behavior would not necessarily be perfect.
 	/// This function is not designed to handle the case when there are no staked NFTs, which is why it's named "if possible",
-	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoNftsStaked` error,
+	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoStakedNfts` error,
 	/// which the depositing contract must be prepared to handle (it is, indeed, prepared).
 	function depositIfPossible(uint256 roundNum_) external payable;
 

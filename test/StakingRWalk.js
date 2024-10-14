@@ -276,7 +276,7 @@ describe("Staking RandomWalk tests", function () {
 		let newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRWalk.waitForDeployment();
 
-		// await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk, "NoNftsStaked");
+		// await expect(newStakingWalletRWalk.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRWalk, "NoStakedNfts");
 		const luckyAddr = await newStakingWalletRWalk.pickRandomStakerIfPossible(hre.ethers.hashMessage('0xffff'));
 		expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
 

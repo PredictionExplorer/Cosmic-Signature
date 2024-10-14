@@ -103,7 +103,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
-				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoNftsStaked.selector;
+				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoStakedNfts.selector;
 			} else {
 				unexpectedErrorOccurred = true;
 			}

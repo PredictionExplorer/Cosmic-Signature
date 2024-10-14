@@ -184,7 +184,7 @@ contract SpecialCosmicGame is CosmicGame {
 	// 		}
 	// 	}
 	// }
-	function depositStakingCSTIfPossible() external payable {
+	function depositToStakingWalletCosmicSignatureNftIfPossible() external payable {
 		// todo-0 I added the passing of `roundNum`. Is it correct?
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
 	}

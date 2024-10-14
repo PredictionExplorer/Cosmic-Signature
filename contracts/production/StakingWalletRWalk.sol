@@ -205,7 +205,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	}
 
 	function pickRandomStakerIfPossible(bytes32 entropy) public view override returns (address) {
-		// require(stakedTokens.length > 0, CosmicGameErrors.NoNftsStaked("There are no NFTs staked."));
+		// require(stakedTokens.length > 0, CosmicGameErrors.NoStakedNfts("There are no staked NFTs."));
 		if (stakedTokens.length == 0) {
 			return address(0);
 		}

@@ -138,8 +138,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	constructor(CosmicSignature nft_, address game_) Ownable(msg.sender) {
 		// #region
 
-		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft."));
-		require(game_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game."));
+		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft_."));
+		require(game_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game_."));
 
 		// #endregion
 		// #region
@@ -371,7 +371,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `CosmicGameErrors.DepositFromUnauthorizedSender`.
-	///    `CosmicGameErrors.NoNftsStaked`.
+	///    `CosmicGameErrors.NoStakedNfts`.
 	///    `EthDepositReceived`.
 	///    `_EthDeposit`.
 	///    `game`.
@@ -401,10 +401,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 			// This error description length affects the length we evaluate near Comment-202410149.
 			// todo-0 Retest that length.
 			// todo-0 Do we have a relevant test? That test is checking that MainPrize sent both charity and staking amopunts to charity.
-			string errorDescription_ = "There are no NFTs staked."
+			string errorDescription_ = "There are no staked NFTs."
 			// #enable_asserts assert(bytes(errorDescription_).length == 41);
 
-			revert CosmicGameErrors.NoNftsStaked(errorDescription_);
+			revert CosmicGameErrors.NoStakedNfts(errorDescription_);
 		}
 
 		// #endregion
@@ -483,7 +483,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		// #region
 
 		// require(charityAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		require(_numStakedNfts == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still NFTs staked."));
+		require(_numStakedNfts == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still staked NFTs."));
 		require(numUnpaidStakeActions == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still unpaid rewards."));
 
 		// #endregion
