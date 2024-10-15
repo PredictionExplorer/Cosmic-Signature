@@ -112,7 +112,7 @@ interface IStakingWalletCosmicSignatureNft {
 	/// @dev Comment-202410142 applies.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	/// @notice After an NFT has been unstaked, continues paying rewards to the staker.
+	/// @notice After an NFT has been unstaked, pays another part of the reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
@@ -123,11 +123,13 @@ interface IStakingWalletCosmicSignatureNft {
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @return The current staked NFT count.
+	/// @dev Comment-202410274 relates.
 	function numStakedNfts() external view returns (uint256);
 
-	/// @notice Checks if an NFT has been used for staking.
+	/// @notice Checks if an NFT has ever been used for staking.
 	/// @param nftId_ NFT ID.
-	/// @return `true` if the given NFT has been used, `false` otherwise.
+	/// @return `true` if the given NFT has been used; `false` otherwise.
+	/// @dev Comment-202410274 relates.
 	function wasNftUsed(uint256 nftId_) external view returns (bool);
 
 	/// @notice Receives an ETH deposit to be distributed to stakers.

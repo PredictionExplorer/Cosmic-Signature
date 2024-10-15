@@ -13,7 +13,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// todo-1 Why not name this `randomWalkNFT`?
 	address public randomWalk;
 
-	/// @notice Reference to the CosmicSignature NFT contract
+	/// @notice Reference to the CosmicSignature contract
 	CosmicSignature public nft;
 	
 	CosmicToken public token;
