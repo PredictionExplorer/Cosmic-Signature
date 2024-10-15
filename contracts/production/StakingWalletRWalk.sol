@@ -12,13 +12,22 @@ import { IStakingWalletRWalk } from "./interfaces/IStakingWalletRWalk.sol";
 /// todo-0 Nick is saying that both wallets should, ideally, reuse the functionality.
 /// todo-0 Keep in mind that some functionality cannot be eliminated here.
 /// todo-0 Does this really need to be `Ownable`?
+/// todo-0 Rename to StakingWalletRandomWalkNft.
+/// todo-0 Rename the interface too.
+/// todo-0 Rename the file too.
 contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	// #region Data Types
 
 	/// @notice Represents a stake action for a token
 	/// @dev Stores details about each staking event
 	struct _StakeAction {
+		// todo-0 Add uint256 index;
+		// todo-0 Zero-based?
+		// todo-0 Comment that this is index in `StakingWalletRWalk.stakerAddresses`.
+		// todo-0 It can change zero opr more times during the lifetime of the `_StakeAction` instance.
+
 		uint256 nftId;
+		// todo-0 Rename to nftOwnerAddress
 		address owner;
 		// todo-0 Eliminate?
 		uint256 stakeTime;
@@ -41,16 +50,19 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	// #region State
 
 	/// @notice Reference to the RandomWalkNFT contract
+	/// todo-0 Rename to randomWalkNft
 	RandomWalkNFT public randomWalk;
 
+	/// @notice todo-0 write comment
 	mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
 
 	/// @notice The total number of stake actions
+	/// todo-0 Eliminate.
 	uint256 public numStakeActions;
 
-	/// @notice This contains IDs of NFTs that have ever been used for staking.
-	/// @dev Idea. Item value should be an enum NFTStakingStatusCode: NeverStaked, Staked, Unstaked.
-	mapping(uint256 nftId => bool nftWasUsed) private _usedNfts;
+	/// @notice The current number of staked NFTs.
+	/// todo-0 Move this to the base class. Or eliminate?
+	uint256 private _numStakedNfts;
 
 	/// @notice Currently staked NFT IDs
 	/// todo-0 Make sense to either convert this to `mapping` or eliminate `_numStakedNfts`?
@@ -58,15 +70,20 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	/// todo-0 Don't eliminate this because this is used by the logic.
 	uint256[] public stakedTokens;
 
-	/// @notice The current number of staked NFTs.
-	uint256 private _numStakedNfts;
-
 	/// @notice Mapping of NFT ID to its index in the `stakedTokens` array
 	/// The index is 1-based.
 	mapping(uint256 => uint256) public tokenIndices;
 
 	/// @notice Mapping of NFT ID to its last action ID
+	/// todo-0 Replace with `stakerAddresses`. It maps staking action index to staker address.
+	/// todo-0 Comment that it can contain items beyond `_numStakedNfts - 1`. Those are garbage that the client code must ignore.
+	/// todo-0 Or maybe delete that garbage?
 	mapping(uint256 => int256) public lastActionIds;
+
+	/// @notice This contains IDs of NFTs that have ever been used for staking.
+	/// @dev Comment-202411012 applies.
+	/// todo-0 Move this to the base class.
+	mapping(uint256 nftId => bool nftWasUsed) private _usedNfts;
 
 	/// todo-0 Eliminate?
 	mapping(uint256 ethDepositIndex => _EthDeposit) public ethDeposits;
@@ -81,10 +98,7 @@ contract StakingWalletRWalk is Ownable, IStakingWalletRWalk {
 	/// @param rwalk_ Address of the RandomWalkNFT contract
 	/// @dev Sets up the initial state of the contract
 	constructor(RandomWalkNFT rwalk_) Ownable(msg.sender) {
-		require(
-			address(rwalk_) != address(0),
-			CosmicGameErrors.ZeroAddress("Zero-address was given for the RandomWalk token.")
-		);
+		require(address(rwalk_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the rwalk_."));
 		randomWalk = rwalk_;
 
 		// #region Assertions

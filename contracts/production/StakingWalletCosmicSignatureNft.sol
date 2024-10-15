@@ -108,11 +108,16 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	uint256 private _nftWasStakedAfterPrevEthDeposit = 2;
 
 	/// @notice This contains IDs of NFTs that have ever been used for staking.
-	/// @dev Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
+	/// @dev
+	/// [Comment-202411012]
+	/// Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
+	/// [/Comment-202411012]
 	/// Comment-202410274 applies.
 	mapping(uint256 nftId => bool nftWasUsed) private _usedNfts;
 
 	/// @notice `ethDepositIndex` is 1-based.
+	/// @dev If we executed logic near Comment-202410166, it's possible that this mapping contains items
+	/// beyond `numEthDeposits`. Those are garbage that the client code must ignore.
 	mapping(uint256 ethDepositIndex => _EthDeposit) public ethDeposits;
 
 	/// @notice `ethDeposits` item count.
