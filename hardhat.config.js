@@ -422,7 +422,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
 			// "contracts/production/RaffleWallet.sol": ["RaffleWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
-			"contracts/production/StakingWalletCST.sol": ["StakingWalletCST"],
+			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],
 			"contracts/production/StakingWalletRWalk.sol": ["StakingWalletRWalk"],
 		},
 

@@ -69,7 +69,7 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
    function getTotalSpentByBidder(address bidder) external view returns (uint256,uint256);
 
 	/// @notice Check if a RandomWalk NFT has been used for bidding
-	/// @param tokenId The ID of the RandomWalk NFT
+	/// @param nftId The ID of the RandomWalk NFT
 	/// @return True if the NFT has been used, false otherwise
-   function isRandomWalkNFTUsed(uint256 tokenId) external view returns (bool);
+   function isRandomWalkNFTUsed(uint256 nftId) external view returns (bool);
 }

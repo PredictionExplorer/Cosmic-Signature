@@ -10,8 +10,8 @@ import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
-import { IStakingWalletCST } from "./interfaces/IStakingWalletCST.sol";
-import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
@@ -73,10 +73,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit RaffleWalletAddressChanged(_raffleWallet);
 	}
 
-	function setStakingWalletCST(IStakingWalletCST _stakingWalletCST) external override onlyOwner onlyMaintenance {
-		require(address(_stakingWalletCST) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletCST = StakingWalletCST(address(_stakingWalletCST));
-		emit StakingWalletCSTAddressChanged(_stakingWalletCST);
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft _stakingWalletCosmicSignatureNft) external override onlyOwner onlyMaintenance {
+		require(address(_stakingWalletCosmicSignatureNft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(_stakingWalletCosmicSignatureNft));
+		emit StakingWalletCosmicSignatureNftAddressChanged(_stakingWalletCosmicSignatureNft);
 	}
 
 	function setStakingWalletRWalk(address _stakingWalletRWalk) external override onlyOwner onlyMaintenance {

@@ -43,27 +43,27 @@ contract BidderContract is IERC721Receiver {
 		param_data = abi.encode(defaultParams);
 		cosmicGame.bid{ value: msg.value }(param_data);
 	}
-	function doBidRWalk(int256 tokenId) external payable {
+	function doBidRWalk(int256 nftId) external payable {
 		uint256 price = cosmicGame.getBidPrice();
 		CosmicGame.BidParams memory params;
 		params.message = "contract bid rwalk";
-		params.randomWalkNFTId = tokenId;
+		params.randomWalkNFTId = nftId;
 		bytes memory param_data;
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: price }(param_data);
 	}
-	function doBidRWalk2(int256 tokenId) external payable {
+	function doBidRWalk2(int256 nftId) external payable {
 		RandomWalkNFT rwalk = RandomWalkNFT(cosmicGame.randomWalk());
 		rwalk.setApprovalForAll(address(cosmicGame), true);
-		rwalk.transferFrom(msg.sender, address(this), uint256(tokenId));
+		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
 		CosmicGame.BidParams memory params;
 		params.message = "contract bid rwalk";
-		params.randomWalkNFTId = tokenId;
+		params.randomWalkNFTId = nftId;
 		bytes memory param_data;
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: msg.value }(param_data);
 	}
-	function doBidAndDonate(address nftAddress, uint256 tokenId) external payable {
+	function doBidAndDonate(address nftAddress, uint256 nftId) external payable {
 		IERC721(nftAddress).setApprovalForAll(address(cosmicGame), true);
 		uint256 donatedTokenNum = cosmicGame.numDonatedNFTs();
 		myDonatedNFTs.push(donatedTokenNum);
@@ -74,7 +74,7 @@ contract BidderContract is IERC721Receiver {
 		params.randomWalkNFTId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(params);
-		cosmicGame.bidAndDonateNFT{ value: price }(param_data, IERC721(nftAddress), tokenId);
+		cosmicGame.bidAndDonateNFT{ value: price }(param_data, IERC721(nftAddress), nftId);
 	}
 	function doClaim() external {
 		cosmicGame.claimPrize();
@@ -115,9 +115,9 @@ contract BidderContract is IERC721Receiver {
 		for (uint256 i = 0; i < numMyDonatedNFTs; i++) {
 			uint256 num = myDonatedNFTs[i];
 			cosmicGame.claimDonatedNFT(num);
-			(IERC721 tokenAddr, uint256 tokenId, , ) = cosmicGame.donatedNFTs(num);
+			(IERC721 tokenAddr, uint256 nftId, , ) = cosmicGame.donatedNFTs(num);
 
-			tokenAddr.safeTransferFrom(address(this), creator, tokenId);
+			tokenAddr.safeTransferFrom(address(this), creator, nftId);
 		}
 		delete myDonatedNFTs;
 		numMyDonatedNFTs = 0;

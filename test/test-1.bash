@@ -29,11 +29,12 @@
 		fi
 	fi
 
+	# Preprocessor, asserts, no SMTChecker.
+	# Running in this mode first because we enable Hardhat console in this mode.
+	SafeTryHardhatTest 'true' 'true' '0'
+
 	# Preprocessor, asserts, preprocess for SMTChecker, don't run SMTChecker.
 	SafeTryHardhatTest 'true' 'true' '1'
-
-	# Preprocessor, asserts, no SMTChecker.
-	SafeTryHardhatTest 'true' 'true' '0'
 
 	# Preprocessor, no asserts, no SMTChecker.
 	# This combination of arguments generates a warning near Comment-202409025.

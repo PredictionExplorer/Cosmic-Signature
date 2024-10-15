@@ -32,7 +32,7 @@ contract CharityWallet is Ownable, ICharityWallet {
 		require(amount > 0, CosmicGameErrors.ZeroBalance("No funds to send."));
 
 		(bool success, ) = charityAddress.call{ value: amount }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer failed.", amount, charityAddress));
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAddress, amount));
 		emit DonationSentEvent(charityAddress, amount);
 	}
 }

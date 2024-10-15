@@ -124,7 +124,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 				(bool success, ) = msg.sender.call{ value: amountToSend }("");
 				require(
 					success,
-					CosmicGameErrors.FundTransferFailed("Refund transfer failed.", amountToSend,msg.sender) 
+					CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 				);
 			}
 		}
@@ -319,8 +319,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		return (bidderInfo[roundNum][bidder].totalSpentETH,bidderInfo[roundNum][bidder].totalSpentCST);
 	}
 
-	function isRandomWalkNFTUsed(uint256 tokenId) public view override returns (bool) {
-		return usedRandomWalkNFTs[tokenId];
+	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
+		return usedRandomWalkNFTs[nftId];
 	}
 
 	function setTimesBidPrice(uint256 _value) external onlyOwner {

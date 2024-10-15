@@ -13,8 +13,8 @@ async function mint_random_walk_token(testingAcct, randomWalk) {
 	let topic_sig = randomWalk.interface.getEventTopic("MintEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = randomWalk.interface.parseLog(event_logs[0]);
-	let tokenId = parsed_log.args.tokenId;
-	return tokenId;
+	let nftId = parsed_log.args.tokenId;
+	return nftId;
 }
 async function mint_random_walks(testingAcct, cosmicGameProxy) {
 	let rwalkAddr = await cosmicGameProxy.randomWalk();
@@ -24,8 +24,8 @@ async function mint_random_walks(testingAcct, cosmicGameProxy) {
 		if (output.length > 0) {
 			output = output + ",";
 		}
-		let tokenId = await mint_random_walk_token(testingAcct, randomWalk);
-		output = output + tokenId.toString();
+		let nftId = await mint_random_walk_token(testingAcct, randomWalk);
+		output = output + nftId.toString();
 	}
 	return output;
 }

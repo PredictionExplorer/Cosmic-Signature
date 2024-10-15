@@ -105,7 +105,7 @@ describe("CosmicSignature tests", function () {
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignature.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
-		let token_id = args.tokenId;
+		let token_id = args.nftId;
 		tx = await cosmicSignature.connect(addr1).setTokenName(token_id, "name 0");
 		receipt = await tx.wait();
 		topic_sig = cosmicSignature.interface.getEvent("TokenNameEvent").topicHash;
@@ -113,7 +113,7 @@ describe("CosmicSignature tests", function () {
 		parsed_log = cosmicSignature.interface.parseLog(log);
 		args = parsed_log.args.toObject();
 		expect(args.newName).to.equal("name 0");
-		expect(token_id).to.equal(args.tokenId);
+		expect(token_id).to.equal(args.nftId);
 
 		let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
 		expect(remote_token_name).to.equal("name 0");

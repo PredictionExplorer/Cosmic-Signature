@@ -106,7 +106,7 @@ describe("Contract", function () {
 			if (parsed_log.args.owner != (await bidderContract.getAddress())) {
 				continue;
 			}
-			let tokId = parsed_log.args.tokenId;
+			let tokId = parsed_log.args.nftId;
 			let ownerAddr = await cosmicSignature.ownerOf(tokId);
 			expect(ownerAddr).to.equal(owner.address);
 		}
@@ -140,7 +140,7 @@ describe("Contract", function () {
 		let prizeWinnerTokenIndex = 0;
 		let parsed_log = cosmicSignature.interface.parseLog(mint_logs[prizeWinnerTokenIndex]);
 		let args = parsed_log.args.toObject();
-		let o = await cosmicSignature.ownerOf(args.tokenId);
+		let o = await cosmicSignature.ownerOf(args.nftId);
 		expect(await bnonrec.getAddress()).to.equal(o);
 	});
 });

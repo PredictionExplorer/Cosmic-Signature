@@ -31,7 +31,7 @@ library CosmicGameConstants {
 	/// @dev Stores details about NFTs donated to the game
 	struct DonatedNFT {
 		IERC721 nftAddress;
-		uint256 tokenId;
+		uint256 nftId;
 		uint256 round;
 		bool claimed;
 	}
@@ -75,7 +75,7 @@ library CosmicGameConstants {
 	uint256 public constant STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT = 200 ether;
 
 	/// @notice CST bid price hard min limit
-	/// This is used for a sanity check
+	/// This is used as a min limit on another min limit
 	/// @dev This should not be smaller because we calculate CST bid price in the `1 / MILLION` resolution
 	/// and we want to support a sufficient number of significant digits
 	uint256 public constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;

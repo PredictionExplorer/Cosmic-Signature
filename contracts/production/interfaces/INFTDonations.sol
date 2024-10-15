@@ -11,13 +11,13 @@ interface INFTDonations is ICosmicGameStorage, ISystemManagement {
 	/// @param donor The address of the donor
 	/// @param nftAddress The address of the NFT contract
 	/// @param round The current round number
-	/// @param tokenId The ID of the donated NFT
+	/// @param nftId The ID of the donated NFT
 	/// @param index The index of the donated NFT in the storage array
 	event NFTDonationEvent(
 		address indexed donor,
 		IERC721 indexed nftAddress,
 		uint256 indexed round,
-		uint256 tokenId,
+		uint256 nftId,
 		uint256 index
 	);
 
@@ -26,20 +26,20 @@ interface INFTDonations is ICosmicGameStorage, ISystemManagement {
 	/// @param index The index of the donated NFT
 	/// @param winner The address of the winner claiming the NFT
 	/// @param nftAddressdonatedNFTs The address of the NFT contract
-	/// @param tokenId The ID of the claimed NFT
+	/// @param nftId The ID of the claimed NFT
 	event DonatedNFTClaimedEvent(
 		uint256 indexed round,
 		uint256 index,
 		address winner,
 		address nftAddressdonatedNFTs,
-		uint256 tokenId
+		uint256 nftId
 	);
 
 	/// @notice Donate an NFT to the current round
 	/// @dev This function allows users to donate NFTs that can be claimed by the round winner
 	/// @param nftAddress The address of the NFT contract
-	/// @param tokenId The ID of the NFT being donated
-	function donateNFT(IERC721 nftAddress, uint256 tokenId) external;
+	/// @param nftId The ID of the NFT being donated
+	function donateNFT(IERC721 nftAddress, uint256 nftId) external;
 
 	/// @notice Claim a donated NFT
 	/// @dev Only the winner of the round can claim the NFT within a certain timeframe

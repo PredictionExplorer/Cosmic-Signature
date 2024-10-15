@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -9,7 +10,7 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
-import { StakingWalletCST } from "./StakingWalletCST.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
@@ -90,7 +91,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		_distributeRafflePrizes(raffleAmount_);
 
 		// Staking
-		try stakingWalletCST.depositIfPossible{ value: stakingAmount_ }(roundNum) {
+		try stakingWalletCosmicSignatureNft.depositIfPossible{ value: stakingAmount_ }(roundNum) {
 		} catch (bytes memory errorDetails) {
 			// [ToDo-202409226-0]
 			// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred` to `true` or `false`.
@@ -103,16 +104,19 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
-				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoTokensStaked.selector;
+				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoStakedNfts.selector;
 			} else {
+				// [Comment-202410299/]
+				// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails.length);
+
 				unexpectedErrorOccurred = true;
 			}
 			if (unexpectedErrorOccurred) {
 				revert
 					CosmicGameErrors.FundTransferFailed(
-						"Transfer to StakingWalletCST failed.",
-						stakingAmount_,
-						address(stakingWalletCST)
+						"Transfer to StakingWalletCosmicSignatureNft failed.",
+						address(stakingWalletCosmicSignatureNft),
+						stakingAmount_
 					);
 			}
 			charityAmount_ += stakingAmount_;
@@ -123,9 +127,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
 		(bool success, ) = charity.call{ value: charityAmount_ }("");
 		if (success) {
-			emit CosmicGameEvents.FundsTransferredToCharityEvent(charityAmount_, charity);
+			emit CosmicGameEvents.FundsTransferredToCharity(charity, charityAmount_);
 		} else {
-			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charityAmount_, charity);
+			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charity, charityAmount_);
 		}
 
 		// Sending main prize at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
@@ -135,7 +139,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// todo-1 Can/should we forward all gas to trusted external calls?
 		// todo-1 But a malitios winner also can exploit stack overflow. Can we find out what error happened?
 		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", prizeAmount_, /*winner*/ msg.sender));
+		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", /*winner*/ msg.sender, prizeAmount_));
 	}
 
 	/// @notice Distribute special prizes to Endurance Champion and Stellar Spender
@@ -144,7 +148,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// Endurance Champion Prize
 		// todo-0 Can this address really be zero? Maybe just assert this?
 		if (enduranceChampion != address(0)) {
-			uint256 tokenId = nft.mint(enduranceChampion, roundNum);
+			uint256 nftId = nft.mint(enduranceChampion, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
@@ -153,13 +157,13 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// {
 			// } catch {
 			// }
-			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, tokenId, erc20TokenReward, 0);
+			emit EnduranceChampionWinnerEvent(enduranceChampion, roundNum, nftId, erc20TokenReward, 0);
 		}
 
 		// Stellar Spender Prize
 		// todo-0 Can this address really be zero? Maybe just assert this?
 		if (stellarSpender != address(0)) {
-			uint256 tokenId = nft.mint(stellarSpender, roundNum);
+			uint256 nftId = nft.mint(stellarSpender, roundNum);
 			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
@@ -171,7 +175,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			emit StellarSpenderWinnerEvent(
 				stellarSpender,
 				roundNum,
-				tokenId,
+				nftId,
 				erc20TokenReward,
 				stellarSpenderAmount,
 				1
@@ -197,12 +201,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			uint256 tokenId = nft.mint(raffleWinner, roundNum);
-			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, tokenId, i, false, false);
+			uint256 nftId = nft.mint(raffleWinner, roundNum);
+			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, nftId, i, false, false);
 		}
 
-		// Distribute CST NFTs to random RandomWalk NFT stakers
-		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numTokensStaked();
+		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
+		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
@@ -213,8 +217,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 					break;
 				}
 
-				uint256 tokenId = nft.mint(rwalkWinner, roundNum);
-				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, tokenId, i, true, true);
+				uint256 nftId = nft.mint(rwalkWinner, roundNum);
+				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, nftId, i, true, true);
 			}
 		}
 	}

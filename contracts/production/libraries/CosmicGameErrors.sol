@@ -150,9 +150,9 @@ library CosmicGameErrors {
 	/// @notice Thrown when an ERC20 token transfer fails
 	/// See also: `CosmicGameEvents.ERC20TransferFailed`
 	/// @param errStr Description of the error
-	/// @param receiver The intended receiver of the tokens
-	/// @param tokenAmount The amount of tokens to transfer
-	error ERC20TransferFailed(string errStr, address receiver, uint256 tokenAmount);
+	/// @param destinationAddress The intended receiver of the tokens
+	/// @param amount The amount of tokens to transfer
+	error ERC20TransferFailed(string errStr, address destinationAddress, uint256 amount);
 
 	/// @notice Thrown when ERC721 token minting fails
 	/// @param errStr Description of the error
@@ -173,14 +173,14 @@ library CosmicGameErrors {
 	/// @notice Thrown when the token owner is incorrect
 	/// @param errStr Description of the error
 	/// @param contractAddr The address of the token contract
-	/// @param tokenId The ID of the token
+	/// @param nftId The ID of the token
 	/// @param sender The address of the sender
-	error IncorrectERC721TokenOwner(string errStr, address contractAddr, uint256 tokenId, address sender);
+	error IncorrectERC721TokenOwner(string errStr, address contractAddr, uint256 nftId, address sender);
 
 	/// @notice Thrown when there's an ownership error for a token
 	/// @param errStr Description of the error
-	/// @param tokenId The ID of the token
-	error OwnershipError(string errStr, uint256 tokenId);
+	/// @param nftId The ID of the token
+	error OwnershipError(string errStr, uint256 nftId);
 
 	// #endregion
 	// #region Zero Checking Errors
@@ -203,9 +203,9 @@ library CosmicGameErrors {
 	/// @notice Thrown when a fund transfer fails
 	/// See also: `CosmicGameEvents.FundTransferFailed`
 	/// @param errStr Description of the error
+	/// @param destinationAddress The intended destination of the funds
 	/// @param amount The amount that failed to transfer
-	/// @param destination The intended destination of the funds
-	error FundTransferFailed(string errStr, uint256 amount, address destination);
+	error FundTransferFailed(string errStr, address destinationAddress, uint256 amount);
 
 	/// @notice Thrown when a deposit is attempted from an unauthorized sender
 	/// @param errStr Description of the error
@@ -213,34 +213,36 @@ library CosmicGameErrors {
 	error DepositFromUnauthorizedSender(string errStr, address sender);
 
 	// #endregion
-	// #region Staking Errors
+	// #region NFT Staking Errors
 
-	/// @notice Thrown when attempting to unstake an already unstaked token
+	/// @notice Thrown when attempting to unstake an already unstaked NFT
 	/// @param errStr Description of the error
-	/// @param actionId The ID of the stake action
-	error TokenAlreadyUnstaked(string errStr, uint256 actionId);
+	/// @param stakeActionId NFT stake action ID
+	error NftAlreadyUnstaked(string errStr, uint256 stakeActionId);
 
 	/// @notice Thrown when attempting to claim a reward for a token that hasn't been unstaked
 	/// @param errStr Description of the error
-	/// @param actionId The ID of the stake action
-	error TokenNotUnstaked(string errStr, uint256 actionId);
+	/// @param stakeActionId NFT stake action ID
+	error NftNotUnstaked(string errStr, uint256 stakeActionId);
 
 	// /// @notice Thrown when attempting to claim an already claimed deposit
 	// /// @param errStr Description of the error
-	// /// @param actionId The ID of the stake action
+	// /// @param stakeActionId NFT stake action ID
 	// /// @param depositId The ID of the deposit
-	// error DepositAlreadyClaimed(string errStr, uint256 actionId, uint256 depositId);
+	// error DepositAlreadyClaimed(string errStr, uint256 stakeActionId, uint256 depositId);
+
+	// error NftStakingRewardAlreadyPaid(string errStr, uint256 stakeActionId);
 
 	// /// @notice Thrown when a deposit is outside the staking window
 	// /// @param errStr Description of the error
-	// /// @param actionId The ID of the stake action
+	// /// @param stakeActionId NFT stake action ID
 	// /// @param depositId The ID of the deposit
 	// /// @param stakeStart The start time of the stake
 	// /// @param stakeEnd The end time of the stake
 	// /// @param depositDate The date of the deposit
 	// error DepositOutsideStakingWindow(
 	// 	string errStr,
-	// 	uint256 actionId,
+	// 	uint256 stakeActionId,
 	// 	uint256 depositId,
 	// 	uint256 stakeStart,
 	// 	uint256 stakeEnd,
@@ -249,50 +251,54 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when an unauthorized address attempts to access a function
 	/// @param errStr Description of the error
-	/// @param actionId The ID of the action
+	/// @param stakeActionId The ID of the action
 	/// @param requester The address of the requester
-	error AccessError(string errStr, uint256 actionId, address requester);
+	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address requester);
 
-	/// @notice Thrown when an invalid action ID is provided
+	/// @notice Thrown when an invalid NFT stake action ID is provided
 	/// @param errStr Description of the error
-	/// @param actionId The invalid action ID
-	error InvalidActionId(string errStr, uint256 actionId);
+	/// @param stakeActionId The invalid value
+	error NftStakeActionInvalidId(string errStr, uint256 stakeActionId);
 
-	/// @notice Thrown when an invalid deposit ID is provided
-	/// @param errStr Description of the error
-	/// @param depositId The invalid deposit ID
-	error InvalidDepositId(string errStr, uint256 depositId);
+	// /// @notice Thrown when an invalid deposit ID is provided
+	// /// @param errStr Description of the error
+	// /// @param depositId The invalid deposit ID
+	// error EthDepositInvalidId(string errStr, uint256 depositId);
 
-	/// @notice Thrown when the lengths of action and deposit arrays do not match
-	/// @param errStr Description of the error
-	/// @param actionsLen The length of the actions array
-	/// @param depositsLen The length of the deposits array
-	error IncorrectArrayArguments(string errStr, uint256 actionsLen, uint256 depositsLen);
+	// /// @notice Thrown when the lengths of action and deposit arrays do not match
+	// /// @param errStr Description of the error
+	// /// @param actionsLen The length of the actions array
+	// /// @param depositsLen The length of the deposits array
+	// error IncorrectArrayArguments(string errStr, uint256 actionsLen, uint256 depositsLen);
 
 	/// @notice Thrown when attempting to insert an already inserted token
 	/// @param errStr Description of the error
-	/// @param tokenId The ID of the token
-	/// @param actionId The ID of the action
-	error TokenAlreadyInserted(string errStr, uint256 tokenId, uint256 actionId);
+	/// @param nftId The ID of the token
+	/// @param stakeActionId The ID of the action
+	/// @dev todo-0 This is ugly legacy. Comment this out.
+	error TokenAlreadyInserted(string errStr, uint256 nftId, uint256 stakeActionId);
 
 	/// @notice Thrown when attempting to delete an already deleted token
 	/// @param errStr Description of the error
-	/// @param tokenId The ID of the token
-	error TokenAlreadyDeleted(string errStr, uint256 tokenId);
+	/// @param nftId The ID of the token
+	/// @dev todo-0 This is ugly legacy. Comment this out.
+	error TokenAlreadyDeleted(string errStr, uint256 nftId);
 
-	/// @notice Thrown when there are no tokens staked
+	/// @notice Thrown when there are no staked NFTs
 	/// @param errStr Description of the error
-	error NoTokensStaked(string errStr);
+	error NoStakedNfts(string errStr);
 
-	/// @notice Thrown when attempting to stake a token more than once
+	/// @notice Thrown when attempting to stake an NFT more than once
 	/// @param errStr Description of the error
-	/// @param tokenId The ID of the token
-	error OneTimeStaking(string errStr, uint256 tokenId);
+	/// @param nftId The ID of the token
+	error NftOneTimeStaking(string errStr, uint256 nftId);
 
-	/// @notice Thrown when attempting to set address that have already been set
-	/// @param errStr Description of the error
-	/// @param addr Address value to be set
-	error AddressAlreadySet(string errStr, address addr);
+	// /// @notice Thrown when attempting to set address that have already been set
+	// /// @param errStr Description of the error
+	// /// @param addr Address value to be set
+	// error AddressAlreadySet(string errStr, address addr);
+
+	error NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange(string errStr, uint256 numEthDepositsToEvaluateMaxLimit);
 
 	// #endregion
 }

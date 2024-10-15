@@ -43,8 +43,8 @@ async function list_donated_nfts(nfts) {
 			console.log(
 				"\t" +
 					record.nftAddress.toString() +
-					": tokenId = " +
-					record.tokenId.toString() +
+					": nftId = " +
+					record.nftId.toString() +
 					", num=" +
 					record.index,
 			);
