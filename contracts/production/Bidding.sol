@@ -136,7 +136,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 		if (lastBidder == address(0)) {
 			// First bid of the round
-			prizeTime = block.timestamp + initialSecondsUntilPrize;
+			prizeTime = block.timestamp + initialSecondsUntilPrize + nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		}
 
 		_updateEnduranceChampion();
