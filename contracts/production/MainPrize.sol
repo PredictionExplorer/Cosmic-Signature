@@ -245,6 +245,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// The auction should last 12 hours longer than the amount of time we add after every bid
 		// todo-0 Magic number hardcoded. I added a relevant constant. Use it.
 		CSTAuctionLength = uint256(12) * nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		initialSecondsUntilPrize = nanoSecondsExtra * initialSecondsUntilPrize / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
 		stellarSpenderAmount = 0;
