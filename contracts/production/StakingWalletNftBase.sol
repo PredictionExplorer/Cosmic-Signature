@@ -28,7 +28,8 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	mapping(uint256 nftId => bool nftWasUsed) internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
-	uint256 internal _actionCounter;
+	/// @dev Would it make sense to not expose this variable to external callers? But Nick insists on it being `public`.
+	uint256 public actionCounter;
 
 	// #endregion
 	// #region `constructor`
@@ -37,10 +38,10 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `_numStakedNfts`. `assert` only.
-	///    `_actionCounter`. `assert` only.
+	///    `actionCounter`. `assert` only.
 	constructor() {
 		// #enable_asserts assert(_numStakedNfts == 0);
-		// #enable_asserts assert(_actionCounter == 0);
+		// #enable_asserts assert(actionCounter == 0);
 	}
 
 	// #endregion
