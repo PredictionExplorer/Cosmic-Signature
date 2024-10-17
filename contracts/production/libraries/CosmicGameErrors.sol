@@ -271,18 +271,16 @@ library CosmicGameErrors {
 	// /// @param depositsLen The length of the deposits array
 	// error IncorrectArrayArguments(string errStr, uint256 actionsLen, uint256 depositsLen);
 
-	/// @notice Thrown when attempting to insert an already inserted token
-	/// @param errStr Description of the error
-	/// @param nftId The ID of the token
-	/// @param stakeActionId The ID of the action
-	/// @dev todo-0 This is ugly legacy. Comment this out.
-	error TokenAlreadyInserted(string errStr, uint256 nftId, uint256 stakeActionId);
+	// /// @notice Thrown when attempting to insert an already inserted token
+	// /// @param errStr Description of the error
+	// /// @param nftId The ID of the token
+	// /// @param stakeActionId The ID of the action
+	// error TokenAlreadyInserted(string errStr, uint256 nftId, uint256 stakeActionId);
 
-	/// @notice Thrown when attempting to delete an already deleted token
-	/// @param errStr Description of the error
-	/// @param nftId The ID of the token
-	/// @dev todo-0 This is ugly legacy. Comment this out.
-	error TokenAlreadyDeleted(string errStr, uint256 nftId);
+	// /// @notice Thrown when attempting to delete an already deleted token
+	// /// @param errStr Description of the error
+	// /// @param nftId The ID of the token
+	// error TokenAlreadyDeleted(string errStr, uint256 nftId);
 
 	/// @notice Thrown when there are no staked NFTs
 	/// @param errStr Description of the error

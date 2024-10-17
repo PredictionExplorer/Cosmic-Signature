@@ -24,7 +24,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGame,
 		} = await basicDeployment(contractDeployerAcct, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
@@ -38,7 +38,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation: cosmicGame,
 		};
@@ -61,7 +61,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await loadFixture(deployCosmic);
@@ -85,7 +85,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await loadFixture(deployCosmic);
@@ -122,7 +122,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await loadFixture(deployCosmic);
@@ -149,7 +149,7 @@ describe('Staking CST tests', function () {
 
 		const tx = await newStakingWalletCosmicSignatureNft.stakeMany([0,1]);
 		const receipt = await tx.wait();
-		const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+		const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 
@@ -181,7 +181,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await loadFixture(deployCosmic);
@@ -207,7 +207,7 @@ describe('Staking CST tests', function () {
 
 		const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 		const receipt = await tx.wait();
-		const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+		const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
@@ -229,7 +229,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await basicDeploymentAdvanced(
@@ -264,7 +264,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -290,7 +290,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await basicDeploymentAdvanced(
@@ -325,7 +325,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -355,7 +355,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await basicDeploymentAdvanced(
@@ -390,7 +390,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -415,7 +415,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await basicDeploymentAdvanced(
@@ -455,7 +455,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_mine');
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 	// 	const block = await hre.ethers.provider.getBlock(receipt.blockNumber);
@@ -480,7 +480,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await basicDeploymentAdvanced(
@@ -517,7 +517,7 @@ describe('Staking CST tests', function () {
 	//
 	// 	let tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	let receipt = await tx.wait();
-	// 	let topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+	// 	let topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 	// 	let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	let log = newStakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 	// 	// const unstakeTime = log.args.unstakeTime;
@@ -551,7 +551,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
@@ -588,7 +588,7 @@ describe('Staking CST tests', function () {
 	
 		let tx = await newStakingWalletCosmicSignatureNft.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+		let topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = newStakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		// const unstakeTime = log.args.unstakeTime;
@@ -641,7 +641,7 @@ describe('Staking CST tests', function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk
+			stakingWalletRandomWalkNft
 		} = await basicDeploymentAdvanced(
 			'SpecialCosmicGame',
 			owner,
@@ -682,7 +682,7 @@ describe('Staking CST tests', function () {
 		let tx = await brokenStaker.doStake(0);
 		await expect(tx).not.to.be.reverted;
 		let receipt = await tx.wait();
-		let topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+		let topic_sig = newStakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = newStakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		// const unstakeTime = log.args.unstakeTime;
@@ -737,7 +737,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk
+	// 		stakingWalletRandomWalkNft
 	// 	} = await basicDeploymentAdvanced(
 	// 		'SpecialCosmicGame',
 	// 		owner,
@@ -806,7 +806,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await loadFixture(deployCosmic);
@@ -834,7 +834,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		cosmicGameImplementation
 	// 	} = await basicDeployment(owner, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false, false);
@@ -889,7 +889,7 @@ describe('Staking CST tests', function () {
 	// 	await cosmicSignature.setApprovalForAll(await newStakingWalletCosmicSignatureNft.getAddress(), true);
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 	// 	const receipt = await tx.wait();
-	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 	// 	const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 	//
@@ -932,7 +932,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation
 		} = await basicDeployment(owner, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false, false);
@@ -961,7 +961,7 @@ describe('Staking CST tests', function () {
 			const tx = await newStakingWalletCosmicSignatureNft.stake(nftId_);
 			await expect(tx).not.to.be.reverted;
 			const receipt = await tx.wait();
-			const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+			const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 			const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 			const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		}
@@ -1015,7 +1015,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await loadFixture(deployCosmic);
@@ -1104,7 +1104,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation
 		} = await basicDeployment(owner, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false, false);
@@ -1121,9 +1121,9 @@ describe('Staking CST tests', function () {
 		);
 		await newStakingWalletCosmicSignatureNft.waitForDeployment();
 
-		const NewStakingWalletRWalk = await hre.ethers.getContractFactory('StakingWalletRWalk');
-		const newStakingWalletRWalk = await NewStakingWalletRWalk.deploy(await randomWalkNFT.getAddress());
-		await newStakingWalletRWalk.waitForDeployment();
+		const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory('StakingWalletRandomWalkNft');
+		const newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());
+		await newStakingWalletRandomWalkNft.waitForDeployment();
 
 		const numSigners = 20;
 		const numLoops = 20;
@@ -1131,7 +1131,7 @@ describe('Staking CST tests', function () {
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
 			await newCosmicSignature.connect(signer).setApprovalForAll(await newStakingWalletCosmicSignatureNft.getAddress(), true);
-			await randomWalkNFT.connect(signer).setApprovalForAll(await newStakingWalletRWalk.getAddress(), true);
+			await randomWalkNFT.connect(signer).setApprovalForAll(await newStakingWalletRandomWalkNft.getAddress(), true);
 		}
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
@@ -1147,7 +1147,7 @@ describe('Staking CST tests', function () {
 				const mintPrice = await randomWalkNFT.getMintPrice();
 				await randomWalkNFT.connect(signer).mint({ value: mintPrice });
 				const nftId = i * numLoops + j;
-				await newStakingWalletRWalk.connect(signer).stake(nftId);
+				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId);
 			}
 		}
 		// verification algorithm is simple: if from 400 staked tokens at least
@@ -1158,7 +1158,7 @@ describe('Staking CST tests', function () {
 			const numSamples = 1000;
 			for (let i = 0; i < numSamples; i++) {
 				const r = Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, "0")
-				const luckyAddr = await newStakingWalletRWalk.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
+				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
 				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {
@@ -1190,7 +1190,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await loadFixture(deployCosmic);
@@ -1217,7 +1217,7 @@ describe('Staking CST tests', function () {
 
 		const tx = await newStakingWalletCosmicSignatureNft.stake(0);
 		const receipt = await tx.wait();
-		const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+		const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
@@ -1240,7 +1240,7 @@ describe('Staking CST tests', function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
@@ -1273,7 +1273,7 @@ describe('Staking CST tests', function () {
 
 		let tx = await newStakingWalletCosmicSignatureNft.stake(0);
 		let receipt = await tx.wait();
-		let topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('StakeActionOccurred').topicHash;
+		let topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('NftStaked').topicHash;
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		// let unstakeTime = log.args.unstakeTime;
@@ -1306,7 +1306,7 @@ describe('Staking CST tests', function () {
 	// 		raffleWallet,
 	// 		randomWalkNFT,
 	// 		stakingWalletCosmicSignatureNft,
-	// 		stakingWalletRWalk,
+	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
 	// 		bidLogic
 	// 	} = await basicDeploymentAdvanced(

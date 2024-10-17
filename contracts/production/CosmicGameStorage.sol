@@ -10,8 +10,7 @@ import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// #region External Contracts
 
-	// todo-1 Why not name this `randomWalkNFT`?
-	address public randomWalk;
+	address public randomWalkNft;
 
 	/// @notice Reference to the CosmicSignature contract
 	CosmicSignature public nft;
@@ -20,7 +19,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	address public raffleWallet;
 	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 	// todo-0 Make this strongly typed.
-	address public stakingWalletRWalk;
+	address public stakingWalletRandomWalkNft;
 	address public marketingWallet;
 	address public charity;
 

@@ -63,7 +63,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 
 	function setRandomWalk(address _randomWalk) external override onlyOwner onlyMaintenance {
 		require(_randomWalk != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		randomWalk = _randomWalk;
+		randomWalkNft = _randomWalk;
 		emit RandomWalkAddressChanged(_randomWalk);
 	}
 
@@ -79,10 +79,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit StakingWalletCosmicSignatureNftAddressChanged(_stakingWalletCosmicSignatureNft);
 	}
 
-	function setStakingWalletRWalk(address _stakingWalletRWalk) external override onlyOwner onlyMaintenance {
-		require(_stakingWalletRWalk != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletRWalk = _stakingWalletRWalk;
-		emit StakingWalletRWalkAddressChanged(_stakingWalletRWalk);
+	function setStakingWalletRandomWalkNft(address _stakingWalletRandomWalkNft) external override onlyOwner onlyMaintenance {
+		require(_stakingWalletRandomWalkNft != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletRandomWalkNft = _stakingWalletRandomWalkNft;
+		emit StakingWalletRandomWalkNftAddressChanged(_stakingWalletRandomWalkNft);
 	}
 
 	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyMaintenance {

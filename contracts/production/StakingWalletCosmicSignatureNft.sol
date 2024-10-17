@@ -8,14 +8,17 @@ pragma solidity 0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
+import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
+import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 
 // #endregion
 // #region
 
-contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatureNft {
+contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStakingWalletCosmicSignatureNft {
 	// #region Data Types
 
 	/// @notice Stores details about an NFT stake action.
@@ -43,7 +46,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	struct _EthDeposit {
 		/// @dev
 		/// [Comment-202410117]
-		/// This is populated from `StakingWalletCosmicSignatureNft._actionCounter`.
+		/// This is populated from `StakingWalletNftBase.actionCounter`.
 		/// [/Comment-202410117]
 		/// This is populated when creating an `_EthDeposit` instance.
 		/// This is not updated when adding another deposit to the last `StakingWalletCosmicSignatureNft.ethDeposits` item.
@@ -78,14 +81,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	/// @dev Comment-202410117 applies to `stakeActionId`.
 	mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
 
-	/// @notice The current staked NFT count.
-	/// In other words, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
-	/// @dev
-	/// [Comment-202410274]
-	/// It could make sense to declare this `public`, but this is `private` because there is an accessor function for this.
-	/// [/Comment-202410274]
-	uint256 private _numStakedNfts;
-
 	/// @notice The current number of already unstaked and not yet fully rewarded NFTs.
 	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
 	uint256 public numUnpaidStakeActions;
@@ -95,25 +90,22 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	/// @dev
 	/// [Comment-202410307]
 	/// After someone stakes an NFT, we must create a new `ethDeposits` item on the next deposit.
-	/// Although, if they also unstake it before the next deposit it would be unnecessary to create a new item,
+	/// Although, if they also unstake it before the next deposit, it would be unnecessary to create a new item,
 	/// but we will anyway create one, which is probably not too bad.
 	/// At the same time, in case someone unstakes an NFT and we pay them their reward from the last `ethDeposits` item
 	/// before we receive another deposit, we will not need to create a new item. Given that on unstake we do pay
 	/// reward from at least the last `ethDeposits` item, we are covered.
 	/// [/Comment-202410307]
 	/// [Comment-202410168]
-	/// The initial value doesn't matter because before we get a chance to evaluate this we will assign to this.
+	/// One might want to initialize this with 2, but the initial value doesn't actually matter
+	/// because before we get a chance to evaluate this we will assign to this.
+	/// The 1st staker will pay the gas fee to create a storage slot for this variable.
 	/// [/Comment-202410168]
 	/// To minimize gas fees, we never assign zero to this, and therefore this is not a `bool`.
-	uint256 private _nftWasStakedAfterPrevEthDeposit = 2;
-
-	/// @notice This contains IDs of NFTs that have ever been used for staking.
-	/// @dev
-	/// [Comment-202411012]
-	/// Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
-	/// [/Comment-202411012]
-	/// Comment-202410274 applies.
-	mapping(uint256 nftId => bool nftWasUsed) private _usedNfts;
+	/// In fact, this design doesn't necessarily improve net use of gas -- due to gas refunds for freeing storage slots.
+	/// But, at least, we avoid gas fee spikes that we would experience when saving a nonzero to a non-existent storage slot.
+	/// Besides, gas refunds are not guaranteed because they are capped.
+	uint256 private _nftWasStakedAfterPrevEthDeposit;
 
 	/// @notice `ethDepositIndex` is 1-based.
 	/// @dev If we executed logic near Comment-202410166, it's possible that this mapping contains items
@@ -122,9 +114,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 
 	/// @notice `ethDeposits` item count.
 	uint256 public numEthDeposits;
-
-	/// @notice This is used to generate monotonic unique IDs.
-	uint256 private _actionCounter;
 
 	// #endregion
 	// #region `constructor`
@@ -135,19 +124,19 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `Ownable` `constructor`. ToDo-202408114-1 applies.
+	///    `CosmicGameErrors.ZeroAddress`.
+	///    `Ownable.constructor`. ToDo-202408114-1 applies.
+	///    `StakingWalletNftBase.constructor`.
 	///    `nft`.
 	///    `game`.
-	///    `_numStakedNfts`. `assert` only.
 	///    `numUnpaidStakeActions`. `assert` only.
 	///    `_nftWasStakedAfterPrevEthDeposit`. `assert` only.
 	///    `numEthDeposits`. `assert` only.
-	///    `_actionCounter`. `assert` only.
 	///
 	/// todo-1 Is `nft_` the same as `game_.nft()`?
 	/// todo-1 But we don't import the `CosmicGame` contract.
 	/// todo-1 At least explain things in a comment.
-	/// todo-1 The same probably applies to `StakingWalletRWalk`. But there the `game_` member is different.
+	/// todo-1 The same probably applies to `StakingWalletRandomWalkNft`. But there the `game_` member is different.
 	constructor(CosmicSignature nft_, address game_) Ownable(msg.sender) {
 		// #region
 
@@ -165,11 +154,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 
 		// #enable_asserts assert(address(nft) == address(nft_));
 		// #enable_asserts assert(game == game_);
-		// #enable_asserts assert(_numStakedNfts == 0);
 		// #enable_asserts assert(numUnpaidStakeActions == 0);
-		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 0);
 		// #enable_asserts assert(numEthDeposits == 0);
-		// #enable_asserts assert(_actionCounter == 0);
 
 		// #endregion
 	}
@@ -178,17 +165,24 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	// #region `stake`
 
 	/// @dev
+	/// [Comment-202411023]
+	/// Issue. To eliminate a compile error, after the `override` keyword,
+	/// I had to specify both `IStakingWalletNftBase` and `StakingWalletNftBase`.
+	/// Problem is that there supposed to be only a single virtual function with this name. But this looks like we have 2 of them.
+	/// [/Comment-202411023]
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `StakeActionOccurred`.
-	///    `StakeAction`.
+	///    `CosmicGameErrors.NftOneTimeStaking`.
+	///    `CosmicGameConstants.NftTypeCode`.
+	///    `NftStaked`.
+	///    `_StakeAction`.
 	///    `nft`.
 	///    `stakeActions`.
 	///    `_numStakedNfts`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
-	///    `usedNfts`.
-	///    `_actionCounter`.
-	function stake(uint256 nftId_) public override {
+	///    `_usedNfts`.
+	///    `actionCounter`.
+	function stake(uint256 nftId_) public override(IStakingWalletNftBase, StakingWalletNftBase) {
 		// #region
 
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
@@ -204,8 +198,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		// #endregion
 		// #region
 
-		uint256 newStakeActionId_ = _actionCounter + 1;
-		_actionCounter = newStakeActionId_;
+		uint256 newStakeActionId_ = actionCounter + 1;
+		actionCounter = newStakeActionId_;
 		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
@@ -218,7 +212,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 
 		_usedNfts[nftId_] = true;
 		nft.transferFrom(msg.sender, address(this), nftId_);
-		emit StakeActionOccurred(newStakeActionId_, nftId_, msg.sender, newNumStakedNfts_);
+		emit NftStaked(newStakeActionId_, CosmicGameConstants.NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
 		
 		// #endregion
 		// #region
@@ -230,22 +224,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
 		// #enable_asserts assert(_usedNfts[nftId_]);
-		// #enable_asserts assert(_actionCounter > 0);
+		// #enable_asserts assert(actionCounter > 0);
 
 		// #endregion
-	}
-
-	// #endregion
-	// #region `stakeMany`
-
-	function stakeMany(uint256[] calldata nftIds_) external override {
-		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
-
-		for ( uint256 nftIdIndex_ = 0; nftIdIndex_ < nftIds_.length; ++ nftIdIndex_ ) {
-			stake(nftIds_[nftIdIndex_]);
-		}
-
-		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + nftIds_.length);
 	}
 
 	// #endregion
@@ -369,26 +350,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	}
 
 	// #endregion
-	// #region `numStakedNfts`
-
-	/// @dev
-	/// Observable universe entities accessed here:
-	///    `_numStakedNfts`.
-	function numStakedNfts() external view override returns (uint256) {
-		return _numStakedNfts;
-	}
-
-	// #endregion
-	// #region `wasNftUsed`
-
-	/// @dev
-	/// Observable universe entities accessed here:
-	///    `_usedNfts`.
-	function wasNftUsed(uint256 nftId_) external view override returns (bool) {
-		return _usedNfts[nftId_];
-	}
-
-	// #endregion
 	// #region `depositIfPossible`
 
 	/// @dev
@@ -404,7 +365,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `ethDeposits`.
 	///    `numEthDeposits`.
-	///    `_actionCounter`.
+	///    `actionCounter`.
 	/// todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
@@ -432,13 +393,14 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 
 		_EthDeposit memory newEthDeposit_;
 		uint256 newNumEthDeposits_ = numEthDeposits;
-		uint256 newActionCounter_ = _actionCounter + 1;
-		_actionCounter = newActionCounter_;
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
 
 		// #endregion
 		// #region
 
 		// Comment-202410168 relates.
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1 || _nftWasStakedAfterPrevEthDeposit == 2);
 		if (_nftWasStakedAfterPrevEthDeposit >= 2) {
 
 			// #region
@@ -478,7 +440,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
 		// #enable_asserts assert(ethDeposits[numEthDeposits].depositId > 0);
 		// #enable_asserts assert(numEthDeposits - initialNumEthDeposits_ <= 1);
-		// #enable_asserts assert(_actionCounter > 0);
+		// #enable_asserts assert(actionCounter > 0);
 
 		// #endregion
 	}
@@ -568,14 +530,14 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	// #region `_unstake`
 
 	/// @notice Makes state updates needed to unstake an NFT.
-	/// The caller is required to pay the returned reward.
+	/// The caller is required to pay the returned reward to the staker.
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `CosmicGameErrors.NftStakeActionInvalidId`.
 	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
 	///    `CosmicGameErrors.NftAlreadyUnstaked`.
-	///    `UnstakeActionOccurred`.
+	///    `NftUnstaked`.
 	///    `_StakeAction`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `nft`.
@@ -588,9 +550,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		returns (uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
-		// #enable_asserts assert(numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT);
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
 		// #enable_asserts uint256 initialNumUnpaidStakeActions_ = numUnpaidStakeActions;
+		// #enable_asserts assert(numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT);
 
 		// #endregion
 		// #region
@@ -632,7 +594,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 		uint256 newNumStakedNfts_ = _numStakedNfts - 1;
 		_numStakedNfts = newNumStakedNfts_;
 		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
-		emit UnstakeActionOccurred(stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+		emit NftUnstaked(stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
 
 		// #endregion
 		// #region
@@ -650,8 +612,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, IStakingWalletCosmicSignatu
 	// #region `_preparePayReward`
 
 	/// @notice Makes state updates needed to pay another, possibly the last, part of the reward.
-	/// The caller is required to pay the returned reward.
-	/// @dev This function is called after the `UnstakeActionOccurred` or `RewardPaid` event is emitted
+	/// The caller is required to pay the returned reward to the staker.
+	/// @dev This function is called after the `NftUnstaked` or `RewardPaid` event is emitted
 	/// with a nonzero `maxUnpaidEthDepositIndex`.
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.

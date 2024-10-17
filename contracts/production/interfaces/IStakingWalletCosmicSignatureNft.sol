@@ -1,23 +1,13 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
-/// @title Staking wallet for Cosmic Signature NFTs.
-/// @author Cosmic Game Development Team.
-/// @notice A contract implementing this interface allows users to stake their Cosmic Signature NFTs and earn rewards.
-/// @dev Supports CosmicSignature NFT staking and unstaking, as well as staker reward distribution.
-interface IStakingWalletCosmicSignatureNft {
-	/// @notice Emitted when an NFT is staked.
-	/// @param stakeActionId Stake action ID.
-	/// @param nftId Staked NFT ID.
-	/// @param stakerAddress Staker (NFT owner) address.
-	/// @param numStakedNfts Staked NFT count after this action.
-	event StakeActionOccurred(
-		uint256 indexed stakeActionId,
-		uint256 indexed nftId,
-		address indexed stakerAddress,
-		uint256 numStakedNfts
-	);
+import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
+/// @title Staking wallet for CosmicSignature NFTs.
+/// @author Cosmic Game Development Team.
+/// @notice A contract implementing this interface allows users to stake their CosmicSignature NFTs and earn rewards.
+/// @dev Supports CosmicSignature NFT staking and unstaking, as well as staker reward distribution.
+interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is unstaked and at least a part of the reward is paid to the staker.
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Unstaked NFT ID.
@@ -25,8 +15,9 @@ interface IStakingWalletCosmicSignatureNft {
 	/// @param numStakedNfts Staked NFT count after this action.
 	/// @param rewardAmount Reward amount paid to the staker.
 	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
-	event UnstakeActionOccurred(
+	event NftUnstaked(
 		uint256 indexed stakeActionId,
+		// CosmicGameConstants.NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts,
@@ -67,18 +58,11 @@ interface IStakingWalletCosmicSignatureNft {
 		uint256 numStakedNfts
 	);
 
-	/// @notice Stakes an NFT.
-	/// @param nftId_ NFT to stake ID.
-	function stake(uint256 nftId_) external;
-
-	/// @notice Stakes multiple NFTs.
-	/// @param nftIds_ NFT to stake IDs.
-	function stakeMany(uint256[] calldata nftIds_) external;
-
 	/// @notice Unstakes an NFT and pays at least a part of its reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
-	/// @dev
+	/// @dev Transfers the NFT back to the owner, pays at least a part of its reward to the staker,
+	/// and, in case the whole reward has been paid, deletes the stake action.
 	/// [Comment-202410142]
 	/// The `numEthDepositsToEvaluateMaxLimit_` parameter makes it possible to ensure that the function gas fee
 	/// won't exceed the max gas per transaction imposed by the blockchain.
@@ -108,7 +92,9 @@ interface IStakingWalletCosmicSignatureNft {
 	/// [/Comment-202410142]
 	function unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	/// @notice Similar to `unstake`. Performs the instake action for zero or more stake actions in a single transaction.
+	/// @notice Similarly to `unstake`, performs the instake action for zero or more stake actions in a single transaction.
+	/// @param stakeActionIds_ Stake action IDs.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
@@ -118,19 +104,11 @@ interface IStakingWalletCosmicSignatureNft {
 	/// @dev Comment-202410142 applies.
 	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	/// @notice Similar to `payReward`. Performs the pay reward action for zero or more stake actions in a single transaction.
+	/// @notice Similarly to `payReward`, performs the pay reward action for zero or more stake actions in a single transaction.
+	/// @param stakeActionIds_ Stake action IDs.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
-
-	/// @return The current staked NFT count.
-	/// @dev Comment-202410274 relates.
-	function numStakedNfts() external view returns (uint256);
-
-	/// @notice Checks if an NFT has ever been used for staking.
-	/// @param nftId_ NFT ID.
-	/// @return `true` if the given NFT has been used; `false` otherwise.
-	/// @dev Comment-202410274 relates.
-	function wasNftUsed(uint256 nftId_) external view returns (bool);
 
 	/// @notice Receives an ETH deposit to be distributed to stakers.
 	/// @param roundNum_ Bidding round number.

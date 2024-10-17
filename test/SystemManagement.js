@@ -19,7 +19,7 @@ describe("CosmicSignature tests", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
+			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
@@ -32,7 +32,7 @@ describe("CosmicSignature tests", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			// todo-0 Bug. This is actully `stakingWalletRWalk`. ToDo-202410075-0 applies.
+			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
 			marketingWallet,
 		};
 	}
@@ -72,7 +72,7 @@ describe("CosmicSignature tests", function () {
 		testAcct = hre.ethers.Wallet.createRandom();
 		await expect(cosmicGameProxy.connect(owner).setRandomWalk(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
 		await cosmicGameProxy.connect(owner).setRandomWalk(testAcct.address);
-		expect(await cosmicGameProxy.randomWalk()).to.equal(testAcct.address);
+		expect(await cosmicGameProxy.randomWalkNft()).to.equal(testAcct.address);
 
 		testAcct = hre.ethers.Wallet.createRandom();
 		await expect(cosmicGameProxy.connect(owner).setRaffleWallet(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
@@ -85,9 +85,9 @@ describe("CosmicSignature tests", function () {
 		expect(await cosmicGameProxy.stakingWalletCosmicSignatureNft()).to.equal(testAcct.address);
 
 		testAcct = hre.ethers.Wallet.createRandom();
-		await expect(cosmicGameProxy.connect(owner).setStakingWalletRWalk(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
-		await cosmicGameProxy.connect(owner).setStakingWalletRWalk(testAcct.address);
-		expect(await cosmicGameProxy.stakingWalletRWalk()).to.equal(testAcct.address);
+		await expect(cosmicGameProxy.connect(owner).setStakingWalletRandomWalkNft(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
+		await cosmicGameProxy.connect(owner).setStakingWalletRandomWalkNft(testAcct.address);
+		expect(await cosmicGameProxy.stakingWalletRandomWalkNft()).to.equal(testAcct.address);
 
 		await cosmicGameProxy.connect(owner).setNumRaffleETHWinnersBidding(99n);
 		expect(await cosmicGameProxy.numRaffleETHWinnersBidding()).to.equal(99n);
@@ -216,7 +216,7 @@ describe("CosmicSignature tests", function () {
 		await expect(cosmicGameProxy.connect(owner).setRandomWalk(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setRaffleWallet(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setStakingWalletCosmicSignatureNft(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
-		await expect(cosmicGameProxy.connect(owner).setStakingWalletRWalk(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
+		await expect(cosmicGameProxy.connect(owner).setStakingWalletRandomWalkNft(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleETHWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleNFTWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleNFTWinnersStakingRWalk(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0);
@@ -314,7 +314,7 @@ describe("CosmicSignature tests", function () {
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setStakingWalletCosmicSignatureNft(addr1.address))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setStakingWalletRWalk(addr1.address))
+		await expect(cosmicGameProxy.connect(addr1).setStakingWalletRandomWalkNft(addr1.address))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setTimeIncrease(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
@@ -350,7 +350,7 @@ describe("CosmicSignature tests", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk
+			stakingWalletRandomWalkNft
 		} = await basicDeploymentAdvanced(
 			'CosmicGame',
 			owner,

@@ -65,32 +65,32 @@ describe("Contract", function () {
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 
-		let randomWalkAddr = await cosmicGameProxy.randomWalk();
-		let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
-		let rwalkPrice = await randomWalk.getMintPrice();
-		await randomWalk.connect(owner).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		await randomWalk.connect(owner).setApprovalForAll(await bidderContract.getAddress(), true);
-		let tx = await randomWalk.connect(owner).mint({ value: rwalkPrice });
+		let randomWalkAddr = await cosmicGameProxy.randomWalkNft();
+		let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
+		let rwalkPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(owner).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		await randomWalkNft.connect(owner).setApprovalForAll(await bidderContract.getAddress(), true);
+		let tx = await randomWalkNft.connect(owner).mint({ value: rwalkPrice });
 		let receipt = await tx.wait();
-		let topic_sig = randomWalk.interface.getEvent("MintEvent").topicHash;
+		let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
-		let parsed_log = randomWalk.interface.parseLog(log);
+		let parsed_log = randomWalkNft.interface.parseLog(log);
 		let donated_token_id = parsed_log.args.tokenId;
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		await randomWalk.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donated_token_id);
+		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donated_token_id);
 		await bidderContract.connect(owner).doBidAndDonate(randomWalkAddr, donated_token_id, { value: bidPrice });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await bidderContract.connect(owner).doBid({ value: bidPrice });
 
-		rwalkPrice = await randomWalk.getMintPrice();
-		tx = await randomWalk.connect(owner).mint({ value: rwalkPrice });
+		rwalkPrice = await randomWalkNft.getMintPrice();
+		tx = await randomWalkNft.connect(owner).mint({ value: rwalkPrice });
 		receipt = await tx.wait();
-		topic_sig = randomWalk.interface.getEvent("MintEvent").topicHash;
+		topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
-		parsed_log = randomWalk.interface.parseLog(log);
+		parsed_log = randomWalkNft.interface.parseLog(log);
 		let rwalk_token_id = parsed_log.args.tokenId;
-		await randomWalk.connect(owner).transferFrom(owner.address,await bidderContract.getAddress(), rwalk_token_id);
+		await randomWalkNft.connect(owner).transferFrom(owner.address,await bidderContract.getAddress(), rwalk_token_id);
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await bidderContract.connect(owner).doBidRWalk(rwalk_token_id, { value: bidPrice });
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -110,7 +110,7 @@ describe("Contract", function () {
 			let ownerAddr = await cosmicSignature.ownerOf(tokId);
 			expect(ownerAddr).to.equal(owner.address);
 		}
-		let donatedTokenOwner = await randomWalk.ownerOf(donated_token_id);
+		let donatedTokenOwner = await randomWalkNft.ownerOf(donated_token_id);
 		expect(donatedTokenOwner).to.equal(owner.address);
 	});
 	it("Non-ERC721 receiver contract can bid", async function () {

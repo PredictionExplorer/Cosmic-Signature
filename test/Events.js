@@ -16,7 +16,7 @@ describe("Events", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
@@ -30,7 +30,7 @@ describe("Events", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		};
@@ -263,7 +263,7 @@ describe("Events", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
@@ -328,7 +328,7 @@ describe("Events", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
 
@@ -378,7 +378,7 @@ describe("Events", function () {
 		await expect(cosmicGameProxy.connect(owner).setRandomWalk(testAcct.address))
 			.to.emit(cosmicGameProxy, "RandomWalkAddressChanged")
 			.withArgs(testAcct.address);
-		expect(await cosmicGameProxy.randomWalk()).to.equal(testAcct.address);
+		expect(await cosmicGameProxy.randomWalkNft()).to.equal(testAcct.address);
 
 		testAcct = hre.ethers.Wallet.createRandom();
 		await expect(cosmicGameProxy.connect(owner).setRaffleWallet(testAcct.address))
