@@ -31,7 +31,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 		raffleWallet,
 		randomWalkNFT,
 		stakingWalletCosmicSignatureNft,
-		stakingWalletRWalk,
+		stakingWalletRandomWalkNft,
 		marketingWallet,
 		cosmicGame,
 	} = await basicDeployment(
@@ -58,7 +58,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	console.log("Proxy implementation address:", await cosmicGame.getAddress());
 	console.log("randomWalkNFT address:", await randomWalkNFT.getAddress());
 	console.log("StakingWalletCosmicSignatureNft address:", await stakingWalletCosmicSignatureNft.getAddress());
-	console.log("StakingWalletRWalk address:", await stakingWalletRWalk.getAddress());
+	console.log("StakingWalletRandomWalkNft address:", await stakingWalletRandomWalkNft.getAddress());
 	console.log("MarketingWallet address:", await marketingWallet.getAddress());
 	console.log(
 		"INSERT INTO cg_contracts VALUES('" +
@@ -78,7 +78,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 			"','" +
 			await stakingWalletCosmicSignatureNft.getAddress() +
 			"','" +
-			await stakingWalletRWalk.getAddress() +
+			await stakingWalletRandomWalkNft.getAddress() +
 			"','" +
 			await marketingWallet.getAddress() +
 			"','" +

@@ -21,7 +21,7 @@ describe("Bid time accounting", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
 
@@ -34,7 +34,7 @@ describe("Bid time accounting", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 		};
 	}
@@ -180,7 +180,7 @@ describe("Bid time accounting", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await basicDeploymentAdvanced("CosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);

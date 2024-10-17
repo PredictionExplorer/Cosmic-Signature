@@ -19,6 +19,14 @@ library CosmicGameConstants {
 		CST
 	}
 
+	enum NftTypeCode {
+		// @notice This denotes an uninitialized or invalid value.
+		None,
+
+		CosmicSignature,
+		RandomWalk
+	}
+
 	/// @notice Information about a bidder
 	/// @dev Stores the total amount spent and the time of the last bid
 	struct BidderInfo {

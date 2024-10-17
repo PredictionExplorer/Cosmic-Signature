@@ -27,8 +27,8 @@ async function bid_simple(testingAcct, cosmicGameProxy) {
 }
 async function bid_randomwalk(testingAcct, cosmicGameProxy, nftId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
-	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	let rwalkAddr = await cosmicGameProxy.randomWalkNft();
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	let bidParams = { msg: "rwalk bid", rwalk: nftId };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy.connect(testingAcct).bid(params,{value:bidPrice});
@@ -43,15 +43,15 @@ async function bid_randomwalk(testingAcct, cosmicGameProxy, nftId) {
 async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 
-	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
-	await randomWalk.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
+	let rwalkAddr = await cosmicGameProxy.randomWalkNft();
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
 
 	let bidParams = { msg: "donate bid", rwalk: -1 };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
-		.bidAndDonateNFT(params, randomWalk.address, donatedTokenId, { value: bidPrice });
+		.bidAndDonateNFT(params, randomWalkNft.address, donatedTokenId, { value: bidPrice });
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -64,21 +64,21 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.donor).to.equal(testingAcct.address);
-	expect(parsed_log.args.nftAddress).to.equal(randomWalk.address);
+	expect(parsed_log.args.nftAddress).to.equal(randomWalkNft.address);
 	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
 }
 async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTokenId, tokenIdBidding) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 
-	let rwalkAddr = await cosmicGameProxy.randomWalk();
-	let randomWalk = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
-	await randomWalk.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
+	let rwalkAddr = await cosmicGameProxy.randomWalkNft();
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
 
 	let bidParams = { msg: "donate nft rwalk bid", rwalk: tokenIdBidding };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
-		.bidAndDonateNFT(params, randomWalk.address, donatedTokenId,{value:bidPrice});
+		.bidAndDonateNFT(params, randomWalkNft.address, donatedTokenId,{value:bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -91,7 +91,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.donor).to.equal(testingAcct.address);
-	expect(parsed_log.args.nftAddress).to.equal(randomWalk.address);
+	expect(parsed_log.args.nftAddress).to.equal(randomWalkNft.address);
 	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
 }
 async function main() {

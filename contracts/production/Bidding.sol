@@ -50,10 +50,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 				)
 			);
 			require(
-				RandomWalkNFT(randomWalk).ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
+				RandomWalkNFT(randomWalkNft).ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
-					randomWalk,
+					randomWalkNft,
 					uint256(params.randomWalkNFTId),
 					msg.sender
 				)

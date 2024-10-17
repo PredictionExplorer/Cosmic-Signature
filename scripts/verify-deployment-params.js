@@ -1,4 +1,4 @@
-// Used to check the three main fields of deployed contracts: activationTime, charityAddress and randomWalk address
+// Used to check the three main fields of deployed contracts: activationTime, charityAddress and randomWalkNft address
 
 const hre = require("hardhat");
 const { expect } = require("chai");
@@ -8,14 +8,14 @@ async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
 	let activationTime = await cosmicGameProxy.activationTime();
-	let randomWalkAddr = await cosmicGameProxy.randomWalk();
+	let randomWalkAddr = await cosmicGameProxy.randomWalkNft();
 	let charityAddr = await cosmicGameProxy.charity();
 	let charityContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
 	let charityContractOwner = await charityContract.owner();
 	let charityDonationsReceiver = await charityContract.charityAddress();
 
 	console.log("activation time = " + activationTime);
-	console.log("randomWalk address = " + randomWalkAddr);
+	console.log("randomWalkNft address = " + randomWalkAddr);
 	console.log("charity wallet contract address = " + charityAddr);
 	console.log("owner of charity wallet contract = " + charityContractOwner);
 	console.log("charity donations receiver =" + charityDonationsReceiver);

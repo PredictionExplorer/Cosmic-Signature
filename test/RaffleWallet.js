@@ -15,7 +15,7 @@ describe("RaffleWallet", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation
 		} = await basicDeployment(contractDeployerAcct, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
@@ -29,7 +29,7 @@ describe("RaffleWallet", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation
 		};
@@ -53,7 +53,7 @@ describe("RaffleWallet", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
@@ -86,7 +86,7 @@ describe("RaffleWallet", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
