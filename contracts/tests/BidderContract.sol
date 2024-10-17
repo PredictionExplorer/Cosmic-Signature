@@ -53,7 +53,7 @@ contract BidderContract is IERC721Receiver {
 		cosmicGame.bid{ value: price }(param_data);
 	}
 	function doBidRWalk2(int256 nftId) external payable {
-		RandomWalkNFT rwalk = RandomWalkNFT(cosmicGame.randomWalk());
+		RandomWalkNFT rwalk = RandomWalkNFT(cosmicGame.randomWalkNft());
 		rwalk.setApprovalForAll(address(cosmicGame), true);
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
 		CosmicGame.BidParams memory params;

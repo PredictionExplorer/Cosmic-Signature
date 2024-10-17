@@ -5,7 +5,7 @@ import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
 import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRWalk } from "../production/StakingWalletRWalk.sol";
+import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
 import { RaffleWallet } from "../production/RaffleWallet.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
@@ -213,15 +213,16 @@ contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft 
 	// }
 }
 
-contract TestStakingWalletRWalk is StakingWalletRWalk {
-	constructor(RandomWalkNFT nft_) StakingWalletRWalk(nft_) {}
+contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
+	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
 
-	function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
-		_insertToken(_nftId, stakeActionId_);
-	}
-	function doRemoveToken(uint256 _nftId) external {
-		_removeToken(_nftId);
-	}
+	// // todo-0 Nick, these legacy functions no longer exist.
+	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+	// 	_insertToken(_nftId, stakeActionId_);
+	// }
+	// function doRemoveToken(uint256 _nftId) external {
+	// 	_removeToken(_nftId);
+	// }
 }
 
 contract MaliciousToken1 is ERC721 {

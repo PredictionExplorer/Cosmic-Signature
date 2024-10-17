@@ -28,8 +28,8 @@ interface ISystemEvents {
 	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft newStakingWalletCosmicSignatureNft);
 
 	/// @notice Emitted when the RandomWalk staking wallet address is changed
-	/// @param newStakingWalletRWalk The new RandomWalk staking wallet address
-	event StakingWalletRWalkAddressChanged(address newStakingWalletRWalk);
+	/// @param newStakingWalletRandomWalkNft The new RandomWalk staking wallet address
+	event StakingWalletRandomWalkNftAddressChanged(address newStakingWalletRandomWalkNft);
 
 	/// @notice Emitted when the marketing wallet address is changed
 	/// @param newMarketingWallet The new marketing wallet address

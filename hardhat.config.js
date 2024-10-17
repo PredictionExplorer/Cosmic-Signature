@@ -423,7 +423,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 			// "contracts/production/RaffleWallet.sol": ["RaffleWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
 			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],
-			"contracts/production/StakingWalletRWalk.sol": ["StakingWalletRWalk"],
+			"contracts/production/StakingWalletRandomWalkNft.sol": ["StakingWalletRandomWalkNft"],
 		},
 
 		// // It appears to be unnecessary to configure this.

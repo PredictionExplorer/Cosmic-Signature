@@ -19,7 +19,7 @@ describe("Zero-address checking", function () {
 			raffleWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
@@ -33,7 +33,7 @@ describe("Zero-address checking", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
 		};
@@ -56,7 +56,7 @@ describe("Zero-address checking", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
@@ -75,7 +75,7 @@ describe("Zero-address checking", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
@@ -100,7 +100,7 @@ describe("Zero-address checking", function () {
 			randomWalkNFT,
 			raffleWallet,
 			stakingWalletCosmicSignatureNft,
-			stakingWalletRWalk,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
@@ -118,11 +118,11 @@ describe("Zero-address checking", function () {
 		// // Comment-202409209 applies.
 		// await expect(StakingWalletCosmicSignatureNft.deploy(addr1.address, addr2.address, hre.ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
-	it("Shouldn't be possible to deploy StakingWalletRWalk with zero-address-ed parameters", async function () {
+	it("Shouldn't be possible to deploy StakingWalletRandomWalkNft with zero-address-ed parameters", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
-		const StakingWalletRWalk = await hre.ethers.getContractFactory("StakingWalletRWalk");
-		await expect(StakingWalletRWalk.deploy(hre.ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		const StakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
+		await expect(StakingWalletRandomWalkNft.deploy(hre.ethers.ZeroAddress, {gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy CosmicSignature with zero-address-ed parameters", async function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");

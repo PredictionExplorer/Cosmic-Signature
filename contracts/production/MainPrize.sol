@@ -11,7 +11,7 @@ import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRWalk } from "./StakingWalletRWalk.sol";
+import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { RaffleWallet } from "./RaffleWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
@@ -206,12 +206,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
-		// uint256 numStakedTokensRWalk = StakingWalletRWalk(stakingWalletRWalk).numStakedNfts();
+		// uint256 numStakedTokensRWalk = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateEntropy();
-				address rwalkWinner = StakingWalletRWalk(stakingWalletRWalk).pickRandomStakerIfPossible(raffleEntropy);
+				address rwalkWinner = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerIfPossible(raffleEntropy);
 
 				if (rwalkWinner == address(0)) {
 					break;
