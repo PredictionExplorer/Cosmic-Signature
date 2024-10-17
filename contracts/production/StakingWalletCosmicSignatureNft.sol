@@ -46,7 +46,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	struct _EthDeposit {
 		/// @dev
 		/// [Comment-202410117]
-		/// This is populated from `StakingWalletCosmicSignatureNft.actionCounter`.
+		/// This is populated from `StakingWalletNftBase.actionCounter`.
 		/// [/Comment-202410117]
 		/// This is populated when creating an `_EthDeposit` instance.
 		/// This is not updated when adding another deposit to the last `StakingWalletCosmicSignatureNft.ethDeposits` item.
@@ -530,7 +530,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region `_unstake`
 
 	/// @notice Makes state updates needed to unstake an NFT.
-	/// The caller is required to pay the returned reward.
+	/// The caller is required to pay the returned reward to the staker.
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
@@ -612,7 +612,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region `_preparePayReward`
 
 	/// @notice Makes state updates needed to pay another, possibly the last, part of the reward.
-	/// The caller is required to pay the returned reward.
+	/// The caller is required to pay the returned reward to the staker.
 	/// @dev This function is called after the `NftUnstaked` or `RewardPaid` event is emitted
 	/// with a nonzero `maxUnpaidEthDepositIndex`.
 	/// Observable universe entities accessed here:

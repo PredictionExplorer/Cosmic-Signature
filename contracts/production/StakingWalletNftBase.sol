@@ -16,7 +16,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 
 	/// @notice The current staked NFT count.
 	/// @dev In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
-   /// In `StakingWalletRandomWalkNft`, this is the total number of `stakeActions` and `stakeActionIds` items.
+	/// In `StakingWalletRandomWalkNft`, this is the total number of `stakeActions` and `stakeActionIds` items.
 	/// [Comment-202410274]
 	/// It could make sense to declare this `public`, but this is `internal` because there is an accessor function for this.
 	/// [/Comment-202410274]
@@ -28,7 +28,10 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	mapping(uint256 nftId => bool nftWasUsed) internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
-	/// @dev Would it make sense to not expose this variable to external callers? But Nick insists on it being `public`.
+	/// @dev Issue. Would it make sense to not expose this variable to external callers?
+	/// But Nick insists on it being `public` -- to make it easier to monitor contract activities.
+	/// But the suitability of this variable for any purpose other than what the @notice says is purely accidential.
+	/// Any refactoring can easily break things.
 	uint256 public actionCounter;
 
 	// #endregion

@@ -19,8 +19,7 @@ import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWa
 contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRandomWalkNft {
 	// #region Data Types
 
-	/// @notice Represents a stake action for a token
-	/// @dev Stores details about each staking event
+	/// @notice Stores details about an NFT stake action.
 	struct _StakeAction {
 		/// @notice Index of this stake action in `StakingWalletRandomWalkNft.stakeActionIds`.
 		/// @dev It can change zero or more times during the lifetime of the `_StakeAction` instance.
@@ -28,42 +27,26 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		uint256 nftId;
 		address nftOwnerAddress;
-		// // todo-0 Eliminate?
-		// uint256 stakeTime;
-		// // todo-0 Eliminate?
-		// uint256 unstakeTime;
-		// // todo-0 Eliminate?
-		// mapping(uint256 => bool) depositClaimed;
 	}
-
-	// /// @notice Represents an ETH deposit for reward distribution
-	// /// @dev Stores details about each ETH deposit event
-	// /// todo-0 Eliminate?
-	// struct _EthDeposit {
-	// 	uint256 depositTime;
-	// 	uint256 depositAmount;
-	// 	uint256 numStaked;
-	// }
 
 	// #endregion
 	// #region State
 
-	/// @notice Reference to the RandomWalkNFT contract
+	/// @notice The `RandomWalkNFT` contract address.
 	RandomWalkNFT public randomWalkNft;
 
-	/// @notice todo-0 write comment
+	/// @notice Info about currently staked NFTs.
+	/// @dev Comment-202410117 applies to `stakeActionId`.
 	mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
 
 	/// @notice This maps `_StakeAction.index` to `stakeActions` item key.
-	/// @dev Issue. Ideally, item value should be a storage slot reference, like in the `unstake` function,
-	/// the `stakeActionReference_` variable. It could be possible to implement that in assembly.
 	mapping(uint256 stakeActionIndex => uint256 stakeActionId) public stakeActionIds;
 
 	// #endregion
 	// #region `constructor`
 
 	/// @notice Constructor.
-	/// @param randomWalkNft_ Address of the RandomWalkNFT contract.
+	/// @param randomWalkNft_ The `RandomWalkNFT` contract address.
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `CosmicGameErrors.ZeroAddress`.

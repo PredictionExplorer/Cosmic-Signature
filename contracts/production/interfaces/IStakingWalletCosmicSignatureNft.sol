@@ -62,7 +62,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
 	/// @dev Transfers the NFT back to the owner, pays at least a part of its reward to the staker,
-	/// and possibly deletes the stake action.
+	/// and, in case the whole reward has been paid, deletes the stake action.
 	/// [Comment-202410142]
 	/// The `numEthDepositsToEvaluateMaxLimit_` parameter makes it possible to ensure that the function gas fee
 	/// won't exceed the max gas per transaction imposed by the blockchain.
@@ -92,7 +92,9 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// [/Comment-202410142]
 	function unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	/// @notice Similar to `unstake`. Performs the instake action for zero or more stake actions in a single transaction.
+	/// @notice Similarly to `unstake`, performs the instake action for zero or more stake actions in a single transaction.
+	/// @param stakeActionIds_ Stake action IDs.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
@@ -102,7 +104,9 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @dev Comment-202410142 applies.
 	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	/// @notice Similar to `payReward`. Performs the pay reward action for zero or more stake actions in a single transaction.
+	/// @notice Similarly to `payReward`, performs the pay reward action for zero or more stake actions in a single transaction.
+	/// @param stakeActionIds_ Stake action IDs.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 

@@ -26,7 +26,8 @@ interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// @dev Transfers the NFT back to the owner and deletes the stake action.
 	function unstake(uint256 stakeActionId_) external;
 
-	/// @notice Similar to `unstake`. Performs the instake action for zero or more stake actions in a single transaction.
+	/// @notice Similarly to `unstake`, performs the instake action for zero or more stake actions in a single transaction.
+	/// @param stakeActionIds_ Stake action IDs.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external;
 
 	/// @notice Picks a random staker based on the provided entropy.
