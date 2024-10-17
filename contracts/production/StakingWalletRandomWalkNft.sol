@@ -86,7 +86,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `NftStaked`.
 	///    `_numStakedNfts`.
 	///    `_usedNfts`.
-	///    `_actionCounter`.
+	///    `actionCounter`.
 	///    `_StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
@@ -107,8 +107,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
-		uint256 newStakeActionId_ = _actionCounter + 1;
-		_actionCounter = newStakeActionId_;
+		uint256 newStakeActionId_ = actionCounter + 1;
+		actionCounter = newStakeActionId_;
 		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
@@ -126,7 +126,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
 		// #enable_asserts assert(_usedNfts[nftId_]);
-		// #enable_asserts assert(_actionCounter > 0);
+		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
 		// #enable_asserts assert(stakeActions[newStakeActionId_].index == _numStakedNfts - 1);
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftId == nftId_);
@@ -166,11 +166,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
-				// [Comment-202411024]
-				// Similar logic exists in multiple places.
-				// [/Comment-202411024]
 				// #enable_asserts assert(stakeActionIds[stakeActions[stakeActionId_].index] == stakeActionId_);
-
 				revert CosmicGameErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
 			} else {
 				// Comment-202410182 applies.
@@ -181,7 +177,6 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
-		// Comment-202411024 applies.
 		// #enable_asserts assert(stakeActionIds[stakeActions[stakeActionId_].index] == stakeActionId_);
 
 		// #endregion

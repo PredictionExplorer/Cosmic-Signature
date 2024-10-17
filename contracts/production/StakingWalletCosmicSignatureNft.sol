@@ -46,7 +46,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	struct _EthDeposit {
 		/// @dev
 		/// [Comment-202410117]
-		/// This is populated from `StakingWalletCosmicSignatureNft._actionCounter`.
+		/// This is populated from `StakingWalletCosmicSignatureNft.actionCounter`.
 		/// [/Comment-202410117]
 		/// This is populated when creating an `_EthDeposit` instance.
 		/// This is not updated when adding another deposit to the last `StakingWalletCosmicSignatureNft.ethDeposits` item.
@@ -181,7 +181,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `_numStakedNfts`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `_usedNfts`.
-	///    `_actionCounter`.
+	///    `actionCounter`.
 	function stake(uint256 nftId_) public override(IStakingWalletNftBase, StakingWalletNftBase) {
 		// #region
 
@@ -198,8 +198,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		uint256 newStakeActionId_ = _actionCounter + 1;
-		_actionCounter = newStakeActionId_;
+		uint256 newStakeActionId_ = actionCounter + 1;
+		actionCounter = newStakeActionId_;
 		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
@@ -224,7 +224,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
 		// #enable_asserts assert(_usedNfts[nftId_]);
-		// #enable_asserts assert(_actionCounter > 0);
+		// #enable_asserts assert(actionCounter > 0);
 
 		// #endregion
 	}
@@ -365,7 +365,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `ethDeposits`.
 	///    `numEthDeposits`.
-	///    `_actionCounter`.
+	///    `actionCounter`.
 	/// todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
@@ -393,8 +393,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 		_EthDeposit memory newEthDeposit_;
 		uint256 newNumEthDeposits_ = numEthDeposits;
-		uint256 newActionCounter_ = _actionCounter + 1;
-		_actionCounter = newActionCounter_;
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
 
 		// #endregion
 		// #region
@@ -440,7 +440,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
 		// #enable_asserts assert(ethDeposits[numEthDeposits].depositId > 0);
 		// #enable_asserts assert(numEthDeposits - initialNumEthDeposits_ <= 1);
-		// #enable_asserts assert(_actionCounter > 0);
+		// #enable_asserts assert(actionCounter > 0);
 
 		// #endregion
 	}
