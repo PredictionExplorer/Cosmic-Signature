@@ -29,12 +29,13 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		/// @notice
 		/// [Comment-202410268]
 		/// This index is within `StakingWalletCosmicSignatureNft.ethDeposits`.
+		/// It's 1-based.
 		/// A nonzero indicates that this NFT has been unstaked and it's likely that rewards from some `_EthDeposit` instances
 		/// have not been paid yet. So the staker has an option to call `StakingWalletCosmicSignatureNft.payReward`,
 		/// possibly multiple times, to receieve yet to be paid rewards.
 		/// We used the word "likely" in the above comment
-		/// because this particular `_EthDeposit` instance has not been evaluated yet.
-		/// Therefore it's actually possible that the staker isn't entitled to get a reward from it.
+		/// because this particular `_EthDeposit` instance has not been evaluated yet,
+		/// and therefore it's actually possible that the staker isn't entitled to get a reward from it.
 		/// Comment-202410142 relates.
 		/// [/Comment-202410268]
 		uint256 maxUnpaidEthDepositIndex;
@@ -47,6 +48,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		/// @dev
 		/// [Comment-202410117]
 		/// This is populated from `StakingWalletNftBase.actionCounter`.
+		/// This is a nonzero.
 		/// [/Comment-202410117]
 		/// This is populated when creating an `_EthDeposit` instance.
 		/// This is not updated when adding another deposit to the last `StakingWalletCosmicSignatureNft.ethDeposits` item.
@@ -60,7 +62,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @notice A max limit on another max limit.
 	/// @dev This value is quite big, and, at the same time, it's small enough to avoid dealing with possible overflows.
-	/// Comment-202410286 relates.
 	uint256 public constant NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max / 256;
 
 	// /// @notice Precision factor for calculations
@@ -79,14 +80,15 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice Info about currently staked NFTs.
 	/// This also contains unstaked, but not yet fully rewarded NFTs.
 	/// @dev Comment-202410117 applies to `stakeActionId`.
-	mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
+	// mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
+	_StakeAction[1 << 64] public stakeActions;
 
 	/// @notice The current number of already unstaked and not yet fully rewarded NFTs.
 	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
 	uint256 public numUnpaidStakeActions;
 
 	/// @notice This indicates whether an NFT stake action occurred after we received the last ETH deposit.
-	/// 1 means false; 2 means true.
+	/// 1 (or zero) means false; 2 means true.
 	/// @dev
 	/// [Comment-202410307]
 	/// After someone stakes an NFT, we must create a new `ethDeposits` item on the next deposit.
@@ -108,9 +110,11 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	uint256 private _nftWasStakedAfterPrevEthDeposit;
 
 	/// @notice `ethDepositIndex` is 1-based.
-	/// @dev If we executed logic near Comment-202410166, it's possible that this mapping contains items
+	/// @dev The item at the index of zero always remains zero.
+	/// If we executed logic near Comment-202410166, it's possible that this contains items
 	/// beyond `numEthDeposits`. Those are garbage that the client code must ignore.
-	mapping(uint256 ethDepositIndex => _EthDeposit) public ethDeposits;
+	// mapping(uint256 ethDepositIndex => _EthDeposit) public ethDeposits;
+	_EthDeposit[1 << 64] public ethDeposits;
 
 	/// @notice `ethDeposits` item count.
 	uint256 public numEthDeposits;
@@ -129,9 +133,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `StakingWalletNftBase.constructor`.
 	///    `nft`.
 	///    `game`.
-	///    `numUnpaidStakeActions`. `assert` only.
-	///    `_nftWasStakedAfterPrevEthDeposit`. `assert` only.
-	///    `numEthDeposits`. `assert` only.
+	///    `numUnpaidStakeActions`.
+	///    `_nftWasStakedAfterPrevEthDeposit`.
+	///    `numEthDeposits`.
 	///
 	/// todo-1 Is `nft_` the same as `game_.nft()`?
 	/// todo-1 But we don't import the `CosmicGame` contract.
@@ -173,6 +177,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `CosmicGameErrors.NftOneTimeStaking`.
+	///    `CosmicGameConstants.BooleanWithPadding`.
 	///    `CosmicGameConstants.NftTypeCode`.
 	///    `NftStaked`.
 	///    `_StakeAction`.
@@ -191,15 +196,16 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		require(
-			( ! _usedNfts[nftId_] ),
+			( ! _usedNfts[nftId_].value ),
 			CosmicGameErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #endregion
 		// #region
 
-		uint256 newStakeActionId_ = actionCounter + 1;
-		actionCounter = newStakeActionId_;
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
+		uint256 newStakeActionId_ = newActionCounter_;
 		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
@@ -210,7 +216,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// Comment-202410168 relates.
 		_nftWasStakedAfterPrevEthDeposit = 2;
 
-		_usedNfts[nftId_] = true;
+		_usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
 		nft.transferFrom(msg.sender, address(this), nftId_);
 		emit NftStaked(newStakeActionId_, CosmicGameConstants.NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
 		
@@ -223,7 +229,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #enable_asserts assert(stakeActions[newStakeActionId_].maxUnpaidEthDepositIndex == 0);
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
-		// #enable_asserts assert(_usedNfts[nftId_]);
+		// #enable_asserts assert(_usedNfts[nftId_].value);
 		// #enable_asserts assert(actionCounter > 0);
 
 		// #endregion
@@ -264,7 +270,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
-	///    `_numStakedNfts`. `assert` only.
+	///    `_numStakedNfts`.
 	///    `_unstake`.
 	///    `_payReward`.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
@@ -278,18 +284,24 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// [Comment-202410311]
 		// Comment-202410309 applies.
 		// But in this case that requirement changes to `numEthDepositsToEvaluateMaxLimit_ >= stakeActionIds_.length`,
-		// which this formula implicitly validates if it does not underflow.
-		// The logic won't broken even if `stakeActionIds_.length` is zero.
+		// which this formula implicitly validates by not underflowing.
+		// The logic won't be broken even if `stakeActionIds_.length` is zero.
+		// Comment-202411054 relates.
 		// [/Comment-202410311]
-		numEthDepositsToEvaluateMaxLimit_ -= stakeActionIds_.length;
+		uint256 remainingNumEthDepositsToEvaluateMaxLimit_ = numEthDepositsToEvaluateMaxLimit_ - stakeActionIds_.length;
 
 		uint256 rewardAmountsSum_ = 0;
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
-			++ numEthDepositsToEvaluateMaxLimit_;
-			(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) =
-				_unstake(stakeActionIds_[stakeActionIdIndex_], numEthDepositsToEvaluateMaxLimit_);
+			// [Comment-202411054]
+			// Compensating for what we subtracted near Comment-202410311.
+			// As a result, we fulfill the Comment-202410309 requirement.
+			// [/Comment-202411054]
+			++ remainingNumEthDepositsToEvaluateMaxLimit_;
+
+			uint256 rewardAmount_;
+			(rewardAmount_, remainingNumEthDepositsToEvaluateMaxLimit_) =
+				_unstake(stakeActionIds_[stakeActionIdIndex_], remainingNumEthDepositsToEvaluateMaxLimit_);
 			rewardAmountsSum_ += rewardAmount_;
-			numEthDepositsToEvaluateMaxLimit_ = remainingNumEthDepositsToEvaluateMaxLimit_;
 		}
 		_payReward(rewardAmountsSum_);
 
@@ -326,7 +338,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
-	///    `_numStakedNfts`. `assert` only.
+	///    `_numStakedNfts`.
 	///    `_preparePayReward`.
 	///    `_payReward`.
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
@@ -336,15 +348,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		);
 
 		// Comment-202410311 applies.
-		numEthDepositsToEvaluateMaxLimit_ -= stakeActionIds_.length;
+		uint256 remainingNumEthDepositsToEvaluateMaxLimit_ = numEthDepositsToEvaluateMaxLimit_ - stakeActionIds_.length;
 
 		uint256 rewardAmountsSum_ = 0;
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
-			++ numEthDepositsToEvaluateMaxLimit_;
-			(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) =
-				_preparePayReward(stakeActionIds_[stakeActionIdIndex_], numEthDepositsToEvaluateMaxLimit_);
+			// Comment-202411054 applies.
+			++ remainingNumEthDepositsToEvaluateMaxLimit_;
+
+			uint256 rewardAmount_;
+			(rewardAmount_, remainingNumEthDepositsToEvaluateMaxLimit_) =
+				_preparePayReward(stakeActionIds_[stakeActionIdIndex_], remainingNumEthDepositsToEvaluateMaxLimit_);
 			rewardAmountsSum_ += rewardAmount_;
-			numEthDepositsToEvaluateMaxLimit_ = remainingNumEthDepositsToEvaluateMaxLimit_;
 		}
 		_payReward(rewardAmountsSum_);
 	}
@@ -410,7 +424,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			// If we executed logic near Comment-202410166, it's possible that an `ethDeposits` item already exists at this position.
 			// We will overwrite it.
 			numEthDeposits = ( ++ newNumEthDeposits_ );
-
+			
 			newEthDeposit_.depositId = uint64(newActionCounter_);
 
 			// [Comment-202410161/]
@@ -630,8 +644,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		returns (uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
-		// #enable_asserts assert(numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT);
 		// #enable_asserts uint256 initialNumUnpaidStakeActions_ = numUnpaidStakeActions;
+		// #enable_asserts assert(numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT);
 
 		// #endregion
 		// #region
@@ -690,12 +704,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		returns (uint256 rewardAmount_, uint256 remainingMaxUnpaidEthDepositIndex_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
-		// [Comment-202410286]
 		// This can be zero.
-		// It's probably safe to assume that this is not anywhere close to overflow.
-		// So let's take the liberty to add this `assert`, in spite of the fact that this constant isn't intended to be used in this case.
-		// [/Comment-202410286]
-		// #enable_asserts assert(maxUnpaidEthDepositIndex_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT);
+		// #enable_asserts assert(maxUnpaidEthDepositIndex_ < ethDeposits.length);
 
 		// #enable_asserts assert(numEthDepositsToEvaluateMaxLimit_ > 0 && numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT);
 
@@ -708,85 +718,42 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		{
 			// #region
 
-			// [Comment-202410284]
 			// This formula would be able to underflow if its parameters were unsigned.
-			// [/Comment-202410284]
-			// The result can be positive, zero, or negative if interpreted as signed.
+			// The result can be positive, zero, or negative, if interpreted as signed.
 			remainingMaxUnpaidEthDepositIndex_ = uint256(int256(maxUnpaidEthDepositIndex_) - int256(numEthDepositsToEvaluateMaxLimit_));
+
+			if (int256(remainingMaxUnpaidEthDepositIndex_) < int256(0)) {
+				remainingMaxUnpaidEthDepositIndex_ = 0;
+			}
 
 			// #enable_asserts assert(rewardAmount_ == 0);
 
 			// #endregion
 			// #region
 
-			for (uint256 ethDepositIndex_ = maxUnpaidEthDepositIndex_; ;) {
-				// #region
-
-				_EthDeposit memory ethDepositCopy_ = ethDeposits[ethDepositIndex_];
-
-				// Comment-202410284 applies.
-				// [Comment-202410287/]
-				ethDepositIndex_ = uint256(int256(ethDepositIndex_) - int256(1));
-				// #enable_asserts assert(int256(ethDepositIndex_) >= -1);
-
-				// #endregion
-				// #region
-
-				// [Comment-202410283]
-				// This condition is guaranteed to be `true` if `ethDepositCopy_` was taken from the index of zero.
-				// That storage slot is never assigned to.
-				// [/Comment-202410283]
-				if (ethDepositCopy_.depositId < stakeActionId_) {
-
+			for (uint256 ethDepositIndex_ = maxUnpaidEthDepositIndex_; ; ) {
+				if (ethDepositIndex_ > remainingMaxUnpaidEthDepositIndex_) {
+					{
+						_EthDeposit memory ethDepositCopy_ = ethDeposits[ethDepositIndex_];
+						-- ethDepositIndex_;
+						if (ethDepositCopy_.depositId > stakeActionId_) {
+							rewardAmount_ += ethDepositCopy_.rewardAmountPerStakedNft;
+							continue;
+						}
+					}
 					remainingMaxUnpaidEthDepositIndex_ = 0;
-
-					// Comment-202410284 applies.
-					uint256 numEvaluatedEthDeposits = uint256(int256(maxUnpaidEthDepositIndex_) - int256(ethDepositIndex_));
-					// #enable_asserts assert(int256(numEvaluatedEthDeposits) > int256(0));
-
-					remainingNumEthDepositsToEvaluateMaxLimit_ = numEthDepositsToEvaluateMaxLimit_ - numEvaluatedEthDeposits;
-					break;
-				}
-
-				// #endregion
-				// #region
-
-				// [Comment-202410288]
-				// Provided Comment-202410283 is true, this `assert` is supposed to succeed.
-				// Remember that we have decremented this near Comment-202410287.
-				// [/Comment-202410288]
-				// #enable_asserts assert(int256(ethDepositIndex_) >= int256(0));
-
-				rewardAmount_ += ethDepositCopy_.rewardAmountPerStakedNft;
-
-				// [Comment-202410289/]
-				// #enable_asserts assert(int256(ethDepositIndex_) >= int256(remainingMaxUnpaidEthDepositIndex_));
-
-				// #endregion
-				// #region
-
-				// [Comment-202410291/]
-				if (int256(ethDepositIndex_) <= int256(remainingMaxUnpaidEthDepositIndex_)) {
-
-					// [Comment-202410292]
-					// Given the `assert` near Comment-202410289 and the condition near Comment-202410291,
-					// this assert is guaranteed to succeed.
-					// [/Comment-202410292]
+				} else {
 					// #enable_asserts assert(ethDepositIndex_ == remainingMaxUnpaidEthDepositIndex_);
 
-					// We have already calculated this. Keeping the previously calculated value.
-					// Given the `assert`s near Comment-202410288 and Comment-202410292, this assert is guaranteed to succeed.
-					// If this is zero the last evaluated deposit index was 1, and so we have completed evaluating depsits
-					// for the given stake action, which, in turn, was staked before we received the 1st deposit.
-					// As noted in Comment-202410283, we know that it's unnecessary to evaluate the non-exiting deposit
-					// at the index of zero.
-					// #enable_asserts assert(int256(remainingMaxUnpaidEthDepositIndex_) >= int256(0));
-
-					// #enable_asserts assert(remainingNumEthDepositsToEvaluateMaxLimit_ == 0);
-					break;
+					// We have already calculated `remainingMaxUnpaidEthDepositIndex_`. Keeping the previously calculated value.
+					// If it equals zero, we have completed evaluating depsits for the given stake action.
+					// Note that it's possible that we haven't evaluated any deposits due to `maxUnpaidEthDepositIndex_` being zero.
 				}
-
-				// #endregion
+				{
+					uint256 numEvaluatedEthDeposits_ = maxUnpaidEthDepositIndex_ - ethDepositIndex_;
+					remainingNumEthDepositsToEvaluateMaxLimit_ = numEthDepositsToEvaluateMaxLimit_ - numEvaluatedEthDeposits_;
+				}
+				break;
 			}
 
 			// #endregion

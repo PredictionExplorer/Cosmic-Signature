@@ -37,10 +37,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @notice Info about currently staked NFTs.
 	/// @dev Comment-202410117 applies to `stakeActionId`.
-	mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
+	// mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
+	_StakeAction[1 << 64] public stakeActions;
 
 	/// @notice This maps `_StakeAction.index` to `stakeActions` item key.
-	mapping(uint256 stakeActionIndex => uint256 stakeActionId) public stakeActionIds;
+	// mapping(uint256 stakeActionIndex => uint256 stakeActionId) public stakeActionIds;
+	uint256[1 << 64] public stakeActionIds;
 
 	// #endregion
 	// #region `constructor`
@@ -65,6 +67,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `CosmicGameErrors.NftOneTimeStaking`.
+	///    `CosmicGameConstants.BooleanWithPadding`.
 	///    `CosmicGameConstants.NftTypeCode`.
 	///    `NftStaked`.
 	///    `_numStakedNfts`.
@@ -83,15 +86,16 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #region
 
 		require(
-			( ! _usedNfts[nftId_] ),
+			( ! _usedNfts[nftId_].value ),
 			CosmicGameErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #endregion
 		// #region
 
-		uint256 newStakeActionId_ = actionCounter + 1;
-		actionCounter = newStakeActionId_;
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
+		uint256 newStakeActionId_ = newActionCounter_;
 		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
@@ -100,7 +104,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
 		_numStakedNfts = newNumStakedNfts_;
-		_usedNfts[nftId_] = true;
+		_usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 		emit NftStaked(newStakeActionId_, CosmicGameConstants.NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
 
@@ -108,7 +112,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #region
 
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
-		// #enable_asserts assert(_usedNfts[nftId_]);
+		// #enable_asserts assert(_usedNfts[nftId_].value);
 		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
 		// #enable_asserts assert(stakeActions[newStakeActionId_].index == _numStakedNfts - 1);
@@ -195,7 +199,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `_numStakedNfts`. `assert` only.
+	///    `_numStakedNfts`.
 	///    `unstake`.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external override {
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
@@ -206,39 +210,6 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - stakeActionIds_.length);
 	}
-
-	// #endregion
-	// #region //
-
-	// function numStakedNfts() public view override returns (uint256) {
-	// 	// #region Assertions
-	// 	// todo-1 Given this equality, why do we need to store `_numStakedNfts` separately? To save gas?
-	// 	// todo-1 At least explain this in a comment near `_numStakedNfts`.
-	// 	// #enable_asserts assert(stakedTokens.length == _numStakedNfts);
-	// 	// #endregion
-	//
-	// 	return stakedTokens.length;
-	// }
-
-	// function isTokenStaked(uint256 nftId) public view override returns (bool) {
-	// 	return tokenIndices[nftId] != 0;
-	// }
-
-	// function lastActionIdByTokenId(uint256 nftId) public view override returns (int256) {
-	// 	uint256 tokenIndex = tokenIndices[nftId];
-	// 	if (tokenIndex == 0) {
-	// 		return -2;
-	// 	}
-	// 	return lastActionIds[nftId];
-	// }
-
-	// function stakerByTokenId(uint256 nftId) public view override returns (address) {
-	// 	int256 stakeActionId = lastActionIdByTokenId(nftId);
-	// 	if (stakeActionId < 0) {
-	// 		return address(0);
-	// 	}
-	// 	return stakeActions[uint256(stakeActionId)].owner;
-	// }
 
 	// #endregion
 	// #region `pickRandomStakerIfPossible`
@@ -266,50 +237,6 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #enable_asserts assert(luckyStakerAddress_ != address(0));
 		return luckyStakerAddress_;
 	}
-
-	// #endregion
-	// #region //
-
-	// /// @notice Inserts a token into the staked tokens list
-	// /// @dev Internal function to manage staked tokens
-	// /// @param nftId ID of the token to insert
-	// /// @param stakeActionId ID of the stake action
-	// function _insertToken(uint256 nftId, uint256 stakeActionId) internal {
-	// 	require(
-	// 		!isTokenStaked(nftId),
-	// 		CosmicGameErrors.TokenAlreadyInserted("NFT is already in the list.", nftId, stakeActionId)
-	// 	);
-	// 	stakedTokens.push(nftId);
-	// 	tokenIndices[nftId] = stakedTokens.length;
-	// 	lastActionIds[nftId] = int256(stakeActionId);
-	//
-	// 	// #region Assertions
-	// 	// #enable_asserts assert(isTokenStaked(nftId));
-	// 	// #enable_asserts assert(tokenIndices[nftId] == stakedTokens.length);
-	// 	// #enable_asserts assert(lastActionIds[nftId] == int256(stakeActionId));
-	// 	// #enable_asserts assert(stakedTokens[stakedTokens.length - 1] == nftId);
-	// 	// #endregion
-	// }
-
-	// /// @notice Removes a token from the staked tokens list
-	// /// @dev Internal function to manage staked tokens
-	// /// @param nftId ID of the token to remove
-	// function _removeToken(uint256 nftId) internal {
-	// 	require(isTokenStaked(nftId), CosmicGameErrors.TokenAlreadyDeleted("NFT is not in the list.", nftId));
-	// 	uint256 index = tokenIndices[nftId];
-	// 	uint256 lastTokenId = stakedTokens[stakedTokens.length - 1];
-	// 	stakedTokens[index - 1] = lastTokenId;
-	// 	tokenIndices[lastTokenId] = index;
-	// 	delete tokenIndices[nftId];
-	// 	stakedTokens.pop();
-	// 	lastActionIds[nftId] = -1;
-	//
-	// 	// #region Assertions
-	// 	// #enable_asserts assert(!isTokenStaked(nftId));
-	// 	// #enable_asserts assert(tokenIndices[nftId] == 0);
-	// 	// #enable_asserts assert(lastActionIds[nftId] == -1);
-	// 	// #endregion
-	// }
 
 	// #endregion
 }
