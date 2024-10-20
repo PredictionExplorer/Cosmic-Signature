@@ -85,6 +85,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		uint256 stakingAmount_
 	) internal {
 		// Endurance Champion and Stellar Spender prizes
+		// todo-0 Chrono-warrior too?
 		_distributeSpecialPrizes();
 
 		// Raffle
@@ -143,6 +144,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	}
 
 	/// @notice Distribute special prizes to Endurance Champion and Stellar Spender
+	/// todo-0 Chrono-warrior too?
 	/// @dev This function mints NFTs and distributes CST tokens to special winners
 	function _distributeSpecialPrizes() internal {
 		// Endurance Champion Prize

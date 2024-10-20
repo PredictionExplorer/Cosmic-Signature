@@ -1,11 +1,19 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
+
+// #endregion
+// #region
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
+
+// #endregion
+// #region
 
 abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// #region External Contracts
@@ -27,12 +35,18 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// #region Game State
 
 	uint256 public roundNum;
+
+	/// @notice ETH.
 	uint256 public bidPrice;
+
 	uint256 public startingBidPriceCSTMinLimit;
 	uint256 public startingBidPriceCST;
 	uint256 public nanoSecondsExtra;
 	uint256 public timeIncrease;
+
+	/// @notice Applies to `bidPrice`.
 	uint256 public priceIncrease;
+
 	uint256 public initialBidAmountFraction;
 	address public lastBidder;
 	CosmicGameConstants.BidType public lastBidType;
@@ -45,7 +59,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	uint256 public lastCSTBidTime;
 	uint256 public CSTAuctionLength;
 	uint256 public RoundStartCSTAuctionLength;
-	mapping(uint256 => mapping(address => CosmicGameConstants.BidderInfo)) public bidderInfo;
+	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicGameConstants.BidderInfo)) public bidderInfo;
 	address public stellarSpender;
 	uint256 public stellarSpenderAmount;
 	address public enduranceChampion;
@@ -90,3 +104,5 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	// #endregion
 }
+
+// #endregion
