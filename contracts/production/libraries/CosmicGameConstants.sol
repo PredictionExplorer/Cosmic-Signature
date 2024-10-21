@@ -7,6 +7,11 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @notice Default values and types used across the Cosmic Game ecosystem
 /// @dev These constants are used for initial state variables but may be updated later
 library CosmicGameConstants {
+	struct BooleanWithPadding {
+		bool value;
+		uint248 padding;
+	}
+
 	/// @notice Types of bids that can be made in the game
 	enum BidType {
 		/// @notice Bid using Ether

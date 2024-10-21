@@ -165,9 +165,9 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 
 		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
 
-		uint256 numParticipants = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numParticipants] = /*lastBidder*/ msg.sender;
-		numRaffleParticipants[roundNum] = numParticipants + 1;
+		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
+		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidder*/ msg.sender;
+		numRaffleParticipants[roundNum] = numRaffleParticipants_ + 1;
 
 		// Distribute token rewards
 		// try
@@ -211,7 +211,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 	}
 
 	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
-		uint256 numParticipants = numRaffleParticipants[_round];
+		uint256 numRaffleParticipants_ = numRaffleParticipants[_round];
 		require(
 			_round <= roundNum,
 			CosmicGameErrors.InvalidBidderQueryRound(
@@ -221,19 +221,19 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 			)
 		);
 		require(
-			numParticipants > 0,
+			numRaffleParticipants_ > 0,
 			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", _round)
 		);
 		require(
-			_positionFromEnd < numParticipants,
+			_positionFromEnd < numRaffleParticipants_,
 			CosmicGameErrors.InvalidBidderQueryOffset(
 				"Provided index is larger than array length",
 				_round,
 				_positionFromEnd,
-				numParticipants
+				numRaffleParticipants_
 			)
 		);
-		uint256 offset = numParticipants - _positionFromEnd - 1;
+		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
 		address bidderAddr = raffleParticipants[_round][offset];
 		return bidderAddr;
 	}

@@ -6,6 +6,7 @@ pragma solidity 0.8.26;
 // #endregion
 // #region
 
+import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 
 // #endregion
@@ -25,7 +26,8 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// @notice This contains IDs of NFTs that have ever been used for staking.
 	/// @dev Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
 	/// Comment-202410274 applies.
-	mapping(uint256 nftId => bool nftWasUsed) internal _usedNfts;
+	// mapping(uint256 nftId => bool nftWasUsed) internal _usedNfts;
+	CosmicGameConstants.BooleanWithPadding[1 << 64] internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
 	/// @dev Issue. Would it make sense to not expose this variable to external callers?
@@ -40,8 +42,8 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// @notice Constructor.
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `_numStakedNfts`. `assert` only.
-	///    `actionCounter`. `assert` only.
+	///    `_numStakedNfts`.
+	///    `actionCounter`.
 	constructor() {
 		// #enable_asserts assert(_numStakedNfts == 0);
 		// #enable_asserts assert(actionCounter == 0);
@@ -58,7 +60,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `_numStakedNfts`. `assert` only.
+	///    `_numStakedNfts`.
 	///    `stake`.
 	function stakeMany(uint256[] calldata nftIds_) external override {
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
@@ -85,9 +87,11 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 
 	/// @dev
 	/// Observable universe entities accessed here:
+	///    `CosmicGameConstants.BooleanWithPadding`.
 	///    `_usedNfts`.
 	function wasNftUsed(uint256 nftId_) external view override returns (bool) {
-		return _usedNfts[nftId_];
+		// return _usedNfts[nftId_];
+		return _usedNfts[nftId_].value;
 	}
 
 	// #endregion

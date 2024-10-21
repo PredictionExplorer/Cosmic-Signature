@@ -10,10 +10,11 @@ abstract contract SpecialPrizes is CosmicGameStorage, ISpecialPrizes {
 		if (lastBidder == address(0)) {
 			return (address(0), 0);
 		}
-
-		uint256 lastBidTime = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
-		if (lastBidTime > enduranceChampionDuration) {
-			return (lastBidder, lastBidTime);
+		{
+			uint256 lastBidDuration_ = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
+			if (lastBidDuration_ > enduranceChampionDuration) {
+				return (lastBidder, lastBidDuration_);
+			}
 		}
 		return (enduranceChampion, enduranceChampionDuration);
 	}
