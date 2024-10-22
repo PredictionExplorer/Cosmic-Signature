@@ -20,7 +20,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 
 	/// @title Bid Parameters
 	/// @dev Struct to encapsulate parameters for placing a bid in the Cosmic Game
-	/// todo-0 I am not sure if we still need this.
 	struct BidParams {
 		/// @notice The message associated with the bid
 		/// @dev Can be used to store additional information or comments from the bidder
@@ -45,15 +44,15 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 			require(
 				!usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
 				CosmicGameErrors.UsedRandomWalkNFT(
-					"This RandomWalkNFT has already been used for bidding.",
+					"This RandomWalk NFT has already been used for bidding.",
 					uint256(params.randomWalkNFTId)
 				)
 			);
 			require(
-				RandomWalkNFT(randomWalkNft).ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
+				randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
 				CosmicGameErrors.IncorrectERC721TokenOwner(
-					"You must be the owner of the RandomWalkNFT.",
-					randomWalkNft,
+					"You must be the owner of the RandomWalk NFT.",
+					address(randomWalkNft),
 					uint256(params.randomWalkNFTId),
 					msg.sender
 				)
@@ -137,14 +136,13 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		if (lastBidder == address(0)) {
 			// First bid of the round
 			prizeTime = block.timestamp + initialSecondsUntilPrize + nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		} else {
+			_updateEnduranceChampion();
 		}
 
-		_updateEnduranceChampion();
 		lastBidder = msg.sender;
 		lastBidType = bidType;
-
 		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
-
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidder*/ msg.sender;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_ + 1;
@@ -276,7 +274,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		startingBidPriceCST = newStartingBidPriceCST;
 		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 
-		lastCSTBidTime = block.timestamp;
+		lastCstBidTimeStamp = block.timestamp;
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 
 		// [Comment-202409182]
@@ -286,28 +284,29 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
-		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
-		if (secondsElapsed >= duration) {
+		(uint256 secondsElapsed_, uint256 duration_) = getCstAuctionDuration();
+		if (secondsElapsed_ >= duration_) {
 			return 0;
 		}
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
+			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed_ / duration_);
 
 			// [Comment-202409162/]
 			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
 
 			// // todo-0 Nick, you might want to refactopr the above this way.
 			// // todo-0 Remember to fix relevant code and comments.
-			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * secondsElapsed / duration);
+			// // todo-0 Remember to make the same change in `BiddingOpenBid`.
+			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * secondsElapsed_ / duration_);
 		}
 	}
 
-	function auctionDuration() public view override returns (uint256, uint256) {
-		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-		return (secondsElapsed, CSTAuctionLength);
+	function getCstAuctionDuration() public view override returns (uint256, uint256) {
+		uint256 secondsElapsed_ = block.timestamp - lastCstBidTimeStamp;
+		return (secondsElapsed_, cstAuctionLength);
 	}
 
 	function getTotalBids() public view override returns (uint256) {

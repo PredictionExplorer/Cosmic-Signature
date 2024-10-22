@@ -50,9 +50,10 @@ interface IBidding is ICosmicGameStorage, IBidStatistics {
    function getCurrentBidPriceCST() external view returns (uint256);
 
 	/// @notice Get the current auction duration and elapsed time
-	/// @dev This function is used by `getCurrentBidPriceCST`
 	/// @return A tuple containing the seconds elapsed and total duration of the current auction
-   function auctionDuration() external view returns (uint256, uint256);
+	/// @dev This function is used by `getCurrentBidPriceCST`
+	/// todo-1 I dislike it that this returns 2 numbers. This should return only seconds elapsed.
+   function getCstAuctionDuration() external view returns (uint256, uint256);
 
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round

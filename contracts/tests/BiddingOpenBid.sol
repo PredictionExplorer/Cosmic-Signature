@@ -51,10 +51,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 				)
 			);
 			require(
-				RandomWalkNFT(randomWalkNft).ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
+				randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalkNFT.",
-					randomWalkNft,
+					address(randomWalkNft),
 					uint256(params.randomWalkNFTId),
 					msg.sender
 				)
@@ -157,9 +157,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		if (lastBidder == address(0)) {
 			// First bid of the round
 			prizeTime = block.timestamp + initialSecondsUntilPrize;
+		} else {
+			_updateEnduranceChampion();
 		}
 
-		_updateEnduranceChampion();
 		lastBidder = msg.sender;
 		lastBidType = bidType;
 
@@ -278,7 +279,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 		startingBidPriceCST = newStartingBidPriceCST;
 		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 		
-		lastCSTBidTime = block.timestamp;
+		lastCstBidTimeStamp = block.timestamp;
 		_bidCommon(message, CosmicGameConstants.BidType.CST);
 
 		// Comment-202409182 applies.
@@ -286,24 +287,24 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorag
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
-		(uint256 secondsElapsed, uint256 duration) = auctionDuration();
-		if (secondsElapsed >= duration) {
+		(uint256 secondsElapsed_, uint256 duration_) = getCstAuctionDuration();
+		if (secondsElapsed_ >= duration_) {
 			return 0;
 		}
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed / duration);
+			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed_ / duration_);
 
 			// Comment-202409162 applies.
 			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
 		}
 	}
 
-	function auctionDuration() public view override returns (uint256, uint256) {
-		uint256 secondsElapsed = block.timestamp - lastCSTBidTime;
-		return (secondsElapsed, CSTAuctionLength);
+	function getCstAuctionDuration() public view override returns (uint256, uint256) {
+		uint256 secondsElapsed_ = block.timestamp - lastCstBidTimeStamp;
+		return (secondsElapsed_, cstAuctionLength);
 	}
 
 	function getTotalBids() public view override returns (uint256) {

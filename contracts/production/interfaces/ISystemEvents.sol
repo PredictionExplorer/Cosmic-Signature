@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
 interface ISystemEvents {
@@ -15,9 +16,9 @@ interface ISystemEvents {
 	/// @param newCharity The new charity address
 	event CharityAddressChanged(address newCharity);
 
-	/// @notice Emitted when the RandomWalk address is changed
-	/// @param newRandomWalk The new RandomWalk address
-	event RandomWalkAddressChanged(address newRandomWalk);
+	/// @notice Emitted when the `RandomWalkNFT` address is changed
+	/// @param newRandomWalkNft The new `RandomWalkNFT` address
+	event RandomWalkNftAddressChanged(IRandomWalkNFT newRandomWalkNft);
 
 	/// @notice Emitted when the raffle wallet address is changed
 	/// @param newRaffleWallet The new raffle wallet address
@@ -88,8 +89,8 @@ interface ISystemEvents {
 	event TimeoutClaimPrizeChanged(uint256 newTimeout);
 
 	/// @notice Emitted when the round start CST auction length is changed
-	/// @param newAuctionLength The new round start CST auction length
-	event RoundStartCSTAuctionLengthChanged(uint256 newAuctionLength);
+	/// @param newRoundStartCstAuctionLength The new round start CST auction length
+	event RoundStartCstAuctionLengthChanged(uint256 newRoundStartCstAuctionLength);
 
 	/// @notice Emitted when the token reward is changed
 	/// @param newReward The new token reward value

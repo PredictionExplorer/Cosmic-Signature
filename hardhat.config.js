@@ -298,7 +298,9 @@ const hardhatUserConfig = {
 			outputSelection: {
 				"*": {
 					"*": [
-						"storageLayout"
+						"storageLayout",
+						// "ir",
+						// "irOptimized",
 					],
 				},
 			},

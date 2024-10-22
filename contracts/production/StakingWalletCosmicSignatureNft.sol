@@ -43,7 +43,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @notice Stores details about an ETH deposit.
 	/// Multiple deposits can be aggregated in a single `_EthDeposit` instance.
-	/// To minimize transaction fees, this structure fits in a single storage slot.
+	/// @dev This structure fits in a single storage slot.
 	struct _EthDeposit {
 		/// @dev
 		/// [Comment-202410117]

@@ -166,9 +166,9 @@ contract SpecialCosmicGame is CosmicGame {
 	function setTokenContractRaw(ICosmicToken addr) external {
 		token = CosmicToken(address(addr));
 	}
-	function setActivationTimeRaw(uint256 newActivationTime) external {
-		activationTime = newActivationTime;
-		lastCSTBidTime = activationTime;
+	function setActivationTimeRaw(uint256 activationTime_) external {
+		activationTime = activationTime_;
+		lastCstBidTimeStamp = activationTime_;
 	}
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?

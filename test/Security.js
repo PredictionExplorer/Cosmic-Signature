@@ -62,7 +62,7 @@ describe("Security", function () {
 		await cosmicGameProxy.setNftContract(await cosmicSignature.getAddress());
 		await cosmicGameProxy.setCharity(await charityWallet.getAddress());
 		await cosmicGameProxy.setRaffleWallet(await raffleWallet.getAddress());
-		await cosmicGameProxy.setRandomWalk(await randomWalkNFT.getAddress());
+		await cosmicGameProxy.setRandomWalkNft(await randomWalkNFT.getAddress());
 		await cosmicGameProxy.setActivationTime(0);
 		await cosmicGameProxy.setPrizePercentage(10n);
 		await cosmicGameProxy.setRuntimeMode();
