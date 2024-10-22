@@ -29,6 +29,17 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	address public stakingWalletRandomWalkNft;
 	// todo-0 Make this strongly typed.
 	address public marketingWallet;
+
+	/// @dev
+	/// [Comment-202411078]
+	/// This is a 3rd party address, not anything like our own `CharityWallet`.
+	/// todo-0 It appears that we don't use `CharityWallet`. Why?
+	/// We transfer ETH directly to this address.
+	/// Assuming that if there is a contract at this address, it's not malitios.
+	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
+	/// Therefore it's important that a human conducted a due-diligence on this address.
+	/// Comment-202411077 relates.
+	/// [/Comment-202411078]
 	address public charity;
 
 	// #endregion
@@ -109,8 +120,24 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	address public stellarSpender;
 	uint256 public stellarSpenderAmount;
+
+	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
+	/// [Comment-202411075]
+	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
+	/// [/Comment-202411075]
+	/// @dev todo-0 Try to fit all endurance champion info in a single storage slot.
 	address public enduranceChampion;
+
+	uint256 public enduranceChampionStartTime;
 	uint256 public enduranceChampionDuration;
+	uint256 public prevEnduranceChampionDuration;
+
+	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
+	/// Comment-202411075 applies.
+	/// @dev todo-0 Try to fit all chrono-warrior info in a single storage slot.
+	address public chronoWarrior;
+
+	uint256 public chronoWarriorDuration;
 
 	// #endregion
 	// #region Percentages

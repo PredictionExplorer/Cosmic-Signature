@@ -124,8 +124,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// stakingAmount_ = 0;
 		}
 
-		// Charity
+		// [Comment-202411077]
+		// Sending ETH to charity.
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
+		// Comment-202411078 relates.
+		// [/Comment-202411077]
 		(bool success, ) = charity.call{ value: charityAmount_ }("");
 		if (success) {
 			emit CosmicGameEvents.FundsTransferredToCharity(charity, charityAmount_);
@@ -142,6 +145,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// todo-1 And don't limit gas when sending ETH or whatever tokens to `msg.sender`.
 		// todo-1 But a malitios winner also can exploit stack overflow. Can we find out what error happened?
 		// todo-1 Does an extarnal call use the same stack as the calling contract does?
+		// todo-1 See also: Comment-202411077, Comment-202411078.
 		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", /*winner*/ msg.sender, prizeAmount_));
 	}
