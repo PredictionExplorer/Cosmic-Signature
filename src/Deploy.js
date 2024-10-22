@@ -118,7 +118,7 @@ const basicDeploymentAdvanced = async function (
 	await cosmicGameProxy.connect(deployerAcct).setTokenContract(cosmicTokenAddr);
 	await cosmicGameProxy.connect(deployerAcct).setNftContract(cosmicSignatureAddr);
 	await cosmicGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
-	await cosmicGameProxy.connect(deployerAcct).setRandomWalk(randomWalkNFTAddr);
+	await cosmicGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNFTAddr);
 	await cosmicGameProxy.connect(deployerAcct).setRaffleWallet(raffleWalletAddr);
 	await cosmicGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);

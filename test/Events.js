@@ -375,8 +375,8 @@ describe("Events", function () {
 		expect((await cosmicGameProxy.charity()).toString()).to.equal(testAcct.address.toString());
 
 		testAcct = hre.ethers.Wallet.createRandom();
-		await expect(cosmicGameProxy.connect(owner).setRandomWalk(testAcct.address))
-			.to.emit(cosmicGameProxy, "RandomWalkAddressChanged")
+		await expect(cosmicGameProxy.connect(owner).setRandomWalkNft(testAcct.address))
+			.to.emit(cosmicGameProxy, "RandomWalkNftAddressChanged")
 			.withArgs(testAcct.address);
 		expect(await cosmicGameProxy.randomWalkNft()).to.equal(testAcct.address);
 

@@ -12,24 +12,24 @@ library CosmicGameConstants {
 		uint248 padding;
 	}
 
-	/// @notice Types of bids that can be made in the game
-	enum BidType {
-		/// @notice Bid using Ether
-		ETH,
-
-		/// @notice Bid using RandomWalk NFT
-		RandomWalk,
-
-		/// @notice Bid using Cosmic Tokens
-		CST
-	}
-
 	enum NftTypeCode {
-		// @notice This denotes an uninitialized or invalid value.
+		/// @notice This denotes an uninitialized or invalid value.
 		None,
 
 		CosmicSignature,
 		RandomWalk
+	}
+
+	/// @notice Types of bids that can be made in the game.
+	enum BidType {
+		/// @notice Bid using Ether.
+		ETH,
+
+		/// @notice Bid using Ether + a RandomWalk NFT.
+		RandomWalk,
+
+		/// @notice Bid using Cosmic Tokens.
+		CST
 	}
 
 	/// @notice Information about a bidder

@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
@@ -18,10 +19,10 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 
    function setRuntimeMode() external;
 
-	/// @notice Set the RandomWalk NFT contract address
+	/// @notice Set the `RandomWalkNFT` contract address
 	/// @dev Only callable by the contract owner
-	/// @param _randomWalk The new RandomWalk NFT contract address
-   function setRandomWalk(address _randomWalk) external;
+	/// @param randomWalkNft_ The new `RandomWalkNFT` contract address
+   function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external;
 
 	/// @notice Set the raffle wallet address
 	/// @dev Only callable by the contract owner
@@ -97,13 +98,13 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 
 	/// @notice Set the activation time
 	/// @dev Only callable by the contract owner
-	/// @param _activationTime The new activation time
-   function setActivationTime(uint256 _activationTime) external;
+	/// @param activationTime_ The new activation time
+   function setActivationTime(uint256 activationTime_) external;
 
 	/// @notice Set the round start CST auction length
 	/// @dev Only callable by the contract owner
-	/// @param _roundStartCSTAuctionLength The new round start CST auction length
-   function setRoundStartCSTAuctionLength(uint256 _roundStartCSTAuctionLength) external;
+	/// @param roundStartCstAuctionLength_ The new round start CST auction length
+   function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external;
 
 	/// @notice Set the ERC20 reward multiplier
 	/// @dev Only callable by the contract owner

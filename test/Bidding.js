@@ -270,7 +270,7 @@ describe("Bidding tests", function () {
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"BidMessageLengthOverflow");
 	});
-	it("auctionDuration() method works", async function () {
+	it("getCstAuctionDuration() method works", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
@@ -285,10 +285,10 @@ describe("Bidding tests", function () {
 
 		await cosmicGameProxy.connect(addr1).bidWithCST("cst bid");
 
-		const res = await cosmicGameProxy.auctionDuration();
+		const res = await cosmicGameProxy.getCstAuctionDuration();
 		const duration = res[1];
-		const secondsElapsed = res[0];
-		expect(secondsElapsed).to.equal(0);
+		const secondsElapsed_ = res[0];
+		expect(secondsElapsed_).to.equal(0);
 	});
 	it("There is an execution path for all bidders being RWalk token bidders", async function () {
 		async function mint_rwalk(a) {
@@ -349,7 +349,7 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 
-		let aLen = await cosmicGameProxy.CSTAuctionLength();
+		let aLen = await cosmicGameProxy.cstAuctionLength();
 		await hre.ethers.provider.send('evm_increaseTime', [Number(aLen)]); // make CST price drop to 0
 		await hre.ethers.provider.send('evm_mine');
 
@@ -683,9 +683,9 @@ describe("Bidding tests", function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
-		let spent,spentEth,spentCst,auctionDuration,auctionLength,cstPrice,tx,topic_sig,receipt,log,evt,bidPriceCst;
-		auctionDuration = await cosmicGameProxy.auctionDuration();
-		auctionLength = auctionDuration[1];
+		let spent,spentEth,spentCst,cstAuctionDuration_,auctionLength,cstPrice,tx,topic_sig,receipt,log,evt,bidPriceCst;
+		cstAuctionDuration_ = await cosmicGameProxy.getCstAuctionDuration();
+		auctionLength = cstAuctionDuration_[1];
 		let bidParams = { msg: '', rwalk: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -853,7 +853,7 @@ describe("Bidding tests", function () {
 			}
 			await hre.ethers.provider.send("evm_increaseTime", [timeBump]);
 			await hre.ethers.provider.send("evm_mine");
-			let CSTAuctionLength = await cosmicGameProxy.CSTAuctionLength();
+			let cstAuctionLength_ = await cosmicGameProxy.cstAuctionLength();
 		}
 	})
 })

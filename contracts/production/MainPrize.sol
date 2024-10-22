@@ -137,8 +137,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
 		// which would inflict damage if we ignore that error.
 		// todo-1 Can/should we specify how much gas an untrusted external call is allowed to use?
-		// todo-1 Can/should we forward all gas to trusted external calls?
+		// todo-1 `transfer` allows only 3500 gas, right?
+		// todo-1 At the same time, can/should we forward all gas to trusted external calls?
+		// todo-1 And don't limit gas when sending ETH or whatever tokens to `msg.sender`.
 		// todo-1 But a malitios winner also can exploit stack overflow. Can we find out what error happened?
+		// todo-1 Does an extarnal call use the same stack as the calling contract does?
 		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
 		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", /*winner*/ msg.sender, prizeAmount_));
 	}
@@ -194,7 +197,6 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			// todo-0 Make `raffleWallet` strongly typed.
 			RaffleWallet(raffleWallet).deposit{ value: perWinnerAmount }(raffleWinner);
 			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
 		}
@@ -241,16 +243,39 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	/// @dev This function is called after a prize is claimed to prepare for the next round
 	function _roundEndResets() internal {
 		lastBidder = address(0);
-		// todo-0 Maybe better reset this to zero? Review uses.
-		lastCSTBidTime = block.timestamp;
+		// todo-0 If we are about to enter maintenance mode don't update this, but rather update this after coming back from maintenance.
+		lastCstBidTimeStamp = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
-		// The auction should last 12 hours longer than the amount of time we add after every bid
-		// todo-0 Magic number hardcoded. I added a relevant constant. Use it.
-		CSTAuctionLength = uint256(12) * nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+
+		// // Incorrect?
+		// cstAuctionLength =
+		// 	roundStartCstAuctionLength *
+		// 	(nanoSecondsExtra + CosmicGameConstants.DEFAULT_AUCTION_HOUR) /
+		// 	CosmicGameConstants.DEFAULT_AUCTION_HOUR;
+
+		// // Incorrect?
+		// cstAuctionLength =
+		// 	roundStartCstAuctionLength *
+		// 	(nanoSecondsExtra + CosmicGameConstants.DEFAULT_AUCTION_LENGTH) /
+		// 	CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+
+		// // Incorrect?
+		// cstAuctionLength = roundStartCstAuctionLength + nanoSecondsExtra;
+
+		// // Incorrect?
+		// cstAuctionLength = roundStartCstAuctionLength * nanoSecondsExtra / CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
+
+		// todo-0 Nick, is this correct?
+		// todo-0 Should we use this formula before the 1st round too?
+		// todo-0 Should `setRoundStartCstAuctionLength` and `setNanoSecondsExtra` use it too?
+		// todo-0 Comment: assuming this will neither overflow nor underflow.
+		cstAuctionLength = roundStartCstAuctionLength + nanoSecondsExtra - CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
+
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
 		stellarSpenderAmount = 0;
 		enduranceChampion = address(0);
+		// todo-0 Maybe reset this to -1?
 		enduranceChampionDuration = 0;
 
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {

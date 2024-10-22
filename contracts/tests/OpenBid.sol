@@ -73,9 +73,9 @@ contract CosmicGameOpenBid is
 		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
 		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
-		lastCSTBidTime = activationTime;
-		CSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
-		RoundStartCSTAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+		lastCstBidTimeStamp = activationTime;
+		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		marketingReward = CosmicGameConstants.MARKETING_REWARD;

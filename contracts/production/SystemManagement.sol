@@ -10,6 +10,8 @@ import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
+import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
@@ -61,10 +63,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit SystemModeChanged(systemMode);
 	}
 
-	function setRandomWalk(address _randomWalk) external override onlyOwner onlyMaintenance {
-		require(_randomWalk != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		randomWalkNft = _randomWalk;
-		emit RandomWalkAddressChanged(_randomWalk);
+	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyMaintenance {
+		require(address(randomWalkNft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		randomWalkNft = RandomWalkNFT(address(randomWalkNft_));
+		emit RandomWalkNftAddressChanged(randomWalkNft_);
 	}
 
 	function setRaffleWallet(address _raffleWallet) external override onlyOwner onlyMaintenance {
@@ -180,15 +182,15 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit MaxMessageLengthChanged(_maxMessageLength);
 	}
 
-	function setActivationTime(uint256 _activationTime) external override onlyOwner onlyMaintenance {
-		activationTime = _activationTime;
-		lastCSTBidTime = _activationTime;
-		emit ActivationTimeChanged(_activationTime);
+	function setActivationTime(uint256 activationTime_) external override onlyOwner onlyMaintenance {
+		activationTime = activationTime_;
+		lastCstBidTimeStamp = activationTime_;
+		emit ActivationTimeChanged(activationTime_);
 	}
 
-	function setRoundStartCSTAuctionLength(uint256 _roundStartCSTAuctionLength) external override onlyOwner onlyMaintenance {
-		RoundStartCSTAuctionLength = _roundStartCSTAuctionLength;
-		emit RoundStartCSTAuctionLengthChanged(_roundStartCSTAuctionLength);
+	function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external override onlyOwner onlyMaintenance {
+		roundStartCstAuctionLength = roundStartCstAuctionLength_;
+		emit RoundStartCstAuctionLengthChanged(roundStartCstAuctionLength_);
 	}
 
 	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external override onlyOwner onlyMaintenance {
