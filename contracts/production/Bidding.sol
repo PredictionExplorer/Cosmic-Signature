@@ -192,7 +192,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
-		uint256 numRaffleParticipants_ = numRaffleParticipants[_round];
 		require(
 			_round <= roundNum,
 			CosmicGameErrors.InvalidBidderQueryRound(
@@ -201,6 +200,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 				roundNum
 			)
 		);
+		uint256 numRaffleParticipants_ = numRaffleParticipants[_round];
 		require(
 			numRaffleParticipants_ > 0,
 			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", _round)

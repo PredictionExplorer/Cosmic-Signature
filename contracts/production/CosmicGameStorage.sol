@@ -11,6 +11,7 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
+import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
 // #endregion
@@ -22,13 +23,22 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	RandomWalkNFT public randomWalkNft;
 	CosmicSignature public nft;
 	CosmicToken public token;
-	// todo-0 Make this strongly typed.
-	address public raffleWallet;
+	EthPrizesWallet public ethPrizesWallet;
 	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 	// todo-0 Make this strongly typed.
 	address public stakingWalletRandomWalkNft;
 	// todo-0 Make this strongly typed.
 	address public marketingWallet;
+
+	/// @dev
+	/// [Comment-202411078]
+	/// We transfer ETH directly to this address.
+	/// This is intended to be our own `CharityWallet`.
+	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
+	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
+	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
+	/// Comment-202411077 relates.
+	/// [/Comment-202411078]
 	address public charity;
 
 	// #endregion
@@ -109,8 +119,24 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	address public stellarSpender;
 	uint256 public stellarSpenderAmount;
+
+	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
+	/// [Comment-202411075]
+	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
+	/// [/Comment-202411075]
+	/// @dev todo-0 Try to fit all endurance champion info in a single storage slot.
 	address public enduranceChampion;
+
+	uint256 public enduranceChampionStartTime;
 	uint256 public enduranceChampionDuration;
+	uint256 public prevEnduranceChampionDuration;
+
+	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
+	/// Comment-202411075 applies.
+	/// @dev todo-0 Try to fit all chrono-warrior info in a single storage slot.
+	address public chronoWarrior;
+
+	uint256 public chronoWarriorDuration;
 
 	// #endregion
 	// #region Percentages

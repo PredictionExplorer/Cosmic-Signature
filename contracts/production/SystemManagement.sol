@@ -14,6 +14,8 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
+import { IEthPrizesWallet } from "./interfaces/IEthPrizesWallet.sol";
+import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
@@ -69,10 +71,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit RandomWalkNftAddressChanged(randomWalkNft_);
 	}
 
-	function setRaffleWallet(address _raffleWallet) external override onlyOwner onlyMaintenance {
-		require(_raffleWallet != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		raffleWallet = _raffleWallet;
-		emit RaffleWalletAddressChanged(_raffleWallet);
+	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external override onlyOwner onlyMaintenance {
+		require(address(ethPrizesWallet_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
+		emit EthPrizesWalletAddressChanged(ethPrizesWallet_);
 	}
 
 	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft _stakingWalletCosmicSignatureNft) external override onlyOwner onlyMaintenance {

@@ -40,7 +40,7 @@ const basicDeploymentAdvanced = async function (
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
-	let cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet;
+	let cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, ethPrizesWallet;
 	let CosmicGame = await hre.ethers.getContractFactory(cgpName);
 	cosmicGameProxy = await hre.upgrades.deployProxy(
 		CosmicGame,
@@ -81,10 +81,10 @@ const basicDeploymentAdvanced = async function (
 		await charityWallet.connect(deployerAcct).transferOwnership(cosmicDAOAddr);
 	}
 
-	let RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-	raffleWallet = await RaffleWallet.connect(deployerAcct).deploy(cosmicGameProxyAddr);
-	await raffleWallet.waitForDeployment();
-	let raffleWalletAddr = await raffleWallet.getAddress();
+	let EthPrizesWallet = await hre.ethers.getContractFactory("EthPrizesWallet");
+	ethPrizesWallet = await EthPrizesWallet.connect(deployerAcct).deploy(cosmicGameProxyAddr);
+	await ethPrizesWallet.waitForDeployment();
+	let ethPrizesWalletAddr = await ethPrizesWallet.getAddress();
 
 	let MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
 	const marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicToken);
@@ -119,7 +119,7 @@ const basicDeploymentAdvanced = async function (
 	await cosmicGameProxy.connect(deployerAcct).setNftContract(cosmicSignatureAddr);
 	await cosmicGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
 	await cosmicGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNFTAddr);
-	await cosmicGameProxy.connect(deployerAcct).setRaffleWallet(raffleWalletAddr);
+	await cosmicGameProxy.connect(deployerAcct).setEthPrizesWallet(ethPrizesWalletAddr);
 	await cosmicGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
 	await cosmicGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
@@ -138,7 +138,7 @@ const basicDeploymentAdvanced = async function (
 		cosmicSignature,
 		charityWallet,
 		cosmicDAO,
-		raffleWallet,
+		ethPrizesWallet,
 		randomWalkNFT,
 		stakingWalletCosmicSignatureNft,
 		stakingWalletRandomWalkNft,

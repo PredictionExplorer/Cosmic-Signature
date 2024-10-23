@@ -12,7 +12,7 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
-import { RaffleWallet } from "./RaffleWallet.sol";
+import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -54,7 +54,10 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// // todo-1 Remove this garbage soon.
 			// lastBidder = address(0);
 
-			winners[roundNum] = /*winner*/ msg.sender;
+			// todo-0 Assign `lastBidder` here.
+			// todo-0 Comment: Even if `lastBidder` forgets to claim the prize, we will still record them as the winner.
+			// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
+			winners[roundNum] = /*winner*/ msg.sender /*lastBidder*/;
 
 			uint256 prizeAmount_ = prizeAmount();
 			uint256 charityAmount_ = charityAmount();
@@ -65,8 +68,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			_distributePrizes(/*winner,*/ prizeAmount_, charityAmount_, raffleAmount_, stakingAmount_);
 
 			_roundEndResets();
-			emit PrizeClaimEvent(roundNum, /*winner*/ msg.sender, prizeAmount_);
-			++ roundNum;
+			// emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, prizeAmount_);
+			// ++ roundNum;
 		}
 	}
 
@@ -124,14 +127,19 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// stakingAmount_ = 0;
 		}
 
-		// Charity
+		// [Comment-202411077]
+		// Sending ETH to charity.
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
-		(bool success, ) = charity.call{ value: charityAmount_ }("");
-		if (success) {
+		// Comment-202411078 relates.
+		// [/Comment-202411077]
+		(bool isSuccess, ) = charity.call{ value: charityAmount_ }("");
+		if (isSuccess) {
 			emit CosmicGameEvents.FundsTransferredToCharity(charity, charityAmount_);
 		} else {
 			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charity, charityAmount_);
 		}
+
+		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, prizeAmount_);
 
 		// Sending main prize at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
@@ -142,8 +150,10 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// todo-1 And don't limit gas when sending ETH or whatever tokens to `msg.sender`.
 		// todo-1 But a malitios winner also can exploit stack overflow. Can we find out what error happened?
 		// todo-1 Does an extarnal call use the same stack as the calling contract does?
-		(success, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
-		require(success, CosmicGameErrors.FundTransferFailed("Transfer to the winner failed.", /*winner*/ msg.sender, prizeAmount_));
+		// todo-1 Really, the only potentially vulnerable external call is the one near Comment-202411077.
+		// todo-1 See also: Comment-202411077, Comment-202411078.
+		(isSuccess, ) = /*winner*/ msg.sender.call{ value: prizeAmount_ }("");
+		require(isSuccess, CosmicGameErrors.FundTransferFailed("Transfer to bidding round main prize claimer failed.", /*winner*/ msg.sender, prizeAmount_));
 	}
 
 	/// @notice Distribute special prizes to Endurance Champion and Stellar Spender
@@ -197,7 +207,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateEntropy();
 			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			RaffleWallet(raffleWallet).deposit{ value: perWinnerAmount }(raffleWinner);
+			ethPrizesWallet.deposit{value: perWinnerAmount}(raffleWinner);
+			// todo-0 I will need a similar event for Chrono-Warrior.
 			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
 		}
 
@@ -242,40 +253,41 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	/// @notice Reset various parameters at the end of a bidding round
 	/// @dev This function is called after a prize is claimed to prepare for the next round
 	function _roundEndResets() internal {
+		++ roundNum;
 		lastBidder = address(0);
 		// todo-0 If we are about to enter maintenance mode don't update this, but rather update this after coming back from maintenance.
 		lastCstBidTimeStamp = block.timestamp;
 		lastBidType = CosmicGameConstants.BidType.ETH;
 
-		// // Incorrect?
+		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength =
 		// 	roundStartCstAuctionLength *
 		// 	(nanoSecondsExtra + CosmicGameConstants.DEFAULT_AUCTION_HOUR) /
 		// 	CosmicGameConstants.DEFAULT_AUCTION_HOUR;
 
-		// // Incorrect?
+		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength =
 		// 	roundStartCstAuctionLength *
 		// 	(nanoSecondsExtra + CosmicGameConstants.DEFAULT_AUCTION_LENGTH) /
 		// 	CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 
-		// // Incorrect?
+		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength = roundStartCstAuctionLength + nanoSecondsExtra;
 
-		// // Incorrect?
+		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength = roundStartCstAuctionLength * nanoSecondsExtra / CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
 
-		// todo-0 Nick, is this correct?
+		// todo-0 Nick has confirmed that this is correct.
+		// Assuming this will neither overflow nor underflow.
 		// todo-0 Should we use this formula before the 1st round too?
 		// todo-0 Should `setRoundStartCstAuctionLength` and `setNanoSecondsExtra` use it too?
-		// todo-0 Comment: assuming this will neither overflow nor underflow.
 		cstAuctionLength = roundStartCstAuctionLength + nanoSecondsExtra - CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
 
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
 		stellarSpenderAmount = 0;
 		enduranceChampion = address(0);
-		// todo-0 Maybe reset this to -1?
+		// ToDo-202411082-0 relates and/or applies.
 		enduranceChampionDuration = 0;
 
 		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {

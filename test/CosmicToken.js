@@ -16,7 +16,7 @@ describe("CosmicToken tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
@@ -30,7 +30,7 @@ describe("CosmicToken tests", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
 			marketingWallet,
@@ -46,7 +46,7 @@ describe("CosmicToken tests", function () {
 	};
 	it("ERC20 nonces() function exists", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(

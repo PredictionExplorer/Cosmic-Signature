@@ -11,6 +11,7 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
 abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, INFTDonations {
+	// todo-0 Didn't we discuss that an NFT donation without placing a bid could result in spamming?
 	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRuntime  {
 		nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
@@ -47,6 +48,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 		require(winners[donatedNFT.round] == msg.sender, CosmicGameErrors.NonExistentWinner("Only the round winner can claim this NFT",index));
 
 		donatedNFT.claimed = true;
+		// todo-1 Sometimes we use "safe" function and sometimes we don't. Review all NFT calls.
 		donatedNFT.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNFT.nftId);
 
 		emit DonatedNFTClaimedEvent(donatedNFT.round, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.nftId);

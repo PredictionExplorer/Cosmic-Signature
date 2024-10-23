@@ -28,7 +28,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 		cosmicSignature,
 		charityWallet,
 		cosmicDAO,
-		raffleWallet,
+		ethPrizesWallet,
 		randomWalkNFT,
 		stakingWalletCosmicSignatureNft,
 		stakingWalletRandomWalkNft,
@@ -54,7 +54,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 	console.log("CosmicSignature address:",await cosmicSignature.getAddress());
 	console.log("CharityWallet address:",await charityWallet.getAddress());
 	console.log("CosmicDAO address", await cosmicDAO.getAddress());
-	console.log("RaffleWallet address:", await raffleWallet.getAddress());
+	console.log("EthPrizesWallet address:", await ethPrizesWallet.getAddress());
 	console.log("Proxy implementation address:", await cosmicGame.getAddress());
 	console.log("randomWalkNFT address:", await randomWalkNFT.getAddress());
 	console.log("StakingWalletCosmicSignatureNft address:", await stakingWalletCosmicSignatureNft.getAddress());
@@ -72,7 +72,7 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 			"','" +
 			await charityWallet.getAddress() +
 			"','" +
-			await raffleWallet.getAddress() +
+			await ethPrizesWallet.getAddress() +
 			"','" +
 			await randomWalkNFT.getAddress() +
 			"','" +

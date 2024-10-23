@@ -6,11 +6,14 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 interface IMainPrize is ICosmicGameStorage, ISystemManagement, IBidStatistics {
-	/// @notice Emitted when a prize is claimed
-	/// @param prizeNum The number of the prize being claimed
-	/// @param destination The address receiving the prize
-	/// @param amount The amount of the prize
-	event PrizeClaimEvent(uint256 indexed prizeNum, address indexed destination, uint256 amount);
+	/// @notice Emitted when main prize is claimed.
+	/// @param roundNum Bidding round number.
+	/// @param claimedBy The address receiving the prize.
+	/// It will be different from the bidding round actual winner if the winner has failed to claim the prize
+	/// within a timeout and someone else claimed it.
+	/// It's possible to find out from other events who is the actual winner.
+	/// @param amount Prize amount.
+	event MainPrizeClaimed(uint256 indexed roundNum, address indexed claimedBy, uint256 amount);
 
 	/// @notice Emitted when an ETH raffle winner is selected
 	/// @param winner The address of the winner

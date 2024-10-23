@@ -16,7 +16,7 @@ async function main() {
 		cosmicSignature,
 		charityWallet,
 		cosmicDAO,
-		raffleWallet,
+		ethPrizesWallet,
 		randomWalkNFT,
 		stakingWalletCosmicSignatureNft,
 		stakingWalletRandomWalkNft,
@@ -29,7 +29,7 @@ async function main() {
 	console.log("CosmicSignature address:", cosmicSignature.address);
 	console.log("CharityWallet address:", charityWallet.address);
 	console.log("CosmicDAO address", cosmicDAO.address);
-	console.log("RaffleWallet address:", raffleWallet.address);
+	console.log("EthPrizesWallet address:", ethPrizesWallet.address);
 	console.log("randomWalkNFT address:", randomWalkNFT.address);
 	console.log("stakingWalletCosmicSignatureNft address: ",stakingWalletCosmicSignatureNft.address);
 	console.log("stakingWalletRandomWalkNft address: ",stakingWalletRandomWalkNft.address);

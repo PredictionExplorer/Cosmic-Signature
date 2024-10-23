@@ -6,6 +6,7 @@ import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
+import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
 import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
@@ -24,10 +25,10 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	/// @param randomWalkNft_ The new `RandomWalkNFT` contract address
    function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external;
 
-	/// @notice Set the raffle wallet address
-	/// @dev Only callable by the contract owner
-	/// @param _raffleWallet The new raffle wallet address
-   function setRaffleWallet(address _raffleWallet) external;
+	/// @notice Sets the ETH prizes wallet address.
+	/// @dev Only callable by the contract owner.
+	/// @param ethPrizesWallet_ The new value.
+   function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external;
 
 	/// @notice Set the CST staking wallet address
 	/// @dev Only callable by the contract owner
