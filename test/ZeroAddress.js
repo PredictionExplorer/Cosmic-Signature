@@ -16,7 +16,7 @@ describe("Zero-address checking", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -31,7 +31,7 @@ describe("Zero-address checking", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -54,7 +54,7 @@ describe("Zero-address checking", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -73,7 +73,7 @@ describe("Zero-address checking", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -98,7 +98,7 @@ describe("Zero-address checking", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -134,9 +134,9 @@ describe("Zero-address checking", function () {
 		const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
 		await expect(MarketingWallet.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
-	it("Shouldn't be possible to deploy RaffleWallet with zero-address-ed parameters", async function () {
+	it("Shouldn't be possible to deploy EthPrizesWallet with zero-address-ed parameters", async function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
-		const RaffleWallet = await hre.ethers.getContractFactory("RaffleWallet");
-		await expect(RaffleWallet.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
+		const EthPrizesWallet = await hre.ethers.getContractFactory("EthPrizesWallet");
+		await expect(EthPrizesWallet.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
 	});
 });

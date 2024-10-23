@@ -21,7 +21,7 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -36,7 +36,7 @@ describe("Security", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -51,7 +51,7 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -61,7 +61,7 @@ describe("Security", function () {
 		await cosmicGameProxy.setTokenContract(await cosmicToken.getAddress());
 		await cosmicGameProxy.setNftContract(await cosmicSignature.getAddress());
 		await cosmicGameProxy.setCharity(await charityWallet.getAddress());
-		await cosmicGameProxy.setRaffleWallet(await raffleWallet.getAddress());
+		await cosmicGameProxy.setEthPrizesWallet(await ethPrizesWallet.getAddress());
 		await cosmicGameProxy.setRandomWalkNft(await randomWalkNFT.getAddress());
 		await cosmicGameProxy.setActivationTime(0);
 		await cosmicGameProxy.setPrizePercentage(10n);
@@ -112,7 +112,7 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -137,7 +137,7 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,

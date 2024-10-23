@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
+import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
 interface ISystemEvents {
@@ -20,9 +21,9 @@ interface ISystemEvents {
 	/// @param newRandomWalkNft The new `RandomWalkNFT` address
 	event RandomWalkNftAddressChanged(IRandomWalkNFT newRandomWalkNft);
 
-	/// @notice Emitted when the raffle wallet address is changed
-	/// @param newRaffleWallet The new raffle wallet address
-	event RaffleWalletAddressChanged(address newRaffleWallet);
+	/// @notice Emitted when the ETH prizes wallet address is changed.
+	/// @param newEthPrizesWallet The new value.
+	event EthPrizesWalletAddressChanged(IEthPrizesWallet newEthPrizesWallet);
 
 	/// @notice Emitted when the CST staking wallet address is changed
 	/// @param newStakingWalletCosmicSignatureNft The new CST staking wallet address

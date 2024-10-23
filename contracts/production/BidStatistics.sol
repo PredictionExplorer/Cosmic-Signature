@@ -15,7 +15,10 @@ abstract contract BidStatistics is CosmicGameStorage, IBidStatistics {
 
 		// todo-0 Who and when updates `bidderInfo[roundNum][lastBidder].lastBidTime`? What if it got updated many bids ago?
 		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
-		// todo-0 Can these both be zero?
+		// [ToDo-202411082-0]
+		// Can these both be zero?
+		// Maybe we should reset `enduranceChampionDuration` to -1 on round start?
+		// [/ToDo-202411082-0]
 		if (lastBidDuration > enduranceChampionDuration) {
 			enduranceChampionDuration = lastBidDuration;
 			enduranceChampion = lastBidder;

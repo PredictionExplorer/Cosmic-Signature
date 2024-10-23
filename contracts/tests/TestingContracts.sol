@@ -6,7 +6,8 @@ import { CosmicToken } from "../production/CosmicToken.sol";
 import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
-import { RaffleWallet } from "../production/RaffleWallet.sol";
+import { IEthPrizesWallet } from "../production/interfaces/IEthPrizesWallet.sol";
+import { EthPrizesWallet } from "../production/EthPrizesWallet.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 import { Bidding } from "../production/Bidding.sol";
@@ -154,8 +155,8 @@ contract SpecialCosmicGame is CosmicGame {
 	function setCharityRaw(address addr) external {
 		charity = addr;
 	}
-	function setRaffleWalletRaw(address addr) external {
-		raffleWallet = addr;
+	function setEthPrizesWalletRaw(IEthPrizesWallet ethPrizesWallet_) external {
+		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
 	}
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft addr) external {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(addr));

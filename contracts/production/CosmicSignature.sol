@@ -40,7 +40,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	/// todo-1 Why do we need the above comment? Don't we know what a constructor does?
 	/// @param _cosmicGameProxyContract The address of the CosmicGameProxy contract.
 	/// ToDo-202408114-1 applies.
-	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") Ownable(msg.sender) {
+	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") Ownable(_msgSender()) {
 		require(_cosmicGameProxyContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
 		cosmicGameProxyContract = _cosmicGameProxyContract;
@@ -59,7 +59,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	function setTokenName(uint256 nftId, string memory name) external override {
 		require(
 			_isAuthorized(_ownerOf(nftId), _msgSender(), nftId),
-			CosmicGameErrors.OwnershipError("setTokenName caller is not owner nor approved.", nftId)
+			CosmicGameErrors.OwnershipError("setTokenName caller is not authorized.", nftId)
 		);
 		require(
 			bytes(name).length <= 32,
@@ -74,7 +74,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 		require(
 			_msgSender() == cosmicGameProxyContract,
 			// todo-1 We no longer have a contract named CosmicGameProxy, right? Rephrase?
-			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract is permitted to mint.", msg.sender)
+			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract is permitted to mint.", _msgSender())
 		);
 
 		uint256 nftId = numTokens;

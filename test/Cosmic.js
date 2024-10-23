@@ -16,7 +16,7 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -29,7 +29,7 @@ describe("CosmicGame", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWallet,
 			marketingWallet,
 		};
@@ -43,7 +43,7 @@ describe("CosmicGame", function () {
 		],
 	};
 	it("Should set the right unlockTime", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, raffleWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		expect(await cosmicGameProxy.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
 		expect(await cosmicToken.totalSupply()).to.equal(0);
@@ -56,7 +56,7 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet
@@ -83,7 +83,7 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,

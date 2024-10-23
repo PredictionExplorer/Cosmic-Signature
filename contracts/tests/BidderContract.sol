@@ -5,7 +5,7 @@ pragma abicoder v2;
 import { CosmicGame } from "../production/CosmicGame.sol";
 import { CosmicSignature } from "../production/CosmicSignature.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
-import { RaffleWallet } from "../production/RaffleWallet.sol";
+import { EthPrizesWallet } from "../production/EthPrizesWallet.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -79,15 +79,17 @@ contract BidderContract is IERC721Receiver {
 	function doClaim() external {
 		cosmicGame.claimPrize();
 	}
-	function withdrawRaffleReward(address destination) external {
-		RaffleWallet raffleWallet = RaffleWallet(destination);
-		raffleWallet.withdraw();
+	function withdrawEthPrize(address destination) external {
+		EthPrizesWallet ethPrizesWallet_ = EthPrizesWallet(destination);
+		ethPrizesWallet_.withdraw();
 	}
 	function withdrawAll() external {
-		RaffleWallet raffleWallet = RaffleWallet(cosmicGame.raffleWallet());
-		uint bal = raffleWallet.balances(address(this));
-		if (bal > 0) {
-			raffleWallet.withdraw();
+		EthPrizesWallet ethPrizesWallet_ = cosmicGame.ethPrizesWallet();
+		// Issue. `EthPrizesWallet.withdraw` won't revert on zero balance any more.
+		// So it could make sense to call it without checking balance.
+		uint256 bal_ = ethPrizesWallet_.getWinnerBalance(address(this));
+		if (bal_ > 0) {
+			ethPrizesWallet_.withdraw();
 		}
 		CosmicSignature nft = cosmicGame.nft();
 		// todo-1 Review all calls to `call`.

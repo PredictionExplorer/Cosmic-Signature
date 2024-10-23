@@ -10,7 +10,9 @@ contract CharityWallet is Ownable, ICharityWallet {
 	/// @notice The address of the current designated charity
 	address public charityAddress;
 
-	constructor() Ownable(msg.sender) {
+	// todo-1 Review where we use `_msgSender` and other `Context` methods.
+	// todo-1 Is it really a good idea to use them?
+	constructor() Ownable(_msgSender()) {
 	}
 
 	receive() external payable override {

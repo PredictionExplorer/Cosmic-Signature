@@ -28,6 +28,7 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 
 	function send(uint256 amount, address to) external override onlyOwner {
 		require(to != address(0), CosmicGameErrors.ZeroAddress("Recipient address cannot be zero."));
+		// todo-1 See Comment-202409215.
 		require(amount > 0, CosmicGameErrors.NonZeroValueRequired("Amount must be greater than zero."));
 
 		try token.transfer(to, amount) {

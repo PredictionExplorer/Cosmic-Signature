@@ -11,6 +11,7 @@ import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
+import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
 // #endregion
@@ -22,8 +23,7 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	RandomWalkNFT public randomWalkNft;
 	CosmicSignature public nft;
 	CosmicToken public token;
-	// todo-0 Make this strongly typed.
-	address public raffleWallet;
+	EthPrizesWallet public ethPrizesWallet;
 	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 	// todo-0 Make this strongly typed.
 	address public stakingWalletRandomWalkNft;
@@ -32,12 +32,11 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	/// @dev
 	/// [Comment-202411078]
-	/// This is a 3rd party address, not anything like our own `CharityWallet`.
-	/// todo-0 It appears that we don't use `CharityWallet`. Why?
 	/// We transfer ETH directly to this address.
-	/// Assuming that if there is a contract at this address, it's not malitios.
+	/// This is intended to be our own `CharityWallet`.
+	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
 	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
-	/// Therefore it's important that a human conducted a due-diligence on this address.
+	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
 	/// Comment-202411077 relates.
 	/// [/Comment-202411078]
 	address public charity;

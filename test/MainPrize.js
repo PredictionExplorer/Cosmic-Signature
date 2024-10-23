@@ -16,7 +16,7 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
@@ -30,7 +30,7 @@ describe("CosmicSignature tests", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
 			marketingWallet,
@@ -45,7 +45,7 @@ describe("CosmicSignature tests", function () {
 		],
 	};
 	it("Raffle deposits sent should match raffle deposits received", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, ethPrizesWallet } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await hre.ethers.getSigners();
 	
@@ -71,7 +71,7 @@ describe("CosmicSignature tests", function () {
 
 
 		// at this point all required data was initialized, we can proceed with the test
-		let topic_sig = raffleWallet.interface.getEvent("RaffleDepositEvent").topicHash;
+		let topic_sig = ethPrizesWallet.interface.getEvent("PrizeReceived").topicHash;
 		let tx, receipt, log, parsed_log, winner;
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -136,7 +136,7 @@ describe("CosmicSignature tests", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+1]);
 		await hre.ethers.provider.send("evm_mine");
 
-		let raffleAmount = await cosmicGameProxy.raffleAmount();
+		// let raffleAmount = await cosmicGameProxy.raffleAmount();
 		tx = await cosmicGameProxy.connect(addr3).claimPrize();
 		roundNum = roundNum + 1
 		receipt = await tx.wait();
@@ -148,12 +148,12 @@ describe("CosmicSignature tests", function () {
 
 		const unique_winners = [];
 		for (let i = 0; i < deposit_logs.length; i++) {
-			let wlog = raffleWallet.interface.parseLog(deposit_logs[i]);
+			let wlog = ethPrizesWallet.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
 			let winner = args.winner;
 			let winner_signer = await hre.ethers.getSigner(winner);
 			if (typeof unique_winners[winner] === "undefined") {
-				await raffleWallet.connect(winner_signer).withdraw();
+				await ethPrizesWallet.connect(winner_signer).withdraw();
 				unique_winners[winner] = 1;
 			}
 		}
@@ -167,7 +167,7 @@ describe("CosmicSignature tests", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -241,7 +241,7 @@ describe("CosmicSignature tests", function () {
 			let winner_signer = await hre.ethers.getSigner(winner);
 			if (typeof unique_winners[winner] === 'undefined') {
 				if (winner != (await cBidder.getAddress())) {
-					await raffleWallet.connect(winner_signer).withdraw();
+					await ethPrizesWallet.connect(winner_signer).withdraw();
 				}
 				unique_winners[winner] = 1;
 			}
@@ -263,7 +263,7 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet
@@ -299,9 +299,9 @@ describe("CosmicSignature tests", function () {
 
 		let tx = await bContract.connect(addr2).doClaim();
 		let receipt = await tx.wait();
-		let topic_sig = cosmicGameProxy.interface.getEvent('PrizeClaimEvent').topicHash;
+		let topic_sig = cosmicGameProxy.interface.getEvent('MainPrizeClaimed').topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
-		expect(parsed_log.args.destination).to.equal(await bContract.getAddress());
+		expect(parsed_log.args.claimedBy).to.equal(await bContract.getAddress());
 	});
 })

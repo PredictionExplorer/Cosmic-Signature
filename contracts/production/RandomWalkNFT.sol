@@ -60,7 +60,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// `Ownable` `constructor` and `__Ownable_init` now require a nonzero `initialOwner`.
 	// I have provided a simple one, but this implementation is to be revisited everywhere this ToDo is referenced.
 	// [/ToDo-202408114-1]
-	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(msg.sender) {
+	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",
@@ -75,7 +75,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
-		require(_isAuthorized(_ownerOf(tokenId),_msgSender(), tokenId), "setTokenName caller is not owner nor approved");
+		require(_isAuthorized(_ownerOf(tokenId), _msgSender(), tokenId), "setTokenName caller is not owner nor approved");
 		require(bytes(name).length <= 32, "Token name is too long.");
 		tokenNames[tokenId] = name;
 		emit TokenNameEvent(tokenId, name);

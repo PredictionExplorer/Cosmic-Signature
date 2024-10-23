@@ -13,7 +13,7 @@ describe("Events2", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			raffleWallet,
+			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -28,7 +28,7 @@ describe("Events2", function () {
 			charityWallet,
 			cosmicDAO,
 			randomWalkNFT,
-			raffleWallet,
+			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -44,7 +44,7 @@ describe("Events2", function () {
 		],
 	};
 	it("Number of Raffle events match the configuration", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, raffleWallet, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, ethPrizesWallet, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 
@@ -117,7 +117,7 @@ describe("Events2", function () {
 		expect(total_nft_winners).to.equal(deposit_logs.length);
 
 		let num_eth_winners = await cosmicGameProxy.numRaffleETHWinnersBidding();
-		topic_sig = raffleWallet.interface.getEvent("RaffleDepositEvent").topicHash;
+		topic_sig = ethPrizesWallet.interface.getEvent("PrizeReceived").topicHash;
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(num_eth_winners).to.equal(deposit_logs.length);
 	});
