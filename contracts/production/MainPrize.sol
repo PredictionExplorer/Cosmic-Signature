@@ -37,12 +37,14 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// Only the last bidder may claim the prize.
 			// But after the timeout expires, anyone is welcomed to.
 			// todo-1 Here and elsewhere, use respective functions from `Context`.
+			// todo-1 Make sure this can't overflow.
 			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize) ) {
 				revert
 					CosmicGameErrors.LastBidderOnly(
 						"Only the last bidder may claim the prize until a timeout expires.",
 						lastBidder,
 						/*winner*/ msg.sender,
+						// todo-1 Make sure this can't overflow.
 						timeoutClaimPrize - (block.timestamp - prizeTime)
 					);
 			}
