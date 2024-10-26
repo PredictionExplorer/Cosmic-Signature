@@ -4,7 +4,7 @@ const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-describe("CosmicSignature tests", function () {
+describe("SystemManagement tests", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
@@ -19,8 +19,6 @@ describe("CosmicSignature tests", function () {
 			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
-			// todo-0 Actually this probably works correct. But the order of variables still should be fixed.
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
@@ -33,17 +31,15 @@ describe("CosmicSignature tests", function () {
 			randomWalkNFT,
 			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
-			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
-			// todo-0 Actually this probably works correct. But the order of variables still should be fixed.
 			marketingWallet,
 		};
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("Setters are working", async function () {
@@ -100,27 +96,35 @@ describe("CosmicSignature tests", function () {
 		await cosmicGameProxy.connect(owner).setNumRaffleNFTWinnersStakingRWalk(99n);
 		expect(await cosmicGameProxy.numRaffleNFTWinnersStakingRWalk()).to.equal(99n);
 
-		await expect(cosmicGameProxy.connect(owner).setCharityPercentage(60n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
-		let charityPercentage = await cosmicGameProxy.charityPercentage();
-		await cosmicGameProxy.connect(owner).setCharityPercentage(11n);
-		expect(await cosmicGameProxy.charityPercentage()).to.equal(11n);
-		await cosmicGameProxy.setCharityPercentage(charityPercentage);
+		await expect(cosmicGameProxy.connect(owner).setMainPrizePercentage(75n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
+		let mainPrizePercentage_ = await cosmicGameProxy.mainPrizePercentage();
+		await cosmicGameProxy.connect(owner).setMainPrizePercentage(mainPrizePercentage_ + 1n);
+		expect(await cosmicGameProxy.mainPrizePercentage()).to.equal(mainPrizePercentage_ + 1n);
+		await cosmicGameProxy.setMainPrizePercentage(mainPrizePercentage_);
+
+		await expect(cosmicGameProxy.connect(owner).setChronoWarriorEthPrizePercentage(55n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
+		let chronoWarriorEthPrizePercentage_ = await cosmicGameProxy.chronoWarriorEthPrizePercentage();
+		await cosmicGameProxy.connect(owner).setChronoWarriorEthPrizePercentage(chronoWarriorEthPrizePercentage_ + 1n);
+		expect(await cosmicGameProxy.chronoWarriorEthPrizePercentage()).to.equal(chronoWarriorEthPrizePercentage_ + 1n);
+		await cosmicGameProxy.setChronoWarriorEthPrizePercentage(chronoWarriorEthPrizePercentage_);
 
 		await expect(cosmicGameProxy.connect(owner).setRafflePercentage(55n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
-		let rafflePercentage = await cosmicGameProxy.rafflePercentage();
-		await cosmicGameProxy.connect(owner).setRafflePercentage(6n);
-		expect(await cosmicGameProxy.rafflePercentage()).to.equal(6n);
-		await cosmicGameProxy.setRafflePercentage(rafflePercentage);
+		let rafflePercentage_ = await cosmicGameProxy.rafflePercentage();
+		await cosmicGameProxy.connect(owner).setRafflePercentage(rafflePercentage_ + 1n);
+		expect(await cosmicGameProxy.rafflePercentage()).to.equal(rafflePercentage_ + 1n);
+		await cosmicGameProxy.setRafflePercentage(rafflePercentage_);
 
 		await expect(cosmicGameProxy.connect(owner).setStakingPercentage(60n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
-		let stakingPercentage = await cosmicGameProxy.stakingPercentage();
-		await cosmicGameProxy.connect(owner).setStakingPercentage(6n);
-		expect(await cosmicGameProxy.stakingPercentage()).to.equal(6n);
-		await cosmicGameProxy.setStakingPercentage(stakingPercentage);
+		let stakingPercentage_ = await cosmicGameProxy.stakingPercentage();
+		await cosmicGameProxy.connect(owner).setStakingPercentage(stakingPercentage_ + 1n);
+		expect(await cosmicGameProxy.stakingPercentage()).to.equal(stakingPercentage_ + 1n);
+		await cosmicGameProxy.setStakingPercentage(stakingPercentage_);
 
-		await expect(cosmicGameProxy.connect(owner).setPrizePercentage(75n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
-		await cosmicGameProxy.connect(owner).setPrizePercentage(26n);
-		expect(await cosmicGameProxy.prizePercentage()).to.equal(26n);
+		await expect(cosmicGameProxy.connect(owner).setCharityPercentage(60n)).to.be.revertedWithCustomError(cosmicGameProxy,"PercentageValidation");
+		let charityPercentage_ = await cosmicGameProxy.charityPercentage();
+		await cosmicGameProxy.connect(owner).setCharityPercentage(charityPercentage_ + 1n);
+		expect(await cosmicGameProxy.charityPercentage()).to.equal(charityPercentage_ + 1n);
+		await cosmicGameProxy.setCharityPercentage(charityPercentage_);
 
 		testAcct = hre.ethers.Wallet.createRandom();
 		await expect(cosmicGameProxy.connect(owner).setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicGameProxy,"ZeroAddress");
@@ -224,9 +228,11 @@ describe("CosmicSignature tests", function () {
 		await expect(cosmicGameProxy.connect(owner).setNumRaffleNFTWinnersStakingRWalk(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0);
 		await expect(cosmicGameProxy.connect(owner).setTokenReward(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0);
 		await expect(cosmicGameProxy.connect(owner).setMarketingReward(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0);
-		await expect(cosmicGameProxy.connect(owner).setCharityPercentage(11n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
+		await expect(cosmicGameProxy.connect(owner).setMainPrizePercentage(26n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
+		await expect(cosmicGameProxy.connect(owner).setChronoWarriorEthPrizePercentage(6n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setRafflePercentage(6n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setStakingPercentage(6n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
+		await expect(cosmicGameProxy.connect(owner).setCharityPercentage(11n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setTokenContract(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNftContract(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setMarketingWallet(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
@@ -235,7 +241,6 @@ describe("CosmicSignature tests", function () {
 		await expect(cosmicGameProxy.connect(owner).setPriceIncrease(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setNanoSecondsExtra(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setInitialSecondsUntilPrize(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
-		await expect(cosmicGameProxy.connect(owner).setPrizePercentage(26n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).updateInitialBidAmountFraction(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setActivationTime(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setRoundStartCstAuctionLength(60n * 60n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
@@ -263,7 +268,7 @@ describe("CosmicSignature tests", function () {
 		let revertStr="System in maintenance mode";
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.bid(params, { value: bidPrice })).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,2n);
 		await expect(cosmicGameProxy.bidAndDonateNFT(params, owner.address, 0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicGameProxy, "SystemMode").withArgs(revertStr,2n);
@@ -300,13 +305,15 @@ describe("CosmicSignature tests", function () {
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setNumRaffleNFTWinnersStakingRWalk(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setPrizePercentage(1n))
+		await expect(cosmicGameProxy.connect(addr1).setMainPrizePercentage(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setCharityPercentage(1n))
+		await expect(cosmicGameProxy.connect(addr1).setChronoWarriorEthPrizePercentage(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setRafflePercentage(1n))
-		.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
+			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setStakingPercentage(1n))
+			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
+		await expect(cosmicGameProxy.connect(addr1).setCharityPercentage(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setTokenContract(addr1.address))
 			.to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
@@ -383,7 +390,7 @@ describe("CosmicSignature tests", function () {
 		let cosmicGameAddr = await cosmicGameProxy.getAddress();
 		let donationAmount = hre.ethers.parseEther('10');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -410,7 +417,7 @@ describe("CosmicSignature tests", function () {
 		expect(sysMode.toString()).to.equal('0');
 
 		// make another bid just to make sure runtime mode is enabled
-		bidParams = { msg: '', rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });

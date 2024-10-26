@@ -56,21 +56,21 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when an invalid bidder query offset is provided
 	/// @param errStr Description of the error
-	/// @param providedRound The round number provided
+	/// @param providedRoundNum The round number provided
 	/// @param providedOffset The offset provided
 	/// @param numParticipants The number of participants in the round
 	error InvalidBidderQueryOffset(
 		string errStr,
-		uint256 providedRound,
+		uint256 providedRoundNum,
 		uint256 providedOffset,
 		uint256 numParticipants
 	);
 
-	/// @notice Thrown when an invalid bidder query round is provided
-	/// @param errStr Description of the error
-	/// @param providedRound The round number provided
-	/// @param totalRounds The total number of rounds
-	error InvalidBidderQueryRound(string errStr, uint256 providedRound, uint256 totalRounds);
+	/// @notice Thrown when an invalid bidder query round number is provided.
+	/// @param errStr Description of the error.
+	/// @param providedRoundNum The provided round number.
+	/// @param currentRoundNum The current round number.
+	error InvalidBidderQueryRoundNum(string errStr, uint256 providedRoundNum, uint256 currentRoundNum);
 
 	/// @notice Thrown when the bidder query offset overflows
 	/// @param errStr Description of the error
@@ -80,8 +80,8 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when querying bidders for a round with no bids yet
 	/// @param errStr Description of the error
-	/// @param providedRound The round number provided
-	error BidderQueryNoBidsYet(string errStr, uint256 providedRound);
+	/// @param providedRoundNum The round number provided
+	error BidderQueryNoBidsYet(string errStr, uint256 providedRoundNum);
 
 	// #endregion
 	// #region Claim Prize Errors

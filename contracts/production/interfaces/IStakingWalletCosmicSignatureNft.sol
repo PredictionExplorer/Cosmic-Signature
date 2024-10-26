@@ -42,11 +42,11 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice Emitted when an ETH deposit is received.
 	/// @param roundNum Bidding round number.
 	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit action.
-	/// @param depositIndex `_EthDeposit` instance index in `ethDeposits` (1-based).
+	/// @param depositIndex `EthDeposit` instance index in `ethDeposits` (1-based).
 	/// It can remain the same as it was in the previous event.
-	/// @param depositId `_EthDeposit` instance ID.
+	/// @param depositId `EthDeposit` instance ID.
 	/// It can remain the same as it was in the previous event.
-	/// If a new `_EthDeposit` instance was created, `depositId == actionCounter`.
+	/// If a new `EthDeposit` instance was created, `depositId == actionCounter`.
 	/// @param depositAmount The deposited ETH amount.
 	/// @param numStakedNfts The current staked NFT count.
 	event EthDepositReceived(
@@ -60,7 +60,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 
 	/// @notice Unstakes an NFT and pays at least a part of its reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
-	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
 	/// @dev Transfers the NFT back to the owner, pays at least a part of its reward to the staker,
 	/// and, in case the whole reward has been paid, deletes the stake action.
 	/// [Comment-202410142]
@@ -94,19 +94,19 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 
 	/// @notice Similarly to `unstake`, performs the instake action for zero or more stake actions in a single transaction.
 	/// @param stakeActionIds_ Stake action IDs.
-	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @notice After an NFT has been unstaked, pays another part of the reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
-	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @notice Similarly to `payReward`, performs the pay reward action for zero or more stake actions in a single transaction.
 	/// @param stakeActionIds_ Stake action IDs.
-	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `_EthDeposit` instances.
+	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 

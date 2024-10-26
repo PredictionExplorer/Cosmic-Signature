@@ -35,9 +35,9 @@ library CosmicGameConstants {
 	/// @notice Information about a bidder
 	/// @dev Stores the total amount spent and the time of the last bid
 	struct BidderInfo {
-		uint256 totalSpentETH;
-		uint256 totalSpentCST;
-		uint256 lastBidTime;
+		uint256 totalSpentEth;
+		uint256 totalSpentCst;
+		uint256 lastBidTimeStamp;
 	}
 
 	/// @notice Information about a donated NFT
@@ -45,7 +45,7 @@ library CosmicGameConstants {
 	struct DonatedNFT {
 		IERC721 nftAddress;
 		uint256 nftId;
-		uint256 round;
+		uint256 roundNum;
 		bool claimed;
 	}
 
@@ -122,10 +122,12 @@ library CosmicGameConstants {
 	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = SECONDS_PER_DAY;
 	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = SECONDS_PER_DAY;
 	uint256 public constant INITIAL_ACTIVATION_TIME = 1_702_512_000;
-	uint256 public constant INITIAL_PRIZE_PERCENTAGE = 25;
-	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
+	uint256 public constant INITIAL_MAIN_PRIZE_PERCENTAGE = 25;
+	// todo-1 I added this. So now other initial percentages should be readjusted.
+	uint256 public constant INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE = 7;
 	uint256 public constant INITIAL_RAFFLE_PERCENTAGE = 5;
 	uint256 public constant INITIAL_STAKING_PERCENTAGE = 10;
+	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
 	uint256 public constant INITIAL_RAFFLE_ETH_WINNERS_BIDDING = 3;
 	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
 	uint256 public constant INITIAL_STAKING_WINNERS_RWALK = 4;

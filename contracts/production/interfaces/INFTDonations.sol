@@ -10,25 +10,25 @@ interface INFTDonations is ICosmicGameStorage, ISystemManagement {
 	/// @notice Emitted when an NFT is donated
 	/// @param donor The address of the donor
 	/// @param nftAddress The address of the NFT contract
-	/// @param round The current round number
+	/// @param roundNum The current round number
 	/// @param nftId The ID of the donated NFT
 	/// @param index The index of the donated NFT in the storage array
 	event NFTDonationEvent(
 		address indexed donor,
 		IERC721 indexed nftAddress,
-		uint256 indexed round,
+		uint256 indexed roundNum,
 		uint256 nftId,
 		uint256 index
 	);
 
 	/// @notice Emitted when a donated NFT is claimed
-	/// @param round The round number
+	/// @param roundNum The round number
 	/// @param index The index of the donated NFT
 	/// @param winner The address of the winner claiming the NFT
 	/// @param nftAddressdonatedNFTs The address of the NFT contract
 	/// @param nftId The ID of the claimed NFT
 	event DonatedNFTClaimedEvent(
-		uint256 indexed round,
+		uint256 indexed roundNum,
 		uint256 index,
 		address winner,
 		address nftAddressdonatedNFTs,

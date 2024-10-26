@@ -76,9 +76,15 @@ contract CosmicGame is
 		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
 		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
-		lastCstBidTimeStamp = activationTime;
+
+		// // [Comment-202411115]
+		// // We will update this near Comment-202411113.
+		// // [/Comment-202411115]
+		// lastCstBidTimeStamp = activationTime;
+
 		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+		chronoWarriorDuration = uint256(int256(-1));
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		marketingReward = CosmicGameConstants.MARKETING_REWARD;
@@ -86,10 +92,11 @@ contract CosmicGame is
 		systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 
 		// Initialize percentages
-		prizePercentage = CosmicGameConstants.INITIAL_PRIZE_PERCENTAGE;
-		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
+		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
+		chronoWarriorEthPrizePercentage = CosmicGameConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
 		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
+		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
 
 		// Initialize raffle winners
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
@@ -115,14 +122,12 @@ contract CosmicGame is
 	}
 
 	receive() external payable override {
-
-		// Treat incoming ETH as a bid with default parameters
+		// Treating incoming ETH as a bid with default parameters.
 		BidParams memory defaultParams;
 		// todo-1 Is this assignment redundant? Replace it with an `assert`?
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
-
 		bid(param_data);
 	}
 
@@ -134,8 +139,8 @@ contract CosmicGame is
 	}
 
 	function upgradeTo(address _newImplementation) public override onlyOwner {
-		 _authorizeUpgrade(_newImplementation);
-		 StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		 emit ERC1967Utils.Upgraded(_newImplementation);
+		_authorizeUpgrade(_newImplementation);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
+		emit ERC1967Utils.Upgraded(_newImplementation);
 	}
 }

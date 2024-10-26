@@ -111,10 +111,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		return address(this).balance / 2;
 	}
 
-	/**
-	 * If there was no mint for withdrawalWaitSeconds, then the last minter can withdraw
-	 * half of the balance in the smart contract.
-	 */
+	// If there was no mint for withdrawalWaitSeconds, then the last minter can withdraw
+	// half of the balance in the smart contract.
 	function withdraw() public override {
 		require(_msgSender() == lastMinter, "Only last minter can withdraw.");
 		require(timeUntilWithdrawal() == 0, "Not enough time has elapsed.");

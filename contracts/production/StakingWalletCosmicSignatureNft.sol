@@ -22,7 +22,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region Data Types
 
 	/// @notice Stores details about an NFT stake action.
-	struct _StakeAction {
+	struct StakeAction {
 		uint256 nftId;
 		address nftOwnerAddress;
 
@@ -30,11 +30,11 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		/// [Comment-202410268]
 		/// This index is within `StakingWalletCosmicSignatureNft.ethDeposits`.
 		/// It's 1-based.
-		/// A nonzero indicates that this NFT has been unstaked and it's likely that rewards from some `_EthDeposit` instances
+		/// A nonzero indicates that this NFT has been unstaked and it's likely that rewards from some `EthDeposit` instances
 		/// have not been paid yet. So the staker has an option to call `StakingWalletCosmicSignatureNft.payReward`,
 		/// possibly multiple times, to receieve yet to be paid rewards.
 		/// We used the word "likely" in the above comment
-		/// because this particular `_EthDeposit` instance has not been evaluated yet,
+		/// because this particular `EthDeposit` instance has not been evaluated yet,
 		/// and therefore it's actually possible that the staker isn't entitled to get a reward from it.
 		/// Comment-202410142 relates.
 		/// [/Comment-202410268]
@@ -42,15 +42,15 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	}
 
 	/// @notice Stores details about an ETH deposit.
-	/// Multiple deposits can be aggregated in a single `_EthDeposit` instance.
+	/// Multiple deposits can be aggregated in a single `EthDeposit` instance.
 	/// @dev This structure fits in a single storage slot.
-	struct _EthDeposit {
+	struct EthDeposit {
 		/// @dev
 		/// [Comment-202410117]
 		/// This is populated from `StakingWalletNftBase.actionCounter`.
 		/// This is a nonzero.
 		/// [/Comment-202410117]
-		/// This is populated when creating an `_EthDeposit` instance.
+		/// This is populated when creating an `EthDeposit` instance.
 		/// This is not updated when adding another deposit to the last `StakingWalletCosmicSignatureNft.ethDeposits` item.
 		uint64 depositId;
 
@@ -80,8 +80,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice Info about currently staked NFTs.
 	/// This also contains unstaked, but not yet fully rewarded NFTs.
 	/// @dev Comment-202410117 applies to `stakeActionId`.
-	// mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
-	_StakeAction[1 << 64] public stakeActions;
+	// mapping(uint256 stakeActionId => StakeAction) public stakeActions;
+	StakeAction[1 << 64] public stakeActions;
 
 	/// @notice The current number of already unstaked and not yet fully rewarded NFTs.
 	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
@@ -113,8 +113,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @dev The item at the index of zero always remains zero.
 	/// If we executed logic near Comment-202410166, it's possible that this contains items
 	/// beyond `numEthDeposits`. Those are garbage that the client code must ignore.
-	// mapping(uint256 ethDepositIndex => _EthDeposit) public ethDeposits;
-	_EthDeposit[1 << 64] public ethDeposits;
+	// mapping(uint256 ethDepositIndex => EthDeposit) public ethDeposits;
+	EthDeposit[1 << 64] public ethDeposits;
 
 	/// @notice `ethDeposits` item count.
 	uint256 public numEthDeposits;
@@ -180,7 +180,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `CosmicGameConstants.BooleanWithPadding`.
 	///    `CosmicGameConstants.NftTypeCode`.
 	///    `NftStaked`.
-	///    `_StakeAction`.
+	///    `StakeAction`.
 	///    `nft`.
 	///    `stakeActions`.
 	///    `_numStakedNfts`.
@@ -206,7 +206,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
-		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
+		StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
 		// #enable_asserts assert(newStakeActionReference_.maxUnpaidEthDepositIndex == 0);
@@ -373,7 +373,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `CosmicGameErrors.DepositFromUnauthorizedSender`.
 	///    `CosmicGameErrors.NoStakedNfts`.
 	///    `EthDepositReceived`.
-	///    `_EthDeposit`.
+	///    `EthDeposit`.
 	///    `game`.
 	///    `_numStakedNfts`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
@@ -405,7 +405,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		_EthDeposit memory newEthDeposit_;
+		EthDeposit memory newEthDeposit_;
 		uint256 newNumEthDeposits_ = numEthDeposits;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
@@ -552,7 +552,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
 	///    `CosmicGameErrors.NftAlreadyUnstaked`.
 	///    `NftUnstaked`.
-	///    `_StakeAction`.
+	///    `StakeAction`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `nft`.
 	///    `stakeActions`.
@@ -571,8 +571,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		_StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
-		_StakeAction memory stakeActionCopy_ = stakeActionReference_;
+		StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
+		StakeAction memory stakeActionCopy_ = stakeActionReference_;
 
 		// #endregion
 		// #region
@@ -635,7 +635,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
 	///    `CosmicGameErrors.NftNotUnstaked`.
 	///    `RewardPaid`.
-	///    `_StakeAction`.
+	///    `StakeAction`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `stakeActions`.
 	///    `numUnpaidStakeActions`.
@@ -650,8 +650,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		_StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
-		_StakeAction memory stakeActionCopy_ = stakeActionReference_;
+		StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
+		StakeAction memory stakeActionCopy_ = stakeActionReference_;
 
 		// #endregion
 		// #region
@@ -697,7 +697,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice Calculates reward amount for a given stake action.
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `_EthDeposit`.
+	///    `EthDeposit`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `ethDeposits`.
 	function _calculateRewardAmount(uint256 stakeActionId_, uint256 maxUnpaidEthDepositIndex_, uint256 numEthDepositsToEvaluateMaxLimit_) private view
@@ -734,7 +734,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			for (uint256 ethDepositIndex_ = maxUnpaidEthDepositIndex_; ; ) {
 				if (ethDepositIndex_ > remainingMaxUnpaidEthDepositIndex_) {
 					{
-						_EthDeposit memory ethDepositCopy_ = ethDeposits[ethDepositIndex_];
+						EthDeposit memory ethDepositCopy_ = ethDeposits[ethDepositIndex_];
 						-- ethDepositIndex_;
 						if (ethDepositCopy_.depositId > stakeActionId_) {
 							rewardAmount_ += ethDepositCopy_.rewardAmountPerStakedNft;

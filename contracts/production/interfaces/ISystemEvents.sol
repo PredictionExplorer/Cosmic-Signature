@@ -109,19 +109,23 @@ interface ISystemEvents {
 	/// @param newActivationTime The new activation time
 	event ActivationTimeChanged(uint256 newActivationTime);
 
-	/// @notice Emitted when the charity percentage is changed
-	/// @param newCharityPercentage The new charity percentage
-	event CharityPercentageChanged(uint256 newCharityPercentage);
+	/// @notice Emitted when the main prize percentage is changed.
+	/// @param newMainPrizePercentage The new value.
+	event MainPrizePercentageChanged(uint256 newMainPrizePercentage);
 
-	/// @notice Emitted when the prize percentage is changed
-	/// @param newPrizePercentage The new prize percentage
-	event PrizePercentageChanged(uint256 newPrizePercentage);
+	/// @notice Emitted when the Chrono-Warrior ETH prize percentage is changed.
+	/// @param newChronoWarriorEthPrizePercentage The new value.
+	event ChronoWarriorEthPrizePercentageChanged(uint256 newChronoWarriorEthPrizePercentage);
 
-	/// @notice Emitted when the raffle percentage is changed
-	/// @param newRafflePercentage The new raffle percentage
+	/// @notice Emitted when the raffle percentage is changed.
+	/// @param newRafflePercentage The new value.
 	event RafflePercentageChanged(uint256 newRafflePercentage);
 
-	/// @notice Emitted when the staking percentage is changed
-	/// @param newStakingPercentage The new staking percentage
+	/// @notice Emitted when the staking percentage is changed.
+	/// @param newStakingPercentage The new value.
 	event StakingPercentageChanged(uint256 newStakingPercentage);
+
+	/// @notice Emitted when the charity percentage is changed.
+	/// @param newCharityPercentage The new value.
+	event CharityPercentageChanged(uint256 newCharityPercentage);
 }

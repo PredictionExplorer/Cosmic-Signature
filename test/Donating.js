@@ -38,10 +38,10 @@ describe("Donation tests", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("donateWithInfo() works as expected", async function () {
@@ -96,7 +96,7 @@ describe("Donation tests", function () {
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)
@@ -111,7 +111,7 @@ describe("Donation tests", function () {
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 1, { value: bidPrice });
 
@@ -129,14 +129,14 @@ describe("Donation tests", function () {
 		expect(parsed_log.args.nftId).to.equal(0);
 		expect(parsed_log.args.winner).to.equal(addr1.address);
 		expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(await randomWalkNFT.getAddress());
-		expect(parsed_log.args.round).to.equal(0);
+		expect(parsed_log.args.roundNum).to.equal(0);
 		expect(parsed_log.args.index).to.equal(0);
 
 		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[1]);
 		expect(parsed_log.args.nftId).to.equal(1);
 		expect(parsed_log.args.winner).to.equal(addr1.address);
 		expect(parsed_log.args.nftAddressdonatedNFTs).to.equal(await randomWalkNFT.getAddress());
-		expect(parsed_log.args.round).to.equal(0);
+		expect(parsed_log.args.roundNum).to.equal(0);
 		expect(parsed_log.args.index).to.equal(1);
 	});
 });

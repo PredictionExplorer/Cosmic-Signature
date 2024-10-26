@@ -17,6 +17,7 @@ describe("Bidding tests", function () {
 	// The same applies to `basicDeployment`, `basicDeploymentAdvanced`.
 	// Make sure something like `randomWalkNFT` is not assigned to a variable named like `stakingWalletCosmicSignatureNft`.
 	// Maybe move these functions to a single file and import it?
+	// >>> Actually this probably works correct. But the order of variables still should be fixed.
 	// [/ToDo-202410075-0]
 	async function deployCosmic(deployerAcct) {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
@@ -50,10 +51,10 @@ describe("Bidding tests", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("Should be possible to bid", async function () {
@@ -63,21 +64,25 @@ describe("Bidding tests", function () {
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		expect(await cosmicGameProxy.prizeAmount()).to.equal((donationAmount * 25n)/100n);
+		expect(await cosmicGameProxy.mainPrizeAmount()).to.equal((donationAmount * 25n) / 100n);
+		// todo-1 We now also have chrono-warrior.
 		let echamp = await cosmicGameProxy.currentEnduranceChampion();
 		expect(echamp[0]).to.equal(hre.ethers.ZeroAddress);
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: 1 })).to.be.revertedWithCustomError(contractErrors,"BidPrice");
+		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: 1 })).to.be.revertedWithCustomError(contractErrors, "BidPrice");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice - 1n })).to.be.revertedWithCustomError(contractErrors,"BidPrice");
 
-		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		expect(prizeTime).to.equal(0);
+		let durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		expect(durationUntilPrize_).to.equal(0);
+
+		const nanoSecondsExtra1 = await cosmicGameProxy.nanoSecondsExtra();
+
 		// check that if we sent too much, we get our money back
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: (bidPrice+1000n) }); // this works
 		const contractBalance = await hre.ethers.provider.getBalance(cosmicGameProxy.getAddress());
@@ -86,54 +91,48 @@ describe("Bidding tests", function () {
 		let spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
 		expect(spent[0]).to.equal(bidPrice);
 
-		await hre.ethers.provider.send("evm_increaseTime",[100]);
+		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
+		await hre.ethers.provider.send("evm_increaseTime", [100]);
+		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
 		await hre.ethers.provider.send("evm_mine");
-		echamp =await cosmicGameProxy.currentEnduranceChampion();
+		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
+
+		// todo-1 We now also have chrono-warrior.
+		echamp = await cosmicGameProxy.currentEnduranceChampion();
 		expect(echamp[0]).to.equal(addr1.address);
 
-		let nanoSecondsExtra = await cosmicGameProxy.nanoSecondsExtra();
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		// todo-1 I've seen this line failing at least twice with an error saying something like "expecting 8999, but got 9000".
-		// todo-1 But on further test runs the error hasn't reproduced.
-		// todo-1 It's possible that a binary of an old version of the contract was executed,
-		// todo-1 but this particular logic in the conract probably didn't change recently.
-		expect(prizeTime).to.equal((nanoSecondsExtra/ 1000000000n)+(24n * 3600n)-100n);
+		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		expect(durationUntilPrize_).to.equal((24n * 60n * 60n) + (nanoSecondsExtra1 / 1000000000n) - 100n);
 
+		const nanoSecondsExtra2 = await cosmicGameProxy.nanoSecondsExtra();
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		expect(prizeTime).to.equal(
-			((nanoSecondsExtra
-				/1000000000n)
-				*2n)
-				+(24n * 3600n - 1n -100n),
-		);
+		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		expect(durationUntilPrize_).to.equal((24n * 60n * 60n) + (nanoSecondsExtra1 / 1000000000n) - 100n + (nanoSecondsExtra2 / 1000000000n) - 1n);
 
+		const nanoSecondsExtra3 = await cosmicGameProxy.nanoSecondsExtra();
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		expect(prizeTime).to.equal(
-			((nanoSecondsExtra
-				/1000000000n)
-				*3n)
-				+(24n * 3600n - 2n -100n),
-		); // not super clear why we are subtracting 2 here and 1 above
-		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
+		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		expect(durationUntilPrize_).to.equal((24n * 60n * 60n) + (nanoSecondsExtra1 / 1000000000n) - 100n + (nanoSecondsExtra2 / 1000000000n) - 1n + (nanoSecondsExtra3 / 1000000000n) - 1n);
+		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors, "EarlyClaim");
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
-		await expect(cosmicGameProxy.connect(addr2).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
-
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number((prizeTime-100n))]);
+		await expect(cosmicGameProxy.connect(addr2).claimPrize()).to.be.revertedWithCustomError(contractErrors, "EarlyClaim");
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number((durationUntilPrize_ - 100n))]);
 		await hre.ethers.provider.send("evm_mine");
-		await expect(cosmicGameProxy.connect(addr2).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
+		await expect(cosmicGameProxy.connect(addr2).claimPrize()).to.be.revertedWithCustomError(contractErrors, "EarlyClaim");
 
 		await hre.ethers.provider.send("evm_increaseTime", [100]);
 		await hre.ethers.provider.send("evm_mine");
@@ -142,29 +141,30 @@ describe("Bidding tests", function () {
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
-		await hre.ethers.provider.send("evm_increaseTime",[100]);
+		await hre.ethers.provider.send("evm_increaseTime", [100]);
 		await hre.ethers.provider.send("evm_mine");
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
-		await hre.ethers.provider.send("evm_increaseTime",[10]);
+		await hre.ethers.provider.send("evm_increaseTime", [10]);
 		await hre.ethers.provider.send("evm_mine");
 
-		echamp =await cosmicGameProxy.currentEnduranceChampion();
+		// todo-1 We now also have chrono-warrior.
+		echamp = await cosmicGameProxy.currentEnduranceChampion();
 		expect(echamp[0]).to.equal(addr2.address);
 
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+1]);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilPrize_) + 1]);
 		await hre.ethers.provider.send("evm_mine");
-		let prizeAmount = await cosmicGameProxy.prizeAmount();
+		let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 		let charityAmount = await cosmicGameProxy.charityAmount();
 		// let raffleAmount = await cosmicGameProxy.raffleAmount();
 		await cosmicGameProxy.connect(addr3).claimPrize();
-		let prizeAmount2 = await cosmicGameProxy.prizeAmount();
+		let mainPrizeAmount2_ = await cosmicGameProxy.mainPrizeAmount();
 		let balance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
-		let expectedprizeAmount = (balance * 25n) / 100n;
-		expect(prizeAmount2).to.equal(expectedprizeAmount);
-		let w = await cosmicGameProxy.getWinnerByRound(0);
+		let mainPrizeExpectedAmount_ = (balance * 25n) / 100n;
+		expect(mainPrizeAmount2_).to.equal(mainPrizeExpectedAmount_);
+		let w = await cosmicGameProxy.tryGetWinnerByRoundNum(0);
 		expect(w).to.equal(addr3.address);
 
 		// after the prize has been claimed, let's bid again!
@@ -172,31 +172,31 @@ describe("Bidding tests", function () {
 		await expect(cosmicGameProxy.connect(addr2).claimPrize()).to.be.revertedWithCustomError(contractErrors,"NoLastBidder");
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"EarlyClaim");
+		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors, "EarlyClaim");
 
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilPrize_)]);
 		await hre.ethers.provider.send("evm_mine");
 
-		prizeAmount = await cosmicGameProxy.prizeAmount();
+		mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 		charityAmount = await cosmicGameProxy.charityAmount();
 		await cosmicGameProxy.connect(addr1).claimPrize();
-		prizeAmount2 = await cosmicGameProxy.prizeAmount();
+		mainPrizeAmount2_ = await cosmicGameProxy.mainPrizeAmount();
 		balance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
-		const expectedPrizeAmount = (balance * 25n)/100n;
-		expect(prizeAmount2).to.equal(expectedPrizeAmount);
+		mainPrizeExpectedAmount_ = (balance * 25n)/100n;
+		expect(mainPrizeAmount2_).to.equal(mainPrizeExpectedAmount_);
 
 		// 3 hours after the deadline, anyone should be able to claim the prize
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		expect(await cosmicGameProxy.getTotalBids()).to.equal(1);
 		expect(await cosmicGameProxy.getBidderAtPosition(0)).to.equal(addr1.address);
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilPrize_)]);
 		await hre.ethers.provider.send("evm_mine");
 
 		await expect(cosmicGameProxy.connect(addr2).claimPrize()).to.be.revertedWithCustomError(contractErrors,"LastBidderOnly");
@@ -217,10 +217,10 @@ describe("Bidding tests", function () {
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		// switch to another account and attempt to use nftId=0 which we don't own
-		let bidParams = { msg: "hello", rwalk: 0 };
+		let bidParams = { message: "hello", randomWalkNFTId: 0 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"IncorrectERC721TokenOwner");
-		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })); //nftId=0
+		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice }); //nftId=0
 		await hre.ethers.provider.send("evm_mine");
 		tokenPrice = await randomWalkNFT.getMintPrice();
 		let tx = await randomWalkNFT.connect(owner).mint({ value: tokenPrice });
@@ -230,7 +230,7 @@ describe("Bidding tests", function () {
 		let parsed_log = randomWalkNFT.interface.parseLog(log);
 		let token_id = parsed_log.args[0];
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: Number(token_id) };
+		bidParams = { message: "", randomWalkNFTId: Number(token_id) };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: 0 })).to.be.revertedWithCustomError(contractErrors,"BidPrice");
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
@@ -266,7 +266,7 @@ describe("Bidding tests", function () {
 		}
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: longMsg, rwalk: -1 };
+		let bidParams = { message: longMsg, randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"BidMessageLengthOverflow");
 	});
@@ -275,7 +275,7 @@ describe("Bidding tests", function () {
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -287,8 +287,8 @@ describe("Bidding tests", function () {
 
 		const res = await cosmicGameProxy.getCstAuctionDuration();
 		const duration = res[1];
-		const secondsElapsed_ = res[0];
-		expect(secondsElapsed_).to.equal(0);
+		const numSecondsElapsed_ = res[0];
+		expect(numSecondsElapsed_).to.equal(0);
 	});
 	it("There is an execution path for all bidders being RWalk token bidders", async function () {
 		async function mint_rwalk(a) {
@@ -307,33 +307,34 @@ describe("Bidding tests", function () {
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await hre.ethers.getSigners();
 		let token_id = await mint_rwalk(addr1);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "bidWithRWLK", rwalk: token_id };
+		let bidParams = { message: "bidWithRWLK", randomWalkNFTId: token_id };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		token_id = await mint_rwalk(addr2);
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "bidWithRWLK", rwalk: Number(token_id) };
+		bidParams = { message: "bidWithRWLK", randomWalkNFTId: Number(token_id) };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		token_id = await mint_rwalk(addr3);
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "bidWithRWLK", rwalk: Number(token_id) };
+		bidParams = { message: "bidWithRWLK", randomWalkNFTId: Number(token_id) };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 		token_id = await mint_rwalk(addr4);
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "bidWithRWLK", rwalk: Number(token_id) };
+		bidParams = { message: "bidWithRWLK", randomWalkNFTId: Number(token_id) };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr4).bid(params, { value: bidPrice });
 		token_id = await mint_rwalk(addr5);
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "bidWithRWLK", rwalk: Number(token_id) };
+		bidParams = { message: "bidWithRWLK", randomWalkNFTId: Number(token_id) };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr5).bid(params, { value: bidPrice });
 
-		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+1]);
+		let durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilPrize_) + 1]);
 		await hre.ethers.provider.send("evm_mine");
+		// todo-1 Take a closer look at this. What if it reverts with a different error?
 		await expect(cosmicGameProxy.connect(addr5).claimPrize()).not.to.be.revertedWith("panic code 0x12"); // divide by zero
 	});
 	it('After bid() , bid-related counters have correct values', async function () {
@@ -343,7 +344,7 @@ describe("Bidding tests", function () {
 		
 		let donationAmount = hre.ethers.parseEther('10');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.bid(params, { value: bidPrice });
@@ -357,7 +358,7 @@ describe("Bidding tests", function () {
 		await randomWalkNFT.mint({ value: tokenPrice }); // nftId=0
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: 'rwalk bid', rwalk: 0 };
+		bidParams = { message: "rwalk bid", randomWalkNFTId: 0 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.bid(params, { value: bidPrice });
 
@@ -428,8 +429,8 @@ describe("Bidding tests", function () {
 		let donationAmount = hre.ethers.parseEther('100');
 		await cosmicGameProxy.donate({ value: donationAmount });
 
-		let bidParams, params, prizeTime, bidPrice;
-		bidParams = { msg: '', rwalk: -1 };
+		let bidParams, params, durationUntilPrize_, bidPrice;
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		for (let i = 0; i < 30; i++) {
 			bidPrice = await cosmicGameProxy.getBidPrice();
@@ -440,8 +441,8 @@ describe("Bidding tests", function () {
 			await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 			bidPrice = await cosmicGameProxy.getBidPrice();
 			await cosmicGameProxy.connect(addr4).bid(params, { value: bidPrice });
-			prizeTime = await cosmicGameProxy.timeUntilPrize();
-			await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+			durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+			await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
 			await hre.ethers.provider.send('evm_mine');
 			await cosmicGameProxy.connect(addr4).claimPrize();
 		}
@@ -476,11 +477,11 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr4).bid(params, { value: bidPrice });
-		prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
 		await hre.ethers.provider.send('evm_mine');
-		prizeTime = await cosmicGameProxy.timeoutClaimPrize(); // we need another time increase to claim as addr5 (addr5 has no bids, won't get raffle NFTs)
-		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		durationUntilPrize_ = await cosmicGameProxy.timeoutClaimPrize(); // we need another time increase to claim as addr5 (addr5 has no bids, won't get raffle NFTs)
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
 		await hre.ethers.provider.send('evm_mine');
 		let totSupBefore = await cosmicSignature.totalSupply();
 		tx = await cosmicGameProxy.connect(addr5).claimPrize();
@@ -582,7 +583,7 @@ describe("Bidding tests", function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -594,8 +595,8 @@ describe("Bidding tests", function () {
 		// await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
-		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		let durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
 		await cosmicGameProxy.connect(addr1).claimPrize();
 
 		await hre.ethers.provider.send('evm_increaseTime', [20000]); // make CST bid price cheaper
@@ -613,7 +614,7 @@ describe("Bidding tests", function () {
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
-		expect('199995400000000000000').to.equal(args.numCSTTokens.toString());
+		expect(args.numCSTTokens.toString()).to.equal("199995400000000000000");
 		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
 		// expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
 		expect(args.bidPrice.toString()).to.equal("-1");
@@ -627,7 +628,7 @@ describe("Bidding tests", function () {
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -646,14 +647,14 @@ describe("Bidding tests", function () {
 
 		bAddr = await expect(cosmicGameProxy.bidderAddress(1,2)).to.be.revertedWithCustomError(
 			contractErrors,
-			'InvalidBidderQueryRound'
+			'InvalidBidderQueryRoundNum'
 		);
 		bAddr = await expect(cosmicGameProxy.bidderAddress(0,3)).to.be.revertedWithCustomError(
 			contractErrors,
 			'InvalidBidderQueryOffset'
 		);
-		let prizeTime = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		let durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
 		await cosmicGameProxy.connect(addr3).claimPrize();
 		await expect(cosmicGameProxy.bidderAddress(1, 1)).to.be.revertedWithCustomError(
 			contractErrors,
@@ -686,7 +687,7 @@ describe("Bidding tests", function () {
 		let spent,spentEth,spentCst,cstAuctionDuration_,auctionLength,cstPrice,tx,topic_sig,receipt,log,evt,bidPriceCst;
 		cstAuctionDuration_ = await cosmicGameProxy.getCstAuctionDuration();
 		auctionLength = cstAuctionDuration_[1];
-		let bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -718,13 +719,13 @@ describe("Bidding tests", function () {
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		evt = log.args.toObject();
 		bidPriceCst = evt.numCSTTokens;
-		let totalSpentCst = bidPriceCst + spentCst;
+		let totalSpentCst_ = bidPriceCst + spentCst;
 		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
 		spentCst = spent[1];
-		expect(spentCst).to.equal(totalSpentCst);
+		expect(spentCst).to.equal(totalSpentCst_);
 
 		let maxBidderAddr = await cosmicGameProxy.stellarSpender();
-		let maxEthBidderAmount = await cosmicGameProxy.stellarSpenderAmount();
+		let maxCstBidderAmount_ = await cosmicGameProxy.stellarSpenderTotalSpentCst();
 
 		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
 		expect(maxBidderAddr).to.equal(addr1.address);
@@ -746,7 +747,7 @@ describe("Bidding tests", function () {
 		
 		let donationAmount = hre.ethers.parseEther('10');
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { msg: '', rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -779,7 +780,7 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.setTokenContractRaw(await newToken.getAddress());
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		// See ToDo-202409245-0.
 		// await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors, "ERC20Mint");
@@ -808,7 +809,7 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.setTokenContractRaw(await newToken.getAddress());
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		// See ToDo-202409245-0.
 		// await expect(cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors, "ERC20Mint");
@@ -824,10 +825,10 @@ describe("Bidding tests", function () {
 		let numIterationsMain = 30;
 		let numIterationsSecondary = 100000;
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.bid(params, { value: bidPrice });
-	 	for (let i=0; i<numIterationsMain; i++) {
+		for (let i=0; i<numIterationsMain; i++) {
 			let b = await hre.ethers.provider.getBalance(owner.address);
 			let j=0;
 			while (true) {

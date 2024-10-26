@@ -1,14 +1,14 @@
 const hre = require("hardhat");
 
-const bidParamsEncoding = { 
-	type: 'tuple(string,int256,bool)',
-	name: 'bidparams',
+const bidParamsEncoding = {
+	type: "tuple(string,int256,bool)",
+	name: "BidParams",
 	components: [
-		{name: 'msg', type: 'string'},
-		{name: 'rwalk',type: 'int256'},
-		{name: 'openbid',type: 'bool'},
-	]
-}; 
+		{ name: "message", type: "string" },
+		{ name: "randomWalkNFTId", type: "int256" },
+		{ name: "openBid", type: "bool"},
+	],
+};
 async function getCosmicGameProxyContract(contractName) {
 	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
 	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
@@ -31,7 +31,7 @@ async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract("CosmicGameOpenBid");
 
 	let multiplier = await cosmicGameProxy.timesBidPrice()
-	let bidParams = {msg:'open bid',rwalk:-1,'openbid':true};
+	let bidParams = { message: "open bid", randomWalkNFTId: -1, openBid: true };
 	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	console.log("bidPrice before: "+bidPrice);

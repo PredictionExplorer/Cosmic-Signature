@@ -18,11 +18,11 @@ interface IEthPrizesWallet {
 	/// @notice Receives a prize for a winner.
 	/// @param winner_ Winner address.
 	/// @dev Only callable by the `CosmicGame` contract.
-   function deposit(address winner_) external payable;
+	function deposit(address winner_) external payable;
 
 	/// @notice Allows a winner to withdraw their balance.
 	/// @dev Transfers the entire caller's balance to their address.
-   function withdraw() external;
+	function withdraw() external;
 
 	/// @param winner_ Winner address.
 	/// @return ETH balance belonging to the given address.

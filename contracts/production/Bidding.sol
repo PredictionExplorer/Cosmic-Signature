@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.26;
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,12 +19,16 @@ import { IBidding } from "./interfaces/IBidding.sol";
 abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
-	/// @title Bid Parameters
-	/// @dev Struct to encapsulate parameters for placing a bid in the Cosmic Game
+	/// @title Bid Parameters.
+	/// @dev Encapsulates parameters for placing a bid in the Cosmic Game.
+	/// [Comment-202411111]
+	/// Similar structures exist in multiple places.
+	/// [/Comment-202411111]
 	struct BidParams {
 		/// @notice The message associated with the bid
 		/// @dev Can be used to store additional information or comments from the bidder
 		string message;
+
 		/// @notice The ID of the RandomWalk NFT used for bidding, if any
 		/// @dev Set to -1 if no RandomWalk NFT is used, otherwise contains the NFT's ID
 		/// @custom:note RandomWalk NFTs may provide special benefits or discounts when used for bidding
@@ -92,7 +97,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		}
 
 		// Update bidding statistics 
-		bidderInfo[roundNum][msg.sender].totalSpentETH = bidderInfo[roundNum][msg.sender].totalSpentETH + paidBidPrice;
+		bidderInfo[roundNum][msg.sender].totalSpentEth = bidderInfo[roundNum][msg.sender].totalSpentEth + paidBidPrice;
 
 		bidPrice = newBidPrice;
 
@@ -133,19 +138,24 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
 		);
 
+		// First bid of the round?
 		if (lastBidder == address(0)) {
-			// First bid of the round
-			prizeTime = block.timestamp + initialSecondsUntilPrize + nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+			// todo-0 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
+			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
+
+			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
 		} else {
-			_updateEnduranceChampion();
+			_updateChampionsIfNeeded();
 		}
 
 		lastBidder = msg.sender;
 		lastBidType = bidType;
-		bidderInfo[roundNum][msg.sender].lastBidTime = block.timestamp;
+		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidder*/ msg.sender;
-		numRaffleParticipants[roundNum] = numRaffleParticipants_ + 1;
+		++ numRaffleParticipants_;
+		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
 		// Distribute token rewards
 		// try
@@ -186,36 +196,41 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		uint256 secondsAdded = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
-		prizeTime = Math.max(prizeTime, block.timestamp) + secondsAdded;
+		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
+		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp, nanoSecondsExtra);
 		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
 	}
 
-	function bidderAddress(uint256 _round, uint256 _positionFromEnd) public view override returns (address) {
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
 		require(
-			_round <= roundNum,
-			CosmicGameErrors.InvalidBidderQueryRound(
+			roundNum_ <= roundNum,
+			CosmicGameErrors.InvalidBidderQueryRoundNum(
 				"Provided round number is larger than total number of rounds",
-				_round,
+				roundNum_,
 				roundNum
 			)
 		);
-		uint256 numRaffleParticipants_ = numRaffleParticipants[_round];
+		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
+		// todo-1 Is this validation redundant?
+		// todo-1 Maybe skip all validations and check them only if the bidder address is zero.
+		// todo-1 The same applies to `getBidderAtPosition`.
+		// todo-1 Speking of which, would it make sense to call it from here?
 		require(
 			numRaffleParticipants_ > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", _round)
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
 		);
 		require(
 			_positionFromEnd < numRaffleParticipants_,
 			CosmicGameErrors.InvalidBidderQueryOffset(
 				"Provided index is larger than array length",
-				_round,
+				roundNum_,
 				_positionFromEnd,
 				numRaffleParticipants_
 			)
 		);
 		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
-		address bidderAddr = raffleParticipants[_round][offset];
+		address bidderAddr = raffleParticipants[roundNum_][offset];
 		return bidderAddr;
 	}
 
@@ -248,9 +263,9 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 
-		bidderInfo[roundNum][msg.sender].totalSpentCST = bidderInfo[roundNum][msg.sender].totalSpentCST + price;
-		if (bidderInfo[roundNum][msg.sender].totalSpentCST > stellarSpenderAmount) {
-			stellarSpenderAmount = bidderInfo[roundNum][msg.sender].totalSpentCST;
+		bidderInfo[roundNum][msg.sender].totalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst + price;
+		if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
+			stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
 			stellarSpender = msg.sender;
 		}
 
@@ -284,15 +299,16 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
-		(uint256 secondsElapsed_, uint256 duration_) = getCstAuctionDuration();
-		if (secondsElapsed_ >= duration_) {
+		(uint256 numSecondsElapsed_, uint256 duration_) = getCstAuctionDuration();
+		// // #enable_asserts // #disable_smtchecker console.log(202411119, numSecondsElapsed_, duration_);
+		if (numSecondsElapsed_ >= duration_) {
 			return 0;
 		}
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * secondsElapsed_ / duration_);
+			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * numSecondsElapsed_ / duration_);
 
 			// [Comment-202409162/]
 			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
@@ -300,13 +316,24 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 			// // todo-0 Nick, you might want to refactopr the above this way.
 			// // todo-0 Remember to fix relevant code and comments.
 			// // todo-0 Remember to make the same change in `BiddingOpenBid`.
-			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * secondsElapsed_ / duration_);
+			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * numSecondsElapsed_ / duration_);
 		}
 	}
 
 	function getCstAuctionDuration() public view override returns (uint256, uint256) {
-		uint256 secondsElapsed_ = block.timestamp - lastCstBidTimeStamp;
-		return (secondsElapsed_, cstAuctionLength);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// This would be able to underflow if treated as unsigned if we updated `lastCstBidTimeStamp` near Comment-202411113.
+			uint256 numSecondsElapsed_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
+
+			if(int256(numSecondsElapsed_) < int256(0))
+			{
+				numSecondsElapsed_ = 0;
+			}
+			return (numSecondsElapsed_, cstAuctionLength);
+		}
 	}
 
 	function getTotalBids() public view override returns (uint256) {
@@ -318,8 +345,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		return raffleParticipants[roundNum][position];
 	}
 
-	function getTotalSpentByBidder(address bidder) public view override returns (uint256,uint256) {
-		return (bidderInfo[roundNum][bidder].totalSpentETH,bidderInfo[roundNum][bidder].totalSpentCST);
+	function getTotalSpentByBidder(address bidder) public view override returns (uint256, uint256) {
+		return (bidderInfo[roundNum][bidder].totalSpentEth, bidderInfo[roundNum][bidder].totalSpentCst);
 	}
 
 	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {

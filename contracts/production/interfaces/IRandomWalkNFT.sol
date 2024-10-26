@@ -10,23 +10,23 @@ interface IRandomWalkNFT is IERC721Enumerable {
 
 	/// @notice Sets the base URI for token metadata
 	/// @param value The new value to set
-   function setBaseURI(string memory value) external;
+	function setBaseURI(string memory value) external;
 
-   function setTokenName(uint256 tokenId, string memory name) external;
+	function setTokenName(uint256 tokenId, string memory name) external;
 
-   function getMintPrice() external view returns (uint256);
+	function getMintPrice() external view returns (uint256);
 
-   function timeUntilSale() external view returns (uint256);
+	function timeUntilSale() external view returns (uint256);
 
-   function timeUntilWithdrawal() external view returns (uint256);
+	function timeUntilWithdrawal() external view returns (uint256);
 
-   function withdrawalAmount() external view returns (uint256);
+	function withdrawalAmount() external view returns (uint256);
 
-   function withdraw() external;
+	function withdraw() external;
 
-   function mint() external payable;
+	function mint() external payable;
 
-   function walletOfOwner(address _owner) external view returns (uint256[] memory);
+	function walletOfOwner(address _owner) external view returns (uint256[] memory);
 
-   function seedsOfOwner(address _owner) external view returns (bytes32[] memory);
+	function seedsOfOwner(address _owner) external view returns (bytes32[] memory);
 }

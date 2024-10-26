@@ -36,10 +36,10 @@ describe("MarketingWallet", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("setTokenContract() emits CosmicTokenAddressChanged event correctly()", async function () {
@@ -67,9 +67,9 @@ describe("MarketingWallet", function () {
 		);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
-		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
-		await expect(marketingWallet.connect(addr1).setTokenContract(addr1.address)).to.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
-		expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
+		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(marketingWallet.connect(addr1).setTokenContract(addr1.address)).to.be.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
+		await expect(marketingWallet.setTokenContract(addr2.address)).to.emit(cosmicSignature, "CosmicTokenAddressChanged").withArgs(addr1.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();

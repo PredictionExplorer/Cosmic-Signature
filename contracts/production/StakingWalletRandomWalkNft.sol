@@ -20,9 +20,9 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #region Data Types
 
 	/// @notice Stores details about an NFT stake action.
-	struct _StakeAction {
+	struct StakeAction {
 		/// @notice Index of this stake action in `StakingWalletRandomWalkNft.stakeActionIds`.
-		/// @dev It can change zero or more times during the lifetime of the `_StakeAction` instance.
+		/// @dev It can change zero or more times during the lifetime of the `StakeAction` instance.
 		uint256 index;
 
 		uint256 nftId;
@@ -37,10 +37,10 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @notice Info about currently staked NFTs.
 	/// @dev Comment-202410117 applies to `stakeActionId`.
-	// mapping(uint256 stakeActionId => _StakeAction) public stakeActions;
-	_StakeAction[1 << 64] public stakeActions;
+	// mapping(uint256 stakeActionId => StakeAction) public stakeActions;
+	StakeAction[1 << 64] public stakeActions;
 
-	/// @notice This maps `_StakeAction.index` to `stakeActions` item key.
+	/// @notice This maps `StakeAction.index` to `stakeActions` item key.
 	// mapping(uint256 stakeActionIndex => uint256 stakeActionId) public stakeActionIds;
 	uint256[1 << 64] public stakeActionIds;
 
@@ -73,7 +73,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `_numStakedNfts`.
 	///    `_usedNfts`.
 	///    `actionCounter`.
-	///    `_StakeAction`.
+	///    `StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
@@ -96,7 +96,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
-		_StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
+		StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
 		uint256 newStakeActionIndex_ = _numStakedNfts;
@@ -133,7 +133,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
 	///    `_numStakedNfts`.
 	///    `NftUnstaked`.
-	///    `_StakeAction`.
+	///    `StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
@@ -145,8 +145,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
-		_StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
-		_StakeAction memory stakeActionCopy_ = stakeActionReference_;
+		StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
+		StakeAction memory stakeActionCopy_ = stakeActionReference_;
 
 		// #endregion
 		// #region
@@ -218,7 +218,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// Observable universe entities accessed here:
 	///    // `CosmicGameErrors.NoStakedNfts`.
 	///    `_numStakedNfts`.
-	///    `_StakeAction`.
+	///    `StakeAction`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	/// todo-1 Why is entropy `bytes32`? Can I make it `uint256`? The caller should cast it to `uint256`.

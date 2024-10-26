@@ -19,12 +19,13 @@ async function get_unclaimed_donated_nfts(cosmicGameProxy) {
 		if (record.claimed) {
 			continue;
 		}
-		let prizeArr = prizeData[record.round];
+		let prizeArr = prizeData[record.roundNum];
+		// todo-1 Why would it be `undefined`?
 		if (typeof prizeArr === "undefined") {
 			prizeArr = new Array();
 		}
 		prizeArr.push(record);
-		prizeData[record.round] = prizeArr;
+		prizeData[record.roundNum] = prizeArr;
 	}
 	return prizeData;
 }

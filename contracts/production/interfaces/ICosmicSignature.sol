@@ -31,21 +31,21 @@ interface ICosmicSignature is IERC721Enumerable {
 
 	/// @notice Sets the URL for the token generation script
 	/// @param newTokenGenerationScriptURL The new URL to set
-   function setTokenGenerationScriptURL(string memory newTokenGenerationScriptURL) external;
+	function setTokenGenerationScriptURL(string memory newTokenGenerationScriptURL) external;
 
 	/// @notice Sets the base URI for token metadata
 	/// @param value The new value to set
-   function setBaseURI(string memory value) external;
+	function setBaseURI(string memory value) external;
 
 	/// @notice Allows token owners to set a custom name for their token
 	/// @param nftId The ID of the token to name
 	/// @param name The custom name to set for the token
-   function setTokenName(uint256 nftId, string memory name) external;
+	function setTokenName(uint256 nftId, string memory name) external;
 
 	/// @notice Mints a new CosmicSignature token
 	/// @dev Only callable by the CosmicGameProxy contract.
 	/// @param owner The address that will receive the newly minted token
 	/// @param roundNum The round number in which the token is minted
 	/// @return The ID of the newly minted token
-   function mint(address owner, uint256 roundNum) external returns (uint256);
+	function mint(address owner, uint256 roundNum) external returns (uint256);
 }

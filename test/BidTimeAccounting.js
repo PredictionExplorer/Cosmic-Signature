@@ -40,19 +40,19 @@ describe("Bid time accounting", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
-	const InvalidBidderQueryRoundDef = {
+	const InvalidBidderQueryRoundNumDef = {
 		type: "tuple(string,uint256,uint256)",
-		name: "InvalidBidderQueryRound",
+		name: "InvalidBidderQueryRoundNum",
 		components: [
 			{ name: "errStr", type: "string"},
-			{ name: "providedRound", type: "uint256"},
-			{ name:	"totalRounds", type: "uint256"},
+			{ name: "providedRoundNum", type: "uint256"},
+			{ name:	"currentRoundNum", type: "uint256"},
 		],
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
@@ -66,7 +66,7 @@ describe("Bid time accounting", function () {
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
@@ -88,6 +88,7 @@ describe("Bid time accounting", function () {
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800008000]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid5 (addr1)
 		
+		// todo-1 We now also have chrono-warrior.
 		maxbtime = await cosmicGameProxy.enduranceChampionDuration();
 		maxbaddr = await cosmicGameProxy.enduranceChampion();
 		expect(maxbtime).to.equal(5000);
@@ -109,7 +110,7 @@ describe("Bid time accounting", function () {
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
@@ -163,12 +164,13 @@ describe("Bid time accounting", function () {
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800012000]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });	// bid13 (addr1)
 		
+		// todo-1 We now also have chrono-warrior.
 		maxbtime = await cosmicGameProxy.enduranceChampionDuration();
 		maxbaddr = await cosmicGameProxy.enduranceChampion();
-
 		expect(maxbtime).to.equal(1000);
 		expect(maxbaddr).to.equal(addr1.address);
 	});
+	// todo-1 We now also have chrono-warrior.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
@@ -195,7 +197,7 @@ describe("Bid time accounting", function () {
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
 
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGame.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800080000]);

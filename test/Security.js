@@ -7,10 +7,10 @@ const { basicDeployment } = require("../src/Deploy.js");
 describe("Security", function () {
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	async function deployCosmic(deployerAcct) {
@@ -64,7 +64,7 @@ describe("Security", function () {
 		await cosmicGameProxy.setEthPrizesWallet(await ethPrizesWallet.getAddress());
 		await cosmicGameProxy.setRandomWalkNft(await randomWalkNFT.getAddress());
 		await cosmicGameProxy.setActivationTime(0);
-		await cosmicGameProxy.setPrizePercentage(10n);
+		await cosmicGameProxy.setMainPrizePercentage(10n);
 		await cosmicGameProxy.setRuntimeMode();
 
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
@@ -76,14 +76,14 @@ describe("Security", function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice }); // this works
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 24 * 3600]);
 		await hre.ethers.provider.send("evm_mine");
 
-		let prizeAmount = await cosmicGameProxy.prizeAmount();
+		let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 		let reclaim_bal_before = await hre.ethers.provider.getBalance(await reclaim.getAddress());
 		// Make sure there is no re-entrancy
 		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
@@ -100,7 +100,7 @@ describe("Security", function () {
 		const prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 1]);
 		await hre.ethers.provider.send("evm_mine");
-		let prizeAmount = await cosmicGameProxy.prizeAmount();
+		let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 		let balance_before = await hre.ethers.provider.getBalance(addr1);
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"NoLastBidder");
 	});
