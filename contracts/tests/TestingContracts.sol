@@ -66,34 +66,34 @@ contract BrokenCharityWallet is CharityWallet {
 /// @notice Used to test `revert` statements in `StakingWalletCosmicSignatureNft`
 /// @dev todo-1 This contract name is confising. Make sense to rename it to `BrokenStakingWalletCosmicSignatureNft`?
 contract BrokenStaker {
-	StakingWalletCosmicSignatureNft private stakingWalletCosmicSignatureNft;
-	bool private blockDeposits = false;
+	StakingWalletCosmicSignatureNft private _stakingWalletCosmicSignatureNft;
+	bool private _blockDeposits = false;
 
 	constructor() {}
 
 	receive() external payable {
-		require(!blockDeposits, "I am not accepting deposits");
+		require(!_blockDeposits, "I am not accepting deposits");
 	}
 
 	// /// @dev we don't call it doDeposit() because this method is called from CosmicGame.sol
 	// function deposit() external payable {
-	// 	require(!blockDeposits, "I am not accepting deposits");
-	// 	stakingWalletCosmicSignatureNft.deposit();
+	// 	require(!_blockDeposits, "I am not accepting deposits");
+	// 	_stakingWalletCosmicSignatureNft.deposit();
 	// }
 
 	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicGame.sol
 	function depositIfPossible(uint256 roundNum_) external payable {
-		require(!blockDeposits, "I am not accepting deposits");
-		stakingWalletCosmicSignatureNft.depositIfPossible(roundNum_);
+		require(!_blockDeposits, "I am not accepting deposits");
+		_stakingWalletCosmicSignatureNft.depositIfPossible(roundNum_);
 	}
 
 	function doStake(uint256 nftId) external {
-		stakingWalletCosmicSignatureNft.stake(nftId);
+		_stakingWalletCosmicSignatureNft.stake(nftId);
 	}
 
 	// todo-0 Nick, I added the 2nd param. Tests that call this function are broken now.
 	function doUnstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external {
-		stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
+		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}
 
 	// todo-0 I have commented this out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
@@ -102,23 +102,23 @@ contract BrokenStaker {
 	// 	uint256[] memory deposits = new uint256[](1);
 	// 	actions[0] = stakeActionId;
 	// 	deposits[0] = depositId;
-	// 	stakingWalletCosmicSignatureNft.claimManyRewards(actions, deposits);
+	// 	_stakingWalletCosmicSignatureNft.claimManyRewards(actions, deposits);
 	// }
 
 	function startBlockingDeposits() external {
-		blockDeposits = true;
+		_blockDeposits = true;
 	}
 
 	function stopBlockingDeposits() external {
-		blockDeposits = false;
+		_blockDeposits = false;
 	}
 
 	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft sw_) external {
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(sw_));
+		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(sw_));
 	}
 
 	function doSetApprovalForAll(IERC721 nft_) external {
-		nft_.setApprovalForAll(address(stakingWalletCosmicSignatureNft), true);
+		nft_.setApprovalForAll(address(_stakingWalletCosmicSignatureNft), true);
 	}
 }
 

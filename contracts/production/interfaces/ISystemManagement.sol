@@ -32,13 +32,13 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 
 	/// @notice Set the CST staking wallet address
 	/// @dev Only callable by the contract owner
-	/// @param _stakingWalletCosmicSignatureNft The new CST staking wallet address
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft _stakingWalletCosmicSignatureNft) external;
+	/// @param stakingWalletCosmicSignatureNft_ The new CST staking wallet address
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external;
 
 	/// @notice Set the RandomWalk staking wallet address
 	/// @dev Only callable by the contract owner
-	/// @param _stakingWalletRandomWalkNft The new RandomWalk staking wallet address
-	function setStakingWalletRandomWalkNft(address _stakingWalletRandomWalkNft) external;
+	/// @param stakingWalletRandomWalkNft_ The new RandomWalk staking wallet address
+	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external;
 
 	/// @notice Set the marketing wallet address
 	/// @dev Only callable by the contract owner

@@ -15,7 +15,7 @@ import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
-import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
+// import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";

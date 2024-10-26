@@ -1,17 +1,21 @@
 {
 	"extends": "solhint:recommended",
 	"rules": {
-		"func-param-name-mixedcase": "warn",
+		"reason-string": [ "warn", { "maxLength": 128 } ],
 		"interface-starts-with-i": "warn",
+		"func-param-name-mixedcase": "warn",
+		"immutable-vars-naming": [ "warn", { "immutablesAsConstants": false } ],
 		"modifier-name-mixedcase": "warn",
-		"private-vars-leading-underscore": "warn",
+		"private-vars-leading-underscore": [ "warn", { "strict": true } ],
 		"ordering": "warn",
 		"gas-calldata-parameters": "warn",
 		"gas-increment-by-one": "warn",
 		"gas-length-in-loops": "warn",
+		"gas-multitoken1155": "warn",
 		"gas-small-strings": "warn",
 		"gas-struct-packing": "warn",
 		"comprehensive-interface": "warn",
+		"avoid-low-level-calls": "off",
 		"func-visibility": [ "warn", { "ignoreConstructors": true } ]
 	}
 }
