@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 // #region Imports
 
@@ -8,6 +8,7 @@ import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -141,6 +142,12 @@ contract CosmicGame is
 	function upgradeTo(address _newImplementation) public override onlyOwner {
 		_authorizeUpgrade(_newImplementation);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		emit ERC1967Utils.Upgraded(_newImplementation);
+		 // todo-0 This event has been eliminated.
+		 // todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
+		 // todo-0 So I have refactored this to emit that same event.
+		 // todo-0 But would it be better to call that function here?
+		 // todo-0 Nick, please take a closer look at this.
+		 // emit ERC1967Utils.Upgraded(_newImplementation);
+		 emit IERC1967.Upgraded(_newImplementation);
 	}
 }
