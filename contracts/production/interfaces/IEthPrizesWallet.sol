@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 /// @title A wallet to hold ETH winnings in the Cosmic Game.
 /// @author Cosmic Game Development Team.
@@ -18,11 +18,11 @@ interface IEthPrizesWallet {
 	/// @notice Receives a prize for a winner.
 	/// @param winner_ Winner address.
 	/// @dev Only callable by the `CosmicGame` contract.
-   function deposit(address winner_) external payable;
+	function deposit(address winner_) external payable;
 
 	/// @notice Allows a winner to withdraw their balance.
 	/// @dev Transfers the entire caller's balance to their address.
-   function withdraw() external;
+	function withdraw() external;
 
 	/// @param winner_ Winner address.
 	/// @return ETH balance belonging to the given address.

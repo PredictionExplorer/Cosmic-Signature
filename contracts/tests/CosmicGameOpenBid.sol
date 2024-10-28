@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 // #region Imports
 
@@ -76,6 +76,7 @@ contract CosmicGameOpenBid is
 		lastCstBidTimeStamp = activationTime;
 		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+		chronoWarriorDuration = uint256(int256(-1));
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		marketingReward = CosmicGameConstants.MARKETING_REWARD;
@@ -83,10 +84,11 @@ contract CosmicGameOpenBid is
 		systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 
 		// Initialize percentages
-		prizePercentage = CosmicGameConstants.INITIAL_PRIZE_PERCENTAGE;
-		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
+		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
+		chronoWarriorEthPrizePercentage = CosmicGameConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
 		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
+		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
 
 		// Initialize raffle winners
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
@@ -112,14 +114,12 @@ contract CosmicGameOpenBid is
 	}
 
 	receive() external payable override {
-
-		// Treat incoming ETH as a bid with default parameters
+		// Treating incoming ETH as a bid with default parameters.
 		BidParams memory defaultParams;
 		// todo-1 Is this assignment redundant? Replace it with an `assert`?
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
-
 		bid(param_data);
 	}
 
@@ -131,7 +131,7 @@ contract CosmicGameOpenBid is
 	}
 
 	function upgradeTo(address _newImplementation) public override onlyOwner {
-		 _authorizeUpgrade(_newImplementation);
-		 StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
+		_authorizeUpgrade(_newImplementation);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
 	}
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
@@ -20,7 +20,7 @@ interface IETHDonations is ICosmicGameStorage, ISystemManagement {
 	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId, uint256 round);
 
 	/// @notice This function allows a user to donate ETH without placing a bid
-   /// todo-1 I've seen a `receive` function that is equivalent to placing a bid. So this is similar, right? Maybe cross-reference them?
+	/// todo-1 I've seen a `receive` function that is equivalent to placing a bid. So this is similar, right? Maybe cross-reference them?
 	function donate() external payable;
 
 	/// @notice This function is similar to `donate`. In addition, it allows to provide additional information

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 pragma abicoder v2;
 
 import { CosmicGame } from "../production/CosmicGame.sol";

@@ -6,15 +6,15 @@ const { getCosmicGameProxyContract } = require("./helper.js");
 
 const bidParamsEncoding = {
 	type: "tuple(string,int256)",
-	name: "bidparams",
+	name: "BidParams",
 	components: [
-		{ name: "msg", type: "string" },
-		{ name: "rwalk", type: "int256" },
+		{ name: "message", type: "string" },
+		{ name: "randomWalkNFTId", type: "int256" },
 	],
 };
 async function bid_simple(testingAcct, cosmicGameProxy) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
-	let bidParams = { msg: "test bid", rwalk: -1 };
+	let bidParams = { message: "test bid", randomWalkNFTId: -1 };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	let tx = await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice });
 	let receipt = await tx.wait();
@@ -29,7 +29,7 @@ async function bid_randomwalk(testingAcct, cosmicGameProxy, nftId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	let rwalkAddr = await cosmicGameProxy.randomWalkNft();
 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
-	let bidParams = { msg: "rwalk bid", rwalk: nftId };
+	let bidParams = { message: "rwalk bid", randomWalkNFTId: nftId };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy.connect(testingAcct).bid(params,{value:bidPrice});
 	receipt = await tx.wait();
@@ -47,7 +47,7 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
 
-	let bidParams = { msg: "donate bid", rwalk: -1 };
+	let bidParams = { message: "donate bid", randomWalkNFTId: -1 };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
@@ -74,7 +74,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
 	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicGameProxy.address, true);
 
-	let bidParams = { msg: "donate nft rwalk bid", rwalk: tokenIdBidding };
+	let bidParams = { message: "donate nft rwalk bid", randomWalkNFTId: tokenIdBidding };
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)

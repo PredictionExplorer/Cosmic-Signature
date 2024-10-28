@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
@@ -37,10 +39,10 @@ describe("Events2", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("Number of Raffle events match the configuration", async function () {
@@ -58,7 +60,7 @@ describe("Events2", function () {
 
 		// we need to create CosmicToken holders prior to our test
 		let p = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: p });
 		let ptime = await cosmicGameProxy.timeUntilPrize();
@@ -89,15 +91,15 @@ describe("Events2", function () {
 		await randomWalkNFT.connect(addr2).mint({ value: rwalkTokenPrice });
 		let tx, receipt, log, parsed_log, bidPrice, winner;
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 
@@ -117,8 +119,9 @@ describe("Events2", function () {
 		expect(total_nft_winners).to.equal(deposit_logs.length);
 
 		let num_eth_winners = await cosmicGameProxy.numRaffleETHWinnersBidding();
+		const numChronoWarriors_ = 1n;
 		topic_sig = ethPrizesWallet.interface.getEvent("PrizeReceived").topicHash;
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		expect(num_eth_winners).to.equal(deposit_logs.length);
+		expect(num_eth_winners + numChronoWarriors_).to.equal(deposit_logs.length);
 	});
 });

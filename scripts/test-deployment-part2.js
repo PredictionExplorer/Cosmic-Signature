@@ -18,7 +18,7 @@ async function claim_raffle_eth(testingAcct, ethPrizesWallet, event_logs) {
 	}
 }
 async function claim_prize(testingAcct, cosmicGameProxy) {
-	let prizeAmount = await cosmicGameProxy.prizeAmount();
+	let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 	let charityAmount = await cosmicGameProxy.charityAmount();
 	let tx = await cosmicGameProxy.connect(testingAcct).claimPrize({ gasLimit: 2500000 });
 	let receipt = await tx.wait();
@@ -26,7 +26,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.claimedBy).to.equal(testingAcct.address);
-	expect(parsed_log.args.amount).to.equal(prizeAmount);
+	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 
 	let ethPrizesWalletAddr = await cosmicGameProxy.ethPrizesWallet();
 	let ethPrizesWallet = await hre.ethers.getContractAt("EthPrizesWallet", ethPrizesWalletAddr);

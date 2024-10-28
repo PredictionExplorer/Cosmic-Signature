@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 // #endregion
 // #region
@@ -99,11 +99,18 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	uint256 public timeoutClaimPrize;
 
 	/// @notice We add an item on each bid.
-	/// @dev todo-0 Is it really necessary to save info about past rounds?
-	/// todo-0 See https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729540799827169?thread_ts=1729208829.862549&cid=C02EDDE5UF8
+	/// @dev
+	/// [ToDo-202411098-0]
+	/// Is it really necessary to save info about past rounds?
+	/// But Nick wrote at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729540799827169?thread_ts=1729208829.862549&cid=C02EDDE5UF8 :
+	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
+	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
+	/// [/ToDo-202411098-0]
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
+	/// @dev ToDo-202411098-0 applies.
 	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
+
 	uint256 public lastCstBidTimeStamp;
 
 	/// @dev This is initialized with a constant and is then slightly exponentially increased after every bidding round.
@@ -113,27 +120,32 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	/// todo-0 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
 	uint256 public roundStartCstAuctionLength;
 
-	/// @dev todo-0 Is it really necessary to save info about past rounds?
-	/// todo-0 See https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729540799827169?thread_ts=1729208829.862549&cid=C02EDDE5UF8
+	/// @dev ToDo-202411098-0 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicGameConstants.BidderInfo)) public bidderInfo;
 
+	/// @dev This will remain zero if nobody bids with CST.
 	address public stellarSpender;
-	uint256 public stellarSpenderAmount;
+
+	uint256 public stellarSpenderTotalSpentCst;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
 	/// [Comment-202411075]
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
 	/// [/Comment-202411075]
-	/// @dev todo-0 Try to fit all endurance champion info in a single storage slot.
+	/// @dev
+	/// [Comment-202411099]
+	/// Relevant logic prototype:
+	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/ChampionFinder.sol
+	/// [/Comment-202411099]
 	address public enduranceChampion;
 
-	uint256 public enduranceChampionStartTime;
+	uint256 public enduranceChampionStartTimeStamp;
 	uint256 public enduranceChampionDuration;
 	uint256 public prevEnduranceChampionDuration;
 
 	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
 	/// Comment-202411075 applies.
-	/// @dev todo-0 Try to fit all chrono-warrior info in a single storage slot.
+	/// Comment-202411099 applies.
 	address public chronoWarrior;
 
 	uint256 public chronoWarriorDuration;
@@ -141,11 +153,12 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	// #endregion
 	// #region Percentages
 
-	/// @notice Comment-202411064 applies.
-	uint256 public prizePercentage;
+	/// @notice The percentage of ETH in the game account to be paid to the main prize winner.
+	/// Comment-202411064 applies.
+	uint256 public mainPrizePercentage;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public charityPercentage;
+	uint256 public chronoWarriorEthPrizePercentage;
 
 	/// @notice Comment-202411064 applies.
 	uint256 public rafflePercentage;
@@ -153,10 +166,17 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	/// @notice Comment-202411064 applies.
 	uint256 public stakingPercentage;
 
+	/// @notice Comment-202411064 applies.
+	uint256 public charityPercentage;
+
 	// #endregion
 	// #region Prize Claim Variables
 
 	/// @notice Bidding round winners.
+	/// @dev ToDo-202411098-0 applies.
+	/// todo-0 But we do need to allow the winner to claim donated NFTs afterwards.
+	/// todo-0 But maybe allow it only during the next round?
+	/// todo-0 For at least how long it will last?
 	mapping(uint256 roundNum => address bidderAddress) public winners;
 
 	/// @notice Comment-202411064 applies.

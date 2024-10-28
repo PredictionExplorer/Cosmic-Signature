@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 /// @title Charitable donations management
 /// @author Cosmic Game Development Team
@@ -30,7 +30,7 @@ interface ICharityWallet {
 
 	/// @notice Allows the contract to receive ETH donations
 	/// @dev This function is called for plain ETH transfers without data
-   /// todo-1 That dev comment is unnecessary. It's a well known fact.
+	/// todo-1 That dev comment is unnecessary. It's a well known fact.
 	receive() external payable;
 
 	/// @notice Sets or updates the address of the designated charity

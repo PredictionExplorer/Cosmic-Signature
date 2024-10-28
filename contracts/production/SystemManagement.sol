@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
@@ -61,6 +62,11 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
 			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 		);
+
+		// Comment-202411112 applies.
+		// [Comment-202411113/]
+		lastCstBidTimeStamp = Math.max(block.timestamp, activationTime);
+
 		systemMode = CosmicGameConstants.MODE_RUNTIME;
 		emit SystemModeChanged(systemMode);
 	}
@@ -77,16 +83,16 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit EthPrizesWalletAddressChanged(ethPrizesWallet_);
 	}
 
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft _stakingWalletCosmicSignatureNft) external override onlyOwner onlyMaintenance {
-		require(address(_stakingWalletCosmicSignatureNft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(_stakingWalletCosmicSignatureNft));
-		emit StakingWalletCosmicSignatureNftAddressChanged(_stakingWalletCosmicSignatureNft);
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external override onlyOwner onlyMaintenance {
+		require(address(stakingWalletCosmicSignatureNft_) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(stakingWalletCosmicSignatureNft_));
+		emit StakingWalletCosmicSignatureNftAddressChanged(stakingWalletCosmicSignatureNft_);
 	}
 
-	function setStakingWalletRandomWalkNft(address _stakingWalletRandomWalkNft) external override onlyOwner onlyMaintenance {
-		require(_stakingWalletRandomWalkNft != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletRandomWalkNft = _stakingWalletRandomWalkNft;
-		emit StakingWalletRandomWalkNftAddressChanged(_stakingWalletRandomWalkNft);
+	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external override onlyOwner onlyMaintenance {
+		require(stakingWalletRandomWalkNft_ != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletRandomWalkNft = stakingWalletRandomWalkNft_;
+		emit StakingWalletRandomWalkNftAddressChanged(stakingWalletRandomWalkNft_);
 	}
 
 	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyMaintenance {
@@ -186,10 +192,23 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 
 	function setActivationTime(uint256 activationTime_) external override onlyOwner onlyMaintenance {
 		activationTime = activationTime_;
-		lastCstBidTimeStamp = activationTime_;
 		emit ActivationTimeChanged(activationTime_);
 	}
 
+	function timeUntilActivation() external view override returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// return (block.timestamp >= activationTime) ? 0 : (activationTime - block.timestamp);
+			uint256 durationUntilActivation_ = uint256(int256(activationTime) - int256(block.timestamp));
+			if(int256(durationUntilActivation_) < int256(0)) {
+				durationUntilActivation_ = 0;
+			}
+			return durationUntilActivation_;
+		}
+	}
+	
 	function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external override onlyOwner onlyMaintenance {
 		roundStartCstAuctionLength = roundStartCstAuctionLength_;
 		emit RoundStartCstAuctionLengthChanged(roundStartCstAuctionLength_);
@@ -200,44 +219,54 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit Erc20RewardMultiplierChanged(_erc20RewardMultiplier);
 	}
 
-	function setCharityPercentage(uint256 _charityPercentage) external override onlyOwner onlyMaintenance {
-		charityPercentage = _charityPercentage;
-		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
+	function setMainPrizePercentage(uint256 mainPrizePercentage_) external override onlyOwner onlyMaintenance {
+		uint256 percentageSum_ = mainPrizePercentage_ + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage + charityPercentage;
 		require(
-			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
+			percentageSum_ < 100,
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		emit CharityPercentageChanged(_charityPercentage);
+		mainPrizePercentage = mainPrizePercentage_;
+		emit MainPrizePercentageChanged(mainPrizePercentage_);
 	}
 
-	function setPrizePercentage(uint256 _prizePercentage) external override onlyOwner onlyMaintenance {
-		prizePercentage = _prizePercentage;
-		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
+	function setChronoWarriorEthPrizePercentage(uint256 chronoWarriorEthPrizePercentage_) external override onlyOwner onlyMaintenance {
+		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage_ + rafflePercentage + stakingPercentage + charityPercentage;
 		require(
-			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
+			percentageSum_ < 100,
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		emit PrizePercentageChanged(_prizePercentage);
+		chronoWarriorEthPrizePercentage = chronoWarriorEthPrizePercentage_;
+		emit ChronoWarriorEthPrizePercentageChanged(chronoWarriorEthPrizePercentage_);
 	}
 
-	function setRafflePercentage(uint256 _rafflePercentage) external override onlyOwner onlyMaintenance {
-		rafflePercentage = _rafflePercentage;
-		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
+	function setRafflePercentage(uint256 rafflePercentage_) external override onlyOwner onlyMaintenance {
+		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage_ + stakingPercentage + charityPercentage;
 		require(
-			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
+			percentageSum_ < 100,
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		emit RafflePercentageChanged(_rafflePercentage);
+		rafflePercentage = rafflePercentage_;
+		emit RafflePercentageChanged(rafflePercentage_);
 	}
 
-	function setStakingPercentage(uint256 _stakingPercentage) external override onlyOwner onlyMaintenance {
-		stakingPercentage = _stakingPercentage;
-		uint256 percentageSum = prizePercentage + charityPercentage + rafflePercentage + stakingPercentage;
+	function setStakingPercentage(uint256 stakingPercentage_) external override onlyOwner onlyMaintenance {
+		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage_ + charityPercentage;
 		require(
-			percentageSum < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum)
+			percentageSum_ < 100,
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		emit StakingPercentageChanged(_stakingPercentage);
+		stakingPercentage = stakingPercentage_;
+		emit StakingPercentageChanged(stakingPercentage_);
+	}
+
+	function setCharityPercentage(uint256 charityPercentage_) external override onlyOwner onlyMaintenance {
+		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage + charityPercentage_;
+		require(
+			percentageSum_ < 100,
+			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
+		);
+		charityPercentage = charityPercentage_;
+		emit CharityPercentageChanged(charityPercentage_);
 	}
 
 	function getSystemMode() public view override returns (uint256) {

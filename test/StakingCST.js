@@ -44,12 +44,12 @@ describe('Staking CST tests', function () {
 		};
 	}
 	const bidParamsEncoding = {
-		type: 'tuple(string,int256)',
-		name: 'bidparams',
+		type: "tuple(string,int256)",
+		name: "BidParams",
 		components: [
-			{ name: 'msg', type: 'string' },
-			{ name: 'rwalk', type: 'int256' }
-		]
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
+		],
 	};
 	it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft from arbitrary address", async function () {
 		const {
@@ -158,6 +158,7 @@ describe('Staking CST tests', function () {
 		// expect(await newStakingWalletCosmicSignatureNft.stakerByTokenId(99n)).to.equal(hre.ethers.ZeroAddress);
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
+		// todo-1 Everywhere, it's unnecessary to check for the `not.to.be.reverted`, right? It's better to just not call `expect`.
 		await expect(newStakingWalletCosmicSignatureNft.unstake(1)).not.to.be.reverted;
 		await expect(newStakingWalletCosmicSignatureNft.unstake(1)).to.be.revertedWithCustomError(
 			contractErrors,
@@ -784,7 +785,7 @@ describe('Staking CST tests', function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]); // prepare for unstake
 	//
 	// 	const bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	const bidParams = { msg: '', rwalk: -1 };
+	// 	const bidParams = { message: "", randomWalkNFTId: -1 };
 	// 	const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.bid(params, { value: bidPrice });
 	//
@@ -874,7 +875,7 @@ describe('Staking CST tests', function () {
 	// 	);
 	//
 	// 	const bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	const bidParams = { msg: '', rwalk: -1 };
+	// 	const bidParams = { message: "", randomWalkNFTId: -1 };
 	// 	const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.bid(params, { value: bidPrice });
 	//
@@ -975,7 +976,7 @@ describe('Staking CST tests', function () {
 		}
 
 		const bidPrice = await cosmicGameProxy.getBidPrice();
-		const bidParams = { msg: '', rwalk: -1 };
+		const bidParams = { message: "", randomWalkNFTId: -1 };
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.bid(params, { value: bidPrice });
 
@@ -1021,7 +1022,7 @@ describe('Staking CST tests', function () {
 	// 	} = await loadFixture(deployCosmic);
 	//
 	// 	let bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	let bidParams = { msg: '', rwalk: -1 };
+	// 	let bidParams = { message: "", randomWalkNFTId: -1 };
 	// 	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 	// 	let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -1029,14 +1030,14 @@ describe('Staking CST tests', function () {
 	// 	await cosmicGameProxy.connect(addr1).claimPrize();
 	//
 	// 	bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	bidParams = { msg: '', rwalk: -1 };
+	// 	bidParams = { message: "", randomWalkNFTId: -1 };
 	// 	params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 	// 	prizeTime = await cosmicGameProxy.timeUntilPrize();
 	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 	// 	await cosmicGameProxy.connect(addr2).claimPrize();
 	// 	bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	bidParams = { msg: '', rwalk: -1 };
+	// 	bidParams = { message: "", randomWalkNFTId: -1 };
 	// 	params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 	// 	prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -1059,7 +1060,7 @@ describe('Staking CST tests', function () {
 	// 	// CS tokens) with stake operation executed. Now we are ready to test staking
 	//
 	// 	bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	bidParams = { msg: '', rwalk: -1 };
+	// 	bidParams = { message: "", randomWalkNFTId: -1 };
 	// 	params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 	// 	prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -1092,6 +1093,7 @@ describe('Staking CST tests', function () {
 	// 	await expect(stakingWalletCosmicSignatureNft.moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft,"ModuloIsZero");
 	// });
 
+	// todo-1 This test no longer makes sense for `StakingWalletCosmicSignatureNft`, right?
 	it('The random picking of winner from StakingWalletCosmicSignatureNft is really random', async function () {
 		const signers = await hre.ethers.getSigners();
 		const owner = signers[0];

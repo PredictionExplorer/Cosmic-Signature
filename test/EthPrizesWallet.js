@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
@@ -36,10 +38,10 @@ describe("EthPrizesWallet", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("deposit() works as expected", async function () {
@@ -71,17 +73,18 @@ describe("EthPrizesWallet", function () {
 		let newEthPrizesWallet = await NewEthPrizesWallet.deploy(owner.address);
 		await newEthPrizesWallet.waitForDeployment();
 
-		expect(await newEthPrizesWallet.connect(addr1).deposit(addr1.address,{value: 1000000n})).to.revertedWithCustomError(contractErrors, "DepositFromUnauthorizedSender");
+		await expect(newEthPrizesWallet.connect(addr1).deposit(addr1.address,{value: 1000000n})).to.be.revertedWithCustomError(contractErrors, "DepositFromUnauthorizedSender");
 
 		// // Comment-202411084 relates and/or applies.
 		// // I have observed that this now reverts with panic when asserts are enabled.
-		// expect(await newEthPrizesWallet.deposit(hre.ethers.ZeroAddress)).to.revertedWithCustomError(contractErrors, "ZeroAddress");
+		// await expect(newEthPrizesWallet.deposit(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors, "ZeroAddress");
 
 		// Comment-202409215 relates and/or applies.
-		// expect(await newEthPrizesWallet.deposit(addr1.address)).to.revertedWithCustomError(contractErrors, "NonZeroValueRequired");
-		expect(await newEthPrizesWallet.deposit(addr1.address)).not.to.be.reverted;
+		// await expect(newEthPrizesWallet.deposit(addr1.address)).to.be.revertedWithCustomError(contractErrors, "NonZeroValueRequired");
+		await expect(newEthPrizesWallet.deposit(addr1.address)).not.to.be.reverted;
 
-		expect(await newEthPrizesWallet.connect(owner).deposit({value:1000000n})).not.to.be.reverted;
+		// // Someone forgot to pass an address to this call.
+		// await expect(newEthPrizesWallet.connect(owner).deposit({value:1000000n})).not.to.be.reverted;
 	});
 	it("withdraw() works as expected", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
@@ -114,7 +117,7 @@ describe("EthPrizesWallet", function () {
 		await newEthPrizesWallet.connect(owner).deposit(addr1.address,{value: 1000n});
 
 		// Comment-202409215 relates and/or applies.
-		// expect(await newEthPrizesWallet.connect(addr2).withdraw()).to.be.revertedWithCustomError(contractErrors, "ZeroBalance");
-		expect(await newEthPrizesWallet.connect(addr2).withdraw()).not.to.be.reverted;
+		// await expect(newEthPrizesWallet.connect(addr2).withdraw()).to.be.revertedWithCustomError(contractErrors, "ZeroBalance");
+		await expect(newEthPrizesWallet.connect(addr2).withdraw()).not.to.be.reverted;
 	});
 });

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
@@ -19,6 +19,9 @@ abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 	function donateWithInfo(string calldata _data) external payable override onlyRuntime {
 		// todo-1 Comment-202409215 should not apply here.
 		// todo-1 But should we enforce a minimum donation?
+		// todo-1 But this whole ETH donation thing is questionable. Why don't we force the user within to show a message
+		// todo-1 to simply bid with a message?
+		// todo-1 But currently bid with a message isn't supported, right?
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 
 		uint256 recordId = donateWithInfoNumRecords;

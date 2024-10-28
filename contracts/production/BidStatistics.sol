@@ -1,27 +1,67 @@
-// SPDX-License-Identifier: MIT
+// #region
 
-pragma solidity 0.8.26;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.27;
+
+// #endregion
+// #region
 
 // import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
+// #endregion
+// #region
+
 abstract contract BidStatistics is CosmicGameStorage, IBidStatistics {
-	/// @notice Update the endurance champion based on the current bid
-	/// @dev This function is called for each bid to potentially update the endurance champion
-	function _updateEnduranceChampion() internal {
+	// #region `_updateChampionsIfNeeded`
+
+	/// @notice Tries to update the endurance champion and chrono-warrior info.
+	function _updateChampionsIfNeeded() internal {
 		// if (lastBidder == address(0)) return;
 		// #enable_asserts assert(lastBidder != address(0));
 
-		// todo-0 Who and when updates `bidderInfo[roundNum][lastBidder].lastBidTime`? What if it got updated many bids ago?
-		uint256 lastBidDuration = block.timestamp - bidderInfo[roundNum][lastBidder].lastBidTime;
-		// [ToDo-202411082-0]
-		// Can these both be zero?
-		// Maybe we should reset `enduranceChampionDuration` to -1 on round start?
-		// [/ToDo-202411082-0]
-		if (lastBidDuration > enduranceChampionDuration) {
-			enduranceChampionDuration = lastBidDuration;
+		uint256 lastBidTimeStampCopy_ = bidderInfo[roundNum][lastBidder].lastBidTimeStamp;
+		uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
+		if (enduranceChampion == address(0)) {
 			enduranceChampion = lastBidder;
+			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
+			enduranceChampionDuration = lastBidDuration_;
+			// #enable_asserts assert(chronoWarrior == address(0));
+		} else if (lastBidDuration_ > enduranceChampionDuration) {
+			{
+				uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration;
+				_updateChronoWarriorIfNeeded(chronoEndTimeStamp_);
+			}
+			prevEnduranceChampionDuration = enduranceChampionDuration;
+			enduranceChampion = lastBidder;
+			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
+			enduranceChampionDuration = lastBidDuration_;
 		}
+
+		// #enable_asserts assert(enduranceChampion != address(0));
 	}
+
+	// #endregion
+	// #region `_updateChronoWarriorIfNeeded`
+
+	/// @notice Tries to update the chrono-warrior info.
+	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
+		// #enable_asserts assert(enduranceChampion != address(0));
+		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
+		// #enable_asserts assert((chronoWarrior == address(0)) == (int256(chronoWarriorDuration) < int256(0)));
+
+		uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
+		uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+		if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
+			chronoWarrior = enduranceChampion;
+			chronoWarriorDuration = chronoDuration_;
+		}
+
+		// #enable_asserts assert(chronoWarrior != address(0));
+	}
+
+	// #endregion
 }
+
+// #endregion

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
@@ -24,6 +24,8 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 	}
 
 	// todo-1 Bug: it looks like anybody can burn someone's tokens. Make this `onlyOwner`?
+	// todo-1 Make some `public` functions `external`.
+	// todo-1 Make some `public`/`external` functions `private`.
 	function burn(address account, uint256 amount) override public {
 		_burn(account, amount);
 	}

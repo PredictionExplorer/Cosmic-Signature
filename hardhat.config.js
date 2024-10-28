@@ -43,38 +43,49 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // [Comment-202409011]
 // Issue. Hardhat would automatically install solcjs, but solcjs fails to execute SMTChecker.
 // It could be a solcjs bug.
-// So we are telling Hardhat to use the native solc of the given version.
+// So we must tell Hardhat to use the native solc of the given version.
 // Remember to manually install it.
-// The simplest option is to install the solc package globally:
+// One option is to install the solc package globally:
 //    sudo add-apt-repository ppa:ethereum/ethereum
 //    sudo apt install solc
-// Another option is to use the "solc-select" tool.
+// Another, arguably better option is to use the "solc-select" tool.
+// It's documented at https://github.com/crytic/solc-select .
+// Install it.
+// To switch to a particular solc version, use this command:
+//    solc-select use 0.8.27 --always-install
+// It's OK if then you switch to a different version. As long as the given version remains installed,
+// we should be able to find and use it.
+// Note that Hardhat will not necessarily validate solc of what version it's executing,
+// so it's your responsibility to correctly configure all the relevant parameters here that reference this comment.
 // Remember that depending on how your system upates are configured and how you installed the solc package,
 // the package can be updated at any moment, so you might want to disable quiet automatic updates.
-// Hardhat will not necessarily validate solc of what version it's executing.
 // [/Comment-202409011]
-// const solidityCompilerPath = "/usr/bin/solc";
-// todo-1 I upgarded solc, but found out it wasn't supported yet, but I was ubale to downgrade it.
-// todo-1 So I used the "solc-select" tool to install the older version.
-// todo-1 To be revisited.
-// todo-1 Then eliminate `nodeFSModule`.
-const solidityCompilerDefaultPath = "/usr/bin/solc";
-const solidityCompilerAlternativePath = process.env["HOME"] + "/.local/bin/solc";
-const solidityCompilerPath = 
-	nodeFSModule.existsSync(solidityCompilerAlternativePath) ?
-	solidityCompilerAlternativePath :
-	solidityCompilerDefaultPath;
 
 // Comment-202409011 applies.
 // [ToDo-202409098-1]
 // When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
 // [/ToDo-202409098-1]
-const solidityVersion = "0.8.26";
-// const solidityVersion = "0.8.27";
+const solidityVersion = "0.8.27";
 
 // Comment-202409011 applies.
-const solidityCompilerLongVersion = solidityVersion + "+commit.8a97fa7a.Linux.g++";
-// const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
+// [Comment-202411136]
+// Hardhat docs says that this is used as extra information in the build-info files, but other than that is not important.
+// To find out this value, execute:
+//    solc --version
+// Make sure you are executing the executable pointed at by `solidityCompilerPath`.
+// We print it near Comment-202411143.
+// [/Comment-202411136]
+const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
+
+// Comment-202409011 applies.
+// Comment-202411136 relates.
+let solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
+if( ! nodeFSModule.existsSync(solidityCompilerPath) ) {
+	solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
+	if( ! nodeFSModule.existsSync(solidityCompilerPath) ) {
+		solidityCompilerPath = "/usr/bin/solc";
+	}
+}
 
 // #endregion
 // #region
@@ -94,6 +105,9 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
 }
 
+// [Comment-202411143/]
+// Comment-202409011 relates.
+// Comment-202411136 relates.
 console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
 
 // #endregion
@@ -202,7 +216,7 @@ subtask(
 				isSolcJs: false,
 				version: solidityVersion,
 
-				// This is used as extra information in the build-info files, but other than that is not important.
+				// Comment-202411136 applies.
 				longVersion: solidityCompilerLongVersion,
 			};
 		}
@@ -214,7 +228,7 @@ subtask(
 
 		// // Calling the default implementation.
 		// return runSuper();
- 	}
+	}
 );
 
 // #endregion

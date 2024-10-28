@@ -5,3 +5,9 @@
 @ Execute `./check-1.bash`.
 
 @ After the script finishes, review its report file, which name is specified near Comment-202409124.
+
+@ An alternative option is to execute the following command in the VS Code integrated terminal:
+
+   npx hardhat check
+
+   Then use Ctrl+Click to click links in the command output.

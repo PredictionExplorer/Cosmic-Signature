@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -17,7 +17,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: nftAddress,
 			nftId: nftId,
-			round: roundNum,
+			roundNum: roundNum,
 			claimed: false
 		});
 		++ numDonatedNFTs;
@@ -26,6 +26,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 
 	/// @notice Internal function to handle NFT donations
 	/// @dev This function is called by donateNFT and bidAndDonateNFT
+	/// todo-0 todo-1 What's the difference between this and `donateNFT`? Can I eliminate one of them?
 	/// @param _nftAddress Address of the NFT contract
 	/// @param _nftId ID of the NFT to donate
 	function _donateNFT(IERC721 _nftAddress, uint256 _nftId) internal {
@@ -33,7 +34,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: _nftAddress,
 			nftId: _nftId,
-			round: roundNum,
+			roundNum: roundNum,
 			claimed: false
 		});
 		++ numDonatedNFTs;
@@ -41,17 +42,18 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 	}
 
 	function claimDonatedNFT(uint256 index) public override onlyRuntime {
-		require(index < numDonatedNFTs, CosmicGameErrors.InvalidDonatedNFTIndex("Invalid donated NFT index",index));
+		require(index < numDonatedNFTs, CosmicGameErrors.InvalidDonatedNFTIndex("Invalid donated NFT index", index));
 
 		CosmicGameConstants.DonatedNFT storage donatedNFT = donatedNFTs[index];
-		require(!donatedNFT.claimed, CosmicGameErrors.NFTAlreadyClaimed("NFT already claimed",index));
-		require(winners[donatedNFT.round] == msg.sender, CosmicGameErrors.NonExistentWinner("Only the round winner can claim this NFT",index));
+		require(!donatedNFT.claimed, CosmicGameErrors.NFTAlreadyClaimed("NFT already claimed", index));
+		// todo-1 Should we allow anybody to claim after a timeout that starts after ciam main prize?
+		require(winners[donatedNFT.roundNum] == msg.sender, CosmicGameErrors.NonExistentWinner("Only the round winner can claim this NFT", index));
 
 		donatedNFT.claimed = true;
 		// todo-1 Sometimes we use "safe" function and sometimes we don't. Review all NFT calls.
 		donatedNFT.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNFT.nftId);
 
-		emit DonatedNFTClaimedEvent(donatedNFT.round, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.nftId);
+		emit DonatedNFTClaimedEvent(donatedNFT.roundNum, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.nftId);
 	}
 
 	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant onlyRuntime {
@@ -63,6 +65,6 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage,
 	function getDonatedNFTDetails(uint256 index) public view override returns (address, uint256, uint256, bool) {
 		require(index < numDonatedNFTs, "Invalid donated NFT index");
 		CosmicGameConstants.DonatedNFT memory donatedNFT = donatedNFTs[index];
-		return (address(donatedNFT.nftAddress), donatedNFT.nftId, donatedNFT.round, donatedNFT.claimed);
+		return (address(donatedNFT.nftAddress), donatedNFT.nftId, donatedNFT.roundNum, donatedNFT.claimed);
 	}
 }

@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
@@ -38,10 +40,10 @@ describe("CharityWallet tests", function () {
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("CharityWallet is sending the right amount", async function () {
@@ -106,19 +108,19 @@ describe("CharityWallet tests", function () {
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { msg: "", rwalk: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { msg: "", rwalk: -1 };
+		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 

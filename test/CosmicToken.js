@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
@@ -19,7 +21,6 @@ describe("CosmicToken tests", function () {
 			ethPrizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
-			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
 
@@ -32,16 +33,15 @@ describe("CosmicToken tests", function () {
 			randomWalkNFT,
 			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
-			// todo-0 Bug. This is actully `stakingWalletRandomWalkNft`. ToDo-202410075-0 applies.
 			marketingWallet,
 		};
 	}
 	const bidParamsEncoding = {
 		type: "tuple(string,int256)",
-		name: "bidparams",
+		name: "BidParams",
 		components: [
-			{ name: "msg", type: "string" },
-			{ name: "rwalk", type: "int256" },
+			{ name: "message", type: "string" },
+			{ name: "randomWalkNFTId", type: "int256" },
 		],
 	};
 	it("ERC20 nonces() function exists", async function () {
