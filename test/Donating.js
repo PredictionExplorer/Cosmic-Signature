@@ -99,7 +99,7 @@ describe("Donation tests", function () {
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
 		let bidParams = { message: "", randomWalkNFTId: -1 };
-		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)
 			.bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });

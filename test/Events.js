@@ -76,7 +76,7 @@ describe("Events", function () {
 		await expect(cosmicGameProxy.connect(bidder1).claimPrize())
 			.to.emit(charityWallet, "DonationReceivedEvent")
 			.withArgs(await cosmicGameProxy.getAddress(), charityAmount + stakingAmount);
-		let balance = await hre.ethers.provider.getBalance(await charityWallet.getAddress());
+		const balance = await hre.ethers.provider.getBalance(await charityWallet.getAddress());
 		expect(balance).to.equal(charityAmount + stakingAmount);
 
 		// CharityUpdatedEvent
@@ -140,7 +140,7 @@ describe("Events", function () {
 		expect(winner).to.equal(bidder1.address);
 
 		const mainPrizeAmountAfterClaim_ = await cosmicGameProxy.mainPrizeAmount();
-		balance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
+		const balance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
 		const mainPrizeExpectedAmount_ = balance * 25n / 100n;
 		expect(mainPrizeAmountAfterClaim_).to.equal(mainPrizeExpectedAmount_);
 

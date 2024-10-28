@@ -17,9 +17,9 @@
 
 @ Try to find the folowing case sensitive regular experssion patterns in source files. The findings might indicate mistakes.
 
-(?<!\t\t// #enable_asserts )\bassert\s*\(
+(?<!\t\t// #enable)_asserts
 
-(?<!\t\t// #(?:enable|disable))_asserts
+(?<!\t\t// #enable_asserts )\bassert\s*\(
 
 @ Review Comment-202409013.
   Specify there what contracts to analyze, or leave all commented.
