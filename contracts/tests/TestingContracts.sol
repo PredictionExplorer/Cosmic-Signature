@@ -143,7 +143,7 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 		token.transfer(this.owner(), cosmicSupply);
 		for (uint256 i = 0; i < numDonatedNFTs; i++) {
 			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
-			IERC721(dnft.nftAddress).transferFrom(address(this), this.owner(), dnft.nftId);
+			dnft.nftAddress.transferFrom(address(this), this.owner(), dnft.nftId);
 		}
 		selfdestruct(payable(this.owner()));
 	}
