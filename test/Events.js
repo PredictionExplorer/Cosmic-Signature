@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");

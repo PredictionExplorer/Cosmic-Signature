@@ -378,6 +378,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 	// #endregion
 	// #region `timeUntilPrize`
 
+	// todo-0 Slither dislikes some time comparisons.
+	// todo-0 Would it make sense to subtract the times as signed `int256` in most cases?
+	// todo-0 It could also make sense to do it from within an `unchecked` block.
+	// todo-0 All our times are supposed to be reasonable values that are close to `block.timestamp`.
+	// todo-0 `activationTime`, even though it's set externally, will also be reasonable, right?
+	// todo-0 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
 	function timeUntilPrize() external view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked

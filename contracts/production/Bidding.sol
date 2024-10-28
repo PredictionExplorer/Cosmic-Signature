@@ -241,8 +241,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// This can be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
 		// We are OK with that.
-		// todo-0 I dislike the above. Someone will be able to abuse the system. We increase round time by 1 hour on each bid and double CST bid price, right?
-		// todo-0 So someone can keep bidding with 0 CSTs.
 		// [/Comment-202409179]
 		uint256 price = getCurrentBidPriceCST();
 

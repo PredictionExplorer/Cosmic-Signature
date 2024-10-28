@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
@@ -96,7 +98,7 @@ describe("Donation tests", function () {
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		let bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)

@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { chai } = require("@nomicfoundation/hardhat-chai-matchers");

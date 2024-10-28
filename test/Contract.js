@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
@@ -135,7 +137,7 @@ describe("Contract", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		let tx = await bnonrec.connect(owner).doClaim();
 		let receipt = await tx.wait();
-		topic_sig = cosmicSignature.interface.getEvent("MintEvent").topicHash;
+		const topic_sig = cosmicSignature.interface.getEvent("MintEvent").topicHash;
 		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let prizeWinnerTokenIndex = 0;
 		let parsed_log = cosmicSignature.interface.parseLog(mint_logs[prizeWinnerTokenIndex]);

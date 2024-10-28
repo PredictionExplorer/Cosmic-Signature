@@ -1,5 +1,6 @@
 // todo-1 Is license supposed to be the same in all files? Currently it's not.
 // todo-1 Near `IRandomWalkNFT`, I specified a different license.
+// todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
 // todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT
 
@@ -95,12 +96,6 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		return saleTime - block.timestamp;
 	}
 
-	// todo-0 Slither dislikes some time comparisons.
-	// todo-0 Would it make sense to subtract the times as signed `int256` in most cases?
-	// todo-0 It could also make sense to do it from within an `unchecked` block.
-	// todo-0 All our times are supposed to be reasonable values that are close to `block.timestamp`.
-	// todo-0 `activationTime`, even though it's set externally, will also be reasonable, right?
-	// todo-0 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
 	function timeUntilWithdrawal() public view override returns (uint256) {
 		uint256 withdrawalTime = lastMintTime + withdrawalWaitSeconds;
 		if (withdrawalTime < block.timestamp) return 0;
