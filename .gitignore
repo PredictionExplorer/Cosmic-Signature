@@ -25,7 +25,7 @@ node_modules
 # Comment-202409014 applies.
 /smtchecker/compile-1-output
 
-# # Comment-202408024 applies.
-# /abi
+# Comment-202408024 applies.
+/abi
 
 # /config.sh
