@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: CC0-1.0
-
 pragma solidity 0.8.27;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
@@ -19,6 +18,12 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	function prepareMaintenance() external;
 
 	function setRuntimeMode() external;
+
+	// /// @notice Get the current system mode
+	// /// @return The current system mode (0: Runtime, 1: Prepare Maintenance, 2: Maintenance)
+	// /// todo-9 Why did someone hardcoded those magic numbes in a comment?
+	// /// @dev We don't need this function because `systemMode` is declared `public`.
+	// function getSystemMode() external view returns (uint256);
 
 	/// @notice Set the `RandomWalkNFT` contract address
 	/// @dev Only callable by the contract owner
@@ -140,9 +145,4 @@ interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
 	/// @dev Only callable by the contract owner.
 	/// @param charityPercentage_ The new value.
 	function setCharityPercentage(uint256 charityPercentage_) external;
-
-	/// @notice Get the current system mode
-	/// @return The current system mode (0: Runtime, 1: Prepare Maintenance, 2: Maintenance)
-	/// todo-1 Why did someone hardcoded those magic numbes in a comment?
-	function getSystemMode() external view returns (uint256);
 }

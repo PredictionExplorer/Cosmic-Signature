@@ -7,7 +7,7 @@ pragma solidity 0.8.27;
 // #region
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+// import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
@@ -186,15 +186,15 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that payment to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras agan).
 			uint256 nftId = nft.mint(stellarSpender, roundNum);
-			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
+			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
 			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			token.mint(stellarSpender, erc20TokenReward);
+			token.mint(stellarSpender, cstReward_);
 			// {
 			// } catch {
 			// }
-			emit StellarSpenderPrizePaid(stellarSpender, roundNum, nftId, erc20TokenReward, stellarSpenderTotalSpentCst /* , 1 */);
+			emit StellarSpenderPrizePaid(stellarSpender, roundNum, nftId, cstReward_, stellarSpenderTotalSpentCst /* , 1 */);
 		}
 
 		// Endurance Champion prize.
@@ -203,15 +203,15 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 		// #enable_asserts assert(enduranceChampion != address(0));
 		{
 			uint256 nftId = nft.mint(enduranceChampion, roundNum);
-			uint256 erc20TokenReward = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
+			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
 			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			token.mint(enduranceChampion, erc20TokenReward);
+			token.mint(enduranceChampion, cstReward_);
 			// {
 			// } catch {
 			// }
-			emit EnduranceChampionPrizePaid(enduranceChampion, roundNum, nftId, erc20TokenReward /* , 0 */);
+			emit EnduranceChampionPrizePaid(enduranceChampion, roundNum, nftId, cstReward_ /* , 0 */);
 		}
 
 		// Chrono-Warrior prize.
@@ -334,7 +334,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, Sy
 			// Comment-202411115 applies to `lastCstBidTimeStamp`.
 		} else {
 			// [Comment-202411112]
-			// Even if nobody bids any time soon, the CST bid price will start declining.
+			// Even if nobody bids any time soon, the CST bid price will start declining immediately.
 			// [/Comment-202411112]
 			lastCstBidTimeStamp = block.timestamp;
 		}

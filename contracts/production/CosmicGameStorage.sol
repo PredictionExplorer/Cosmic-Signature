@@ -7,28 +7,30 @@ pragma solidity 0.8.27;
 // #region
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicToken } from "./CosmicToken.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
-import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { EthPrizesWallet } from "./EthPrizesWallet.sol";
+import { CosmicToken } from "./CosmicToken.sol";
+import { MarketingWallet } from "./MarketingWallet.sol";
+import { CosmicSignature } from "./CosmicSignature.sol";
+import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
+import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
 
 // #endregion
 // #region
 
 abstract contract CosmicGameStorage is ICosmicGameStorage {
-	// #region External Contracts and Other Addresses
+	// #region External Contract and Other Addresses
 
-	RandomWalkNFT public randomWalkNft;
-	CosmicSignature public nft;
-	CosmicToken public token;
 	EthPrizesWallet public ethPrizesWallet;
+	CosmicToken public token;
+	// todo-0 Make this strongly typed.
+	address public marketingWallet;
+	CosmicSignature public nft;
+	RandomWalkNFT public randomWalkNft;
 	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 	// todo-0 Make this strongly typed.
 	address public stakingWalletRandomWalkNft;
-	// todo-0 Make this strongly typed.
-	address public marketingWallet;
 
 	/// @dev
 	/// [Comment-202411078]
@@ -42,7 +44,57 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	address public charity;
 
 	// #endregion
-	// #region Game State
+	// #region System Parameters and Variables
+
+	/// @notice Comment-202411064 applies.
+	uint256 public systemMode;
+
+	/// [Comment-202411064]
+	/// This is a configurable parameter.
+	/// [/Comment-202411064]
+	/// At the same time, this is a variable that the logic changes.
+	uint256 public activationTime;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-0 Rename to `marketingCstReward`.
+	uint256 public marketingReward;
+
+	/// @notice Comment-202411064 applies.
+	/// [Comment-202409143]
+	/// This limits the number of bytes, which can be fewer UTF-8 characters.
+	/// [/Comment-202409143]
+	uint256 public maxMessageLength;
+
+	// #endregion
+	// #region Donation Variables
+
+	uint256 public numDonationInfoRecords;
+	mapping(uint256 index => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
+	uint256 public numDonatedNFTs;
+	mapping(uint256 index => CosmicGameConstants.DonatedNFT) public donatedNFTs;
+
+	// #endregion
+	// #region Game Parameters and Variables
+
+	/// @notice Comment-202411064 applies.
+	/// @dev
+	/// [Comment-202411067]
+	/// We slightly exponentially increase this after every bidding round, based on `timeIncrease`.
+	/// [/Comment-202411067]
+	uint256 public nanoSecondsExtra;
+
+	/// @notice Comment-202411064 applies.
+	/// Equals the number of microseonds per second plus a small fraction of it.
+	/// Comment-202411067 relates.
+	/// Rename to `nanoSecondsExtraIncreaseParam`.
+	uint256 public timeIncrease;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-0 Rename to `roundInitialDuration`.
+	uint256 public initialSecondsUntilPrize;
+
+	/// todo-0 Rename to `roundEndTime`.
+	uint256 public prizeTime;
 
 	/// @notice Bidding round counter.
 	/// For the first round, this equals zero.
@@ -52,14 +104,29 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
+	// todo-0 Rename to `ethBidPrice`.
 	uint256 public bidPrice;
 
-	/// @notice
-	/// [Comment-202411064]
-	/// This is a configurable parameter.
-	/// [/Comment-202411064]
+	/// @notice Comment-202411064 applies.
+	/// Rename to `initialEthBidPriceDivisor`.
+	uint256 public initialBidAmountFraction;
+
+	/// @notice Comment-202411064 applies.
 	/// Comment-202411065 relates.
+	// Equals a million plus a small fraction of it.
+	// todo-0 Rename to `ethBidPriceIncreaseParam`.
 	uint256 public priceIncrease;
+
+	/// @dev This is initialized with a constant and is then slightly exponentially increased after every bidding round.
+	/// todo-0 Rename to `cstAuctionDuration`.
+	uint256 public cstAuctionLength;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-0 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
+	/// todo-0 Rename to `roundStartCstAuctionDuration`.
+	uint256 public roundStartCstAuctionLength;
+
+	uint256 public lastCstBidTimeStamp;
 
 	/// @notice
 	/// [Comment-202411066]
@@ -72,31 +139,21 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	uint256 public startingBidPriceCSTMinLimit;
 
 	/// @notice Comment-202411064 applies.
-	/// [Comment-202411067]
-	/// @dev We slightly exponentially increase this after every bidding round, based on `timeIncrease`.
-	/// [/Comment-202411067]
-	uint256 public nanoSecondsExtra;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202411067 relates.
-	uint256 public timeIncrease;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public initialBidAmountFraction;
-
-	address public lastBidder;
-	CosmicGameConstants.BidType public lastBidType;
+	/// This number of CSTs is minted as a reward for each bid.
+	/// rename to `cstRewardForBidding`.
+	uint256 public tokenReward;
 
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
 	mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNFTs;
 
-	/// @notice Comment-202411064 applies.
-	uint256 public initialSecondsUntilPrize;
+	address public lastBidder;
 
-	uint256 public prizeTime;
+	/// todo-0 Rename to `lastBidTypeCode`.
+	CosmicGameConstants.BidType public lastBidType;
 
-	/// @notice Comment-202411064 applies.
-	uint256 public timeoutClaimPrize;
+	/// @dev ToDo-202411098-0 applies.
+	/// Rename to `numBids`.
+	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
 
 	/// @notice We add an item on each bid.
 	/// @dev
@@ -106,22 +163,48 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
 	/// [/ToDo-202411098-0]
+	/// Rename to `bids`.
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
 	/// @dev ToDo-202411098-0 applies.
-	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
+	/// todo-0 Rename to `biddersInfo`.
+	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicGameConstants.BidderInfo)) public bidderInfo;
 
-	uint256 public lastCstBidTimeStamp;
+	// #endregion
+	// #region Game Prize Percentage Parameters
 
-	/// @dev This is initialized with a constant and is then slightly exponentially increased after every bidding round.
-	uint256 public cstAuctionLength;
+	/// @notice The percentage of ETH in the game account to be paid to the main prize winner.
+	/// Comment-202411064 applies.
+	uint256 public mainPrizePercentage;
+
+	/// @notice ETH.
+	/// Comment-202411064 applies.
+	uint256 public chronoWarriorEthPrizePercentage;
+
+	/// @notice ETH.
+	/// Comment-202411064 applies.
+	uint256 public rafflePercentage;
+
+	/// @notice ETH.
+	/// Comment-202411064 applies.
+	uint256 public stakingPercentage;
+
+	/// @notice ETH.
+	/// Comment-202411064 applies.
+	uint256 public charityPercentage;
+
+	// #endregion
+	// #region Game Prize Other Parameters and Variables
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
-	uint256 public roundStartCstAuctionLength;
+	uint256 public timeoutClaimPrize;
 
+	/// @notice Bidding round winners.
 	/// @dev ToDo-202411098-0 applies.
-	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicGameConstants.BidderInfo)) public bidderInfo;
+	/// todo-0 But we do need to allow the winner to claim donated NFTs afterwards.
+	/// todo-0 But maybe allow it only during the next round?
+	/// todo-0 For at least how long it will last?
+	mapping(uint256 roundNum => address bidderAddress) public winners;
 
 	/// @dev This will remain zero if nobody bids with CST.
 	address public stellarSpender;
@@ -150,37 +233,12 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 
 	uint256 public chronoWarriorDuration;
 
-	// #endregion
-	// #region Percentages
-
-	/// @notice The percentage of ETH in the game account to be paid to the main prize winner.
-	/// Comment-202411064 applies.
-	uint256 public mainPrizePercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public chronoWarriorEthPrizePercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public rafflePercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public stakingPercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public charityPercentage;
-
-	// #endregion
-	// #region Prize Claim Variables
-
-	/// @notice Bidding round winners.
-	/// @dev ToDo-202411098-0 applies.
-	/// todo-0 But we do need to allow the winner to claim donated NFTs afterwards.
-	/// todo-0 But maybe allow it only during the next round?
-	/// todo-0 For at least how long it will last?
-	mapping(uint256 roundNum => address bidderAddress) public winners;
-
 	/// @notice Comment-202411064 applies.
 	uint256 public numRaffleETHWinnersBidding;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-0 Rename to `cstRewardMultiplier`.
+	uint256 public erc20RewardMultiplier;
 
 	/// @notice Comment-202411064 applies.
 	uint256 public numRaffleNFTWinnersBidding;
@@ -189,35 +247,6 @@ abstract contract CosmicGameStorage is ICosmicGameStorage {
 	uint256 public numRaffleNFTWinnersStakingRWalk;
 
 	bytes32 public raffleEntropy;
-	mapping(uint256 index => CosmicGameConstants.DonatedNFT) public donatedNFTs;
-	uint256 public numDonatedNFTs;
-
-	// #endregion
-	// #region System Variables
-
-	uint256 public donateWithInfoNumRecords;
-	mapping(uint256 index => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public activationTime;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public tokenReward;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public erc20RewardMultiplier;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public marketingReward;
-
-	/// @notice Comment-202411064 applies.
-	/// [Comment-202409143]
-	/// This limits the number of bytes, which can be fewer UTF-8 characters.
-	/// [/Comment-202409143]
-	uint256 public maxMessageLength;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public systemMode;
 
 	// #endregion
 }

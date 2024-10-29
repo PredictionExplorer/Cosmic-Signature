@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.27;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -21,7 +20,6 @@ import { CosmicGameStorage } from "./CosmicGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
 abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISystemManagement {
-
 	modifier onlyRuntime() {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -38,16 +36,6 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		_;
 	}
 
-	function setCharity(address _charity) external override onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
-		require(_charity != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		charity = _charity;
-		emit CharityAddressChanged(_charity);
-	}
-
 	function prepareMaintenance() external override onlyOwner {
 		require(
 			systemMode == CosmicGameConstants.MODE_RUNTIME,
@@ -57,12 +45,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit SystemModeChanged(systemMode);
 	}   
 
-	function setRuntimeMode() external override onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
-
+	function setRuntimeMode() external override onlyOwner onlyMaintenance {
 		// Comment-202411112 applies.
 		// [Comment-202411113/]
 		lastCstBidTimeStamp = Math.max(block.timestamp, activationTime);
@@ -70,6 +53,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		systemMode = CosmicGameConstants.MODE_RUNTIME;
 		emit SystemModeChanged(systemMode);
 	}
+
+	// function getSystemMode() public view override returns (uint256) {
+	// 	return systemMode;
+	// }
 
 	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyMaintenance {
 		require(address(randomWalkNft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
@@ -111,6 +98,12 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		require(address(_nft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		nft = CosmicSignature(address(_nft));
 		emit CosmicSignatureAddressChanged(_nft);
+	}
+
+	function setCharity(address _charity) external override onlyOwner onlyMaintenance {
+		require(_charity != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		charity = _charity;
+		emit CharityAddressChanged(_charity);
 	}
 
 	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external onlyOwner onlyMaintenance {
@@ -267,9 +260,5 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		);
 		charityPercentage = charityPercentage_;
 		emit CharityPercentageChanged(charityPercentage_);
-	}
-
-	function getSystemMode() public view override returns (uint256) {
-		return systemMode;
 	}
 }
