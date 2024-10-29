@@ -14,12 +14,12 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
-import { ICosmicGameStorage } from "./interfaces/ICosmicGameStorage.sol";
+import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameStorage.sol";
 
 // #endregion
 // #region
 
-abstract contract CosmicGameStorage is ICosmicGameStorage {
+abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region External Contract and Other Addresses
 
 	EthPrizesWallet public ethPrizesWallet;

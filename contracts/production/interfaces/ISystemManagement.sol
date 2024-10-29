@@ -6,10 +6,10 @@ import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
-import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
+import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface ISystemManagement is ICosmicGameStorage, ISystemEvents {
+interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @notice Set the charity address
 	/// @dev Only callable by the contract owner
 	/// @param _charity The new charity address

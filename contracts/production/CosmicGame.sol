@@ -15,7 +15,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { Bidding } from "./Bidding.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { NFTDonations } from "./NFTDonations.sol";
@@ -31,7 +31,7 @@ import { ICosmicGame } from "./interfaces/ICosmicGame.sol";
 contract CosmicGame is
 	OwnableUpgradeable,
 	UUPSUpgradeable,
-	CosmicGameStorage,
+	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
 	Bidding,

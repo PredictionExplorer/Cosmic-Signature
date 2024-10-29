@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.27;
 
-import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
+import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
-interface IBidding is ICosmicGameStorage, IBidStatistics {
+interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Emitted when a bid is placed
 	/// @param lastBidder The address of the bidder
 	/// @param roundNum The current round number

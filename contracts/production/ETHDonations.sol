@@ -5,11 +5,11 @@ pragma solidity 0.8.27;
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IETHDonations } from "./interfaces/IETHDonations.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
-abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, IETHDonations {
+abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, IETHDonations {
 	function donate() external payable override onlyRuntime {
 		// todo-1 See Comment-202409215.
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));

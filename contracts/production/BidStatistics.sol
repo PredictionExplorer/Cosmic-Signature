@@ -7,13 +7,13 @@ pragma solidity 0.8.27;
 // #region
 
 // import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
 // #endregion
 // #region
 
-abstract contract BidStatistics is CosmicGameStorage, IBidStatistics {
+abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #region `_updateChampionsIfNeeded`
 
 	/// @notice Tries to update the endurance champion and chrono-warrior info.

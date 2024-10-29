@@ -18,7 +18,7 @@ import { CosmicSignature } from "./CosmicSignature.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { EthPrizesWallet } from "./EthPrizesWallet.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
@@ -26,7 +26,7 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 // #endregion
 // #region
 
-abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IMainPrize {
+abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	// #region `claimPrize`
 
 	function claimPrize() external override nonReentrant onlyRuntime {

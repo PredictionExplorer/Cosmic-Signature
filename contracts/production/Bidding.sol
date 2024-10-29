@@ -11,12 +11,12 @@ import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
-abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
+abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
 	/// @title Bid Parameters.

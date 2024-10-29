@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
-import { ICosmicGameStorage } from "./ICosmicGameStorage.sol";
+import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
-interface IMainPrize is ICosmicGameStorage, ISystemManagement, IBidStatistics {
+interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
 	/// @notice Emitted when main prize is claimed.
 	/// @param roundNum Bidding round number.
 	/// @param claimedBy The address receiving the prize.

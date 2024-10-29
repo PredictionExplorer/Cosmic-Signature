@@ -16,10 +16,10 @@ import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCos
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { IEthPrizesWallet } from "./interfaces/IEthPrizesWallet.sol";
 import { EthPrizesWallet } from "./EthPrizesWallet.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
-abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISystemManagement {
+abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameStorage, ISystemManagement {
 	modifier onlyRuntime() {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
