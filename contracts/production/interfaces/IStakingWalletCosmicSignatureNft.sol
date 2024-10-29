@@ -58,6 +58,12 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 		uint256 numStakedNfts
 	);
 
+	/// @notice Emitted when contract state is reset.
+	/// @param numStateResets The number of state resets completed so far.
+	event StateReset(
+		uint256 /*indexed*/ numStateResets
+	);
+
 	/// @notice Unstakes an NFT and pays at least a part of its reward to the staker.
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.

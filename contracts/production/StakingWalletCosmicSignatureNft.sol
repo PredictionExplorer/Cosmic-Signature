@@ -61,7 +61,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region Constants
 
 	/// @notice A max limit on another max limit.
-	/// @dev This value is quite big, and, at the same time, it's small enough to avoid dealing with possible overflows.
+	/// This value is quite big, and, at the same time, it's nowhere close to the point of overflow.
 	uint256 public constant NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max / 256;
 
 	// /// @notice Precision factor for calculations
@@ -119,6 +119,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice `ethDeposits` item count.
 	uint256 public numEthDeposits;
 
+	uint256 public numStateResets;
+
 	// #endregion
 	// #region `constructor`
 
@@ -136,6 +138,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `numUnpaidStakeActions`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `numEthDeposits`.
+	///    `numStateResets`.
 	///
 	/// todo-1 Is `nft_` the same as `game_.nft()`?
 	/// todo-1 But we don't import the `CosmicGame` contract.
@@ -161,6 +164,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #enable_asserts assert(numUnpaidStakeActions == 0);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 0);
 		// #enable_asserts assert(numEthDeposits == 0);
+		// #enable_asserts assert(numStateResets == 0);
 
 		// #endregion
 	}
@@ -472,9 +476,11 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `msg.sender` (indirectly).
 	///    `owner` (indirectly).
 	///    `_numStakedNfts`.
+	///    `StateReset`.
 	///    `numUnpaidStakeActions`.
 	///    // `_nftWasStakedAfterPrevEthDeposit`.
 	///    `numEthDeposits`.
+	///    `numStateResets`.
 	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns (bool) {
 		// #region
 
@@ -493,6 +499,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			// It's unnecessary to also clear `ethDeposits`.
 			// [/Comment-202410166]
 			numEthDeposits = 0;
+
+			emit StateReset( ++ numStateResets );
 		}
 
 		// #endregion
