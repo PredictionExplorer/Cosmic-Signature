@@ -9,6 +9,7 @@ import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 /// @dev Supports CosmicSignature NFT staking and unstaking, as well as staker reward distribution.
 interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is unstaked and at least a part of the reward is paid to the staker.
+	/// @param actionCounter An always increasing by at least 1 unique ID of this unstake action.
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Unstaked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
@@ -16,6 +17,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param rewardAmount Reward amount paid to the staker.
 	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
 	event NftUnstaked(
+		uint256 /*indexed*/ actionCounter,
 		uint256 indexed stakeActionId,
 		// CosmicGameConstants.NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
@@ -44,6 +46,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit action.
 	/// @param depositIndex `EthDeposit` instance index in `ethDeposits` (1-based).
 	/// It can remain the same as it was in the previous event.
+	/// `numEthDeposits` can be reset near Comment-202410166. Afterwards, this event will be emitted with `depositIndex == 1`.
 	/// @param depositId `EthDeposit` instance ID.
 	/// It can remain the same as it was in the previous event.
 	/// If a new `EthDeposit` instance was created, `depositId == actionCounter`.
@@ -51,7 +54,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param numStakedNfts The current staked NFT count.
 	event EthDepositReceived(
 		uint256 indexed roundNum,
-		uint256 actionCounter,
+		uint256 /*indexed*/ actionCounter,
 		uint256 depositIndex,
 		uint256 depositId,
 		uint256 depositAmount,

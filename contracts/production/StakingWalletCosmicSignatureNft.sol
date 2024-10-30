@@ -559,12 +559,13 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `CosmicGameErrors.NftStakeActionInvalidId`.
 	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
 	///    `CosmicGameErrors.NftAlreadyUnstaked`.
+	///    `_numStakedNfts`.
+	///    `actionCounter`.
 	///    `NftUnstaked`.
 	///    `StakeAction`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `nft`.
 	///    `stakeActions`.
-	///    `_numStakedNfts`.
 	///    `numUnpaidStakeActions`.
 	///    `numEthDeposits`.
 	///    `_calculateRewardAmount`.
@@ -616,15 +617,16 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 newNumStakedNfts_ = _numStakedNfts - 1;
 		_numStakedNfts = newNumStakedNfts_;
 		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
-		emit NftUnstaked(stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+		emit NftUnstaked(( ++ actionCounter ), stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
 
 		// #endregion
 		// #region
 
+		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - 1);
+		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(nft.ownerOf(stakeActionCopy_.nftId) == msg.sender);
 		// // #enable_asserts assert(stakeActions[stakeActionId_].nftId == 0);
 		// // #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
-		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - 1);
 		// #enable_asserts assert(numUnpaidStakeActions - initialNumUnpaidStakeActions_ <= 1);
 
 		// #endregion
