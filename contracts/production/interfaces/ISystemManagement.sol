@@ -1,95 +1,35 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
 import { ICosmicToken } from "./ICosmicToken.sol";
+import { IMarketingWallet } from "./IMarketingWallet.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
-import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
+import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
 interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
-	/// @notice Set the charity address
-	/// @dev Only callable by the contract owner
-	/// @param _charity The new charity address
-	function setCharity(address _charity) external;
-
 	function prepareMaintenance() external;
 
 	function setRuntimeMode() external;
 
 	// /// @notice Get the current system mode
 	// /// @return The current system mode (0: Runtime, 1: Prepare Maintenance, 2: Maintenance)
-	// /// todo-9 Why did someone hardcoded those magic numbes in a comment?
+	// /// todo-9 Someone has hardcoded those magic numbes in the above comment. Remove them from the comment.
 	// /// @dev We don't need this function because `systemMode` is declared `public`.
 	// function getSystemMode() external view returns (uint256);
 
-	/// @notice Set the `RandomWalkNFT` contract address
+	/// @notice Set the activation time
 	/// @dev Only callable by the contract owner
-	/// @param randomWalkNft_ The new `RandomWalkNFT` contract address
-	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external;
+	/// @param activationTime_ The new activation time
+	function setActivationTime(uint256 activationTime_) external;
 
-	/// @notice Sets the ETH prizes wallet address.
-	/// @dev Only callable by the contract owner.
-	/// @param ethPrizesWallet_ The new value.
-	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external;
-
-	/// @notice Set the CST staking wallet address
-	/// @dev Only callable by the contract owner
-	/// @param stakingWalletCosmicSignatureNft_ The new CST staking wallet address
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external;
-
-	/// @notice Set the RandomWalk staking wallet address
-	/// @dev Only callable by the contract owner
-	/// @param stakingWalletRandomWalkNft_ The new RandomWalk staking wallet address
-	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external;
-
-	/// @notice Set the marketing wallet address
-	/// @dev Only callable by the contract owner
-	/// @param _marketingWallet The new marketing wallet address
-	function setMarketingWallet(address _marketingWallet) external;
-
-	/// @notice Set the Cosmic Token contract address
-	/// @dev Only callable by the contract owner
-	/// @param _token The new Cosmic Token contract address
-	function setTokenContract(ICosmicToken _token) external;
-
-	/// @notice Set the Cosmic Signature NFT contract address
-	/// @dev Only callable by the contract owner
-	/// @param _nft The new Cosmic Signature NFT contract address
-	function setNftContract(ICosmicSignature _nft) external;
-
-	/// @notice Set the time increase factor
-	/// @dev Only callable by the contract owner
-	/// @param _timeIncrease The new time increase factor
-	function setTimeIncrease(uint256 _timeIncrease) external;
-
-	/// @notice Set the price increase factor
-	/// @dev Only callable by the contract owner
-	/// @param _priceIncrease The new price increase factor
-	function setPriceIncrease(uint256 _priceIncrease) external;
-
-	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external;
-
-	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;
-
-	/// @notice Set the initial seconds until prize
-	/// @dev Only callable by the contract owner
-	/// @param _initialSecondsUntilPrize The new initial seconds until prize
-	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external;
-
-	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external;
-
-	/// @notice Set the timeout for claiming prize
-	/// @dev Only callable by the contract owner
-	/// @param _timeoutClaimPrize The new timeout for claiming prize
-	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external;
-
-	/// @notice Set the token reward amount
-	/// @dev Only callable by the contract owner
-	/// @param _tokenReward The new token reward amount
-	function setTokenReward(uint256 _tokenReward) external;
+	/// @notice Get the time until the game activates
+	/// @return The number of seconds until activation, or 0 if already activated
+	function timeUntilActivation() external view returns (uint256);
 
 	/// @notice Set the marketing reward amount
 	/// @dev Only callable by the contract owner
@@ -102,24 +42,77 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param _maxMessageLength The new maximum message length
 	function setMaxMessageLength(uint256 _maxMessageLength) external;
 
-	/// @notice Set the activation time
-	/// @dev Only callable by the contract owner
-	/// @param activationTime_ The new activation time
-	function setActivationTime(uint256 activationTime_) external;
+	/// @notice Sets the ETH prizes wallet address.
+	/// @dev Only callable by the contract owner.
+	/// @param ethPrizesWallet_ The new value.
+	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external;
 
-	/// @notice Get the time until the game activates
-	/// @return The number of seconds until activation, or 0 if already activated
-	function timeUntilActivation() external view returns (uint256);
+	/// @notice Set the Cosmic Token contract address
+	/// @dev Only callable by the contract owner
+	/// @param _token The new Cosmic Token contract address
+	function setTokenContract(ICosmicToken _token) external;
+
+	/// @notice Set the marketing wallet address
+	/// @dev Only callable by the contract owner
+	/// @param _marketingWallet The new marketing wallet address
+	function setMarketingWallet(address _marketingWallet) external;
+
+	/// @notice Set the Cosmic Signature NFT contract address
+	/// @dev Only callable by the contract owner
+	/// @param _nft The new Cosmic Signature NFT contract address
+	function setNftContract(ICosmicSignature _nft) external;
+
+	/// @notice Set the `RandomWalkNFT` contract address
+	/// @dev Only callable by the contract owner
+	/// @param randomWalkNft_ The new `RandomWalkNFT` contract address
+	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external;
+
+	/// @notice Set the CST staking wallet address
+	/// @dev Only callable by the contract owner
+	/// @param stakingWalletCosmicSignatureNft_ The new CST staking wallet address
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external;
+
+	/// @notice Set the RandomWalk staking wallet address
+	/// @dev Only callable by the contract owner
+	/// @param stakingWalletRandomWalkNft_ The new RandomWalk staking wallet address
+	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external;
+
+	/// @notice Set the charity address
+	/// @dev Only callable by the contract owner
+	/// @param _charity The new charity address
+	function setCharity(address _charity) external;
+
+	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;
+
+	/// @notice Set the time increase factor
+	/// @dev Only callable by the contract owner
+	/// @param _timeIncrease The new time increase factor
+	function setTimeIncrease(uint256 _timeIncrease) external;
+
+	/// @notice Set the initial seconds until prize
+	/// @dev Only callable by the contract owner
+	/// @param _initialSecondsUntilPrize The new initial seconds until prize
+	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external;
+
+	/// todo-0 Rename to `set...`.
+	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external;
+
+	/// @notice Set the price increase factor
+	/// @dev Only callable by the contract owner
+	/// @param _priceIncrease The new price increase factor
+	function setPriceIncrease(uint256 _priceIncrease) external;
 
 	/// @notice Set the round start CST auction length
 	/// @dev Only callable by the contract owner
 	/// @param roundStartCstAuctionLength_ The new round start CST auction length
 	function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external;
 
-	/// @notice Set the ERC20 reward multiplier
+	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external;
+
+	/// @notice Set the token reward amount
 	/// @dev Only callable by the contract owner
-	/// @param _erc20RewardMultiplier The new ERC20 reward multiplier
-	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external;
+	/// @param _tokenReward The new token reward amount
+	function setTokenReward(uint256 _tokenReward) external;
 
 	/// @notice Sets the main prize percentage.
 	/// @dev Only callable by the contract owner.
@@ -145,4 +138,20 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @dev Only callable by the contract owner.
 	/// @param charityPercentage_ The new value.
 	function setCharityPercentage(uint256 charityPercentage_) external;
+
+	/// @notice Set the timeout for claiming prize
+	/// @dev Only callable by the contract owner
+	/// @param _timeoutClaimPrize The new timeout for claiming prize
+	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external;
+
+	/// @notice Set the ERC20 reward multiplier
+	/// @dev Only callable by the contract owner
+	/// @param _erc20RewardMultiplier The new ERC20 reward multiplier
+	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external;
+
+	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external;
+
+	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external;
+
+	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external;
 }

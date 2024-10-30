@@ -20,30 +20,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #region
 
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
-	// #region External Contract and Other Addresses
-
-	EthPrizesWallet public ethPrizesWallet;
-	CosmicToken public token;
-	// todo-0 Make this strongly typed.
-	address public marketingWallet;
-	CosmicSignature public nft;
-	RandomWalkNFT public randomWalkNft;
-	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
-	// todo-0 Make this strongly typed.
-	address public stakingWalletRandomWalkNft;
-
-	/// @dev
-	/// [Comment-202411078]
-	/// We transfer ETH directly to this address.
-	/// This is intended to be our own `CharityWallet`.
-	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
-	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
-	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
-	/// Comment-202411077 relates.
-	/// [/Comment-202411078]
-	address public charity;
-
-	// #endregion
 	// #region System Parameters and Variables
 
 	/// @notice Comment-202411064 applies.
@@ -64,6 +40,44 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	uint256 public maxMessageLength;
+
+	// #endregion
+	// #region External Contract and Other Addresses
+
+	/// @notice Comment-202411064 applies.
+	EthPrizesWallet public ethPrizesWallet;
+
+	/// @notice Comment-202411064 applies.
+	CosmicToken public token;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-0 Make this strongly typed.
+	address public marketingWallet;
+
+	/// @notice Comment-202411064 applies.
+	CosmicSignature public nft;
+
+	/// @notice Comment-202411064 applies.
+	RandomWalkNFT public randomWalkNft;
+
+	/// @notice Comment-202411064 applies.
+	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-0 Make this strongly typed.
+	address public stakingWalletRandomWalkNft;
+
+	/// @notice Comment-202411064 applies.
+	/// @dev
+	/// [Comment-202411078]
+	/// We transfer ETH directly to this address.
+	/// This is intended to be our own `CharityWallet`.
+	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
+	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
+	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
+	/// Comment-202411077 relates.
+	/// [/Comment-202411078]
+	address public charity;
 
 	// #endregion
 	// #region Donation Variables
@@ -234,11 +248,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public chronoWarriorDuration;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public numRaffleETHWinnersBidding;
-
-	/// @notice Comment-202411064 applies.
 	/// todo-0 Rename to `cstRewardMultiplier`.
 	uint256 public erc20RewardMultiplier;
+
+	/// @notice Comment-202411064 applies.
+	uint256 public numRaffleETHWinnersBidding;
 
 	/// @notice Comment-202411064 applies.
 	uint256 public numRaffleNFTWinnersBidding;
