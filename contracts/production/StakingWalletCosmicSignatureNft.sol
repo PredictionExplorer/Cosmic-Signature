@@ -617,7 +617,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 newNumStakedNfts_ = _numStakedNfts - 1;
 		_numStakedNfts = newNumStakedNfts_;
 		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
-		emit NftUnstaked(( ++ actionCounter ), stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
+		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
 
 		// #endregion
 		// #region
