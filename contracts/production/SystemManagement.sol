@@ -36,7 +36,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		_;
 	}
 
-	function prepareMaintenance() external override onlyOwner {
+	function prepareMaintenance() external override onlyOwner /*onlyMaintenance*/ {
 		require(
 			systemMode == CosmicGameConstants.MODE_RUNTIME,
 			CosmicGameErrors.SystemMode("System must be in runtime mode", systemMode)
