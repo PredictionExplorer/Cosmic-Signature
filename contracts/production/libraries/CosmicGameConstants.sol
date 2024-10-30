@@ -21,6 +21,7 @@ library CosmicGameConstants {
 	}
 
 	/// @notice Types of bids that can be made in the game.
+	/// todo-0 Rename to `BidTypeCode`.
 	enum BidType {
 		/// @notice Bid using Ether.
 		ETH,

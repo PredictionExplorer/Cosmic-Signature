@@ -187,7 +187,7 @@ describe("SystemManagement tests", function () {
 		await cosmicGameProxy.connect(owner).setErc20RewardMultiplier(99n);
 		expect(await cosmicGameProxy.erc20RewardMultiplier()).to.equal(99n);
 
-		expect(await cosmicGameProxy.getSystemMode()).to.equal(2);
+		expect(await cosmicGameProxy./*getSystemMode*/systemMode()).to.equal(2);
 
 		await expect(cosmicGameProxy.connect(owner).prepareMaintenance()).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode");
 		await expect(cosmicGameProxy.connect(addr1).setRuntimeMode()).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");

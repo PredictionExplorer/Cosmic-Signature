@@ -63,8 +63,8 @@ contract BidderContract is IERC721Receiver {
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: msg.value }(param_data);
 	}
-	function doBidAndDonate(address nftAddress, uint256 nftId) external payable {
-		IERC721(nftAddress).setApprovalForAll(address(cosmicGame), true);
+	function doBidAndDonate(IERC721 nftAddress_, uint256 nftId_) external payable {
+		nftAddress_.setApprovalForAll(address(cosmicGame), true);
 		uint256 donatedTokenNum = cosmicGame.numDonatedNFTs();
 		myDonatedNFTs.push(donatedTokenNum);
 		numMyDonatedNFTs++;
@@ -74,7 +74,7 @@ contract BidderContract is IERC721Receiver {
 		params.randomWalkNFTId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(params);
-		cosmicGame.bidAndDonateNFT{ value: price }(param_data, IERC721(nftAddress), nftId);
+		cosmicGame.bidAndDonateNFT{ value: price }(param_data, nftAddress_, nftId_);
 	}
 	function doClaim() external {
 		cosmicGame.claimPrize();

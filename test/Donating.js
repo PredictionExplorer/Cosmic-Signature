@@ -54,16 +54,16 @@ describe("Donation tests", function () {
 		let donationAmount = hre.ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
-		let numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
-		expect(numDonationInfoRecs).to.equal(1);
+		let numDonationInfoRecords_ = await cosmicGameProxy.numDonationInfoRecords();
+		expect(numDonationInfoRecords_).to.equal(1);
 		let donationInfoRec = await cosmicGameProxy.donationInfoRecords(0);
 		expect(donationInfoRec.donor).to.equal(addr1.address);
 		expect(donationInfoRec.data).to.equal(dataStr);
 
 		// check number of records is incrementing
 		await cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
-		numDonationInfoRecs = await cosmicGameProxy.donateWithInfoNumRecords();
-		expect(numDonationInfoRecs).to.equal(2);
+		numDonationInfoRecords_ = await cosmicGameProxy.numDonationInfoRecords();
+		expect(numDonationInfoRecords_).to.equal(2);
 
 		await expect(cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: 0n})).to.be.revertedWithCustomError(cosmicGameProxy,"NonZeroValueRequired");
 	});
@@ -99,7 +99,7 @@ describe("Donation tests", function () {
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
 		let bidParams = { message: "", randomWalkNFTId: -1 };
-		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)
 			.bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });

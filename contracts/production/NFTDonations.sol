@@ -6,11 +6,11 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
-abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, INFTDonations {
+abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INFTDonations {
 	// todo-0 Didn't we discuss that an NFT donation without placing a bid could result in spamming?
 	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRuntime  {
 		nftAddress.safeTransferFrom(msg.sender, address(this), nftId);

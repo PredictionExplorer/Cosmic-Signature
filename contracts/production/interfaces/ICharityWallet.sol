@@ -5,7 +5,7 @@ pragma solidity 0.8.27;
 /// @title Charitable donations management
 /// @author Cosmic Game Development Team
 /// @notice A contract implementing this interface collects donations and periodically sends them to a designated charity
-/// @dev The contract is designed to be transparent. It allows anyone to trigger a donation transfer
+/// @dev As noted in Comment-202409273, this contract is designed to be transparent. It allows anyone to trigger a donation transfer.
 /// todo-0 Use this and other interfaces in some places where we use respective contracts.
 /// todo-0 On the other hand, SMTChecker needs to know exactly which contract we call.
 /// todo-0 Besides, it needs to see a high level call.

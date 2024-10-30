@@ -10,12 +10,12 @@ import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
 import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
-import { CosmicGameStorage } from "../production/CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 
-abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding  {
+abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding  {
 
 	uint256 public timesBidPrice; // multiples of bid price that open bid has to be
 

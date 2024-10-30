@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.27;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -7,6 +6,8 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { IEthPrizesWallet } from "./interfaces/IEthPrizesWallet.sol";
+import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
@@ -15,13 +16,10 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { IEthPrizesWallet } from "./interfaces/IEthPrizesWallet.sol";
-import { EthPrizesWallet } from "./EthPrizesWallet.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
-abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISystemManagement {
-
+abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameStorage, ISystemManagement {
 	modifier onlyRuntime() {
 		require(
 			systemMode < CosmicGameConstants.MODE_MAINTENANCE,
@@ -38,17 +36,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		_;
 	}
 
-	function setCharity(address _charity) external override onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
-		require(_charity != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		charity = _charity;
-		emit CharityAddressChanged(_charity);
-	}
-
-	function prepareMaintenance() external override onlyOwner {
+	function prepareMaintenance() external override onlyOwner /*onlyMaintenance*/ {
 		require(
 			systemMode == CosmicGameConstants.MODE_RUNTIME,
 			CosmicGameErrors.SystemMode("System must be in runtime mode", systemMode)
@@ -57,12 +45,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit SystemModeChanged(systemMode);
 	}   
 
-	function setRuntimeMode() external override onlyOwner {
-		require(
-			systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-			CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-		);
-
+	function setRuntimeMode() external override onlyOwner onlyMaintenance {
 		// Comment-202411112 applies.
 		// [Comment-202411113/]
 		lastCstBidTimeStamp = Math.max(block.timestamp, activationTime);
@@ -71,124 +54,9 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit SystemModeChanged(systemMode);
 	}
 
-	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyMaintenance {
-		require(address(randomWalkNft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		randomWalkNft = RandomWalkNFT(address(randomWalkNft_));
-		emit RandomWalkNftAddressChanged(randomWalkNft_);
-	}
-
-	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external override onlyOwner onlyMaintenance {
-		require(address(ethPrizesWallet_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
-		emit EthPrizesWalletAddressChanged(ethPrizesWallet_);
-	}
-
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external override onlyOwner onlyMaintenance {
-		require(address(stakingWalletCosmicSignatureNft_) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(stakingWalletCosmicSignatureNft_));
-		emit StakingWalletCosmicSignatureNftAddressChanged(stakingWalletCosmicSignatureNft_);
-	}
-
-	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external override onlyOwner onlyMaintenance {
-		require(stakingWalletRandomWalkNft_ != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletRandomWalkNft = stakingWalletRandomWalkNft_;
-		emit StakingWalletRandomWalkNftAddressChanged(stakingWalletRandomWalkNft_);
-	}
-
-	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyMaintenance {
-		require(_marketingWallet != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		marketingWallet = _marketingWallet;
-		emit MarketingWalletAddressChanged(_marketingWallet);
-	}
-
-	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyMaintenance {
-		require(address(_token) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = CosmicToken(address(_token));
-		emit CosmicTokenAddressChanged(_token);
-	}
-
-	function setNftContract(ICosmicSignature _nft) external override onlyOwner onlyMaintenance {
-		require(address(_nft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		nft = CosmicSignature(address(_nft));
-		emit CosmicSignatureAddressChanged(_nft);
-	}
-
-	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external onlyOwner onlyMaintenance {
-		numRaffleETHWinnersBidding = newNumRaffleETHWinnersBidding;
-		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
-	}
-
-	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external onlyOwner onlyMaintenance {
-		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
-		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
-	}
-
-	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external onlyOwner onlyMaintenance {
-		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
-		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
-	}
-
-	function setTimeIncrease(uint256 _timeIncrease) external override onlyOwner onlyMaintenance {
-		timeIncrease = _timeIncrease;
-		emit TimeIncreaseChanged(_timeIncrease);
-	}
-
-	function setPriceIncrease(uint256 _priceIncrease) external override onlyOwner onlyMaintenance {
-		priceIncrease = _priceIncrease;
-		emit PriceIncreaseChanged(_priceIncrease);
-	}
-
-	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyMaintenance {
-		// This ensures that SMTChecker won't flag the logic or an `assert` near Comment-202409163 or Comment-202409162.
-		// We probably don't need a `require` to enforce this condition.
-		// #enable_asserts assert(newStartingBidPriceCSTMinLimit <= type(uint256).max / CosmicGameConstants.MILLION);
-
-		require(
-			newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-			CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
-				"Provided starting bid price in CST min limit is too small",
-				newStartingBidPriceCSTMinLimit,
-				CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
-			)
-		);
-		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
-		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
-	}
-
-	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external override onlyOwner onlyMaintenance {
-		nanoSecondsExtra = newNanoSecondsExtra;
-		emit NanoSecondsExtraChanged(newNanoSecondsExtra);
-	}
-
-	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external override onlyOwner onlyMaintenance {
-		initialSecondsUntilPrize = _initialSecondsUntilPrize;
-		emit InitialSecondsUntilPrizeChanged(_initialSecondsUntilPrize);
-	}
-
-	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external override onlyOwner onlyMaintenance {
-		initialBidAmountFraction = newInitialBidAmountFraction;
-		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
-	}
-
-	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external override onlyOwner onlyMaintenance {
-		timeoutClaimPrize = _timeoutClaimPrize;
-		emit TimeoutClaimPrizeChanged(_timeoutClaimPrize);
-	}
-
-	function setTokenReward(uint256 _tokenReward) external override onlyOwner onlyMaintenance {
-		tokenReward = _tokenReward;
-		emit TokenRewardChanged(_tokenReward);
-	}
-
-	function setMarketingReward(uint256 _marketingReward) external override onlyOwner onlyMaintenance {
-		marketingReward = _marketingReward;
-		emit MarketingRewardChanged(_marketingReward);
-	}
-
-	function setMaxMessageLength(uint256 _maxMessageLength) external override onlyOwner onlyMaintenance {
-		maxMessageLength = _maxMessageLength;
-		emit MaxMessageLengthChanged(_maxMessageLength);
-	}
+	// function getSystemMode() public view override returns (uint256) {
+	// 	return systemMode;
+	// }
 
 	function setActivationTime(uint256 activationTime_) external override onlyOwner onlyMaintenance {
 		activationTime = activationTime_;
@@ -209,14 +77,114 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		}
 	}
 	
+	function setMarketingReward(uint256 _marketingReward) external override onlyOwner onlyMaintenance {
+		marketingReward = _marketingReward;
+		emit MarketingRewardChanged(_marketingReward);
+	}
+
+	function setMaxMessageLength(uint256 _maxMessageLength) external override onlyOwner onlyMaintenance {
+		maxMessageLength = _maxMessageLength;
+		emit MaxMessageLengthChanged(_maxMessageLength);
+	}
+
+	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external override onlyOwner onlyMaintenance {
+		require(address(ethPrizesWallet_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
+		emit EthPrizesWalletAddressChanged(ethPrizesWallet_);
+	}
+
+	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyMaintenance {
+		require(address(_token) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		token = CosmicToken(address(_token));
+		emit CosmicTokenAddressChanged(_token);
+	}
+
+	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyMaintenance {
+		require(_marketingWallet != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		marketingWallet = _marketingWallet;
+		emit MarketingWalletAddressChanged(_marketingWallet);
+	}
+
+	function setNftContract(ICosmicSignature _nft) external override onlyOwner onlyMaintenance {
+		require(address(_nft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		nft = CosmicSignature(address(_nft));
+		emit CosmicSignatureAddressChanged(_nft);
+	}
+
+	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyMaintenance {
+		require(address(randomWalkNft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		randomWalkNft = RandomWalkNFT(address(randomWalkNft_));
+		emit RandomWalkNftAddressChanged(randomWalkNft_);
+	}
+
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external override onlyOwner onlyMaintenance {
+		require(address(stakingWalletCosmicSignatureNft_) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(stakingWalletCosmicSignatureNft_));
+		emit StakingWalletCosmicSignatureNftAddressChanged(stakingWalletCosmicSignatureNft_);
+	}
+
+	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external override onlyOwner onlyMaintenance {
+		require(stakingWalletRandomWalkNft_ != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletRandomWalkNft = stakingWalletRandomWalkNft_;
+		emit StakingWalletRandomWalkNftAddressChanged(stakingWalletRandomWalkNft_);
+	}
+
+	function setCharity(address _charity) external override onlyOwner onlyMaintenance {
+		require(_charity != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		charity = _charity;
+		emit CharityAddressChanged(_charity);
+	}
+
+	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external override onlyOwner onlyMaintenance {
+		nanoSecondsExtra = newNanoSecondsExtra;
+		emit NanoSecondsExtraChanged(newNanoSecondsExtra);
+	}
+
+	function setTimeIncrease(uint256 _timeIncrease) external override onlyOwner onlyMaintenance {
+		timeIncrease = _timeIncrease;
+		emit TimeIncreaseChanged(_timeIncrease);
+	}
+
+	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external override onlyOwner onlyMaintenance {
+		initialSecondsUntilPrize = _initialSecondsUntilPrize;
+		emit InitialSecondsUntilPrizeChanged(_initialSecondsUntilPrize);
+	}
+
+	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external override onlyOwner onlyMaintenance {
+		initialBidAmountFraction = newInitialBidAmountFraction;
+		emit InitialBidAmountFractionChanged(initialBidAmountFraction);
+	}
+
+	function setPriceIncrease(uint256 _priceIncrease) external override onlyOwner onlyMaintenance {
+		priceIncrease = _priceIncrease;
+		emit PriceIncreaseChanged(_priceIncrease);
+	}
+
 	function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external override onlyOwner onlyMaintenance {
 		roundStartCstAuctionLength = roundStartCstAuctionLength_;
 		emit RoundStartCstAuctionLengthChanged(roundStartCstAuctionLength_);
 	}
 
-	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external override onlyOwner onlyMaintenance {
-		erc20RewardMultiplier = _erc20RewardMultiplier;
-		emit Erc20RewardMultiplierChanged(_erc20RewardMultiplier);
+	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyMaintenance {
+		// This ensures that SMTChecker won't flag the logic or an `assert` near Comment-202409163 or Comment-202409162.
+		// We probably don't need a `require` to enforce this condition.
+		// #enable_asserts assert(newStartingBidPriceCSTMinLimit <= type(uint256).max / CosmicGameConstants.MILLION);
+
+		require(
+			newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
+			CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+				"Provided starting bid price in CST min limit is too small",
+				newStartingBidPriceCSTMinLimit,
+				CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
+			)
+		);
+		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
+		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
+	}
+
+	function setTokenReward(uint256 _tokenReward) external override onlyOwner onlyMaintenance {
+		tokenReward = _tokenReward;
+		emit TokenRewardChanged(_tokenReward);
 	}
 
 	function setMainPrizePercentage(uint256 mainPrizePercentage_) external override onlyOwner onlyMaintenance {
@@ -269,7 +237,28 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicGameStorage, ISy
 		emit CharityPercentageChanged(charityPercentage_);
 	}
 
-	function getSystemMode() public view override returns (uint256) {
-		return systemMode;
+	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external override onlyOwner onlyMaintenance {
+		timeoutClaimPrize = _timeoutClaimPrize;
+		emit TimeoutClaimPrizeChanged(_timeoutClaimPrize);
+	}
+
+	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external override onlyOwner onlyMaintenance {
+		erc20RewardMultiplier = _erc20RewardMultiplier;
+		emit Erc20RewardMultiplierChanged(_erc20RewardMultiplier);
+	}
+
+	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external override onlyOwner onlyMaintenance {
+		numRaffleETHWinnersBidding = newNumRaffleETHWinnersBidding;
+		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
+	}
+
+	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external override onlyOwner onlyMaintenance {
+		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
+		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
+	}
+
+	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external override onlyOwner onlyMaintenance {
+		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
+		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
 	}
 }

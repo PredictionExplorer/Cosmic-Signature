@@ -11,12 +11,12 @@ import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { CosmicGameStorage } from "./CosmicGameStorage.sol";
+import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
-abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, SystemManagement, BidStatistics, IBidding {
+abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
 	/// @title Bid Parameters.
@@ -324,6 +324,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicGameStorage, Syst
 		// #enable_smtchecker */
 		{
 			// This would be able to underflow if treated as unsigned if we updated `lastCstBidTimeStamp` near Comment-202411113.
+			// todo-0 Revisit the above comment.
 			uint256 numSecondsElapsed_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
 
 			if(int256(numSecondsElapsed_) < int256(0))
