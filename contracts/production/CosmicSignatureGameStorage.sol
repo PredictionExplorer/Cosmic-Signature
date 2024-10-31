@@ -183,6 +183,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	address public lastBidder;
 
+	/// todo-0 Do we really need this?
 	/// todo-0 Rename to `lastBidTypeCode`.
 	CosmicGameConstants.BidType public lastBidType;
 

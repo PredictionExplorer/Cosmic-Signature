@@ -20,15 +20,8 @@ import { ICosmicToken } from "./ICosmicToken.sol";
 ///    A collection of addresses to be paid to. Some might need to wait until a reward becomes available.
 ///       The owner can add any number of addresses to it.
 /// Then a peson will withdraw their reward when it becomes available. The withdrawal involves minting for `msg.sender`.
+/// Then the game won't need to store an address of this in its storage.
 /// [/ToDo-202411182-1]
-
-	/// todo-1 Would it be better to mint this amount multiplied by the number of bids only on main prize claim? It would save gas.
-	/// todo-1 Although the practice of minting per bid is questionable. The number of bids per round can vary.
-	/// todo-1 Would it be better to mint a fixed amount per a period of time?
-	/// todo-1 But I would redesign marketing wallet to mint the funds for the given address, with some time constraints,
-	/// todo-1 like no more than 100 tokens per day.
-	/// todo-1 Or marketing wallet can reproduce the current minting logic by evaluating game state.
-
 interface IMarketingWallet {
 	/// @notice Emitted when the CosmicToken contract address is changed
 	/// @param newCosmicToken Address of the new CosmicToken contract
