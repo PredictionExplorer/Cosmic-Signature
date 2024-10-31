@@ -97,11 +97,10 @@ library CosmicGameConstants {
 	/// @notice Default token reward amount (100 tokens)
 	uint256 public constant TOKEN_REWARD = 100 ether;
 
-	/// @notice Default multiplier for ERC20 token rewards
+	/// @notice `erc20RewardMultiplier` default value.
 	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
 
 	/// @notice Default marketing reward amount, in CST.
-	/// todo-1 Is this enough?
 	uint256 public constant MARKETING_REWARD = 15 ether;
 
 	/// @notice Default auction length (12 hours)

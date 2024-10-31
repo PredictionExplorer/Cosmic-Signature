@@ -13,7 +13,7 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
 interface ISystemManagement is ICosmicSignatureGameStorage /* , ISystemEvents */ {
 	// function prepareMaintenance() external;
-
+	//
 	// function setRuntimeMode() external;
 
 	/// @notice Set the activation time
@@ -23,9 +23,11 @@ interface ISystemManagement is ICosmicSignatureGameStorage /* , ISystemEvents */
 
 	/// @notice Get the time until the game activates
 	/// @return The number of seconds until activation, or 0 if already activated
+	/// todo-0 Rename to `durationUntilActivation`.
+	/// todo-0 The same applies to all `timeUntil...` functions.
 	function timeUntilActivation() external view returns (uint256);
 
-	/// @notice Sets the delay duration before the next bidding round.
+	/// @notice Sets `delayDurationBeforeNextRound` value.
 	/// @dev Only callable by the contract owner.
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;

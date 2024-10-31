@@ -26,6 +26,7 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 // #endregion
 // #region
 
+// ToDo-202411179-1 relates and/or applies.
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	// #region `claimPrize`
 
@@ -54,6 +55,15 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// But after the timeout expires, anyone is welcomed to.
 			// todo-1 Here and elsewhere, use respective functions from `Context`.
 			// todo-1 Make sure this can't overflow.
+			//
+			// todo-0 Eliminate the above `require`.
+			// todo-0 Rewrite this:
+			// todo-0 (msg.sender == lastBidder) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutClaimPrize)
+			// todo-0 Throw `CosmicGameErrors.EarlyClaim` if not.
+			// todo-0 Eliminate `CosmicGameErrors.LastBidderOnly`.
+			//
+			// todo-0 But I can eliminate the prev `require` too and check it only if `msg.sender != lastBidder`.
+			// todo-0 Otherwie only assert it.
 			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize) ) {
 				revert
 					CosmicGameErrors.LastBidderOnly(

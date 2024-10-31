@@ -101,8 +101,9 @@ library CosmicGameErrors {
 	/// @notice Thrown when attempting to claim a prize too early
 	/// @param errStr Description of the error
 	/// @param claimTime The time when claiming is allowed
-	/// @param blockTimestamp The current block timestamp
-	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimestamp);
+	/// @param blockTimeStamp The current block timestamp
+	/// todo-0 Rename to `MainPrizeEarlyClaim`.
+	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error

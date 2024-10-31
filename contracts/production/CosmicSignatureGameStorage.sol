@@ -38,12 +38,16 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411173]
 	uint256 public activationTime;
 
-	/// @notice Specifies for how long to wait after main prize claim to start the next bidding round.
+	/// @notice Delay duration before the next bidding round.
+	/// Specifies for how long to wait after main prize has been claimed to start the next bidding round.
 	/// Comment-202411064 applies.
 	uint256 public delayDurationBeforeNextRound;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice On each bid, we mint this CST amount for `marketingWallet`.
+	/// Comment-202411064 applies.
+	/// @dev ToDo-202411182-1 relates.
 	/// todo-0 Rename to `marketingCstRewardAmount`.
+	/// todo-0 Even better, rename to `marketingWaletCstContributionAmount`.
 	uint256 public marketingReward;
 
 	/// @notice Comment-202411064 applies.
@@ -107,9 +111,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// But in that case the logic does not emit an event.
 	/// Comment-202411173 relates.
 	/// [/Comment-202411174]
-	/// @dev
 	/// [Comment-202411067]
-	/// We slightly exponentially increase this after every bidding round, based on `timeIncrease`.
+	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
 	/// [/Comment-202411067]
 	uint256 public nanoSecondsExtra;
 
@@ -265,7 +268,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public chronoWarriorDuration;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice Stellar Spender and Endurance Champion CST reward amount multiplier.
+	/// Comment-202411064 applies.
 	/// todo-0 Rename to `cstRewardAmountMultiplier`.
 	uint256 public erc20RewardMultiplier;
 

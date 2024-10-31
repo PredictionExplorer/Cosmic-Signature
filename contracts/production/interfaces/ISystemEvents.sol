@@ -20,7 +20,7 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
 
-	/// @notice Emitted when the marketing reward is changed.
+	/// @notice Emitted when the marketing reward amount is changed.
 	/// @param newValue The new value.
 	event MarketingRewardChanged(uint256 newValue);
 

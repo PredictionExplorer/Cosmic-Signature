@@ -21,6 +21,7 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
+	// todo-1 Why do we need exception handling here?
 	try {
 		// todo-0 This no longer exists.
 		await cosmicGameProxy.connect(testingAcct).setRuntimeMode();

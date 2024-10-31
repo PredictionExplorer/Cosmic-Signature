@@ -39,17 +39,19 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	// }
 
 	modifier onlyInactive() {
+		uint256 activationTimeCopy_ = activationTime;
 		require(
-			block.timestamp < activationTime,
-			CosmicGameErrors.SystemIsActive("Already active.", activationTime, block.timestamp)
+			block.timestamp < activationTimeCopy_,
+			CosmicGameErrors.SystemIsActive("Already active.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
 
 	modifier onlyActive() {
+		uint256 activationTimeCopy_ = activationTime;
 		require(
-			block.timestamp >= activationTime,
-			CosmicGameErrors.SystemIsInactive("Not active yet.", activationTime, block.timestamp)
+			block.timestamp >= activationTimeCopy_,
+			CosmicGameErrors.SystemIsInactive("Not active yet.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
