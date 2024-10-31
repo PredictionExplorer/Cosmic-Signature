@@ -29,12 +29,18 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IMainPrize {
 	// #region `claimPrize`
 
-	function claimPrize() external override nonReentrant onlyRuntime {
+	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.
+	function claimPrize() external override nonReentrant /*onlyActive*/ {
+		// todo-1 Maybe emove this unchecked here. It complicates things, but doesn't add a lot of value.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
 			require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
+
+			// [Comment-202411169/]
+			// #enable_asserts assert(block.timestamp >= activationTime);
+
 			require(
 				block.timestamp >= prizeTime,
 				CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
@@ -327,17 +333,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		chronoWarrior = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
 
-		if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
-			systemMode = CosmicGameConstants.MODE_MAINTENANCE;
-			emit SystemModeChanged(systemMode);
+		// if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
+		// 	systemMode = CosmicGameConstants.MODE_MAINTENANCE;
+		// 	emit SystemModeChanged(systemMode);
+		// }
 
-			// Comment-202411115 applies to `lastCstBidTimeStamp`.
-		} else {
-			// [Comment-202411112]
-			// Even if nobody bids any time soon, the CST bid price will start declining immediately.
-			// [/Comment-202411112]
-			lastCstBidTimeStamp = block.timestamp;
-		}
+		_setActivationTime(activationTime + delayDurationBeforeNextRound);
 	}
 
 	// #endregion

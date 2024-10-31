@@ -11,8 +11,9 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
 abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INFTDonations {
-	// todo-0 Didn't we discuss that an NFT donation without placing a bid could result in spamming?
-	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRuntime  {
+	/// todo-0 Didn't we discuss that an NFT donation without placing a bid could result in spamming?
+	/// todo-1 Should we allow donations even while the system is inactive?
+	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive  {
 		nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: nftAddress,
@@ -41,7 +42,8 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _nftId, numDonatedNFTs - 1);
 	}
 
-	function claimDonatedNFT(uint256 index) public override onlyRuntime {
+	/// todo-0 Allow this to execute even before activation time.
+	function claimDonatedNFT(uint256 index) public override onlyActive {
 		require(index < numDonatedNFTs, CosmicGameErrors.InvalidDonatedNFTIndex("Invalid donated NFT index", index));
 
 		CosmicGameConstants.DonatedNFT storage donatedNFT = donatedNFTs[index];
@@ -56,7 +58,7 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 		emit DonatedNFTClaimedEvent(donatedNFT.roundNum, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.nftId);
 	}
 
-	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant onlyRuntime {
+	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant /*onlyActive*/ {
 		for (uint256 i = 0; i < indices.length; i++) {
 			claimDonatedNFT(indices[i]);
 		}

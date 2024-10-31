@@ -41,8 +41,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		_bid(_data);
 	}
 
-	function _bid(bytes memory _data) internal onlyRuntime {
-
+	function _bid(bytes memory _data) internal /*onlyActive*/ {
 		BidParams memory params = abi.decode(_data, (BidParams));
 
 		if (params.randomWalkNFTId != -1) {
@@ -128,11 +127,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
-		require(
-			block.timestamp >= activationTime,
-			CosmicGameErrors.ActivationTime("Not active yet.", activationTime, block.timestamp)
-		);
+	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -234,7 +229,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
+	function bidWithCST(string memory message) external override nonReentrant /*onlyActive*/ {
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// [Comment-202409179]
@@ -323,10 +318,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		unchecked
 		// #enable_smtchecker */
 		{
-			// This would be able to underflow if treated as unsigned if we updated `lastCstBidTimeStamp` near Comment-202411113.
-			// todo-0 Revisit the above comment.
 			uint256 numSecondsElapsed_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
-
 			if(int256(numSecondsElapsed_) < int256(0))
 			{
 				numSecondsElapsed_ = 0;

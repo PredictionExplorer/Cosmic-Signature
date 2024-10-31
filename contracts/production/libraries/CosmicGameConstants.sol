@@ -100,21 +100,22 @@ library CosmicGameConstants {
 	/// @notice Default multiplier for ERC20 token rewards
 	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
 
-	/// @notice Default marketing reward amount (15 tokens)
+	/// @notice Default marketing reward amount, in CST.
+	/// todo-1 Is this enough?
 	uint256 public constant MARKETING_REWARD = 15 ether;
 
 	/// @notice Default auction length (12 hours)
 	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * SECONDS_PER_HOUR;
 
-	/// @notice System mode constants
-	/// @dev These define the operational states of the CosmicGameProxy contract.
-	uint256 public constant MODE_RUNTIME = 0; // Normal operation
-	uint256 public constant MODE_PREPARE_MAINTENANCE = 1; // Preparing for maintenance
-	uint256 public constant MODE_MAINTENANCE = 2; // System under maintenance
-
-	/// @notice Error messages for system mode checks
-	string public constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE";
-	string public constant ERR_STR_MODE_RUNTIME = "System in maintenance mode";
+	// /// @notice System mode constants
+	// /// @dev These define the operational states of the CosmicGameProxy contract.
+	// uint256 public constant MODE_RUNTIME = 0; // Normal operation
+	// uint256 public constant MODE_PREPARE_MAINTENANCE = 1; // Preparing for maintenance
+	// uint256 public constant MODE_MAINTENANCE = 2; // System under maintenance
+	//
+	// /// @notice Error messages for system mode checks
+	// string public constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE";
+	// string public constant ERR_STR_MODE_RUNTIME = "System in maintenance mode";
 
 	uint256 public constant INITIAL_NANOSECONDS_EXTRA = NANOSECONDS_PER_HOUR;
 	uint256 public constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
@@ -123,6 +124,7 @@ library CosmicGameConstants {
 	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = SECONDS_PER_DAY;
 	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = SECONDS_PER_DAY;
 	uint256 public constant INITIAL_ACTIVATION_TIME = 1_702_512_000;
+	uint256 public constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = SECONDS_PER_DAY;
 	uint256 public constant INITIAL_MAIN_PRIZE_PERCENTAGE = 25;
 	// todo-1 I added this. So now other initial percentages should be readjusted.
 	uint256 public constant INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE = 7;

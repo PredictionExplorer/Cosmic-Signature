@@ -18,10 +18,22 @@ library CosmicGameErrors {
 	// #endregion
 	// #region System Errors
 
-	/// @notice Thrown when an action is attempted in an incorrect system mode
-	/// @param errStr Description of the error
-	/// @param systemMode The current system mode
-	error SystemMode(string errStr, uint256 systemMode);
+	// /// @notice Thrown when an action is attempted in an incorrect system mode
+	// /// @param errStr Description of the error
+	// /// @param systemMode The current system mode
+	// error SystemMode(string errStr, uint256 systemMode);
+
+	/// @notice Thrown when an action is attempted before the activation time.
+	/// @param errStr Description of the error.
+	/// @param activationTime The activation time of the game.
+	/// @param blockTimeStamp The current block timestamp.
+	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
+
+	/// @notice Thrown when an action is attempted at or after the activation time.
+	/// @param errStr Description of the error.
+	/// @param activationTime The activation time of the game.
+	/// @param blockTimeStamp The current block timestamp.
+	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
 	// #endregion
 	// #region Bidding Errors
@@ -126,12 +138,6 @@ library CosmicGameErrors {
 	/// @param businessLogicAddr The address of the business logic contract
 	/// @param selector The function selector that failed
 	error CallToBusinessLogicFailed(string errStr, address businessLogicAddr, bytes4 selector);
-
-	/// @notice Thrown when an action is attempted before the activation time
-	/// @param errStr Description of the error
-	/// @param activationTime The activation time of the game
-	/// @param blockTimestamp The current block timestamp
-	error ActivationTime(string errStr, uint256 activationTime, uint256 blockTimestamp);
 
 	/// @notice Thrown when percentage validation fails
 	/// @param errStr Description of the error

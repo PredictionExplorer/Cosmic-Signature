@@ -187,8 +187,9 @@ describe("SystemManagement tests", function () {
 		await cosmicGameProxy.connect(owner).setErc20RewardMultiplier(99n);
 		expect(await cosmicGameProxy.erc20RewardMultiplier()).to.equal(99n);
 
-		expect(await cosmicGameProxy./*getSystemMode*/systemMode()).to.equal(2);
+		expect(await cosmicGameProxy.systemMode()).to.equal(2);
 
+		// todo-0 This no longer exists.
 		await expect(cosmicGameProxy.connect(owner).prepareMaintenance()).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode");
 		await expect(cosmicGameProxy.connect(addr1).setRuntimeMode()).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 		await cosmicGameProxy.setRuntimeMode();
@@ -198,7 +199,7 @@ describe("SystemManagement tests", function () {
 		await cosmicGameProxy.connect(addr2).transferOwnership(owner.address);
 		expect((await cosmicGameProxy.owner()).toString()).to.equal(owner.address.toString());
 	});
-	it("Setters are not available in run-time mode", async function () {
+	it("Setters are not available while the system is active.", async function () {
 		let runtimeMode = true;
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
@@ -219,6 +220,8 @@ describe("SystemManagement tests", function () {
 		let testAcct;
 		testAcct = hre.ethers.Wallet.createRandom();
 
+		// todo-0 Fix this. Reorder the calls.
+		// todo-0 prepareMaintenance and setDelayDurationBeforeNextRound should be available in any mode. Test that.
 		let revertStr = "System must be in MODE_MAINTENANCE";
 		await expect(cosmicGameProxy.connect(owner).setCharity(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
 		await expect(cosmicGameProxy.connect(owner).setRandomWalkNft(testAcct.address)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
@@ -249,8 +252,10 @@ describe("SystemManagement tests", function () {
 		await expect(cosmicGameProxy.connect(owner).setMaxMessageLength(99n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0);
 		await expect(cosmicGameProxy.connect(owner).setErc20RewardMultiplier(11n)).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode");
 		await expect(cosmicGameProxy.connect(owner).setRuntimeMode()).to.be.revertedWithCustomError(cosmicGameProxy,"SystemMode").withArgs(revertStr,0n);
+		// todo-0 This no longer exists.
 		await cosmicGameProxy.connect(owner).prepareMaintenance();
 	});
+	// todo-0 Rephrase.
 	it("In maintenance mode, runtime-mode funtions are not available", async function () {
 		let runtimeMode = false;
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
@@ -400,7 +405,9 @@ describe("SystemManagement tests", function () {
 		let sysMode = await cosmicGameProxy.systemMode();
 		expect(sysMode.toString()).to.equal('0');
 
+		// todo-0 This no longer exists.
 		await cosmicGameProxy.connect(owner).prepareMaintenance();
+		// todo-0 This no longer exists.
 		await expect(cosmicGameProxy.connect(addr1).prepareMaintenance()).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
 
 		sysMode = await cosmicGameProxy.systemMode();

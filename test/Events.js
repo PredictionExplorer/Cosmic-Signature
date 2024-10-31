@@ -282,7 +282,7 @@ describe("Events", function () {
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await expect(cosmicGameProxy.connect(bidder1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors,"ActivationTime");
+		await expect(cosmicGameProxy.connect(bidder1).bid(params, { value: bidPrice })).to.be.revertedWithCustomError(contractErrors, "ActivationTime");
 
 		await expect(
 			bidder2.sendTransaction({

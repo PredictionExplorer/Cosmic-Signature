@@ -73,7 +73,11 @@ contract CosmicGameOpenBid is
 		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
 		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
-		lastCstBidTimeStamp = activationTime;
+		delayDurationBeforeNextRound = CosmicGameConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
+
+		// Comment-202411168 applies.
+		lastCstBidTimeStamp = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+
 		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		chronoWarriorDuration = uint256(int256(-1));
@@ -81,7 +85,7 @@ contract CosmicGameOpenBid is
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		marketingReward = CosmicGameConstants.MARKETING_REWARD;
 		maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
-		systemMode = CosmicGameConstants.MODE_MAINTENANCE;
+		// systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 
 		// Initialize percentages
 		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;

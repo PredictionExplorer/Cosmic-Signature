@@ -169,6 +169,8 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 	function setActivationTimeRaw(uint256 activationTime_) external {
 		activationTime = activationTime_;
+
+		// Comment-202411168 applies.
 		lastCstBidTimeStamp = activationTime_;
 	}
 	// function depositStakingCST() external payable {

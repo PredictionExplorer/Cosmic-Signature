@@ -22,6 +22,7 @@ async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
 	try {
+		// todo-0 This no longer exists.
 		await cosmicGameProxy.connect(testingAcct).prepareMaintenance();
 	} catch(e) {
 		console.log(e);

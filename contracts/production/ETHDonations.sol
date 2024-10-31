@@ -10,14 +10,16 @@ import { IETHDonations } from "./interfaces/IETHDonations.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, IETHDonations {
-	function donate() external payable override onlyRuntime {
+	/// todo-1 Should we allow donations even while the system is inactive?
+	function donate() external payable override onlyActive {
 		// todo-1 See Comment-202409215.
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 		emit DonationEvent(msg.sender, msg.value, roundNum);
 	}
 
-	function donateWithInfo(string calldata _data) external payable override onlyRuntime {
-		// todo-1 Comment-202409215 should not apply here.
+	/// todo-1 Should we allow donations even while the system is inactive?
+	function donateWithInfo(string calldata _data) external payable override onlyActive {
+		// todo-1 Unlike in `donate`, Comment-202409215 should not apply here.
 		// todo-1 But should we enforce a minimum donation?
 		// todo-1 But this whole ETH donation thing is questionable. Why don't we force the user within to show a message
 		// todo-1 to simply bid with a message?
