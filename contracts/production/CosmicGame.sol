@@ -123,7 +123,7 @@ contract CosmicGame is
 		numRaffleNFTWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
 		numRaffleNFTWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
 
-		// todo-0 I have just hardcoded a number. It's more gas-efficient. Comment. Tell Nick.
+		// todo-0 I have just hardcoded some number. It's more gas-efficient this way. Comment. Tell Nick.
 		// Issue. It appears that on upgrade this will be unnecessary.
 		raffleEntropy = bytes32(uint256(202411186)); // keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 	}
