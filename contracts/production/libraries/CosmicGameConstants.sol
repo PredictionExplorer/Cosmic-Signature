@@ -47,16 +47,18 @@ library CosmicGameConstants {
 		IERC721 nftAddress;
 		uint256 nftId;
 		uint256 roundNum;
+		// todo-1 Do we need this? Woudn't `nftAddress.ownerOf` show this?
+		// todo-1 What if someone donates the same NFT again?
 		bool claimed;
 	}
 
-	/// @notice Information about a donation
-	/// @dev Stores details about donations made to the game
+	/// @notice Details about a donation made to the game.
+	/// Used for an ETH donation.
 	struct DonationInfoRecord {
 		address donor;
 		uint256 amount;
 
-		/// @notice JSON-formatted string with additional data
+		/// @notice JSON-formatted string with additional data.
 		string data;
 	}
 
