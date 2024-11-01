@@ -112,6 +112,6 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @notice Obtains the winner of a specific round.
 	/// @param roundNum_ The round number.
-	/// @return The winner address.
+	/// @return The winner address, or zero if `roundNum_` is invalid or the round has not ended yet.
 	function tryGetWinnerByRoundNum(uint256 roundNum_) external view returns (address);
 }

@@ -37,7 +37,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 
 	// #endregion
 
-	function bid(bytes memory _data) public payable override nonReentrant {
+	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
 		_bid(_data);
 	}
 

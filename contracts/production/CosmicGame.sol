@@ -164,7 +164,7 @@ contract CosmicGame is
 	function _authorizeUpgrade(address newImplementation_) internal override {
 	}
 
-	// todo-1 Should this be `onlyInactive`?
+	/// todo-1 Should this be `onlyInactive`?
 	function upgradeTo(address _newImplementation) public override onlyOwner {
 		_authorizeUpgrade(_newImplementation);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
