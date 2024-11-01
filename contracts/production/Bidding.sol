@@ -252,7 +252,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// );
 
 		// [Comment-202409177]
-		// Burn the CST tokens used for bidding
+		// Burn the CST tokens used for bidding.
+		// ToDo-202411182-1 relates and/or applies.
 		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 
@@ -269,8 +270,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		uint256 newStartingBidPriceCST;
 		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
 			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
-		}
-		else {
+		} else {
 			// #enable_smtchecker /*
 			unchecked
 			// #enable_smtchecker */

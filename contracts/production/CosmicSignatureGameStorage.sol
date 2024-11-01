@@ -243,7 +243,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-0 For at least how long it will last?
 	mapping(uint256 roundNum => address bidderAddress) public winners;
 
-	/// @dev This will remain zero if nobody bids with CST.
+	/// @dev This will remain zero if nobody bids with CST or everybody bids with a zero CST price.
+	/// Comment-202409179 relates.
 	address public stellarSpender;
 
 	uint256 public stellarSpenderTotalSpentCst;

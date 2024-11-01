@@ -263,8 +263,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		uint256 newStartingBidPriceCST;
 		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
 			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
-		}
-		else {
+		} else {
 			// #enable_smtchecker /*
 			unchecked
 			// #enable_smtchecker */

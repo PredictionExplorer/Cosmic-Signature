@@ -19,11 +19,14 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 	/// ToDo-202408114-1 applies.
 	constructor() ERC20("CosmicToken", "CST") Ownable(msg.sender) ERC20Permit("CosmicToken") {}
 
+	/// todo-1 `onlyOwner` is really meant to be only the game contract, right?
+	/// todo-1 See `CosmicSignature`. It's done right there.
+	/// todo-1 Maybe we need a big array of authorized minters, also in `CosmicSignature`.
 	function mint(address to, uint256 amount) public override onlyOwner {
 		_mint(to, amount);
 	}
 
-	// todo-1 Bug: it looks like anybody can burn someone's tokens. Make this `onlyOwner`?
+	// todo-1 Bug: it looks like anybody can burn someone's tokens. Make this `onlyOwner` (or only game) like `mint`?
 	// todo-1 Make some `public` functions `external`.
 	// todo-1 Make some `public`/`external` functions `private`.
 	function burn(address account, uint256 amount) override public {
@@ -59,7 +62,6 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 	// function _burn(address account, uint256 amount) internal override(ERC20, ERC20Votes) {
 	// 	super._burn(account, amount);
 	// }
-
 
 	function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
 		super._update(from, to, value);
