@@ -127,6 +127,16 @@ library CosmicGameConstants {
 		uint256 lastBidTimeStamp;
 	}
 
+	/// @notice Details about a donation made to the game.
+	/// Used for an ETH donation.
+	struct DonationInfoRecord {
+		address donor;
+		uint256 amount;
+
+		/// @notice JSON-formatted string with additional data.
+		string data;
+	}
+
 	/// @notice Information about a donated NFT
 	/// @dev Stores details about NFTs donated to the game
 	struct DonatedNFT {
@@ -137,15 +147,5 @@ library CosmicGameConstants {
 		// todo-1 What if someone donates the same NFT again?
 		// todo-1 Make sure it's impossible that we transfer someone's NFT to someone else.
 		bool claimed;
-	}
-
-	/// @notice Details about a donation made to the game.
-	/// Used for an ETH donation.
-	struct DonationInfoRecord {
-		address donor;
-		uint256 amount;
-
-		/// @notice JSON-formatted string with additional data.
-		string data;
 	}
 }
