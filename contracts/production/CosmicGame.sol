@@ -60,6 +60,11 @@ contract CosmicGame is
 		// ToDo-202408114-1 applies.
 		__Ownable_init(_gameAdministrator);
 
+		// todo-1 Think again which of these should not be reset on upgrade. Comment.
+		// todo-1 I wrote some comments already.
+		// todo-1 Really,it lloks like most variables should not be reset on upgrade.
+		// todo-1 So maybe write one common comment to revisit this when developing a new upgrade contract.
+
 		// systemMode = CosmicGameConstants.MODE_MAINTENANCE;
 		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicGameConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
@@ -82,7 +87,10 @@ contract CosmicGame is
 		// todo-1 This is already zero, right? Assert?
 		// todo-1 But on ipgrade this won't be zero, right? So don't reset this back to zero on upgrade?
 		roundNum = 0;
+
+		// Issue. It appears that on upgrade this will be incorrect.
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
+
 		initialBidAmountFraction = CosmicGameConstants.INITIAL_BID_AMOUNT_FRACTION;
 		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;
 		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;

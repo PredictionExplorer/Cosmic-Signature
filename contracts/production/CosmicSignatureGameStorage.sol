@@ -50,10 +50,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-0 Even better, rename to `marketingWaletCstContributionAmount`.
 	uint256 public marketingReward;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The maximum allowed length of a bid message.
 	/// [Comment-202409143]
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
+	/// Comment-202411064 applies.
 	uint256 public maxMessageLength;
 
 	// #endregion
@@ -133,7 +134,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// For the first round, this equals zero.
 	uint256 public roundNum;
 
-	/// @notice ETH.
+	/// @notice ETH bid price.
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
@@ -141,7 +142,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public bidPrice;
 
 	/// @notice Comment-202411064 applies.
-	/// Rename to `initialEthBidPriceDivisor`.
+	/// Rename to `firstEthBidPriceDivisor`.
 	uint256 public initialBidAmountFraction;
 
 	/// @notice Comment-202411064 applies.
