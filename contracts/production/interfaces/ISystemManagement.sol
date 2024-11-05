@@ -9,9 +9,9 @@ import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-// import { ISystemEvents } from "./ISystemEvents.sol";
+import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface ISystemManagement is ICosmicSignatureGameStorage /* , ISystemEvents */ {
+interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	// function prepareMaintenance() external;
 	//
 	// function setRuntimeMode() external;

@@ -74,6 +74,19 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		_setActivationTime(newValue_);
 	}
 
+	function _setActivationTime(uint256 newValue_) internal {
+		activationTime = newValue_;
+
+		// [Comment-202411168]
+		// One might want to ensure that this is not in the past.
+		// But `activationTime` is really not supposed to be in the past.
+		// So keeping it simple and gas-effiicient.
+		// [/Comment-202411168]
+		lastCstBidTimeStamp = newValue_;
+
+		emit ActivationTimeChanged(newValue_);
+	}
+
 	function timeUntilActivation() external view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked

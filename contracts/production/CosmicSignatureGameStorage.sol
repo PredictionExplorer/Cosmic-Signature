@@ -290,22 +290,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	bytes32 public raffleEntropy;
 
 	// #endregion
-	// #region `_setActivationTime`
-
-	function _setActivationTime(uint256 newValue_) internal {
-		activationTime = newValue_;
-
-		// [Comment-202411168]
-		// One might want to ensure that this is not in the past.
-		// But `activationTime` is really not supposed to be in the past.
-		// So keeping it simple and gas-effiicient.
-		// [/Comment-202411168]
-		lastCstBidTimeStamp = newValue_;
-
-		emit ActivationTimeChanged(newValue_);
-	}
-
-	// #endregion
 }
 
 // #endregion
