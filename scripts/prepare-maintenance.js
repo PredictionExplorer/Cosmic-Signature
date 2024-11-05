@@ -1,3 +1,5 @@
+// todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
+
 const hre = require("hardhat");
 
 async function getCosmicGameProxyContract() {
@@ -21,12 +23,14 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
+	// todo-1 Why do we need error handling here?
 	try {
-		// todo-0 This no longer exists.
+		// todo-0 This function no longer exists.
 		await cosmicGameProxy.connect(testingAcct).prepareMaintenance();
 	} catch(e) {
 		console.log(e);
 	}
+	// todo-0 This function no longer exists.
 	let sysMode = await cosmicGameProxy.systemMode();
 	console.log("systemMode = "+sysMode.toString());
 	if (sysMode.toString() == "1") {

@@ -23,8 +23,7 @@ describe("Staking RandomWalk tests", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -71,7 +70,7 @@ describe("Staking RandomWalk tests", function () {
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice })
+		await randomWalkNFT.mint({ value: tokenPrice });
 
 		const StakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
 		let newStakingWalletRandomWalkNft = await StakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());
@@ -120,7 +119,7 @@ describe("Staking RandomWalk tests", function () {
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice })
+		await randomWalkNFT.mint({ value: tokenPrice });
 
 		const StakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
 		let newStakingWalletRandomWalkNft = await StakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());
@@ -151,14 +150,16 @@ describe("Staking RandomWalk tests", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft");
 		let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 		await cosmicGameProxy.setStakingWalletRandomWalkNft(await newStakingWalletRandomWalkNft.getAddress());
-		await cosmicGameProxy.setRuntimeMode();
+		// await cosmicGameProxy.setRuntimeMode();
+		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
+		await cosmicGameProxy.setActivationTime(latestBlock_.timestamp);
 		let sampleTokenId = 33;
 		let tokenStaked = await newStakingWalletRandomWalkNft.isTokenStaked(sampleTokenId);
 		expect(tokenStaked).to.equal(false);
@@ -221,11 +222,11 @@ describe("Staking RandomWalk tests", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,true);
+		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 
 		for(let i=0; i < 10 ;i++) {
 			let tokenPrice = await randomWalkNFT.getMintPrice();
-			await randomWalkNFT.mint({ value: tokenPrice })
+			await randomWalkNFT.mint({ value: tokenPrice });
 		}
 		for (let i=0; i < 10; i++) {
 			await randomWalkNFT.setApprovalForAll(await stakingWalletRandomWalkNft.getAddress(), true);
@@ -251,11 +252,10 @@ describe("Staking RandomWalk tests", function () {
 			let o = await randomWalkNFT.ownerOf(i);
 			expect(o).to.equal(owner.address);
 		}
-
-	})
+	});
 	it("The random picking of winner from StakingWalletRandomWalkNft is really random", async function () {
 		const signers = await hre.ethers.getSigners();
-		let owner = signers[0];
+		const owner = signers[0];
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -268,33 +268,37 @@ describe("Staking RandomWalk tests", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false,false);
+		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
-		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
+		const newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		await newCosmicSignature.waitForDeployment();
 
 		const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
-		let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());
+		const newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(
+			await randomWalkNFT.getAddress()
+		);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 
 		// await expect(newStakingWalletRandomWalkNft.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NoStakedNfts");
-		const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0xffff'));
-		expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
+		{
+			const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0xffff'));
+			expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
+		}
 
-		let numSigners = 20;
-		let numLoops = 50;
-		let randomSeed = 11235813; // fib
-		for (let i=0; i<numSigners; i++) {
-			let signer = signers[i];
+		const numSigners = 20;
+		const numLoops = 50;
+		// const randomSeed = 11235813; // fib
+		for (let i = 0; i < numSigners; i++) {
+			const signer = signers[i];
 			await randomWalkNFT.connect(signer).setApprovalForAll(await newStakingWalletRandomWalkNft.getAddress(), true);
 		}
-		for (let i=0; i<numSigners; i++) {
-			let signer = signers[i];
-			for (let j=0; j<numLoops; j++) {
+		for (let i = 0; i < numSigners; i++) {
+			const signer = signers[i];
+			for (let j = 0; j < numLoops; j++) {
 				let mintPrice = await randomWalkNFT.getMintPrice();
 				await randomWalkNFT.connect(signer).mint({ value: mintPrice });
-				let nftId = i*numLoops+ j;
+				const nftId = i * numLoops + j;
 				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId);
 			}
 		}
@@ -303,11 +307,11 @@ describe("Staking RandomWalk tests", function () {
 		// then we consider randomness works. Sample size is 300 (30% of the population)
 		// Now the same process for RandomWalk verification
 		{
-			let luckyStakers = {};
-			let numSamples = 300;
-			for (let i=0; i<numSamples; i++) {
-				let r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
-				let luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
+			const luckyStakers = {};
+			const numSamples = 300;
+			for (let i = 0; i < numSamples; i++) {
+				const r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
+				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
 				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {
@@ -316,10 +320,10 @@ describe("Staking RandomWalk tests", function () {
 				numToks = numToks + 1;
 				luckyStakers[luckyAddr] = numToks;
 			}
-			for (let i=0; i<numSigners; i++) {
-				let signer = signers[i];
-				let numToks = luckyStakers[signer.address];
-				let msg = "The raffle algorithm for holders is not random, staker "+signer.address;
+			for (let i = 0; i < numSigners; i++) {
+				const signer = signers[i];
+				const numToks = luckyStakers[signer.address];
+				const msg = "The raffle algorithm for holders is not random, staker " + signer.address;
 				if (numToks === undefined) {
 					throw msg;
 				}
@@ -328,7 +332,7 @@ describe("Staking RandomWalk tests", function () {
 				}
 			}
 		}
-	})
+	});
 	it("Shouldn't be possible to use a token twice for stake/unstake", async function () {
 		const {
 			cosmicGameProxy,
@@ -353,7 +357,7 @@ describe("Staking RandomWalk tests", function () {
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
 		let newCosmicSignature = await CosmicSignature.deploy(owner.address);
 		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.mint({ value: tokenPrice })
+		await randomWalkNFT.mint({ value: tokenPrice });
 
 		const StakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
 		let newStakingWalletRandomWalkNft = await StakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());

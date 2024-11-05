@@ -22,8 +22,7 @@ describe("CosmicSignature tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -57,7 +56,7 @@ describe("CosmicSignature tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
+		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
 
 		await expect(
 			cosmicSignature.connect(addr1).mint(addr1.address, 0n),
@@ -71,7 +70,7 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature.connect(owner).mint(hre.ethers.ZeroAddress, 0n),
 		).to.be.revertedWithCustomError(cosmicSignature,"ZeroAddress");
 
-	})
+	});
 	it("setTokenGenerationScriptURL() works as expected", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const transferOwnership = false;
@@ -85,12 +84,12 @@ describe("CosmicSignature tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
+		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
 
 		await cosmicSignature.connect(owner).setTokenGenerationScriptURL("url://");
 		expect(await cosmicSignature.tokenGenerationScriptURL()).to.equal("url://");
 		await expect(cosmicSignature.connect(addr1).setTokenGenerationScriptURL("none")).to.be.revertedWithCustomError(cosmicGameProxy,"OwnableUnauthorizedAccount");
-	})
+	});
 	it("Should be possible to setTokenName()", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
@@ -144,4 +143,4 @@ describe("CosmicSignature tests", function () {
 		await cosmicSignature.connect(owner).setBaseURI("somebase/");
 		expect(await cosmicSignature.tokenURI(0n)).to.equal("somebase/0");
 	});
-})
+});

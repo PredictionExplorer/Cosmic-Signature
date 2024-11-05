@@ -10,9 +10,9 @@ import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 
-/// @notice Both CST and ETH tokens have the same scale, meaning the minimum amount equals 1 Wei,
+/// @notice The CST has the same scale as ETH, meaning the minimum amount equals 1 Wei,
 /// which makes it possible to use Solidity syntax, such as `1 ether`, to specify an amount in CST.
-/// todo-0 Make sense to move `Ownable` to the beginning of the base contract list?
+/// todo-1 Make sense to move `Ownable` to the beginning of the base contract list?
 contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ICosmicToken {
 	/// @notice Initializes the CosmicToken contract
 	/// @dev Sets the token name to "CosmicToken" and symbol to "CST"
@@ -21,16 +21,16 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 
 	/// todo-1 `onlyOwner` is really meant to be only the game contract, right?
 	/// todo-1 See `CosmicSignature`. It's done right there.
-	/// todo-1 Maybe we need a big array of authorized minters, also in `CosmicSignature`.
-	function mint(address to, uint256 amount) public override onlyOwner {
-		_mint(to, amount);
+	/// todo-1 Maybe we need a big array of authorized minters/burners, also in `CosmicSignature`.
+	function mint(address to, uint256 value) public override onlyOwner {
+		_mint(to, value);
 	}
 
-	// todo-1 Bug: it looks like anybody can burn someone's tokens. Make this `onlyOwner` (or only game) like `mint`?
-	// todo-1 Make some `public` functions `external`.
-	// todo-1 Make some `public`/`external` functions `private`.
-	function burn(address account, uint256 amount) override public {
-		_burn(account, amount);
+	/// todo-1 Make some `public` functions `external`.
+	/// todo-1 Make some `public`/`external` functions `private`.
+	/// todo-1 I added `onlyOwner`. Is it correct?
+	function burn(address account, uint256 value) public override onlyOwner {
+		_burn(account, value);
 	}
 
 	// The following functions are overrides required by Solidity.

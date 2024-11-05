@@ -8,13 +8,13 @@ import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
 interface ISystemEvents {
-	// /// @notice Emitted when the system mode is changed
-	// /// @param newSystemMode The new system mode
+	// /// @notice Emitted when the system mode is changed.
+	// /// @param newSystemMode The new system mode.
 	// event SystemModeChanged(uint256 newSystemMode);
 
-	/// @notice Emitted when the activation time is changed
-	/// @param newActivationTime The new activation time
-	event ActivationTimeChanged(uint256 newActivationTime);
+	/// @notice Emitted when the activation time is changed.
+	/// @param newValue The new value.
+	event ActivationTimeChanged(uint256 newValue);
 
 	/// @notice Emitted when the delay duration before the next bidding round is changed.
 	/// @param newValue The new value.

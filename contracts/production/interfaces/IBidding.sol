@@ -46,7 +46,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @param message The bidder's message
 	function bidWithCST(string memory message) external;
 
-	/// @notice Obtains the current price that a bidder is required to pay to place a CST bid.
+	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// In our game, the price decreases linearly over the Dutch auction duration, and can become zero.
 	/// @return The CST price, in Wei.
 	/// @dev Comment-202409179 relates.

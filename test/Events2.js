@@ -21,8 +21,7 @@ describe("Events2", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -49,6 +48,9 @@ describe("Events2", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, ethPrizesWallet, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
 
 		// we need to mint RWalk tokens for all bidders that participate to avoid missing events
 		let tokenPrice = await randomWalkNFT.getMintPrice();

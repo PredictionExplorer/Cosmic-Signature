@@ -3,7 +3,7 @@ const { basicDeployment } = require("../src/Deploy.js");
 
 const fs = require("fs");
 
-task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) => {
+task("deploy-cosmicgame", "Deploys contracts to a network", async (args, hre) => {
 	let configFile = args.deployconfig;
 	if (typeof configFile === "undefined" || configFile.length == 0) {
 		console.log("Please provide config file : --deployconfig [file_path]");
@@ -36,11 +36,14 @@ task("deploy-cosmicgame", "Deploys contracts to a  network", async (args, hre) =
 		cosmicGame,
 	} = await basicDeployment(
 		deployerAcct,
-		config_params.randomWalkAddr,
+		config_params.randomWalkNftAddr,
 		config_params.activationTime,
 		config_params.charityAddr,
-		config_params.transferOwnership,
-		config_params.switchToRuntime,
+		config_params.transferOwnership
+
+		// // todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
+		// // todo-0 So I have commented this out.
+		// config_params.switchToRuntime
 	);
 	console.log("contracts deployed");
 	if (config_params.donateToContract == true) {

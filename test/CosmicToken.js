@@ -22,8 +22,7 @@ describe("CosmicToken tests", function () {
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -53,4 +52,4 @@ describe("CosmicToken tests", function () {
 			cosmicToken.nonces(owner.address),
 		).not.to.be.reverted;
 	});
-})
+});

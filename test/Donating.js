@@ -24,8 +24,7 @@ describe("Donation tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -93,6 +92,9 @@ describe("Donation tests", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let mintPrice = await randomWalkNFT.getMintPrice();

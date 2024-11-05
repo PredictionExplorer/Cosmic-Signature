@@ -62,7 +62,7 @@ contract CosmicGame is
 
 		// todo-1 Think again which of these should not be reset on upgrade. Comment.
 		// todo-1 I wrote some comments already.
-		// todo-1 Really,it lloks like most variables should not be reset on upgrade.
+		// todo-1 Really,it looks like most variables should not be reset on upgrade.
 		// todo-1 So maybe write one common comment to revisit this when developing a new upgrade contract.
 
 		// systemMode = CosmicGameConstants.MODE_MAINTENANCE;
@@ -96,8 +96,14 @@ contract CosmicGame is
 		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 
-		// Comment-202411168 applies.
-		lastCstBidTimeStamp = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+		// [Comment-202411211]
+		// If this condition is `true` it's likely that `setActivationTime` will not be called,
+		// which implies that this is likely our last chance to initialize `lastCstBidTimeStamp`.
+		// [/Comment-202411211]
+		if (CosmicGameConstants.INITIAL_ACTIVATION_TIME < CosmicGameConstants.TIMESTAMP_9999_12_31) {
+			// Comment-202411168 applies.
+			lastCstBidTimeStamp = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+		}
 
 		// [ToDo-202409199-0]
 		// It's very likely a bug that we assign a twice smaller value here.
@@ -168,12 +174,12 @@ contract CosmicGame is
 	function upgradeTo(address _newImplementation) public override onlyOwner {
 		_authorizeUpgrade(_newImplementation);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		 // todo-0 This event has been eliminated.
-		 // todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
-		 // todo-0 So I have refactored this to emit that same event.
-		 // todo-0 But would it be better to call that function here?
-		 // todo-0 Nick, please take a closer look at this.
-		 // emit ERC1967Utils.Upgraded(_newImplementation);
-		 emit IERC1967.Upgraded(_newImplementation);
+		// todo-0 This event has been eliminated.
+		// todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
+		// todo-0 So I have refactored this to emit that same event.
+		// todo-0 But would it be better to call that function here?
+		// todo-0 Nick, please take a closer look at this.
+		// emit ERC1967Utils.Upgraded(_newImplementation);
+		emit IERC1967.Upgraded(_newImplementation);
 	}
 }

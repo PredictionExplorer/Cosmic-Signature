@@ -23,7 +23,7 @@ async function main() {
 		marketingWallet,
 		cosmicGameImplementation,
 	} =
-		await basicDeploymentAdvanced("SelfdestructibleCosmicGameProxy",deployerAcct, "", 0, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
+		await basicDeploymentAdvanced("SelfdestructibleCosmicGameProxy", deployerAcct, "", 1, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
 	console.log("CosmicGameProxy address:", cosmicGameProxy.address);
 	console.log("CosmicToken address:", cosmicToken.address);
 	console.log("CosmicSignature address:", cosmicSignature.address);

@@ -18,20 +18,20 @@ library CosmicGameErrors {
 	// #endregion
 	// #region System Errors
 
-	// /// @notice Thrown when an action is attempted in an incorrect system mode
-	// /// @param errStr Description of the error
-	// /// @param systemMode The current system mode
+	// /// @notice Thrown when an action is attempted in an incorrect system mode.
+	// /// @param errStr Description of the error.
+	// /// @param systemMode The current system mode.
 	// error SystemMode(string errStr, uint256 systemMode);
 
-	/// @notice Thrown when an action is attempted before the activation time.
+	/// @notice Thrown when an action is attempted before the game activation time.
 	/// @param errStr Description of the error.
-	/// @param activationTime The activation time of the game.
+	/// @param activationTime The game activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	/// @notice Thrown when an action is attempted at or after the activation time.
+	/// @notice Thrown when an action is attempted at or after the game activation time.
 	/// @param errStr Description of the error.
-	/// @param activationTime The activation time of the game.
+	/// @param activationTime The game activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 

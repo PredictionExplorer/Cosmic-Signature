@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
@@ -130,6 +130,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 			}
 		}
 
+		// todo-1 Emit this before sending refund.
 		emit BidEvent(
 			lastBidder,
 			roundNum,
@@ -197,6 +198,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 	}
 
 	function getBidPrice() public view override returns (uint256) {
+		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 

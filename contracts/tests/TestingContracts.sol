@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
-import { CosmicToken } from "../production/CosmicToken.sol";
-import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
-import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
+import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 import { IEthPrizesWallet } from "../production/interfaces/IEthPrizesWallet.sol";
 import { EthPrizesWallet } from "../production/EthPrizesWallet.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
-import { CosmicGame } from "../production/CosmicGame.sol";
-import { Bidding } from "../production/Bidding.sol";
-import { NFTDonations } from "../production/NFTDonations.sol";
+import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
+import { CosmicToken } from "../production/CosmicToken.sol";
 import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "../production/CosmicSignature.sol";
-import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
-import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
+import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
+import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { Bidding } from "../production/Bidding.sol";
+import { NFTDonations } from "../production/NFTDonations.sol";
+import { CosmicGame } from "../production/CosmicGame.sol";
 
 contract BrokenToken {
 	// used to test revert() statements in token transfers in claimPrize() function
@@ -51,7 +51,7 @@ contract BrokenERC20 {
 contract BrokenCharity {
 	// uint256 private counter;
 	receive() external payable {
-		require(false, "Test deposit failed");
+		require(false, "Test deposit failed.");
 	}
 }
 
@@ -167,18 +167,18 @@ contract SpecialCosmicGame is CosmicGame {
 	function setTokenContractRaw(ICosmicToken addr) external {
 		token = CosmicToken(address(addr));
 	}
-	function setActivationTimeRaw(uint256 activationTime_) external {
-		activationTime = activationTime_;
-
-		// Comment-202411168 applies.
-		lastCstBidTimeStamp = activationTime_;
-	}
+	// function setActivationTimeRaw(uint256 newValue_) external {
+	// 	activationTime = newValue_;
+	//
+	// 	// Comment-202411168 applies.
+	// 	lastCstBidTimeStamp = newValue_;
+	// }
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
-	// 	(bool success, ) = address(stakingWalletCosmicSignatureNft).call{ value: msg.value }(
+	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{ value: msg.value }(
 	// 		abi.encodeWithSelector(StakingWalletCosmicSignatureNft.deposit.selector)
 	// 	);
-	// 	if (!success) {
+	// 	if ( ! isSuccess_ ) {
 	// 		assembly {
 	// 			let ptr := mload(0x40)
 	// 			let size := returndatasize()
@@ -188,13 +188,12 @@ contract SpecialCosmicGame is CosmicGame {
 	// 	}
 	// }
 	function depositToStakingWalletCosmicSignatureNftIfPossible() external payable {
-		// todo-0 I added the passing of `roundNum`. Is it correct?
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
 	}
-	function mintCST(address to, uint256 roundNum) external {
-		(bool success, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to, roundNum));
+	function mintCST(address to_, uint256 roundNum_) external {
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to_, roundNum_));
 
-		if (!success) {
+		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
 				let size := returndatasize()
@@ -236,8 +235,8 @@ contract MaliciousToken1 is ERC721 {
 	}
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// the following call should revert
-		(bool success, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector,address(this),0));
-		if (!success) {
+		(bool isSuccess_, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector,address(this),0));
+		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
 				let size := returndatasize()
@@ -262,8 +261,8 @@ contract MaliciousToken2 is ERC721 {
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
 		// the following call should revert
-		(bool success, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(CosmicGame.bidAndDonateNFT.selector,param_data,address(this),0));
-		if (!success) {
+		(bool isSuccess_, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(CosmicGame.bidAndDonateNFT.selector,param_data,address(this),0));
+		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
 				let size := returndatasize()

@@ -8,6 +8,7 @@ import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -74,8 +75,11 @@ contract CosmicGameOpenBid is
 		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
 
-		// Comment-202411168 applies.
-		lastCstBidTimeStamp = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+		// Comment-202411211 applies.
+		if (CosmicGameConstants.INITIAL_ACTIVATION_TIME < CosmicGameConstants.TIMESTAMP_9999_12_31) {
+			// Comment-202411168 applies.
+			lastCstBidTimeStamp = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+		}
 
 		// ToDo-202409199-0 applies.
 		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
@@ -123,8 +127,11 @@ contract CosmicGameOpenBid is
 	function _authorizeUpgrade(address newImplementation_) internal override {
 	}
 
+	/// todo-1 Should this be `onlyInactive`?
 	function upgradeTo(address _newImplementation) public override onlyOwner {
 		_authorizeUpgrade(_newImplementation);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
+		// todo-0 See todos in `CosmicGame.upgradeTo` about making sure that this is correct.
+		emit IERC1967.Upgraded(_newImplementation);
 	}
 }

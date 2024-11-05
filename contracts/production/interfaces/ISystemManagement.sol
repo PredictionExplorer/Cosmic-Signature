@@ -16,18 +16,18 @@ interface ISystemManagement is ICosmicSignatureGameStorage /* , ISystemEvents */
 	//
 	// function setRuntimeMode() external;
 
-	/// @notice Set the activation time
-	/// @dev Only callable by the contract owner
-	/// @param activationTime_ The new activation time
-	function setActivationTime(uint256 activationTime_) external;
+	/// @notice Sets `activationTime`.
+	/// @dev Only callable by the contract owner.
+	/// @param newValue_ The new value.
+	function setActivationTime(uint256 newValue_) external;
 
-	/// @notice Get the time until the game activates
-	/// @return The number of seconds until activation, or 0 if already activated
+	/// @notice Calculates the duration until the game activates.
+	/// @return The number of seconds until activation or 0 if already activated.
 	/// todo-0 Rename to `durationUntilActivation`.
 	/// todo-0 The same applies to all `timeUntil...` functions.
 	function timeUntilActivation() external view returns (uint256);
 
-	/// @notice Sets `delayDurationBeforeNextRound` value.
+	/// @notice Sets `delayDurationBeforeNextRound`.
 	/// @dev Only callable by the contract owner.
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;

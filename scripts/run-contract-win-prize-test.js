@@ -14,8 +14,8 @@ async function main() {
 	await cosmicGameProxy.connect(addr1).bid("addr1 bids", { value: bidPrice });
 	bidPrice = await cosmicGameProxy.getBidPrice();
 	await cosmicGameProxy.connect(addr2).bid("addr2 bids", { value: bidPrice });
-	let randomWalkAddr = await cosmicGameProxy.randomWalkNft();
-	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
+	let randomWalkNftAddr_ = await cosmicGameProxy.randomWalkNft();
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 	let rwalkPrice = await randomWalkNft.getMintPrice();
 	await randomWalkNft.connect(owner).setApprovalForAll(cosmicGameProxy.address, true);
 	await randomWalkNft.connect(owner).setApprovalForAll(bidderContract.address, true);
@@ -28,7 +28,7 @@ async function main() {
 	bidPrice = await cosmicGameProxy.getBidPrice();
 	console.log("tokenid= " + token_id);
 	await randomWalkNft.connect(owner).transferFrom(owner.address, bidderContract.address, token_id);
-	await bidderContract.connect(owner).doBidAndDonate(randomWalkAddr, token_id, { value: bidPrice });
+	await bidderContract.connect(owner).doBidAndDonate(randomWalkNftAddr_, token_id, { value: bidPrice });
 
 	bidPrice = await cosmicGameProxy.getBidPrice();
 	await bidderContract.connect(owner).doBid({ value: bidPrice });

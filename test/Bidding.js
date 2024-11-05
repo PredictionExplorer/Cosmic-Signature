@@ -33,8 +33,7 @@ describe("Bidding tests", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGame,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -62,7 +61,14 @@ describe("Bidding tests", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
-		let donationAmount = hre.ethers.parseEther("10");
+
+		// [ToDo-202411202-1]
+		// This is a quick hack.
+		// To be revisited.
+		// [/ToDo-202411202-1]
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
+
+		const donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		expect(await cosmicGameProxy.mainPrizeAmount()).to.equal((donationAmount * 25n) / 100n);
 		// todo-1 We now also have chrono-warrior.
@@ -426,6 +432,10 @@ describe("Bidding tests", function () {
 		const [owner, addr1, addr2, addr3, addr4, addr5] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
+
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
+
 		let donationAmount = hre.ethers.parseEther('100');
 		await cosmicGameProxy.donate({ value: donationAmount });
 
@@ -582,6 +592,9 @@ describe("Bidding tests", function () {
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
+
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -626,6 +639,9 @@ describe("Bidding tests", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };
@@ -771,7 +787,7 @@ describe("Bidding tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
+		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		const BrokenToken = await hre.ethers.getContractFactory("BrokenERC20");
@@ -800,7 +816,7 @@ describe("Bidding tests", function () {
 			// todo-1 Search for reg-ex pattern, case insensitive: stakingWallet(?!CST|RWalk)
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
+		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		const BrokenToken = await hre.ethers.getContractFactory("BrokenERC20");
@@ -856,5 +872,5 @@ describe("Bidding tests", function () {
 			await hre.ethers.provider.send("evm_mine");
 			let cstAuctionLength_ = await cosmicGameProxy.cstAuctionLength();
 		}
-	})
-})
+	});
+});

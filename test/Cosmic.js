@@ -22,8 +22,7 @@ describe("CosmicGame", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -65,9 +64,8 @@ describe("CosmicGame", function () {
 		} = await basicDeployment(
 			contractDeployerAcct,
 			'',
-			0,
+			1,
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-			true,
 			true
 		);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
@@ -77,7 +75,7 @@ describe("CosmicGame", function () {
 				data: "0xffffffff", // non-existent selector
 			})
 		).to.be.revertedWith("Function does not exist.");
-	})
+	});
 	it("Fallback function is executing bid", async function () {
 		const {
 			cosmicGameProxy,

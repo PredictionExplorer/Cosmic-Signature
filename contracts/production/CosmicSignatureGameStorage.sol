@@ -36,6 +36,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// And in that case the logic emits an event.
 	/// Comment-202411174 relates
 	/// [/Comment-202411173]
+	/// @dev Comment-202411168 relates.
 	uint256 public activationTime;
 
 	/// @notice Delay duration before the next bidding round.
@@ -162,6 +163,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Last CST bid timestamp.
 	/// A.k.a. CST Dutch auction start time.
+	/// @dev Comment-202411168 relates.
 	uint256 public lastCstBidTimeStamp;
 
 	/// @notice
@@ -290,17 +292,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region `_setActivationTime`
 
-	function _setActivationTime(uint256 activationTime_) internal {
-		activationTime = activationTime_;
+	function _setActivationTime(uint256 newValue_) internal {
+		activationTime = newValue_;
 
 		// [Comment-202411168]
 		// One might want to ensure that this is not in the past.
-		// But `activationTime` is really supposed to be in the future.
+		// But `activationTime` is really not supposed to be in the past.
 		// So keeping it simple and gas-effiicient.
 		// [/Comment-202411168]
-		lastCstBidTimeStamp = activationTime_;
+		lastCstBidTimeStamp = newValue_;
 
-		emit ActivationTimeChanged(activationTime_);
+		emit ActivationTimeChanged(newValue_);
 	}
 
 	// #endregion

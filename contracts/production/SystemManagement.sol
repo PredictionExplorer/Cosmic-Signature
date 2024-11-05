@@ -70,8 +70,8 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	// 	emit SystemModeChanged(systemMode);
 	// }
 
-	function setActivationTime(uint256 activationTime_) external override onlyOwner onlyInactive {
-		_setActivationTime(activationTime_);
+	function setActivationTime(uint256 newValue_) external override onlyOwner onlyInactive {
+		_setActivationTime(newValue_);
 	}
 
 	function timeUntilActivation() external view override returns (uint256) {

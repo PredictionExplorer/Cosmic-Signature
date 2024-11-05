@@ -24,8 +24,7 @@ describe("CharityWallet tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -71,7 +70,7 @@ describe("CharityWallet tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
+		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
 
 		const BrokenCharity = await hre.ethers.getContractFactory("BrokenCharity");
 		let brokenCharity = await BrokenCharity.deploy();
@@ -154,4 +153,4 @@ describe("CharityWallet tests", function () {
 		let new_charity_addr = await charityWallet.charityAddress();
 		expect(new_charity_addr.toString()).to.equal(addr1.address.toString());
 	});
-})
+});

@@ -333,6 +333,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// todo-0 Should `setRoundStartCstAuctionLength` and `setNanoSecondsExtra` use it too?
 		cstAuctionLength = roundStartCstAuctionLength + (nanoSecondsExtra - CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA) / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 
+		// todo-1 Add 1 to ensure that the result is a nonzero?
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		stellarSpender = address(0);
 		stellarSpenderTotalSpentCst = 0;
@@ -348,7 +349,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// 	emit SystemModeChanged(systemMode);
 		// }
 
-		_setActivationTime(activationTime + delayDurationBeforeNextRound);
+		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
 	}
 
 	// #endregion

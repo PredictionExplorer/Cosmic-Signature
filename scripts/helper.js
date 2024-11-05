@@ -9,6 +9,7 @@ async function getCosmicGameProxyContract() {
 	let cosmicGameProxy = await hre.ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
 	return cosmicGameProxy;
 }
+
 async function getBidderContract() {
 	let bidderContractAddr = process.env.BIDDER_CONTRACT_ADDRESS;
 	if (typeof bidderContractAddr === "undefined" || bidderContractAddr.length != 42) {
@@ -19,4 +20,5 @@ async function getBidderContract() {
 	let bidderContract = await hre.ethers.getContractAt("BidderContract", bidderContractAddr);
 	return bidderContract;
 }
+
 module.exports = { getCosmicGameProxyContract, getBidderContract };

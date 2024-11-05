@@ -23,6 +23,14 @@ library CosmicGameConstants {
 	uint256 public constant SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY;
 	uint256 public constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * SECONDS_PER_DAY;
 
+	/// @notice This equals 9999-12-31 00:00:00.
+	/// @dev JavaScript  code to calculate this.
+	///		const n = (new Date(9999, 12 - 1, 31)).getTime() / 1000;
+	///		console.log(n);
+	///		const d = new Date(n * 1000);
+	///		console.log(d);
+	uint256 public constant TIMESTAMP_9999_12_31 = 253_402_214_400;
+
 	// /// @notice System mode constants.
 	// /// @dev These define the operational states of the CosmicGameProxy contract.
 	// uint256 public constant MODE_RUNTIME = 0; // Normal operation.
@@ -37,9 +45,11 @@ library CosmicGameConstants {
 	// todo-1 And maybe in rare cases replace it with `DEFAULT_`.
 
 	/// @notice Initial `activationTime`.
-	/// @dev Comment-202411168 relates and/or applies.
-	uint256 public constant INITIAL_ACTIVATION_TIME = 1_702_512_000;
+	/// @dev This must be in the future. Otherwise it would be impossible to configure our contract after deployment.
+	/// Comment-202411168 relates.
+	uint256 public constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9999_12_31;
 
+	/// @notice Default `delayDurationBeforeNextRound`.
 	uint256 public constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = SECONDS_PER_DAY;
 
 	/// @notice Default `marketingReward`.

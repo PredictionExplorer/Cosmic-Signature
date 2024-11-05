@@ -28,8 +28,7 @@ describe("Contract", function () {
 			stakingWallet,
 			marketingWallet,
 			bidLogic,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -53,6 +52,9 @@ describe("Contract", function () {
 		let bidderContract = await BidderContract.connect(owner).deploy(await cosmicGameProxy.getAddress());
 		await bidderContract.waitForDeployment();
 
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
+
 		let bidPrice;
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "owner bids", randomWalkNFTId: -1 };
@@ -67,8 +69,8 @@ describe("Contract", function () {
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 
-		let randomWalkAddr = await cosmicGameProxy.randomWalkNft();
-		let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkAddr);
+		let randomWalkNftAddr_ = await cosmicGameProxy.randomWalkNft();
+		let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 		let rwalkPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(owner).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
 		await randomWalkNft.connect(owner).setApprovalForAll(await bidderContract.getAddress(), true);
@@ -80,7 +82,7 @@ describe("Contract", function () {
 		let donated_token_id = parsed_log.args.tokenId;
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donated_token_id);
-		await bidderContract.connect(owner).doBidAndDonate(randomWalkAddr, donated_token_id, { value: bidPrice });
+		await bidderContract.connect(owner).doBidAndDonate(randomWalkNftAddr_, donated_token_id, { value: bidPrice });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await bidderContract.connect(owner).doBid({ value: bidPrice });

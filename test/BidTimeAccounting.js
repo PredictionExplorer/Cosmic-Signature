@@ -25,8 +25,7 @@ describe("Bid time accounting", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -187,7 +186,7 @@ describe("Bid time accounting", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
-		} = await basicDeploymentAdvanced("CosmicGame", owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true, true);
+		} = await basicDeploymentAdvanced("CosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 
 		// test case description:
 		// first bid is made by owner, to initialize all the variables, duration of 1000 seconds

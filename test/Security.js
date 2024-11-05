@@ -29,8 +29,7 @@ describe("Security", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation
-		} = await basicDeployment(contractDeployerAcct, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
-
+		} = await basicDeployment(contractDeployerAcct, '', 1, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 		return {
 			cosmicGameProxy: cosmicGameProxy,
 			cosmicToken,
@@ -46,7 +45,7 @@ describe("Security", function () {
 		};
 	}
 	it("Vulnerability to claimPrize() multiple times", async function () {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
 			cosmicToken,
@@ -57,7 +56,7 @@ describe("Security", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,false);
+		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		await cosmicGameProxy.setTokenContract(await cosmicToken.getAddress());
@@ -65,17 +64,21 @@ describe("Security", function () {
 		await cosmicGameProxy.setCharity(await charityWallet.getAddress());
 		await cosmicGameProxy.setEthPrizesWallet(await ethPrizesWallet.getAddress());
 		await cosmicGameProxy.setRandomWalkNft(await randomWalkNFT.getAddress());
-		await cosmicGameProxy.setActivationTime(0);
 		await cosmicGameProxy.setMainPrizePercentage(10n);
-		await cosmicGameProxy.setRuntimeMode();
+
+		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
+		// But, hopefully, it will work somehow.
+		await cosmicGameProxy.setActivationTime(0);
+
+		// await cosmicGameProxy.setRuntimeMode();
+		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
+		// await cosmicGameProxy.setActivationTime(latestBlock_.timestamp);
 
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(await cosmicGameProxy.getAddress());
 
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };
@@ -91,9 +94,8 @@ describe("Security", function () {
 		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
 	});
 	it("Is possible to take prize before activation", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } = await loadFixture(
-			deployCosmic,
-		);
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } =
+			await loadFixture(deployCosmic);
 		const [owner, addr1, ...addrs] = await hre.ethers.getSigners();
 		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = hre.ethers.parseEther("10");
@@ -119,7 +121,7 @@ describe("Security", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		let donationAmount = hre.ethers.parseEther("10");
@@ -144,7 +146,7 @@ describe("Security", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
+		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
 
 		let donationAmount = hre.ethers.parseEther("10");

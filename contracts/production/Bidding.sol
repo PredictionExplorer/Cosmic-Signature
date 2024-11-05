@@ -5,12 +5,12 @@ pragma solidity 0.8.27;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+// import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -99,7 +99,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		bidderInfo[roundNum][msg.sender].totalSpentEth = bidderInfo[roundNum][msg.sender].totalSpentEth + paidBidPrice;
 
 		bidPrice = newBidPrice;
-
 		_bidCommon(params.message, bidType);
 
 		// Refund excess ETH if the bidder sent more than required
@@ -112,6 +111,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 			);
 		}
 
+		// todo-1 Emit this before sending refund.
 		emit BidEvent(
 			lastBidder,
 			roundNum,
@@ -255,6 +255,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// Burn the CST tokens used for bidding.
 		// ToDo-202411182-1 relates and/or applies.
 		// [/Comment-202409177]
+		// todo-1 What about calling `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` here?
+		// todo-1 It would be a safer option.
 		token.burn(msg.sender, price);
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst + price;
