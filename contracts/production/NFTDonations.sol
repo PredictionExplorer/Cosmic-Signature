@@ -11,8 +11,10 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { INFTDonations } from "./interfaces/INFTDonations.sol";
 
 abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INFTDonations {
-	// todo-0 Didn't we discuss that an NFT donation without placing a bid could result in spamming?
-	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRuntime  {
+	/// todo-1 Didn't we discuss that an NFT donation without placing a bid could result in spamming?
+	/// todo-1 But Nick is saying it's OK.
+	/// todo-0 Should we allow donations even while the system is inactive?
+	function donateNFT(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive  {
 		nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
 		donatedNFTs[numDonatedNFTs] = CosmicGameConstants.DonatedNFT({
 			nftAddress: nftAddress,
@@ -41,7 +43,8 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 		emit NFTDonationEvent(msg.sender, _nftAddress, roundNum, _nftId, numDonatedNFTs - 1);
 	}
 
-	function claimDonatedNFT(uint256 index) public override onlyRuntime {
+	/// todo-0 Allow this to execute even before activation time.
+	function claimDonatedNFT(uint256 index) public override /*nonReentrant*/ onlyActive {
 		require(index < numDonatedNFTs, CosmicGameErrors.InvalidDonatedNFTIndex("Invalid donated NFT index", index));
 
 		CosmicGameConstants.DonatedNFT storage donatedNFT = donatedNFTs[index];
@@ -53,10 +56,12 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 		// todo-1 Sometimes we use "safe" function and sometimes we don't. Review all NFT calls.
 		donatedNFT.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNFT.nftId);
 
+		// todo-1 Emit this before making the exernal call?
 		emit DonatedNFTClaimedEvent(donatedNFT.roundNum, index, msg.sender, address(donatedNFT.nftAddress), donatedNFT.nftId);
 	}
 
-	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant onlyRuntime {
+	/// todo-1 `nonReentrant` not needed here?
+	function claimManyDonatedNFTs(uint256[] calldata indices) external override nonReentrant /*onlyActive*/ {
 		for (uint256 i = 0; i < indices.length; i++) {
 			claimDonatedNFT(indices[i]);
 		}

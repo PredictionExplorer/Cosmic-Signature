@@ -7,6 +7,7 @@ Execute the following commands:
 	npx hardhat node
 
 	#in another terminal run all the remaining commands:
+	# todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
 	# (previously set switchToRuntime=false and donateToContract=false to get maintenance mode with no transactions)
 	npx hardhat deploy-cosmicgame --deployconfig deploy-local.json --network localhost
 
@@ -15,10 +16,10 @@ Execute the following commands:
 
 	#the new CosmicGameImplementation contract uses new state variable, timesBidPrice, the default value is set at deploy-newlogic.js but
 	#you can change it running this script (note: only in maintenance mode!)) :
+	# todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
 	COSMIC_GAME_PROXY_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./settimesbidprice.js --network localhost
 
 	#now we can use new biding feature (bid can be as high as you want but bigger than current bidPrice * timesBidPrice)
 	COSMIC_GAME_PROXY_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./openBid.js --network localhost
 
 Validation: bid operation should not fail (i.e. revert) , in etl/cmd/cosmicgme/scripts run ./cginfo script to dump state variables and check the bid price
-

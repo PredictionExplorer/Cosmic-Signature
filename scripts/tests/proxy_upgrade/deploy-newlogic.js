@@ -33,6 +33,7 @@ async function main() {
 	// we need to do execute any initialization process manually (only for those variables that are added extra)
 	await cosmicGameProxy.setTimesBidPrice(10n);	// initialize timesBidPrice to 10
 
+	// todo-0 This function no longer exists.
 	await cosmicGameProxy.setRuntimeMode();
 
 	let implementationAddr = await cosmicGameProxy.runner.provider.getStorage(cosmicGameProxy,'0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc');

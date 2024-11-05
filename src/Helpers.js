@@ -9,7 +9,7 @@
 // #region parseBooleanEnvironmentVariable
 
 /**
- * @param {string} environmentVariableName
+ * @param {string?} environmentVariableName
  * @param {boolean} defaultValue
  * @returns {boolean}
  * @throws {Error}
@@ -33,7 +33,7 @@ function parseBooleanEnvironmentVariable(environmentVariableName, defaultValue) 
 // #region parseIntegerEnvironmentVariable
 
 /**
- * @param {string} environmentVariableName
+ * @param {string?} environmentVariableName
  * @param {number} defaultValue
  * @returns {number}
  * @throws {Error}

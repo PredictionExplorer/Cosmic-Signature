@@ -26,6 +26,7 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		emit CosmicTokenAddressChanged(addr);
 	}
 
+	/// todo-1 Do we need a function to send to multiple addresses?
 	function send(uint256 amount, address to) external override onlyOwner {
 		require(to != address(0), CosmicGameErrors.ZeroAddress("Recipient address cannot be zero."));
 		// todo-1 See Comment-202409215.

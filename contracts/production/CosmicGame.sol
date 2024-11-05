@@ -60,64 +60,95 @@ contract CosmicGame is
 		// ToDo-202408114-1 applies.
 		__Ownable_init(_gameAdministrator);
 
-		// Initialize state variables
+		// todo-1 Think again which of these should not be reset on upgrade. Comment.
+		// todo-1 I wrote some comments already.
+		// todo-1 Really,it looks like most variables should not be reset on upgrade.
+		// todo-1 So maybe write one common comment to revisit this when developing a new upgrade contract.
+
+		// systemMode = CosmicGameConstants.MODE_MAINTENANCE;
+		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+		delayDurationBeforeNextRound = CosmicGameConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
+		marketingReward = CosmicGameConstants.MARKETING_REWARD;
+		maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
+		// ethPrizesWallet =
+		// token =
+		// marketingWallet =
+		// nft =
+		// randomWalkNft =
+		// stakingWalletCosmicSignatureNft =
+		// stakingWalletRandomWalkNft =
+		// charity =
+		// numDonationInfoRecords =
+		// numDonatedNFTs =
+		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
+		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
+		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
+		// prizeTime =
+		// todo-1 This is already zero, right? Assert?
+		// todo-1 But on ipgrade this won't be zero, right? So don't reset this back to zero on upgrade?
 		roundNum = 0;
+
+		// Issue. It appears that on upgrade this will be incorrect.
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
-		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
+
+		initialBidAmountFraction = CosmicGameConstants.INITIAL_BID_AMOUNT_FRACTION;
+		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;
+		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+
+		// [Comment-202411211]
+		// If this condition is `true` it's likely that `setActivationTime` will not be called,
+		// which implies that this is likely our last chance to initialize `lastCstBidTimeStamp`.
+		// [/Comment-202411211]
+		if (CosmicGameConstants.INITIAL_ACTIVATION_TIME < CosmicGameConstants.TIMESTAMP_9999_12_31) {
+			// Comment-202411168 applies.
+			lastCstBidTimeStamp = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
+		}
+
 		// [ToDo-202409199-0]
 		// It's very likely a bug that we assign a twice smaller value here.
 		// Waiting for Taras to comment on the issue.
 		// [/ToDo-202409199-0]
 		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
-		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
-		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
-		priceIncrease = CosmicGameConstants.INITIAL_PRICE_INCREASE;
-		initialBidAmountFraction = CosmicGameConstants.INITIAL_BID_AMOUNT_FRACTION;
-		lastBidder = address(0);
-		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
-		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
-		activationTime = CosmicGameConstants.INITIAL_ACTIVATION_TIME;
-
-		// // [Comment-202411115]
-		// // We will update this near Comment-202411113.
-		// // [/Comment-202411115]
-		// lastCstBidTimeStamp = activationTime;
-
-		cstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
-		roundStartCstAuctionLength = CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
-		chronoWarriorDuration = uint256(int256(-1));
+		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
-		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
-		marketingReward = CosmicGameConstants.MARKETING_REWARD;
-		maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
-		systemMode = CosmicGameConstants.MODE_MAINTENANCE;
-
-		// Initialize percentages
+		// todo-0 Is this redundant? Assert?
+		lastBidder = address(0);
+		// lastBidType =
 		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicGameConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
 		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
 		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
+		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
+		// stellarSpender =
+		// stellarSpenderTotalSpentCst =
+		// enduranceChampion =
+		// enduranceChampionStartTimeStamp =
+		// enduranceChampionDuration =
+		// prevEnduranceChampionDuration =
+		// chronoWarrior =
 
-		// Initialize raffle winners
+		// Issue. It appears that on upgrade this will be redundant.
+		chronoWarriorDuration = uint256(int256(-1));
+
+		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
 		numRaffleNFTWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
 		numRaffleNFTWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
 
-		raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
+		// todo-0 I have just hardcoded some number. It's more gas-efficient this way. Comment. Tell Nick.
+		// Issue. It appears that on upgrade this will be unnecessary.
+		raffleEntropy = bytes32(uint256(202411186)); // keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 	}
 
-	function bidAndDonateNFT(
-		bytes calldata _param_data,
-		IERC721 nftAddress,
-		uint256 nftId
-	) external payable override nonReentrant {
-		
-		_bid(_param_data);
-		_donateNFT(nftAddress, nftId);
+	function bidAndDonateNFT(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant {
+		_bid(data_);
+		_donateNFT(nftAddress_, nftId_);
 	}
 
-	// Make it possible for the contract to receive NFTs by implementing the IERC721Receiver interface
+	/// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
+	/// todo-1 Is this actually necessary? Don't we have designated functions to receive donated NFTs?
 	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
 		return this.onERC721Received.selector;
 	}
@@ -133,21 +164,22 @@ contract CosmicGame is
 	}
 
 	fallback() external payable override {
-		revert("Function does not exist");
+		revert("Function does not exist.");
 	}
 
-	function _authorizeUpgrade(address newImplementation) internal override {
+	function _authorizeUpgrade(address newImplementation_) internal override {
 	}
 
+	/// todo-1 Should this be `onlyInactive`?
 	function upgradeTo(address _newImplementation) public override onlyOwner {
 		_authorizeUpgrade(_newImplementation);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		 // todo-0 This event has been eliminated.
-		 // todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
-		 // todo-0 So I have refactored this to emit that same event.
-		 // todo-0 But would it be better to call that function here?
-		 // todo-0 Nick, please take a closer look at this.
-		 // emit ERC1967Utils.Upgraded(_newImplementation);
-		 emit IERC1967.Upgraded(_newImplementation);
+		// todo-0 This event has been eliminated.
+		// todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
+		// todo-0 So I have refactored this to emit that same event.
+		// todo-0 But would it be better to call that function here?
+		// todo-0 Nick, please take a closer look at this.
+		// emit ERC1967Utils.Upgraded(_newImplementation);
+		emit IERC1967.Upgraded(_newImplementation);
 	}
 }

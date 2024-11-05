@@ -18,15 +18,39 @@ library CosmicGameErrors {
 	// #endregion
 	// #region System Errors
 
-	/// @notice Thrown when an action is attempted in an incorrect system mode
+	// /// @notice Thrown when an action is attempted in an incorrect system mode.
+	// /// @param errStr Description of the error.
+	// /// @param systemMode The current system mode.
+	// error SystemMode(string errStr, uint256 systemMode);
+
+	/// @notice Thrown when an action is attempted before the game activation time.
+	/// @param errStr Description of the error.
+	/// @param activationTime The game activation time.
+	/// @param blockTimeStamp The current block timestamp.
+	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
+
+	/// @notice Thrown when an action is attempted at or after the game activation time.
+	/// @param errStr Description of the error.
+	/// @param activationTime The game activation time.
+	/// @param blockTimeStamp The current block timestamp.
+	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
+
+	/// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
 	/// @param errStr Description of the error
-	/// @param systemMode The current system mode
-	error SystemMode(string errStr, uint256 systemMode);
+	/// @param providedValue The actual provided value
+	/// @param valueMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
+	error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueMinLimit);
+
+	/// @notice Thrown when percentage validation fails
+	/// @param errStr Description of the error
+	/// @param percentageSum The sum of percentages (should be 100)
+	error PercentageValidation(string errStr, uint256 percentageSum);
 
 	// #endregion
 	// #region Bidding Errors
 
 	/// @notice Thrown when the bid price is incorrect
+	/// todo-1 Incorrect or too low? Rename to make it clear? Fix the comment too.
 	/// @param errStr Description of the error
 	/// @param amountRequired The required bid amount
 	/// @param amountSent The amount actually sent
@@ -35,18 +59,13 @@ library CosmicGameErrors {
 	/// @notice Thrown when the bid message length exceeds the maximum allowed
 	/// @param errStr Description of the error
 	/// @param msgLength The length of the provided message
+	/// @dev todo-1 I dislike the word `Overflow`.
 	error BidMessageLengthOverflow(string errStr, uint256 msgLength);
 
 	/// @notice Thrown when attempting to use an already used RandomWalk NFT
 	/// @param errStr Description of the error
 	/// @param randomWalkTokenId The ID of the RandomWalk NFT
 	error UsedRandomWalkNFT(string errStr, uint256 randomWalkTokenId);
-
-	/// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
-	/// @param errStr Description of the error
-	/// @param providedValue The actual provided value
-	/// @param valueMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
-	error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueMinLimit);
 
 	// /// @notice Thrown when the bidder has insufficient CST balance
 	// /// @param errStr Description of the error
@@ -76,6 +95,7 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	/// @param providedOffset The offset provided
 	/// @param offsetFromStart The offset from the start
+	/// @dev todo-1 I dislike the word `Overflow`.
 	error BidderQueryOffsetOverflow(string errStr, uint256 providedOffset, uint256 offsetFromStart);
 
 	/// @notice Thrown when querying bidders for a round with no bids yet
@@ -89,8 +109,9 @@ library CosmicGameErrors {
 	/// @notice Thrown when attempting to claim a prize too early
 	/// @param errStr Description of the error
 	/// @param claimTime The time when claiming is allowed
-	/// @param blockTimestamp The current block timestamp
-	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimestamp);
+	/// @param blockTimeStamp The current block timestamp
+	/// todo-0 Rename to `MainPrizeEarlyClaim`.
+	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error
@@ -121,22 +142,11 @@ library CosmicGameErrors {
 	// #endregion
 	// #region Game Logic Errors
 
-	/// @notice Thrown when a call to the business logic contract fails
-	/// @param errStr Description of the error
-	/// @param businessLogicAddr The address of the business logic contract
-	/// @param selector The function selector that failed
-	error CallToBusinessLogicFailed(string errStr, address businessLogicAddr, bytes4 selector);
-
-	/// @notice Thrown when an action is attempted before the activation time
-	/// @param errStr Description of the error
-	/// @param activationTime The activation time of the game
-	/// @param blockTimestamp The current block timestamp
-	error ActivationTime(string errStr, uint256 activationTime, uint256 blockTimestamp);
-
-	/// @notice Thrown when percentage validation fails
-	/// @param errStr Description of the error
-	/// @param percentageSum The sum of percentages (should be 100)
-	error PercentageValidation(string errStr, uint256 percentageSum);
+	// /// @notice Thrown when a call to the business logic contract fails
+	// /// @param errStr Description of the error
+	// /// @param businessLogicAddr The address of the business logic contract
+	// /// @param selector The function selector that failed
+	// error CallToBusinessLogicFailed(string errStr, address businessLogicAddr, bytes4 selector);
 
 	// #endregion
 	// #region Token-Related Errors

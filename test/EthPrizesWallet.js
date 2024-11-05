@@ -20,8 +20,7 @@ describe("EthPrizesWallet", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation
-		} = await basicDeployment(contractDeployerAcct, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
-
+		} = await basicDeployment(contractDeployerAcct, '', 1, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 		return {
 			cosmicGameProxy: cosmicGameProxy,
 			cosmicToken,
@@ -62,9 +61,8 @@ describe("EthPrizesWallet", function () {
 			'CosmicGame',
 			owner,
 			'',
-			0,
+			1,
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-			true,
 			true
 		);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
@@ -104,9 +102,8 @@ describe("EthPrizesWallet", function () {
 			'CosmicGame',
 			owner,
 			'',
-			0,
+			1,
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-			true,
 			true
 		);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');

@@ -22,8 +22,7 @@ describe("MainPrize tests", function () {
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true,true);
-
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
 			cosmicToken,
@@ -49,6 +48,9 @@ describe("MainPrize tests", function () {
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await hre.ethers.getSigners();
 	
+		// ToDo-202411202-1 applies.
+		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
+
 		let roundNum = 0;
 		// we need to mint Rwalk because our Rwalk contract is empty and doesn't have any holder
 		// but they are needed to test token distribution in claimPrize()
@@ -177,9 +179,8 @@ describe("MainPrize tests", function () {
 			'SpecialCosmicGame',
 			owner,
 			'',
-			0,
+			1,
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-			true,
 			true
 		);
 
@@ -271,9 +272,8 @@ describe("MainPrize tests", function () {
 		} = await basicDeployment(
 			contractDeployerAcct,
 			'',
-			0,
+			1,
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-			true,
 			true
 		);
 		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
@@ -305,4 +305,4 @@ describe("MainPrize tests", function () {
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
 		expect(parsed_log.args.claimedBy).to.equal(await bContract.getAddress());
 	});
-})
+});

@@ -22,23 +22,40 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Parameters and Variables
 
-	/// @notice Comment-202411064 applies.
-	uint256 public systemMode;
+	// /// @notice Comment-202411064 applies.
+	// uint256 public systemMode;
 
+	/// @notice
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// [/Comment-202411064]
+	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
+	/// [/Comment-202411172]
+	/// [Comment-202411173]
+	/// And in that case the logic emits an event.
+	/// Comment-202411174 relates
+	/// [/Comment-202411173]
+	/// @dev Comment-202411168 relates.
 	uint256 public activationTime;
 
-	/// @notice Comment-202411064 applies.
-	/// todo-0 Rename to `marketingCstReward`.
+	/// @notice Delay duration before the next bidding round.
+	/// Specifies for how long to wait after main prize has been claimed to start the next bidding round.
+	/// Comment-202411064 applies.
+	uint256 public delayDurationBeforeNextRound;
+
+	/// @notice On each bid, we mint this CST amount for `marketingWallet`.
+	/// Comment-202411064 applies.
+	/// @dev ToDo-202411182-1 relates.
+	/// todo-0 Rename to `marketingCstRewardAmount`.
+	/// todo-0 Even better, rename to `marketingWaletCstContributionAmount`.
 	uint256 public marketingReward;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The maximum allowed length of a bid message.
 	/// [Comment-202409143]
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
+	/// Comment-202411064 applies.
 	uint256 public maxMessageLength;
 
 	// #endregion
@@ -91,9 +108,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Game Parameters and Variables
 
 	/// @notice Comment-202411064 applies.
-	/// @dev
+	/// Comment-202411172 applies.
+	/// [Comment-202411174]
+	/// But in that case the logic does not emit an event.
+	/// Comment-202411173 relates.
+	/// [/Comment-202411174]
 	/// [Comment-202411067]
-	/// We slightly exponentially increase this after every bidding round, based on `timeIncrease`.
+	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
 	/// [/Comment-202411067]
 	uint256 public nanoSecondsExtra;
 
@@ -114,7 +135,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// For the first round, this equals zero.
 	uint256 public roundNum;
 
-	/// @notice ETH.
+	/// @notice ETH bid price.
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
@@ -122,7 +143,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public bidPrice;
 
 	/// @notice Comment-202411064 applies.
-	/// Rename to `initialEthBidPriceDivisor`.
+	/// Rename to `firstEthBidPriceDivisor`.
 	uint256 public initialBidAmountFraction;
 
 	/// @notice Comment-202411064 applies.
@@ -140,6 +161,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-0 Rename to `roundStartCstAuctionDuration`.
 	uint256 public roundStartCstAuctionLength;
 
+	/// @notice Last CST bid timestamp.
+	/// A.k.a. CST Dutch auction start time.
+	/// @dev Comment-202411168 relates.
 	uint256 public lastCstBidTimeStamp;
 
 	/// @notice
@@ -154,7 +178,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202411064 applies.
 	/// This number of CSTs is minted as a reward for each bid.
-	/// rename to `cstRewardForBidding`.
+	/// rename to `cstRewardAmountForBidding`.
 	uint256 public tokenReward;
 
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
@@ -162,6 +186,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	address public lastBidder;
 
+	/// todo-0 Do we really need this?
 	/// todo-0 Rename to `lastBidTypeCode`.
 	CosmicGameConstants.BidType public lastBidType;
 
@@ -220,7 +245,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-0 For at least how long it will last?
 	mapping(uint256 roundNum => address bidderAddress) public winners;
 
-	/// @dev This will remain zero if nobody bids with CST.
+	/// @dev This will remain zero if nobody bids with CST or everybody bids with a zero CST price.
+	/// Comment-202409179 relates.
 	address public stellarSpender;
 
 	uint256 public stellarSpenderTotalSpentCst;
@@ -247,8 +273,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public chronoWarriorDuration;
 
-	/// @notice Comment-202411064 applies.
-	/// todo-0 Rename to `cstRewardMultiplier`.
+	/// @notice Stellar Spender and Endurance Champion CST reward amount multiplier.
+	/// Comment-202411064 applies.
+	/// todo-0 Rename to `cstRewardAmountMultiplier`.
 	uint256 public erc20RewardMultiplier;
 
 	/// @notice Comment-202411064 applies.
@@ -261,6 +288,22 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public numRaffleNFTWinnersStakingRWalk;
 
 	bytes32 public raffleEntropy;
+
+	// #endregion
+	// #region `_setActivationTime`
+
+	function _setActivationTime(uint256 newValue_) internal {
+		activationTime = newValue_;
+
+		// [Comment-202411168]
+		// One might want to ensure that this is not in the past.
+		// But `activationTime` is really not supposed to be in the past.
+		// So keeping it simple and gas-effiicient.
+		// [/Comment-202411168]
+		lastCstBidTimeStamp = newValue_;
+
+		emit ActivationTimeChanged(newValue_);
+	}
 
 	// #endregion
 }

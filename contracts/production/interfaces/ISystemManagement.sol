@@ -9,32 +9,33 @@ import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { ISystemEvents } from "./ISystemEvents.sol";
+// import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
-	function prepareMaintenance() external;
+interface ISystemManagement is ICosmicSignatureGameStorage /* , ISystemEvents */ {
+	// function prepareMaintenance() external;
+	//
+	// function setRuntimeMode() external;
 
-	function setRuntimeMode() external;
+	/// @notice Sets `activationTime`.
+	/// @dev Only callable by the contract owner.
+	/// @param newValue_ The new value.
+	function setActivationTime(uint256 newValue_) external;
 
-	// /// @notice Get the current system mode
-	// /// @return The current system mode (0: Runtime, 1: Prepare Maintenance, 2: Maintenance)
-	// /// todo-9 Someone has hardcoded those magic numbes in the above comment. Remove them from the comment.
-	// /// @dev We don't need this function because `systemMode` is declared `public`.
-	// function getSystemMode() external view returns (uint256);
-
-	/// @notice Set the activation time
-	/// @dev Only callable by the contract owner
-	/// @param activationTime_ The new activation time
-	function setActivationTime(uint256 activationTime_) external;
-
-	/// @notice Get the time until the game activates
-	/// @return The number of seconds until activation, or 0 if already activated
+	/// @notice Calculates the duration until the game activates.
+	/// @return The number of seconds until activation or 0 if already activated.
+	/// todo-0 Rename to `durationUntilActivation`.
+	/// todo-0 The same applies to all `timeUntil...` functions.
 	function timeUntilActivation() external view returns (uint256);
 
-	/// @notice Set the marketing reward amount
-	/// @dev Only callable by the contract owner
-	/// @param _marketingReward The new marketing reward amount
-	function setMarketingReward(uint256 _marketingReward) external;
+	/// @notice Sets `delayDurationBeforeNextRound`.
+	/// @dev Only callable by the contract owner.
+	/// @param newValue_ The new value.
+	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
+
+	/// @notice Sets the marketing reward amount.
+	/// @dev Only callable by the contract owner.
+	/// @param newValue_ The new value.
+	function setMarketingReward(uint256 newValue_) external;
 
 	/// @notice Set the maximum message length
 	/// Comment-202409143 applies.

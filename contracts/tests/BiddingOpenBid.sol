@@ -4,12 +4,12 @@ pragma solidity 0.8.27;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
-import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
+// import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
@@ -40,22 +40,21 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		_bid(_data);
 	}
 
-	function _bid(bytes memory _data) internal onlyRuntime {
-
+	function _bid(bytes memory _data) internal /*onlyActive*/ {
 		BidParams memory params = abi.decode(_data, (BidParams));
 
 		if (params.randomWalkNFTId != -1) {
 			require(
 				!usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
 				CosmicGameErrors.UsedRandomWalkNFT(
-					"This RandomWalkNFT has already been used for bidding.",
+					"This RandomWalk NFT has already been used for bidding.",
 					uint256(params.randomWalkNFTId)
 				)
 			);
 			require(
 				randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
 				CosmicGameErrors.IncorrectERC721TokenOwner(
-					"You must be the owner of the RandomWalkNFT.",
+					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
 					uint256(params.randomWalkNFTId),
 					msg.sender
@@ -131,6 +130,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 			}
 		}
 
+		// todo-1 Emit this before sending refund.
 		emit BidEvent(
 			lastBidder,
 			roundNum,
@@ -146,11 +146,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
-		require(
-			block.timestamp >= activationTime,
-			CosmicGameErrors.ActivationTime("Not active yet.", activationTime, block.timestamp)
-		);
+	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -202,6 +198,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 	}
 
 	function getBidPrice() public view override returns (uint256) {
+		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 
@@ -241,7 +238,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
+	function bidWithCST(string memory message) external override nonReentrant /*onlyActive*/ {
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// Comment-202409179 applies.
@@ -268,8 +265,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		uint256 newStartingBidPriceCST;
 		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
 			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
-		}
-		else {
+		} else {
 			// #enable_smtchecker /*
 			unchecked
 			// #enable_smtchecker */

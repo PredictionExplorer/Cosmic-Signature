@@ -5,12 +5,12 @@ pragma solidity 0.8.27;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicToken } from "./CosmicToken.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+// import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -37,12 +37,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 
 	// #endregion
 
-	function bid(bytes memory _data) public payable override nonReentrant {
+	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
 		_bid(_data);
 	}
 
-	function _bid(bytes memory _data) internal onlyRuntime {
-
+	function _bid(bytes memory _data) internal /*onlyActive*/ {
 		BidParams memory params = abi.decode(_data, (BidParams));
 
 		if (params.randomWalkNFTId != -1) {
@@ -100,7 +99,6 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		bidderInfo[roundNum][msg.sender].totalSpentEth = bidderInfo[roundNum][msg.sender].totalSpentEth + paidBidPrice;
 
 		bidPrice = newBidPrice;
-
 		_bidCommon(params.message, bidType);
 
 		// Refund excess ETH if the bidder sent more than required
@@ -113,6 +111,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 			);
 		}
 
+		// todo-1 Emit this before sending refund.
 		emit BidEvent(
 			lastBidder,
 			roundNum,
@@ -128,11 +127,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal {
-		require(
-			block.timestamp >= activationTime,
-			CosmicGameErrors.ActivationTime("Not active yet.", activationTime, block.timestamp)
-		);
+	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -234,7 +229,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant onlyRuntime {
+	function bidWithCST(string memory message) external override nonReentrant /*onlyActive*/ {
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// [Comment-202409179]
@@ -257,8 +252,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// );
 
 		// [Comment-202409177]
-		// Burn the CST tokens used for bidding
+		// Burn the CST tokens used for bidding.
+		// ToDo-202411182-1 relates and/or applies.
 		// [/Comment-202409177]
+		// todo-1 What about calling `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` here?
+		// todo-1 It would be a safer option.
 		token.burn(msg.sender, price);
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst + price;
@@ -274,8 +272,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		uint256 newStartingBidPriceCST;
 		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
 			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
-		}
-		else {
+		} else {
 			// #enable_smtchecker /*
 			unchecked
 			// #enable_smtchecker */
@@ -323,10 +320,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		unchecked
 		// #enable_smtchecker */
 		{
-			// This would be able to underflow if treated as unsigned if we updated `lastCstBidTimeStamp` near Comment-202411113.
-			// todo-0 Revisit the above comment.
 			uint256 numSecondsElapsed_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
-
 			if(int256(numSecondsElapsed_) < int256(0))
 			{
 				numSecondsElapsed_ = 0;
