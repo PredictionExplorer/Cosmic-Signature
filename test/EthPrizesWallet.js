@@ -71,7 +71,7 @@ describe("EthPrizesWallet", function () {
 		let newEthPrizesWallet = await NewEthPrizesWallet.deploy(owner.address);
 		await newEthPrizesWallet.waitForDeployment();
 
-		await expect(newEthPrizesWallet.connect(addr1).deposit(addr1.address,{value: 1000000n})).to.be.revertedWithCustomError(contractErrors, "DepositFromUnauthorizedSender");
+		await expect(newEthPrizesWallet.connect(addr1).deposit(addr1.address,{value: 1000000n})).to.be.revertedWithCustomError(contractErrors, "AccessDenied");
 
 		// // Comment-202411084 relates and/or applies.
 		// // I have observed that this now reverts with panic when asserts are enabled.

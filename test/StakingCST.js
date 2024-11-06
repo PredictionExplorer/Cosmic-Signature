@@ -68,7 +68,7 @@ describe('Staking CST tests', function () {
 
 		await expect(stakingWalletCosmicSignatureNft.depositIfPossible(0, { value: hre.ethers.parseEther('2') })).to.be.revertedWithCustomError(
 			contractErrors,
-			'DepositFromUnauthorizedSender'
+			"AccessDenied"
 		);
 	});
 

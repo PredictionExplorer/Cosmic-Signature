@@ -62,6 +62,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region External Contract and Other Addresses
 
 	/// @notice Comment-202411064 applies.
+	/// todo-0 Replace this with a reference to `PrizesWallet`.
 	EthPrizesWallet public ethPrizesWallet;
 
 	/// @notice Comment-202411064 applies.
@@ -101,7 +102,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public numDonationInfoRecords;
 	mapping(uint256 index => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
+	/// todo-0 Eliminate this. Now this functionality lives in `IPrizesWallet` and `PrizesWallet`.
 	uint256 public numDonatedNFTs;
+	/// todo-0 Eliminate this. Now this functionality lives in `IPrizesWallet` and `PrizesWallet`.
 	mapping(uint256 index => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 
 	// #endregion

@@ -15,6 +15,11 @@ library CosmicGameErrors {
 	/// @dev In .NET, `InvalidOperationException` serves the same purpose.
 	error InvalidOperationInCurrentState(string errStr);
 
+	/// @notice Thrown when an unauthorized caller calls a privileged method.
+	/// @param errStr Description of the error.
+	/// @param caller Caller address.
+	error AccessDenied(string errStr, address caller);
+
 	// #endregion
 	// #region System Errors
 
@@ -216,11 +221,6 @@ library CosmicGameErrors {
 	/// @param destinationAddress The intended destination of the funds
 	/// @param amount The amount that failed to transfer
 	error FundTransferFailed(string errStr, address destinationAddress, uint256 amount);
-
-	/// @notice Thrown when a deposit is attempted from an unauthorized sender
-	/// @param errStr Description of the error
-	/// @param sender The address of the unauthorized sender
-	error DepositFromUnauthorizedSender(string errStr, address sender);
 
 	// #endregion
 	// #region NFT Staking Errors
