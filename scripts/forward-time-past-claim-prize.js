@@ -1,19 +1,21 @@
+"use strict";
+
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function main() {
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	const cosmicGameProxy = await getCosmicGameProxyContract();
 	//console.log(cosmicGameProxy);
-	let timeUntil = await cosmicGameProxy.timeUntilPrize();
-	console.log("Time until prize before: " + timeUntil.toString());
-	let prizeTime = await cosmicGameProxy.timeUntilPrize();
-	await hre.ethers.provider.send("evm_increaseTime", [prizeTime.add(1).toNumber()]);
+	let durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+	console.log("Duration until main prize before: " + durationUntilMainPrize_.toString());
+	// durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize_.add(1).toNumber()]);
 	await hre.ethers.provider.send("evm_mine");
-
-	timeUntil = await cosmicGameProxy.timeUntilPrize();
-	console.log("Time until prize after: " + timeUntil.toString());
+	durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+	console.log("Duration until main prize after: " + durationUntilMainPrize_.toString());
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {
