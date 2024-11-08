@@ -8,10 +8,10 @@ import { IBidStatistics } from "./IBidStatistics.sol";
 interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Emitted when the first bid is placed in a bidding round.
 	/// @param roundNum The current bidding round number.
-	/// @param timeStamp The current block timestamp.
+	/// @param blockTimeStamp The current block timestamp.
 	event FirstBidPlacedInRound(
 		uint256 indexed roundNum,
-		uint256 timeStamp
+		uint256 blockTimeStamp
 	);
 
 	/// @notice Emitted when a bid is placed

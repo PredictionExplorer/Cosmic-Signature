@@ -994,6 +994,7 @@ describe('Staking CST tests', function () {
 		await cosmicGameProxy.claimPrize();
 
 		// forward timestamp se we can unstake
+		// todo-1 The forwarding no longer needed, right?
 		await hre.ethers.provider.send('evm_increaseTime', [6000]);
 		await hre.ethers.provider.send('evm_mine');
 
