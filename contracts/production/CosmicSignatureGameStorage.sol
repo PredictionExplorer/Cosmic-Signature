@@ -25,7 +25,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// @notice Comment-202411064 applies.
 	// uint256 public systemMode;
 
-	/// @notice
+	/// @notice Bidding round activation time. Starting at this point, people will be allowed to place bids.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// [/Comment-202411064]
@@ -36,7 +36,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// And in that case the logic emits an event.
 	/// Comment-202411174 relates
 	/// [/Comment-202411173]
-	/// @dev Comment-202411168 relates.
+	/// @dev Comment-202411236 relates.
+	/// Comment-202411168 relates.
 	uint256 public activationTime;
 
 	/// @notice Delay duration before the next bidding round.

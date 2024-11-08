@@ -17,7 +17,7 @@ interface ICosmicSignature is IERC721Enumerable {
 	/// @notice Emitted when a new token is minted
 	/// @param nftId The ID of the newly minted token
 	/// @param owner The address that received the token
-	/// @param roundNum The round number in which the token was minted
+	/// @param roundNum The bidding round number in which the token was minted.
 	/// @param seed The unique seed generated for the token
 	event MintEvent(uint256 indexed nftId, address indexed owner, uint256 indexed roundNum, bytes32 seed);
 
@@ -45,7 +45,7 @@ interface ICosmicSignature is IERC721Enumerable {
 	/// @notice Mints a new CosmicSignature token
 	/// @dev Only callable by the CosmicGameProxy contract.
 	/// @param owner The address that will receive the newly minted token
-	/// @param roundNum The round number in which the token is minted
+	/// @param roundNum The bidding round number in which the token is minted.
 	/// @return The ID of the newly minted token
 	function mint(address owner, uint256 roundNum) external returns (uint256);
 }

@@ -21,12 +21,14 @@ import { NFTDonations } from "../production/NFTDonations.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 
 contract BrokenToken {
-	// used to test revert() statements in token transfers in claimPrize() function
-	uint256 counter;
-	function mint(address, uint256 round) public {
-		counter = round;
-		require(false, "Test mint() failed");
+	/// notice used to test revert() statements in token transfers in claimPrize() function
+	uint256 private _counter;
+
+	function mint(address, uint256 roundNum_) public {
+		_counter = roundNum_;
+		require(false, "Test mint() failed.");
 	}
+	
 	function totalSupply() public pure returns (uint256) {
 		return 1;
 	}

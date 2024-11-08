@@ -70,7 +70,18 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	// 	emit SystemModeChanged(systemMode);
 	// }
 
-	function setActivationTime(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setActivationTime(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
+		// [Comment-202411236]
+		// Imposing this requirement instead of `onlyInactive`.
+		// This design leaves the door open for the admin to change `activationTime` to a point in the future
+		// and then change some parameters.
+		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `bidPrice`.
+		// [/Comment-202411236]
+		require(
+			lastBidder == address(0),
+			CosmicGameErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
+		);
+
 		_setActivationTime(newValue_);
 	}
 

@@ -45,7 +45,8 @@ library CosmicGameConstants {
 	// todo-1 And maybe in rare cases replace it with `DEFAULT_`.
 
 	/// @notice Initial `activationTime`.
-	/// @dev This must be in the future. Otherwise it would be impossible to configure our contract after deployment.
+	/// @dev This should be in the future -- to configure our contract after the deployment
+	/// without calling `setActivationTime`.
 	/// Comment-202411168 relates.
 	uint256 public constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9999_12_31;
 

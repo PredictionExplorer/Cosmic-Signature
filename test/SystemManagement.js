@@ -162,8 +162,8 @@ describe("SystemManagement tests", function () {
 		await cosmicGameProxy.setNumRaffleNFTWinnersStakingRWalk(99n);
 		expect(await cosmicGameProxy.numRaffleNFTWinnersStakingRWalk()).to.equal(99n);
 
-		await cosmicGameProxy.setActivationTime(99n);
-		expect(await cosmicGameProxy.activationTime()).to.equal(99n);
+		await cosmicGameProxy.setActivationTime(123n);
+		expect(await cosmicGameProxy.activationTime()).to.equal(123n);
 		expect(await cosmicGameProxy.timeUntilActivation()).to.equal(0n);
 
 		// await expect(cosmicGameProxy.prepareMaintenance()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemMode");
@@ -185,7 +185,8 @@ describe("SystemManagement tests", function () {
 		const testAcct_ = hre.ethers.Wallet.createRandom();
 		// const revertStr = "System must be in MODE_MAINTENANCE.";
 		// await expect(cosmicGameProxy.setRuntimeMode()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemMode").withArgs(revertStr, 0n);
-		await expect(cosmicGameProxy.setActivationTime(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		// await expect(cosmicGameProxy.setActivationTime(123n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await cosmicGameProxy.setActivationTime(123n);
 		await cosmicGameProxy.setDelayDurationBeforeNextRound(11n * 60n * 60n);
 		await expect(cosmicGameProxy.setMarketingReward(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setMaxMessageLength(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -426,7 +427,7 @@ describe("SystemManagement tests", function () {
 			if (counter_ > 0) {
 				break;
 			}
-			await cosmicGameProxy.setActivationTime(99n);
+			await cosmicGameProxy.setActivationTime(123n);
 			expect(await cosmicGameProxy.timeUntilActivation()).to.equal(0n);
 		}
 	});

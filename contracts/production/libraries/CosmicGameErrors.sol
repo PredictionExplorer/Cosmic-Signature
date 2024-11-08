@@ -28,17 +28,22 @@ library CosmicGameErrors {
 	// /// @param systemMode The current system mode.
 	// error SystemMode(string errStr, uint256 systemMode);
 
-	/// @notice Thrown when an action is attempted before the game activation time.
+	/// @notice Thrown when an action is attempted before the bidding round activation time.
 	/// @param errStr Description of the error.
-	/// @param activationTime The game activation time.
+	/// @param activationTime The activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	/// @notice Thrown when an action is attempted at or after the game activation time.
+	/// @notice Thrown when an action is attempted at or after the bidding round activation time.
 	/// @param errStr Description of the error.
-	/// @param activationTime The game activation time.
+	/// @param activationTime The activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
+
+	/// @notice Thrown when an action is attempted that is not allowed after someone has already placed a bid
+	/// in the current bidding round.
+	/// @param errStr Description of the error.
+	error BidHasBeenPlacedInCurrentRound(string errStr);
 
 	/// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
 	/// @param errStr Description of the error
@@ -80,7 +85,7 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when an invalid bidder query offset is provided
 	/// @param errStr Description of the error
-	/// @param providedRoundNum The round number provided
+	/// @param providedRoundNum The provided bidding round number.
 	/// @param providedOffset The offset provided
 	/// @param numParticipants The number of participants in the round
 	error InvalidBidderQueryOffset(
@@ -90,10 +95,10 @@ library CosmicGameErrors {
 		uint256 numParticipants
 	);
 
-	/// @notice Thrown when an invalid bidder query round number is provided.
+	/// @notice Thrown when an invalid bidder query bidding round number is provided.
 	/// @param errStr Description of the error.
-	/// @param providedRoundNum The provided round number.
-	/// @param currentRoundNum The current round number.
+	/// @param providedRoundNum The provided bidding round number.
+	/// @param currentRoundNum The current bidding round number.
 	error InvalidBidderQueryRoundNum(string errStr, uint256 providedRoundNum, uint256 currentRoundNum);
 
 	/// @notice Thrown when the bidder query offset overflows
@@ -105,7 +110,7 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when querying bidders for a round with no bids yet
 	/// @param errStr Description of the error
-	/// @param providedRoundNum The round number provided
+	/// @param providedRoundNum The provided bidding round number.
 	error BidderQueryNoBidsYet(string errStr, uint256 providedRoundNum);
 
 	// #endregion
@@ -172,7 +177,7 @@ library CosmicGameErrors {
 	/// @notice Thrown when ERC721 token minting fails
 	/// @param errStr Description of the error
 	/// @param receiver The intended receiver of the token
-	/// @param roundNum The round number for the token
+	/// @param roundNum The bidding round number for the token.
 	error ERC721Mint(string errStr, address receiver, uint256 roundNum);
 
 	/// @notice Thrown when the token name length is invalid
