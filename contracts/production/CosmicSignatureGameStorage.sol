@@ -7,7 +7,7 @@ pragma solidity 0.8.27;
 // #region
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { EthPrizesWallet } from "./EthPrizesWallet.sol";
+import { PrizesWallet } from "./PrizesWallet.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
@@ -62,8 +62,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region External Contract and Other Addresses
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 Replace this with a reference to `PrizesWallet`.
-	EthPrizesWallet public ethPrizesWallet;
+	PrizesWallet public prizesWallet;
 
 	/// @notice Comment-202411064 applies.
 	CosmicToken public token;
@@ -142,7 +141,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
-	// todo-0 Rename to `ethBidPrice`.
+	/// todo-1 Rename to `ethBidPrice`.
+	/// todo-1 Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
 	uint256 public bidPrice;
 
 	/// @notice Comment-202411064 applies.

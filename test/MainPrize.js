@@ -18,7 +18,7 @@ describe("MainPrize tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			marketingWallet,
@@ -29,8 +29,8 @@ describe("MainPrize tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			marketingWallet,
 		};
@@ -44,7 +44,7 @@ describe("MainPrize tests", function () {
 		],
 	};
 	it("Raffle deposits sent should match raffle deposits received", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT, ethPrizesWallet } =
+		const {cosmicGameProxy, cosmicSignature, prizesWallet, randomWalkNFT,} =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await hre.ethers.getSigners();
 	
@@ -73,7 +73,7 @@ describe("MainPrize tests", function () {
 
 
 		// at this point all required data was initialized, we can proceed with the test
-		let topic_sig = ethPrizesWallet.interface.getEvent("PrizeReceived").topicHash;
+		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 		let tx, receipt, log, parsed_log, winner;
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -151,12 +151,12 @@ describe("MainPrize tests", function () {
 
 		const unique_winners = [];
 		for (let i = 0; i < deposit_logs.length; i++) {
-			let wlog = ethPrizesWallet.interface.parseLog(deposit_logs[i]);
+			let wlog = prizesWallet.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
 			let winner = args.winner;
 			let winner_signer = await hre.ethers.getSigner(winner);
 			if (typeof unique_winners[winner] === "undefined") {
-				await ethPrizesWallet.connect(winner_signer).withdraw();
+				await prizesWallet.connect(winner_signer).withdrawEth();
 				unique_winners[winner] = 1;
 			}
 		}
@@ -169,8 +169,8 @@ describe("MainPrize tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -243,7 +243,7 @@ describe("MainPrize tests", function () {
 			let winner_signer = await hre.ethers.getSigner(winner);
 			if (typeof unique_winners[winner] === 'undefined') {
 				if (winner != (await cBidder.getAddress())) {
-					await ethPrizesWallet.connect(winner_signer).withdraw();
+					await prizesWallet.connect(winner_signer).withdrawEth();
 				}
 				unique_winners[winner] = 1;
 			}
@@ -265,7 +265,7 @@ describe("MainPrize tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet
@@ -276,7 +276,7 @@ describe("MainPrize tests", function () {
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
 			true
 		);
-		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// in this test we will make one bid as EOA, after that we will wait for claimPrize() timeout
 		// and call the claimPrize() function from a contract. The contract should get the (main) prize.

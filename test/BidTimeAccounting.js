@@ -20,7 +20,7 @@ describe("Bid time accounting", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -32,8 +32,8 @@ describe("Bid time accounting", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -58,7 +58,7 @@ describe("Bid time accounting", function () {
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
@@ -97,7 +97,7 @@ describe("Bid time accounting", function () {
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
@@ -180,8 +180,8 @@ describe("Bid time accounting", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,

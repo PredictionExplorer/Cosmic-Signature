@@ -5,9 +5,8 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
-import { IEthPrizesWallet } from "../production/interfaces/IEthPrizesWallet.sol";
-import { EthPrizesWallet } from "../production/EthPrizesWallet.sol";
-import { CharityWallet } from "../production/CharityWallet.sol";
+import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
+import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
 import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
@@ -16,6 +15,7 @@ import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { CharityWallet } from "../production/CharityWallet.sol";
 import { Bidding } from "../production/Bidding.sol";
 import { NFTDonations } from "../production/NFTDonations.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
@@ -155,8 +155,8 @@ contract SpecialCosmicGame is CosmicGame {
 	function setCharityRaw(address addr) external {
 		charity = addr;
 	}
-	function setEthPrizesWalletRaw(IEthPrizesWallet ethPrizesWallet_) external {
-		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
+	function setPrizesWalletRaw(IPrizesWallet newValue_) external {
+		prizesWallet = PrizesWallet(address(newValue_));
 	}
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft addr) external {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(addr));
@@ -235,7 +235,7 @@ contract MaliciousToken1 is ERC721 {
 	}
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// the following call should revert
-		(bool isSuccess_, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector,address(this),0));
+		(bool isSuccess_, /*bytes memory retval*/) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector, address(this), 0));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -254,14 +254,14 @@ contract MaliciousToken2 is ERC721 {
 		game = game_;
 	}
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
-		uint256 price = Bidding(payable(address(game))).getBidPrice();
+		// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
 		CosmicGame.BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNFTId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
 		// the following call should revert
-		(bool isSuccess_, bytes memory retval) = msg.sender.call(abi.encodeWithSelector(CosmicGame.bidAndDonateNFT.selector,param_data,address(this),0));
+		(bool isSuccess_, /*bytes memory retval*/) = msg.sender.call(abi.encodeWithSelector(CosmicGame.bidAndDonateNFT.selector,param_data, address(this), 0));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)

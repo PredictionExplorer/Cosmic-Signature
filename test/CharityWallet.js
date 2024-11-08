@@ -20,7 +20,7 @@ describe("CharityWallet tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -31,8 +31,8 @@ describe("CharityWallet tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWallet,
 			marketingWallet,
 		};
@@ -46,7 +46,7 @@ describe("CharityWallet tests", function () {
 		],
 	};
 	it("CharityWallet is sending the right amount", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let amountSent = hre.ethers.parseUnits("9",18);
@@ -66,7 +66,7 @@ describe("CharityWallet tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -78,17 +78,17 @@ describe("CharityWallet tests", function () {
 
 		await owner.sendTransaction({ to: await charityWallet.getAddress(), value: hre.ethers.parseUnits("3",18)});
 		await charityWallet.setCharity(await brokenCharity.getAddress());
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
-		await expect(charityWallet.send()).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+		await expect(charityWallet.send()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
 
 
 		const BrokenCharityWallet = await hre.ethers.getContractFactory("BrokenCharityWallet");
 		let brokenCharityWallet = await BrokenCharityWallet.deploy();
 		await brokenCharityWallet.waitForDeployment();
 		await brokenCharityWallet.setCharityToZeroAddress();
-		await expect(brokenCharityWallet.send()).to.be.revertedWithCustomError(brokenCharityWallet,"ZeroAddress");
+		await expect(brokenCharityWallet.send()).to.be.revertedWithCustomError(brokenCharityWallet, "ZeroAddress");
 		await brokenCharityWallet.setCharity(addr1.address);
-		await expect(brokenCharityWallet.send()).to.be.revertedWithCustomError(brokenCharityWallet,"ZeroBalance");
+		await expect(brokenCharityWallet.send()).to.be.revertedWithCustomError(brokenCharityWallet, "ZeroBalance");
 	});
 	it("Change charityAddress via DAO (Governor) is working", async function () {
 		if (SKIP_LONG_TESTS == "1") return;
@@ -97,7 +97,7 @@ describe("CharityWallet tests", function () {
 				await hre.ethers.provider.send("evm_mine");
 			}
 		};
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 

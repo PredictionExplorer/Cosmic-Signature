@@ -1,7 +1,3 @@
-// todo-0 Add winners per round and a function to set winner.
-// todo-0 Callable only by game.
-
-
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
@@ -32,7 +28,7 @@ contract PrizesWallet is /*Ownable,*/ IPrizesWallet {
 	modifier onlyGame() {
 		require(
 			msg.sender == game,
-			CosmicGameErrors.AccessDenied("Only the CosmicGame contract is permitted to call this method.", msg.sender)
+			CosmicGameErrors.CallDenied("Only the CosmicGame contract is permitted to call this method.", msg.sender)
 		);
 		_;
 	}
@@ -77,6 +73,13 @@ contract PrizesWallet is /*Ownable,*/ IPrizesWallet {
 		emit EthWithdrawn(msg.sender, ethBalance_);
 		(bool isSuccess, ) = msg.sender.call{value: ethBalance_}("");
 		require(isSuccess, CosmicGameErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalance_));
+	}
+
+	// #endregion
+	// #region `getEthBalance`
+
+	function getEthBalance() external view override returns(uint256) {
+		return _ethBalances[uint160(msg.sender)];
 	}
 
 	// #endregion

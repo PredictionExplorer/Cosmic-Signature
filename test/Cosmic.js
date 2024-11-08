@@ -18,7 +18,7 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -29,8 +29,8 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWallet,
 			marketingWallet,
 		};
@@ -44,7 +44,7 @@ describe("CosmicGame", function () {
 		],
 	};
 	it("Should set the right unlockTime", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		expect(await cosmicGameProxy.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
 		expect(await cosmicToken.totalSupply()).to.equal(0);
@@ -57,7 +57,7 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet
@@ -68,7 +68,7 @@ describe("CosmicGame", function () {
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
 			true
 		);
-		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(
 			hre.ethers.provider.call({
 				to:  await cosmicGameProxy.getAddress(),
@@ -83,7 +83,7 @@ describe("CosmicGame", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,

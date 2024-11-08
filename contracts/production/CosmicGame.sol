@@ -70,7 +70,7 @@ contract CosmicGame is
 		delayDurationBeforeNextRound = CosmicGameConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingReward = CosmicGameConstants.MARKETING_REWARD;
 		maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
-		// ethPrizesWallet =
+		// prizesWallet =
 		// token =
 		// marketingWallet =
 		// nft =

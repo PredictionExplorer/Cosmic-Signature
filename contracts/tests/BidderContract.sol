@@ -2,15 +2,15 @@
 pragma solidity 0.8.27;
 pragma abicoder v2;
 
-import { CosmicGame } from "../production/CosmicGame.sol";
-import { CosmicSignature } from "../production/CosmicSignature.sol";
-import { CosmicToken } from "../production/CosmicToken.sol";
-import { EthPrizesWallet } from "../production/EthPrizesWallet.sol";
-import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import { PrizesWallet } from "../production/PrizesWallet.sol";
+import { CosmicToken } from "../production/CosmicToken.sol";
+import { CosmicSignature } from "../production/CosmicSignature.sol";
+import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+import { CosmicGame } from "../production/CosmicGame.sol";
 
 contract BidderContract is IERC721Receiver {
 	CosmicGame public cosmicGame;
@@ -80,17 +80,21 @@ contract BidderContract is IERC721Receiver {
 		cosmicGame.claimPrize();
 	}
 	function withdrawEthPrize(address destination) external {
-		EthPrizesWallet ethPrizesWallet_ = EthPrizesWallet(destination);
-		ethPrizesWallet_.withdraw();
+		PrizesWallet prizesWallet_ = PrizesWallet(destination);
+		prizesWallet_.withdrawEth();
 	}
 	function withdrawAll() external {
-		EthPrizesWallet ethPrizesWallet_ = cosmicGame.ethPrizesWallet();
-		// Issue. `EthPrizesWallet.withdraw` won't revert on zero balance any more.
+		PrizesWallet prizesWallet_ = cosmicGame.prizesWallet();
+
+		// Issue. `PrizesWallet.withdrawEth` won't revert on zero balance any more.
 		// So it could make sense to call it without checking balance.
-		uint256 bal_ = ethPrizesWallet_.getWinnerBalance(address(this));
+		// But it would cost more gas if the balance is zero.
+		// Comment-202409215 relates.
+		uint256 bal_ = prizesWallet_.getEthBalance();
 		if (bal_ > 0) {
-			ethPrizesWallet_.withdraw();
+			prizesWallet_.withdrawEth();
 		}
+
 		CosmicSignature nft = cosmicGame.nft();
 		// todo-1 Review all calls to `call`.
 		// todo-1 I didn't replace those with high level calls when it's used simply to send funds.

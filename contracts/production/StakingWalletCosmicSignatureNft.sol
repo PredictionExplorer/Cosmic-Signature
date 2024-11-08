@@ -374,7 +374,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `msg.value`.
-	///    `CosmicGameErrors.AccessDenied`.
+	///    `CosmicGameErrors.CallDenied`.
 	///    `CosmicGameErrors.NoStakedNfts`.
 	///    `EthDepositReceived`.
 	///    `EthDeposit`.
@@ -399,7 +399,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// todo-1 Move this validation to a modifier. See `PrizesWallet`.
 		require(
 			msg.sender == game,
-			CosmicGameErrors.AccessDenied("Only the CosmicGame contract is permitted to make a deposit.", msg.sender)
+			CosmicGameErrors.CallDenied("Only the CosmicGame contract is permitted to make a deposit.", msg.sender)
 		);
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 		if (numStakedNftsCopy_ == 0) {

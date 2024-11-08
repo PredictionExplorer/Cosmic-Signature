@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
-import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
+import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { IMarketingWallet } from "./IMarketingWallet.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
@@ -43,10 +43,10 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param _maxMessageLength The new maximum message length
 	function setMaxMessageLength(uint256 _maxMessageLength) external;
 
-	/// @notice Sets the ETH prizes wallet address.
+	/// @notice Sets `prizesWallet`.
 	/// @dev Only callable by the contract owner.
-	/// @param ethPrizesWallet_ The new value.
-	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external;
+	/// @param newValue_ The new value.
+	function setPrizesWallet(IPrizesWallet newValue_) external;
 
 	/// @notice Set the Cosmic Token contract address
 	/// @dev Only callable by the contract owner
@@ -58,10 +58,10 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param _marketingWallet The new marketing wallet address
 	function setMarketingWallet(address _marketingWallet) external;
 
-	/// @notice Set the Cosmic Signature NFT contract address
-	/// @dev Only callable by the contract owner
-	/// @param _nft The new Cosmic Signature NFT contract address
-	function setNftContract(ICosmicSignature _nft) external;
+	/// @notice Sets `nft`.
+	/// @dev Only callable by the contract owner.
+	/// @param newValue_ The new value.
+	function setCosmicSignatureNft(ICosmicSignature newValue_) external;
 
 	/// @notice Set the `RandomWalkNFT` contract address
 	/// @dev Only callable by the contract owner

@@ -18,7 +18,7 @@ library CosmicGameErrors {
 	/// @notice Thrown when an unauthorized caller calls a privileged method.
 	/// @param errStr Description of the error.
 	/// @param caller Caller address.
-	error AccessDenied(string errStr, address caller);
+	error CallDenied(string errStr, address caller);
 
 	// #endregion
 	// #region System Errors

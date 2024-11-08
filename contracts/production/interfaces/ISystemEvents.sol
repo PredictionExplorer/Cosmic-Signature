@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { ICosmicToken } from "./ICosmicToken.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
-import { IEthPrizesWallet } from "./IEthPrizesWallet.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
 interface ISystemEvents {
@@ -28,9 +28,9 @@ interface ISystemEvents {
 	/// @param newMessageLength The new maximum message length
 	event MaxMessageLengthChanged(uint256 newMessageLength);
 
-	/// @notice Emitted when the ETH prizes wallet address is changed.
-	/// @param newEthPrizesWallet The new value.
-	event EthPrizesWalletAddressChanged(IEthPrizesWallet newEthPrizesWallet);
+	/// @notice Emitted when `prizesWallet` is changed.
+	/// @param newValue The new value.
+	event PrizesWalletAddressChanged(IPrizesWallet newValue);
 
 	/// @notice Emitted when the Cosmic Token address is changed
 	/// @param newCosmicToken The new Cosmic Token address
@@ -40,10 +40,9 @@ interface ISystemEvents {
 	/// @param newMarketingWallet The new marketing wallet address
 	event MarketingWalletAddressChanged(address newMarketingWallet);
 
-	/// @notice Emitted when the Cosmic Signature address is changed
-	/// @param newCosmicSignature The new Cosmic Signature address
-	/// todo-0 Rename to `CosmicSignatureNftAddressChanged`.
-	event CosmicSignatureAddressChanged(ICosmicSignature newCosmicSignature);
+	/// @notice Emitted when `nft` is changed.
+	/// @param newValue The new value.
+	event CosmicSignatureNftAddressChanged(ICosmicSignature newValue);
 
 	/// @notice Emitted when the `RandomWalkNFT` address is changed
 	/// @param newRandomWalkNft The new `RandomWalkNFT` address

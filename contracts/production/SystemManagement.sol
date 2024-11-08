@@ -6,8 +6,8 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { IEthPrizesWallet } from "./interfaces/IEthPrizesWallet.sol";
-import { EthPrizesWallet } from "./EthPrizesWallet.sol";
+import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
+import { PrizesWallet } from "./PrizesWallet.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
@@ -116,10 +116,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit MaxMessageLengthChanged(_maxMessageLength);
 	}
 
-	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external override onlyOwner onlyInactive {
-		require(address(ethPrizesWallet_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
-		emit EthPrizesWalletAddressChanged(ethPrizesWallet_);
+	function setPrizesWallet(IPrizesWallet newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		prizesWallet = PrizesWallet(address(newValue_));
+		emit PrizesWalletAddressChanged(newValue_);
 	}
 
 	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyInactive {
@@ -134,10 +134,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit MarketingWalletAddressChanged(_marketingWallet);
 	}
 
-	function setNftContract(ICosmicSignature _nft) external override onlyOwner onlyInactive {
-		require(address(_nft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		nft = CosmicSignature(address(_nft));
-		emit CosmicSignatureAddressChanged(_nft);
+	function setCosmicSignatureNft(ICosmicSignature newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		nft = CosmicSignature(address(newValue_));
+		emit CosmicSignatureNftAddressChanged(newValue_);
 	}
 
 	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyInactive {

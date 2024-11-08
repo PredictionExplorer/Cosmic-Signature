@@ -18,7 +18,7 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -29,8 +29,8 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWallet,
 			marketingWallet,
 		};
@@ -52,7 +52,7 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -68,7 +68,7 @@ describe("CosmicSignature tests", function () {
 
 		await expect(
 			cosmicSignature.connect(owner).mint(hre.ethers.ZeroAddress, 0n),
-		).to.be.revertedWithCustomError(cosmicSignature,"ZeroAddress");
+		).to.be.revertedWithCustomError(cosmicSignature, "ZeroAddress");
 
 	});
 	it("setTokenGenerationScriptURL() works as expected", async function () {
@@ -80,7 +80,7 @@ describe("CosmicSignature tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
@@ -92,7 +92,7 @@ describe("CosmicSignature tests", function () {
 	});
 	it("Should be possible to setTokenName()", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };
@@ -119,17 +119,17 @@ describe("CosmicSignature tests", function () {
 		let remote_token_name = await cosmicSignature.connect(addr1).tokenNames(token_id);
 		expect(remote_token_name).to.equal("name 0");
 
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(cosmicSignature.connect(addr2).setTokenName(token_id, "name 000")).to.be.revertedWithCustomError(
-			contractErrors,
+			cosmicSignatureGameErrorsFactory_,
 			"OwnershipError"
 		);
 		await expect(
 			cosmicSignature.connect(addr1).setTokenName(token_id, "012345678901234567890123456789012"),
-		).to.be.revertedWithCustomError(contractErrors,"TokenNameLength");
+		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenNameLength");
 	});
 	it("BaseURI/TokenURI works", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let bidPrice = await cosmicGameProxy.getBidPrice();
