@@ -14,7 +14,7 @@ describe("MarketingWallet", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -27,8 +27,8 @@ describe("MarketingWallet", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -51,8 +51,8 @@ describe("MarketingWallet", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -65,10 +65,10 @@ describe("MarketingWallet", function () {
 			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
 			true
 		);
-		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		await expect(marketingWallet.connect(addr1).setTokenContract(addr1.address)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
-		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors, "ZeroAddress");
+		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 		await expect(marketingWallet.setTokenContract(addr2.address)).to.emit(marketingWallet, "CosmicTokenAddressChanged").withArgs(addr2.address);
 	});
 	it("MarketinWallet properly send()s accumulated funds", async function () {
@@ -79,13 +79,13 @@ describe("MarketingWallet", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		const BidderContract = await hre.ethers.getContractFactory('BidderContract');
 		const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
@@ -95,8 +95,8 @@ describe("MarketingWallet", function () {
 		await cBidder.doBid({ value: bidPrice });
 
 		const marketingReward = hre.ethers.parseEther('15');
-		await expect(marketingWallet.send(marketingReward,hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(contractErrors,"ZeroAddress");
-		await expect(marketingWallet.send(0n,addr1.address)).to.be.revertedWithCustomError(contractErrors,"NonZeroValueRequired");
+		await expect(marketingWallet.send(marketingReward,hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		await expect(marketingWallet.send(0n,addr1.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
 		await expect(marketingWallet.connect(addr1).send(0n,await cBidder.getAddress())).to.be.revertedWithCustomError(marketingWallet,"OwnableUnauthorizedAccount");
 		await marketingWallet.send(marketingReward,addr1);
 		await marketingWallet.setTokenContract(await cBidder.getAddress());

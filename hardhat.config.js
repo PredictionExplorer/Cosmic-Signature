@@ -365,7 +365,7 @@ const hardhatUserConfig = {
 			'CosmicGameProxy',
 			'CosmicSignature',
 			'CosmicToken',
-			'EthPrizesWallet',
+			'PrizesWallet',
 			'RandomWalkNFT',
 		],
 
@@ -435,8 +435,8 @@ if (ENABLE_SMTCHECKER >= 2) {
 			// "contracts/production/CosmicGame.sol": ["CosmicGame"],
 			// "contracts/production/CosmicSignature.sol": ["CosmicSignature"],
 			// "contracts/production/CosmicToken.sol": ["CosmicToken"],
-			// "contracts/production/EthPrizesWallet.sol": ["EthPrizesWallet"],
 			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
+			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
 			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],
 			"contracts/production/StakingWalletRandomWalkNft.sol": ["StakingWalletRandomWalkNft"],

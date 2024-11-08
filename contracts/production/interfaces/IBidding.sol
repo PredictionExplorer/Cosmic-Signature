@@ -6,14 +6,23 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
+	/// @notice Emitted when the first bid is placed in a bidding round.
+	/// @param roundNum The current bidding round number.
+	/// @param timeStamp The current block timestamp.
+	event FirstBidPlacedInRound(
+		uint256 indexed roundNum,
+		uint256 timeStamp
+	);
+
 	/// @notice Emitted when a bid is placed
 	/// @param lastBidder The address of the bidder
-	/// @param roundNum The current round number
+	/// @param roundNum The current bidding round number.
 	/// @param bidPrice The price of the bid
 	/// @param randomWalkNFTId The ID of the RandomWalk NFT used (if any)
 	/// @param numCSTTokens The number of CST tokens used (if any)
 	/// @param prizeTime The time when the prize can be claimed
 	/// @param message An optional message from the bidder
+	/// todo-1 Rename to `BidPlaced`.
 	event BidEvent(
 		address indexed lastBidder,
 		uint256 indexed roundNum,
@@ -34,7 +43,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	function getBidPrice() external view returns (uint256);
 
 	/// @notice Get the address of a bidder at a specific position from the end in a given round
-	/// @param roundNum_ The round number
+	/// @param roundNum_ The bidding round number.
 	/// @param _positionFromEnd The position from the end of the bidders list
 	/// @return The address of the bidder
 	/// @dev todo-1 Reorder this function to after `getBidderAtPosition`?

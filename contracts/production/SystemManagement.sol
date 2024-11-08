@@ -6,8 +6,8 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { IEthPrizesWallet } from "./interfaces/IEthPrizesWallet.sol";
-import { EthPrizesWallet } from "./EthPrizesWallet.sol";
+import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
+import { PrizesWallet } from "./PrizesWallet.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
@@ -70,8 +70,32 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	// 	emit SystemModeChanged(systemMode);
 	// }
 
-	function setActivationTime(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setActivationTime(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
+		// [Comment-202411236]
+		// Imposing this requirement instead of `onlyInactive`.
+		// This design leaves the door open for the admin to change `activationTime` to a point in the future
+		// and then change some parameters.
+		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `bidPrice`.
+		// [/Comment-202411236]
+		require(
+			lastBidder == address(0),
+			CosmicGameErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
+		);
+
 		_setActivationTime(newValue_);
+	}
+
+	function _setActivationTime(uint256 newValue_) internal {
+		activationTime = newValue_;
+
+		// [Comment-202411168]
+		// One might want to ensure that this is not in the past.
+		// But `activationTime` is really not supposed to be in the past.
+		// So keeping it simple and gas-effiicient.
+		// [/Comment-202411168]
+		lastCstBidTimeStamp = newValue_;
+
+		emit ActivationTimeChanged(newValue_);
 	}
 
 	function timeUntilActivation() external view override returns (uint256) {
@@ -103,10 +127,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit MaxMessageLengthChanged(_maxMessageLength);
 	}
 
-	function setEthPrizesWallet(IEthPrizesWallet ethPrizesWallet_) external override onlyOwner onlyInactive {
-		require(address(ethPrizesWallet_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		ethPrizesWallet = EthPrizesWallet(address(ethPrizesWallet_));
-		emit EthPrizesWalletAddressChanged(ethPrizesWallet_);
+	function setPrizesWallet(IPrizesWallet newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		prizesWallet = PrizesWallet(address(newValue_));
+		emit PrizesWalletAddressChanged(newValue_);
 	}
 
 	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyInactive {
@@ -121,10 +145,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit MarketingWalletAddressChanged(_marketingWallet);
 	}
 
-	function setNftContract(ICosmicSignature _nft) external override onlyOwner onlyInactive {
-		require(address(_nft) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		nft = CosmicSignature(address(_nft));
-		emit CosmicSignatureAddressChanged(_nft);
+	function setCosmicSignatureNft(ICosmicSignature newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		nft = CosmicSignature(address(newValue_));
+		emit CosmicSignatureNftAddressChanged(newValue_);
 	}
 
 	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyInactive {

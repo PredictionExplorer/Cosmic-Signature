@@ -4,14 +4,14 @@ const hre = require("hardhat");
 const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
-async function claim_raffle_eth(testingAcct, ethPrizesWallet, event_logs) {
+async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 	const unique_winners = [];
 	for (let i = 0; i < event_logs.length; i++) {
-		let wlog = ethPrizesWallet.interface.parseLog(event_logs[i]);
+		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
 		let winner = wlog.args.winner;
 		if (winner.address == testingAcct.address) {
 			if (typeof unique_winners[winner] === "undefined") {
-				await ethPrizesWallet.connect(testingAcct).withdraw();
+				await prizesWallet.connect(testingAcct).withdrawEth();
 				unique_winners[winner] = 1;
 			}
 		}
@@ -28,11 +28,11 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 	expect(parsed_log.args.claimedBy).to.equal(testingAcct.address);
 	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 
-	let ethPrizesWalletAddr = await cosmicGameProxy.ethPrizesWallet();
-	let ethPrizesWallet = await hre.ethers.getContractAt("EthPrizesWallet", ethPrizesWalletAddr);
-	topic_sig = ethPrizesWallet.interface.getEventTopic("PrizeReceived");
+	let prizesWalletAddr = await cosmicGameProxy.prizesWallet();
+	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
+	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-	claim_raffle_eth(testingAcct, ethPrizesWallet, event_logs);
+	claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 
 	let cosmicSigAddr = await cosmicGameProxy.nft();
 	let cosmicSignature = await hre.ethers.getContractAt("CosmicSignature", cosmicSigAddr);

@@ -17,7 +17,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -30,8 +30,8 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -53,15 +53,15 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		// const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
@@ -93,7 +93,7 @@ describe("Staking RandomWalk tests", function () {
 		await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.unstake(0);
 
-		await expect(newStakingWalletRandomWalkNft.unstake(0)).to.be.revertedWithCustomError(contractErrors, "NftAlreadyUnstaked");
+		await expect(newStakingWalletRandomWalkNft.unstake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftAlreadyUnstaked");
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {
@@ -102,15 +102,15 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		// const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
@@ -134,7 +134,7 @@ describe("Staking RandomWalk tests", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		await hre.ethers.provider.send("evm_mine");
 
-		await expect(newStakingWalletRandomWalkNft.connect(addr1).unstake(0)).to.be.revertedWithCustomError(contractErrors, "NftStakeActionAccessDenied");
+		await expect(newStakingWalletRandomWalkNft.connect(addr1).unstake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftStakeActionAccessDenied");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
@@ -144,14 +144,14 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			cosmicGameImplementation,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft");
 		let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNFT.getAddress());
@@ -168,10 +168,10 @@ describe("Staking RandomWalk tests", function () {
 		expect(tokenIndexCheck).to.equal(1);
 		let tokenIdCheck = await newStakingWalletRandomWalkNft.stakedTokens(Number(tokenIndexCheck)-1);
 		expect(tokenIdCheck).to.equal(sampleTokenId);
-		await expect(newStakingWalletRandomWalkNft.doInsertToken(sampleTokenId,0)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyInserted");
+		await expect(newStakingWalletRandomWalkNft.doInsertToken(sampleTokenId,0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenAlreadyInserted");
 
 		await newStakingWalletRandomWalkNft.doRemoveToken(sampleTokenId);
-		await expect(newStakingWalletRandomWalkNft.doRemoveToken(owner.address)).to.be.revertedWithCustomError(contractErrors,"TokenAlreadyDeleted");
+		await expect(newStakingWalletRandomWalkNft.doRemoveToken(owner.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenAlreadyDeleted");
 		await randomWalkNFT.setApprovalForAll(await newStakingWalletRandomWalkNft.getAddress(), true);
 		async function mint_rwalk(a) {
 			let tokenPrice = await randomWalkNFT.getMintPrice();
@@ -216,7 +216,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -262,7 +262,7 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -340,15 +340,15 @@ describe("Staking RandomWalk tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic,
 		} = await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		// const cBidder = await BidderContract.deploy(await cosmicGameProxy.getAddress());
@@ -373,6 +373,6 @@ describe("Staking RandomWalk tests", function () {
 		await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.unstake(0);
 
-		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(contractErrors, "NftOneTimeStaking");
+		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftOneTimeStaking");
 	});
 });

@@ -23,7 +23,7 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
@@ -36,8 +36,8 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -52,18 +52,18 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
+		await cosmicGameProxy.setPrizesWallet(await prizesWallet.getAddress());
 		await cosmicGameProxy.setTokenContract(await cosmicToken.getAddress());
-		await cosmicGameProxy.setNftContract(await cosmicSignature.getAddress());
-		await cosmicGameProxy.setCharity(await charityWallet.getAddress());
-		await cosmicGameProxy.setEthPrizesWallet(await ethPrizesWallet.getAddress());
+		await cosmicGameProxy.setCosmicSignatureNft(await cosmicSignature.getAddress());
 		await cosmicGameProxy.setRandomWalkNft(await randomWalkNFT.getAddress());
+		await cosmicGameProxy.setCharity(await charityWallet.getAddress());
 		await cosmicGameProxy.setMainPrizePercentage(10n);
 
 		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
@@ -91,13 +91,13 @@ describe("Security", function () {
 		let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 		let reclaim_bal_before = await hre.ethers.provider.getBalance(await reclaim.getAddress());
 		// Make sure there is no re-entrancy
-		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(contractErrors,"FundTransferFailed");
+		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
 	});
 	it("Is possible to take prize before activation", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, ...addrs] = await hre.ethers.getSigners();
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		await hre.ethers.provider.send("evm_mine"); // begin
@@ -106,7 +106,7 @@ describe("Security", function () {
 		await hre.ethers.provider.send("evm_mine");
 		let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
 		let balance_before = await hre.ethers.provider.getBalance(addr1);
-		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(contractErrors,"NoLastBidder");
+		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoLastBidder");
 	});
 	it("donateNFT() function is confirmed to be non-reentrant", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
@@ -116,13 +116,13 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
@@ -141,13 +141,13 @@ describe("Security", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const contractErrors = await hre.ethers.getContractFactory('CosmicGameErrors');
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });

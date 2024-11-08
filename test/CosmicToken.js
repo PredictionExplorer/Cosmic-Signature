@@ -18,7 +18,7 @@ describe("CosmicToken tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
-			ethPrizesWallet,
+			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			marketingWallet,
@@ -29,8 +29,8 @@ describe("CosmicToken tests", function () {
 			cosmicSignature,
 			charityWallet,
 			cosmicDAO,
+			prizesWallet,
 			randomWalkNFT,
-			ethPrizesWallet,
 			stakingWalletCosmicSignatureNft,
 			marketingWallet,
 		};
@@ -45,9 +45,9 @@ describe("CosmicToken tests", function () {
 	};
 	it("ERC20 nonces() function exists", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, ethPrizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
-		const contractErrors = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 		await expect(
 			cosmicToken.nonces(owner.address),
 		).not.to.be.reverted;

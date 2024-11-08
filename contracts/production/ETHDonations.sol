@@ -11,6 +11,7 @@ import { SystemManagement } from "./SystemManagement.sol";
 
 abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, IETHDonations {
 	/// todo-1 Should we allow donations even while the system is inactive?
+	/// todo-1 Rename to `donateEth`?
 	function donate() external payable override onlyActive {
 		// todo-1 See Comment-202409215.
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
@@ -18,6 +19,7 @@ abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 	}
 
 	/// todo-1 Should we allow donations even while the system is inactive?
+	/// todo-1 Rename to `donateEthWithInfo`?
 	function donateWithInfo(string calldata _data) external payable override onlyActive {
 		// todo-1 Unlike in `donate`, Comment-202409215 should not apply here.
 		// todo-1 But should we enforce a minimum donation?

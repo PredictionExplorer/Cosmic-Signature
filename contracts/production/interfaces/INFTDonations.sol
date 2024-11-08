@@ -10,7 +10,7 @@ interface INFTDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	/// @notice Emitted when an NFT is donated
 	/// @param donor The address of the donor
 	/// @param nftAddress The address of the NFT contract
-	/// @param roundNum The current round number
+	/// @param roundNum The current bidding round number.
 	/// @param nftId The ID of the donated NFT
 	/// @param index The index of the donated NFT in the storage array
 	event NFTDonationEvent(
@@ -22,7 +22,7 @@ interface INFTDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	);
 
 	/// @notice Emitted when a donated NFT is claimed
-	/// @param roundNum The round number
+	/// @param roundNum The bidding round number.
 	/// @param index The index of the donated NFT
 	/// @param winner The address of the winner claiming the NFT
 	/// @param nftAddressdonatedNFTs The address of the NFT contract
@@ -53,6 +53,6 @@ interface INFTDonations is ICosmicSignatureGameStorage, ISystemManagement {
 
 	/// @notice Get the details of a donated NFT
 	/// @param index The index of the donated NFT
-	/// @return A tuple containing the NFT address, token ID, round number, and claimed status
+	/// @return A tuple containing the NFT address, NFT ID, bidding round number, and claimed status.
 	function getDonatedNFTDetails(uint256 index) external view returns (address, uint256, uint256, bool);
 }

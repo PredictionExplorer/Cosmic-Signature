@@ -214,7 +214,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		require(
 			roundNum_ <= roundNum,
 			CosmicGameErrors.InvalidBidderQueryRoundNum(
-				"Provided round number is larger than total number of rounds",
+				"The provided bidding round number is greater than the current one's.",
 				roundNum_,
 				roundNum
 			)

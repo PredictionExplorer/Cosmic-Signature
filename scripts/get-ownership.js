@@ -19,10 +19,10 @@ async function main() {
 	o = await cstContract.owner();
 	console.log("Owner of CosmicSignature: " + o);
 
-	addr = cosmicGameProxy.ethPrizesWallet();
-	let ethPrizesWalletContract = await hre.ethers.getContractAt("EthPrizesWallet", addr);
-	o = await ethPrizesWalletContract.owner();
-	console.log("Owner of EthPrizesWallet: " + o);
+	addr = cosmicGameProxy.prizesWallet();
+	let prizesWalletContract = await hre.ethers.getContractAt("PrizesWallet", addr);
+	o = await prizesWalletContract.owner();
+	console.log("Owner of PrizesWallet: " + o);
 
 	addr = await cosmicGameProxy.charity();
 	console.log("CharityWallet contract at CosmicGameProxy contract: " + addr);

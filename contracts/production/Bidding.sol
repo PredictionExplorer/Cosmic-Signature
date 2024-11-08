@@ -140,6 +140,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
 
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
+
+			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
 		}
@@ -201,7 +203,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		require(
 			roundNum_ <= roundNum,
 			CosmicGameErrors.InvalidBidderQueryRoundNum(
-				"Provided round number is larger than total number of rounds",
+				"The provided bidding round number is greater than the current one's.",
 				roundNum_,
 				roundNum
 			)

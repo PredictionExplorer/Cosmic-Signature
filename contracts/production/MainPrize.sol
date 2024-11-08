@@ -13,11 +13,11 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
+import { PrizesWallet } from "./PrizesWallet.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
-import { EthPrizesWallet } from "./EthPrizesWallet.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -236,7 +236,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		emit ChronoWarriorPrizePaid(chronoWarrior, roundNum, chronoWarriorEthPrizeAmount_);
 		// todo-1 Here and elsewhere, if this address happends to be the same as the main prize winner, don't deposit here,
 		// todo-1 but later send this to the main prize winner directly.
-		ethPrizesWallet.deposit{value: chronoWarriorEthPrizeAmount_}(chronoWarrior);
+		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(chronoWarrior);
 	}
 
 	// #endregion
@@ -251,8 +251,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateRaffleEntropy();
 			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			ethPrizesWallet.deposit{value: perWinnerAmount}(raffleWinner);
-			// todo-0 I will need a similar event for Chrono-Warrior.
+			prizesWallet.depositEth{value: perWinnerAmount}(raffleWinner);
 			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
 		}
 

@@ -17,14 +17,14 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @notice Emitted when an ETH raffle winner is selected
 	/// @param winner The address of the winner
-	/// @param roundNum The round number
+	/// @param roundNum The bidding round number.
 	/// @param winnerIndex The index of the winner
 	/// @param amount The amount won
 	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed roundNum, uint256 winnerIndex, uint256 amount);
 
 	/// @notice Emitted when an NFT raffle winner is selected
 	/// @param winner The address of the winner
-	/// @param roundNum The round number
+	/// @param roundNum The bidding round number.
 	/// @param nftId The ID of the NFT won
 	/// @param winnerIndex The index of the winner
 	/// @param isStaker Whether the winner is a staker
@@ -41,7 +41,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @dev todo-0 I renamed this and changed params. Tell Nick.
 	/// @notice Emitted when the Stellar Spender receives their prize.
 	/// @param stellarSpender Stellar Spender address.
-	/// @param roundNum The round number.
+	/// @param roundNum The bidding round number.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
 	/// @param cstPrizeAmount The amount of CST awarded.
 	/// @param totalSpentCst The total CST amount spent by the winner.
@@ -59,7 +59,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @dev todo-0 I renamed this and changed params. Tell Nick.
 	/// @notice Emitted when the Endurance Champion receives their prize.
 	/// @param enduranceChampion Endurance Champion address.
-	/// @param roundNum The round number.
+	/// @param roundNum The bidding round number.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
 	/// @param cstPrizeAmount The amount of Cosmic Tokens awarded.
 	/// ---param winnerIndex Winner index.
@@ -74,7 +74,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @notice Emitted when the Chrono-Warrior receives their prize. The prize ETH is transferred to `EthPrizesWalet`.
 	/// @param chronoWarrior Chrono-Warrior address.
-	/// @param roundNum The round number.
+	/// @param roundNum The bidding round number.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	event ChronoWarriorPrizePaid(
 		address indexed chronoWarrior,
@@ -111,7 +111,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	function timeUntilPrize() external view returns (uint256);
 
 	/// @notice Obtains the winner of a specific round.
-	/// @param roundNum_ The round number.
+	/// @param roundNum_ The bidding round number.
 	/// @return The winner address, or zero if `roundNum_` is invalid or the round has not ended yet.
 	function tryGetWinnerByRoundNum(uint256 roundNum_) external view returns (address);
 }

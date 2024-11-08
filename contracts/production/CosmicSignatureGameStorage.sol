@@ -7,7 +7,7 @@ pragma solidity 0.8.27;
 // #region
 
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { EthPrizesWallet } from "./EthPrizesWallet.sol";
+import { PrizesWallet } from "./PrizesWallet.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { MarketingWallet } from "./MarketingWallet.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
@@ -25,7 +25,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// @notice Comment-202411064 applies.
 	// uint256 public systemMode;
 
-	/// @notice
+	/// @notice Bidding round activation time. Starting at this point, people will be allowed to place bids.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// [/Comment-202411064]
@@ -36,7 +36,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// And in that case the logic emits an event.
 	/// Comment-202411174 relates
 	/// [/Comment-202411173]
-	/// @dev Comment-202411168 relates.
+	/// @dev Comment-202411236 relates.
+	/// Comment-202411168 relates.
 	uint256 public activationTime;
 
 	/// @notice Delay duration before the next bidding round.
@@ -62,7 +63,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region External Contract and Other Addresses
 
 	/// @notice Comment-202411064 applies.
-	EthPrizesWallet public ethPrizesWallet;
+	PrizesWallet public prizesWallet;
 
 	/// @notice Comment-202411064 applies.
 	CosmicToken public token;
@@ -101,7 +102,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public numDonationInfoRecords;
 	mapping(uint256 index => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
+	/// todo-0 Eliminate this. Now this functionality lives in `IPrizesWallet` and `PrizesWallet`.
 	uint256 public numDonatedNFTs;
+	/// todo-0 Eliminate this. Now this functionality lives in `IPrizesWallet` and `PrizesWallet`.
 	mapping(uint256 index => CosmicGameConstants.DonatedNFT) public donatedNFTs;
 
 	// #endregion
@@ -139,7 +142,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
-	// todo-0 Rename to `ethBidPrice`.
+	/// todo-1 Rename to `ethBidPrice`.
+	/// todo-1 Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
 	uint256 public bidPrice;
 
 	/// @notice Comment-202411064 applies.
@@ -288,22 +292,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public numRaffleNFTWinnersStakingRWalk;
 
 	bytes32 public raffleEntropy;
-
-	// #endregion
-	// #region `_setActivationTime`
-
-	function _setActivationTime(uint256 newValue_) internal {
-		activationTime = newValue_;
-
-		// [Comment-202411168]
-		// One might want to ensure that this is not in the past.
-		// But `activationTime` is really not supposed to be in the past.
-		// So keeping it simple and gas-effiicient.
-		// [/Comment-202411168]
-		lastCstBidTimeStamp = newValue_;
-
-		emit ActivationTimeChanged(newValue_);
-	}
 
 	// #endregion
 }
