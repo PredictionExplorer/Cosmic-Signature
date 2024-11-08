@@ -97,7 +97,7 @@ library CosmicGameConstants {
 	uint256 public constant INITIAL_RAFFLE_PERCENTAGE = 5;
 	uint256 public constant INITIAL_STAKING_PERCENTAGE = 10;
 	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
-	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = SECONDS_PER_DAY;
+	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = SECONDS_PER_DAY;
 
 	/// @notice Default `erc20RewardMultiplier`.
 	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;

@@ -120,7 +120,7 @@ contract CosmicGame is
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
 		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
 		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
-		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
+		timeoutDurationToClaimMainPrize = CosmicGameConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
 		// stellarSpender =
 		// stellarSpenderTotalSpentCst =
 		// enduranceChampion =

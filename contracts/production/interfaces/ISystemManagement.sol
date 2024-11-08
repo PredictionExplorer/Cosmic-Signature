@@ -142,10 +142,10 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param charityPercentage_ The new value.
 	function setCharityPercentage(uint256 charityPercentage_) external;
 
-	/// @notice Set the timeout for claiming prize
+	/// @notice Sets `timeoutDurationToClaimMainPrize`.
+	/// @param newValue_ The new value.
 	/// @dev Only callable by the contract owner.
-	/// @param _timeoutClaimPrize The new timeout for claiming prize
-	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external;
+	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
 
 	/// @notice Set the ERC20 reward multiplier
 	/// @dev Only callable by the contract owner.

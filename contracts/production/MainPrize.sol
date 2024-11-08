@@ -58,20 +58,20 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			//
 			// todo-0 Eliminate the above `require`.
 			// todo-0 Rewrite this:
-			// todo-0 (msg.sender == lastBidder) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutClaimPrize)
+			// todo-0 (msg.sender == lastBidder) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutDurationToClaimMainPrize)
 			// todo-0 Throw `CosmicGameErrors.EarlyClaim` if not.
 			// todo-0 Eliminate `CosmicGameErrors.LastBidderOnly`.
 			//
 			// todo-0 But I can eliminate the prev `require` too and check it only if `msg.sender != lastBidder`.
 			// todo-0 Otherwie only assert it.
-			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutClaimPrize) ) {
+			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutDurationToClaimMainPrize) ) {
 				revert
 					CosmicGameErrors.LastBidderOnly(
 						"Only the last bidder may claim the prize until a timeout expires.",
 						lastBidder,
 						/*winner*/ msg.sender,
 						// todo-1 Make sure this can't overflow.
-						timeoutClaimPrize - (block.timestamp - prizeTime)
+						timeoutDurationToClaimMainPrize - (block.timestamp - prizeTime)
 					);
 			}
 
@@ -402,11 +402,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		{
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
 			// return (block.timestamp >= prizeTime) ? 0 : (prizeTime - block.timestamp);
-			uint256 durationUntilPrize_ = uint256(int256(prizeTime) - int256(block.timestamp));
-			if(int256(durationUntilPrize_) < int256(0)) {
-				durationUntilPrize_ = 0;
+			uint256 durationUntilMainPrize_ = uint256(int256(prizeTime) - int256(block.timestamp));
+			if(int256(durationUntilMainPrize_) < int256(0)) {
+				durationUntilMainPrize_ = 0;
 			}
-			return durationUntilPrize_;
+			return durationUntilMainPrize_;
 		}
 	}
 

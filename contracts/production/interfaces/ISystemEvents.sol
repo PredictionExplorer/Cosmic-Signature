@@ -112,9 +112,9 @@ interface ISystemEvents {
 	/// @param newCharityPercentage The new value.
 	event CharityPercentageChanged(uint256 newCharityPercentage);
 
-	/// @notice Emitted when the timeout for claiming prize is changed
-	/// @param newTimeout The new timeout value for claiming prize
-	event TimeoutClaimPrizeChanged(uint256 newTimeout);
+	/// @notice Emitted when `timeoutDurationToClaimMainPrize` is changed.
+	/// @param newValue The new value.
+	event TimeoutDurationToClaimMainPrizeChanged(uint256 newValue);
 
 	/// @notice Emitted when the ERC20 reward multiplier is changed
 	/// @param newMultiplier The new ERC20 reward multiplier

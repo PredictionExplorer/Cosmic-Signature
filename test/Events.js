@@ -426,11 +426,11 @@ describe("Events", function () {
 			.withArgs(time_increase);
 		expect((await cosmicGameProxy.timeIncrease()).toString()).to.equal(time_increase.toString());
 
-		const timeout_claim_prize = 1003n;
-		await expect(cosmicGameProxy.connect(owner).setTimeoutClaimPrize(timeout_claim_prize))
-			.to.emit(cosmicGameProxy, "TimeoutClaimPrizeChanged")
-			.withArgs(timeout_claim_prize);
-		expect((await cosmicGameProxy.timeoutClaimPrize()).toString()).to.equal(timeout_claim_prize.toString());
+		const timeoutDurationToClaimMainPrize_ = 1003n;
+		await expect(cosmicGameProxy.connect(owner).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize_))
+			.to.emit(cosmicGameProxy, "TimeoutDurationToClaimMainPrizeChanged")
+			.withArgs(timeoutDurationToClaimMainPrize_);
+		expect(await cosmicGameProxy.timeoutDurationToClaimMainPrize()).to.equal(timeoutDurationToClaimMainPrize_);
 
 		const price_increase = 1002n;
 		await expect(cosmicGameProxy.connect(owner).setPriceIncrease(price_increase))

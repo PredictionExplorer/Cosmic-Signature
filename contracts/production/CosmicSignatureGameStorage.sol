@@ -240,7 +240,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Game Prize Other Parameters and Variables
 
 	/// @notice Comment-202411064 applies.
-	uint256 public timeoutClaimPrize;
+	uint256 public timeoutDurationToClaimMainPrize;
 
 	/// @notice Bidding round winners.
 	/// @dev ToDo-202411098-0 applies.

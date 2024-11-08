@@ -18,9 +18,9 @@ async function main() {
 	await cosmicGameProxy.connect(addr2).bid("addr2 bids", { value: bidPrice });
 	let randomWalkNftAddr_ = await cosmicGameProxy.randomWalkNft();
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
-	let rwalkPrice = await randomWalkNft_.getMintPrice();
 	await randomWalkNft_.connect(owner).setApprovalForAll(cosmicGameProxy.address, true);
 	await randomWalkNft_.connect(owner).setApprovalForAll(bidderContract.address, true);
+	let rwalkPrice = await randomWalkNft_.getMintPrice();
 	let tx = await randomWalkNft_.connect(owner).mint({ value: rwalkPrice });
 	let receipt = await tx.wait();
 	let topic_sig = randomWalkNft_.interface.getEventTopic("MintEvent");

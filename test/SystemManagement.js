@@ -147,8 +147,8 @@ describe("SystemManagement tests", function () {
 		expect(await cosmicGameProxy.charityPercentage()).to.equal(charityPercentage_ + 1n);
 		await cosmicGameProxy.setCharityPercentage(charityPercentage_);
 
-		await cosmicGameProxy.setTimeoutClaimPrize(99n);
-		expect(await cosmicGameProxy.timeoutClaimPrize()).to.equal(99n);
+		await cosmicGameProxy.setTimeoutDurationToClaimMainPrize(99n);
+		expect(await cosmicGameProxy.timeoutDurationToClaimMainPrize()).to.equal(99n);
 
 		await cosmicGameProxy.setErc20RewardMultiplier(99n);
 		expect(await cosmicGameProxy.erc20RewardMultiplier()).to.equal(99n);
@@ -211,7 +211,7 @@ describe("SystemManagement tests", function () {
 		await expect(cosmicGameProxy.setRafflePercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setStakingPercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setCharityPercentage(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicGameProxy.setTimeoutClaimPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicGameProxy.setTimeoutDurationToClaimMainPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setErc20RewardMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setNumRaffleETHWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setNumRaffleNFTWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -282,8 +282,8 @@ describe("SystemManagement tests", function () {
 		const delayDurationBeforeNextRound_ = await cosmicGameProxy.delayDurationBeforeNextRound();
 		expect(delayDurationBeforeNextRound_).to.equal(123n * 60n);
 
-		const durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
+		const durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
 		await hre.ethers.provider.send('evm_mine');
 		await cosmicGameProxy.connect(addr1).claimPrize();
 
@@ -362,7 +362,7 @@ describe("SystemManagement tests", function () {
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setCharityPercentage(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setTimeoutClaimPrize(1n))
+		await expect(cosmicGameProxy.connect(addr1).setTimeoutDurationToClaimMainPrize(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setErc20RewardMultiplier(12n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
