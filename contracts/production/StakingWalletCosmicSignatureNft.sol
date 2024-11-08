@@ -122,6 +122,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	uint256 public numStateResets;
 
 	// #endregion
+	// #region `onlyGame`
+
+	modifier onlyGame() {
+		require(
+			msg.sender == game,
+			CosmicGameErrors.CallDenied("Only the CosmicGame contract is permitted to call this method.", msg.sender)
+		);
+		_;
+	}
+
+	// #endregion
 	// #region `constructor`
 
 	/// @notice Constructor.
@@ -374,21 +385,20 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `msg.value`.
-	///    `CosmicGameErrors.CallDenied`.
 	///    `CosmicGameErrors.NoStakedNfts`.
+	///    `_numStakedNfts`.
+	///    `actionCounter`.
 	///    `EthDepositReceived`.
 	///    `EthDeposit`.
-	///    `game`.
-	///    `_numStakedNfts`.
+	///    `onlyGame`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `ethDeposits`.
 	///    `numEthDeposits`.
-	///    `actionCounter`.
 	/// todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
 	/// todo-1 But in this particular case `receive` won't be sufficient for our needs.
-	function depositIfPossible(uint256 roundNum_) external payable override {
+	function depositIfPossible(uint256 roundNum_) external payable override onlyGame {
 		// #region
 
 		// #enable_asserts uint256 initialNumEthDeposits_ = numEthDeposits;
@@ -396,11 +406,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		// todo-1 Move this validation to a modifier. See `PrizesWallet`.
-		require(
-			msg.sender == game,
-			CosmicGameErrors.CallDenied("Only the CosmicGame contract is permitted to make a deposit.", msg.sender)
-		);
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 		if (numStakedNftsCopy_ == 0) {
 			// This string length affects the length we evaluate near Comment-202410149 and log near Comment-202410299.
@@ -456,10 +461,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 		
+		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
 		// #enable_asserts assert(ethDeposits[numEthDeposits].depositId > 0);
 		// #enable_asserts assert(numEthDeposits - initialNumEthDeposits_ <= 1);
-		// #enable_asserts assert(actionCounter > 0);
 
 		// #endregion
 	}
