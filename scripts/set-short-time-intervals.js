@@ -1,7 +1,7 @@
 // Sets short time intervals to avoid waiting for running tests
 
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function set_parameters(testingAcct, cosmicGameProxy) {

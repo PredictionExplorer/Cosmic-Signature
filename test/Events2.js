@@ -1,9 +1,9 @@
 "use strict";
 
-const hre = require("hardhat");
 const { expect } = require("chai");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Events2", function () {
 	// const INITIAL_AMOUNT = hre.ethers.parseEther("10");
@@ -122,6 +122,7 @@ describe("Events2", function () {
 
 		let num_eth_winners = await cosmicGameProxy.numRaffleETHWinnersBidding();
 		const numChronoWarriors_ = 1n;
+		// todo-1 This is now broken. See Comment-202411248.
 		topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(num_eth_winners + numChronoWarriors_).to.equal(deposit_logs.length);

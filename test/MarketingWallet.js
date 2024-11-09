@@ -1,9 +1,9 @@
 "use strict";
 
-const hre = require("hardhat");
 const { expect } = require("chai");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("MarketingWallet", function () {
 	async function deployCosmic(deployerAcct) {

@@ -1,7 +1,7 @@
 // Confirms that deployed contracts are fully operational
 
-const hre = require("hardhat");
 const { expect } = require("chai");
+const hre = require("hardhat");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 const bidParamsEncoding = {

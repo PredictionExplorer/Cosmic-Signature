@@ -1,9 +1,9 @@
 "use strict";
 
-const hre = require("hardhat");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
+const hre = require("hardhat");
+// const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 const SKIP_LONG_TESTS = "0";

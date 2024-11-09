@@ -4,8 +4,8 @@
 // 	- with PRIVKEY environment variable set -> generates claimManyDonatedNFTs() calls per prize
 // (note: only for unclaimed tokens)
 
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function get_unclaimed_donated_nfts(cosmicGameProxy) {

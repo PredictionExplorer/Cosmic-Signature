@@ -1,7 +1,7 @@
 // Confirms that deployed contracts are fully operational
 
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 
 async function getSelfDestructableCosmicGameProxyContract() {
 	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;

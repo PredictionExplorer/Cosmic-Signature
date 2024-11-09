@@ -1,9 +1,9 @@
 "use strict";
 
-const hre = require("hardhat");
 const { expect } = require("chai");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("Events", function () {
 	const INITIAL_AMOUNT = hre.ethers.parseUnits("10",18);
