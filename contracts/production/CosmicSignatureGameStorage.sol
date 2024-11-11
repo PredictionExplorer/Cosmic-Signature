@@ -102,10 +102,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public numDonationInfoRecords;
 	mapping(uint256 index => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
-	/// todo-0 Eliminate this. Now this functionality lives in `IPrizesWallet` and `PrizesWallet`.
-	uint256 public numDonatedNFTs;
-	/// todo-0 Eliminate this. Now this functionality lives in `IPrizesWallet` and `PrizesWallet`.
-	mapping(uint256 index => CosmicGameConstants.DonatedNFT) public donatedNFTs;
+	// uint256 public numDonatedNfts;
+	// mapping(uint256 index => CosmicGameConstants.DonatedNft) public donatedNfts;
 
 	// #endregion
 	// #region Game Parameters and Variables
@@ -239,16 +237,23 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Game Prize Other Parameters and Variables
 
-	/// @notice Comment-202411064 applies.
+	/// @notice If main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
+	/// Comment-202411064 applies.
+	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
+	/// @dev todo-1 Rename to `timeoutDurationToClaimRoundMainPrize`.
 	uint256 public timeoutDurationToClaimMainPrize;
 
-	/// @notice Bidding round winners.
+	/// @notice Bidding round main prize winners.
 	/// @dev ToDo-202411098-0 applies.
-	/// todo-0 But we do need to allow the winner to claim donated NFTs afterwards.
-	/// todo-0 But maybe allow it only during the next round?
-	/// todo-0 For at least how long it will last?
-	mapping(uint256 roundNum => address bidderAddress) public winners;
+	/// [ToDo-202411257-1]
+	/// I have now added a similar variable to `PrizesWallet`.
+	/// Can I now eliminate this?
+	/// Or keep this, just in case a future version needs it, but don't populate.
+	/// At least rename this like it is in `PrizesWallet`.
+	/// [/ToDo-202411257-1]
+	mapping(uint256 roundNum => address winnerAddress) public winners;
 
+	/// @notice Stellar Spender address.
 	/// @dev This will remain zero if nobody bids with CST or everybody bids with a zero CST price.
 	/// Comment-202409179 relates.
 	address public stellarSpender;

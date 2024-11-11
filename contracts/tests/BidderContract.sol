@@ -16,8 +16,8 @@ contract BidderContract is IERC721Receiver {
 	CosmicGame public cosmicGame;
 	address public creator;
 	uint256 public lastTokenIdChecked = 0;
-	uint256[] public myDonatedNFTs;
-	uint256 public numMyDonatedNFTs;
+	uint256[] public myDonatedNfts;
+	uint256 public numMyDonatedNfts;
 	bool blockDeposits = false;
 	constructor(address payable _cosmicGame) {
 		cosmicGame = CosmicGame(_cosmicGame);
@@ -63,19 +63,21 @@ contract BidderContract is IERC721Receiver {
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: msg.value }(param_data);
 	}
-	function doBidAndDonate(IERC721 nftAddress_, uint256 nftId_) external payable {
-		nftAddress_.setApprovalForAll(address(cosmicGame), true);
-		uint256 donatedTokenNum = cosmicGame.numDonatedNFTs();
-		myDonatedNFTs.push(donatedTokenNum);
-		numMyDonatedNFTs++;
-		uint256 price = cosmicGame.getBidPrice();
-		CosmicGame.BidParams memory params;
-		params.message = "contract bid with donation";
-		params.randomWalkNFTId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(params);
-		cosmicGame.bidAndDonateNFT{ value: price }(param_data, nftAddress_, nftId_);
-	}
+	// todo-1 This function no longer compiles because I moved NFT donations to `PrizesWallet`
+	// todo-1 and commented out `CosmicGame.bidAndDonateNft`.
+	// function doBidAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
+	// 	nftAddress_.setApprovalForAll(address(cosmicGame), true);
+	// 	uint256 donatedTokenNum = cosmicGame.numDonatedNfts();
+	// 	myDonatedNfts.push(donatedTokenNum);
+	// 	numMyDonatedNfts++;
+	// 	uint256 price = cosmicGame.getBidPrice();
+	// 	CosmicGame.BidParams memory params;
+	// 	params.message = "contract bid with donation";
+	// 	params.randomWalkNFTId = -1;
+	// 	bytes memory param_data;
+	// 	param_data = abi.encode(params);
+	// 	cosmicGame.bidAndDonateNft{ value: price }(param_data, nftAddress_, nftId_);
+	// }
 	function doClaim() external {
 		cosmicGame.claimPrize();
 	}
@@ -83,51 +85,52 @@ contract BidderContract is IERC721Receiver {
 		PrizesWallet prizesWallet_ = PrizesWallet(destination);
 		prizesWallet_.withdrawEth();
 	}
-	function withdrawAll() external {
-		PrizesWallet prizesWallet_ = cosmicGame.prizesWallet();
-
-		// Issue. `PrizesWallet.withdrawEth` won't revert on zero balance any more.
-		// So it could make sense to call it without checking balance.
-		// But it would cost more gas if the balance is zero.
-		// Comment-202409215 relates.
-		uint256 bal_ = prizesWallet_.getEthBalance();
-		if (bal_ > 0) {
-			prizesWallet_.withdrawEth();
-		}
-
-		CosmicSignature nft = cosmicGame.nft();
-		// todo-1 Review all calls to `call`.
-		// todo-1 I didn't replace those with high level calls when it's used simply to send funds.
-		// todo-1 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
-		// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
-		// todo-1 In any case, write comments.
-		(bool success, ) = creator.call{ value: address(this).balance }("");
-		success = false;
-		uint256 totalSupply = nft.totalSupply();
-		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
-			address tokenOwner = nft.ownerOf(i);
-			if (tokenOwner == address(this)) {
-				nft.safeTransferFrom(address(this), creator, i);
-			}
-		}
-		if (totalSupply > 0) {
-			lastTokenIdChecked = totalSupply - 1;
-		}
-		CosmicToken token = cosmicGame.token();
-		uint ctokenBalance = token.balanceOf(address(this));
-		if (ctokenBalance > 0) {
-			token.transfer(creator, ctokenBalance);
-		}
-		for (uint256 i = 0; i < numMyDonatedNFTs; i++) {
-			uint256 num = myDonatedNFTs[i];
-			cosmicGame.claimDonatedNFT(num);
-			(IERC721 tokenAddr, uint256 nftId, , ) = cosmicGame.donatedNFTs(num);
-
-			tokenAddr.safeTransferFrom(address(this), creator, nftId);
-		}
-		delete myDonatedNFTs;
-		numMyDonatedNFTs = 0;
-	}
+	// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
+	// function withdrawAll() external {
+	// 	PrizesWallet prizesWallet_ = cosmicGame.prizesWallet();
+	//
+	// 	// Issue. `PrizesWallet.withdrawEth` won't revert on zero balance any more.
+	// 	// So it could make sense to call it without checking balance.
+	// 	// But it would cost more gas if the balance is zero.
+	// 	// Comment-202409215 relates.
+	// 	uint256 bal_ = prizesWallet_.getEthBalanceInfo().amount;
+	// 	if (bal_ > 0) {
+	// 		prizesWallet_.withdrawEth();
+	// 	}
+	//
+	// 	CosmicSignature nft = cosmicGame.nft();
+	// 	// todo-1 Review all calls to `call`.
+	// 	// todo-1 I didn't replace those with high level calls when it's used simply to send funds.
+	// 	// todo-1 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
+	// 	// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
+	// 	// todo-1 In any case, write comments.
+	// 	(bool success, ) = creator.call{ value: address(this).balance }("");
+	// 	success = false;
+	// 	uint256 totalSupply = nft.totalSupply();
+	// 	for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
+	// 		address tokenOwner = nft.ownerOf(i);
+	// 		if (tokenOwner == address(this)) {
+	// 			nft.safeTransferFrom(address(this), creator, i);
+	// 		}
+	// 	}
+	// 	if (totalSupply > 0) {
+	// 		lastTokenIdChecked = totalSupply - 1;
+	// 	}
+	// 	CosmicToken token = cosmicGame.token();
+	// 	uint ctokenBalance = token.balanceOf(address(this));
+	// 	if (ctokenBalance > 0) {
+	// 		token.transfer(creator, ctokenBalance);
+	// 	}
+	// 	for (uint256 i = 0; i < numMyDonatedNfts; i++) {
+	// 		uint256 num = myDonatedNfts[i];
+	// 		cosmicGame.claimDonatedNft(num);
+	// 		(IERC721 tokenAddr, uint256 nftId, , ) = cosmicGame.donatedNfts(num);
+	//
+	// 		tokenAddr.safeTransferFrom(address(this), creator, nftId);
+	// 	}
+	// 	delete myDonatedNfts;
+	// 	delete numMyDonatedNfts;
+	// }
 	function doFailedBid() external payable {
 		uint256 price = msg.value;
 		CosmicGame.BidParams memory defaultParams;
@@ -145,7 +148,8 @@ contract BidderContract is IERC721Receiver {
 	function stopBlockingDeposits() external {
 		blockDeposits = false;
 	}
-	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+		// todo-1 This should return `IERC721Receiver.onERC721Received.selector` instead.
 		return this.onERC721Received.selector;
 	}
 }

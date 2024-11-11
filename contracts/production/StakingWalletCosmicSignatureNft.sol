@@ -124,6 +124,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #endregion
 	// #region `onlyGame`
 
+	/// @dev
+	/// [Comment-202411253]
+	/// Similar logic exists in multiple places.
+	/// [/Comment-202411253]
 	modifier onlyGame() {
 		require(
 			msg.sender == game,

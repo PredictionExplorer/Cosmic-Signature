@@ -17,7 +17,8 @@ import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosm
 import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { Bidding } from "../production/Bidding.sol";
-import { NFTDonations } from "../production/NFTDonations.sol";
+// import { NFTDonations } from "../production/NFTDonations.sol";
+import { ICosmicGame } from "../production/interfaces/ICosmicGame.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 
 contract BrokenToken {
@@ -98,7 +99,7 @@ contract BrokenStaker {
 		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}
 
-	// todo-0 I have commented this out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
+	// todo-1 I have commented this out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
 	// function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
 	// 	uint256[] memory actions = new uint256[](1);
 	// 	uint256[] memory deposits = new uint256[](1);
@@ -130,25 +131,26 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 
 	constructor() CosmicGame() {}
 
-	function finalizeTesting() external onlyOwner {
-		// returns all the assets to the creator of the contract and self-destroys
-
-		// CosmicSignature tokens
-		uint256 cosmicSupply = nft.totalSupply();
-		for (uint256 i = 0; i < cosmicSupply; i++) {
-			address owner = nft.ownerOf(i);
-			if (owner == address(this)) {
-				nft.transferFrom(address(this), this.owner(), i);
-			}
-		}
-		cosmicSupply = token.balanceOf(address(this));
-		token.transfer(this.owner(), cosmicSupply);
-		for (uint256 i = 0; i < numDonatedNFTs; i++) {
-			CosmicGameConstants.DonatedNFT memory dnft = donatedNFTs[i];
-			dnft.nftAddress.transferFrom(address(this), this.owner(), dnft.nftId);
-		}
-		selfdestruct(payable(this.owner()));
-	}
+	// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
+	// function finalizeTesting() external onlyOwner {
+	// 	// returns all the assets to the creator of the contract and self-destroys
+	//
+	// 	// CosmicSignature tokens
+	// 	uint256 cosmicSupply = nft.totalSupply();
+	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
+	// 		address owner = nft.ownerOf(i);
+	// 		if (owner == address(this)) {
+	// 			nft.transferFrom(address(this), this.owner(), i);
+	// 		}
+	// 	}
+	// 	cosmicSupply = token.balanceOf(address(this));
+	// 	token.transfer(this.owner(), cosmicSupply);
+	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
+	// 		CosmicGameConstants.DonatedNft memory dnft = donatedNfts[i];
+	// 		dnft.nftAddress.transferFrom(address(this), this.owner(), dnft.nftId);
+	// 	}
+	// 	selfdestruct(payable(this.owner()));
+	// }
 }
 
 contract SpecialCosmicGame is CosmicGame {
@@ -229,15 +231,14 @@ contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
 	// }
 }
 
-contract MaliciousToken1 is ERC721 {
-
-	// sends donateNFT() inside a call to transfer a token, generating reentrant function call
+contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
-
 	}
+
+	/// @notice sends donateNft() inside a call to transfer a token, generating reentrant function call
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// the following call should revert
-		(bool isSuccess_, /*bytes memory retval*/) = msg.sender.call(abi.encodeWithSelector(NFTDonations.donateNFT.selector, address(this), 0));
+		(bool isSuccess_, /*bytes memory retval*/) = msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, address(this), 0));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -249,28 +250,32 @@ contract MaliciousToken1 is ERC721 {
 	}
 }
 
-contract MaliciousToken2 is ERC721 {
-	address game;
-	// sends bidAndDonateNFT() inside a call to transfer a token, generating reentrant function call
-	constructor(address game_,string memory name_, string memory symbol_) ERC721(name_,symbol_) {
-		game = game_;
+contract MaliciousNft2 is ERC721 {
+	// address private game;
+
+	constructor(/*address game_,*/ string memory name_, string memory symbol_) ERC721(name_, symbol_) {
+		// game = game_;
 	}
-	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
-		// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
-		CosmicGame.BidParams memory defaultParams;
-		defaultParams.message = "";
-		defaultParams.randomWalkNFTId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(defaultParams);
-		// the following call should revert
-		(bool isSuccess_, /*bytes memory retval*/) = msg.sender.call(abi.encodeWithSelector(CosmicGame.bidAndDonateNFT.selector,param_data, address(this), 0));
-		if ( ! isSuccess_ ) {
-			assembly {
-				let ptr := mload(0x40)
-				let size := returndatasize()
-				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
-			}
-		}
-	}
+
+	// /// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
+	// /// @dev todo-1 This method no longer compiles because I have commented out `ICosmicGame.bidAndDonateNft`.
+	// function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
+	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
+	// 	CosmicGame.BidParams memory defaultParams;
+	// 	defaultParams.message = "";
+	// 	defaultParams.randomWalkNFTId = -1;
+	// 	bytes memory param_data;
+	// 	param_data = abi.encode(defaultParams);
+	// 	// the following call should revert
+	// 	(bool isSuccess_, /*bytes memory retval*/) =
+	// 		msg.sender.call(abi.encodeWithSelector(ICosmicGame.bidAndDonateNft.selector, param_data, address(this), 0));
+	// 	if ( ! isSuccess_ ) {
+	// 		assembly {
+	// 			let ptr := mload(0x40)
+	// 			let size := returndatasize()
+	// 			returndatacopy(ptr, 0, size)
+	// 			revert(ptr, size)
+	// 		}
+	// 	}
+	// }
 }

@@ -30,7 +30,8 @@ async function main() {
 	console.log("tokenid = " + token_id);
 	await randomWalkNft_.connect(owner).transferFrom(owner.address, bidderContract.address, token_id);
 	bidPrice = await cosmicGameProxy.getBidPrice();
-	await bidderContract.connect(owner).doBidAndDonate(randomWalkNftAddr_, token_id, { value: bidPrice });
+	// todo-1 I have commented this method out.
+	await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, token_id, { value: bidPrice });
 
 	bidPrice = await cosmicGameProxy.getBidPrice();
 	await bidderContract.connect(owner).doBid({ value: bidPrice });

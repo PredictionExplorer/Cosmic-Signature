@@ -121,14 +121,16 @@ describe("Events", function () {
 
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await cosmicGameProxy.connect(donor).bidAndDonateNFT(params,await randomWalkNFT.getAddress(), 0, { value: bidPrice });
+		// todo-1 I have commented this method out.
+		await cosmicGameProxy.connect(donor).bidAndDonateNft(params,await randomWalkNFT.getAddress(), 0, { value: bidPrice });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(bidder1).bid(params, { value: bidPrice });
 
-		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonExistentWinner");
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonExistentWinner");
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await hre.ethers.provider.send("evm_mine");
@@ -147,10 +149,12 @@ describe("Events", function () {
 		const mainPrizeExpectedAmount_ = balance * 25n / 100n;
 		expect(mainPrizeAmountAfterClaim_).to.equal(mainPrizeExpectedAmount_);
 
-		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNFT(1)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InvalidDonatedNFTIndex");
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InvalidDonatedNftIndex");
 
-		await cosmicGameProxy.connect(bidder1).claimDonatedNFT(0);
-		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNFT(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NFTAlreadyClaimed");
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await cosmicGameProxy.connect(bidder1).claimDonatedNft(0);
+		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "DonatedNftAlreadyClaimed");
 
 		mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(donor).mint({ value: mintPrice });
@@ -165,7 +169,8 @@ describe("Events", function () {
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { message: "hello", randomWalkNFTId: 1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await cosmicGameProxy.connect(donor).bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 2, { value: bidPrice });
+		// todo-1 I have commented this method out.
+		await cosmicGameProxy.connect(donor).bidAndDonateNft(params, await randomWalkNFT.getAddress(), 2, { value: bidPrice });
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await hre.ethers.provider.send("evm_mine");
@@ -176,7 +181,8 @@ describe("Events", function () {
 			.withArgs(1, donor.address, mainPrizeAmountBeforeClaim_);
 
 		expect(await randomWalkNFT.balanceOf(donor.address)).to.equal(1);
-		await cosmicGameProxy.connect(donor).claimDonatedNFT(1);
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await cosmicGameProxy.connect(donor).claimDonatedNft(1);
 		expect(await randomWalkNFT.balanceOf(donor.address)).to.equal(2);
 
 		expect(await cosmicGameProxy.roundNum()).to.equal(2);
@@ -236,7 +242,7 @@ describe("Events", function () {
 			.to.emit(cosmicGameProxy, "BidEvent")
 			.withArgs(addr1.address, 0, rwalkBidPrice, 0, -1, 2000090000, "random walk");
 	});
-	it("DonatedNFTClaimedEvent is correctly emitted", async function () {
+	it("DonatedNftClaimedEvent is correctly emitted", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
@@ -250,15 +256,17 @@ describe("Events", function () {
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(bidder1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(bidder1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		await cosmicGameProxy.connect(bidder1).bidAndDonateNFT(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
+		// todo-1 I have commented this method out.
+		await cosmicGameProxy.connect(bidder1).bidAndDonateNft(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
 
 		let prizeTimeInc = await cosmicGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTimeInc)]);
 
 		await expect(cosmicGameProxy.connect(bidder1).claimPrize());
 
-		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNFT(0))
-			.to.emit(cosmicGameProxy, "DonatedNFTClaimedEvent")
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNft(0))
+			.to.emit(cosmicGameProxy, "DonatedNftClaimedEvent")
 			.withArgs(0, 0, bidder1.address, await randomWalkNFT.getAddress(), 0);
 	});
 	it("should not be possible to bid before activation", async function () {

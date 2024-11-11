@@ -19,7 +19,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// @dev In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
 	/// In `StakingWalletRandomWalkNft`, this is the total number of `stakeActions` and `stakeActionIds` items.
 	/// [Comment-202410274]
-	/// It could make sense to declare this `public`, but this is `internal` because there is an accessor function for this.
+	/// It could make sense to declare this `public`, but this is not because there is an accessor method for this.
 	/// [/Comment-202410274]
 	uint256 internal _numStakedNfts;
 

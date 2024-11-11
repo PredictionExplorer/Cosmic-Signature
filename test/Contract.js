@@ -82,7 +82,8 @@ describe("Contract", function () {
 		let donated_token_id = parsed_log.args.tokenId;
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donated_token_id);
-		await bidderContract.connect(owner).doBidAndDonate(randomWalkNftAddr_, donated_token_id, { value: bidPrice });
+		// todo-1 I have commented this method out.
+		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donated_token_id, { value: bidPrice });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await bidderContract.connect(owner).doBid({ value: bidPrice });

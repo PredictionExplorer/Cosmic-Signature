@@ -108,54 +108,43 @@ describe("Security", function () {
 		let balance_before = await hre.ethers.provider.getBalance(addr1);
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoLastBidder");
 	});
-	it("donateNFT() function is confirmed to be non-reentrant", async function () {
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
-		const {
-			cosmicGameProxy,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			prizesWallet,
-			randomWalkNFT,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			marketingWallet,
-		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
-		let donationAmount = hre.ethers.parseEther("10");
+	// todo-1 This test now needs rewriting and moving to the `PrizesWallet` tests.
+	it("donateNft() function is confirmed to be non-reentrant", async function () {
+		const [owner,] = await hre.ethers.getSigners();
+		const {cosmicGameProxy,} =
+			await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+
+		// todo-1 Why do we need this donation here? Comment it out?
+		const donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 
-		const MaliciousToken = await hre.ethers.getContractFactory('MaliciousToken1');
-		let maliciousToken = await MaliciousToken.deploy('Bad Token','BAD');
-		await maliciousToken.waitForDeployment();
+		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft1");
+		const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
+		await maliciousNft.waitForDeployment();
 
-		await expect(cosmicGameProxy.connect(owner).donateNFT(await maliciousToken.getAddress(),0)).to.be.revertedWithCustomError(cosmicGameProxy,'ReentrancyGuardReentrantCall');
+		// todo-1 This will probably now revert due to stack overflow.
+		await expect(cosmicGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicGameProxy, "ReentrancyGuardReentrantCall");
 	});
-	it("bidAnddonateNFT() function is confirmed to be non-reentrant", async function () {
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
-		const {
-			cosmicGameProxy,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			prizesWallet,
-			randomWalkNFT,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			marketingWallet,
-		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
-
-		let donationAmount = hre.ethers.parseEther("10");
+	
+	// todo-1 This test now needs rewriting and moving to the `PrizesWallet` tests.
+	// todo-1 I have commented out `CosmicGame.bidAndDonateNft`.
+	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {
+		const [owner,] = await hre.ethers.getSigners();
+		const {cosmicGameProxy,} =
+			await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+	
+		// todo-1 Why do we need this donation here? Comment it out?
+		const donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-
-		const MaliciousToken = await hre.ethers.getContractFactory('MaliciousToken2');
-		let maliciousToken = await MaliciousToken.deploy(await cosmicGameProxy.getAddress(),'Bad Token','BAD');
-		await maliciousToken.waitForDeployment();
-
-		await expect(cosmicGameProxy.connect(owner).donateNFT(await maliciousToken.getAddress(),0)).to.be.revertedWithCustomError(cosmicGameProxy,'ReentrancyGuardReentrantCall');
+	
+		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft2");
+		const maliciousNft = await MaliciousNft.deploy(/*await cosmicGameProxy.getAddress(),*/ "Bad NFT", "BAD");
+		await maliciousNft.waitForDeployment();
+	
+		// todo-1 This will probably now revert due to stack overflow.
+		await expect(cosmicGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });

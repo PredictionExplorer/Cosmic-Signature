@@ -86,8 +86,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// todo-0 Assign `lastBidder` here.
 			// todo-0 Comment: Even if `lastBidder` forgets to claim the prize, we will still record them as the winner.
 			// todo-0 This will allow them to claim donated NFTs.
+			// todo-0 But I have now moved NFT donations to `PrizesWallet`. ToDo-202411257-1 relates.
 			// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
 			winners[roundNum] = /*winner*/ msg.sender /*lastBidder*/;
+			// todo-1 Think if this is the best place to call this method. Maybe call it after disrtibuting prizes. Or maybe leave it alone.
+			prizesWallet.registerRoundEnd(roundNum, /*winner*/ msg.sender /*lastBidder*/);
 
 			// todo-1 Calculate these at the point where we need these, not here.
 			uint256 mainPrizeAmount_ = mainPrizeAmount();
@@ -109,7 +112,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @notice Distribute prizes to various recipients
 	/// @dev This function handles the distribution of ETH and NFT prizes
-	/// // param winner Address of the round winner
+	/// // param winner Bidding round main prize winner address.
 	/// @param mainPrizeAmount_ ETH main prize amount.
 	/// @param charityAmount_ Amount of ETH for charity
 	/// @param raffleAmount_ Amount of ETH for raffle winners
@@ -200,7 +203,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// Stellar Spender prize.
 		if (stellarSpender != address(0)) {
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
-			// todo-1 Remember that payment to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras agan).
+			// todo-1 Remember that payment to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
 			uint256 nftId = nft.mint(stellarSpender, roundNum);
 			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
@@ -236,7 +239,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		emit ChronoWarriorPrizePaid(chronoWarrior, roundNum, chronoWarriorEthPrizeAmount_);
 		// todo-1 Here and elsewhere, if this address happends to be the same as the main prize winner, don't deposit here,
 		// todo-1 but later send this to the main prize winner directly.
-		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(chronoWarrior);
+		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarrior);
 	}
 
 	// #endregion
@@ -251,7 +254,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateRaffleEntropy();
 			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			prizesWallet.depositEth{value: perWinnerAmount}(raffleWinner);
+			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinner);
 			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
 		}
 

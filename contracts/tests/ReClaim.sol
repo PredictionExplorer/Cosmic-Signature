@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
-import { CosmicGame } from "../production/CosmicGame.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+// import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import { CosmicGame } from "../production/CosmicGame.sol";
 
 contract ReClaim {
 	CosmicGame public cosmicGame;

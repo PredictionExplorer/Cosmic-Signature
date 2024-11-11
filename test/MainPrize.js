@@ -72,7 +72,7 @@ describe("MainPrize tests", function () {
 		let totalSupplyBefore = Number(await cosmicSignature.totalSupply());
 
 		// at this point all required data was initialized, we can proceed with the test
-		// todo-1 This is now broken. See Comment-202411248.
+		// todo-1 This is now broken. I have eliminated this event.
 		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 		let tx, receipt, log, parsed_log, winner;
 

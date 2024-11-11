@@ -30,7 +30,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 
 	let prizesWalletAddr = await cosmicGameProxy.prizesWallet();
 	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
-	// todo-1 This is now broken. See Comment-202411248.
+	// todo-1 This is now broken. I have eliminated this event.
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	claim_raffle_eth(testingAcct, prizesWallet, event_logs);

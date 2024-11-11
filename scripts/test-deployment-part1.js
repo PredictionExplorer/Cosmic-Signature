@@ -1,3 +1,5 @@
+// todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
+
 // Confirms that deployed contracts are fully operational
 
 const { expect } = require("chai");
@@ -51,7 +53,8 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
-		.bidAndDonateNFT(params, randomWalkNft.address, donatedTokenId, { value: bidPrice });
+		// todo-1 I have commented this method out.
+		.bidAndDonateNft(params, randomWalkNft.address, donatedTokenId, { value: bidPrice });
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -60,7 +63,7 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	expect(parsed_log.args.bidPrice).to.equal(bidPrice);
 	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
 
-	topic_sig = cosmicGameProxy.interface.getEventTopic("NFTDonationEvent");
+	topic_sig = cosmicGameProxy.interface.getEventTopic("NftDonationEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.donor).to.equal(testingAcct.address);
@@ -78,7 +81,8 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
-		.bidAndDonateNFT(params, randomWalkNft.address, donatedTokenId,{value:bidPrice});
+		// todo-1 I have commented this method out.
+		.bidAndDonateNft(params, randomWalkNft.address, donatedTokenId, {value:bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -87,7 +91,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	expect(parsed_log.args.randomWalkNFTId).to.equal(tokenIdBidding);
 	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
 
-	topic_sig = cosmicGameProxy.interface.getEventTopic("NFTDonationEvent");
+	topic_sig = cosmicGameProxy.interface.getEventTopic("NftDonationEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.donor).to.equal(testingAcct.address);
