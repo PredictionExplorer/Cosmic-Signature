@@ -1,21 +1,24 @@
+// todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
+
 // Helps building transaction to get back donated Random Walk tokens used in bid+donate calls
 // Two run modes:
 // 	- without PRIVKEY environment variable set -> only lists donated tokens per round
-// 	- with PRIVKEY environment variable set -> generates claimManyDonatedNFTs() calls per prize
+// 	- with PRIVKEY environment variable set -> generates claimManyDonatedNfts() calls per prize
 // (note: only for unclaimed tokens)
 
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function get_unclaimed_donated_nfts(cosmicGameProxy) {
-	let numDonatedNFTs = await cosmicGameProxy.numDonatedNFTs();
-	let numNFTs = numDonatedNFTs.toNumber();
+	let numDonatedNfts = await cosmicGameProxy.numDonatedNfts();
+	let numNFTs = numDonatedNfts.toNumber();
 	let prizeData = [];
 	for (let i = 0; i < numNFTs; i++) {
-		let record_orig = await cosmicGameProxy.donatedNFTs(i);
+		let record_orig = await cosmicGameProxy.donatedNfts(i);
 		let record = Object.assign({}, record_orig);
 		Object.defineProperty(record, "index", { value: i, writable: true });
+		// todo-1 The `claimed` variable no longer exists.
 		if (record.claimed) {
 			continue;
 		}
@@ -95,7 +98,7 @@ async function main() {
 	if (privKey.length > 0) {
 		if (paramList.length > 0) {
 			console.log("Sending claimMany transaction");
-			await cosmicGameProxy.connect(testingAcct).claimManyDonatedNFTs(paramList);
+			await cosmicGameProxy.connect(testingAcct).claimManyDonatedNfts(paramList);
 		}
 	}
 }

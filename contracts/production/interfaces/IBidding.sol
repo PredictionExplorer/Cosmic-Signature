@@ -8,10 +8,10 @@ import { IBidStatistics } from "./IBidStatistics.sol";
 interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Emitted when the first bid is placed in a bidding round.
 	/// @param roundNum The current bidding round number.
-	/// @param timeStamp The current block timestamp.
+	/// @param blockTimeStamp The current block timestamp.
 	event FirstBidPlacedInRound(
 		uint256 indexed roundNum,
-		uint256 timeStamp
+		uint256 blockTimeStamp
 	);
 
 	/// @notice Emitted when a bid is placed
@@ -35,6 +35,8 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	
 	/// @notice Place a bid in the current round 
 	/// @dev This function handles ETH bids and RandomWalk NFT bids
+	/// todo-1 Rename to `bidWithEth`?
+	/// todo-1 Then also rename methods like `bidAndDonateNft`.
 	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
 	function bid(bytes calldata _data) external payable;
 

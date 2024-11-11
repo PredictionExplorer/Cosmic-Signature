@@ -91,7 +91,7 @@ contract CosmicGameOpenBid is
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;
 		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
 		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
-		timeoutClaimPrize = CosmicGameConstants.INITIAL_TIMEOUT_CLAIM_PRIZE;
+		timeoutDurationToClaimMainPrize = CosmicGameConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
 		chronoWarriorDuration = uint256(int256(-1));
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
@@ -100,15 +100,18 @@ contract CosmicGameOpenBid is
 		raffleEntropy = bytes32(uint256(202411186)); // keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 	}
 
-	function bidAndDonateNFT(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant {
-		_bid(data_);
-		_donateNFT(nftAddress_, nftId_);
-	}
+	// function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant {
+	// 	_bid(data_);
+	// 	_donateNft(nftAddress_, nftId_);
+	// }
 
-	/// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
-	function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
-		return this.onERC721Received.selector;
-	}
+	// Moved to `PrizesWallet`.
+	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
+	// /// todo-1 Someone forgot to derive `CosmicGameOpenBid` from `IERC721Receiver` and add the `override` keyword.
+	// function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+	// 	// todo-1 This should return `IERC721Receiver.onERC721Received.selector` instead.
+	// 	return this.onERC721Received.selector;
+	// }
 
 	receive() external payable override {
 		// Treating incoming ETH as a bid with default parameters.

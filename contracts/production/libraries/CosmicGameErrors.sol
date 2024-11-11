@@ -134,20 +134,20 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	error NoLastBidder(string errStr);
 
-	/// @notice Thrown when attempting to claim a non-existent donated NFT
-	/// @param errStr Description of the error
-	/// @param index The index of the non-existent NFT
-	error InvalidDonatedNFTIndex(string errStr, uint256 index);
-
-	/// @notice Thrown when a non-existent winner attempts to claim a prize
-	/// @param errStr Description of the error
-	/// @param index The index of the donated token
+	/// @notice Thrown when someone who is not a prize winner attempts to claim the prize.
+	/// @param errStr Description of the error.
+	/// @param index Prize info index in an array.
 	error NonExistentWinner(string errStr, uint256 index);
 
-	/// @notice Thrown when attempting to claim an already claimed NFT
-	/// @param errStr Description of the error
-	/// @param index The index of the already claimed NFT
-	error NFTAlreadyClaimed(string errStr, uint256 index);
+	/// @notice Thrown when attempting to claim a non-existent donated NFT.
+	/// @param errStr Description of the error.
+	/// @param index `donatedNfts` non-existent item index.
+	error InvalidDonatedNftIndex(string errStr, uint256 index);
+
+	/// @notice Thrown when attempting to claim an already claimed donated NFT.
+	/// @param errStr Description of the error.
+	/// @param index `donatedNfts` item index.
+	error DonatedNftAlreadyClaimed(string errStr, uint256 index);
 
 	// #endregion
 	// #region Game Logic Errors

@@ -9,9 +9,11 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @notice Emitted when main prize is claimed.
 	/// @param roundNum Bidding round number.
 	/// @param claimedBy The address receiving the prize.
+	/// [Comment-202411254]
 	/// It will be different from the bidding round actual winner if the winner has failed to claim the prize
 	/// within a timeout and someone else claimed it.
 	/// It's possible to find out from other events who is the actual winner.
+	/// [/Comment-202411254]
 	/// @param amount Prize amount.
 	event MainPrizeClaimed(uint256 indexed roundNum, address indexed claimedBy, uint256 amount);
 

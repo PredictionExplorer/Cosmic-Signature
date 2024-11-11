@@ -1,7 +1,7 @@
 // Confirms that deployed contracts are fully operational
 
-const hre = require("hardhat");
 const { expect } = require("chai");
+const hre = require("hardhat");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
@@ -30,6 +30,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 
 	let prizesWalletAddr = await cosmicGameProxy.prizesWallet();
 	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
+	// todo-1 This is now broken. I have eliminated this event.
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	claim_raffle_eth(testingAcct, prizesWallet, event_logs);

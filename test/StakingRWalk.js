@@ -1,9 +1,9 @@
 "use strict";
 
-const hre = require("hardhat");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
+const hre = require("hardhat");
+// const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 const SKIP_LONG_TESTS = "0";
@@ -244,6 +244,7 @@ describe("Staking RandomWalk tests", function () {
 		await cosmicGameProxy.claimPrize();
 
 		// forward timestamp se we can unstake
+		// todo-1 The forwarding no longer needed, right?
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 60*3600*24]);
 		await hre.ethers.provider.send("evm_mine");
 

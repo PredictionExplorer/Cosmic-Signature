@@ -1,7 +1,7 @@
 // Confirms that deployed contracts are fully operational
 
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 const numRWalkToMint = 4;

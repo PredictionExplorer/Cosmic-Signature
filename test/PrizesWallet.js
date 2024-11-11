@@ -31,18 +31,15 @@ describe("PrizesWallet", function () {
 		let newPrizesWallet = await NewPrizesWallet.deploy(owner.address);
 		await newPrizesWallet.waitForDeployment();
 
-		await expect(newPrizesWallet.connect(addr1).depositEth(addr1.address, {value: 1000000n})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "CallDenied");
+		await expect(newPrizesWallet.connect(addr1).depositEth(0, addr1.address, {value: 1000000n})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "CallDenied");
 
-		// // Comment-202411084 relates and/or applies.
+		// // I have replaced respective `require` with an `assert`.
 		// // I have observed that this now reverts with panic when asserts are enabled.
-		// await expect(newPrizesWallet.depositEth(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		// await expect(newPrizesWallet.depositEth(0, hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 
 		// Comment-202409215 relates.
-		// await expect(newPrizesWallet.depositEth(addr1.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
-		await expect(newPrizesWallet.depositEth(addr1.address)).not.to.be.reverted;
-
-		// // Someone forgot to pass an address to this call.
-		// await expect(newPrizesWallet.depositEth({value:1000000n})).not.to.be.reverted;
+		// await expect(newPrizesWallet.depositEth(0, addr1.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
+		await expect(newPrizesWallet.depositEth(0, addr1.address)).not.to.be.reverted;
 	});
 	it("withdrawEth works correctly", async function () {
 		const {signers,} = await loadFixture(deployCosmic);
@@ -53,7 +50,7 @@ describe("PrizesWallet", function () {
 		let newPrizesWallet = await NewPrizesWallet.deploy(owner.address);
 		await newPrizesWallet.waitForDeployment();
 
-		await newPrizesWallet.depositEth(addr1.address, {value: 1000n});
+		await newPrizesWallet.depositEth(0, addr1.address, {value: 1000n});
 
 		// Comment-202409215 relates.
 		// await expect(newPrizesWallet.connect(addr2).withdrawEth()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroBalance");

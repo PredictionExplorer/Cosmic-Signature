@@ -1,7 +1,7 @@
 // Sets short time intervals to avoid waiting for running tests
 
+// const { expect } = require("chai");
 const hre = require("hardhat");
-const { expect } = require("chai");
 const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function set_parameters(testingAcct, cosmicGameProxy) {
@@ -10,10 +10,10 @@ async function set_parameters(testingAcct, cosmicGameProxy) {
 	let initialseconds = hre.ethers.BigNumber.from("60");
 	await cosmicGameProxy.connect(testingAcct).setInitialSecondsUntilPrize(initialseconds);
 	let timeout = hre.ethers.BigNumber.from("90");
-	await cosmicGameProxy.connect(testingAcct).setTimeoutClaimPrize(timeout);
+	await cosmicGameProxy.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeout);
 	console.log("Nanoseconds extra = " + nanoseconds);
 	console.log("Initial seconds = " + initialseconds);
-	console.log("Timeout claim prize = " + timeout);
+	console.log("Timeout duration to claim main prize = " + timeout);
 }
 async function main() {
 	let privKey = process.env.PRIVKEY;

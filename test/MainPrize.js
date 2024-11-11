@@ -1,9 +1,9 @@
 "use strict";
 
-const hre = require("hardhat");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { expect } = require("chai");
+const hre = require("hardhat");
+// const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("MainPrize tests", function () {
@@ -71,8 +71,8 @@ describe("MainPrize tests", function () {
 		roundNum = roundNum + 1;
 		let totalSupplyBefore = Number(await cosmicSignature.totalSupply());
 
-
 		// at this point all required data was initialized, we can proceed with the test
+		// todo-1 This is now broken. I have eliminated this event.
 		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 		let tx, receipt, log, parsed_log, winner;
 
@@ -161,7 +161,7 @@ describe("MainPrize tests", function () {
 			}
 		}
 	});
-	it('Distribution of prize amounts matches specified business logic', async function () {
+	it("Distribution of prize amounts matches specified business logic", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,

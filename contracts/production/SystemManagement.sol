@@ -277,9 +277,9 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit CharityPercentageChanged(charityPercentage_);
 	}
 
-	function setTimeoutClaimPrize(uint256 _timeoutClaimPrize) external override onlyOwner onlyInactive {
-		timeoutClaimPrize = _timeoutClaimPrize;
-		emit TimeoutClaimPrizeChanged(_timeoutClaimPrize);
+	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external override onlyOwner onlyInactive {
+		timeoutDurationToClaimMainPrize = newValue_;
+		emit TimeoutDurationToClaimMainPrizeChanged(newValue_);
 	}
 
 	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external override onlyOwner onlyInactive {

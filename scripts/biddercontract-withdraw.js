@@ -1,5 +1,5 @@
-const hre = require("hardhat");
-const { expect } = require("chai");
+// const { expect } = require("chai");
+// const hre = require("hardhat");
 const { getBidderContract } = require("./helper.js");
 
 async function main() {

@@ -147,8 +147,8 @@ describe("SystemManagement tests", function () {
 		expect(await cosmicGameProxy.charityPercentage()).to.equal(charityPercentage_ + 1n);
 		await cosmicGameProxy.setCharityPercentage(charityPercentage_);
 
-		await cosmicGameProxy.setTimeoutClaimPrize(99n);
-		expect(await cosmicGameProxy.timeoutClaimPrize()).to.equal(99n);
+		await cosmicGameProxy.setTimeoutDurationToClaimMainPrize(99n);
+		expect(await cosmicGameProxy.timeoutDurationToClaimMainPrize()).to.equal(99n);
 
 		await cosmicGameProxy.setErc20RewardMultiplier(99n);
 		expect(await cosmicGameProxy.erc20RewardMultiplier()).to.equal(99n);
@@ -211,7 +211,7 @@ describe("SystemManagement tests", function () {
 		await expect(cosmicGameProxy.setRafflePercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setStakingPercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setCharityPercentage(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicGameProxy.setTimeoutClaimPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicGameProxy.setTimeoutDurationToClaimMainPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setErc20RewardMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setNumRaffleETHWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setNumRaffleNFTWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -232,14 +232,15 @@ describe("SystemManagement tests", function () {
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		const bidPrice = await cosmicGameProxy.getBidPrice();
 		await expect(cosmicGameProxy.bid(params, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicGameProxy.bidAndDonateNFT(params, owner.address, 0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		// todo-1 I have commented this method out.
+		await expect(cosmicGameProxy.bidAndDonateNft(params, owner.address, 0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicGameProxy.bidWithCST("")).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-
-		// todo-0 This reverts with a different error. It's probably correct, but take another look. Comment.
+		// todo-1 This reverts with a different error. It's probably correct, but take another look. Comment.
 		await expect(cosmicGameProxy.claimPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoLastBidder");
-
-		await expect(cosmicGameProxy.claimDonatedNFT(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicGameProxy.claimManyDonatedNFTs([0])).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await expect(cosmicGameProxy.claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await expect(cosmicGameProxy.claimManyDonatedNfts([0])).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(owner.sendTransaction({ to: await cosmicGameProxy.getAddress(), value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicGameProxy.donate({value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicGameProxy.donateWithInfo("{}",{value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
@@ -247,7 +248,8 @@ describe("SystemManagement tests", function () {
 		const mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		await expect(cosmicGameProxy.connect(addr1).donateNFT(await randomWalkNFT.getAddress(), 0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		// todo-1 I have moved NFT donations to `PrizesWallet`.
+		await expect(cosmicGameProxy.connect(addr1).donateNft(await randomWalkNFT.getAddress(), 0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 	});
 	it('The active and inactive modes function correctly', async function () {
 		const {signers, cosmicGameProxy,} = await loadFixture(deployCosmic);
@@ -282,8 +284,8 @@ describe("SystemManagement tests", function () {
 		const delayDurationBeforeNextRound_ = await cosmicGameProxy.delayDurationBeforeNextRound();
 		expect(delayDurationBeforeNextRound_).to.equal(123n * 60n);
 
-		const durationUntilPrize_ = await cosmicGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilPrize_)]);
+		const durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
 		await hre.ethers.provider.send('evm_mine');
 		await cosmicGameProxy.connect(addr1).claimPrize();
 
@@ -362,7 +364,7 @@ describe("SystemManagement tests", function () {
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setCharityPercentage(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setTimeoutClaimPrize(1n))
+		await expect(cosmicGameProxy.connect(addr1).setTimeoutDurationToClaimMainPrize(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setErc20RewardMultiplier(12n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");

@@ -97,7 +97,12 @@ library CosmicGameConstants {
 	uint256 public constant INITIAL_RAFFLE_PERCENTAGE = 5;
 	uint256 public constant INITIAL_STAKING_PERCENTAGE = 10;
 	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
-	uint256 public constant INITIAL_TIMEOUT_CLAIM_PRIZE = SECONDS_PER_DAY;
+
+	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
+	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = SECONDS_PER_DAY;
+
+	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
+	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 * SECONDS_PER_DAY;
 
 	/// @notice Default `erc20RewardMultiplier`.
 	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
@@ -109,6 +114,11 @@ library CosmicGameConstants {
 	struct BooleanWithPadding {
 		bool value;
 		uint248 padding;
+	}
+
+	struct BalanceInfo {
+		uint256 roundNum;
+		uint256 amount;
 	}
 
 	enum NftTypeCode {
@@ -153,18 +163,12 @@ library CosmicGameConstants {
 		string data;
 	}
 
-	/// @notice Information about a donated NFT
-	/// @dev Stores details about NFTs donated to the game
-	struct DonatedNFT {
-		/// todo-1 Do we need a list of banned NFT addresses that are known to be malitios?
+	/// @notice Stores details about an NFT donated to the game.
+	struct DonatedNft {
+		/// todo-1 I have reordered `roundNum`. It used to be before `claimed`. I wrote about this on Slack.
+		uint256 roundNum;
 		IERC721 nftAddress;
 		uint256 nftId;
-		uint256 roundNum;
-		/// todo-1 Do we need this? Woudn't `nftAddress.ownerOf` show this?
-		/// todo-1 What if someone donates the same NFT again?
-		/// todo-1 Maybe zero out the instance of this structure when the NFT is claimed. 
-		/// todo-1 The backend will know where there are gaps in the array that contains instances of this struct.
-		/// todo-1 Make sure it's impossible that we transfer someone's NFT to someone else.
-		bool claimed;
+		// bool claimed;
 	}
 }
