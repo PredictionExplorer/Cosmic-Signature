@@ -122,7 +122,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		ethBalanceInfoReference_.roundNum = roundNum_;
 
 		ethBalanceInfoReference_.amount += msg.value;
-		// emit EthReceived(winner_, msg.value);
+		emit EthReceived(winner_, msg.value);
 	}
 
 	// #endregion
