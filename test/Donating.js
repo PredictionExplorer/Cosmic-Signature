@@ -67,7 +67,8 @@ describe("Donation tests", function () {
 		await expect(cosmicGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: 0n})).to.be.revertedWithCustomError(cosmicGameProxy, "NonZeroValueRequired");
 	});
 
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
+	// todo-1 and NFT donation without making a bid is prohibited.
 	it("donateNft() without making a bid works", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
@@ -104,12 +105,12 @@ describe("Donation tests", function () {
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
-		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		// await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.prizesWallet(), true);
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)
-			// todo-1 I have commented this method out.
 			.bidAndDonateNft(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
 		let receipt = await tx.wait();
 		let topic_sig = cosmicGameProxy.interface.getEvent("NftDonationEvent").topicHash;
@@ -123,7 +124,6 @@ describe("Donation tests", function () {
 		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
 		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		// todo-1 I have commented this method out.
 		await cosmicGameProxy.connect(addr1).bidAndDonateNft(params, await randomWalkNFT.getAddress(), 1, { value: bidPrice });
 
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();

@@ -32,7 +32,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.
 	function claimPrize() external override nonReentrant /*onlyActive*/ {
-		// todo-1 Maybe emove this unchecked here. It complicates things, but doesn't add a lot of value.
+		// todo-1 Maybe remove this unchecked here. It complicates things, but doesn't add a lot of value.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -290,13 +290,26 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @notice Update the entropy used for random selection
 	/// @dev This function updates the entropy using the current block information
 	/// todo-1 Ideally, this should return the updated value so that the caller didn't have to spend gas to read it from the storage.
+	/// todo-1 Or better add a function to a library: `generateRandomNumber(uint256 seed_) returns (uint256 randomNumber_)`.
+	/// todo-1 Call it in loops. Load and save `raffleEntropy` only once.
 	function _updateRaffleEntropy() internal {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			// todo-1 Would it be less vulnerable to manipulation to use prev block timestamp, or maybe like 10 blocks back?
-			// todo-1 Is `abi.encodePacked` more efficient?
+			// todo-1 Everywhere, better do this:
+			// todo-1 raffleEntropy = keccak256(abi.encodePacked(/* block.prevrandao ^ */ block.timestamp ^ raffleEntropy));
+			// todo-1 `block.prevrandao` belongs to the previous block, meaning it's already known.
+			// todo-1 So if we use it alone, a user can initiate a transaction to be executed within the current block,
+			// todo-1 while knowing what random number is going to be generated.
+			// todo-1 The same applies to `blockhash(block.number - 1)`.
+			// todo-1 On the other hand, `block.timestamp` belongs to the currently being built block,
+			// todo-1 which makes it less predictable by the user, even though it's predictable to some degree,
+			// todo-1 but the block proposer can manipulate it within a range.
+			// todo-1 So let's use `block.timestamp` alone. Mixing it with `block.prevrandao` would make the result
+			// todo-1 neither less predictable nor less resistant to manipulation.
+			// todo-1 A better conversion to `bytes`: https://stackoverflow.com/questions/49231267/how-to-convert-uint256-to-bytes-and-bytes-convert-to-uint256
+			// todo-1 But ChatGPT is saying that it a bit less gas efficient.
 			raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
 		}
 	}

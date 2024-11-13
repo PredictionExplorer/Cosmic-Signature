@@ -62,6 +62,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// I have provided a simple one, but this implementation is to be revisited everywhere this ToDo is referenced.
 	// [/ToDo-202408114-1]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
+		// Issue. It would be more efficient and not less random to initialize this with a hardcoded number.
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",
@@ -145,6 +146,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		price = newPrice;
 		uint256 tokenId = nextTokenId;
 		++ nextTokenId;
+		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but comment.
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number), tokenId, lastMinter));
 		seeds[tokenId] = entropy;
 		_safeMint(lastMinter, tokenId);

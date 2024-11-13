@@ -103,6 +103,8 @@ describe("Events", function () {
 		const contractBalance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
 		expect(contractBalance).to.equal(donationAmount+INITIAL_AMOUNT);
 	});
+
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
 	it("should emit MainPrizeClaimed and update winner on successful prize claim", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
@@ -117,11 +119,11 @@ describe("Events", function () {
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(donor).mint({ value: mintPrice });
 
-		await randomWalkNFT.connect(donor).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		// await randeomWalkNFT.connect(donor).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		await randomWalkNFT.connect(donor).setApprovalForAll(await cosmicGameProxy.prizesWallet(), true);
 
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		// todo-1 I have commented this method out.
 		await cosmicGameProxy.connect(donor).bidAndDonateNft(params,await randomWalkNFT.getAddress(), 0, { value: bidPrice });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -169,7 +171,6 @@ describe("Events", function () {
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { message: "hello", randomWalkNFTId: 1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		// todo-1 I have commented this method out.
 		await cosmicGameProxy.connect(donor).bidAndDonateNft(params, await randomWalkNFT.getAddress(), 2, { value: bidPrice });
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 3600]);
@@ -187,6 +188,7 @@ describe("Events", function () {
 
 		expect(await cosmicGameProxy.roundNum()).to.equal(2);
 	});
+
 	it("BidEvent is correctly emitted", async function () {
 		const {
 			cosmicGameProxy,
@@ -242,6 +244,8 @@ describe("Events", function () {
 			.to.emit(cosmicGameProxy, "BidEvent")
 			.withArgs(addr1.address, 0, rwalkBidPrice, 0, -1, 2000090000, "random walk");
 	});
+
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
 	it("DonatedNftClaimedEvent is correctly emitted", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
@@ -255,8 +259,8 @@ describe("Events", function () {
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let mintPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(bidder1).mint({ value: mintPrice });
-		await randomWalkNFT.connect(bidder1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		// todo-1 I have commented this method out.
+		// await randomWalkNFT.connect(bidder1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		await randomWalkNFT.connect(bidder1).setApprovalForAll(await cosmicGameProxy.prizesWallet(), true);
 		await cosmicGameProxy.connect(bidder1).bidAndDonateNft(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
 
 		let prizeTimeInc = await cosmicGameProxy.timeUntilPrize();
@@ -269,6 +273,7 @@ describe("Events", function () {
 			.to.emit(cosmicGameProxy, "DonatedNftClaimedEvent")
 			.withArgs(0, 0, bidder1.address, await randomWalkNFT.getAddress(), 0);
 	});
+
 	it("should not be possible to bid before activation", async function () {
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
 		const {

@@ -232,9 +232,8 @@ describe("SystemManagement tests", function () {
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		const bidPrice = await cosmicGameProxy.getBidPrice();
 		await expect(cosmicGameProxy.bid(params, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		// todo-1 I have commented this method out.
 		await expect(cosmicGameProxy.bidAndDonateNft(params, owner.address, 0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicGameProxy.bidWithCST("")).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicGameProxy.bidWithCst("")).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		// todo-1 This reverts with a different error. It's probably correct, but take another look. Comment.
 		await expect(cosmicGameProxy.claimPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoLastBidder");
 		// todo-1 I have moved NFT donations to `PrizesWallet`.

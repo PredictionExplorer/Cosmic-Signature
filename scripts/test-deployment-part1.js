@@ -53,8 +53,7 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
-		// todo-1 I have commented this method out.
-		.bidAndDonateNft(params, randomWalkNft.address, donatedTokenId, { value: bidPrice });
+		.bidAndDonateNft(params, randomWalkNft.address, donatedTokenId, {value: bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -81,8 +80,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding], [bidParams]);
 	tx = await cosmicGameProxy
 		.connect(testingAcct)
-		// todo-1 I have commented this method out.
-		.bidAndDonateNft(params, randomWalkNft.address, donatedTokenId, {value:bidPrice});
+		.bidAndDonateNft(params, randomWalkNft.address, donatedTokenId, {value: bidPrice});
 	receipt = await tx.wait();
 	topic_sig = cosmicGameProxy.interface.getEventTopic("BidEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

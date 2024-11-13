@@ -122,7 +122,6 @@ describe("Events2", function () {
 
 		let num_eth_winners = await cosmicGameProxy.numRaffleETHWinnersBidding();
 		const numChronoWarriors_ = 1n;
-		// todo-1 This is now broken. I have eliminated this event.
 		topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(num_eth_winners + numChronoWarriors_).to.equal(deposit_logs.length);

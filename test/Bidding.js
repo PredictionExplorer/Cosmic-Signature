@@ -289,7 +289,7 @@ describe("Bidding tests", function () {
 		// bidPrice = await cosmicGameProxy.getBidPrice();
 		// await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 
-		await cosmicGameProxy.connect(addr1).bidWithCST("cst bid");
+		await cosmicGameProxy.connect(addr1).bidWithCst("cst bid");
 
 		const res = await cosmicGameProxy.getCstAuctionDuration();
 		const duration = res[1];
@@ -371,7 +371,7 @@ describe("Bidding tests", function () {
 		let lastBidType = await cosmicGameProxy.lastBidType();
 		expect(lastBidType).to.equal(1);
 
-		await cosmicGameProxy.bidWithCST('cst bid');
+		await cosmicGameProxy.bidWithCst('cst bid');
 
 		lastBidType = await cosmicGameProxy.lastBidType();
 		expect(lastBidType).to.equal(2);
@@ -615,14 +615,14 @@ describe("Bidding tests", function () {
 
 		await hre.ethers.provider.send('evm_increaseTime', [20000]); // make CST bid price cheaper
 		await hre.ethers.provider.send('evm_mine');
-		await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
+		await cosmicGameProxy.connect(addr1).bidWithCst('cst bid');
 
 		let cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
 		expect(cstPrice.toString()).to.equal('200000000000000000000');
 		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
 		// expect(cstPrice.toString()).to.equal('214831600000000000000');
 
-		let tx = await cosmicGameProxy.connect(addr1).bidWithCST('cst bid');
+		let tx = await cosmicGameProxy.connect(addr1).bidWithCst('cst bid');
 		let receipt = await tx.wait();
 		let topic_sig = cosmicGameProxy.interface.getEvent('BidEvent').topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -713,7 +713,7 @@ describe("Bidding tests", function () {
 		expect(spentEth).to.equal(bidPrice);
 		await hre.ethers.provider.send('evm_increaseTime', [Number(auctionLength)-600]); // lower price to pay in CST
 		await hre.ethers.provider.send('evm_mine');
-		tx = await cosmicGameProxy.connect(addr1).bidWithCST("");
+		tx = await cosmicGameProxy.connect(addr1).bidWithCst("");
 		topic_sig = cosmicGameProxy.interface.getEvent('BidEvent').topicHash;
 		receipt = await tx.wait();
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -731,7 +731,7 @@ describe("Bidding tests", function () {
 		spentEth = spent[0];
 		expect(spentEth).to.equal(totalEthSpent);
 
-		tx = await cosmicGameProxy.connect(addr1).bidWithCST("");
+		tx = await cosmicGameProxy.connect(addr1).bidWithCst("");
 		receipt = await tx.wait();
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		evt = log.args.toObject();
@@ -754,8 +754,8 @@ describe("Bidding tests", function () {
 
 		// Refactored due to Comment-202409181.
 		const cosmicTokenFactory = await hre.ethers.getContractFactory('CosmicToken');
-		// await expect(cosmicGameProxy.connect(addr1).bidWithCST('cst bid')).to.be.revertedWithCustomError(cosmicGameProxy, "InsufficientCSTBalance");
-		await expect(cosmicGameProxy.connect(addr1).bidWithCST('cst bid')).to.be.revertedWithCustomError(cosmicTokenFactory, "ERC20InsufficientBalance");
+		// await expect(cosmicGameProxy.connect(addr1).bidWithCst('cst bid')).to.be.revertedWithCustomError(cosmicGameProxy, "InsufficientCSTBalance");
+		await expect(cosmicGameProxy.connect(addr1).bidWithCst('cst bid')).to.be.revertedWithCustomError(cosmicTokenFactory, "ERC20InsufficientBalance");
 	});
 	it('getBidderAtPosition() reverts if invalid position index is provided', async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
@@ -862,7 +862,7 @@ describe("Bidding tests", function () {
 				}
 			}
 			try {
-				await cosmicGameProxy.bidWithCST("");
+				await cosmicGameProxy.bidWithCst("");
 			} catch (e) {
 				console.log(e);
 				let balanceEth = await hre.ethers.provider.getBalance(owner.address);

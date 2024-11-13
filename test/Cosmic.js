@@ -74,7 +74,7 @@ describe("CosmicGame", function () {
 				to:  await cosmicGameProxy.getAddress(),
 				data: "0xffffffff", // non-existent selector
 			})
-		).to.be.revertedWith("Function does not exist.");
+		).to.be.revertedWith("Method does not exist.");
 	});
 	it("Fallback function is executing bid", async function () {
 		const {

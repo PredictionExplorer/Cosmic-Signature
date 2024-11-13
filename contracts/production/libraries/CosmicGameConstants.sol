@@ -111,6 +111,7 @@ library CosmicGameConstants {
 	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
 	uint256 public constant INITIAL_STAKING_WINNERS_RWALK = 4;
 
+	/// todo-1 Maybe just use `uint256` instead of this.
 	struct BooleanWithPadding {
 		bool value;
 		uint248 padding;

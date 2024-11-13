@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 // import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
@@ -22,23 +22,19 @@ abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 	// 	emit NftDonationEvent(msg.sender, nftAddress, roundNum, nftId, numDonatedNfts - 1);
 	// }
 
-	// /// @notice Internal function to handle NFT donations
-	// /// @dev This function is called by donateNft and bidAndDonateNft
-	// /// todo-1 Actually `donateNft` doesn't call it.
-	// /// todo-1 Maybe eliminate this method and leave only `donateNft`.
-	// /// @param _nftAddress Address of the NFT contract
-	// /// @param _nftId ID of the NFT to donate
-	// function _donateNft(IERC721 _nftAddress, uint256 _nftId) internal {
-	// 	_nftAddress.safeTransferFrom(msg.sender, address(this), _nftId);
-	// 	donatedNfts[numDonatedNfts] = CosmicGameConstants.DonatedNft({
-	// 		roundNum: roundNum,
-	// 		nftAddress: _nftAddress,
-	// 		nftId: _nftId,
-	// 		claimed: false
-	// 	});
-	// 	++ numDonatedNfts;
-	// 	emit NftDonationEvent(msg.sender, _nftAddress, roundNum, _nftId, numDonatedNfts - 1);
-	// }
+	function _donateNft(IERC721 nftAddress_, uint256 nftId_) internal {
+		// nftAddress_.safeTransferFrom(msg.sender, address(this), nftId_);
+		// donatedNfts[numDonatedNfts] = CosmicGameConstants.DonatedNft({
+		// 	roundNum: roundNum,
+		// 	nftAddress: nftAddress_,
+		// 	nftId: nftId_,
+		// 	claimed: false
+		// });
+		// ++ numDonatedNfts;
+		// emit NftDonationEvent(msg.sender, nftAddress_, roundNum, nftId_, numDonatedNfts - 1);
+
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
+	}
 
 	// function claimDonatedNft(uint256 index) public override /*nonReentrant*/ onlyActive {
 	// 	require(index < numDonatedNfts, CosmicGameErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index));

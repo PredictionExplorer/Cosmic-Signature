@@ -42,7 +42,8 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	/// ToDo-202408114-1 applies.
 	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") Ownable(_msgSender()) {
 		require(_cosmicGameProxyContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
+		// entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
+		entropy = bytes32(0x9b4631c9a4f4800392c74f3d2ee9e04fa8742b7f86e87b7d4b67fd7400d26f1e);
 		cosmicGameProxyContract = _cosmicGameProxyContract;
 	}
 
