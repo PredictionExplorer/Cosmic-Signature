@@ -85,6 +85,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @notice The current number of already unstaked and not yet fully rewarded NFTs.
 	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
+	/// @dev todo-1 In all staking contracts, reorder `num...` variables to before respective arrays.
 	uint256 public numUnpaidStakeActions;
 
 	/// @notice This indicates whether an NFT stake action occurred after we received the last ETH deposit.
@@ -107,6 +108,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// In fact, this design doesn't necessarily improve net use of gas -- due to gas refunds for freeing storage slots.
 	/// But, at least, we avoid gas fee spikes that we would experience when saving a nonzero to a non-existent storage slot.
 	/// Besides, gas refunds are not guaranteed because they are capped.
+	/// todo-1 Maybe just use 0 and 1 here?
 	uint256 private _nftWasStakedAfterPrevEthDeposit;
 
 	/// @notice `ethDepositIndex` is 1-based.

@@ -109,7 +109,8 @@ describe("Security", function () {
 		await expect(cosmicGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoLastBidder");
 	});
 
-	// todo-1 This test now needs rewriting and moving to the `PrizesWallet` tests.
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
+	// todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
 	it("donateNft() function is confirmed to be non-reentrant", async function () {
 		const [owner,] = await hre.ethers.getSigners();
 		const {cosmicGameProxy,} =
@@ -124,12 +125,11 @@ describe("Security", function () {
 		const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
 		await maliciousNft.waitForDeployment();
 
-		// todo-1 This will probably now revert due to stack overflow.
+		// todo-1 This will probably now revert due to `onlyGame`.
 		await expect(cosmicGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicGameProxy, "ReentrancyGuardReentrantCall");
 	});
 	
-	// todo-1 This test now needs rewriting and moving to the `PrizesWallet` tests.
-	// todo-1 I have commented out `CosmicGame.bidAndDonateNft`.
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {
 		const [owner,] = await hre.ethers.getSigners();
 		const {cosmicGameProxy,} =
@@ -144,7 +144,8 @@ describe("Security", function () {
 		const maliciousNft = await MaliciousNft.deploy(/*await cosmicGameProxy.getAddress(),*/ "Bad NFT", "BAD");
 		await maliciousNft.waitForDeployment();
 	
-		// todo-1 This will probably now revert due to stack overflow.
+		// todo-1 Given the test title, isn't this supposed to call `bidAndDonateNft`?
+		// todo-1 This will probably now revert due to `onlyGame`.
 		await expect(cosmicGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });

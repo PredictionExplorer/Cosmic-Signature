@@ -63,8 +63,7 @@ contract BidderContract is IERC721Receiver {
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: msg.value }(param_data);
 	}
-	// todo-1 This function no longer compiles because I moved NFT donations to `PrizesWallet`
-	// todo-1 and commented out `CosmicGame.bidAndDonateNft`.
+	// todo-1 This function no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function doBidAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
 	// 	nftAddress_.setApprovalForAll(address(cosmicGame), true);
 	// 	uint256 donatedTokenNum = cosmicGame.numDonatedNfts();

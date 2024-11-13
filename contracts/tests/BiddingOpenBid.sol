@@ -42,6 +42,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 
 	function _bid(bytes memory _data) internal /*onlyActive*/ {
 		BidParams memory params = abi.decode(_data, (BidParams));
+		CosmicGameConstants.BidType bidType;
 
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -61,22 +62,22 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 				)
 			);
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
+			bidType = CosmicGameConstants.BidType.RandomWalk;
+		} else {
+			bidType = CosmicGameConstants.BidType.ETH;
 		}
 
-		CosmicGameConstants.BidType bidType = params.randomWalkNFTId == -1
-			? CosmicGameConstants.BidType.ETH
-			: CosmicGameConstants.BidType.RandomWalk;
-
 		uint256 newBidPrice = getBidPrice();
-		uint256 rwalkBidPrice = newBidPrice / 2;
 		uint256 paidBidPrice;
 
-		// RandomWalk NFT bids get a 50% discount on the bid price
 		if (bidType == CosmicGameConstants.BidType.RandomWalk) {
+			// RandomWalk NFT bids get a 50% discount on the bid price.
+			uint256 rwalkBidPrice = newBidPrice / 2;
+
 			require(
 				msg.value >= rwalkBidPrice,
 				CosmicGameErrors.BidPrice(
-					"The value submitted for this transaction with RandomWalk is too low.",
+					"The value submitted for this transaction with RandomWalk NFT is too low.",
 					rwalkBidPrice,
 					msg.value
 				)
@@ -238,7 +239,11 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant /*onlyActive*/ {
+	function bidWithCst(string memory message_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(message_);
+	}
+
+	function _bidWithCst(string memory message_) internal /*onlyActive*/ {
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// Comment-202409179 applies.
@@ -278,10 +283,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 		
 		lastCstBidTimeStamp = block.timestamp;
-		_bidCommon(message, CosmicGameConstants.BidType.CST);
+		_bidCommon(message_, CosmicGameConstants.BidType.CST);
 
 		// Comment-202409182 applies.
-		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
+		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {

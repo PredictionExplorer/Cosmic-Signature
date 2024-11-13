@@ -42,7 +42,9 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 	}
 
 	function _bid(bytes memory _data) internal /*onlyActive*/ {
+		// todo-1 Why do we need this ugly data thing? Why can't we simply pass parameters to the method the normal way?
 		BidParams memory params = abi.decode(_data, (BidParams));
+		CosmicGameConstants.BidType bidType;
 
 		if (params.randomWalkNFTId != -1) {
 			require(
@@ -62,22 +64,22 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 				)
 			);
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
+			bidType = CosmicGameConstants.BidType.RandomWalk;
+		} else {
+			bidType = CosmicGameConstants.BidType.ETH;
 		}
 
-		CosmicGameConstants.BidType bidType = params.randomWalkNFTId == -1
-			? CosmicGameConstants.BidType.ETH
-			: CosmicGameConstants.BidType.RandomWalk;
-
 		uint256 newBidPrice = getBidPrice();
-		uint256 rwalkBidPrice = newBidPrice / 2;
 		uint256 paidBidPrice;
 
-		// RandomWalk NFT bids get a 50% discount on the bid price
 		if (bidType == CosmicGameConstants.BidType.RandomWalk) {
+			// RandomWalk NFT bids get a 50% discount on the bid price.
+			uint256 rwalkBidPrice = newBidPrice / 2;
+			
 			require(
 				msg.value >= rwalkBidPrice,
 				CosmicGameErrors.BidPrice(
-					"The value submitted for this transaction with RandomWalk is too low.",
+					"The value submitted for this transaction with RandomWalk NFT is too low.",
 					rwalkBidPrice,
 					msg.value
 				)
@@ -231,7 +233,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return bidderAddr;
 	}
 
-	function bidWithCST(string memory message) external override nonReentrant /*onlyActive*/ {
+	function bidWithCst(string memory message_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(message_);
+	}
+
+	function _bidWithCst(string memory message_) internal /*onlyActive*/ {
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// [Comment-202409179]
@@ -239,6 +245,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
 		// We are OK with that.
 		// [/Comment-202409179]
+		// todo-1 This price can double at any moment. The bid call should include the max price the user would be willing to pay.
 		uint256 price = getCurrentBidPriceCST();
 
 		// // [Comment-202409181]
@@ -287,12 +294,12 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
 
 		lastCstBidTimeStamp = block.timestamp;
-		_bidCommon(message, CosmicGameConstants.BidType.CST);
+		_bidCommon(message_, CosmicGameConstants.BidType.CST);
 
 		// [Comment-202409182]
 		// The cast of `price` to a signed integer can't overflow, thanks to the logic near Comment-202409163.
 		// [/Comment-202409182]
-		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message);
+		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {

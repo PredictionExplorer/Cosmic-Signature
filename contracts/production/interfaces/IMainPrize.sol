@@ -86,6 +86,8 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @notice Claim the prize for the current round
 	/// @dev This function distributes prizes, updates game state, and starts a new round
+	/// todo-1 Rename to `claimMainPrize` or `claimRoundMainPrize`.
+	/// todo-1 Specify prize type everywhere: claim(?:.(?!main))*?prize
 	function claimPrize() external;
 
 	/// @notice Obtains the current main prize amount.

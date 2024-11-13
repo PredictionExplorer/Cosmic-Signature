@@ -17,7 +17,7 @@ import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosm
 import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { Bidding } from "../production/Bidding.sol";
-// import { NFTDonations } from "../production/NFTDonations.sol";
+// import { NftDonations } from "../production/NftDonations.sol";
 import { ICosmicGame } from "../production/interfaces/ICosmicGame.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 
@@ -180,7 +180,7 @@ contract SpecialCosmicGame is CosmicGame {
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
 	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{ value: msg.value }(
-	// 		abi.encodeWithSelector(StakingWalletCosmicSignatureNft.deposit.selector)
+	// 		abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
 	// 	);
 	// 	if ( ! isSuccess_ ) {
 	// 		assembly {
@@ -195,8 +195,8 @@ contract SpecialCosmicGame is CosmicGame {
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
 	}
 	function mintCST(address to_, uint256 roundNum_) external {
-		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(CosmicSignature.mint.selector, to_, roundNum_));
-
+		// todo-1 Should we make a high level call here?
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignature.mint.selector, to_, roundNum_));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -238,7 +238,9 @@ contract MaliciousNft1 is ERC721 {
 	/// @notice sends donateNft() inside a call to transfer a token, generating reentrant function call
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// the following call should revert
-		(bool isSuccess_, /*bytes memory retval*/) = msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, address(this), 0));
+		// todo-1 Should we make a high level call here?
+		(bool isSuccess_, /*bytes memory retval*/) =
+			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -257,25 +259,26 @@ contract MaliciousNft2 is ERC721 {
 		// game = game_;
 	}
 
-	// /// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
-	// /// @dev todo-1 This method no longer compiles because I have commented out `ICosmicGame.bidAndDonateNft`.
-	// function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
-	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
-	// 	CosmicGame.BidParams memory defaultParams;
-	// 	defaultParams.message = "";
-	// 	defaultParams.randomWalkNFTId = -1;
-	// 	bytes memory param_data;
-	// 	param_data = abi.encode(defaultParams);
-	// 	// the following call should revert
-	// 	(bool isSuccess_, /*bytes memory retval*/) =
-	// 		msg.sender.call(abi.encodeWithSelector(ICosmicGame.bidAndDonateNft.selector, param_data, address(this), 0));
-	// 	if ( ! isSuccess_ ) {
-	// 		assembly {
-	// 			let ptr := mload(0x40)
-	// 			let size := returndatasize()
-	// 			returndatacopy(ptr, 0, size)
-	// 			revert(ptr, size)
-	// 		}
-	// 	}
-	// }
+	/// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
+	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
+		// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
+		CosmicGame.BidParams memory defaultParams;
+		defaultParams.message = "";
+		defaultParams.randomWalkNFTId = -1;
+		bytes memory param_data;
+		param_data = abi.encode(defaultParams);
+		// the following call should revert
+		// todo-1 Should we make a high level call here?
+		(bool isSuccess_, /*bytes memory retval*/) =
+			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`.
+			msg.sender.call(abi.encodeWithSelector(ICosmicGame.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
+		if ( ! isSuccess_ ) {
+			assembly {
+				let ptr := mload(0x40)
+				let size := returndatasize()
+				returndatacopy(ptr, 0, size)
+				revert(ptr, size)
+			}
+		}
+	}
 }

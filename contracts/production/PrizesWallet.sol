@@ -22,7 +22,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	/// @notice The `CosmicGame` contract address.
 	address public game;
 
-	/// @notice For each bidding round number, contains main prize winner address.
+	/// @notice For each bidding round number, contains the main prize winner address.
 	/// ToDo-202411257-1 relates.
 	address[1 << 64] public roundMainPrizeWinners;
 
@@ -54,8 +54,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `onlyGame`
 
-	/// @dev
-	/// Comment-202411253 applies.
+	/// @dev Comment-202411253 applies.
 	modifier onlyGame() {
 		require(
 			msg.sender == game,
@@ -77,6 +76,15 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `onERC721Received`
 
+	/// @notice Implements `IERC721Receiver`.
+	/// @dev
+	/// [ToDo-202411268-1]
+	/// Review all:
+	/// onERC721Received|IERC721Receiver|safeTransferFrom
+	/// Only `PrizesWallet` needs this, right? Or it doesn't? What about some testing contracts?
+	/// But even `PrizesWallet` doesn't need this because it won't make the NFT claimable.
+	/// ToDo-202411267-1 relates.
+	/// [/ToDo-202411268-1]
 	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
 		return IERC721Receiver.onERC721Received.selector;
 	}
@@ -122,7 +130,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		ethBalanceInfoReference_.roundNum = roundNum_;
 
 		ethBalanceInfoReference_.amount += msg.value;
-		// emit EthReceived(winner_, msg.value);
+		emit EthReceived(roundNum_, winner_, msg.value);
 	}
 
 	// #endregion
@@ -182,17 +190,22 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `donateNft`
 
-	function donateNft(uint256 roundNum_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ {
+	function donateNft(uint256 roundNum_, address donor_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ onlyGame {
 		require(address(nftAddress_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		uint256 numDonatedNftsCopy_ = numDonatedNfts;
 		CosmicGameConstants.DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
 		newDonatedNftReference_.roundNum = roundNum_;
 		newDonatedNftReference_.nftAddress = nftAddress_;
 		newDonatedNftReference_.nftId = nftId_;
-		emit NftDonated(roundNum_, msg.sender, nftAddress_, nftId_, numDonatedNftsCopy_);
+		emit NftDonated(roundNum_, /*msg.sender*/ donor_, nftAddress_, nftId_, numDonatedNftsCopy_);
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
-		nftAddress_.safeTransferFrom(msg.sender, address(this), nftId_);
+		// [ToDo-202411267-1]
+		// Sometimes we use "safe" function and sometimes we don't. Review all NFT and ERC20 calls.
+		// It's unnecessary for this particular transfer to be "safe".
+		// ToDo-202411268-1 relates.
+		// [/ToDo-202411267-1]
+		nftAddress_.safeTransferFrom(/*msg.sender*/ donor_, address(this), nftId_);
 	}
 
 	// #endregion
@@ -227,7 +240,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		delete donatedNftReference_.nftAddress;
 		delete donatedNftReference_.nftId;
 		emit DonatedNftClaimed(donatedNftCopy_.roundNum, msg.sender, donatedNftCopy_.nftAddress, donatedNftCopy_.nftId, index_);
-		// todo-1 Sometimes we use "safe" function and sometimes we don't. Review all NFT and ERC20 calls.
+		// ToDo-202411267-1 applies.
+		// todo-1 Maybe we should validate NFT receiver off-chain. Although maybe that's unnecessary too.
 		donatedNftCopy_.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNftCopy_.nftId);
 	}
 

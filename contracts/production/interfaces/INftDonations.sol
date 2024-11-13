@@ -6,7 +6,7 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
 
 /// @dev todo-1 Eliminate this interface and contract.
-interface INFTDonations is ICosmicSignatureGameStorage, ISystemManagement {
+interface INftDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	// /// @notice Emitted when an NFT is donated
 	// /// @param donor The address of the donor
 	// /// @param nftAddress The address of the NFT contract
@@ -38,6 +38,8 @@ interface INFTDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	// /// @notice This method allows anybody to donate an NFT.
 	// /// @param nftAddress NFT contract address.
 	// /// @param nftId NFT ID.
+	// /// @dev todo-9 It's incorrect that this function is external. NFT donations without bidding should not be allowed --
+	// /// todo-9 to prevent spamming.
 	// function donateNft(IERC721 nftAddress, uint256 nftId) external;
 
 	// /// @notice Claim a donated NFT

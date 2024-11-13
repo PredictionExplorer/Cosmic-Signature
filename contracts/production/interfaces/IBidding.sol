@@ -52,10 +52,10 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// todo-1 Rename to reflect the fact that this is position from end.
 	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns (address);
 
-	/// @notice Place a bid using CST tokens
-	/// @dev This function allows bidding with CST tokens, adjusting the CST price dynamically
-	/// @param message The bidder's message
-	function bidWithCST(string memory message) external;
+	/// @notice Places a bid using CST tokens.
+	/// @dev This function allows bidding with CST tokens, adjusting the CST price dynamically.
+	/// @param message_ The bidder's message, if any.
+	function bidWithCst(string memory message_) external;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// In our game, the price decreases linearly over the Dutch auction duration, and can become zero.
@@ -81,6 +81,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Get the total amount spent by a bidder in the current round
 	/// @param bidder The address of the bidder
 	/// @return The total amount spent by the bidder in wei
+	/// @dev todo-1 This is ETH, right? Rename to make it clear.
 	function getTotalSpentByBidder(address bidder) external view returns (uint256, uint256);
 
 	/// @notice Check if a RandomWalk NFT has been used for bidding

@@ -18,7 +18,7 @@ import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
-import { NFTDonations } from "../production/NFTDonations.sol";
+import { NftDonations } from "../production/NftDonations.sol";
 import { ETHDonations } from "../production/ETHDonations.sol";
 import { SpecialPrizes } from "../production/SpecialPrizes.sol";
 import { MainPrize } from "../production/MainPrize.sol";
@@ -36,7 +36,7 @@ contract CosmicGameOpenBid is
 	BidStatistics,
 	BiddingOpenBid,
 	MainPrize,
-	NFTDonations,
+	NftDonations,
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
@@ -97,13 +97,19 @@ contract CosmicGameOpenBid is
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
 		numRaffleNFTWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
 		numRaffleNFTWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
-		raffleEntropy = bytes32(uint256(202411186)); // keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
+		// raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
+		raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	// function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant {
-	// 	_bid(data_);
-	// 	_donateNft(nftAddress_, nftId_);
-	// }
+	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		_donateNft(nftAddress_, nftId_);
+	}
+
+	function bidWithCstAndDonateNft(string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(message_);
+		_donateNft(nftAddress_, nftId_);
+	}
 
 	// Moved to `PrizesWallet`.
 	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
@@ -124,7 +130,7 @@ contract CosmicGameOpenBid is
 	}
 
 	fallback() external payable override {
-		revert("Function does not exist.");
+		revert("Method does not exist.");
 	}
 
 	function _authorizeUpgrade(address newImplementation_) internal override {

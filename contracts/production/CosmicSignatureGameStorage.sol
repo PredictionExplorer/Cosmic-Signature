@@ -129,7 +129,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-0 Rename to `roundInitialDuration`.
 	uint256 public initialSecondsUntilPrize;
 
-	/// todo-0 Rename to `roundEndTime`.
+	/// todo-0 Rename to `mainPrizeTime` or `roundEndTime`.
 	uint256 public prizeTime;
 
 	/// @notice Bidding round counter.
@@ -296,6 +296,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202411064 applies.
 	uint256 public numRaffleNFTWinnersStakingRWalk;
 
+	/// @dev todo-1 The type of this and other similar variables should be `uint256`.
 	bytes32 public raffleEntropy;
 
 	// #endregion
