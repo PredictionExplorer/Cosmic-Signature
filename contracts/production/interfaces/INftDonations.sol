@@ -6,7 +6,7 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
 
 /// @dev todo-1 Eliminate this interface and contract.
-interface INFTDonations is ICosmicSignatureGameStorage, ISystemManagement {
+interface INftDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	// /// @notice Emitted when an NFT is donated
 	// /// @param donor The address of the donor
 	// /// @param nftAddress The address of the NFT contract

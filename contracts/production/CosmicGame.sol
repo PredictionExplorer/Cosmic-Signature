@@ -18,7 +18,7 @@ import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { Bidding } from "./Bidding.sol";
 import { BidStatistics } from "./BidStatistics.sol";
-import { NFTDonations } from "./NFTDonations.sol";
+import { NftDonations } from "./NftDonations.sol";
 import { ETHDonations } from "./ETHDonations.sol";
 import { SpecialPrizes } from "./SpecialPrizes.sol";
 import { MainPrize } from "./MainPrize.sol";
@@ -36,7 +36,7 @@ contract CosmicGame is
 	BidStatistics,
 	Bidding,
 	MainPrize,
-	NFTDonations,
+	NftDonations,
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {

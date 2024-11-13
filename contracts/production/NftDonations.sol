@@ -7,9 +7,9 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
-import { INFTDonations } from "./interfaces/INFTDonations.sol";
+import { INftDonations } from "./interfaces/INftDonations.sol";
 
-abstract contract NFTDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INFTDonations {
+abstract contract NftDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INftDonations {
 	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive  {
 	// 	nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
 	// 	donatedNfts[numDonatedNfts] = CosmicGameConstants.DonatedNft({

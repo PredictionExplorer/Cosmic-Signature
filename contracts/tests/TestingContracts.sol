@@ -17,7 +17,7 @@ import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosm
 import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { Bidding } from "../production/Bidding.sol";
-// import { NFTDonations } from "../production/NFTDonations.sol";
+// import { NftDonations } from "../production/NftDonations.sol";
 import { ICosmicGame } from "../production/interfaces/ICosmicGame.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 
