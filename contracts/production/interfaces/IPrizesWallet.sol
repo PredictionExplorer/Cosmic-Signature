@@ -31,7 +31,7 @@ interface IPrizesWallet {
 	// /// @param winner Prize winner address.
 	// /// @param amount Prize ETH amount.
 	// /// @dev We don't need this event. `CosmicGame` will emit respective events.
-	event EthReceived(address indexed winner, uint256 amount);
+	// event EthReceived(address indexed winner, uint256 amount);
 
 	/// @notice Emitted when a prize winner withdraws their ETH balance.
 	/// @param winner Prize winner address.
