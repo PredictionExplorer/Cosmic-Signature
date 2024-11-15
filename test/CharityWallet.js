@@ -101,9 +101,9 @@ describe("CharityWallet tests", function () {
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
-		let tx, receipt, log, parsed_log, bidPrice, winner, donationAmount;
+		let tx, receipt, log, parsed_log, bidPrice, winner;
 
-		donationAmount = hre.ethers.parseEther("10");
+		const donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();

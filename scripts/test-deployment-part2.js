@@ -25,7 +25,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 	let topic_sig = cosmicGameProxy.interface.getEventTopic("MainPrizeClaimed");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.claimedBy).to.equal(testingAcct.address);
+	expect(parsed_log.args.beneficiary).to.equal(testingAcct.address);
 	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 
 	let prizesWalletAddr = await cosmicGameProxy.prizesWallet();

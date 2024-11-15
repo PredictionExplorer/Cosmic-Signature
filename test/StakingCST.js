@@ -38,7 +38,7 @@ describe('Staking CST tests', function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicGameImplementation: cosmicGame,
+			cosmicGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -843,7 +843,7 @@ describe('Staking CST tests', function () {
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
-	// 		cosmicGameImplementation
+	// 		cosmicGame
 	// 	} = await basicDeployment(owner, "", 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 	//		
@@ -941,7 +941,7 @@ describe('Staking CST tests', function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicGameImplementation
+			cosmicGame
 		} = await basicDeployment(owner, '', 0, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 
 		const CosmicSignature = await hre.ethers.getContractFactory('CosmicSignature');
@@ -1117,7 +1117,7 @@ describe('Staking CST tests', function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicGameImplementation,
+			cosmicGame,
 		} = await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 
 		const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");

@@ -34,7 +34,7 @@ describe("PrizesWallet", function () {
 		await expect(newPrizesWallet.connect(addr1).depositEth(0, addr1.address, {value: 1000000n})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "CallDenied");
 
 		// // I have replaced respective `require` with an `assert`.
-		// // I have observed that this now reverts with panic when asserts are enabled.
+		// // I have observed the `assert` working. This now reverts with panic when asserts are enabled.
 		// await expect(newPrizesWallet.depositEth(0, hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 
 		// Comment-202409215 relates.

@@ -804,7 +804,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		// // [Comment-202409215]
-		// // It's unnecessary to spend gas on this validation.
+		// // It appears to be unnecessary to spend gas on this validation.
 		// // [/Comment-202409215]
 		// // This will be zero in the following cases:
 		// // 1. The staker stakes and, before we receive anotehr deposit, unstakes their NFT.

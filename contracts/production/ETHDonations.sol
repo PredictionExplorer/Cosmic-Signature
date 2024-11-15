@@ -23,9 +23,9 @@ abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 	function donateWithInfo(string calldata _data) external payable override onlyActive {
 		// todo-1 Unlike in `donate`, Comment-202409215 should not apply here.
 		// todo-1 But should we enforce a minimum donation?
-		// todo-1 But this whole ETH donation thing is questionable. Why don't we force the user within to show a message
+		// todo-1 But this whole ETH donation thing is questionable. Why don't we force the user willing to show a message
 		// todo-1 to simply bid with a message?
-		// todo-1 But currently bid with a message isn't supported, right?
+		// todo-1 Or is this feature meant to be for Taras to jump-start the game? Then why not just make the 1st bid?
 		require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("Donation amount must be greater than 0."));
 
 		uint256 donationInfoRecordIndex_ = numDonationInfoRecords;

@@ -40,8 +40,10 @@ contract CosmicGame is
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
-	// todo-0 Should we use this for `ERC20` instead, to give SMTChecker more info?
-	// todo-0 But it won't compile then, right?
+	// todo-1 Should we use this for `ERC20` instead, to give SMTChecker more info?
+	// todo-1 But it won't compile then, right?
+	// todo-1 Do we actually need this? I dislike this. Maybe comment this out.
+	// todo-1 Review all uses of `IERC20`. Make sure we check the return value.
 	using SafeERC20 for IERC20;
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -142,14 +144,26 @@ contract CosmicGame is
 		raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
+	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
+	function bidWithCstAndDonateToken(string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(message_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
 	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
 		_bid(data_);
-		_donateNft(nftAddress_, nftId_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	function bidWithCstAndDonateNft(string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
 		_bidWithCst(message_);
-		_donateNft(nftAddress_, nftId_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	// Moved to `PrizesWallet`.

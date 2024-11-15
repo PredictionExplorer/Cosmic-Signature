@@ -13,9 +13,9 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
-import { PrizesWallet } from "./PrizesWallet.sol";
-import { CosmicToken } from "./CosmicToken.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
+// import { PrizesWallet } from "./PrizesWallet.sol";
+// import { CosmicToken } from "./CosmicToken.sol";
+// import { CosmicSignature } from "./CosmicSignature.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
@@ -290,7 +290,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @notice Update the entropy used for random selection
 	/// @dev This function updates the entropy using the current block information
 	/// todo-1 Ideally, this should return the updated value so that the caller didn't have to spend gas to read it from the storage.
-	/// todo-1 Or better add a function to a library: `generateRandomNumber(uint256 seed_) returns (uint256 randomNumber_)`.
+	/// todo-1 Or better add a function to a library: `generateRandomNumber(uint256 seed_) returns(uint256 randomNumber_)`.
 	/// todo-1 Call it in loops. Load and save `raffleEntropy` only once.
 	function _updateRaffleEntropy() internal {
 		// #enable_smtchecker /*
@@ -370,35 +370,35 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	// #endregion
 	// #region `mainPrizeAmount`
 
-	function mainPrizeAmount() public view override returns (uint256) {
+	function mainPrizeAmount() public view override returns(uint256) {
 		return address(this).balance * mainPrizePercentage / 100;
 	}
 
 	// #endregion
 	// #region `chronoWarriorEthPrizeAmount`
 
-	function chronoWarriorEthPrizeAmount() public view override returns (uint256) {
+	function chronoWarriorEthPrizeAmount() public view override returns(uint256) {
 		return address(this).balance * chronoWarriorEthPrizePercentage / 100;
 	}
 
 	// #endregion
 	// #region `raffleAmount`
 
-	function raffleAmount() public view override returns (uint256) {
+	function raffleAmount() public view override returns(uint256) {
 		return address(this).balance * rafflePercentage / 100;
 	}
 
 	// #endregion
 	// #region `stakingAmount`
 
-	function stakingAmount() public view override returns (uint256) {
+	function stakingAmount() public view override returns(uint256) {
 		return address(this).balance * stakingPercentage / 100;
 	}
 
 	// #endregion
 	// #region `charityAmount`
 
-	function charityAmount() public view override returns (uint256) {
+	function charityAmount() public view override returns(uint256) {
 		return address(this).balance * charityPercentage / 100;
 	}
 
@@ -411,7 +411,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	// todo-0 All our times are supposed to be reasonable values that are close to `block.timestamp`.
 	// todo-0 `activationTime`, even though it's set externally, will also be reasonable, right?
 	// todo-0 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
-	function timeUntilPrize() external view override returns (uint256) {
+	function timeUntilPrize() external view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -429,7 +429,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	// #endregion
 	// #region `tryGetWinnerByRoundNum`
 
-	function tryGetWinnerByRoundNum(uint256 roundNum_) public view override returns (address) {
+	function tryGetWinnerByRoundNum(uint256 roundNum_) public view override returns(address) {
 		return winners[roundNum_];
 	}
 

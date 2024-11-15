@@ -36,7 +36,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Place a bid in the current round 
 	/// @dev This function handles ETH bids and RandomWalk NFT bids
 	/// todo-1 Rename to `bidWithEth`?
-	/// todo-1 Then also rename methods like `bidAndDonateNft`.
+	/// todo-1 Then also rename methods like `bidAndDonate...`.
 	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
 	function bid(bytes calldata _data) external payable;
 

@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
@@ -32,6 +32,7 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 		// todo-1 See Comment-202409215.
 		require(amount > 0, CosmicGameErrors.NonZeroValueRequired("Amount must be greater than zero."));
 
+		// todo-1 Do we really need to bother with this error handling? The transaction would revert anyway.
 		try token.transfer(to, amount) {
 		} catch {
 			revert CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount);

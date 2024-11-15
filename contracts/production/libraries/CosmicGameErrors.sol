@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 /// @title CosmicGameErrors - Custom error library for the Cosmic Game
 /// @author Cosmic Game Development Team
 /// @notice This library contains custom errors used throughout the Cosmic Game contracts
@@ -116,11 +118,13 @@ library CosmicGameErrors {
 	// #endregion
 	// #region Claim Prize Errors
 
-	/// @notice Thrown when attempting to claim a prize too early
-	/// @param errStr Description of the error
-	/// @param claimTime The time when claiming is allowed
-	/// @param blockTimeStamp The current block timestamp
-	/// todo-0 Rename to `MainPrizeEarlyClaim`.
+	/// @notice Thrown when attempting to claim a bidding round main prize too early.
+	/// See also: `EarlyWithdrawal`.
+	/// @param errStr Description of the error.
+	/// @param claimTime The time when claiming is allowed.
+	/// todo-1 Name it better. It should be named like the respective storage variable. Or see how I named this in `EarlyWithdrawal`.
+	/// @param blockTimeStamp The current block timestamp.
+	/// @dev todo-1 Rename to `RoundMainPrizeEarlyClaim`.
 	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
@@ -134,10 +138,30 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error
 	error NoLastBidder(string errStr);
 
-	/// @notice Thrown when someone who is not a prize winner attempts to claim the prize.
+	// /// @notice Thrown when the provided bidding round number is invalid.
+	// /// @param errStr Description of the error.
+	// /// @param roundNum Provided bidding round number.
+	// error InvalidRoundNum(string errStr, uint256 roundNum);
+
+	/// @notice Thrown when attempting to withdraw a prize or whatever too early.
+	/// See also: `EarlyClaim`.
 	/// @param errStr Description of the error.
-	/// @param index Prize info index in an array.
-	error NonExistentWinner(string errStr, uint256 index);
+	/// @param operationAllowedTime The time when this operation will be allowed.
+	/// @param blockTimeStamp The current block timestamp.
+	error EarlyWithdrawal(string errStr, uint256 operationAllowedTime, uint256 blockTimeStamp);
+
+	/// @notice Thrown when someone attempts to claim an ERC-20 token donation, but is not permitted to do so.
+	/// @param errStr Description of the error.
+	/// @param roundNum Bidding round number.
+	/// @param beneficiary The address that attempted to claim the donation.
+	/// @param tokenAddress The ERC-20 contract address.
+	error DonatedTokenClaimDenied(string errStr, uint256 roundNum, address beneficiary, IERC20 tokenAddress);
+
+	/// @notice Thrown when someone attempts to claim a donated NFT, but is not permitted to do so.
+	/// @param errStr Description of the error.
+	/// @param beneficiary The address that attempted to claim the donation.
+	/// @param index Donated NFT index in an array.
+	error DonatedNftClaimDenied(string errStr, address beneficiary, uint256 index);
 
 	/// @notice Thrown when attempting to claim a non-existent donated NFT.
 	/// @param errStr Description of the error.

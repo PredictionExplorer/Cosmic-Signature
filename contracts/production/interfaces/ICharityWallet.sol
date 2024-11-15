@@ -34,7 +34,7 @@ interface ICharityWallet {
 	receive() external payable;
 
 	/// @notice Sets or updates the address of the designated charity
-	/// @dev Only the contract owner can call this function
+	/// @dev Only callable by the contract owner.
 	/// @param newCharityAddress The new charity address
 	function setCharity(address newCharityAddress) external;
 

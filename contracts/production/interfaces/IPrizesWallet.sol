@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
 
-/// @title A wallet to hold ETH, ERC20 token, ERC721 NFT winnings in the Cosmic Signature Game.
+/// @title A wallet to hold the Cosmic Signature Game prizes and donations.
 /// @author Cosmic Game Development Team.
 /// todo-1 Everywhere, rephrase to Cosmic Signature Game?
-/// @notice A contract implementing this interface supports depositing ETH, donating ERC20 tokens and ERC721 NFTs,
-/// and allows prize winners to withdraw their prizes.
+/// @notice A contract implementing this interface supports depositing ETH, donating ERC-20 tokens and ERC-721 NFTs,
+/// and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 /// @dev It's OK if the same NFT will be donated and claimed multiple times.
-/// Nothing would be broken if an NFT contract acts malitiosly.
+/// Nothing would be broken if an ERC-20 or NFT contract acts malitiosly.
 /// For example, a malitios NFT contract can allow donating an NFT multiple times without claiming it.
-///
-/// todo-0 Write similar comments regarding ERC-20. Combine them with the above.
-///
 interface IPrizesWallet {
 	/// @notice Emitted when `timeoutDurationToWithdrawPrizes` is changed.
 	/// @param newValue The new value.
 	event TimeoutDurationToWithdrawPrizesChanged(uint256 newValue);
 
 	/// @notice Emitted when an ETH prize is received for a winner.
+	/// @param roundNum The current bidding round number.
 	/// @param winner Prize winner address.
 	/// @param amount Prize ETH amount.
 	/// @dev Issue. This event is kinda redundant, given that `CosmicGame` already emits
@@ -28,16 +27,43 @@ interface IPrizesWallet {
 	/// todo-1 Maybe talk to Nick again about that later.
 	event EthReceived(uint256 indexed roundNum, address indexed winner, uint256 amount);
 
-	/// @notice Emitted when a prize winner withdraws their ETH balance.
+	/// @notice Emitted when someone withdraws ETH.
 	/// @param winner Prize winner address.
-	/// @param withdrawnBy Withdrawer address.
-	/// It can be different when withdrawing unclaimed balance.
-	/// Comment-202411254 relates and/or applies.
-	/// @param amount Balance ETH amount.
-	event EthWithdrawn(address indexed winner, address indexed withdrawnBy, uint256 amount);
+	/// @param beneficiary Withdrawer address.
+	/// [Comment-202411285]
+	/// It can be different from `winner` when withdrawing an unclaimed prize.
+	/// Comment-202411254 relates.
+	/// [/Comment-202411285]
+	/// @param amount ETH amount.
+	event EthWithdrawn(address indexed winner, address indexed beneficiary, uint256 amount);
+
+	/// @notice Emitted when someone makes an ERC-20 token donation.
+	/// @param roundNum The current bidding round number.
+	/// @param donor Donor address.
+	/// @param tokenAddress The ERC-20 contract address.
+	/// @param amount Token amount.
+	event TokenDonated(
+		uint256 indexed roundNum,
+		address indexed donor,
+		IERC20 indexed tokenAddress,
+		uint256 amount
+	);
+
+	/// @notice Emitted when someone claims an ERC-20 token donation.
+	/// @param roundNum Bidding round number.
+	/// @param beneficiary The address that claimed the donation.
+	/// Comment-202411254 applies.
+	/// @param tokenAddress The ERC-20 contract address.
+	/// @param amount Token amount.
+	event DonatedTokenClaimed(
+		uint256 indexed roundNum,
+		address beneficiary,
+		IERC20 tokenAddress,
+		uint256 amount
+	);
 
 	/// @notice Emitted when someone donates an NFT.
-	/// @param roundNum The bidding round number for which the NFT is donated.
+	/// @param roundNum The current bidding round number.
 	/// @param donor Donor address.
 	/// @param nftAddress NFT contract address.
 	/// @param nftId NFT ID.
@@ -51,42 +77,50 @@ interface IPrizesWallet {
 	);
 
 	/// @notice Emitted when someone claims a donated NFT.
-	/// @param roundNum The bidding round number for which the NFT was donated.
-	/// @param claimedBy The address that claimed the NFT.
+	/// @param roundNum Bidding round number.
+	/// @param beneficiary The address that claimed the donation.
 	/// Comment-202411254 applies.
 	/// @param nftAddress NFT contract address.
 	/// @param nftId NFT ID.
 	/// @param index `donatedNfts` item index.
-	/// @dev todo-1 Would it make sense to eliminate all these params except `index`?
-	/// todo-1 Then it would probably need to be declared `indexed`.
 	event DonatedNftClaimed(
 		uint256 indexed roundNum,
-		address claimedBy,
+		address beneficiary,
 		IERC721 nftAddress,
 		uint256 nftId,
 		uint256 index
 	);
 
 	/// @notice Sets `timeoutDurationToWithdrawPrizes`.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev Only callable by the contract owner.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
 
 	/// @notice `CosmicGame` calls this method on main prize claim.
-	/// @dev Only callable by the `CosmicGame` contract.
+	/// Only the `CosmicGame` contract is permitted to call this method.
 	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinner_) external;
 
+	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
+	function withdrawEverything(
+		bool withdrawEth_,
+		CosmicGameConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
+		uint256[] calldata donatedNftIndices_
+	) external;
+
 	/// @notice Receives an ETH prize for a winner.
+	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// @param roundNum_ The current bidding round number.
 	/// @param winner_ Prize winner address.
-	/// @dev Only callable by the `CosmicGame` contract.
+	/// @dev
 	/// todo-1 Do we need a method to deposit for multiple winnes? That method can even be combined with `registerRoundEnd`.
-	/// todo-1 Ideally, it should accept an array of structs, each being 32 bytes long.
+	/// todo-1 Ideally, it should accept an array of structs, each being 32 bytes long (or maybe don't bother with that kind of optimization).
 	function depositEth(uint256 roundNum_, address winner_) external payable;
 
 	/// @notice A prize winner calls this method to withdraw their ETH balance.
+	/// Only the prize winner is permitted to call this method.
 	function withdrawEth() external;
 
-	/// @notice Anybody is welcomed to call this method to withdraw a prize winner's unclaimed ETH after a timeout expires.
+	/// @notice Anybody is welcomed to call this method after a timeout expires to withdraw a prize winner's unclaimed ETH.
 	/// @param winner_ Prize winner address.
 	function withdrawEth(address winner_) external;
 
@@ -94,31 +128,55 @@ interface IPrizesWallet {
 	/// @dev Comment-202410274 relates.
 	function getEthBalanceInfo() external view returns(CosmicGameConstants.BalanceInfo memory);
 
-	/// @param winner_ Prize winner address.
 	/// @return Details on ETH balance belonging to the given address.
+	/// @param winner_ Prize winner address.
 	/// @dev Comment-202410274 relates.
 	function getEthBalanceInfo(address winner_) external view returns(CosmicGameConstants.BalanceInfo memory);
 
+	/// @notice This method allows anybody to make an ERC-20 token donation.
+	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// @param roundNum_ The current bidding round number.
+	/// @param donor_ Donor address.
+	/// @param tokenAddress_ The ERC-20 contract address.
+	/// @param amount_ Token amount.
+	/// @dev
+	/// [Comment-202411288]
+	/// We do not need a method to make multiple ERC-20 token and/or NFT donations because we allow at most 1 donation per bid.
+	/// [/Comment-202411288]
+	function donateToken(uint256 roundNum_, address donor_, IERC20 tokenAddress_, uint256 amount_) external;
+
+	/// @notice Claims an ERC-20 token donateion.
+	/// [Comment-202411289]
+	/// Only the bidding round main prize winner is permitted to claim donated ERC-20 tokens and NFTs before a timeout expires.
+	/// Afterwards, anybody is welcomed to.
+	/// [/Comment-202411289]
+	/// @param roundNum_ Bidding round number.
+	/// @param tokenAddress_ The ERC-20 contract address.
+	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external;
+
+	/// @notice Similarly to `claimDonatedToken`, claims zero or more ERC-20 token donations in a single transaction.
+	function claimManyDonatedTokens(CosmicGameConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
+
+	/// @return The ERC-20 token amount donated during the given bidding round that has not been claimed yet.
+	/// @param roundNum_ Bidding round number.
+	/// @param tokenAddress_ The ERC-20 contract address.
+	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns(uint256);
+
 	/// @notice This method allows anybody to donate an NFT.
-	/// @dev Only callable by the `CosmicGame` contract.
-	/// todo-1 Do we need a method to donate multiple NFTs? Maybe not, because at most 1 NFT per bid is allowed.
-	/// @param roundNum_ The bidding round number for which the NFT is donated.
+	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// @param roundNum_ The current bidding round number.
 	/// @param donor_ Donor address.
 	/// @param nftAddress_ NFT contract address.
 	/// @param nftId_ NFT ID.
+	/// @dev Comment-202411288 applies.
 	function donateNft(uint256 roundNum_, address donor_, IERC721 nftAddress_, uint256 nftId_) external;
 
 	/// @notice Claims a donated NFT.
-	/// Only the bidding round main prize winner is permitted to claim a donated NFT until a timeout expires.
-	/// Afterwards, anybody is welcomed to.
+	/// Comment-202411289 applies.
 	/// @param index_ `donatedNfts` item index.
 	function claimDonatedNft(uint256 index_) external;
 
 	/// @notice Similarly to `claimDonatedNft`, claims zero or more donated NFTs in a single transaction.
 	/// @param indices_ `donatedNfts` item indices.
 	function claimManyDonatedNfts(uint256[] calldata indices_) external;
-
-
-
-	// todo-1 Do we need a method to withdraw a combination of ETH, ERC20 tokens, ERC721 NFTs?
 }

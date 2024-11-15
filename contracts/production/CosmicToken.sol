@@ -5,7 +5,6 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-// todo-1 In prev OpenZeppelin version, this was named "draft-ERC20Permit.sol".
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
@@ -28,10 +27,30 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 
 	/// todo-1 Make some `public` functions `external`.
 	/// todo-1 Make some `public`/`external` functions `private`.
-	/// todo-1 I added `onlyOwner`. Is it correct?
 	function burn(address account, uint256 value) public override onlyOwner {
 		_burn(account, value);
 	}
+
+	// /// @dev todo-1 Idea.
+	// /// `oldAllowance_` is the allowance the caller has seen.
+	// /// Event if the allowance decreases before the transaction gets executed this method will do the right thing.
+	// /// This method won't offer any benefit if either `oldAllowance_` or `newAllowance_` is zero.
+	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
+	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) public /*virtual*/ {
+	// 	// Comment-202409215 applies.
+	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
+	//
+	// 	uint256 allowance_ = allowance(msg.sender, spender_);
+	// 	if (allowance_ < oldAllowance_) {
+	// 		uint256 diff_ = oldAllowance_ - allowance_;
+	// 		if (diff_ < newAllowance_) {
+	// 			newAllowance_ -= diff_;
+	// 		} else {
+	// 			newAllowance_ = 0;
+	// 		}
+	// 	}
+	// 	_approve(msg.sender, spender_, newAllowance_);
+	// }
 
 	// The following functions are overrides required by Solidity.
 

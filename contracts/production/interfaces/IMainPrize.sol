@@ -8,14 +8,16 @@ import { IBidStatistics } from "./IBidStatistics.sol";
 interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
 	/// @notice Emitted when main prize is claimed.
 	/// @param roundNum Bidding round number.
-	/// @param claimedBy The address receiving the prize.
+	/// @param beneficiary The address receiving the prize.
 	/// [Comment-202411254]
 	/// It will be different from the bidding round actual winner if the winner has failed to claim the prize
-	/// within a timeout and someone else claimed it.
+	/// within a timeout and someone else claimed it instead.
 	/// It's possible to find out from other events who is the actual winner.
+	/// Comment-202411285 relates.
 	/// [/Comment-202411254]
 	/// @param amount Prize amount.
-	event MainPrizeClaimed(uint256 indexed roundNum, address indexed claimedBy, uint256 amount);
+	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`.
+	event MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiary, uint256 amount);
 
 	/// @notice Emitted when an ETH raffle winner is selected
 	/// @param winner The address of the winner
@@ -92,30 +94,30 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @notice Obtains the current main prize amount.
 	/// @return The current main prize amount, in Wei.
-	function mainPrizeAmount() external view returns (uint256);
+	function mainPrizeAmount() external view returns(uint256);
 
 	/// @notice Obtains the current Chrono-Warrior ETH prize amount.
 	/// @return The current Chrono-Warrior ETH prize amount, in Wei.
-	function chronoWarriorEthPrizeAmount() external view returns (uint256);
+	function chronoWarriorEthPrizeAmount() external view returns(uint256);
 
 	/// @notice Obtains the current raffle amount.
 	/// @return The current raffle amount, in Wei.
-	function raffleAmount() external view returns (uint256);
+	function raffleAmount() external view returns(uint256);
 
 	/// @notice Obtains the current staking amount.
 	/// @return The current staking amount, in Wei.
-	function stakingAmount() external view returns (uint256);
+	function stakingAmount() external view returns(uint256);
 
 	/// @notice Obtains the current charity amount.
 	/// @return The current charity amount, in Wei.
-	function charityAmount() external view returns (uint256);
+	function charityAmount() external view returns(uint256);
 
 	/// @notice Get the time until the next prize can be claimed
 	/// @return The number of seconds until the prize can be claimed, or 0 if claimable now
-	function timeUntilPrize() external view returns (uint256);
+	function timeUntilPrize() external view returns(uint256);
 
 	/// @notice Obtains the winner of a specific round.
 	/// @param roundNum_ The bidding round number.
 	/// @return The winner address, or zero if `roundNum_` is invalid or the round has not ended yet.
-	function tryGetWinnerByRoundNum(uint256 roundNum_) external view returns (address);
+	function tryGetWinnerByRoundNum(uint256 roundNum_) external view returns(address);
 }
