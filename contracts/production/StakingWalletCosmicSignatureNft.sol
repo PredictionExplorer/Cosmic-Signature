@@ -804,8 +804,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		// // [Comment-202409215]
-		// // It's unnecessary to spend gas on this validation.
+		// // It appears to be unnecessary to spend gas on this validation.
 		// // [/Comment-202409215]
+		// // [Comment-202411294]
 		// // This will be zero in the following cases:
 		// // 1. The staker stakes and, before we receive anotehr deposit, unstakes their NFT.
 		// // 2. Someone calls `unstakeMany` or `payManyRewards` with an empty array of stake action IDs.
@@ -814,6 +815,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// // 4. All deposits we received while this stake was active
 		// //    were too small for the formula near Comment-202410161 to produce a nonzero.
 		// //    Although that's probably unlikely to happen.
+		// // [/Comment-202411294]
 		// if (rewardAmount_ > 0)
 
 		{

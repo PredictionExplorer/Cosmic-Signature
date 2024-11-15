@@ -7,8 +7,8 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
-import { CosmicToken } from "../production/CosmicToken.sol";
-import { CosmicSignature } from "../production/CosmicSignature.sol";
+// import { CosmicToken } from "../production/CosmicToken.sol";
+// import { CosmicSignature } from "../production/CosmicSignature.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicGame } from "../production/CosmicGame.sol";
 
@@ -17,6 +17,7 @@ contract BidderContract is IERC721Receiver {
 	address public creator;
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNfts;
+	/// todo-1 Why do we need this? Isn't this the same as `myDonatedNfts.length`?
 	uint256 public numMyDonatedNfts;
 	bool blockDeposits = false;
 	constructor(address payable _cosmicGame) {
@@ -80,11 +81,12 @@ contract BidderContract is IERC721Receiver {
 	function doClaim() external {
 		cosmicGame.claimPrize();
 	}
-	function withdrawEthPrize(address destination) external {
-		PrizesWallet prizesWallet_ = PrizesWallet(destination);
-		prizesWallet_.withdrawEth();
-	}
-	// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
+	// function withdrawEthPrize(address destination) external {
+	// 	PrizesWallet prizesWallet_ = PrizesWallet(destination);
+	// 	prizesWallet_.withdrawEth();
+	// }
+	// // todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
+	// // todo-1 Should this method now call `PrizesWallet.withdrawEverything`?
 	// function withdrawAll() external {
 	// 	PrizesWallet prizesWallet_ = cosmicGame.prizesWallet();
 	//

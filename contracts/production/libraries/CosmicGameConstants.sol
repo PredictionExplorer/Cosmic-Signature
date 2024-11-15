@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title Constants and Structs for Cosmic Game
@@ -164,7 +165,20 @@ library CosmicGameConstants {
 		string data;
 	}
 
-	/// @notice Stores details about an NFT donated to the game.
+	/// @notice Details about an ERC-20 token donation made to the game.
+	struct DonatedToken {
+		// uint256 roundNum;
+		// IERC20 tokenAddress;
+		uint256 amount;
+	}
+
+	/// @notice Details about an ERC-20 token donation that one is required to provide to claim the donation.
+	struct DonatedTokenToClaim {
+		uint256 roundNum;
+		IERC20 tokenAddress;
+	}
+
+	/// @notice Details about an NFT donated to the game.
 	struct DonatedNft {
 		/// todo-1 I have reordered `roundNum`. It used to be before `claimed`. I wrote about this on Slack.
 		uint256 roundNum;

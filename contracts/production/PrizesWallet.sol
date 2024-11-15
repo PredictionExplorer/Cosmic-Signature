@@ -7,6 +7,7 @@ pragma solidity 0.8.27;
 // #region
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
@@ -35,7 +36,6 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	/// @notice For each bidding round number, contains a timeout time
 	/// starting at which anybody will be welcomed to withdraw any unclaimed prizes won in that bidding round.
 	/// If an item equals zero the timeout is considered not expired yet.
-	/// todo-1 Would it work correct without the zero check, at least for ETH? At least add an assert. Or at least comment.
 	uint256[1 << 64] public roundTimeoutTimesToWithdrawPrizes;
 
 	/// @notice For each prize winner address, contains a `CosmicGameConstants.BalanceInfo`.
@@ -43,12 +43,13 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	/// Comment-202410274 applies.
 	CosmicGameConstants.BalanceInfo[1 << 160] private _ethBalancesInfo;
 
+	/// @notice Contains info about ERC-20 token donations.
+	CosmicGameConstants.DonatedToken[(1 << 64) * (1 << 160)] public donatedTokens;
+
 	/// @notice This includes deleted items.
 	uint256 public numDonatedNfts = 0;
 
-	/// @notice Contains info about donated NFTs.
-	/// This array can contain zero or more items per bidding round.
-	/// We delete the item on claim.
+	/// @notice Contains info about NFT donations.
 	CosmicGameConstants.DonatedNft[1 << 64] public donatedNfts;
 
 	// #endregion
@@ -83,9 +84,10 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	/// onERC721Received|IERC721Receiver|safeTransferFrom
 	/// Only `PrizesWallet` needs this, right? Or it doesn't? What about some testing contracts?
 	/// But even `PrizesWallet` doesn't need this because it won't make the NFT claimable.
+	/// The front end should tell the user to make sure it can receive an NFT.
 	/// ToDo-202411267-1 relates.
 	/// [/ToDo-202411268-1]
-	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns(bytes4) {
 		return IERC721Receiver.onERC721Received.selector;
 	}
 
@@ -108,6 +110,21 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		// #enable_asserts assert(roundMainPrizeWinner_ != address(0));
 		roundMainPrizeWinners[roundNum_] = roundMainPrizeWinner_;
 		roundTimeoutTimesToWithdrawPrizes[roundNum_] = block.timestamp + timeoutDurationToWithdrawPrizes;
+	}
+
+	// #endregion
+	// #region `withdrawEverything`
+
+	function withdrawEverything(
+		bool withdrawEth_,
+		CosmicGameConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
+		uint256[] calldata donatedNftIndices_
+	) external override /*nonReentrant*/ {
+		if (withdrawEth_) {
+			withdrawEth();
+		}
+		claimManyDonatedTokens(donatedTokensToClaim_);
+		claimManyDonatedNfts(donatedNftIndices_);
 	}
 
 	// #endregion
@@ -136,7 +153,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `withdrawEth`
 
-	function withdrawEth() external override /*nonReentrant*/ {
+	function withdrawEth() public override /*nonReentrant*/ {
 		CosmicGameConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(msg.sender)];
 		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
@@ -158,8 +175,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[ethBalanceInfoReference_.roundNum];
 		require(
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-			// todo-1 Do we need a better custom error?
-			CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", roundTimeoutTimeToWithdrawPrizes_, block.timestamp)
+			CosmicGameErrors.EarlyWithdrawal("Not enough time has elapsed.", roundTimeoutTimeToWithdrawPrizes_, block.timestamp)
 		);
 		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
@@ -185,6 +201,88 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 
 	function getEthBalanceInfo(address winner_) external view override returns(CosmicGameConstants.BalanceInfo memory) {
 		return _ethBalancesInfo[uint160(winner_)];
+	}
+
+	// #endregion
+	// #region `donateToken`
+
+	function donateToken(uint256 roundNum_, address donor_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ onlyGame {
+		require(address(tokenAddress_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+
+		// Comment-202409215 applies to validating that `amount_` is a nonzero.
+		// But the front end should prohibit zero donations and hide any zero donations from other users.
+		// todo-1 Tell Nick about the above.
+
+		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
+		CosmicGameConstants.DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
+		newDonatedTokenReference_.amount += amount_;
+		emit TokenDonated(roundNum_, /*msg.sender*/ donor_, tokenAddress_, amount_);
+		bool isSuccess = tokenAddress_.transferFrom(/*msg.sender*/ donor_, address(this), amount_);
+		require(isSuccess, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", address(this), amount_));
+	}
+
+	// #endregion
+	// #region `claimDonatedToken`
+
+	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) public override /*nonReentrant*/ {
+		// According to Comment-202411283, we must validate `roundNum_` here.
+		// But array bounds check near Comment-202411287 will implicitly validate it.
+		//
+		// Comment-202409215 applies to validating that `tokenAddress_` is a nonzero.
+
+		// [Comment-202411286]
+		// Nothing will be broken if the `roundMainPrizeWinners` item is still zero.
+		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
+		// [/Comment-202411286]
+		// [Comment-202411287/]
+		if (msg.sender != roundMainPrizeWinners[roundNum_]) {
+			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
+			require(
+				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
+				CosmicGameErrors.DonatedTokenClaimDenied("Only bidding round main prize winner is permitted to claim this ERC-20 token donation.", roundNum_, msg.sender, tokenAddress_)
+			);
+		}
+
+		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
+		CosmicGameConstants.DonatedToken storage donatedTokenReference_ = donatedTokens[donatedTokenIndex_];
+		CosmicGameConstants.DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
+
+		// Comment-202409215 applies to validating that `donatedTokenCopy_.amount` is a nonzero.
+
+		delete donatedTokenReference_.amount;
+		emit DonatedTokenClaimed(roundNum_, msg.sender, tokenAddress_, donatedTokenCopy_.amount);
+		bool isSuccess = tokenAddress_.transfer(msg.sender, donatedTokenCopy_.amount);
+		require(isSuccess, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", msg.sender, donatedTokenCopy_.amount));
+	}
+
+	// #endregion
+	// #region `claimManyDonatedTokens`
+
+	function claimManyDonatedTokens(CosmicGameConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) public override /*nonReentrant*/ {
+		for ( uint256 donatedTokenToClaimIndex_ = 0; donatedTokenToClaimIndex_ < donatedTokensToClaim_.length; ++ donatedTokenToClaimIndex_ ) {
+			claimDonatedToken(donatedTokensToClaim_[donatedTokenToClaimIndex_].roundNum, donatedTokensToClaim_[donatedTokenToClaimIndex_].tokenAddress);
+		}
+	}
+
+	// #endregion
+	// #region `getDonatedTokenAmount`
+
+	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override returns(uint256) {
+		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
+		return donatedTokens[donatedTokenIndex_].amount;
+	}
+
+	// #endregion
+	// #region `_calculateDonatedTokenIndex`
+
+	function _calculateDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns(uint256) {
+		// Comment-202409215 applies.
+		// [Comment-202411283]
+		// But in some cases the caller must validate this.
+		// [/Comment-202411283]
+		// #enable_asserts assert(roundNum_ < (1 << 64));
+
+		return roundNum_ | (uint256(uint160(address(tokenAddress_))) << 64);
 	}
 
 	// #endregion
@@ -226,13 +324,12 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 			// #enable_asserts assert(index_ < numDonatedNfts);
 		}
 
-		// Nothing will be broken if the `roundMainPrizeWinners` item is still zero.
-		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
+		// Comment-202411286 applies.
 		if (msg.sender != roundMainPrizeWinners[donatedNftCopy_.roundNum]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[donatedNftCopy_.roundNum];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicGameErrors.NonExistentWinner("Only bidding round main prize winner is permitted to claim this NFT.", index_)
+				CosmicGameErrors.DonatedNftClaimDenied("Only bidding round main prize winner is permitted to claim this NFT.", msg.sender, index_)
 			);
 		}
 
@@ -242,13 +339,15 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		emit DonatedNftClaimed(donatedNftCopy_.roundNum, msg.sender, donatedNftCopy_.nftAddress, donatedNftCopy_.nftId, index_);
 		// ToDo-202411267-1 applies.
 		// todo-1 Maybe we should validate NFT receiver off-chain. Although maybe that's unnecessary too.
+		// todo-1 But at least warn the user to make sure that they can receive an NFT.
+		// todo-1 Is there a similar method that accepts only the destination address?
 		donatedNftCopy_.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNftCopy_.nftId);
 	}
 
 	// #endregion
 	// #region `claimManyDonatedNfts`
 
-	function claimManyDonatedNfts(uint256[] calldata indices_) external override /*nonReentrant*/ {
+	function claimManyDonatedNfts(uint256[] calldata indices_) public override /*nonReentrant*/ {
 		for ( uint256 indexIndex_ = 0; indexIndex_ < indices_.length; ++ indexIndex_ ) {
 			claimDonatedNft(indices_[indexIndex_]);
 		}

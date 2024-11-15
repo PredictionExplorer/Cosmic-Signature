@@ -43,7 +43,7 @@ interface ICosmicSignature is IERC721Enumerable {
 	function setTokenName(uint256 nftId, string memory name) external;
 
 	/// @notice Mints a new CosmicSignature token
-	/// @dev Only callable by the CosmicGameProxy contract.
+	/// Only the `CosmicGame` contract is permitted to call this method.
 	/// @param owner The address that will receive the newly minted token
 	/// @param roundNum The bidding round number in which the token is minted.
 	/// @return The ID of the newly minted token

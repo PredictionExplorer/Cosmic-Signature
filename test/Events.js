@@ -20,6 +20,8 @@ describe("Events", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
+			// todo-1 This `bidLogic` thing doesn't exist.
+			// todo-1 I've seen it in many places.
 			bidLogic,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
 		return {
@@ -104,7 +106,7 @@ describe("Events", function () {
 		expect(contractBalance).to.equal(donationAmount+INITIAL_AMOUNT);
 	});
 
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("should emit MainPrizeClaimed and update winner on successful prize claim", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);
@@ -132,7 +134,7 @@ describe("Events", function () {
 		await cosmicGameProxy.connect(bidder1).bid(params, { value: bidPrice });
 
 		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonExistentWinner");
+		await expect(cosmicGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "DonatedNftClaimDenied");
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await hre.ethers.provider.send("evm_mine");
@@ -245,7 +247,7 @@ describe("Events", function () {
 			.withArgs(addr1.address, 0, rwalkBidPrice, 0, -1, 2000090000, "random walk");
 	});
 
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
+	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("DonatedNftClaimedEvent is correctly emitted", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
 			await loadFixture(deployCosmic);

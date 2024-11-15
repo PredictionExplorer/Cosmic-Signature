@@ -5,11 +5,10 @@ const { getCosmicGameProxyContract } = require("./helper.js");
 async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 
-	let o, addr;
-	o = await cosmicGameProxy.owner();
+	let o = await cosmicGameProxy.owner();
 	console.log("Owner of CosmicGameProxy: " + o);
 
-	addr = cosmicGameProxy.token();
+	let addr = cosmicGameProxy.token();
 	let tokenContract = await hre.ethers.getContractAt("CosmicToken", addr);
 	o = await tokenContract.owner();
 	console.log("Owner of CosmicToken: " + o);

@@ -11,6 +11,7 @@ interface IETHDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	/// @param amount The amount donated
 	/// @param roundNum The current bidding round number. // todo-0 Should we reorder it to be the 1st param and make it indexed?
 	/// @dev todo-1 This is really an ETH donation. Rename to make it clear.
+	/// todo-1 Reorder `roundNum` to the beginning.
 	event DonationEvent(address indexed donor, uint256 amount, uint256 roundNum);
 
 	/// @notice Emitted when a donation with additional information is made
@@ -19,6 +20,7 @@ interface IETHDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	/// @param recordId Donation record ID // todo-0 Rename to `recordIndex`? Should we make it `indexed`?
 	/// @param roundNum The current bidding round number. // todo-0 Should we reorder it to be the 1st param and make it indexed?
 	/// @dev todo-1 This is really an ETH donation. Rename to make it clear.
+	/// todo-1 Reorder `roundNum` to the beginning.
 	event DonationWithInfoEvent(address indexed donor, uint256 amount, uint256 recordId, uint256 roundNum);
 
 	/// @notice This function allows a user to donate ETH without placing a bid

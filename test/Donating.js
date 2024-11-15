@@ -68,7 +68,7 @@ describe("Donation tests", function () {
 	});
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
-	// todo-1 and NFT donation without making a bid is prohibited.
+	// todo-1 and NFT donation without making a bid is now prohibited.
 	it("donateNft() without making a bid works", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =

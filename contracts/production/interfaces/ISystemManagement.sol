@@ -17,9 +17,9 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	// function setRuntimeMode() external;
 
 	/// @notice Sets `activationTime`.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev Only callable by the contract owner.
-	/// Comment-202411236 relates and/or applies.
+	/// @dev Comment-202411236 relates and/or applies.
 	/// Comment-202411168 relates and/or applies.
 	function setActivationTime(uint256 newValue_) external;
 
@@ -30,70 +30,70 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	function timeUntilActivation() external view returns (uint256);
 
 	/// @notice Sets `delayDurationBeforeNextRound`.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
 
 	/// @notice Sets the marketing reward amount.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setMarketingReward(uint256 newValue_) external;
 
 	/// @notice Set the maximum message length
+	/// Only the contract owner is permitted to call this method.
 	/// Comment-202409143 applies.
-	/// @dev Only callable by the contract owner.
 	/// @param _maxMessageLength The new maximum message length
 	function setMaxMessageLength(uint256 _maxMessageLength) external;
 
 	/// @notice Sets `prizesWallet`.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setPrizesWallet(IPrizesWallet newValue_) external;
 
 	/// @notice Set the Cosmic Token contract address
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _token The new Cosmic Token contract address
 	function setTokenContract(ICosmicToken _token) external;
 
 	/// @notice Set the marketing wallet address
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _marketingWallet The new marketing wallet address
 	function setMarketingWallet(address _marketingWallet) external;
 
 	/// @notice Sets `nft`.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setCosmicSignatureNft(ICosmicSignature newValue_) external;
 
 	/// @notice Set the `RandomWalkNFT` contract address
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param randomWalkNft_ The new `RandomWalkNFT` contract address
 	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external;
 
 	/// @notice Set the CST staking wallet address
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param stakingWalletCosmicSignatureNft_ The new CST staking wallet address
 	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external;
 
 	/// @notice Set the RandomWalk staking wallet address
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param stakingWalletRandomWalkNft_ The new RandomWalk staking wallet address
 	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external;
 
 	/// @notice Set the charity address
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _charity The new charity address
 	function setCharity(address _charity) external;
 
 	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;
 
 	/// @notice Set the time increase factor
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _timeIncrease The new time increase factor
 	function setTimeIncrease(uint256 _timeIncrease) external;
 
 	/// @notice Set the initial seconds until prize
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _initialSecondsUntilPrize The new initial seconds until prize
 	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external;
 
@@ -101,54 +101,54 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external;
 
 	/// @notice Set the price increase factor
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _priceIncrease The new price increase factor
 	function setPriceIncrease(uint256 _priceIncrease) external;
 
 	/// @notice Set the round start CST auction length
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param roundStartCstAuctionLength_ The new round start CST auction length
 	function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external;
 
 	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external;
 
 	/// @notice Set the token reward amount
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _tokenReward The new token reward amount
 	function setTokenReward(uint256 _tokenReward) external;
 
 	/// @notice Sets the main prize percentage.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param mainPrizePercentage_ The new value.
 	function setMainPrizePercentage(uint256 mainPrizePercentage_) external;
 
 	/// @notice Sets the Chrono-Warrior ETH prize percentage.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param chronoWarriorEthPrizePercentage_ The new value.
 	function setChronoWarriorEthPrizePercentage(uint256 chronoWarriorEthPrizePercentage_) external;
 
 	/// @notice Sets the raffle percentage.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param rafflePercentage_ The new value.
 	function setRafflePercentage(uint256 rafflePercentage_) external;
 
 	/// @notice Sets the staking percentage.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param stakingPercentage_ The new value.
 	function setStakingPercentage(uint256 stakingPercentage_) external;
 
 	/// @notice Sets the charity percentage.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param charityPercentage_ The new value.
 	function setCharityPercentage(uint256 charityPercentage_) external;
 
 	/// @notice Sets `timeoutDurationToClaimMainPrize`.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev Only callable by the contract owner.
 	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
 
 	/// @notice Set the ERC20 reward multiplier
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param _erc20RewardMultiplier The new ERC20 reward multiplier
 	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external;
 

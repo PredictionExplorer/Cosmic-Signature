@@ -87,7 +87,7 @@ describe("CosmicGame", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-			cosmicGameImplementation,
+			cosmicGame,
 		} = await loadFixture(deployCosmic);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		const [owner, otherAccount] = await hre.ethers.getSigners();

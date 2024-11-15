@@ -19,6 +19,12 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #endregion
 // #region
 
+/// todo-1 Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
+/// todo-1 But where we do so, consider validating that a big array item index passed to a method,
+/// todo-1 such as `roundNum_`,  is not too big.
+/// todo-1 Otherwise a collision can create a vulnerability.
+/// todo-1 Really, `mapping`s and dynamic arrays are evil. Avoid them!
+/// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Parameters and Variables
 

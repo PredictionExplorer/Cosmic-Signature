@@ -79,11 +79,11 @@ describe("Contract", function () {
 		let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = randomWalkNft.interface.parseLog(log);
-		let donated_token_id = parsed_log.args.tokenId;
+		let donatedNftId_ = parsed_log.args.tokenId;
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donated_token_id);
+		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donatedNftId_);
 		// todo-1 I have commented this method out.
-		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donated_token_id, { value: bidPrice });
+		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, { value: bidPrice });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		await bidderContract.connect(owner).doBid({ value: bidPrice });
@@ -115,8 +115,8 @@ describe("Contract", function () {
 			let ownerAddr = await cosmicSignature.ownerOf(tokId);
 			expect(ownerAddr).to.equal(owner.address);
 		}
-		let donatedTokenOwner = await randomWalkNft.ownerOf(donated_token_id);
-		expect(donatedTokenOwner).to.equal(owner.address);
+		let donatedNftOwner_ = await randomWalkNft.ownerOf(donatedNftId_);
+		expect(donatedNftOwner_).to.equal(owner.address);
 	});
 	it("Non-ERC721 receiver contract can bid", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, randomWalkNFT } = await loadFixture(

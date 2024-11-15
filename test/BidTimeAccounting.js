@@ -16,27 +16,29 @@ describe("Bid time accounting", function () {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
-			cosmicToken,
 			cosmicSignature,
-			charityWallet,
+			cosmicToken,
 			cosmicDAO,
+			charityWallet,
 			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
+			cosmicGame,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
-			cosmicToken,
 			cosmicSignature,
-			charityWallet,
+			cosmicToken,
 			cosmicDAO,
+			charityWallet,
 			prizesWallet,
 			randomWalkNFT,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
+			cosmicGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -174,19 +176,7 @@ describe("Bid time accounting", function () {
 	// todo-1 We now also have chrono-warrior.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const {
-			cosmicGame,
-			cosmicToken,
-			cosmicSignature,
-			charityWallet,
-			cosmicDAO,
-			prizesWallet,
-			randomWalkNFT,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			marketingWallet,
-			bidLogic,
-		} = await basicDeploymentAdvanced("CosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		const {cosmicGameProxy, cosmicGame,} = await loadFixture(deployCosmic);
 
 		// test case description:
 		// first bid is made by owner, to initialize all the variables, duration of 1000 seconds

@@ -40,8 +40,6 @@ contract CosmicGameOpenBid is
 	ETHDonations,
 	SpecialPrizes,
 	ICosmicGame {
-	// todo-0 Should we use this for `ERC20` instead, to give SMTChecker more info?
-	// todo-0 But it won't compile then, right?
 	using SafeERC20 for IERC20;
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -65,9 +63,20 @@ contract CosmicGameOpenBid is
 		delayDurationBeforeNextRound = CosmicGameConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingReward = CosmicGameConstants.MARKETING_REWARD;
 		maxMessageLength = CosmicGameConstants.MAX_MESSAGE_LENGTH;
+		// prizesWallet =
+		// token =
+		// marketingWallet =
+		// nft =
+		// randomWalkNft =
+		// stakingWalletCosmicSignatureNft =
+		// stakingWalletRandomWalkNft =
+		// charity =
+		// numDonationInfoRecords =
+		// // numDonatedNfts =
 		nanoSecondsExtra = CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicGameConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicGameConstants.INITIAL_SECONDS_UNTIL_PRIZE;
+		// prizeTime =
 		roundNum = 0;
 		bidPrice = CosmicGameConstants.FIRST_ROUND_BID_PRICE;
 		initialBidAmountFraction = CosmicGameConstants.INITIAL_BID_AMOUNT_FRACTION;
@@ -92,6 +101,13 @@ contract CosmicGameOpenBid is
 		stakingPercentage = CosmicGameConstants.INITIAL_STAKING_PERCENTAGE;
 		charityPercentage = CosmicGameConstants.INITIAL_CHARITY_PERCENTAGE;
 		timeoutDurationToClaimMainPrize = CosmicGameConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
+		// stellarSpender =
+		// stellarSpenderTotalSpentCst =
+		// enduranceChampion =
+		// enduranceChampionStartTimeStamp =
+		// enduranceChampionDuration =
+		// prevEnduranceChampionDuration =
+		// chronoWarrior =
 		chronoWarriorDuration = uint256(int256(-1));
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
@@ -101,14 +117,26 @@ contract CosmicGameOpenBid is
 		raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
+	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
+	function bidWithCstAndDonateToken(string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(message_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
 	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
 		_bid(data_);
-		_donateNft(nftAddress_, nftId_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	function bidWithCstAndDonateNft(string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
 		_bidWithCst(message_);
-		_donateNft(nftAddress_, nftId_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	// Moved to `PrizesWallet`.

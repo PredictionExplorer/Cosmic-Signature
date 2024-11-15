@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { IBidding } from "./IBidding.sol";
@@ -21,12 +22,20 @@ interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IBidSta
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
 	function initialize(address _gameAdministrator) external;
 
+	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
+	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable;
+
+	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
+	function bidWithCstAndDonateToken(string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
+
 	/// @notice Bids and donates an NFT in a single transaction.
 	/// @param data_ Encoded bid parameters.
 	/// @param nftAddress_ NFT contract address.
 	/// @param nftId_ NFT ID.
+	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
 	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
+	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
 	function bidWithCstAndDonateNft(string memory message_, IERC721 nftAddress_, uint256 nftId_) external;
 
 	/// @notice Fallback function to handle incoming ETH transactions

@@ -6,7 +6,7 @@ import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
-import { PrizesWallet } from "../production/PrizesWallet.sol";
+// import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
 import { CosmicToken } from "../production/CosmicToken.sol";
 import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
@@ -159,9 +159,9 @@ contract SpecialCosmicGame is CosmicGame {
 	function setCharityRaw(address addr) external {
 		charity = addr;
 	}
-	function setPrizesWalletRaw(IPrizesWallet newValue_) external {
-		prizesWallet = PrizesWallet(address(newValue_));
-	}
+	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
+	// 	prizesWallet = PrizesWallet(address(newValue_));
+	// }
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft addr) external {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(addr));
 	}
@@ -238,6 +238,7 @@ contract MaliciousNft1 is ERC721 {
 	/// @notice sends donateNft() inside a call to transfer a token, generating reentrant function call
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// the following call should revert
+		// todo-1 This will probably revert now due to `onlyGame`.
 		// todo-1 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
 			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
@@ -270,7 +271,7 @@ contract MaliciousNft2 is ERC721 {
 		// the following call should revert
 		// todo-1 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
-			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`.
+			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicGame`.
 			msg.sender.call(abi.encodeWithSelector(ICosmicGame.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
 			assembly {

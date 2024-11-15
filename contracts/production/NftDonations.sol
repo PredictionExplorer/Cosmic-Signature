@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 // import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
@@ -10,7 +10,7 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
 abstract contract NftDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INftDonations {
-	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive  {
+	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive {
 	// 	nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
 	// 	donatedNfts[numDonatedNfts] = CosmicGameConstants.DonatedNft({
 	// 		roundNum: roundNum,
@@ -22,26 +22,24 @@ abstract contract NftDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 	// 	emit NftDonationEvent(msg.sender, nftAddress, roundNum, nftId, numDonatedNfts - 1);
 	// }
 
-	function _donateNft(IERC721 nftAddress_, uint256 nftId_) internal {
-		// nftAddress_.safeTransferFrom(msg.sender, address(this), nftId_);
-		// donatedNfts[numDonatedNfts] = CosmicGameConstants.DonatedNft({
-		// 	roundNum: roundNum,
-		// 	nftAddress: nftAddress_,
-		// 	nftId: nftId_,
-		// 	claimed: false
-		// });
-		// ++ numDonatedNfts;
-		// emit NftDonationEvent(msg.sender, nftAddress_, roundNum, nftId_, numDonatedNfts - 1);
-
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
-	}
+	// function _donateNft(IERC721 nftAddress_, uint256 nftId_) internal {
+	// 	nftAddress_.safeTransferFrom(msg.sender, address(this), nftId_);
+	// 	donatedNfts[numDonatedNfts] = CosmicGameConstants.DonatedNft({
+	// 		roundNum: roundNum,
+	// 		nftAddress: nftAddress_,
+	// 		nftId: nftId_,
+	// 		claimed: false
+	// 	});
+	// 	++ numDonatedNfts;
+	// 	emit NftDonationEvent(msg.sender, nftAddress_, roundNum, nftId_, numDonatedNfts - 1);
+	// }
 
 	// function claimDonatedNft(uint256 index) public override /*nonReentrant*/ onlyActive {
 	// 	require(index < numDonatedNfts, CosmicGameErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index));
 	//
 	// 	CosmicGameConstants.DonatedNft storage donatedNft = donatedNfts[index];
 	// 	require(!donatedNft.claimed, CosmicGameErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", index));
-	// 	require(winners[donatedNft.roundNum] == msg.sender, CosmicGameErrors.NonExistentWinner("Only bidding round main prize winner is permitted to claim this NFT.", index));
+	// 	require(winners[donatedNft.roundNum] == msg.sender, CosmicGameErrors.DonatedNftClaimDenied("Only bidding round main prize winner is permitted to claim this NFT.", msg.sender, index));
 	//
 	// 	donatedNft.claimed = true;
 	// 	donatedNft.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNft.nftId);
