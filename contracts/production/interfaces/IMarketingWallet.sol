@@ -38,12 +38,12 @@ interface IMarketingWallet {
 	event RewardSentEvent(address indexed marketer, uint256 amount);
 
 	/// @notice Updates the address of the CosmicToken contract
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param addr Address of the new CosmicToken contract
 	function setTokenContract(ICosmicToken addr) external;
 
 	/// @notice Sends CST tokens as a reward to a marketer
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param amount Amount of CST tokens to send
 	/// @param to Address of the reward recipient
 	function send(uint256 amount, address to) external;

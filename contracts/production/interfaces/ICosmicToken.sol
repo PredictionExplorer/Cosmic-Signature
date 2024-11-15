@@ -7,7 +7,7 @@ pragma solidity 0.8.27;
 /// @dev This token includes burning, ownership, permit, and voting capabilities
 interface ICosmicToken {
 	/// @notice Mints new tokens and assigns them to the specified address.
-	/// @dev Only callable by the contract owner.
+	/// Only the contract owner is permitted to call this method.
 	/// @param to The address that will receive the minted tokens
 	/// @param value The amount of tokens to mint
 	function mint(address to, uint256 value) external;
