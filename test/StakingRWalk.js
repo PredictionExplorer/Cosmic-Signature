@@ -281,9 +281,9 @@ describe("Staking RandomWalk tests", function () {
 		);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 
-		// await expect(newStakingWalletRandomWalkNft.pickRandomStaker(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NoStakedNfts");
+		// await expect(newStakingWalletRandomWalkNft.pickRandomStakerAddress(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NoStakedNfts");
 		{
-			const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0xffff'));
+			const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(hre.ethers.hashMessage('0xffff'));
 			expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
 		}
 
@@ -312,7 +312,7 @@ describe("Staking RandomWalk tests", function () {
 			const numSamples = 300;
 			for (let i = 0; i < numSamples; i++) {
 				const r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
-				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
+				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(hre.ethers.hashMessage('0x'+r));
 				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {

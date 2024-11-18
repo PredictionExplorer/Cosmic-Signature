@@ -78,7 +78,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `_numStakedNfts`.
-	function numStakedNfts() external view override returns (uint256) {
+	function numStakedNfts() external view override returns(uint256) {
 		return _numStakedNfts;
 	}
 
@@ -89,7 +89,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// Observable universe entities accessed here:
 	///    `CosmicGameConstants.BooleanWithPadding`.
 	///    `_usedNfts`.
-	function wasNftUsed(uint256 nftId_) external view override returns (bool) {
+	function wasNftUsed(uint256 nftId_) external view override returns(bool) {
 		// return _usedNfts[nftId_];
 		return _usedNfts[nftId_].value;
 	}

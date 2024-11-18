@@ -24,7 +24,7 @@ because eth_estimateGas function produces very low gasLimit values and because A
 
 ##### for local testnet:
 
-   npx hardhat deploy-cosmicgame --deployconfig ~/deploy-configs/deploy-local.json --network localhost
+    npx hardhat deploy-cosmicgame --deployconfig ~/deploy-configs/deploy-local.json --network localhost
 
 ##### for Arbitrum Sepolia:
 

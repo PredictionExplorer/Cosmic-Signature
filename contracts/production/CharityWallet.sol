@@ -28,6 +28,7 @@ contract CharityWallet is Ownable, ICharityWallet {
 	}
 
 	function send() external override {
+		// todo-1 Maybe force to set a nonzero charity address during deployment and replace this validation with an assert.
 		require(charityAddress != address(0), CosmicGameErrors.ZeroAddress("Charity address not set."));
 		uint256 amount = address(this).balance;
 		// todo-1 See Comment-202409215.

@@ -212,7 +212,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	}
 
 	// #endregion
-	// #region `pickRandomStakerIfPossible`
+	// #region `pickRandomStakerAddressIfPossible`
 
 	/// @dev
 	/// Observable universe entities accessed here:
@@ -222,7 +222,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	/// todo-1 Why is entropy `bytes32`? Can I make it `uint256`? The caller should cast it to `uint256`.
-	function pickRandomStakerIfPossible(bytes32 entropy_) external view override returns (address) {
+	function pickRandomStakerAddressIfPossible(bytes32 entropy_) external view override returns(address) {
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 
 		// require(numStakedNftsCopy_ > 0, CosmicGameErrors.NoStakedNfts("There are no staked NFTs."));

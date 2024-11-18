@@ -9,7 +9,7 @@ pragma solidity 0.8.27;
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
 import { CosmicToken } from "./CosmicToken.sol";
-import { MarketingWallet } from "./MarketingWallet.sol";
+// import { MarketingWallet } from "./MarketingWallet.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
@@ -54,8 +54,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice On each bid, we mint this CST amount for `marketingWallet`.
 	/// Comment-202411064 applies.
 	/// @dev ToDo-202411182-1 relates.
-	/// todo-0 Rename to `marketingCstRewardAmount`.
-	/// todo-0 Even better, rename to `marketingWaletCstContributionAmount`.
+	/// todo-1 Rename to `marketingCstRewardAmount`.
+	/// todo-1 Even better, rename to `marketingWaletCstContributionAmount`.
+	/// todo-1 If I eliminate `MarketingWallet`, eliminate this too.
 	uint256 public marketingReward;
 
 	/// @notice The maximum allowed length of a bid message.
@@ -71,11 +72,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202411064 applies.
 	PrizesWallet public prizesWallet;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice `CosmicToken` contract address.
+	/// Comment-202411064 applies.
 	CosmicToken public token;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 Make this strongly typed.
 	address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.
@@ -128,7 +129,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202411064 applies.
 	/// Equals the number of microseonds per second plus a small fraction of it.
 	/// Comment-202411067 relates.
-	/// Rename to `nanoSecondsExtraIncreaseParam`.
+	/// todo-1 Rename to `nanoSecondsExtraIncreaseParam`.
 	uint256 public timeIncrease;
 
 	/// @notice Comment-202411064 applies.
@@ -151,7 +152,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public bidPrice;
 
 	/// @notice Comment-202411064 applies.
-	/// Rename to `firstEthBidPriceDivisor`.
+	/// todo-1 Rename to `roundFirstEthBidPriceDivisor`.
 	uint256 public initialBidAmountFraction;
 
 	/// @notice Comment-202411064 applies.
@@ -186,7 +187,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202411064 applies.
 	/// This number of CSTs is minted as a reward for each bid.
-	/// rename to `cstRewardAmountForBidding`.
+	/// todo-1 Rename to `cstRewardAmountForBidding`. Or is it only for non-CST bid? If so reflect that in the name.
 	uint256 public tokenReward;
 
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
@@ -199,7 +200,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	CosmicGameConstants.BidType public lastBidType;
 
 	/// @dev ToDo-202411098-0 applies.
-	/// Rename to `numBids`.
+	/// todo-1 Rename to `roundNumBids`.
 	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
 
 	/// @notice We add an item on each bid.
@@ -210,7 +211,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
 	/// [/ToDo-202411098-0]
-	/// Rename to `bids`.
+	/// todo-1 Rename to `roundBids`.
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
 	/// @dev ToDo-202411098-0 applies.

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: CC0-1.0
-
 pragma solidity 0.8.27;
 
 import { ICosmicToken } from "./ICosmicToken.sol";
 
-/// @title A wallet for managing CST rewards for marketing efforts
-/// @author Cosmic Game Development Team
-/// @notice This wallet holds CST rewards for marketing the project on social media
-/// Eventually, the founders of the project will transfer this wallet ownership to the DAO
+/// @title Marketer reward wallet.
+/// @author Cosmic Game Development Team.
+/// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media.
+/// Eventually, the founders of the project will transfer this wallet ownership to the DAO.
 /// @dev
 /// [ToDo-202411182-1]
 /// We mint CST for this wallet on each bid, which I dislike.
@@ -28,23 +27,24 @@ import { ICosmicToken } from "./ICosmicToken.sol";
 /// burn any excessive marketing wallet balance above a configurable value.
 /// [/ToDo-202411182-1]
 interface IMarketingWallet {
-	/// @notice Emitted when the CosmicToken contract address is changed
-	/// @param newCosmicToken Address of the new CosmicToken contract
-	event CosmicTokenAddressChanged(ICosmicToken newCosmicToken);
+	/// @notice Emitted when `token` is changed.
+	/// @param newValue The new value.
+	event TokenContractAddressChanged(ICosmicToken newValue);
 
-	/// @notice Emitted when a reward is sent to a marketer
-	/// @param marketer Address of the reward recipient
-	/// @param amount Amount of CST tokens sent as reward
-	event RewardSentEvent(address indexed marketer, uint256 amount);
+	/// @notice Emitted when a CST reward is paid to a marketer.
+	/// @param marketerAddress Recipient address.
+	/// @param amount Amount paid.
+	event RewardPaid(address indexed marketerAddress, uint256 amount);
 
-	/// @notice Updates the address of the CosmicToken contract
+	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param addr Address of the new CosmicToken contract
-	function setTokenContract(ICosmicToken addr) external;
+	/// @param newValue_ The new value.
+	function setTokenContract(ICosmicToken newValue_) external;
 
-	/// @notice Sends CST tokens as a reward to a marketer
+	/// @notice Pays a CST reward to a marketer.
 	/// Only the contract owner is permitted to call this method.
-	/// @param amount Amount of CST tokens to send
-	/// @param to Address of the reward recipient
-	function send(uint256 amount, address to) external;
+	/// @param marketerAddress_ Recipient address.
+	/// @param amount_ Amount to pay.
+	/// @dev todo-1 Do we need a method to transfer to multiple addresses?
+	function payReward(address marketerAddress_, uint256 amount_) external;
 }

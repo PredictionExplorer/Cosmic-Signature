@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { ICosmicToken } from "./ICosmicToken.sol";
+// import { IMarketingWallet } from "./IMarketingWallet.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
@@ -20,7 +21,7 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
 
-	/// @notice Emitted when the marketing reward amount is changed.
+	/// @notice Emitted when `marketingReward` is changed.
 	/// @param newValue The new value.
 	event MarketingRewardChanged(uint256 newValue);
 
@@ -32,13 +33,13 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event PrizesWalletAddressChanged(IPrizesWallet newValue);
 
-	/// @notice Emitted when the Cosmic Token address is changed
-	/// @param newCosmicToken The new Cosmic Token address
-	event CosmicTokenAddressChanged(ICosmicToken newCosmicToken);
+	/// @notice Emitted when `token` is changed.
+	/// @param newValue The new value.
+	event TokenContractAddressChanged(ICosmicToken newValue);
 
-	/// @notice Emitted when the marketing wallet address is changed
-	/// @param newMarketingWallet The new marketing wallet address
-	event MarketingWalletAddressChanged(address newMarketingWallet);
+	/// @notice Emitted when `marketingWallet` is changed.
+	/// @param newValue The new value.
+	event MarketingWalletAddressChanged(address newValue);
 
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.

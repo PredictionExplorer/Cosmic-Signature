@@ -425,7 +425,7 @@ describe("Events", function () {
 
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicGameProxy.connect(owner).setTokenContract(testAcct_.address))
-			.to.emit(cosmicGameProxy, "CosmicTokenAddressChanged")
+			.to.emit(cosmicGameProxy, "TokenContractAddressChanged")
 			.withArgs(testAcct_.address);
 		expect(await cosmicGameProxy.token()).to.equal(testAcct_.address);
 

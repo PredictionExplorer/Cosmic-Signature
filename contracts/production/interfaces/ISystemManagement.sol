@@ -3,7 +3,7 @@ pragma solidity 0.8.27;
 
 import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { ICosmicToken } from "./ICosmicToken.sol";
-import { IMarketingWallet } from "./IMarketingWallet.sol";
+// import { IMarketingWallet } from "./IMarketingWallet.sol";
 import { ICosmicSignature } from "./ICosmicSignature.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
@@ -34,7 +34,7 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
 
-	/// @notice Sets the marketing reward amount.
+	/// @notice Sets `marketingReward`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setMarketingReward(uint256 newValue_) external;
@@ -50,15 +50,15 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setPrizesWallet(IPrizesWallet newValue_) external;
 
-	/// @notice Set the Cosmic Token contract address
+	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _token The new Cosmic Token contract address
-	function setTokenContract(ICosmicToken _token) external;
+	/// @param newValue_ The new value.
+	function setTokenContract(ICosmicToken newValue_) external;
 
-	/// @notice Set the marketing wallet address
+	/// @notice Sets `marketingWallet`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _marketingWallet The new marketing wallet address
-	function setMarketingWallet(address _marketingWallet) external;
+	/// @param newValue_ The new value.
+	function setMarketingWallet(address newValue_) external;
 
 	/// @notice Sets `nft`.
 	/// Only the contract owner is permitted to call this method.

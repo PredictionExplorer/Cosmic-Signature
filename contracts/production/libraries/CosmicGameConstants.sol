@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-/// @title Constants and Structs for Cosmic Game
+/// @title Constants and structures for Cosmic Game
 /// @notice Default values and types used across the Cosmic Game ecosystem
 /// @dev These constants are used for initial state variables but may be updated later
 library CosmicGameConstants {
@@ -24,7 +24,7 @@ library CosmicGameConstants {
 	uint256 public constant SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY;
 	uint256 public constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * SECONDS_PER_DAY;
 
-	/// @notice This equals 9999-12-31 00:00:00.
+	/// @notice This is equivalent to the midnight of 9999-12-31.
 	/// @dev JavaScript  code to calculate this.
 	///		const n = (new Date(9999, 12 - 1, 31)).getTime() / 1000;
 	///		console.log(n);

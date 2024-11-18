@@ -8,7 +8,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
-import { CosmicToken } from "../production/CosmicToken.sol";
+// import { CosmicToken } from "../production/CosmicToken.sol";
 // import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
@@ -176,7 +176,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		// } catch {
 		// 	revert
 		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken mint() failed to mint reward tokens for the bidder.",
+		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
 		// 			/*lastBidder*/ msg.sender,
 		// 			tokenReward
 		// 		);
@@ -188,8 +188,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		// } catch {
 		// 	revert
 		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
-		// 			address(marketingWallet),
+		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
+		// 			marketingWallet,
 		// 			marketingReward
 		// 		);
 		// }

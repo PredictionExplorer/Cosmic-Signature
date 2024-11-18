@@ -81,7 +81,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	/// @dev
 	/// [ToDo-202411268-1]
 	/// Review all:
-	/// onERC721Received|IERC721Receiver|safeTransferFrom
+	/// onERC721Received|IERC721Receiver|safeTransfer(From)?
 	/// Only `PrizesWallet` needs this, right? Or it doesn't? What about some testing contracts?
 	/// But even `PrizesWallet` doesn't need this because it won't make the NFT claimable.
 	/// The front end should tell the user to make sure it can receive an NFT.

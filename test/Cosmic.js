@@ -14,25 +14,29 @@ describe("CosmicGame", function () {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
-			cosmicToken,
 			cosmicSignature,
-			charityWallet,
+			cosmicToken,
 			cosmicDAO,
+			charityWallet,
 			prizesWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCosmicSignatureNft,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
+			cosmicGame,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicGameProxy,
-			cosmicToken,
 			cosmicSignature,
-			charityWallet,
+			cosmicToken,
 			cosmicDAO,
+			charityWallet,
 			prizesWallet,
 			randomWalkNFT,
-			stakingWallet,
+			stakingWalletCosmicSignatureNft,
+			stakingWalletRandomWalkNft,
 			marketingWallet,
+			cosmicGame,
 		};
 	}
 	const bidParamsEncoding = {

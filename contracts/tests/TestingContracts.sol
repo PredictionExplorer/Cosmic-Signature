@@ -35,6 +35,7 @@ contract BrokenToken {
 	}
 }
 
+/// todo-1 Rename to `BrokenErc20`.
 contract BrokenERC20 {
 	// used to test revert() statements in CosmicGameImplementation contract
 	uint256 counter;
@@ -125,6 +126,7 @@ contract BrokenStaker {
 	}
 }
 
+/// todo-1 Rename to `SelfDestructibleCosmicSignatureGame`.
 contract SelfdestructibleCosmicGame is CosmicGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
@@ -153,6 +155,7 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 	// }
 }
 
+/// todo-1 Rename to `SpecialCosmicSignatureGame`.
 contract SpecialCosmicGame is CosmicGame {
 	// special CosmicGame contract to be used in unit tests to create special test setups
 
@@ -168,9 +171,9 @@ contract SpecialCosmicGame is CosmicGame {
 	function setNftContractRaw(ICosmicSignature addr) external {
 		nft = CosmicSignature(address(addr));
 	}
-	function setTokenContractRaw(ICosmicToken addr) external {
-		token = CosmicToken(address(addr));
-	}
+	// function setTokenContractRaw(ICosmicToken newValue_) external {
+	// 	token = CosmicToken(address(newValue_));
+	// }
 	// function setActivationTimeRaw(uint256 newValue_) external {
 	// 	activationTime = newValue_;
 	//

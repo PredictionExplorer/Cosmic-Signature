@@ -2,41 +2,43 @@
 pragma solidity 0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-// import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
 contract MarketingWallet is Ownable, IMarketingWallet {
-	/// @notice Reference to the CosmicToken contract
+	/// @notice `CosmicToken` contract address.
+	/// Comment-202411064 applies.
 	CosmicToken public token;
 
-	/// @notice Initializes the MarketingWallet contract
-	/// @param token_ Address of the CosmicToken contract
+	/// @notice Constructor.
+	/// @param token_ `CosmicToken` contract address.
 	/// ToDo-202408114-1 applies.
 	constructor(CosmicToken token_) Ownable(msg.sender) {
 		require(address(token_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		token = token_;
 	}
 
-	function setTokenContract(ICosmicToken addr) external override onlyOwner {
-		require(address(addr) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = CosmicToken(address(addr));
-		emit CosmicTokenAddressChanged(addr);
+	function setTokenContract(ICosmicToken newValue_) external override onlyOwner {
+		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		token = CosmicToken(address(newValue_));
+		emit TokenContractAddressChanged(newValue_);
 	}
 
-	/// todo-1 Do we need a function to send to multiple addresses?
-	function send(uint256 amount, address to) external override onlyOwner {
-		require(to != address(0), CosmicGameErrors.ZeroAddress("Recipient address cannot be zero."));
-		// todo-1 See Comment-202409215.
-		require(amount > 0, CosmicGameErrors.NonZeroValueRequired("Amount must be greater than zero."));
+	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
+		// // `token.transfer` will validate this.
+		// require(marketerAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 
-		// todo-1 Do we really need to bother with this error handling? The transaction would revert anyway.
-		try token.transfer(to, amount) {
-		} catch {
-			revert CosmicGameErrors.ERC20TransferFailed("Transfer failed.", to, amount);
-		}
-		emit RewardSentEvent(to, amount);
+		// // Comment-202409215 applies.
+		// require(amount_ > 0, CosmicGameErrors.NonZeroValueRequired("Amount is zero."));
+
+		// try
+		token.transfer(marketerAddress_, amount_);
+		// {
+		// } catch {
+		// 	revert CosmicGameErrors.ERC20TransferFailed("Transfer failed.", marketerAddress_, amount_);
+		// }
+		emit RewardPaid(marketerAddress_, amount_);
 	}
 }

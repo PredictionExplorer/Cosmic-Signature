@@ -154,6 +154,7 @@ contract BidderContract is IERC721Receiver {
 		return this.onERC721Received.selector;
 	}
 }
+
 contract BidCNonRecv {
 	// Bidder Contract but not ERC721 receiver
 	CosmicGame public cosmicGame;

@@ -28,6 +28,7 @@ import { ICosmicGame } from "../production/interfaces/ICosmicGame.sol";
 // #endregion
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
+/// todo-1 Rename to `CosmicSignatureGameOpenBid`. Also rename the file.
 contract CosmicGameOpenBid is
 	OwnableUpgradeable,
 	UUPSUpgradeable,

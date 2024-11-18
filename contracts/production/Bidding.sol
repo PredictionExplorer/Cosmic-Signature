@@ -9,7 +9,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicToken } from "./CosmicToken.sol";
+// import { CosmicToken } from "./CosmicToken.sol";
 // import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
@@ -49,6 +49,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		if (params.randomWalkNFTId != -1) {
 			require(
 				!usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				// todo-1 Nick wrote about reducing contract bytecode size:
+				// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
+				// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
+				// todo-1 I think we should go for it
 				CosmicGameErrors.UsedRandomWalkNFT(
 					"This RandomWalk NFT has already been used for bidding.",
 					uint256(params.randomWalkNFTId)
@@ -167,7 +171,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// } catch {
 		// 	revert
 		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken mint() failed to mint reward tokens for the bidder.",
+		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
 		// 			/*lastBidder*/ msg.sender,
 		// 			tokenReward
 		// 		);
@@ -179,8 +183,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// } catch {
 		// 	revert
 		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken mint() failed to mint reward tokens for MarketingWallet.",
-		// 			address(marketingWallet),
+		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
+		// 			marketingWallet,
 		// 			marketingReward
 		// 		);
 		// }

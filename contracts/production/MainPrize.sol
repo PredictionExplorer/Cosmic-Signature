@@ -32,7 +32,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.
 	function claimPrize() external override nonReentrant /*onlyActive*/ {
-		// todo-1 Maybe remove this unchecked here. It complicates things, but doesn't add a lot of value.
+		// todo-1 Maybe remove this `unchecked` here. It complicates things, but doesn't add a lot of value.
+		// todo-1 Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -205,6 +206,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that payment to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
 			uint256 nftId = nft.mint(stellarSpender, roundNum);
+			// todo-1 `erc20RewardMultiplier` shold already be multiplied by `1 ether`.
 			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
@@ -272,7 +274,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateRaffleEntropy();
-				address rwalkWinner = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerIfPossible(raffleEntropy);
+				address rwalkWinner = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
 
 				if (rwalkWinner == address(0)) {
 					break;

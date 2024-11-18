@@ -1171,7 +1171,7 @@ describe('Staking CST tests', function () {
 			const numSamples = 1000;
 			for (let i = 0; i < numSamples; i++) {
 				const r = Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, "0")
-				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerIfPossible(hre.ethers.hashMessage('0x'+r));
+				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(hre.ethers.hashMessage('0x'+r));
 				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {

@@ -10,6 +10,8 @@ import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
 import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
 import { CosmicToken } from "./CosmicToken.sol";
+// import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
+// import { MarketingWallet } from "./MarketingWallet.sol";
 import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
 import { CosmicSignature } from "./CosmicSignature.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
@@ -133,16 +135,16 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit PrizesWalletAddressChanged(newValue_);
 	}
 
-	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyInactive {
-		require(address(_token) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = CosmicToken(address(_token));
-		emit CosmicTokenAddressChanged(_token);
+	function setTokenContract(ICosmicToken newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		token = CosmicToken(address(newValue_));
+		emit TokenContractAddressChanged(newValue_);
 	}
 
-	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyInactive {
-		require(_marketingWallet != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		marketingWallet = _marketingWallet;
-		emit MarketingWalletAddressChanged(_marketingWallet);
+	function setMarketingWallet(address newValue_) external override onlyOwner onlyInactive {
+		require(newValue_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		marketingWallet = newValue_;
+		emit MarketingWalletAddressChanged(newValue_);
 	}
 
 	function setCosmicSignatureNft(ICosmicSignature newValue_) external override onlyOwner onlyInactive {

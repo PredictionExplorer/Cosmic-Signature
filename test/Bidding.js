@@ -776,6 +776,7 @@ describe("Bidding tests", function () {
 		expect(await cosmicGameProxy.getBidderAtPosition(1)).to.equal(addr2.address);
 		await expect(cosmicGameProxy.getBidderAtPosition(2)).to.be.revertedWith("Position out of bounds");
 	});
+	// todo-1 Are this and the next tests exactly the same? If so is it a bug or a feature?
 	it("Shouldn't be possible to bid if minting of cosmic tokens (ERC20) fails", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
@@ -788,13 +789,20 @@ describe("Bidding tests", function () {
 			randomWalkNFT,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+		// } = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		} = await loadFixture(deployCosmic);
+		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+
+		const activationTime_ = await cosmicGameProxy.activationTime();
+		cosmicGameProxy.setActivationTime(activationTime_ + 60n);
 
 		const BrokenToken = await hre.ethers.getContractFactory("BrokenERC20");
 		let newToken= await BrokenToken.deploy(0);
 		await newToken.waitForDeployment();
-		await cosmicGameProxy.setTokenContractRaw(await newToken.getAddress());
+		// await cosmicGameProxy.setTokenContractRaw(await newToken.getAddress());
+		await cosmicGameProxy.setTokenContract(await newToken.getAddress());
+
+		cosmicGameProxy.setActivationTime(activationTime_);
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };
@@ -817,13 +825,20 @@ describe("Bidding tests", function () {
 			// todo-1 Search for reg-ex pattern, case insensitive: stakingWallet(?!CST|RWalk)
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+		// } = await basicDeploymentAdvanced("SpecialCosmicGame", owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		} = await loadFixture(deployCosmic);
+		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+
+		const activationTime_ = await cosmicGameProxy.activationTime();
+		cosmicGameProxy.setActivationTime(activationTime_ + 60n);
 
 		const BrokenToken = await hre.ethers.getContractFactory("BrokenERC20");
 		let newToken= await BrokenToken.deploy(1);
 		await newToken.waitForDeployment();
-		await cosmicGameProxy.setTokenContractRaw(await newToken.getAddress());
+		// await cosmicGameProxy.setTokenContractRaw(await newToken.getAddress());
+		await cosmicGameProxy.setTokenContract(await newToken.getAddress());
+
+		cosmicGameProxy.setActivationTime(activationTime_);
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNFTId: -1 };

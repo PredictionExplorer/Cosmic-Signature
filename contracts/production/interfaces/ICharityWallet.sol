@@ -19,9 +19,9 @@ interface ICharityWallet {
 	/// @param amount The amount of ETH donated
 	event DonationReceivedEvent(address indexed donor, uint256 amount);
 
-	/// @notice Emitted after accumulated donations were sent to the charity
-	/// @param charity The address of the charity receiving the donation
-	/// @param amount The amount of ETH sent to the charity
+	/// @notice Emitted after accumulated donations were sent to the charity.
+	/// @param charity The address of the charity receiving the donation.
+	/// @param amount The amount of ETH transferred to the charity.
 	/// @dev
 	/// [ToDo-202409212-1]
 	/// Consider eliminating this and using `CosmicGameEvents.FundsTransferredToCharity` instead.
