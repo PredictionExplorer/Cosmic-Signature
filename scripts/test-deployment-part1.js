@@ -25,7 +25,7 @@ async function bid_simple(testingAcct, cosmicGameProxy) {
 	let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.message).to.equal("test bid");
 	expect(parsed_log.args.bidPrice).to.equal(bidPrice);
-	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
+	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
 }
 async function bid_randomwalk(testingAcct, cosmicGameProxy, nftId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -40,7 +40,7 @@ async function bid_randomwalk(testingAcct, cosmicGameProxy, nftId) {
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.message).to.equal("rwalk bid");
 	expect(parsed_log.args.randomWalkNFTId).to.equal(nftId);
-	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
+	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
 }
 async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	let bidPrice = await cosmicGameProxy.getBidPrice();
@@ -60,7 +60,7 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.message).to.equal("donate bid");
 	expect(parsed_log.args.bidPrice).to.equal(bidPrice);
-	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
+	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
 
 	topic_sig = cosmicGameProxy.interface.getEventTopic("NftDonationEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -87,7 +87,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.message).to.equal("donate nft rwalk bid");
 	expect(parsed_log.args.randomWalkNFTId).to.equal(tokenIdBidding);
-	expect(parsed_log.args.lastBidder).to.equal(testingAcct.address);
+	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
 
 	topic_sig = cosmicGameProxy.interface.getEventTopic("NftDonationEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

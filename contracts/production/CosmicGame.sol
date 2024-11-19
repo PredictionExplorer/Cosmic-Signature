@@ -115,7 +115,7 @@ contract CosmicGame is
 		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
 		// todo-0 Is this redundant? Assert?
-		lastBidder = address(0);
+		lastBidderAddress = address(0);
 		// lastBidType =
 		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicGameConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;

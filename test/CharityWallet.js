@@ -50,11 +50,11 @@ describe("CharityWallet tests", function () {
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let amountSent = hre.ethers.parseUnits("9",18);
-		let receiver = await charityWallet.charityAddress();
+		let receiverAddress_ = await charityWallet.charityAddress();
 		await addr2.sendTransaction({ to: await charityWallet.getAddress(), value: amountSent });
-		let balanceBefore = await hre.ethers.provider.getBalance(receiver);
+		let balanceBefore = await hre.ethers.provider.getBalance(receiverAddress_);
 		await charityWallet.send();
-		let balanceAfter = await hre.ethers.provider.getBalance(receiver);
+		let balanceAfter = await hre.ethers.provider.getBalance(receiverAddress_);
 		expect(balanceAfter).to.equal(balanceBefore+amountSent);
 	});
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {

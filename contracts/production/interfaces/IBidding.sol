@@ -15,7 +15,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	);
 
 	/// @notice Emitted when a bid is placed
-	/// @param lastBidder The address of the bidder
+	/// @param lastBidderAddress The address of the bidder who placed this bid.
 	/// @param roundNum The current bidding round number.
 	/// @param bidPrice The price of the bid
 	/// @param randomWalkNFTId The ID of the RandomWalk NFT used (if any)
@@ -24,7 +24,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @param message An optional message from the bidder
 	/// todo-1 Rename to `BidPlaced`.
 	event BidEvent(
-		address indexed lastBidder,
+		address indexed lastBidderAddress,
 		uint256 indexed roundNum,
 		int256 bidPrice,
 		int256 randomWalkNFTId, // todo-1 Should this be `indexed`?
@@ -77,13 +77,15 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Get the address of a bidder at a specific position in the current round
 	/// @param position The position of the bidder (0-indexed)
 	/// @return The address of the bidder at the specified position
+	/// @dev todo-1 Rename to `getBidderAddressAtPosition`.
 	function getBidderAtPosition(uint256 position) external view returns (address);
 
 	/// @notice Get the total amount spent by a bidder in the current round
-	/// @param bidder The address of the bidder
+	/// @param bidderAddress_ The address of the bidder
 	/// @return The total amount spent by the bidder in wei
-	/// @dev todo-1 This is ETH, right? Rename to make it clear.
-	function getTotalSpentByBidder(address bidder) external view returns (uint256, uint256);
+	/// @dev todo-1 Rename to `getBidderTotalSpentInRound`.
+	/// todo-1 This is ETH, right? Rename to make it clear. Actually it's both ETH and CST, right? Make it clear in this comment.
+	function getTotalSpentByBidder(address bidderAddress_) external view returns (uint256, uint256);
 
 	/// @notice Check if a RandomWalk NFT has been used for bidding
 	/// @param nftId The ID of the RandomWalk NFT

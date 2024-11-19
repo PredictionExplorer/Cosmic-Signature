@@ -80,7 +80,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `bidPrice`.
 		// [/Comment-202411236]
 		require(
-			lastBidder == address(0),
+			lastBidderAddress == address(0),
 			CosmicGameErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
 		);
 

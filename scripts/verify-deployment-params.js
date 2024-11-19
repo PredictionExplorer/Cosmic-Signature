@@ -18,7 +18,7 @@ async function main() {
 	console.log("randomWalkNft address = " + randomWalkNftAddr_);
 	console.log("charity wallet contract address = " + charityAddr);
 	console.log("owner of charity wallet contract = " + charityContractOwner);
-	console.log("charity donations receiver =" + charityDonationsReceiver);
+	console.log("charity donations receiver = " + charityDonationsReceiver);
 }
 main()
 	.then(() => process.exit(0))

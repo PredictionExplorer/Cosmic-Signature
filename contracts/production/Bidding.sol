@@ -110,6 +110,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// Refund excess ETH if the bidder sent more than required
 		if (msg.value > paidBidPrice) {
 			uint256 amountToSend = msg.value - paidBidPrice;
+			// todo-1 No reentrancy vulnerability?
 			(bool success, ) = msg.sender.call{ value: amountToSend }("");
 			require(
 				success,
@@ -119,7 +120,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 
 		// todo-1 Emit this before sending refund.
 		emit BidEvent(
-			lastBidder,
+			lastBidderAddress, // todo-1 <<< Use `msg.sender` instead?
 			roundNum,
 			int256(paidBidPrice),
 			params.randomWalkNFTId,
@@ -140,7 +141,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		);
 
 		// First bid of the round?
-		if (lastBidder == address(0)) {
+		if (lastBidderAddress == address(0)) {
 			// todo-0 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
 			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
@@ -152,11 +153,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 			_updateChampionsIfNeeded();
 		}
 
-		lastBidder = msg.sender;
+		lastBidderAddress = msg.sender;
 		lastBidType = bidType;
 		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidder*/ msg.sender;
+		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
@@ -166,13 +167,13 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// Can this, realistically, fail?
 		// This can't, realistically, overflow, right?
 		// [/ToDo-202409245-0]
-		token.mint(/*lastBidder*/ msg.sender, tokenReward);
+		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
 		// {
 		// } catch {
 		// 	revert
 		// 		CosmicGameErrors.ERC20Mint(
 		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
-		// 			/*lastBidder*/ msg.sender,
+		// 			/*lastBidderAddress*/ msg.sender,
 		// 			tokenReward
 		// 		);
 		// }
@@ -307,7 +308,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// [Comment-202409182]
 		// The cast of `price` to a signed integer can't overflow, thanks to the logic near Comment-202409163.
 		// [/Comment-202409182]
-		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message_);
+		// todo-1 Instead of `lastBidderAddress`, use `msg.sender`?
+		emit BidEvent(lastBidderAddress, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
@@ -355,8 +357,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return raffleParticipants[roundNum][position];
 	}
 
-	function getTotalSpentByBidder(address bidder) public view override returns (uint256, uint256) {
-		return (bidderInfo[roundNum][bidder].totalSpentEth, bidderInfo[roundNum][bidder].totalSpentCst);
+	function getTotalSpentByBidder(address bidderAddress_) public view override returns (uint256, uint256) {
+		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
 	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {

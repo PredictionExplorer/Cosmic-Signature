@@ -103,6 +103,10 @@ library CosmicGameConstants {
 	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = SECONDS_PER_DAY;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
+	/// @dev todo-1 Increase to 31 days, just in case our front end crashes and remains down for too long?
+	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1731974036727899
+	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732036126494949
+	/// todo-1 Create another thread to discuss.
 	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 * SECONDS_PER_DAY;
 
 	/// @notice Default `erc20RewardMultiplier`.

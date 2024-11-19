@@ -19,8 +19,8 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when an unauthorized caller calls a privileged method.
 	/// @param errStr Description of the error.
-	/// @param caller Caller address.
-	error CallDenied(string errStr, address caller);
+	/// @param callerAddress Caller address.
+	error CallDenied(string errStr, address callerAddress);
 
 	// #endregion
 	// #region System Errors
@@ -129,10 +129,11 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error
-	/// @param lastBidder The address of the last bidder
-	/// @param bidder The address of the caller
+	/// @param lastBidderAddress Last bidder address.
+	/// @param beneficiaryAddress The address that attempted to claim the prize.
 	/// @param timeToWait The time left to wait before claiming is allowed
-	error LastBidderOnly(string errStr, address lastBidder, address bidder, uint256 timeToWait);
+	/// todo-1 Rename the param to `durationToWait`. Or how the function to calculate it is named?
+	error LastBidderOnly(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 timeToWait);
 
 	/// @notice Thrown when there is no last bidder
 	/// @param errStr Description of the error
@@ -178,18 +179,18 @@ library CosmicGameErrors {
 
 	// /// @notice Thrown when a call to the business logic contract fails
 	// /// @param errStr Description of the error
-	// /// @param businessLogicAddr The address of the business logic contract
+	// /// @param businessLogicAddress The address of the business logic contract
 	// /// @param selector The function selector that failed
-	// error CallToBusinessLogicFailed(string errStr, address businessLogicAddr, bytes4 selector);
+	// error CallToBusinessLogicFailed(string errStr, address businessLogicAddress, bytes4 selector);
 
 	// #endregion
 	// #region Token-Related Errors
 
 	// /// @notice Thrown when ERC20 token minting fails
 	// /// @param errStr Description of the error
-	// /// @param receiver The intended receiver of the tokens
+	// /// @param receiverAddress The intended receiver of the tokens
 	// /// @param tokenAmount The amount of tokens to mint
-	// error ERC20Mint(string errStr, address receiver, uint256 tokenAmount);
+	// error ERC20Mint(string errStr, address receiverAddress, uint256 tokenAmount);
 
 	/// @notice Thrown when an ERC20 token transfer fails
 	/// See also: `CosmicGameEvents.ERC20TransferFailed`
@@ -200,9 +201,10 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when ERC721 token minting fails
 	/// @param errStr Description of the error
-	/// @param receiver The intended receiver of the token
+	/// @param receiverAddress The intended receiver of the token
 	/// @param roundNum The bidding round number for the token.
-	error ERC721Mint(string errStr, address receiver, uint256 roundNum);
+	/// todo-1 Reorder `roundNum` to after `errStr`?
+	error ERC721Mint(string errStr, address receiverAddress, uint256 roundNum);
 
 	/// @notice Thrown when the token name length is invalid
 	/// @param errStr Description of the error
@@ -211,17 +213,17 @@ library CosmicGameErrors {
 
 	/// @notice Thrown when an address without minting privileges attempts to mint
 	/// @param errStr Description of the error
-	/// @param requester The address attempting to mint
-	error NoMintPrivileges(string errStr, address requester);
+	/// @param requesterAddress The address attempting to mint
+	error NoMintPrivileges(string errStr, address requesterAddress);
 
 	/// @notice Thrown when the token owner is incorrect
 	/// @param errStr Description of the error
-	/// @param contractAddr The address of the token contract
+	/// @param nftAddress NFT contract address.
 	/// @param nftId The ID of the token
-	/// @param sender The address of the sender
-	error IncorrectERC721TokenOwner(string errStr, address contractAddr, uint256 nftId, address sender);
+	/// @param senderAddress The address of the sender
+	error IncorrectERC721TokenOwner(string errStr, address nftAddress, uint256 nftId, address senderAddress);
 
-	/// @notice Thrown when there's an ownership error for a token
+	/// @notice Thrown when there's an ownership error for an NFT.
 	/// @param errStr Description of the error
 	/// @param nftId The ID of the token
 	error OwnershipError(string errStr, uint256 nftId);
@@ -289,10 +291,11 @@ library CosmicGameErrors {
 	// );
 
 	/// @notice Thrown when an unauthorized address attempts to access a function
+	/// todo-1 Explain better what it attempts to access.
 	/// @param errStr Description of the error
 	/// @param stakeActionId The ID of the action
-	/// @param requester The address of the requester
-	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address requester);
+	/// @param requesterAddress The address of the requester
+	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address requesterAddress);
 
 	/// @notice Thrown when an invalid NFT stake action ID is provided
 	/// @param errStr Description of the error
@@ -332,8 +335,8 @@ library CosmicGameErrors {
 
 	// /// @notice Thrown when attempting to set address that have already been set
 	// /// @param errStr Description of the error
-	// /// @param addr Address value to be set
-	// error AddressAlreadySet(string errStr, address addr);
+	// /// @param newValue Address value to be set
+	// error AddressAlreadySet(string errStr, address newValue);
 
 	error NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange(string errStr, uint256 numEthDepositsToEvaluateMaxLimit);
 

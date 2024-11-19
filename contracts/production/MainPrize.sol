@@ -38,7 +38,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		unchecked
 		// #enable_smtchecker */
 		{
-			require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
+			require(lastBidderAddress != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
 
 			// [Comment-202411169/]
 			// #enable_asserts assert(block.timestamp >= activationTime);
@@ -59,17 +59,18 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			//
 			// todo-0 Eliminate the above `require`.
 			// todo-0 Rewrite this:
-			// todo-0 (msg.sender == lastBidder) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutDurationToClaimMainPrize)
+			// todo-0 (msg.sender == lastBidderAddress) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutDurationToClaimMainPrize)
 			// todo-0 Throw `CosmicGameErrors.EarlyClaim` if not.
 			// todo-0 Eliminate `CosmicGameErrors.LastBidderOnly`.
 			//
-			// todo-0 But I can eliminate the prev `require` too and check it only if `msg.sender != lastBidder`.
+			// todo-0 But I can eliminate the prev `require` too and check it only if `msg.sender != lastBidderAddress`.
 			// todo-0 Otherwie only assert it.
-			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutDurationToClaimMainPrize) ) {
+			if ( ! (/*winner*/ msg.sender == lastBidderAddress || block.timestamp - prizeTime >= timeoutDurationToClaimMainPrize) ) {
 				revert
 					CosmicGameErrors.LastBidderOnly(
+						// todo-1 Rephrase: the bidding round main prize
 						"Only the last bidder may claim the prize until a timeout expires.",
-						lastBidder,
+						lastBidderAddress,
 						/*winner*/ msg.sender,
 						// todo-1 Make sure this can't overflow.
 						timeoutDurationToClaimMainPrize - (block.timestamp - prizeTime)
@@ -82,16 +83,16 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// // Prevent reentrancy
 			// // todo-1 Reentrancy is no longer possible. Moved to `_roundEndResets`.
 			// // todo-1 Remove this garbage soon.
-			// lastBidder = address(0);
+			// lastBidderAddress = address(0);
 
-			// todo-0 Assign `lastBidder` here.
-			// todo-0 Comment: Even if `lastBidder` forgets to claim the prize, we will still record them as the winner.
+			// todo-0 Assign `lastBidderAddress` here.
+			// todo-0 Comment: Even if `lastBidderAddress` forgets to claim the prize, we will still record them as the winner.
 			// todo-0 This will allow them to claim donated NFTs.
 			// todo-0 But I have now moved NFT donations to `PrizesWallet`. ToDo-202411257-1 relates.
 			// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
-			winners[roundNum] = /*winner*/ msg.sender /*lastBidder*/;
+			winners[roundNum] = /*winner*/ msg.sender /*lastBidderAddress*/;
 			// todo-1 Think if this is the best place to call this method. Maybe call it after disrtibuting prizes. Or maybe leave it alone.
-			prizesWallet.registerRoundEnd(roundNum, /*winner*/ msg.sender /*lastBidder*/);
+			prizesWallet.registerRoundEnd(roundNum, /*winner*/ msg.sender /*lastBidderAddress*/);
 
 			// todo-1 Calculate these at the point where we need these, not here.
 			uint256 mainPrizeAmount_ = mainPrizeAmount();
@@ -323,7 +324,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @dev This function is called after a prize is claimed to prepare for the next round
 	function _roundEndResets() internal {
 		++ roundNum;
-		lastBidder = address(0);
+		lastBidderAddress = address(0);
 		lastBidType = CosmicGameConstants.BidType.ETH;
 
 		// // todo-0 Incorrect! Remove!

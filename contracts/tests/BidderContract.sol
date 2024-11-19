@@ -155,8 +155,9 @@ contract BidderContract is IERC721Receiver {
 	}
 }
 
+/// @notice Bidder Contract but not ERC721 receiver.
+/// ToDo-202411268-1 relates and/or applies.
 contract BidCNonRecv {
-	// Bidder Contract but not ERC721 receiver
 	CosmicGame public cosmicGame;
 	address public creator;
 	constructor(address payable _cosmicGame) {

@@ -132,7 +132,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 
 		// todo-1 Emit this before sending refund.
 		emit BidEvent(
-			lastBidder,
+			lastBidderAddress,
 			roundNum,
 			int256(paidBidPrice),
 			params.randomWalkNFTId,
@@ -153,31 +153,31 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		);
 
 		// First bid of the round?
-		if (lastBidder == address(0)) {
+		if (lastBidderAddress == address(0)) {
 
 			prizeTime = block.timestamp + initialSecondsUntilPrize;
 		} else {
 			_updateChampionsIfNeeded();
 		}
 
-		lastBidder = msg.sender;
+		lastBidderAddress = msg.sender;
 		lastBidType = bidType;
 		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidder*/ msg.sender;
+		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
 		// Distribute token rewards
 		// try
 		// ToDo-202409245-0 applies.
-		token.mint(/*lastBidder*/ msg.sender, tokenReward);
+		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
 		// {
 		// } catch {
 		// 	revert
 		// 		CosmicGameErrors.ERC20Mint(
 		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
-		// 			/*lastBidder*/ msg.sender,
+		// 			/*lastBidderAddress*/ msg.sender,
 		// 			tokenReward
 		// 		);
 		// }
@@ -285,7 +285,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		_bidCommon(message_, CosmicGameConstants.BidType.CST);
 
 		// Comment-202409182 applies.
-		emit BidEvent(lastBidder, roundNum, -1, -1, int256(price), prizeTime, message_);
+		emit BidEvent(lastBidderAddress, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
@@ -327,8 +327,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		return raffleParticipants[roundNum][position];
 	}
 
-	function getTotalSpentByBidder(address bidder) public view override returns (uint256, uint256) {
-		return (bidderInfo[roundNum][bidder].totalSpentEth, bidderInfo[roundNum][bidder].totalSpentCst);
+	function getTotalSpentByBidder(address bidderAddress_) public view override returns (uint256, uint256) {
+		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
 	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {

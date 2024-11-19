@@ -194,7 +194,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
 	mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNFTs;
 
-	address public lastBidder;
+	// @notice The address of the account that placed the last bid.
+	address public lastBidderAddress;
 
 	/// todo-0 Do we really need this?
 	/// todo-0 Rename to `lastBidTypeCode`.

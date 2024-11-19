@@ -155,31 +155,39 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 	// }
 }
 
+/// @notice special CosmicGame contract to be used in unit tests to create special test setups
 /// todo-1 Rename to `SpecialCosmicSignatureGame`.
 contract SpecialCosmicGame is CosmicGame {
-	// special CosmicGame contract to be used in unit tests to create special test setups
-
-	function setCharityRaw(address addr) external {
-		charity = addr;
+	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
+	function setCharityRaw(address newValue_) external {
+		charity = newValue_;
 	}
+
 	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
 	// 	prizesWallet = PrizesWallet(address(newValue_));
 	// }
-	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft addr) external {
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(addr));
+
+	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
+	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}
-	function setNftContractRaw(ICosmicSignature addr) external {
-		nft = CosmicSignature(address(addr));
+
+	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
+	function setNftContractRaw(ICosmicSignature newValue_) external {
+		nft = CosmicSignature(address(newValue_));
 	}
+
 	// function setTokenContractRaw(ICosmicToken newValue_) external {
 	// 	token = CosmicToken(address(newValue_));
 	// }
+
 	// function setActivationTimeRaw(uint256 newValue_) external {
 	// 	activationTime = newValue_;
 	//
 	// 	// Comment-202411168 applies.
 	// 	lastCstBidTimeStamp = newValue_;
 	// }
+
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
 	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{ value: msg.value }(
@@ -194,9 +202,11 @@ contract SpecialCosmicGame is CosmicGame {
 	// 		}
 	// 	}
 	// }
+
 	function depositToStakingWalletCosmicSignatureNftIfPossible() external payable {
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
 	}
+	
 	function mintCST(address to_, uint256 roundNum_) external {
 		// todo-1 Should we make a high level call here?
 		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignature.mint.selector, to_, roundNum_));

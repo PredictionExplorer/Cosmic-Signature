@@ -29,6 +29,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	string private _baseTokenURI;
 
 	/// @notice Address of the CosmicGameProxy contract.
+	/// todo-1 Declare some other variables `immutable`.
 	address public immutable cosmicGameProxyContract;
 
 	/// @notice IPFS link to the script that generates images and videos for each NFT based on seed

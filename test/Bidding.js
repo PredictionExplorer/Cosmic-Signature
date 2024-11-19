@@ -211,7 +211,7 @@ describe("Bidding tests", function () {
 		await hre.ethers.provider.send("evm_mine");
 
 		await cosmicGameProxy.connect(addr2).claimPrize();
-		expect(await cosmicGameProxy.lastBidder()).to.equal("0x0000000000000000000000000000000000000000");
+		expect(await cosmicGameProxy.lastBidderAddress()).to.equal("0x0000000000000000000000000000000000000000");
 	});
 	it("Should be possible to bid with RandomWalk token", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
@@ -632,7 +632,7 @@ describe("Bidding tests", function () {
 		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
 		// expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
 		expect(args.bidPrice.toString()).to.equal("-1");
-		expect(args.lastBidder).to.equal(addr1.address);
+		expect(args.lastBidderAddress).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');
 	});
 	it('Function bidderAddress() works as expected', async function () {

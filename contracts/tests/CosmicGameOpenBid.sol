@@ -95,7 +95,7 @@ contract CosmicGameOpenBid is
 		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
 		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
-		lastBidder = address(0);
+		lastBidderAddress = address(0);
 		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicGameConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;

@@ -258,7 +258,7 @@ describe("MainPrize tests", function () {
 		let expectedBalanceStakingAfter = balanceStakingBefore + stakingAmount;
 		expect(expectedBalanceStakingAfter).to.equal(balanceStakingAfter);
 	});
-	it("The msg.sender will get the prize if the lastBidder won't claim it", async function () {
+	it("The msg.sender will get the prize if the lastBidderAddress won't claim it", async function () {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
