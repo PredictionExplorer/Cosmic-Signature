@@ -44,14 +44,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @return The ETH price, in Wei
 	function getBidPrice() external view returns (uint256);
 
-	/// @notice Get the address of a bidder at a specific position from the end in a given round
-	/// @param roundNum_ The bidding round number.
-	/// @param _positionFromEnd The position from the end of the bidders list
-	/// @return The address of the bidder
-	/// @dev todo-1 Reorder this function to after `getBidderAtPosition`?
-	/// todo-1 Rename to reflect the fact that this is position from end.
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns (address);
-
 	/// @notice Places a bid using CST tokens.
 	/// @dev This function allows bidding with CST tokens, adjusting the CST price dynamically.
 	/// @param message_ The bidder's message, if any.
@@ -74,10 +66,20 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @return The total number of bids in the current round
 	function getTotalBids() external view returns (uint256);
 
+	/// @notice Get the address of a bidder at a specific position from the end in a given round
+	/// @param roundNum_ The bidding round number.
+	/// @param _positionFromEnd The position from the end of the bidders list
+	/// @return The address of the bidder
+	/// @dev todo-1 Reorder this function to after `getBidderAtPosition`?
+	/// todo-1 Rename to reflect the fact that this is position from end.
+	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns (address);
+
 	/// @notice Get the address of a bidder at a specific position in the current round
 	/// @param position The position of the bidder (0-indexed)
 	/// @return The address of the bidder at the specified position
 	/// @dev todo-1 Rename to `getBidderAddressAtPosition`.
+	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	function getBidderAtPosition(uint256 position) external view returns (address);
 
 	/// @notice Get the total amount spent by a bidder in the current round
@@ -85,6 +87,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @return The total amount spent by the bidder in wei
 	/// @dev todo-1 Rename to `getBidderTotalSpentInRound`.
 	/// todo-1 This is ETH, right? Rename to make it clear. Actually it's both ETH and CST, right? Make it clear in this comment.
+	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	function getTotalSpentByBidder(address bidderAddress_) external view returns (uint256, uint256);
 
 	/// @notice Check if a RandomWalk NFT has been used for bidding

@@ -130,112 +130,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		);
 	}
 
-	/// @notice Internal function to handle common bid logic
-	/// @dev This function updates game state and distributes rewards
-	/// @param message The bidder's message
-	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
-		require(
-			bytes(message).length <= maxMessageLength,
-			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
-		);
-
-		// First bid of the round?
-		if (lastBidderAddress == address(0)) {
-			// todo-0 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
-			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
-			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
-
-			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
-
-			emit FirstBidPlacedInRound(roundNum, block.timestamp);
-		} else {
-			_updateChampionsIfNeeded();
-		}
-
-		lastBidderAddress = msg.sender;
-		lastBidType = bidType;
-		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
-		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
-		++ numRaffleParticipants_;
-		numRaffleParticipants[roundNum] = numRaffleParticipants_;
-
-		// Distribute token rewards
-		// try
-		// [ToDo-202409245-0]
-		// Can this, realistically, fail?
-		// This can't, realistically, overflow, right?
-		// [/ToDo-202409245-0]
-		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
-		// 			/*lastBidderAddress*/ msg.sender,
-		// 			tokenReward
-		// 		);
-		// }
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(marketingWallet, marketingReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
-		// 			marketingWallet,
-		// 			marketingReward
-		// 		);
-		// }
-
-		_pushBackPrizeTime();
-	}
-
 	function getBidPrice() public view override returns (uint256) {
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
-	}
-
-	/// @notice Extend the time until the prize can be claimed
-	/// @dev This function increases the prize time and adjusts the time increase factor
-	function _pushBackPrizeTime() internal {
-		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
-		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
-		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp, nanoSecondsExtra);
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
-	}
-
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
-		require(
-			roundNum_ <= roundNum,
-			CosmicGameErrors.InvalidBidderQueryRoundNum(
-				"The provided bidding round number is greater than the current one's.",
-				roundNum_,
-				roundNum
-			)
-		);
-		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
-		// todo-1 Is this validation redundant?
-		// todo-1 Maybe skip all validations and check them only if the bidder address is zero.
-		// todo-1 The same applies to `getBidderAtPosition`.
-		// todo-1 Speking of which, would it make sense to call it from here?
-		require(
-			numRaffleParticipants_ > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
-		);
-		require(
-			_positionFromEnd < numRaffleParticipants_,
-			CosmicGameErrors.InvalidBidderQueryOffset(
-				"Provided index is larger than array length",
-				roundNum_,
-				_positionFromEnd,
-				numRaffleParticipants_
-			)
-		);
-		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
-		address bidderAddr = raffleParticipants[roundNum_][offset];
-		return bidderAddr;
 	}
 
 	function bidWithCst(string memory message_) external override nonReentrant /*onlyActive*/ {
@@ -348,8 +244,112 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		}
 	}
 
+	/// @notice Internal function to handle common bid logic
+	/// @dev This function updates game state and distributes rewards
+	/// @param message The bidder's message
+	/// @param bidType The type of bid (ETH or RandomWalk)
+	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
+		require(
+			bytes(message).length <= maxMessageLength,
+			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
+		);
+
+		// First bid of the round?
+		if (lastBidderAddress == address(0)) {
+			// todo-0 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
+			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
+
+			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
+
+			emit FirstBidPlacedInRound(roundNum, block.timestamp);
+		} else {
+			_updateChampionsIfNeeded();
+		}
+
+		lastBidderAddress = msg.sender;
+		lastBidType = bidType;
+		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
+		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
+		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
+		++ numRaffleParticipants_;
+		numRaffleParticipants[roundNum] = numRaffleParticipants_;
+
+		// Distribute token rewards
+		// try
+		// [ToDo-202409245-0]
+		// Can this, realistically, fail?
+		// This can't, realistically, overflow, right?
+		// [/ToDo-202409245-0]
+		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
+		// 			/*lastBidderAddress*/ msg.sender,
+		// 			tokenReward
+		// 		);
+		// }
+		// try
+		// ToDo-202409245-0 applies.
+		token.mint(marketingWallet, marketingReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
+		// 			marketingWallet,
+		// 			marketingReward
+		// 		);
+		// }
+
+		_pushBackPrizeTime();
+	}
+
+	/// @notice Extend the time until the prize can be claimed
+	/// @dev This function increases the prize time and adjusts the time increase factor
+	function _pushBackPrizeTime() internal {
+		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
+		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp, nanoSecondsExtra);
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
+	}
+
 	function getTotalBids() public view override returns (uint256) {
 		return numRaffleParticipants[roundNum];
+	}
+
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
+		require(
+			roundNum_ <= roundNum,
+			CosmicGameErrors.InvalidBidderQueryRoundNum(
+				"The provided bidding round number is greater than the current one's.",
+				roundNum_,
+				roundNum
+			)
+		);
+		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
+		// todo-1 Is this validation redundant?
+		// todo-1 Maybe skip all validations and check them only if the bidder address is zero.
+		// todo-1 The same applies to `getBidderAtPosition`.
+		// todo-1 Speking of which, would it make sense to call it from here?
+		require(
+			numRaffleParticipants_ > 0,
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
+		);
+		require(
+			_positionFromEnd < numRaffleParticipants_,
+			CosmicGameErrors.InvalidBidderQueryOffset(
+				"Provided index is larger than array length",
+				roundNum_,
+				_positionFromEnd,
+				numRaffleParticipants_
+			)
+		);
+		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
+		address bidderAddr = raffleParticipants[roundNum_][offset];
+		return bidderAddr;
 	}
 
 	function getBidderAtPosition(uint256 position) public view override returns (address) {
