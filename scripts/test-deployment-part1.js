@@ -65,7 +65,7 @@ async function bid_and_donate(testingAcct, cosmicGameProxy, donatedTokenId) {
 	topic_sig = cosmicGameProxy.interface.getEventTopic("NftDonationEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.donor).to.equal(testingAcct.address);
+	expect(parsed_log.args.donorAddress).to.equal(testingAcct.address);
 	expect(parsed_log.args.nftAddress).to.equal(randomWalkNft.address);
 	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
 }
@@ -92,7 +92,7 @@ async function bid_and_donate_with_rwalk(testingAcct, cosmicGameProxy, donatedTo
 	topic_sig = cosmicGameProxy.interface.getEventTopic("NftDonationEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.donor).to.equal(testingAcct.address);
+	expect(parsed_log.args.donorAddress).to.equal(testingAcct.address);
 	expect(parsed_log.args.nftAddress).to.equal(randomWalkNft.address);
 	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
 }

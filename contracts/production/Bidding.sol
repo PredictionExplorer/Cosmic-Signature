@@ -281,6 +281,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// [Comment-202409163]
 		// Doubling the starting CST price for the next CST bid, while enforcing a minimum.
 		// This logic avoids an overfow, both here and near Comment-202409162.
+		//
+		// todo-1 The following TODO is BS. But anyway give these issues a thought.
+		// todo-1 Revisit this. I need to make sure that the total supply of cosmic tokens can't overflow.
+		// todo-1 Therefore add a max limit constant that equals `type(uint256).max >> 64`.
 		// [/Comment-202409163]
 		uint256 newStartingBidPriceCST;
 		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
@@ -321,7 +325,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 			// [Comment-202409162/]
 			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
 
-			// // todo-0 Nick, you might want to refactopr the above this way.
+			// // todo-0 Nick, you might want to refactor the above this way.
 			// // todo-0 Remember to fix relevant code and comments.
 			// // todo-0 Remember to make the same change in `BiddingOpenBid`.
 			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * numSecondsElapsed_ / duration_);

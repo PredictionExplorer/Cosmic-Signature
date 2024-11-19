@@ -73,7 +73,7 @@ describe("MainPrize tests", function () {
 
 		// at this point all required data was initialized, we can proceed with the test
 		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
-		let tx, receipt, log, parsed_log, winner;
+		let tx, receipt, log, parsed_log;
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { message: "", randomWalkNFTId: -1 };
@@ -103,8 +103,8 @@ describe("MainPrize tests", function () {
 		expect(Number(roundNumAfter) - 1).to.equal(Number(roundNumBefore));
 
 		// check winners[] map contains correct winner value
-		let curWinner = await cosmicGameProxy.winners(roundNumBefore);
-		expect(curWinner).to.equal(addr3.address);
+		let curWinnerAddress_ = await cosmicGameProxy.winners(roundNumBefore);
+		expect(curWinnerAddress_).to.equal(addr3.address);
 
 		//make sure the number of deposits matches numRaffleWinnersPerRound variable
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -117,8 +117,10 @@ describe("MainPrize tests", function () {
 		let prize_winner_mints = 1;
 		let expected_total_supply = totalSupplyBefore + prize_winner_mints + sum_winners;
 		let curTotalSupply = Number(await cosmicSignature.totalSupply());
-		expect(await cosmicSignature.totalSupply()).to.equal(curTotalSupply);
-		let last_cosmic_signature_supply = sum_winners + prize_winner_mints;
+		// todo-1 This looked like a bug, so I replaced this with the next line, but it fails.
+		// expect(await cosmicSignature.totalSupply()).to.equal(curTotalSupply);
+		expect(curTotalSupply).to.equal(expected_total_supply);
+		// let last_cosmic_signature_supply = sum_winners + prize_winner_mints;
 
 		// let's begin a new round
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -152,11 +154,11 @@ describe("MainPrize tests", function () {
 		for (let i = 0; i < deposit_logs.length; i++) {
 			let wlog = prizesWallet.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
-			let winner = args.winner;
-			let winner_signer = await hre.ethers.getSigner(winner);
-			if (typeof unique_winners[winner] === "undefined") {
+			let roundPrizeWinnerAddress_ = args.roundPrizeWinnerAddress;
+			if (typeof unique_winners[roundPrizeWinnerAddress_] === "undefined") {
+				let winner_signer = await hre.ethers.getSigner(roundPrizeWinnerAddress_);
 				await prizesWallet.connect(winner_signer).withdrawEth();
-				unique_winners[winner] = 1;
+				unique_winners[roundPrizeWinnerAddress_] = 1;
 			}
 		}
 	});
@@ -218,7 +220,7 @@ describe("MainPrize tests", function () {
 		let balanceStakingBefore = await hre.ethers.provider.getBalance(await stakingWalletCosmicSignatureNft.getAddress());
 		let raffleAmount = await cosmicGameProxy.raffleAmount();
 		let numWinners = await cosmicGameProxy.numRaffleETHWinnersBidding();
-		let amountPerWinner = Number(raffleAmount)/Number(numWinners);
+		let amountPerWinner = Number(raffleAmount) / Number(numWinners);
 		let modAmount = Number(raffleAmount) % Number(numWinners);
 		raffleAmount = raffleAmount - BigInt(modAmount); // clean the value from reminder if not divisible by numWinners
 		const prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -237,14 +239,14 @@ describe("MainPrize tests", function () {
 		for (let i = 0; i < deposit_logs.length; i++) {
 			let wlog = cosmicGameProxy.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
-			let winner = args.winner;
+			let winnerAddress_ = args.winnerAddress;
 			sumDeposits = sumDeposits + args.amount;
-			let winner_signer = await hre.ethers.getSigner(winner);
-			if (typeof unique_winners[winner] === 'undefined') {
-				if (winner != (await cBidder.getAddress())) {
+			if (typeof unique_winners[winnerAddress_] === 'undefined') {
+				if (winnerAddress_ != (await cBidder.getAddress())) {
+					let winner_signer = await hre.ethers.getSigner(winnerAddress_);
 					await prizesWallet.connect(winner_signer).withdrawEth();
 				}
-				unique_winners[winner] = 1;
+				unique_winners[winnerAddress_] = 1;
 			}
 		}
 		expect(sumDeposits).to.equal(raffleAmount);
@@ -302,6 +304,6 @@ describe("MainPrize tests", function () {
 		let topic_sig = cosmicGameProxy.interface.getEvent('MainPrizeClaimed').topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
-		expect(parsed_log.args.beneficiary).to.equal(await bContract.getAddress());
+		expect(parsed_log.args.beneficiaryAddress).to.equal(await bContract.getAddress());
 	});
 });

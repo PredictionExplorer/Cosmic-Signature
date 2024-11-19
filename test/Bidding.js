@@ -170,7 +170,7 @@ describe("Bidding tests", function () {
 		let balance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
 		let mainPrizeExpectedAmount_ = (balance * 25n) / 100n;
 		expect(mainPrizeAmount2_).to.equal(mainPrizeExpectedAmount_);
-		let w = await cosmicGameProxy.tryGetWinnerByRoundNum(0);
+		let w = await cosmicGameProxy.tryGetRoundMainPrizeWinnerAddress(0);
 		expect(w).to.equal(addr3.address);
 
 		// after the prize has been claimed, let's bid again!
@@ -502,7 +502,7 @@ describe("Bidding tests", function () {
 		// all Raffle NFTs must have zero address because they are not staked, verify it
 		for (let i = 0; i < raffle_logs.length; i++) {
 			let rlog = cosmicGameProxy.interface.parseLog(raffle_logs[i]);
-			let winner = rlog.args.winner;
+			// let winnerAddress_ = rlog.args.winnerAddress;
 			let owner = await cosmicSignature.ownerOf(rlog.args.nftId);
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(rlog.args.nftId);
 			// expect(stakerAddr).to.equal('0x0000000000000000000000000000000000000000');

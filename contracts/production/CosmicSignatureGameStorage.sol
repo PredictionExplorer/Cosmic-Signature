@@ -133,10 +133,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public timeIncrease;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 Rename to `roundInitialDuration`.
+	/// todo-1 Rename to `roundInitialDuration`.
 	uint256 public initialSecondsUntilPrize;
 
-	/// todo-0 Rename to `mainPrizeTime` or `roundEndTime`.
+	/// todo-1 Rename to `mainPrizeTime` or `roundEndTime`.
 	uint256 public prizeTime;
 
 	/// @notice Bidding round counter.
@@ -158,20 +158,21 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411065 relates.
 	// Equals a million plus a small fraction of it.
-	// todo-0 Rename to `ethBidPriceIncreaseParam`.
+	// todo-1 Rename to `ethBidPriceIncreaseParam`.
 	uint256 public priceIncrease;
 
-	/// @dev This is initialized with a constant and is then slightly exponentially increased after every bidding round.
-	/// todo-0 Rename to `cstAuctionDuration`.
+	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
+	/// todo-1 Rename to `cstDutchAuctionDuration`.
+	/// todo-1 Rename any "Auction" to "Dutch Auction".
 	uint256 public cstAuctionLength;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
-	/// todo-0 Rename to `roundStartCstAuctionDuration`.
+	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
+	/// todo-1 Rename to `roundStartCstDutchAuctionDuration`.
 	uint256 public roundStartCstAuctionLength;
 
 	/// @notice Last CST bid timestamp.
-	/// A.k.a. CST Dutch auction start time.
+	/// A.k.a. CST Dutch auction start timestamp.
 	/// @dev Comment-202411168 relates.
 	uint256 public lastCstBidTimeStamp;
 
@@ -221,8 +222,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Game Prize Percentage Parameters
 
-	/// @notice The percentage of ETH in the game account to be paid to the main prize winner.
+	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize winner.
 	/// Comment-202411064 applies.
+	/// @dev todo-1 Rename to `roundMainEthPrizePercentage`.
 	uint256 public mainPrizePercentage;
 
 	/// @notice ETH.
@@ -231,20 +233,23 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice ETH.
 	/// Comment-202411064 applies.
+	/// @dev todo-1 Name this better. Include the word "ETH".
 	uint256 public rafflePercentage;
 
 	/// @notice ETH.
 	/// Comment-202411064 applies.
+	/// @dev todo-1 Name this better. Include the word "ETH".
 	uint256 public stakingPercentage;
 
 	/// @notice ETH.
 	/// Comment-202411064 applies.
+	/// @dev todo-1 Name this better. Include the word "ETH".
 	uint256 public charityPercentage;
 
 	// #endregion
 	// #region Game Prize Other Parameters and Variables
 
-	/// @notice If main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
+	/// @notice If bidding round main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
 	/// Comment-202411064 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
 	/// @dev todo-1 Rename to `timeoutDurationToClaimRoundMainPrize`.

@@ -6,35 +6,40 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
-	/// @notice Emitted when main prize is claimed.
-	/// @param roundNum Bidding round number.
-	/// @param beneficiary The address receiving the prize.
+	/// @notice Emitted when a bidding round main prize is claimed.
+	/// This event indicates that the round has ended.
+	/// @param roundNum The current bidding round number.
+	/// @param beneficiaryAddress The address receiving the prize.
 	/// [Comment-202411254]
-	/// It will be different from the bidding round actual winner if the winner has failed to claim the prize
+	/// It will be different from the bidding round main prize actual winner if the winner has failed to claim the prize
 	/// within a timeout and someone else claimed it instead.
 	/// It's possible to find out from other events who is the actual winner.
 	/// Comment-202411285 relates.
 	/// [/Comment-202411254]
-	/// @param amount Prize amount.
+	/// @param amount ETH amount.
 	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`.
-	event MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiary, uint256 amount);
+	event MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiaryAddress, uint256 amount);
 
 	/// @notice Emitted when an ETH raffle winner is selected
-	/// @param winner The address of the winner
+	/// @param winnerAddress The address of the winner
 	/// @param roundNum The bidding round number.
+	/// todo-1 Make sense to reorder `roundNum` to the beginning?
 	/// @param winnerIndex The index of the winner
-	/// @param amount The amount won
-	event RaffleETHWinnerEvent(address indexed winner, uint256 indexed roundNum, uint256 winnerIndex, uint256 amount);
+	/// @param amount ETH amount.
+	/// @dev todo-1 Name this better. Remove the word "Event".
+	event RaffleETHWinnerEvent(address indexed winnerAddress, uint256 indexed roundNum, uint256 winnerIndex, uint256 amount);
 
 	/// @notice Emitted when an NFT raffle winner is selected
-	/// @param winner The address of the winner
+	/// @param winnerAddress The address of the winner
 	/// @param roundNum The bidding round number.
+	/// todo-1 Make sense to reorder `roundNum` to the beginning?
 	/// @param nftId The ID of the NFT won
 	/// @param winnerIndex The index of the winner
 	/// @param isStaker Whether the winner is a staker
 	/// @param isRWalk Whether the NFT is a RandomWalk NFT
+	/// @dev todo-1 Name this better. Remove the word "Event".
 	event RaffleNFTWinnerEvent(
-		address indexed winner,
+		address indexed winnerAddress,
 		uint256 indexed roundNum,
 		uint256 indexed nftId,
 		uint256 winnerIndex,
@@ -46,6 +51,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @notice Emitted when the Stellar Spender receives their prize.
 	/// @param stellarSpender Stellar Spender address.
 	/// @param roundNum The bidding round number.
+	/// todo-1 Make sense to reorder `roundNum` to the beginning?
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
 	/// @param cstPrizeAmount The amount of CST awarded.
 	/// @param totalSpentCst The total CST amount spent by the winner.
@@ -64,6 +70,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @notice Emitted when the Endurance Champion receives their prize.
 	/// @param enduranceChampion Endurance Champion address.
 	/// @param roundNum The bidding round number.
+	/// todo-1 Make sense to reorder `roundNum` to the beginning?
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
 	/// @param cstPrizeAmount The amount of Cosmic Tokens awarded.
 	/// ---param winnerIndex Winner index.
@@ -116,8 +123,9 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @return The number of seconds until the prize can be claimed, or 0 if claimable now
 	function timeUntilPrize() external view returns(uint256);
 
-	/// @notice Obtains the winner of a specific round.
+	/// @return The given bidding round main prize winner address,
+	/// or zero if `roundNum_` is invalid or the round has not ended yet.
 	/// @param roundNum_ The bidding round number.
-	/// @return The winner address, or zero if `roundNum_` is invalid or the round has not ended yet.
-	function tryGetWinnerByRoundNum(uint256 roundNum_) external view returns(address);
+	/// @dev todo-1 Eliminate this method?
+	function tryGetRoundMainPrizeWinnerAddress(uint256 roundNum_) external view returns(address);
 }

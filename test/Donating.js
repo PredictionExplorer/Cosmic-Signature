@@ -60,7 +60,7 @@ describe("Donation tests", function () {
 		let numDonationInfoRecords_ = await cosmicGameProxy.numDonationInfoRecords();
 		expect(numDonationInfoRecords_).to.equal(1);
 		let donationInfoRec = await cosmicGameProxy.donationInfoRecords(0);
-		expect(donationInfoRec.donor).to.equal(addr1.address);
+		expect(donationInfoRec.donorAddress).to.equal(addr1.address);
 		expect(donationInfoRec.data).to.equal(dataStr);
 
 		// check number of records is incrementing
@@ -120,7 +120,7 @@ describe("Donation tests", function () {
 		let topic_sig = cosmicGameProxy.interface.getEvent("NftDonationEvent").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicGameProxy.interface.parseLog(log);
-		expect(parsed_log.args.donor).to.equal(addr1.address);
+		expect(parsed_log.args.donorAddress).to.equal(addr1.address);
 		expect(parsed_log.args.nftId).to.equal(0);
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
@@ -142,14 +142,14 @@ describe("Donation tests", function () {
 		expect(event_logs.length).to.equal(2);
 		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 		expect(parsed_log.args.nftId).to.equal(0);
-		expect(parsed_log.args.winner).to.equal(addr1.address);
+		expect(parsed_log.args.beneficiaryAddress).to.equal(addr1.address);
 		expect(parsed_log.args.nftAddress).to.equal(await randomWalkNFT.getAddress());
 		expect(parsed_log.args.roundNum).to.equal(0);
 		expect(parsed_log.args.index).to.equal(0);
 
 		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[1]);
 		expect(parsed_log.args.nftId).to.equal(1);
-		expect(parsed_log.args.winner).to.equal(addr1.address);
+		expect(parsed_log.args.beneficiaryAddress).to.equal(addr1.address);
 		expect(parsed_log.args.nftAddress).to.equal(await randomWalkNFT.getAddress());
 		expect(parsed_log.args.roundNum).to.equal(0);
 		expect(parsed_log.args.index).to.equal(1);

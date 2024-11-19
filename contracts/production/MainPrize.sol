@@ -255,17 +255,17 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateRaffleEntropy();
-			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinner);
-			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
+			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
+			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinnerAddress_);
+			emit RaffleETHWinnerEvent(raffleWinnerAddress_, roundNum, i, perWinnerAmount);
 		}
 
 		// Distribute NFT prizes to bidders
 		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
 			_updateRaffleEntropy();
-			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			uint256 nftId = nft.mint(raffleWinner, roundNum);
-			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, nftId, i, false, false);
+			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
+			uint256 nftId = nft.mint(raffleWinnerAddress_, roundNum);
+			emit RaffleNFTWinnerEvent(raffleWinnerAddress_, roundNum, nftId, i, false, false);
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
@@ -274,14 +274,14 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		{
 			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
 				_updateRaffleEntropy();
-				address rwalkWinner = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
+				address luckyStakerAddress_ = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
 
-				if (rwalkWinner == address(0)) {
+				if (luckyStakerAddress_ == address(0)) {
 					break;
 				}
 
-				uint256 nftId = nft.mint(rwalkWinner, roundNum);
-				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, nftId, i, true, true);
+				uint256 nftId = nft.mint(luckyStakerAddress_, roundNum);
+				emit RaffleNFTWinnerEvent(luckyStakerAddress_, roundNum, nftId, i, true, true);
 			}
 		}
 	}
@@ -429,9 +429,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	}
 
 	// #endregion
-	// #region `tryGetWinnerByRoundNum`
+	// #region `tryGetRoundMainPrizeWinnerAddress`
 
-	function tryGetWinnerByRoundNum(uint256 roundNum_) public view override returns(address) {
+	function tryGetRoundMainPrizeWinnerAddress(uint256 roundNum_) public view override returns(address) {
 		return winners[roundNum_];
 	}
 

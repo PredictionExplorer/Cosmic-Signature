@@ -30,10 +30,11 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	CosmicGameConstants.BooleanWithPadding[1 << 64] internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
-	/// @dev Issue. Would it make sense to not expose this variable to external callers?
-	/// But Nick insists on it being `public` -- to make it easier to monitor contract activities.
+	/// @dev Issue. I would prefer to declare this variable `internal`,
+	/// but Nick is saying that he needs it to monitor contract activities.
 	/// But the suitability of this variable for any purpose other than what the @notice says is purely accidential.
 	/// Any refactoring can easily break things.
+	/// todo-1 Talk to Nick again.
 	uint256 public actionCounter;
 
 	// #endregion

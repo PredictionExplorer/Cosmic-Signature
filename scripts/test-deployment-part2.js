@@ -8,11 +8,11 @@ async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 	const unique_winners = [];
 	for (let i = 0; i < event_logs.length; i++) {
 		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
-		let winner = wlog.args.winner;
-		if (winner.address == testingAcct.address) {
-			if (typeof unique_winners[winner] === "undefined") {
+		let roundPrizeWinnerAddress_ = wlog.args.roundPrizeWinnerAddress;
+		if (roundPrizeWinnerAddress_.address == testingAcct.address) {
+			if (typeof unique_winners[roundPrizeWinnerAddress_] === "undefined") {
 				await prizesWallet.connect(testingAcct).withdrawEth();
-				unique_winners[winner] = 1;
+				unique_winners[roundPrizeWinnerAddress_] = 1;
 			}
 		}
 	}
@@ -25,7 +25,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 	let topic_sig = cosmicGameProxy.interface.getEventTopic("MainPrizeClaimed");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.beneficiary).to.equal(testingAcct.address);
+	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
 	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 
 	let prizesWalletAddr = await cosmicGameProxy.prizesWallet();
@@ -41,7 +41,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 	for (let i = 0; i < event_logs.length; i++) {
 		let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[i]);
 		let ownr = await cosmicSignature.ownerOf(parsed_log.args.nftId);
-		expect(ownr).to.equal(parsed_log.args.winner);
+		expect(ownr).to.equal(parsed_log.args.winnerAddress);
 	}
 
 	let CharityWalletAddr = await cosmicGameProxy.charity();

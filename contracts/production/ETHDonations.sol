@@ -30,7 +30,7 @@ abstract contract ETHDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 
 		uint256 donationInfoRecordIndex_ = numDonationInfoRecords;
 		donationInfoRecords[donationInfoRecordIndex_] = CosmicGameConstants.DonationInfoRecord({
-			donor: msg.sender,
+			donorAddress: msg.sender,
 			amount: msg.value,
 			data: _data
 		});

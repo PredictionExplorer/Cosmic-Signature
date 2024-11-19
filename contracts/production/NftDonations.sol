@@ -39,7 +39,7 @@ abstract contract NftDonations is ReentrancyGuardUpgradeable, CosmicSignatureGam
 	//
 	// 	CosmicGameConstants.DonatedNft storage donatedNft = donatedNfts[index];
 	// 	require(!donatedNft.claimed, CosmicGameErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", index));
-	// 	require(winners[donatedNft.roundNum] == msg.sender, CosmicGameErrors.DonatedNftClaimDenied("Only bidding round main prize winner is permitted to claim this NFT.", msg.sender, index));
+	// 	require(winners[donatedNft.roundNum] == msg.sender, CosmicGameErrors.DonatedNftClaimDenied("Only the bidding round main prize winner is permitted to claim this NFT.", msg.sender, index));
 	//
 	// 	donatedNft.claimed = true;
 	// 	donatedNft.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNft.nftId);

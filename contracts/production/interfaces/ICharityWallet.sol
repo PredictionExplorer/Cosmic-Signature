@@ -15,9 +15,9 @@ interface ICharityWallet {
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 
 	/// @notice Emitted after a donation was received
-	/// @param donor Donor address
+	/// @param donorAddress Donor address
 	/// @param amount The amount of ETH donated
-	event DonationReceivedEvent(address indexed donor, uint256 amount);
+	event DonationReceivedEvent(address indexed donorAddress, uint256 amount);
 
 	/// @notice Emitted after accumulated donations were sent to the charity.
 	/// @param charity The address of the charity receiving the donation.

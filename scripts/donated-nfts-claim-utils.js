@@ -89,9 +89,9 @@ async function main() {
 	}
 	let roundToClaim = parseInt(roundNumStr, 10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
-	let prizeWinner = await cosmicGameProxy.winners(roundToClaim);
-	if (prizeWinner.toString() != testingAcct.address.toString()) {
-		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + prizeWinner.toString());
+	let roundMainPrizeWinnerAddress_ = await cosmicGameProxy.winners(roundToClaim);
+	if (roundMainPrizeWinnerAddress_.toString() != testingAcct.address.toString()) {
+		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + roundMainPrizeWinnerAddress_.toString());
 		process.exit(1);
 	}
 

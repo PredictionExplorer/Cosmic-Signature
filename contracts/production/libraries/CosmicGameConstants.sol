@@ -158,7 +158,7 @@ library CosmicGameConstants {
 	/// @notice Details about a donation made to the game.
 	/// Used for an ETH donation.
 	struct DonationInfoRecord {
-		address donor;
+		address donorAddress;
 		uint256 amount;
 
 		/// @notice JSON-formatted string with additional data.

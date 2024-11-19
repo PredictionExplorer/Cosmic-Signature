@@ -25,7 +25,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 
 	/// @notice For each bidding round number, contains the main prize winner address.
 	/// ToDo-202411257-1 relates.
-	address[1 << 64] public roundMainPrizeWinners;
+	address[1 << 64] public roundMainPrizeWinnerAddresses;
 
 	/// @notice If a prize winner doesn't withdraw their prize within this timeout, anybody will be welcomed to withdraw it.
 	/// This timeout applies to all kinds of prizes, including ETH.
@@ -102,13 +102,13 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEnd`
 
-	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinner_) external override onlyGame {
-		// #enable_asserts assert(roundMainPrizeWinners[roundNum_] == address(0));
-		// #enable_asserts assert(roundNum_ == 0 || roundMainPrizeWinners[roundNum_ - 1] != address(0));
+	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external override onlyGame {
+		// #enable_asserts assert(roundMainPrizeWinnerAddresses[roundNum_] == address(0));
+		// #enable_asserts assert(roundNum_ == 0 || roundMainPrizeWinnerAddresses[roundNum_ - 1] != address(0));
 		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
 		// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
-		// #enable_asserts assert(roundMainPrizeWinner_ != address(0));
-		roundMainPrizeWinners[roundNum_] = roundMainPrizeWinner_;
+		// #enable_asserts assert(roundMainPrizeWinnerAddress_ != address(0));
+		roundMainPrizeWinnerAddresses[roundNum_] = roundMainPrizeWinnerAddress_;
 		roundTimeoutTimesToWithdrawPrizes[roundNum_] = block.timestamp + timeoutDurationToWithdrawPrizes;
 	}
 
@@ -130,15 +130,15 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `depositEth`
 
-	function depositEth(uint256 roundNum_, address winner_) external payable override onlyGame {
+	function depositEth(uint256 roundNum_, address roundPrizeWinnerAddress_) external payable override onlyGame {
 		// Given that only `CosmicGame` is permitted to call us, this validation can't fail. So I have replaced it with an `assert`.
-		// require(winner_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		// #enable_asserts assert(winner_ != address(0));
+		// require(roundPrizeWinnerAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		// #enable_asserts assert(roundPrizeWinnerAddress_ != address(0));
 
 		// // Comment-202409215 applies.
 		// require(msg.value > 0, CosmicGameErrors.NonZeroValueRequired("No ETH has been sent."));
 
-		CosmicGameConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(winner_)];
+		CosmicGameConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 
 		// [Comment-202411252]
 		// Even if this winner already has a nonzero balance from a past bidding round,
@@ -147,7 +147,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		ethBalanceInfoReference_.roundNum = roundNum_;
 
 		ethBalanceInfoReference_.amount += msg.value;
-		emit EthReceived(roundNum_, winner_, msg.value);
+		emit EthReceived(roundNum_, roundPrizeWinnerAddress_, msg.value);
 	}
 
 	// #endregion
@@ -170,8 +170,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `withdrawEth`
 
-	function withdrawEth(address winner_) external override /*nonReentrant*/ {
-		CosmicGameConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(winner_)];
+	function withdrawEth(address roundPrizeWinnerAddress_) external override /*nonReentrant*/ {
+		CosmicGameConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[ethBalanceInfoReference_.roundNum];
 		require(
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
@@ -184,7 +184,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
-		emit EthWithdrawn(winner_, msg.sender, ethBalanceAmountCopy_);
+		emit EthWithdrawn(roundPrizeWinnerAddress_, msg.sender, ethBalanceAmountCopy_);
 		(bool isSuccess, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
 		require(isSuccess, CosmicGameErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
 	}
@@ -199,14 +199,14 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo(address winner_) external view override returns(CosmicGameConstants.BalanceInfo memory) {
-		return _ethBalancesInfo[uint160(winner_)];
+	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view override returns(CosmicGameConstants.BalanceInfo memory) {
+		return _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 	}
 
 	// #endregion
 	// #region `donateToken`
 
-	function donateToken(uint256 roundNum_, address donor_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ onlyGame {
+	function donateToken(uint256 roundNum_, address donorAddress_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ onlyGame {
 		require(address(tokenAddress_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 
 		// Comment-202409215 applies to validating that `amount_` is a nonzero.
@@ -216,8 +216,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
 		CosmicGameConstants.DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
 		newDonatedTokenReference_.amount += amount_;
-		emit TokenDonated(roundNum_, /*msg.sender*/ donor_, tokenAddress_, amount_);
-		bool isSuccess = tokenAddress_.transferFrom(/*msg.sender*/ donor_, address(this), amount_);
+		emit TokenDonated(roundNum_, /*msg.sender*/ donorAddress_, tokenAddress_, amount_);
+		bool isSuccess = tokenAddress_.transferFrom(/*msg.sender*/ donorAddress_, address(this), amount_);
 		require(isSuccess, CosmicGameErrors.ERC20TransferFailed("Transfer failed.", address(this), amount_));
 	}
 
@@ -231,15 +231,15 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		// Comment-202409215 applies to validating that `tokenAddress_` is a nonzero.
 
 		// [Comment-202411286]
-		// Nothing will be broken if the `roundMainPrizeWinners` item is still zero.
+		// Nothing will be broken if the `roundMainPrizeWinnerAddresses` item is still zero.
 		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
 		// [/Comment-202411286]
 		// [Comment-202411287/]
-		if (msg.sender != roundMainPrizeWinners[roundNum_]) {
+		if (msg.sender != roundMainPrizeWinnerAddresses[roundNum_]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicGameErrors.DonatedTokenClaimDenied("Only bidding round main prize winner is permitted to claim this ERC-20 token donation.", roundNum_, msg.sender, tokenAddress_)
+				CosmicGameErrors.DonatedTokenClaimDenied("Only the bidding round main prize winner is permitted to claim this ERC-20 token donation.", roundNum_, msg.sender, tokenAddress_)
 			);
 		}
 
@@ -288,14 +288,14 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	// #endregion
 	// #region `donateNft`
 
-	function donateNft(uint256 roundNum_, address donor_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ onlyGame {
+	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ onlyGame {
 		require(address(nftAddress_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
 		uint256 numDonatedNftsCopy_ = numDonatedNfts;
 		CosmicGameConstants.DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
 		newDonatedNftReference_.roundNum = roundNum_;
 		newDonatedNftReference_.nftAddress = nftAddress_;
 		newDonatedNftReference_.nftId = nftId_;
-		emit NftDonated(roundNum_, /*msg.sender*/ donor_, nftAddress_, nftId_, numDonatedNftsCopy_);
+		emit NftDonated(roundNum_, /*msg.sender*/ donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
 		// [ToDo-202411267-1]
@@ -303,7 +303,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		// It's unnecessary for this particular transfer to be "safe".
 		// ToDo-202411268-1 relates.
 		// [/ToDo-202411267-1]
-		nftAddress_.safeTransferFrom(/*msg.sender*/ donor_, address(this), nftId_);
+		nftAddress_.safeTransferFrom(/*msg.sender*/ donorAddress_, address(this), nftId_);
 	}
 
 	// #endregion
@@ -325,11 +325,11 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		}
 
 		// Comment-202411286 applies.
-		if (msg.sender != roundMainPrizeWinners[donatedNftCopy_.roundNum]) {
+		if (msg.sender != roundMainPrizeWinnerAddresses[donatedNftCopy_.roundNum]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[donatedNftCopy_.roundNum];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicGameErrors.DonatedNftClaimDenied("Only bidding round main prize winner is permitted to claim this NFT.", msg.sender, index_)
+				CosmicGameErrors.DonatedNftClaimDenied("Only the bidding round main prize winner is permitted to claim this NFT.", msg.sender, index_)
 			);
 		}
 

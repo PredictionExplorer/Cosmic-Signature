@@ -153,15 +153,15 @@ library CosmicGameErrors {
 	/// @notice Thrown when someone attempts to claim an ERC-20 token donation, but is not permitted to do so.
 	/// @param errStr Description of the error.
 	/// @param roundNum Bidding round number.
-	/// @param beneficiary The address that attempted to claim the donation.
+	/// @param beneficiaryAddress The address that attempted to claim the donation.
 	/// @param tokenAddress The ERC-20 contract address.
-	error DonatedTokenClaimDenied(string errStr, uint256 roundNum, address beneficiary, IERC20 tokenAddress);
+	error DonatedTokenClaimDenied(string errStr, uint256 roundNum, address beneficiaryAddress, IERC20 tokenAddress);
 
 	/// @notice Thrown when someone attempts to claim a donated NFT, but is not permitted to do so.
 	/// @param errStr Description of the error.
-	/// @param beneficiary The address that attempted to claim the donation.
+	/// @param beneficiaryAddress The address that attempted to claim the donation.
 	/// @param index Donated NFT index in an array.
-	error DonatedNftClaimDenied(string errStr, address beneficiary, uint256 index);
+	error DonatedNftClaimDenied(string errStr, address beneficiaryAddress, uint256 index);
 
 	/// @notice Thrown when attempting to claim a non-existent donated NFT.
 	/// @param errStr Description of the error.

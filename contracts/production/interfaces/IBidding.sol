@@ -67,6 +67,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @return A tuple containing the seconds elapsed and total duration of the current auction
 	/// @dev This function is used by `getCurrentBidPriceCST`
 	/// todo-1 I dislike it that this returns 2 numbers. This should return only seconds elapsed.
+	/// todo-1 Rename to `getDurationSinceCstDutchAuctionStart`.
 	function getCstAuctionDuration() external view returns (uint256, uint256);
 
 	/// @notice Get the total number of bids in the current round

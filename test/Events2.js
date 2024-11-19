@@ -91,7 +91,7 @@ describe("Events2", function () {
 		await randomWalkNFT.connect(addr1).mint({ value: rwalkTokenPrice });
 		rwalkTokenPrice = await randomWalkNFT.getMintPrice();
 		await randomWalkNFT.connect(addr2).mint({ value: rwalkTokenPrice });
-		let tx, receipt, log, parsed_log, bidPrice, winner;
+		let tx, receipt, log, parsed_log, bidPrice;
 		bidPrice = await cosmicGameProxy.getBidPrice();
 		bidParams = { message: "", randomWalkNFTId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);

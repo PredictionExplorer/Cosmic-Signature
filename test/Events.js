@@ -145,8 +145,8 @@ describe("Events", function () {
 			.to.emit(cosmicGameProxy, "MainPrizeClaimed")
 			.withArgs(0, bidder1.address, mainPrizeAmountBeforeClaim_);
 
-		const winner = await cosmicGameProxy.winners(0);
-		expect(winner).to.equal(bidder1.address);
+		const roundMainPrizeWinnerAddress_ = await cosmicGameProxy.winners(0);
+		expect(roundMainPrizeWinnerAddress_).to.equal(bidder1.address);
 
 		const mainPrizeAmountAfterClaim_ = await cosmicGameProxy.mainPrizeAmount();
 		const balance = await hre.ethers.provider.getBalance(await cosmicGameProxy.getAddress());
