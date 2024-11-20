@@ -116,12 +116,12 @@ library CosmicGameConstants {
 	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
 	uint256 public constant INITIAL_STAKING_WINNERS_RWALK = 4;
 
-	/// todo-1 Maybe just use `uint256` instead of this.
-	/// todo-1 Avoid using `bool`?
-	struct BooleanWithPadding {
-		bool value;
-		uint248 padding;
-	}
+	// /// @dev It appears that this was a bad idea.
+	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
+	// struct BooleanWithPadding {
+	// 	bool value;
+	// 	uint248 padding;
+	// }
 
 	struct BalanceInfo {
 		uint256 roundNum;

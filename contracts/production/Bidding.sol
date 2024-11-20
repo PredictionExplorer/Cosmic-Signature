@@ -3,10 +3,10 @@ pragma solidity 0.8.27;
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-// import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 // import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+// import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 // import { CosmicToken } from "./CosmicToken.sol";
@@ -363,8 +363,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
-	// function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
+	// function wasRandomWalkNftUsed(uint256 nftId_) public view override returns (bool) {
 	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNFTs[nftId];
+	// 	return usedRandomWalkNFTs[nftId_];
 	// }
 }

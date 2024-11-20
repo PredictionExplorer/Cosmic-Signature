@@ -83,7 +83,8 @@ describe("Staking RandomWalk tests", function () {
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 
-		expect(await newStakingWalletRandomWalkNft.wasNftUsed(0)).to.equal(true);
+		// expect(await newStakingWalletRandomWalkNft.wasNftUsed(0)).to.equal(true);
+		expect(await newStakingWalletRandomWalkNft.wasNftUsed(0)).to.equal(1n);
 		expect(await newStakingWalletRandomWalkNft.stakerByTokenId(0)).to.equal(owner.address);
 		expect(await newStakingWalletRandomWalkNft.stakerByTokenId(99)).to.equal(hre.ethers.ZeroAddress);
 		expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(0)).to.equal(0);

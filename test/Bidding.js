@@ -240,7 +240,7 @@ describe("Bidding tests", function () {
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: 0 })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "BidPrice");
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
-		// expect(await cosmicGameProxy.isRandomWalkNFTUsed(token_id)).to.equal(true);
+		// expect(await cosmicGameProxy.wasRandomWalkNftUsed(token_id)).to.equal(true);
 		expect(await cosmicGameProxy.usedRandomWalkNFTs(token_id)).to.equal(1);
 
 		// try to bid again using the same nftId
@@ -508,7 +508,8 @@ describe("Bidding tests", function () {
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(rlog.args.nftId);
 			// expect(stakerAddr).to.equal('0x0000000000000000000000000000000000000000');
 			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.wasNftUsed(rlog.args.nftId);
-			expect(nftWasUsed_).to.equal(false);
+			// expect(nftWasUsed_).to.equal(false);
+			expect(nftWasUsed_).to.equal(0n);
 		}
 		// all the remaining NFTs must have stakerByTokenId() equal to the addr who staked it
 		// also check the correctness of lastActionId map
@@ -517,7 +518,8 @@ describe("Bidding tests", function () {
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(i);
 			// if (stakerAddr == '0x0000000000000000000000000000000000000000') {
 			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.wasNftUsed(i);
-			if ( ! nftWasUsed_ ) {
+			// if ( ! nftWasUsed_ ) {
+			if (nftWasUsed_ == 0n) {
 				let ownr = await cosmicSignature.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
 				if (userTokens === undefined) {

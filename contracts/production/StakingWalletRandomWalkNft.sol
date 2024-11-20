@@ -67,7 +67,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `CosmicGameErrors.NftOneTimeStaking`.
-	///    `CosmicGameConstants.BooleanWithPadding`.
+	///    // `CosmicGameConstants.BooleanWithPadding`.
 	///    `CosmicGameConstants.NftTypeCode`.
 	///    `NftStaked`.
 	///    `_numStakedNfts`.
@@ -86,7 +86,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #region
 
 		require(
-			( ! _usedNfts[nftId_].value ),
+			// ( ! _usedNfts[nftId_].value ),
+			_usedNfts[nftId_] == 0,
 			CosmicGameErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
 		);
 
@@ -104,7 +105,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
 		_numStakedNfts = newNumStakedNfts_;
-		_usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
+		// _usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
+		_usedNfts[nftId_] = 1;
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 		emit NftStaked(newStakeActionId_, CosmicGameConstants.NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
 
@@ -112,7 +114,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #region
 
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
-		// #enable_asserts assert(_usedNfts[nftId_].value);
+		// // #enable_asserts assert(_usedNfts[nftId_].value);
+		// #enable_asserts assert(_usedNfts[nftId_] == 1);
 		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
 		// #enable_asserts assert(stakeActions[newStakeActionId_].index == _numStakedNfts - 1);

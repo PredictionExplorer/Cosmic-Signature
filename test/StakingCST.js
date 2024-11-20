@@ -162,7 +162,8 @@ describe('Staking CST tests', function () {
 			cosmicSignatureGameErrorsFactory_,
 			"NftAlreadyUnstaked"
 		);
-		expect(await newStakingWalletCosmicSignatureNft.wasNftUsed(0)).to.equal(true);
+		// expect(await newStakingWalletCosmicSignatureNft.wasNftUsed(0)).to.equal(true);
+		expect(await newStakingWalletCosmicSignatureNft.wasNftUsed(0)).to.equal(1n);
 
 		await expect(newStakingWalletCosmicSignatureNft.depositIfPossible(0, { value: hre.ethers.parseEther('1') })).not.to.be.reverted;
 		await expect(newStakingWalletCosmicSignatureNft.depositIfPossible(1, { value: hre.ethers.parseEther('2') })).not.to.be.reverted;

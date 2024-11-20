@@ -19,8 +19,8 @@ interface IStakingWalletNftBase {
 	);
 
 	/// @notice Stakes an NFT.
+	/// Transfers the NFT to this contract and records a stake action.
 	/// @param nftId_ NFT to stake ID.
-	/// @dev Transfers the NFT to this contract and records the stake action.
 	/// Comment-202411023 relates and/or applies.
 	function stake(uint256 nftId_) external;
 
@@ -36,5 +36,5 @@ interface IStakingWalletNftBase {
 	/// @param nftId_ NFT ID.
 	/// @return `true` if the given NFT has been used; `false` otherwise.
 	/// @dev Comment-202410274 relates.
-	function wasNftUsed(uint256 nftId_) external view returns(bool);
+	function wasNftUsed(uint256 nftId_) external view returns(/*bool*/ uint256);
 }
