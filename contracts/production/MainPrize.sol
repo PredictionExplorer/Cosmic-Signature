@@ -295,6 +295,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// todo-1 Ideally, this should return the updated value so that the caller didn't have to spend gas to read it from the storage.
 	/// todo-1 Or better add a function to a library: `generateRandomNumber(uint256 seed_) returns(uint256 randomNumber_)`.
 	/// todo-1 Call it in loops. Load and save `raffleEntropy` only once.
+	/// todo-1 uint256 randomNumber_ = /* block.prevrandao ^ */ block.timestamp ^ raffleEntropy;
+	/// todo-1 for(...;...;...) randomNumber_ = generateRandomNumber(randomNumber_);
+	/// todo-1 raffleEntropy = randomNumber_;
 	function _updateRaffleEntropy() internal {
 		// #enable_smtchecker /*
 		unchecked
