@@ -240,7 +240,8 @@ describe("Bidding tests", function () {
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await expect(cosmicGameProxy.connect(owner).bid(params, { value: 0 })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "BidPrice");
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
-		expect(await cosmicGameProxy.isRandomWalkNFTUsed(token_id)).to.equal(true);
+		// expect(await cosmicGameProxy.isRandomWalkNFTUsed(token_id)).to.equal(true);
+		expect(await cosmicGameProxy.usedRandomWalkNFTs(token_id)).to.equal(1);
 
 		// try to bid again using the same nftId
 		bidPrice = await cosmicGameProxy.getBidPrice();

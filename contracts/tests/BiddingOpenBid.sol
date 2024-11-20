@@ -45,7 +45,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 
 		if (params.randomWalkNFTId != -1) {
 			require(
-				!usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
 				CosmicGameErrors.UsedRandomWalkNFT(
 					"This RandomWalk NFT has already been used for bidding.",
 					uint256(params.randomWalkNFTId)
@@ -60,7 +61,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 					msg.sender
 				)
 			);
-			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
+			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
+			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
 			bidType = CosmicGameConstants.BidType.RandomWalk;
 		} else {
 			bidType = CosmicGameConstants.BidType.ETH;
@@ -331,9 +333,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
-	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
-		return usedRandomWalkNFTs[nftId];
-	}
+	// function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
+	// 	// todo-9 This is now a `uint256`.
+	// 	return usedRandomWalkNFTs[nftId];
+	// }
 
 	function setTimesBidPrice(uint256 _value) external onlyOwner {
 		timesBidPrice = _value;

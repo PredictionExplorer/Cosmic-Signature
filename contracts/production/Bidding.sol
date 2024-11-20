@@ -48,7 +48,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 
 		if (params.randomWalkNFTId != -1) {
 			require(
-				!usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
 				// todo-1 Nick wrote about reducing contract bytecode size:
 				// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
 				// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
@@ -67,7 +68,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 					msg.sender
 				)
 			);
-			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
+			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
+			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
 			bidType = CosmicGameConstants.BidType.RandomWalk;
 		} else {
 			bidType = CosmicGameConstants.BidType.ETH;
@@ -361,7 +363,8 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
-	function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
-		return usedRandomWalkNFTs[nftId];
-	}
+	// function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
+	// 	// todo-9 This is now a `uint256`.
+	// 	return usedRandomWalkNFTs[nftId];
+	// }
 }

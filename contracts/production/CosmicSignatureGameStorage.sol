@@ -192,7 +192,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public tokenReward;
 
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
-	mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNFTs;
+	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNFTs;
+	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNFTs;
 
 	// @notice The address of the account that placed the last bid.
 	address public lastBidderAddress;
