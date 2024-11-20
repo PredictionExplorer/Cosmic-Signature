@@ -2,10 +2,10 @@
 pragma solidity 0.8.27;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-// import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 // import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+// import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
 import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
 // import { CosmicToken } from "../production/CosmicToken.sol";
@@ -16,7 +16,7 @@ import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 
 abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
-	uint256 public timesBidPrice; // multiples of bid price that open bid has to be
+	// #region Data Types
 
 	/// @dev Comment-202411111 applies.
 	struct BidParams {
@@ -33,7 +33,18 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		/// @dev Set to true to send this type of bid
 		bool openBid;
 	}
-	event TimesBidPriceChangedEvent(uint256 newTimesBidPrice);
+
+	// #endregion
+
+	/// @notice multiples of bid price that open bid has to be
+	uint256 public timesBidPrice;
+
+	event TimesBidPriceChangedEvent(uint256 newValue);
+
+	function setTimesBidPrice(uint256 newValue_) external onlyOwner {
+		timesBidPrice = newValue_;
+		emit TimesBidPriceChangedEvent(newValue_);
+	}
 
 	function bid(bytes memory _data) public payable override nonReentrant {
 		_bid(_data);
@@ -144,100 +155,9 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		);
 	}
 
-	/// @notice Internal function to handle common bid logic
-	/// @dev This function updates game state and distributes rewards
-	/// @param message The bidder's message
-	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
-		require(
-			bytes(message).length <= maxMessageLength,
-			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
-		);
-
-		// First bid of the round?
-		if (lastBidderAddress == address(0)) {
-
-			prizeTime = block.timestamp + initialSecondsUntilPrize;
-		} else {
-			_updateChampionsIfNeeded();
-		}
-
-		lastBidderAddress = msg.sender;
-		lastBidType = bidType;
-		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
-		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
-		++ numRaffleParticipants_;
-		numRaffleParticipants[roundNum] = numRaffleParticipants_;
-
-		// Distribute token rewards
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
-		// 			/*lastBidderAddress*/ msg.sender,
-		// 			tokenReward
-		// 		);
-		// }
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(marketingWallet, marketingReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
-		// 			marketingWallet,
-		// 			marketingReward
-		// 		);
-		// }
-
-		_pushBackPrizeTime();
-	}
-
 	function getBidPrice() public view override returns (uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
-	}
-
-	/// @notice Extend the time until the prize can be claimed
-	/// @dev This function increases the prize time and adjusts the time increase factor
-	function _pushBackPrizeTime() internal {
-		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
-		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
-	}
-
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
-		require(
-			roundNum_ <= roundNum,
-			CosmicGameErrors.InvalidBidderQueryRoundNum(
-				"The provided bidding round number is greater than the current one's.",
-				roundNum_,
-				roundNum
-			)
-		);
-		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
-		require(
-			numRaffleParticipants_ > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
-		);
-		require(
-			_positionFromEnd < numRaffleParticipants_,
-			CosmicGameErrors.InvalidBidderQueryOffset(
-				"Provided index is larger than array length",
-				roundNum_,
-				_positionFromEnd,
-				numRaffleParticipants_
-			)
-		);
-		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
-		address bidderAddr = raffleParticipants[roundNum_][offset];
-		return bidderAddr;
 	}
 
 	function bidWithCst(string memory message_) external override nonReentrant /*onlyActive*/ {
@@ -320,8 +240,99 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		}
 	}
 
+	/// @notice Internal function to handle common bid logic
+	/// @dev This function updates game state and distributes rewards
+	/// @param message The bidder's message
+	/// @param bidType The type of bid (ETH or RandomWalk)
+	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
+		require(
+			bytes(message).length <= maxMessageLength,
+			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
+		);
+
+		// First bid of the round?
+		if (lastBidderAddress == address(0)) {
+
+			prizeTime = block.timestamp + initialSecondsUntilPrize;
+		} else {
+			_updateChampionsIfNeeded();
+		}
+
+		lastBidderAddress = msg.sender;
+		lastBidType = bidType;
+		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
+		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
+		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
+		++ numRaffleParticipants_;
+		numRaffleParticipants[roundNum] = numRaffleParticipants_;
+
+		// Distribute token rewards
+		// try
+		// ToDo-202409245-0 applies.
+		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
+		// 			/*lastBidderAddress*/ msg.sender,
+		// 			tokenReward
+		// 		);
+		// }
+		// try
+		// ToDo-202409245-0 applies.
+		token.mint(marketingWallet, marketingReward);
+		// {
+		// } catch {
+		// 	revert
+		// 		CosmicGameErrors.ERC20Mint(
+		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
+		// 			marketingWallet,
+		// 			marketingReward
+		// 		);
+		// }
+
+		_pushBackPrizeTime();
+	}
+
+	/// @notice Extend the time until the prize can be claimed
+	/// @dev This function increases the prize time and adjusts the time increase factor
+	function _pushBackPrizeTime() internal {
+		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
+	}
+
 	function getTotalBids() public view override returns (uint256) {
 		return numRaffleParticipants[roundNum];
+	}
+
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
+		require(
+			roundNum_ <= roundNum,
+			CosmicGameErrors.InvalidBidderQueryRoundNum(
+				"The provided bidding round number is greater than the current one's.",
+				roundNum_,
+				roundNum
+			)
+		);
+		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
+		require(
+			numRaffleParticipants_ > 0,
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
+		);
+		require(
+			_positionFromEnd < numRaffleParticipants_,
+			CosmicGameErrors.InvalidBidderQueryOffset(
+				"Provided index is larger than array length",
+				roundNum_,
+				_positionFromEnd,
+				numRaffleParticipants_
+			)
+		);
+		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
+		address bidderAddr = raffleParticipants[roundNum_][offset];
+		return bidderAddr;
 	}
 
 	function getBidderAtPosition(uint256 position) public view override returns (address) {
@@ -333,13 +344,8 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
-	// function isRandomWalkNFTUsed(uint256 nftId) public view override returns (bool) {
+	// function wasRandomWalkNftUsed(uint256 nftId_) public view override returns (bool) {
 	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNFTs[nftId];
+	// 	return usedRandomWalkNFTs[nftId_];
 	// }
-
-	function setTimesBidPrice(uint256 _value) external onlyOwner {
-		timesBidPrice = _value;
-		emit TimesBidPriceChangedEvent(_value);
-	}
 }
