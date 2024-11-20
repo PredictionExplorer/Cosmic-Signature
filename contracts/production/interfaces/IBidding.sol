@@ -64,6 +64,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round
+	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	function getTotalBids() external view returns (uint256);
 
 	/// @notice Get the address of a bidder at a specific position from the end in a given round
@@ -93,5 +94,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Check if a RandomWalk NFT has been used for bidding
 	/// @param nftId The ID of the RandomWalk NFT
 	/// @return True if the NFT has been used, false otherwise
+	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	function isRandomWalkNFTUsed(uint256 nftId) external view returns (bool);
 }
