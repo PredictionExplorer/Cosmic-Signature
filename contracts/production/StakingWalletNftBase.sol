@@ -16,22 +16,26 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	// #region State
 
 	/// @notice The current staked NFT count.
-	/// @dev In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
+	/// @dev
+	/// [Comment-202412025]
+	/// In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
 	/// In `StakingWalletRandomWalkNft`, this is the total number of `stakeActions` and `stakeActionIds` items.
+	/// [/Comment-202412025]
 	/// [Comment-202410274]
 	/// It could make sense to declare this `public`, but this is not because there is an accessor method for this.
 	/// [/Comment-202410274]
 	uint256 internal _numStakedNfts;
 
-	/// @notice This contains IDs of NFTs that have ever been used for staking.
+	/// @notice If an item of this array at a particular index is a nonzero it means
+	/// a CosmicSignature or RandomWalk NFT with that ID has already been used for staking.
 	/// @dev Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
+	/// But it should be 256 bits long.
 	/// Comment-202410274 applies.
-	// mapping(uint256 nftId => bool nftWasUsed) internal _usedNfts;
 	// CosmicGameConstants.BooleanWithPadding[1 << 64] internal _usedNfts;
 	uint256[1 << 64] internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
-	/// @dev Issue. I would prefer to declare this variable `internal`,
+	/// @dev Issue. I would prefer to declare this variable `internal` (and name it `_...`),
 	/// but Nick is saying that he needs it to monitor contract activities.
 	/// But the suitability of this variable for any purpose other than what the @notice says is purely accidential.
 	/// Any refactoring can easily break things.

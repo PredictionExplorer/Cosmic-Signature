@@ -29,12 +29,13 @@ interface IStakingWalletNftBase {
 	function stakeMany(uint256[] calldata nftIds_) external;
 
 	/// @return The current staked NFT count.
-	/// @dev Comment-202410274 relates.
+	/// @dev Comment-202412025 applies.
+	/// Comment-202410274 relates.
 	function numStakedNfts() external view returns(uint256);
 
 	/// @notice Checks if an NFT has ever been used for staking.
 	/// @param nftId_ NFT ID.
-	/// @return `true` if the given NFT has been used; `false` otherwise.
+	/// @return A nonzero if the given NFT has been used; zero otherwise.
 	/// @dev Comment-202410274 relates.
 	function wasNftUsed(uint256 nftId_) external view returns(/*bool*/ uint256);
 }

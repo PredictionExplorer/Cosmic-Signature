@@ -6,7 +6,7 @@ import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 /// @title Staking wallet for CosmicSignature NFTs.
 /// @author Cosmic Game Development Team.
 /// @notice A contract implementing this interface allows users to stake their CosmicSignature NFTs and earn rewards.
-/// @dev Supports CosmicSignature NFT staking and unstaking, as well as staker reward distribution.
+/// Supports CosmicSignature NFT staking and unstaking, as well as staker reward deposits and distribution.
 interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is unstaked and at least a part of the reward is paid to the staker.
 	/// @param actionCounter An always increasing by at least 1 unique ID of this unstake action.
@@ -68,12 +68,13 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	);
 
 	/// @notice Unstakes an NFT and pays at least a part of its reward to the staker.
+	/// Transfers the NFT back to the owner, pays at least a part of its reward to the staker,
+	/// and, in case the whole reward has been paid, deletes the stake action.
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
-	/// @dev Transfers the NFT back to the owner, pays at least a part of its reward to the staker,
-	/// and, in case the whole reward has been paid, deletes the stake action.
+	/// @dev
 	/// [Comment-202410142]
-	/// The `numEthDepositsToEvaluateMaxLimit_` parameter makes it possible to ensure that the function gas fee
+	/// The `numEthDepositsToEvaluateMaxLimit_` parameter makes it possible to ensure that the method gas fee
 	/// won't exceed the max gas per transaction imposed by the blockchain.
 	/// For Arbitrum, the best value appears to be over 20000, given some 2200 gas needed to evaluate a deposit
 	/// and 50 million max gas per transaction.
@@ -83,7 +84,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// A marginal case here is when the staker is entitled to the deposit at the index of 1 (the index is 1-based),
 	/// so in this case the non-existing deposit at the index of zero doesn't require evaluation.
 	/// So client code recommended logic is the following. In case, for exmple, the contract can evaluate at most 20000 deposits
-	/// within the max gas per transaction limit, and 20001 deposits must be evaluated, of which 20000 will be paid to the staker,
+	/// within the max gas per transaction limit, but 20001 deposits must be evaluated, of which 20000 will be paid to the staker,
 	/// the client code should call the contract twice. On the 1st call pass `numEthDepositsToEvaluateMaxLimit_ = 10001`
 	/// and on the 2nd call pass `numEthDepositsToEvaluateMaxLimit_ = 20000`. On the 2nd call the contract will evaluate
 	/// 10000 deposits, or, in a marginal case, 1 more deposit, if another deposit arrives right before the unstake.
@@ -92,11 +93,11 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// In this case, the staker will get all their rewards from 20000 deposits, but the staking action state will not be finalized.
 	/// In this case, it would be dishonest for the client code to trick the staker into spending gas to call the contract again
 	/// without being rewarded just to properly update contract state. Nothing would, really, be broken
-	/// if a stake action remains unfinalized, except, as noted in Comment-202410296, the `tryPerformMaintenance` function
+	/// if a stake action remains unfinalized, except, as noted in Comment-202410296, the `tryPerformMaintenance` method
 	/// would never allow calling itself.
 	/// But even without this issue, it will, anyway, never allow calling itself, so this is kinda a minor issue.
 	/// To further complicate things, the maximum possible `numEthDepositsToEvaluateMaxLimit_` is different
-	/// for each function that supports this parameter. Besides, it also depends on the number of items in `stakeActionIds_`.
+	/// for each method that supports this parameter. Besides, it also depends on the number of items in `stakeActionIds_`.
 	/// Therefore the client code should simulate the contract call off-chain before making the call on-chain.
 	/// [/Comment-202410142]
 	function unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
@@ -134,19 +135,19 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice
 	/// [Comment-202410296]
 	/// If eventually all stakers unstake their NFTs and receive their reward payments,
-	/// the `owner()` of this contract has an option to call this function
+	/// the `owner()` of this contract has an option to call this method
 	/// to reset contract state and/or to transfer a small remaining balance to charity
 	/// (or to the owner themselves -- to recoup the transaction fees).
 	/// A major problem is that it's unlikely that eventually all stakers will unstake their NFTs and receive their reward payments,
-	/// so, realistically, nobody will ever call this function. It exists just for completeness.
+	/// so, realistically, nobody will ever call this method. It exists just for completeness.
 	/// Comment-202410142 relates.
 	/// [/Comment-202410296]
 	/// @dev Why the balance can remain a nonzero after all payouts have been made?
 	/// Our logic is simple, but it can lose some weis.
 	/// The loss happens when we discard a division remainder near Comment-202410161.
 	/// Any better logic would require orders of magnitude more weis in transaction fees.
-	/// As mentioned above, only `owner()` is permitted to call this function. But if it was making a transfer
+	/// As mentioned above, only the `owner()` is permitted to call this method. But if it was making a transfer
 	/// to an internally stored charity address, it would probably make sense to let anybody call it,
-	/// which is the case for functions tagged with Comment-202409273.
+	/// which is the case for methods tagged with Comment-202409273.
 	function tryPerformMaintenance(bool resetState_, address charityAddress_) external returns(bool);
 }

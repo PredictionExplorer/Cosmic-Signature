@@ -612,7 +612,7 @@ describe('Staking CST tests', function () {
 		receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		log = newStakingWalletCosmicSignatureNft.interface.parseLog(receipt_logs[0]);
 		// numStakeActions = await newStakingWalletCosmicSignatureNft.numStakeActions();
-		const numDeposits = await newStakingWalletCosmicSignatureNft.numEthDeposits();
+		// const numDeposits = await newStakingWalletCosmicSignatureNft.numEthDeposits();
 		// await expect(newStakingWalletCosmicSignatureNft.claimManyRewards([/*numStakeActions*/ 3], [0])).to.be.revertedWithCustomError(
 		// 	cosmicSignatureGameErrorsFactory_,
 		// 	"NftStakeActionInvalidId"

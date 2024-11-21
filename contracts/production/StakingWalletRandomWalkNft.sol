@@ -6,8 +6,8 @@ pragma solidity 0.8.27;
 // #endregion
 // #region
 
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
@@ -33,15 +33,16 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #region State
 
 	/// @notice The `RandomWalkNFT` contract address.
-	RandomWalkNFT public randomWalkNft;
+	RandomWalkNFT public immutable randomWalkNft;
 
 	/// @notice Info about currently staked NFTs.
-	/// @dev Comment-202410117 applies to `stakeActionId`.
-	// mapping(uint256 stakeActionId => StakeAction) public stakeActions;
+	/// This array is sparse (can contain gaps).
+	/// Item index corresponds to stake action ID.
+	/// @dev Comment-202410117 applies to item index.
 	StakeAction[1 << 64] public stakeActions;
 
-	/// @notice This maps `StakeAction.index` to `stakeActions` item key.
-	// mapping(uint256 stakeActionIndex => uint256 stakeActionId) public stakeActionIds;
+	/// @notice An item contains a stake action ID.
+	/// This array is not sparse (contains no gaps).
 	uint256[1 << 64] public stakeActionIds;
 
 	// #endregion
@@ -94,6 +95,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
+		// _usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
+		_usedNfts[nftId_] = 1;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
@@ -105,10 +108,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
 		_numStakedNfts = newNumStakedNfts_;
-		// _usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
-		_usedNfts[nftId_] = 1;
-		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 		emit NftStaked(newStakeActionId_, CosmicGameConstants.NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
+		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 
 		// #endregion
 		// #region
@@ -181,8 +182,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		delete stakeActionReference_.nftOwnerAddress;
 		stakeActionIds[stakeActionCopy_.index] = lastStakeActionId;
 		delete stakeActionIds[newNumStakedNfts_];
-		randomWalkNft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
 		emit NftUnstaked(stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_);
+		randomWalkNft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
 
 		// #endregion
 		// #region
@@ -224,6 +225,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `StakeAction`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
+	///
 	/// todo-1 Why is entropy `bytes32`? Can I make it `uint256`? The caller should cast it to `uint256`.
 	function pickRandomStakerAddressIfPossible(bytes32 entropy_) external view override returns(address) {
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
