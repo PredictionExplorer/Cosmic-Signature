@@ -20,6 +20,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	mapping(uint256 => string) public tokenNames;
 
 	/// @notice Entropy used for generating random seeds
+	/// todo-1 Allow the game (`onlyGame`) to provide entropy as a parameter. It would allow to optimize the game.
 	bytes32 public entropy;
 
 	/// @notice The total number of tokens minted
@@ -73,6 +74,7 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 
 	function mint(address owner, uint256 roundNum) external override returns (uint256) {
 		require(owner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		// todo-1 Move this validation to the `onlyGame` modifier.
 		require(
 			_msgSender() == cosmicGameProxyContract,
 			// todo-1 We no longer have a contract named CosmicGameProxy, right? Rephrase?

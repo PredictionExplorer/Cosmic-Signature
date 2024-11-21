@@ -47,5 +47,6 @@ interface ICosmicSignature is IERC721Enumerable {
 	/// @param owner The address that will receive the newly minted token
 	/// @param roundNum The bidding round number in which the token is minted.
 	/// @return The ID of the newly minted token
+	/// @dev todo-1 Reorder `roundNum` to the beginning? Or just eliminate it?
 	function mint(address owner, uint256 roundNum) external returns (uint256);
 }

@@ -95,5 +95,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	// /// @param nftId_ NFT ID.
 	// /// @return `true` if the given NFT has been used; `false` otherwise.
 	// /// @dev I have eliminated this method. All involved variables are `public`. So anybody can query them.
+	// /// todo-9 It would be more efficient if this returns a number, like `IStakingWalletNftBase.wasNftUsed` does.
 	// function wasRandomWalkNftUsed(uint256 nftId_) external view returns (bool);
 }
