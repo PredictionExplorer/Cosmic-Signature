@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
+/// todo-1 Maybe rename this without the word "Game" and with the word "Signature".
 library CosmicGameEvents {
 	/// @notice This is similar to `CosmicGameErrors.FundTransferFailed`.
 	/// @dev todo-1 Make sure we use this. Otherwie comment this out.
