@@ -18,43 +18,79 @@ import { IBidding } from "../production/interfaces/IBidding.sol";
 abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
+	/// @title Parameters needed to place a bid.
 	/// @dev Comment-202411111 applies.
 	struct BidParams {
 		/// @notice The message associated with the bid
-		/// @dev Can be used to store additional information or comments from the bidder
+		/// Can be used to store additional information or comments from the bidder
 		string message;
 
-		/// @notice The ID of the RandomWalk NFT used for bidding, if any
-		/// @dev Set to -1 if no RandomWalk NFT is used, otherwise contains the NFT's ID
-		/// @custom:note RandomWalk NFTs may provide special benefits or discounts when used for bidding
+		/// @notice The ID of the RandomWalk NFT to be used for bidding.
+		/// Set to -1 if no RandomWalk NFT is to be used.
+		/// Comment-202412036 applies.
 		int256 randomWalkNFTId;
 
-		/// @notice The flag used to mark a bid as 'bid with open price' (any price user wants) bidPrice will be updated to msg.value and stay at that level
-		/// @dev Set to true to send this type of bid
+		/// @notice The flag used to mark a bid as "bid with open price" (any price user wants).
+		/// `bidPrice` will be updated to `msg.value` and stay at that level.
+		/// Set to `true` to send this type of bid.
 		bool openBid;
 	}
 
 	// #endregion
+	// #region State
 
 	/// @notice multiples of bid price that open bid has to be
 	uint256 public timesBidPrice;
 
+	// #endregion
+	// #region Events
+
 	event TimesBidPriceChangedEvent(uint256 newValue);
+
+	// #endregion
 
 	function setTimesBidPrice(uint256 newValue_) external onlyOwner {
 		timesBidPrice = newValue_;
 		emit TimesBidPriceChangedEvent(newValue_);
 	}
 
-	function bid(bytes memory _data) public payable override nonReentrant {
+	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
 		_bid(_data);
 	}
 
 	function _bid(bytes memory _data) internal /*onlyActive*/ {
 		BidParams memory params = abi.decode(_data, (BidParams));
-		CosmicGameConstants.BidType bidType;
+		// CosmicGameConstants.BidType bidType;
+		uint256 newBidPrice = getBidPrice();
+		uint256 paidBidPrice;
+		if (params.randomWalkNFTId == -1) {
+			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
+			if (params.openBid) {
+				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
+				require(
+					msg.value >= minPriceOpenBid,
+					CosmicGameErrors.BidPrice("The value submitted for open bid too low.", minPriceOpenBid, msg.value)
+				);
 
-		if (params.randomWalkNFTId != -1) {
+				// [Comment-202412035/]
+				paidBidPrice = msg.value;
+			} else {
+				paidBidPrice = newBidPrice;
+				require(
+					msg.value >= paidBidPrice,
+					CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+				);
+			}
+		} else {
+			require(
+				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
+				CosmicGameErrors.IncorrectERC721TokenOwner(
+					"You must be the owner of the RandomWalk NFT.",
+					address(randomWalkNft),
+					uint256(params.randomWalkNFTId),
+					msg.sender
+				)
+			);
 			require(
 				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
 				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
@@ -63,89 +99,27 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 					uint256(params.randomWalkNFTId)
 				)
 			);
-			require(
-				randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
-				CosmicGameErrors.IncorrectERC721TokenOwner(
-					"You must be the owner of the RandomWalk NFT.",
-					address(randomWalkNft),
-					uint256(params.randomWalkNFTId),
-					msg.sender
-				)
-			);
 			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
-			bidType = CosmicGameConstants.BidType.RandomWalk;
-		} else {
-			bidType = CosmicGameConstants.BidType.ETH;
-		}
+			// bidType = CosmicGameConstants.BidType.RandomWalk;
 
-		uint256 newBidPrice = getBidPrice();
-		uint256 paidBidPrice;
+			// todo-3 Somewhere around here, we probably should evaluate `params.openBid`
+			// todo-3 and act differently if it's `true`.
 
-		if (bidType == CosmicGameConstants.BidType.RandomWalk) {
-			// RandomWalk NFT bids get a 50% discount on the bid price.
-			uint256 rwalkBidPrice = newBidPrice / 2;
-
+			paidBidPrice = newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 			require(
-				msg.value >= rwalkBidPrice,
-				CosmicGameErrors.BidPrice(
-					"The value submitted for this transaction with RandomWalk NFT is too low.",
-					rwalkBidPrice,
-					msg.value
-				)
+				msg.value >= paidBidPrice,
+				CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
 			);
-			paidBidPrice = rwalkBidPrice;
-		} else {
-			require(
-				msg.value >= newBidPrice,
-				CosmicGameErrors.BidPrice(
-					"The value submitted for this transaction is too low.",
-					newBidPrice,
-					msg.value
-				)
-			);
-			if (params.openBid) {
-				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
-				// Note: we are not using custom errors (in require() statements) because this is a test contract
-				require(msg.value >= minPriceOpenBid, "The value submitted for open bid is too low.");
-				require(
-					msg.value >= minPriceOpenBid,
-					CosmicGameErrors.BidPrice("The value submitted for open bid too low.", minPriceOpenBid, msg.value)
-				);
-				paidBidPrice = msg.value;
-			} else {
-				require(msg.value >= newBidPrice, "The value submitted for this transaction is too low.");
-				paidBidPrice = newBidPrice;
-			}
 		}
+		bidPrice = params.openBid ? msg.value : newBidPrice;
 
-		bidderInfo[roundNum][msg.sender].totalSpentEth = bidderInfo[roundNum][msg.sender].totalSpentEth + paidBidPrice;
+		// Updating bidding statistics.
+		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
 
-		if (params.openBid) {
-			bidPrice = msg.value;
-		} else {
-			bidPrice = newBidPrice;
-		}
-
-		_bidCommon(params.message, bidType);
-
-		if (params.openBid) {
-			// on open bids full msg.value is consumed
-		} else {
-			// Refund excess ETH if the bidder sent more than required
-			if (msg.value > paidBidPrice) {
-				uint256 amountToSend = msg.value - paidBidPrice;
-				(bool success, ) = msg.sender.call{ value: amountToSend }("");
-				require(
-					success,
-					CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
-				);
-			}
-		}
-
-		// todo-1 Emit this before sending refund.
+		_bidCommon(params.message /* , bidType */);
 		emit BidEvent(
-			lastBidderAddress,
+			/*lastBidderAddress*/ msg.sender,
 			roundNum,
 			int256(paidBidPrice),
 			params.randomWalkNFTId,
@@ -153,6 +127,19 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 			prizeTime,
 			params.message
 		);
+
+		// This condition will be `false` if we assigned near Comment-202412035.
+		if (msg.value > paidBidPrice) {
+
+			// Refunding excess ETH if the bidder sent more than required.
+			uint256 amountToSend = msg.value - paidBidPrice;
+			// todo-1 No reentrancy vulnerability?
+			(bool success, ) = msg.sender.call{ value: amountToSend }("");
+			require(
+				success,
+				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
+			);
+		}
 	}
 
 	function getBidPrice() public view override returns (uint256) {
@@ -165,16 +152,16 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 	}
 
 	function _bidWithCst(string memory message_) internal /*onlyActive*/ {
-		// uint256 userBalance = token.balanceOf(msg.sender);
-
 		// Comment-202409179 applies.
 		uint256 price = getCurrentBidPriceCST();
+
+		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// // Comment-202409181 applies.
 		// require(
 		// 	userBalance >= price,
 		// 	CosmicGameErrors.InsufficientCSTBalance(
-		// 		"Insufficient CST token balance to make a bid with CST",
+		// 		"Insufficient CST token balance to make a bid with CST.",
 		// 		price,
 		// 		userBalance
 		// 	)
@@ -183,46 +170,37 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		// Comment-202409177 applies.
 		token.burn(msg.sender, price);
 
+		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
 			stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
 			stellarSpender = msg.sender;
 		}
-		// Comment-202409163 applies.
-		uint256 newStartingBidPriceCST;
-		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
-			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
-		} else {
-			// #enable_smtchecker /*
-			unchecked
-			// #enable_smtchecker */
-			{
-				newStartingBidPriceCST = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
-			}
-			newStartingBidPriceCST = Math.max(newStartingBidPriceCST, startingBidPriceCSTMinLimit);
-		}
-		startingBidPriceCST = newStartingBidPriceCST;
-		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
-		
-		lastCstBidTimeStamp = block.timestamp;
-		_bidCommon(message_, CosmicGameConstants.BidType.CST);
 
-		// Comment-202409182 applies.
-		emit BidEvent(lastBidderAddress, roundNum, -1, -1, int256(price), prizeTime, message_);
+		// Comment-202409163 applies.
+		uint256 newStartingBidPriceCst_ =
+			Math.max(price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
+		startingBidPriceCST = newStartingBidPriceCst_;
+
+		lastCstBidTimeStamp = block.timestamp;
+		_bidCommon(message_ /* , CosmicGameConstants.BidType.CST */);
+		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
-		(uint256 numSecondsElapsed_, uint256 duration_) = getCstAuctionDuration();
-		if (numSecondsElapsed_ >= duration_) {
-			return 0;
-		}
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * numSecondsElapsed_ / duration_);
+			(uint256 elapsedDuration_, uint256 duration_) = getCstAuctionDuration();
+			uint256 remainingDuration_ = uint256(int256(duration_) - int256(elapsedDuration_));
+			if (int256(remainingDuration_) <= int256(0)) {
+				return 0;
+			}
 
-			// Comment-202409162 applies.
-			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+			// uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * elapsedDuration_ / duration_);
+			// return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+
+			return startingBidPriceCST * remainingDuration_ / duration_;
 		}
 	}
 
@@ -231,20 +209,19 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 numSecondsElapsed_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
-			if(int256(numSecondsElapsed_) < int256(0))
-			{
-				numSecondsElapsed_ = 0;
+			uint256 elapsedDuration_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
+			if (int256(elapsedDuration_) < int256(0)) {
+				elapsedDuration_ = 0;
 			}
-			return (numSecondsElapsed_, cstAuctionLength);
+			return (elapsedDuration_, cstAuctionLength);
 		}
 	}
 
 	/// @notice Internal function to handle common bid logic
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
-	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
+	/// ---param bidType Bid type code.
+	function _bidCommon(string memory message /* , CosmicGameConstants.BidType bidType */) internal onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -254,12 +231,13 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		if (lastBidderAddress == address(0)) {
 
 			prizeTime = block.timestamp + initialSecondsUntilPrize;
+			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
 		}
 
 		lastBidderAddress = msg.sender;
-		lastBidType = bidType;
+		// lastBidType = bidType;
 		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
@@ -319,7 +297,7 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
 		require(
 			numRaffleParticipants_ > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet.", roundNum_)
 		);
 		require(
 			_positionFromEnd < numRaffleParticipants_,

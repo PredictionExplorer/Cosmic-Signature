@@ -7,6 +7,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author Cosmic Game Development Team
 /// @notice This library contains custom errors used throughout the Cosmic Game contracts
 /// @dev Use these errors to provide more detailed and gas-efficient error handling
+/// todo-1 Maybe rename this without the word "Game" and with the word "Signature".
 library CosmicGameErrors {
 	// #region Common Errors
 
@@ -47,11 +48,11 @@ library CosmicGameErrors {
 	/// @param errStr Description of the error.
 	error BidHasBeenPlacedInCurrentRound(string errStr);
 
-	/// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
-	/// @param errStr Description of the error
-	/// @param providedValue The actual provided value
-	/// @param valueMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
-	error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueMinLimit);
+	// /// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
+	// /// @param errStr Description of the error
+	// /// @param providedValue The actual provided value
+	// /// @param valueHardMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
+	// error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueHardMinLimit);
 
 	/// @notice Thrown when percentage validation fails
 	/// @param errStr Description of the error

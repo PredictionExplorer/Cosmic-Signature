@@ -293,9 +293,9 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.connect(addr1).bidWithCst("cst bid");
 
 		const res = await cosmicGameProxy.getCstAuctionDuration();
-		const duration = res[1];
-		const numSecondsElapsed_ = res[0];
-		expect(numSecondsElapsed_).to.equal(0);
+		const duration_ = res[1];
+		const elapsedDuration_ = res[0];
+		expect(elapsedDuration_).to.equal(0);
 	});
 	it("There is an execution path for all bidders being RWalk token bidders", async function () {
 		async function mint_rwalk(a) {
@@ -344,12 +344,12 @@ describe("Bidding tests", function () {
 		// todo-1 Take a closer look at this. What if it reverts with a different error?
 		await expect(cosmicGameProxy.connect(addr5).claimPrize()).not.to.be.revertedWith("panic code 0x12"); // divide by zero
 	});
-	it('After bid() , bid-related counters have correct values', async function () {
+	it("After bid() , bid-related counters have correct values", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		
-		let donationAmount = hre.ethers.parseEther('10');
+		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -369,19 +369,19 @@ describe("Bidding tests", function () {
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.bid(params, { value: bidPrice });
 
-		let lastBidType = await cosmicGameProxy.lastBidType();
-		expect(lastBidType).to.equal(1);
+		// let lastBidType = await cosmicGameProxy.lastBidType();
+		// expect(lastBidType).to.equal(1);
 
 		await cosmicGameProxy.bidWithCst('cst bid');
 
-		lastBidType = await cosmicGameProxy.lastBidType();
-		expect(lastBidType).to.equal(2);
+		// lastBidType = await cosmicGameProxy.lastBidType();
+		// expect(lastBidType).to.equal(2);
 	});
-	it('Bidder is receiving correct refund amount when using larger bidPrice than required', async function () {
+	it("Bidder is receiving correct refund amount when using larger bidPrice than required", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
-		let donationAmount = hre.ethers.parseEther('1');
+		let donationAmount = hre.ethers.parseEther("1");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		let cosmicGameAddr = await cosmicGameProxy.getAddress();
 
@@ -392,7 +392,7 @@ describe("Bidding tests", function () {
 		const cBidder = await BidderContract.deploy(cosmicGameAddr);
 		await cBidder.waitForDeployment();
 		let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
-		let amountSent = hre.ethers.parseEther('2');
+		let amountSent = hre.ethers.parseEther("2");
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await cBidder.doBid2({ value: amountSent });
 
@@ -404,7 +404,7 @@ describe("Bidding tests", function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
-		let donationAmount = hre.ethers.parseEther('1');
+		let donationAmount = hre.ethers.parseEther("1");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		let cosmicGameAddr = await cosmicGameProxy.getAddress();
 
@@ -415,7 +415,7 @@ describe("Bidding tests", function () {
 		const cBidder = await BidderContract.deploy(cosmicGameAddr);
 		await cBidder.waitForDeployment();
 		let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
-		let amountSent = hre.ethers.parseUnits('1',15);
+		let amountSent = hre.ethers.parseUnits("1",15);
 
 		await randomWalkNFT.setApprovalForAll(cosmicGameAddr, true);
 		await randomWalkNFT.setApprovalForAll(await cBidder.getAddress(), true);
@@ -437,7 +437,7 @@ describe("Bidding tests", function () {
 		// ToDo-202411202-1 applies.
 		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
 
-		let donationAmount = hre.ethers.parseEther('100');
+		let donationAmount = hre.ethers.parseEther("100");
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		let bidParams, params, durationUntilMainPrize_, bidPrice;
@@ -621,9 +621,9 @@ describe("Bidding tests", function () {
 		await cosmicGameProxy.connect(addr1).bidWithCst('cst bid');
 
 		let cstPrice = await cosmicGameProxy.getCurrentBidPriceCST();
-		expect(cstPrice.toString()).to.equal('200000000000000000000');
+		expect(cstPrice.toString()).to.equal("200000000000000000000");
 		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
-		// expect(cstPrice.toString()).to.equal('214831600000000000000');
+		// expect(cstPrice.toString()).to.equal("214831600000000000000");
 
 		let tx = await cosmicGameProxy.connect(addr1).bidWithCst('cst bid');
 		let receipt = await tx.wait();
@@ -633,7 +633,7 @@ describe("Bidding tests", function () {
 		let args = parsed_log.args.toObject();
 		expect(args.numCSTTokens.toString()).to.equal("199995400000000000000");
 		// // todo-0 Replace the above with this when fixing ToDo-202409199-0.
-		// expect(args.numCSTTokens.toString()).to.equal('214826658873200000000');
+		// expect(args.numCSTTokens.toString()).to.equal("214826658873200000000");
 		expect(args.bidPrice.toString()).to.equal("-1");
 		expect(args.lastBidderAddress).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');
@@ -765,7 +765,7 @@ describe("Bidding tests", function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		
-		let donationAmount = hre.ethers.parseEther('10');
+		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
 		let bidParams = { message: "", randomWalkNFTId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -879,6 +879,7 @@ describe("Bidding tests", function () {
 					break;
 				}
 			}
+			// todo-1 Make sense to eliminate this error handling?
 			try {
 				await cosmicGameProxy.bidWithCst("");
 			} catch (e) {

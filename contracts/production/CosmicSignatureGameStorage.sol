@@ -147,7 +147,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
-	/// todo-1 Rename to `ethBidPrice`.
+	/// todo-1 Rename to `ethBidPrice` or `lastEthBidPrice`.
 	/// todo-1 Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
 	uint256 public bidPrice;
 
@@ -163,12 +163,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
 	/// todo-1 Rename to `cstDutchAuctionDuration`.
-	/// todo-1 Rename any "Auction" to "Dutch Auction".
 	uint256 public cstAuctionLength;
 
 	/// @notice Comment-202411064 applies.
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
 	/// todo-1 Rename to `roundStartCstDutchAuctionDuration`.
+	/// todo-1 Rename any "Auction" to "Dutch Auction".
+	/// todo-1 But are we going to support a Dutch auction for ETH?
 	uint256 public roundStartCstAuctionLength;
 
 	/// @notice Last CST bid timestamp.
@@ -180,6 +181,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411066]
 	/// We don't let this fall below `startingBidPriceCSTMinLimit`.
 	/// [/Comment-202411066]
+	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
 	uint256 public startingBidPriceCST;
 
 	/// @notice Comment-202411064 applies.
@@ -198,9 +200,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// @notice The address of the account that placed the last bid.
 	address public lastBidderAddress;
 
-	/// todo-0 Do we really need this?
-	/// todo-0 Rename to `lastBidTypeCode`.
-	CosmicGameConstants.BidType public lastBidType;
+	// /// todo-1 Rename to `lastBidTypeCode`.
+	// CosmicGameConstants.BidType public lastBidType;
 
 	/// @dev ToDo-202411098-0 applies.
 	/// todo-1 Rename to `roundNumBids`.

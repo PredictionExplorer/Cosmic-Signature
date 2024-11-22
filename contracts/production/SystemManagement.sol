@@ -208,18 +208,15 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	}
 
 	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyInactive {
-		// This ensures that SMTChecker won't flag the logic or an `assert` near Comment-202409163 or Comment-202409162.
-		// We probably don't need a `require` to enforce this condition.
-		// #enable_asserts assert(newStartingBidPriceCSTMinLimit <= type(uint256).max / CosmicGameConstants.MILLION);
-
-		require(
-			newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-			CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
-				"Provided starting bid price in CST min limit is too small",
-				newStartingBidPriceCSTMinLimit,
-				CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
-			)
-		);
+		// require(
+		// 	newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
+		// 	CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+		// 		// todo-9 Can I phrase this better? Maybe "starting CST bid price".
+		// 		"The provided starting bid price in CST min limit is too small.",
+		// 		newStartingBidPriceCSTMinLimit,
+		// 		CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
+		// 	)
+		// );
 		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
 		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
 	}

@@ -253,6 +253,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
 	function _distributeRafflePrizes(uint256 raffleAmount_) internal {
 		// Distribute ETH prizes
+		// todo-1 How about increasing the number of raffle and/or other kinds of winnes if there are more bidders? Like 5% of bidders.
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateRaffleEntropy();
@@ -298,6 +299,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// todo-1 uint256 randomNumber_ = /* block.prevrandao ^ */ block.timestamp ^ raffleEntropy;
 	/// todo-1 for(...;...;...) randomNumber_ = generateRandomNumber(randomNumber_);
 	/// todo-1 raffleEntropy = randomNumber_;
+	/// todo-1 But maybe use `block.prevrandao`, after all? See `CosmicSignatureHelpers`.
 	function _updateRaffleEntropy() internal {
 		// #enable_smtchecker /*
 		unchecked
@@ -328,7 +330,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	function _roundEndResets() internal {
 		++ roundNum;
 		lastBidderAddress = address(0);
-		lastBidType = CosmicGameConstants.BidType.ETH;
+		// lastBidType = CosmicGameConstants.BidType.ETH;
 
 		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength =

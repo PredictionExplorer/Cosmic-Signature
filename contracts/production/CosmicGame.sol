@@ -111,12 +111,12 @@ contract CosmicGame is
 		// It's very likely a bug that we assign a twice smaller value here.
 		// Waiting for Taras to comment on the issue.
 		// [/ToDo-202409199-0]
-		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
-		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
+		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT / 2;
+		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
 		// todo-0 Is this redundant? Assert?
 		lastBidderAddress = address(0);
-		// lastBidType =
+		// // lastBidType =
 		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicGameConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicGameConstants.INITIAL_RAFFLE_PERCENTAGE;

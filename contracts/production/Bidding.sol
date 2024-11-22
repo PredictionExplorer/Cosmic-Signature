@@ -19,19 +19,19 @@ import { IBidding } from "./interfaces/IBidding.sol";
 abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
 	// #region Data Types
 
-	/// @title Bid Parameters.
-	/// @dev Encapsulates parameters for placing a bid in the Cosmic Game.
+	/// @title Parameters needed to place a bid.
+	/// @dev
 	/// [Comment-202411111]
 	/// Similar structures exist in multiple places.
 	/// [/Comment-202411111]
 	struct BidParams {
 		/// @notice The message associated with the bid
-		/// @dev Can be used to store additional information or comments from the bidder
+		/// Can be used to store additional information or comments from the bidder
 		string message;
 
-		/// @notice The ID of the RandomWalk NFT used for bidding, if any
-		/// @dev Set to -1 if no RandomWalk NFT is used, otherwise contains the NFT's ID
-		/// @custom:note RandomWalk NFTs may provide special benefits or discounts when used for bidding
+		/// @notice The ID of the RandomWalk NFT to be used for bidding.
+		/// Set to -1 if no RandomWalk NFT is to be used.
+		/// Comment-202412036 applies.
 		int256 randomWalkNFTId;
 	}
 
@@ -43,24 +43,17 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 
 	function _bid(bytes memory _data) internal /*onlyActive*/ {
 		// todo-1 Why do we need this ugly data thing? Why can't we simply pass parameters to the method the normal way?
+		// todo-1 But keep in mind that `BidParams` is different in `BiddingOpenBid`.
 		BidParams memory params = abi.decode(_data, (BidParams));
-		CosmicGameConstants.BidType bidType;
-
-		if (params.randomWalkNFTId != -1) {
+		// CosmicGameConstants.BidType bidType;
+		uint256 newBidPrice = getBidPrice();
+		uint256 paidBidPrice;
+		if (params.randomWalkNFTId == -1) {
+			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
+			paidBidPrice = newBidPrice;
+		} else {
 			require(
-				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
-				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
-				// todo-1 Nick wrote about reducing contract bytecode size:
-				// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
-				// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
-				// todo-1 I think we should go for it
-				CosmicGameErrors.UsedRandomWalkNFT(
-					"This RandomWalk NFT has already been used for bidding.",
-					uint256(params.randomWalkNFTId)
-				)
-			);
-			require(
-				randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)) == msg.sender,
+				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
@@ -68,49 +61,44 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 					msg.sender
 				)
 			);
+			require(
+				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
+				CosmicGameErrors.UsedRandomWalkNFT(
+					// todo-1 Nick wrote about reducing contract bytecode size:
+					// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
+					// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
+					// todo-1 I think we should go for it
+					"This RandomWalk NFT has already been used for bidding.",
+					uint256(params.randomWalkNFTId)
+				)
+			);
 			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
-			bidType = CosmicGameConstants.BidType.RandomWalk;
-		} else {
-			bidType = CosmicGameConstants.BidType.ETH;
+			// bidType = CosmicGameConstants.BidType.RandomWalk;
+			paidBidPrice = newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 		}
-
-		uint256 newBidPrice = getBidPrice();
-		uint256 paidBidPrice;
-
-		if (bidType == CosmicGameConstants.BidType.RandomWalk) {
-			// RandomWalk NFT bids get a 50% discount on the bid price.
-			uint256 rwalkBidPrice = newBidPrice / 2;
-			
-			require(
-				msg.value >= rwalkBidPrice,
-				CosmicGameErrors.BidPrice(
-					"The value submitted for this transaction with RandomWalk NFT is too low.",
-					rwalkBidPrice,
-					msg.value
-				)
-			);
-			paidBidPrice = rwalkBidPrice;
-		} else {
-			require(
-				msg.value >= newBidPrice,
-				CosmicGameErrors.BidPrice(
-					"The value submitted for this transaction is too low.",
-					newBidPrice,
-					msg.value
-				)
-			);
-			paidBidPrice = newBidPrice;
-		}
-
-		// Update bidding statistics 
-		bidderInfo[roundNum][msg.sender].totalSpentEth = bidderInfo[roundNum][msg.sender].totalSpentEth + paidBidPrice;
-
+		require(
+			msg.value >= paidBidPrice,
+			CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+		);
 		bidPrice = newBidPrice;
-		_bidCommon(params.message, bidType);
 
-		// Refund excess ETH if the bidder sent more than required
+		// Updating bidding statistics.
+		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
+
+		_bidCommon(params.message /* , bidType */);
+		emit BidEvent(
+			/*lastBidderAddress*/ msg.sender,
+			roundNum,
+			int256(paidBidPrice),
+			params.randomWalkNFTId,
+			-1,
+			prizeTime,
+			params.message
+		);
 		if (msg.value > paidBidPrice) {
+			// Refunding excess ETH if the bidder sent more than required.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
 			(bool success, ) = msg.sender.call{ value: amountToSend }("");
@@ -119,20 +107,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 			);
 		}
-
-		// todo-1 Emit this before sending refund.
-		emit BidEvent(
-			lastBidderAddress, // todo-1 <<< Use `msg.sender` instead?
-			roundNum,
-			int256(paidBidPrice),
-			params.randomWalkNFTId,
-			-1,
-			prizeTime,
-			params.message
-		);
 	}
 
 	function getBidPrice() public view override returns (uint256) {
+		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 
@@ -141,15 +119,19 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 	}
 
 	function _bidWithCst(string memory message_) internal /*onlyActive*/ {
-		// uint256 userBalance = token.balanceOf(msg.sender);
-
 		// [Comment-202409179]
 		// This can be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
 		// We are OK with that.
+		// todo-1 Confirm with them again that this is OK.
+		// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729031458458109
+		// todo-1 Maybe require at least 1 Wei bid.
+		// todo-1 An alternative would be to enforce `startingBidPriceCSTMinLimit`.
+		// todo-1 Or better add another smaller min limit.
 		// [/Comment-202409179]
-		// todo-1 This price can double at any moment. The bid call should include the max price the user would be willing to pay.
 		uint256 price = getCurrentBidPriceCST();
+
+		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// // [Comment-202409181]
 		// // This validation is unnecessary, given that `token.burn` called near Comment-202409177 is going to perform it too.
@@ -157,7 +139,7 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// require(
 		// 	userBalance >= price,
 		// 	CosmicGameErrors.InsufficientCSTBalance(
-		// 		"Insufficient CST token balance to make a bid with CST",
+		// 		"Insufficient CST token balance to make a bid with CST.",
 		// 		price,
 		// 		userBalance
 		// 	)
@@ -166,69 +148,45 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// [Comment-202409177]
 		// Burn the CST tokens used for bidding.
 		// ToDo-202411182-1 relates and/or applies.
-		// [/Comment-202409177]
 		// todo-1 What about calling `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` here?
 		// todo-1 It would be a safer option.
+		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 
-		bidderInfo[roundNum][msg.sender].totalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst + price;
+		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
 			stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
 			stellarSpender = msg.sender;
 		}
 
 		// [Comment-202409163]
-		// Doubling the starting CST price for the next CST bid, while enforcing a minimum.
-		// This logic avoids an overfow, both here and near Comment-202409162.
-		//
-		// todo-1 The following TODO is BS. But anyway give these issues a thought.
-		// todo-1 Revisit this. I need to make sure that the total supply of cosmic tokens can't overflow.
-		// todo-1 Therefore add a max limit constant that equals `type(uint256).max >> 64`.
+		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.
 		// [/Comment-202409163]
-		uint256 newStartingBidPriceCST;
-		if (price >= type(uint256).max / CosmicGameConstants.MILLION / CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER) {
-			newStartingBidPriceCST = type(uint256).max / CosmicGameConstants.MILLION;
-		} else {
-			// #enable_smtchecker /*
-			unchecked
-			// #enable_smtchecker */
-			{
-				newStartingBidPriceCST = price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER;
-			}
-			newStartingBidPriceCST = Math.max(newStartingBidPriceCST, startingBidPriceCSTMinLimit);
-		}
-		startingBidPriceCST = newStartingBidPriceCST;
-		// #enable_asserts assert(startingBidPriceCST >= startingBidPriceCSTMinLimit);
+		uint256 newStartingBidPriceCst_ =
+			Math.max(price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
+		startingBidPriceCST = newStartingBidPriceCst_;
 
 		lastCstBidTimeStamp = block.timestamp;
-		_bidCommon(message_, CosmicGameConstants.BidType.CST);
-
-		// [Comment-202409182]
-		// The cast of `price` to a signed integer can't overflow, thanks to the logic near Comment-202409163.
-		// [/Comment-202409182]
-		// todo-1 Instead of `lastBidderAddress`, use `msg.sender`?
-		emit BidEvent(lastBidderAddress, roundNum, -1, -1, int256(price), prizeTime, message_);
+		_bidCommon(message_ /* , CosmicGameConstants.BidType.CST */);
+		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns (uint256) {
-		(uint256 numSecondsElapsed_, uint256 duration_) = getCstAuctionDuration();
-		// // #enable_asserts // #disable_smtchecker console.log(202411119, numSecondsElapsed_, duration_);
-		if (numSecondsElapsed_ >= duration_) {
-			return 0;
-		}
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * numSecondsElapsed_ / duration_);
+			(uint256 elapsedDuration_, uint256 duration_) = getCstAuctionDuration();
+			// // #enable_asserts // #disable_smtchecker console.log(202411119, elapsedDuration_, duration_);
+			uint256 remainingDuration_ = uint256(int256(duration_) - int256(elapsedDuration_));
+			if (int256(remainingDuration_) <= int256(0)) {
+				return 0;
+			}
 
-			// [Comment-202409162/]
-			return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+			// uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * elapsedDuration_ / duration_);
+			// return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
 
-			// // todo-0 Nick, you might want to refactor the above this way.
-			// // todo-0 Remember to fix relevant code and comments.
-			// // todo-0 Remember to make the same change in `BiddingOpenBid`.
-			// int256 newFormulaIdea = startingBidPriceCST - (startingBidPriceCST * numSecondsElapsed_ / duration_);
+			return startingBidPriceCST * remainingDuration_ / duration_;
 		}
 	}
 
@@ -237,20 +195,19 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 numSecondsElapsed_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
-			if(int256(numSecondsElapsed_) < int256(0))
-			{
-				numSecondsElapsed_ = 0;
+			uint256 elapsedDuration_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
+			if (int256(elapsedDuration_) < int256(0)) {
+				elapsedDuration_ = 0;
 			}
-			return (numSecondsElapsed_, cstAuctionLength);
+			return (elapsedDuration_, cstAuctionLength);
 		}
 	}
 
 	/// @notice Internal function to handle common bid logic
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
-	/// @param bidType The type of bid (ETH or RandomWalk)
-	function _bidCommon(string memory message, CosmicGameConstants.BidType bidType) internal onlyActive {
+	/// ---param bidType Bid type code.
+	function _bidCommon(string memory message /* , CosmicGameConstants.BidType bidType */) internal onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -258,19 +215,18 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
-			// todo-0 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
+			// todo-1 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
 			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
 			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
 
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
-
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
 		}
 
 		lastBidderAddress = msg.sender;
-		lastBidType = bidType;
+		// lastBidType = bidType;
 		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
@@ -336,9 +292,10 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// todo-1 Maybe skip all validations and check them only if the bidder address is zero.
 		// todo-1 The same applies to `getBidderAtPosition`.
 		// todo-1 Speking of which, would it make sense to call it from here?
+		// todo-1 Remember to make the same changes in `BiddingOpenBid`.
 		require(
 			numRaffleParticipants_ > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet", roundNum_)
+			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet.", roundNum_)
 		);
 		require(
 			_positionFromEnd < numRaffleParticipants_,

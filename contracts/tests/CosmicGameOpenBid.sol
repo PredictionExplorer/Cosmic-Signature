@@ -92,8 +92,8 @@ contract CosmicGameOpenBid is
 		}
 
 		// ToDo-202409199-0 applies.
-		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT / 2;
-		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_INITIAL_MIN_LIMIT;
+		startingBidPriceCST = CosmicGameConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT / 2;
+		startingBidPriceCSTMinLimit = CosmicGameConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicGameConstants.TOKEN_REWARD;
 		lastBidderAddress = address(0);
 		mainPrizePercentage = CosmicGameConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
