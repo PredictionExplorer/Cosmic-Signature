@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment } = require("../src/Deploy.js");
 
-describe("SystemManagement tests", function () {
+describe("SystemManagement", function () {
 	/// [ToDo-202411224-1]
 	/// This TODO is done where it's mentioned.
 	/// Rewrite all deployment functions this way.

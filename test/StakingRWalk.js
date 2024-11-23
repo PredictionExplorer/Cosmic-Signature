@@ -8,7 +8,7 @@ const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js")
 
 const SKIP_LONG_TESTS = "0";
 
-describe("Staking RandomWalk tests", function () {
+describe("StakingWalletRandomWalkNft", function () {
 	async function deployCosmic(deployerAcct) {
 		const [contractDeployerAcct] = await hre.ethers.getSigners();
 		const {

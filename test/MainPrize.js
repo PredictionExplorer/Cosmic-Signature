@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-describe("MainPrize tests", function () {
+describe("MainPrize", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.

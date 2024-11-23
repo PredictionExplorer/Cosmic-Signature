@@ -3,7 +3,7 @@
 pragma solidity 0.8.27;
 
 /// @title Charitable donations management
-/// @author Cosmic Game Development Team
+/// @author Cosmic Signature Game Development Team.
 /// @notice A contract implementing this interface collects donations and periodically sends them to a designated charity
 /// @dev As noted in Comment-202409273, this contract is designed to be transparent. It allows anyone to trigger a donation transfer.
 /// todo-0 Use this and other interfaces in some places where we use respective contracts.

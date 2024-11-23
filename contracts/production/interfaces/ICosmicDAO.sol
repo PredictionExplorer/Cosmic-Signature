@@ -3,7 +3,7 @@
 pragma solidity 0.8.27;
 
 /// @title Governance interface for the Cosmic ecosystem
-/// @author Cosmic Game Development Team
+/// @author Cosmic Signature Game Development Team.
 /// @notice A contract implementing this interface implements the governance mechanism for the Cosmic ecosystem
 interface ICosmicDAO {
 	// Empty.
