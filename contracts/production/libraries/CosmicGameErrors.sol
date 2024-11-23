@@ -3,11 +3,10 @@ pragma solidity 0.8.27;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title CosmicGameErrors - Custom error library for the Cosmic Game
-/// @author Cosmic Signature Game Development Team.
-/// @notice This library contains custom errors used throughout the Cosmic Game contracts
-/// @dev Use these errors to provide more detailed and gas-efficient error handling
-/// todo-1 Maybe rename this without the word "Game" and with the word "Signature".
+/// @title Custom errors.
+/// @author Cosmic Signature Development Team.
+/// @notice This library contains custom errors used throughout the Cosmic Signature contracts.
+/// @dev Use these errors to provide more detailed and gas-efficient error handling.
 library CosmicGameErrors {
 	// #region Common Errors
 

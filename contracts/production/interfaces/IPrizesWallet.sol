@@ -6,7 +6,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
 
 /// @title A wallet to hold the Cosmic Signature Game prizes and donations.
-/// @author Cosmic Signature Game Development Team.
+/// @author Cosmic Signature Development Team.
 /// @notice A contract implementing this interface supports depositing ETH, donating ERC-20 tokens and ERC-721 NFTs,
 /// and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 /// @dev It's OK if the same NFT will be donated and claimed multiple times.

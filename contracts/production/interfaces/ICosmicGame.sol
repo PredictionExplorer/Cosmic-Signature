@@ -12,9 +12,9 @@ import { ISpecialPrizes } from "./ISpecialPrizes.sol";
 import { IMainPrize } from "./IMainPrize.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
 
-/// @title Cosmic Game Implementation
-/// @author Cosmic Signature Game Development Team.
-/// @notice A contract implementing this interface implements the main functionality of the Cosmic Game
+/// @title Cosmic Signature Game.
+/// @author Cosmic Signature Development Team.
+/// @notice A contract implementing this interface implements the main functionality of the Cosmic Signature Game.
 //interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IMainPrize, INftDonations, IETHDonations {
 interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics, IBidding, IMainPrize, INftDonations, IETHDonations, ISpecialPrizes {
 

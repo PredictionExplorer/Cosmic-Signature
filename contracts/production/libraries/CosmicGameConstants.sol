@@ -4,10 +4,10 @@ pragma solidity 0.8.27;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-/// @title Constants and structures for Cosmic Game
-/// @notice Default values and types used across the Cosmic Game ecosystem
-/// @dev These constants are used for initial state variables but may be updated later
-/// todo-1 Maybe rename this without the word "Game" and with the word "Signature".
+/// @title Constants and structures.
+/// @author Cosmic Signature Development Team.
+/// @notice Default values and types used across the Cosmic Signature ecosystem.
+/// @dev These constants are used for initial state variables but may be updated later.
 library CosmicGameConstants {
 	/// @notice Represents one million. Useful for calculations involving millions
 	uint256 public constant MILLION = 1e6;

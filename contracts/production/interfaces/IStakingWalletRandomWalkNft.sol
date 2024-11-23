@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
 /// @title Staking wallet for RandomWalk NFTs.
-/// @author Cosmic Signature Game Development Team.
+/// @author Cosmic Signature Development Team.
 /// @notice A contract implementing this interface allows users to stake their RandomWalk NFTs and win prizes.
 /// Supports RandomWalk NFT staking and unstaking, as well as random staker selection.
 interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
