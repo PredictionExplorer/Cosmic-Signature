@@ -18,7 +18,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @param lastBidderAddress The address of the bidder who placed this bid.
 	/// @param roundNum The current bidding round number.
 	/// @param bidPrice The price of the bid
-	/// @param randomWalkNFTId The ID of the RandomWalk NFT used (if any)
+	/// @param randomWalkNftId The ID of the RandomWalk NFT used (if any)
 	/// @param numCSTTokens The number of CST tokens used (if any)
 	/// @param prizeTime The time when the prize can be claimed
 	/// @param message An optional message from the bidder
@@ -27,7 +27,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 		address indexed lastBidderAddress,
 		uint256 indexed roundNum,
 		int256 bidPrice,
-		int256 randomWalkNFTId, // todo-1 Should this be `indexed`?
+		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
 		int256 numCSTTokens,
 		uint256 prizeTime,
 		string message

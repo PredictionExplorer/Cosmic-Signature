@@ -16,7 +16,7 @@ describe("Events2", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -29,7 +29,7 @@ describe("Events2", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -41,11 +41,11 @@ describe("Events2", function () {
 		name: "BidParams",
 		components: [
 			{ name: "message", type: "string" },
-			{ name: "randomWalkNFTId", type: "int256" },
+			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
 	it("Number of Raffle events match the configuration", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 
@@ -53,16 +53,16 @@ describe("Events2", function () {
 		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
 
 		// we need to mint RWalk tokens for all bidders that participate to avoid missing events
-		let tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr1).mint({ value: tokenPrice });
-		tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr2).mint({ value: tokenPrice });
-		tokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr3).mint({ value: tokenPrice });
+		let tokenPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr1).mint({ value: tokenPrice });
+		tokenPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr2).mint({ value: tokenPrice });
+		tokenPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr3).mint({ value: tokenPrice });
 
 		// we need to create CosmicToken holders prior to our test
 		let p = await cosmicGameProxy.getBidPrice();
-		let bidParams = { message: "", randomWalkNFTId: -1 };
+		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: p });
 		let ptime = await cosmicGameProxy.timeUntilPrize();
@@ -77,31 +77,31 @@ describe("Events2", function () {
 			await cosmicSignature.connect(owner_signer).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
 			await stakingWalletCosmicSignatureNft.connect(owner_signer).stake(i);
 		}
-		ts = await randomWalkNFT.totalSupply();
+		ts = await randomWalkNft.totalSupply();
 		for (let i = 0; i<Number(ts); i++) {
-			let ownr = await randomWalkNFT.ownerOf(i)
+			let ownr = await randomWalkNft.ownerOf(i)
 			let owner_signer = await hre.ethers.getSigner(ownr);
-			await randomWalkNFT.connect(owner_signer).setApprovalForAll(await stakingWalletRandomWalkNft.getAddress(), true);
+			await randomWalkNft.connect(owner_signer).setApprovalForAll(await stakingWalletRandomWalkNft.getAddress(), true);
 			await stakingWalletRandomWalkNft.connect(owner_signer).stake(i);
 		}
 
 
 		// test begins here
-		let rwalkTokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr1).mint({ value: rwalkTokenPrice });
-		rwalkTokenPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr2).mint({ value: rwalkTokenPrice });
+		let rwalkTokenPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr1).mint({ value: rwalkTokenPrice });
+		rwalkTokenPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr2).mint({ value: rwalkTokenPrice });
 		let tx, receipt, log, parsed_log, bidPrice;
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 
@@ -112,11 +112,11 @@ describe("Events2", function () {
 		tx = await cosmicGameProxy.connect(addr3).claimPrize();
 		receipt = await tx.wait();
 
-		let num_raffle_nft_winners_bidding = await cosmicGameProxy.numRaffleNFTWinnersBidding();
-		let num_raffle_nft_winners_staking_rwalk = await cosmicGameProxy.numRaffleNFTWinnersStakingRWalk();
+		let num_raffle_nft_winners_bidding = await cosmicGameProxy.numRaffleNftWinnersBidding();
+		let num_raffle_nft_winners_staking_rwalk = await cosmicGameProxy.numRaffleNftWinnersStakingRWalk();
 		let total_nft_winners = Number(num_raffle_nft_winners_bidding) + 
 								Number(num_raffle_nft_winners_staking_rwalk);
-		let topic_sig = cosmicGameProxy.interface.getEvent("RaffleNFTWinnerEvent").topicHash;
+		let topic_sig = cosmicGameProxy.interface.getEvent("RaffleNftWinnerEvent").topicHash;
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(total_nft_winners).to.equal(deposit_logs.length);
 

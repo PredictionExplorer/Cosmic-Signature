@@ -8,7 +8,7 @@ This new business logic contract allows bidding with no upper limit. After bid i
 
     struct BidParams {
         string message;
-        int256 randomWalkNFTId;
+        int256 randomWalkNftId;
         bool openBid;       // true if the value sent with the TX is the amount of bid
     }   
 
@@ -16,7 +16,7 @@ The bidder now sends transaction for any amount in `msg.value`, that is multiple
 
 The call to `bid()` function must now be done in a new way:
 
-    let bidParams = {message: 'bid test', randomWalkNFTId: -1, openBid: true};
+    let bidParams = {message: 'bid test', randomWalkNftId: -1, openBid: true};
     let params = hre.ethers.utils.defaultAbiCoder.encode([bidParamsEncoding],[bidParams]);
     let bidPrice = await cosmicGameProxy.getBidPrice();
     await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice.mul(multiplier), gasLimit: 30000000 }); 

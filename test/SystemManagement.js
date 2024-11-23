@@ -25,7 +25,7 @@ describe("SystemManagement", function () {
 		name: "BidParams",
 		components: [
 			{ name: "message", type: "string" },
-			{ name: "randomWalkNFTId", type: "int256" },
+			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
 	it("In the inactive mode, setters function correctly", async function () {
@@ -156,11 +156,11 @@ describe("SystemManagement", function () {
 		await cosmicGameProxy.setNumRaffleETHWinnersBidding(99n);
 		expect(await cosmicGameProxy.numRaffleETHWinnersBidding()).to.equal(99n);
 
-		await cosmicGameProxy.setNumRaffleNFTWinnersBidding(99n);
-		expect(await cosmicGameProxy.numRaffleNFTWinnersBidding()).to.equal(99n);
+		await cosmicGameProxy.setNumRaffleNftWinnersBidding(99n);
+		expect(await cosmicGameProxy.numRaffleNftWinnersBidding()).to.equal(99n);
 
-		await cosmicGameProxy.setNumRaffleNFTWinnersStakingRWalk(99n);
-		expect(await cosmicGameProxy.numRaffleNFTWinnersStakingRWalk()).to.equal(99n);
+		await cosmicGameProxy.setNumRaffleNftWinnersStakingRWalk(99n);
+		expect(await cosmicGameProxy.numRaffleNftWinnersStakingRWalk()).to.equal(99n);
 
 		await cosmicGameProxy.setActivationTime(123n);
 		expect(await cosmicGameProxy.activationTime()).to.equal(123n);
@@ -214,21 +214,21 @@ describe("SystemManagement", function () {
 		await expect(cosmicGameProxy.setTimeoutDurationToClaimMainPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setErc20RewardMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicGameProxy.setNumRaffleETHWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicGameProxy.setNumRaffleNFTWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicGameProxy.setNumRaffleNFTWinnersStakingRWalk(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicGameProxy.setNumRaffleNftWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicGameProxy.setNumRaffleNftWinnersStakingRWalk(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		// await cosmicGameProxy.prepareMaintenance();
 	});
 	it("In the inactive mode, active mode methods are not available", async function () {
 		const isRuntimeMode_ = false;
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1,] = signers;
-		const {cosmicGameProxy, randomWalkNFT,} =
+		const {cosmicGameProxy, randomWalkNft,} =
 			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
 		expect(await cosmicGameProxy.timeUntilActivation()).to.be.greaterThan(0n);
 
-		const bidParams = { message: "", randomWalkNFTId: -1 };
+		const bidParams = { message: "", randomWalkNftId: -1 };
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		const bidPrice = await cosmicGameProxy.getBidPrice();
 		await expect(cosmicGameProxy.bid(params, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
@@ -244,11 +244,11 @@ describe("SystemManagement", function () {
 		await expect(cosmicGameProxy.donate({value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicGameProxy.donateWithInfo("{}",{value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 
-		const mintPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
-		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		const mintPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
+		await randomWalkNft.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
 		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await expect(cosmicGameProxy.connect(addr1).donateNft(await randomWalkNFT.getAddress(), 0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicGameProxy.connect(addr1).donateNft(await randomWalkNft.getAddress(), 0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 	});
 	it('The active and inactive modes function correctly', async function () {
 		const {signers, cosmicGameProxy,} = await loadFixture(deployCosmic);
@@ -256,7 +256,7 @@ describe("SystemManagement", function () {
 		// let cosmicGameAddr = await cosmicGameProxy.getAddress();
 		// let ownableErr = cosmicGameProxy.interface.getError("OwnableUnauthorizedAccount");
 
-		const bidParams = { message: "", randomWalkNFTId: -1 };
+		const bidParams = { message: "", randomWalkNftId: -1 };
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 
 		// let systemModeCode_ = await cosmicGameProxy.systemMode();
@@ -369,9 +369,9 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicGameProxy.connect(addr1).setNumRaffleETHWinnersBidding(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setNumRaffleNFTWinnersBidding(1n))
+		await expect(cosmicGameProxy.connect(addr1).setNumRaffleNftWinnersBidding(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicGameProxy.connect(addr1).setNumRaffleNFTWinnersStakingRWalk(1n))
+		await expect(cosmicGameProxy.connect(addr1).setNumRaffleNftWinnersStakingRWalk(1n))
 			.to.be.revertedWithCustomError(cosmicGameProxy, "OwnableUnauthorizedAccount");
 
 		await expect(charityWallet.connect(addr1).setCharity(addr1.address))

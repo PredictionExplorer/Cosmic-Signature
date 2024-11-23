@@ -263,18 +263,18 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		}
 
 		// Distribute NFT prizes to bidders
-		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
+		for (uint256 i = 0; i < numRaffleNftWinnersBidding; i++) {
 			_updateRaffleEntropy();
 			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
 			uint256 nftId = nft.mint(raffleWinnerAddress_, roundNum);
-			emit RaffleNFTWinnerEvent(raffleWinnerAddress_, roundNum, nftId, i, false, false);
+			emit RaffleNftWinnerEvent(raffleWinnerAddress_, roundNum, nftId, i, false, false);
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
 		// uint256 numStakedTokensRWalk = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
-			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
+			for (uint256 i = 0; i < numRaffleNftWinnersStakingRWalk; i++) {
 				_updateRaffleEntropy();
 				address luckyStakerAddress_ = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
 
@@ -283,7 +283,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 				}
 
 				uint256 nftId = nft.mint(luckyStakerAddress_, roundNum);
-				emit RaffleNFTWinnerEvent(luckyStakerAddress_, roundNum, nftId, i, true, true);
+				emit RaffleNftWinnerEvent(luckyStakerAddress_, roundNum, nftId, i, true, true);
 			}
 		}
 	}

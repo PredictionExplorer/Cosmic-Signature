@@ -136,8 +136,8 @@ contract CosmicGame is
 
 		erc20RewardMultiplier = CosmicGameConstants.ERC20_REWARD_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
-		numRaffleNFTWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
-		numRaffleNFTWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
+		numRaffleNftWinnersBidding = CosmicGameConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
+		numRaffleNftWinnersStakingRWalk = CosmicGameConstants.INITIAL_STAKING_WINNERS_RWALK;
 
 		// Issue. It appears that on upgrade this will be unnecessary.
 		// raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
@@ -179,7 +179,7 @@ contract CosmicGame is
 		BidParams memory defaultParams;
 		// todo-1 Is this assignment redundant? Replace it with an `assert`?
 		defaultParams.message = "";
-		defaultParams.randomWalkNFTId = -1;
+		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
 		bid(param_data);
 	}

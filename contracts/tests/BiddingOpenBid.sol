@@ -33,7 +33,7 @@ abstract contract BiddingOpenBid is
 		/// @notice The ID of the RandomWalk NFT to be used for bidding.
 		/// Set to -1 if no RandomWalk NFT is to be used.
 		/// Comment-202412036 applies.
-		int256 randomWalkNFTId;
+		int256 randomWalkNftId;
 
 		/// @notice The flag used to mark a bid as "bid with open price" (any price user wants).
 		/// `bidPrice` will be updated to `msg.value` and stay at that level.
@@ -68,7 +68,7 @@ abstract contract BiddingOpenBid is
 		// CosmicGameConstants.BidType bidType;
 		uint256 newBidPrice = getBidPrice();
 		uint256 paidBidPrice;
-		if (params.randomWalkNFTId == -1) {
+		if (params.randomWalkNftId == -1) {
 			if (params.openBid) {
 				uint256 minPriceOpenBid = newBidPrice * timesBidPrice;
 
@@ -104,24 +104,24 @@ abstract contract BiddingOpenBid is
 
 			bidPrice = newBidPrice;
 			require(
-				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
-				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
-				CosmicGameErrors.UsedRandomWalkNFT(
+				// !usedRandomWalkNfts[uint256(params.randomWalkNftId)],
+				usedRandomWalkNfts[uint256(params.randomWalkNftId)] == 0,
+				CosmicGameErrors.UsedRandomWalkNft(
 					"This RandomWalk NFT has already been used for bidding.",
-					uint256(params.randomWalkNFTId)
+					uint256(params.randomWalkNftId)
 				)
 			);
 			require(
-				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
+				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNftId)),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
-					uint256(params.randomWalkNFTId),
+					uint256(params.randomWalkNftId),
 					msg.sender
 				)
 			);
-			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
-			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
+			// usedRandomWalkNfts[uint256(params.randomWalkNftId)] = true;
+			usedRandomWalkNfts[uint256(params.randomWalkNftId)] = 1;
 			// bidType = CosmicGameConstants.BidType.RandomWalk;
 		}
 
@@ -133,7 +133,7 @@ abstract contract BiddingOpenBid is
 			/*lastBidderAddress*/ msg.sender,
 			roundNum,
 			int256(paidBidPrice),
-			params.randomWalkNFTId,
+			params.randomWalkNftId,
 			-1,
 			prizeTime,
 			params.message
@@ -341,6 +341,6 @@ abstract contract BiddingOpenBid is
 
 	// function wasRandomWalkNftUsed(uint256 nftId_) public view override returns (bool) {
 	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNFTs[nftId_];
+	// 	return usedRandomWalkNfts[nftId_];
 	// }
 }

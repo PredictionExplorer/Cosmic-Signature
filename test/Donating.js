@@ -21,7 +21,7 @@ describe("Donations", function () {
 			cosmicDAO,
 			charityWallet,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -34,7 +34,7 @@ describe("Donations", function () {
 			cosmicDAO,
 			charityWallet,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -46,12 +46,12 @@ describe("Donations", function () {
 		name: "BidParams",
 		components: [
 			{ name: "message", type: "string" },
-			{ name: "randomWalkNFTId", type: "int256" },
+			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
 	it("donateWithInfo() works as expected", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 		let donationAmount = hre.ethers.parseEther("10");
@@ -75,22 +75,22 @@ describe("Donations", function () {
 	// todo-1 and NFT donation without making a bid is now prohibited.
 	it("donateNft() without making a bid works", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
 
-		let mintPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(owner).mint({ value: mintPrice });
-		await randomWalkNFT.connect(owner).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		let mintPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(owner).mint({ value: mintPrice });
+		await randomWalkNft.connect(owner).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
 
-		await cosmicGameProxy.connect(owner).donateNft(await randomWalkNFT.getAddress(),0);
+		await cosmicGameProxy.connect(owner).donateNft(await randomWalkNft.getAddress(),0);
 		let details = await cosmicGameProxy.getDonatedNftDetails(0);
-		expect(details[0]).to.equal(await randomWalkNFT.getAddress());
+		expect(details[0]).to.equal(await randomWalkNft.getAddress());
 		await expect(cosmicGameProxy.getDonatedNftDetails(1)).to.be.revertedWith("Invalid donated NFT index.");
 	});
 
 	it("Should not be possible to donate 0 value", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
@@ -99,7 +99,7 @@ describe("Donations", function () {
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("claimManyDonatedNfts() works properly", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 
@@ -107,15 +107,15 @@ describe("Donations", function () {
 		cosmicGameProxy.setDelayDurationBeforeNextRound(0);
 
 		let bidPrice = await cosmicGameProxy.getBidPrice();
-		let mintPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
-		// await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
-		await randomWalkNFT.connect(addr1).setApprovalForAll(await cosmicGameProxy.prizesWallet(), true);
-		let bidParams = { message: "", randomWalkNFTId: -1 };
+		let mintPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
+		// await randomWalkNft.connect(addr1).setApprovalForAll(await cosmicGameProxy.getAddress(), true);
+		await randomWalkNft.connect(addr1).setApprovalForAll(await cosmicGameProxy.prizesWallet(), true);
+		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicGameProxy
 			.connect(addr1)
-			.bidAndDonateNft(params, await randomWalkNFT.getAddress(), 0, { value: bidPrice });
+			.bidAndDonateNft(params, await randomWalkNft.getAddress(), 0, { value: bidPrice });
 		let receipt = await tx.wait();
 		let topic_sig = cosmicGameProxy.interface.getEvent("NftDonationEvent").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -124,11 +124,11 @@ describe("Donations", function () {
 		expect(parsed_log.args.nftId).to.equal(0);
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		mintPrice = await randomWalkNFT.getMintPrice();
-		await randomWalkNFT.connect(addr1).mint({ value: mintPrice });
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		mintPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await cosmicGameProxy.connect(addr1).bidAndDonateNft(params, await randomWalkNFT.getAddress(), 1, { value: bidPrice });
+		await cosmicGameProxy.connect(addr1).bidAndDonateNft(params, await randomWalkNft.getAddress(), 1, { value: bidPrice });
 
 		let prizeTime = await cosmicGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+100]);
@@ -143,14 +143,14 @@ describe("Donations", function () {
 		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
 		expect(parsed_log.args.nftId).to.equal(0);
 		expect(parsed_log.args.beneficiaryAddress).to.equal(addr1.address);
-		expect(parsed_log.args.nftAddress).to.equal(await randomWalkNFT.getAddress());
+		expect(parsed_log.args.nftAddress).to.equal(await randomWalkNft.getAddress());
 		expect(parsed_log.args.roundNum).to.equal(0);
 		expect(parsed_log.args.index).to.equal(0);
 
 		parsed_log = cosmicGameProxy.interface.parseLog(event_logs[1]);
 		expect(parsed_log.args.nftId).to.equal(1);
 		expect(parsed_log.args.beneficiaryAddress).to.equal(addr1.address);
-		expect(parsed_log.args.nftAddress).to.equal(await randomWalkNFT.getAddress());
+		expect(parsed_log.args.nftAddress).to.equal(await randomWalkNft.getAddress());
 		expect(parsed_log.args.roundNum).to.equal(0);
 		expect(parsed_log.args.index).to.equal(1);
 	});

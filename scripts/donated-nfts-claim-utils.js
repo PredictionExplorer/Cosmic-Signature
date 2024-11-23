@@ -12,9 +12,9 @@ const { getCosmicGameProxyContract } = require("./helper.js");
 
 async function get_unclaimed_donated_nfts(cosmicGameProxy) {
 	let numDonatedNfts = await cosmicGameProxy.numDonatedNfts();
-	let numNFTs = numDonatedNfts.toNumber();
+	const numNfts_ = numDonatedNfts.toNumber();
 	let prizeData = [];
-	for (let i = 0; i < numNFTs; i++) {
+	for (let i = 0; i < numNfts_; i++) {
 		let record_orig = await cosmicGameProxy.donatedNfts(i);
 		let record = Object.assign({}, record_orig);
 		Object.defineProperty(record, "index", { value: i, writable: true });
@@ -34,16 +34,16 @@ async function get_unclaimed_donated_nfts(cosmicGameProxy) {
 }
 async function list_donated_nfts(nfts) {
 	//console.log(nfts);
-	let numElts = nfts.length;
-	for (let i = 0; i < numElts; i++) {
-		let roundNFTs = nfts[i];
+	const numNfts_ = nfts.length;
+	for (let i = 0; i < numNfts_; i++) {
+		const roundNfts_ = nfts[i];
 		console.log("Round " + i);
-		if (typeof roundNFTs === "undefined" || roundNFTs.length == 0) {
+		if (typeof roundNfts_ === "undefined" || roundNfts_.length == 0) {
 			console.log("\t(no claimable tokens)");
 			continue;
 		}
-		for (let j = 0; j < roundNFTs.length; j++) {
-			let record = roundNFTs[j];
+		for (let j = 0; j < roundNfts_.length; j++) {
+			let record = roundNfts_[j];
 			console.log(
 				"\t" +
 					record.nftAddress.toString() +

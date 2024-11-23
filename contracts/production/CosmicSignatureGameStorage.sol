@@ -194,8 +194,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public tokenReward;
 
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
-	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNFTs;
-	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNFTs;
+	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNfts;
+	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
 
 	// @notice The address of the account that placed the last bid.
 	address public lastBidderAddress;
@@ -306,10 +306,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public numRaffleETHWinnersBidding;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public numRaffleNFTWinnersBidding;
+	uint256 public numRaffleNftWinnersBidding;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public numRaffleNFTWinnersStakingRWalk;
+	uint256 public numRaffleNftWinnersStakingRWalk;
 
 	/// @dev todo-1 The type of this and other similar variables should be `uint256`.
 	bytes32 public raffleEntropy;

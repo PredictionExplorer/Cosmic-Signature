@@ -291,13 +291,13 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
 	}
 
-	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external override onlyOwner onlyInactive {
-		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
-		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
+	function setNumRaffleNftWinnersBidding(uint256 newNumRaffleNftWinnersBidding) external override onlyOwner onlyInactive {
+		numRaffleNftWinnersBidding = newNumRaffleNftWinnersBidding;
+		emit NumRaffleNftWinnersBiddingChanged(numRaffleNftWinnersBidding);
 	}
 
-	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external override onlyOwner onlyInactive {
-		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
-		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
+	function setNumRaffleNftWinnersStakingRWalk(uint256 newNumRaffleNftWinnersStakingRWalk) external override onlyOwner onlyInactive {
+		numRaffleNftWinnersStakingRWalk = newNumRaffleNftWinnersStakingRWalk;
+		emit NumRaffleNftWinnersStakingRWalkChanged(numRaffleNftWinnersStakingRWalk);
 	}
 }

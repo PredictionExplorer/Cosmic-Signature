@@ -36,7 +36,7 @@ async function claim_prize(testingAcct, cosmicGameProxy) {
 
 	let cosmicSigAddr = await cosmicGameProxy.nft();
 	let cosmicSignature = await hre.ethers.getContractAt("CosmicSignature", cosmicSigAddr);
-	topic_sig = cosmicGameProxy.interface.getEventTopic("RaffleNFTWinnerEvent");
+	topic_sig = cosmicGameProxy.interface.getEventTopic("RaffleNftWinnerEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	for (let i = 0; i < event_logs.length; i++) {
 		let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[i]);

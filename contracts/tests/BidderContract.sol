@@ -31,7 +31,7 @@ contract BidderContract is IERC721Receiver {
 		uint256 price = cosmicGame.getBidPrice();
 		CosmicGame.BidParams memory defaultParams;
 		defaultParams.message = "contract bid";
-		defaultParams.randomWalkNFTId = -1;
+		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
 		cosmicGame.bid{ value: price }(param_data);
@@ -39,7 +39,7 @@ contract BidderContract is IERC721Receiver {
 	function doBid2() external payable {
 		CosmicGame.BidParams memory defaultParams;
 		defaultParams.message = "contract bid";
-		defaultParams.randomWalkNFTId = -1;
+		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
 		cosmicGame.bid{ value: msg.value }(param_data);
@@ -48,7 +48,7 @@ contract BidderContract is IERC721Receiver {
 		uint256 price = cosmicGame.getBidPrice();
 		CosmicGame.BidParams memory params;
 		params.message = "contract bid rwalk";
-		params.randomWalkNFTId = nftId;
+		params.randomWalkNftId = nftId;
 		bytes memory param_data;
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: price }(param_data);
@@ -59,7 +59,7 @@ contract BidderContract is IERC721Receiver {
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
 		CosmicGame.BidParams memory params;
 		params.message = "contract bid rwalk";
-		params.randomWalkNFTId = nftId;
+		params.randomWalkNftId = nftId;
 		bytes memory param_data;
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: msg.value }(param_data);
@@ -73,7 +73,7 @@ contract BidderContract is IERC721Receiver {
 	// 	uint256 price = cosmicGame.getBidPrice();
 	// 	CosmicGame.BidParams memory params;
 	// 	params.message = "contract bid with donation";
-	// 	params.randomWalkNFTId = -1;
+	// 	params.randomWalkNftId = -1;
 	// 	bytes memory param_data;
 	// 	param_data = abi.encode(params);
 	// 	cosmicGame.bidAndDonateNft{ value: price }(param_data, nftAddress_, nftId_);
@@ -136,7 +136,7 @@ contract BidderContract is IERC721Receiver {
 		uint256 price = msg.value;
 		CosmicGame.BidParams memory defaultParams;
 		defaultParams.message = "contract bid";
-		defaultParams.randomWalkNFTId = -1;
+		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
 		blockDeposits = true;
@@ -169,7 +169,7 @@ contract BidCNonRecv {
 		uint256 price = cosmicGame.getBidPrice();
 		CosmicGame.BidParams memory params;
 		params.message = "non-erc721 receiver bid";
-		params.randomWalkNFTId = -1;
+		params.randomWalkNftId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(params);
 		cosmicGame.bid{ value: price }(param_data);

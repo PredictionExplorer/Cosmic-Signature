@@ -37,7 +37,7 @@ abstract contract Bidding is
 		/// @notice The ID of the RandomWalk NFT to be used for bidding.
 		/// Set to -1 if no RandomWalk NFT is to be used.
 		/// Comment-202412036 applies.
-		int256 randomWalkNFTId;
+		int256 randomWalkNftId;
 	}
 
 	// #endregion
@@ -53,7 +53,7 @@ abstract contract Bidding is
 		// CosmicGameConstants.BidType bidType;
 		uint256 newBidPrice = getBidPrice();
 		uint256 paidBidPrice =
-			(params.randomWalkNFTId == -1) ?
+			(params.randomWalkNftId == -1) ?
 			newBidPrice :
 			(newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR);
 
@@ -65,32 +65,32 @@ abstract contract Bidding is
 			CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
 		);
 
-		if (params.randomWalkNFTId == -1) {
+		if (params.randomWalkNftId == -1) {
 			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
 		} else {
 			require(
-				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
-				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
-				CosmicGameErrors.UsedRandomWalkNFT(
+				// !usedRandomWalkNfts[uint256(params.randomWalkNftId)],
+				usedRandomWalkNfts[uint256(params.randomWalkNftId)] == 0,
+				CosmicGameErrors.UsedRandomWalkNft(
 					// todo-1 Nick wrote about reducing contract bytecode size:
 					// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
 					// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
 					// todo-1 I think we should go for it
 					"This RandomWalk NFT has already been used for bidding.",
-					uint256(params.randomWalkNFTId)
+					uint256(params.randomWalkNftId)
 				)
 			);
 			require(
-				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
+				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNftId)),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
-					uint256(params.randomWalkNFTId),
+					uint256(params.randomWalkNftId),
 					msg.sender
 				)
 			);
-			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
-			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
+			// usedRandomWalkNfts[uint256(params.randomWalkNftId)] = true;
+			usedRandomWalkNfts[uint256(params.randomWalkNftId)] = 1;
 			// bidType = CosmicGameConstants.BidType.RandomWalk;
 		}
 		bidPrice = newBidPrice;
@@ -103,7 +103,7 @@ abstract contract Bidding is
 			/*lastBidderAddress*/ msg.sender,
 			roundNum,
 			int256(paidBidPrice),
-			params.randomWalkNFTId,
+			params.randomWalkNftId,
 			-1,
 			prizeTime,
 			params.message
@@ -324,8 +324,8 @@ abstract contract Bidding is
 			)
 		);
 		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
-		address bidderAddr = raffleParticipants[roundNum_][offset];
-		return bidderAddr;
+		address bidderAddress_ = raffleParticipants[roundNum_][offset];
+		return bidderAddress_;
 	}
 
 	function getBidderAtPosition(uint256 position) public view override returns (address) {
@@ -339,6 +339,6 @@ abstract contract Bidding is
 
 	// function wasRandomWalkNftUsed(uint256 nftId_) public view override returns (bool) {
 	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNFTs[nftId_];
+	// 	return usedRandomWalkNfts[nftId_];
 	// }
 }

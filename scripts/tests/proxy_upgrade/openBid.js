@@ -5,7 +5,7 @@ const bidParamsEncoding = {
 	name: "BidParams",
 	components: [
 		{ name: "message", type: "string" },
-		{ name: "randomWalkNFTId", type: "int256" },
+		{ name: "randomWalkNftId", type: "int256" },
 		{ name: "openBid", type: "bool"},
 	],
 };
@@ -31,7 +31,7 @@ async function main() {
 	let cosmicGameProxy = await getCosmicGameProxyContract("CosmicGameOpenBid");
 
 	let multiplier = await cosmicGameProxy.timesBidPrice()
-	let bidParams = { message: "open bid", randomWalkNFTId: -1, openBid: true };
+	let bidParams = { message: "open bid", randomWalkNftId: -1, openBid: true };
 	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicGameProxy.getBidPrice();
 	console.log("bidPrice before: "+bidPrice);

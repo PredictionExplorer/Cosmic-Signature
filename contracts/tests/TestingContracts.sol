@@ -277,7 +277,7 @@ contract MaliciousNft2 is ERC721 {
 		// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
 		CosmicGame.BidParams memory defaultParams;
 		defaultParams.message = "";
-		defaultParams.randomWalkNFTId = -1;
+		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data;
 		param_data = abi.encode(defaultParams);
 		// the following call should revert

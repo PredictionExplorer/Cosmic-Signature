@@ -21,7 +21,7 @@ describe("BidStatistics", function () {
 			cosmicDAO,
 			charityWallet,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -34,7 +34,7 @@ describe("BidStatistics", function () {
 			cosmicDAO,
 			charityWallet,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -46,7 +46,7 @@ describe("BidStatistics", function () {
 		name: "BidParams",
 		components: [
 			{ name: "message", type: "string" },
-			{ name: "randomWalkNFTId", type: "int256" },
+			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
 	const InvalidBidderQueryRoundNumDef = {
@@ -60,7 +60,7 @@ describe("BidStatistics", function () {
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
@@ -69,7 +69,7 @@ describe("BidStatistics", function () {
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { message: "", randomWalkNFTId: -1 };
+		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
@@ -99,7 +99,7 @@ describe("BidStatistics", function () {
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 
 		// test case description:
@@ -113,7 +113,7 @@ describe("BidStatistics", function () {
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGameProxy.donate({ value: donationAmount });
-		let bidParams = { message: "", randomWalkNFTId: -1 };
+		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGameProxy.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800000000]);
@@ -188,7 +188,7 @@ describe("BidStatistics", function () {
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicGame.donate({ value: donationAmount });
 
-		let bidParams = { message: "", randomWalkNFTId: -1 };
+		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicGame.getBidPrice();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800080000]);

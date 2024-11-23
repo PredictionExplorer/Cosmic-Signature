@@ -21,7 +21,7 @@ describe("CharityWallet", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
@@ -32,7 +32,7 @@ describe("CharityWallet", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWallet,
 			marketingWallet,
 		};
@@ -42,11 +42,11 @@ describe("CharityWallet", function () {
 		name: "BidParams",
 		components: [
 			{ name: "message", type: "string" },
-			{ name: "randomWalkNFTId", type: "int256" },
+			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
 	it("CharityWallet is sending the right amount", async function () {
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let amountSent = hre.ethers.parseUnits("9",18);
@@ -67,7 +67,7 @@ describe("CharityWallet", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWallet,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
@@ -97,7 +97,7 @@ describe("CharityWallet", function () {
 				await hre.ethers.provider.send("evm_mine");
 			}
 		};
-		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNFT } =
+		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
@@ -107,19 +107,19 @@ describe("CharityWallet", function () {
 		await cosmicGameProxy.donate({ value: donationAmount });
 
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		let bidParams = { message: "", randomWalkNFTId: -1 };
+		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(owner).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicGameProxy.getBidPrice();
-		bidParams = { message: "", randomWalkNFTId: -1 };
+		bidParams = { message: "", randomWalkNftId: -1 };
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 

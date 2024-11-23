@@ -154,7 +154,7 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 
 	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external;
 
-	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external;
+	function setNumRaffleNftWinnersBidding(uint256 newNumRaffleNftWinnersBidding) external;
 
-	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external;
+	function setNumRaffleNftWinnersStakingRWalk(uint256 newNumRaffleNftWinnersStakingRWalk) external;
 }

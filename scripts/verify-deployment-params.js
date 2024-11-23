@@ -20,6 +20,7 @@ async function main() {
 	console.log("owner of charity wallet contract = " + charityContractOwner);
 	console.log("charity donations receiver = " + charityDonationsReceiver);
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

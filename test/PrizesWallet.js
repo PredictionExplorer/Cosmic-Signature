@@ -19,7 +19,7 @@ describe("PrizesWallet", function () {
 	// 	name: "BidParams",
 	// 	components: [
 	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNFTId", type: "int256" },
+	// 		{ name: "randomWalkNftId", type: "int256" },
 	// 	],
 	// };
 	it("depositEth works correctly", async function () {

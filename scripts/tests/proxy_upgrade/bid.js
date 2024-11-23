@@ -5,7 +5,7 @@ const bidParamsEncoding = {
 	name: "BidParams",
 	components: [
 		{ name: "message", type: "string" },
-		{ name: "randomWalkNFTId", type: "int256" },
+		{ name: "randomWalkNftId", type: "int256" },
 		{ name: "openBid", type: "bool"},
 	],
 };
@@ -30,7 +30,7 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGameProxy = await getCosmicGameProxyContract();
 	let bidPrice = await cosmicGameProxy.getBidPrice();
-	let bidParams = { message: "bid test", randomWalkNFTId: -1, openBid: false };
+	let bidParams = { message: "bid test", randomWalkNftId: -1, openBid: false };
 	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	await cosmicGameProxy.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
 }

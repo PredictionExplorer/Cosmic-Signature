@@ -119,15 +119,15 @@ const basicDeploymentAdvanced = async function (
 	await prizesWallet.waitForDeployment();
 	const prizesWalletAddr = await prizesWallet.getAddress();
 
-	let randomWalkNFT;
+	let randomWalkNft;
 	if (randomWalkNftAddr.length === 0) {
 		const RandomWalkNFT = await hre.ethers.getContractFactory("RandomWalkNFT");
-		randomWalkNFT = await RandomWalkNFT.connect(deployerAcct).deploy();
-		await randomWalkNFT.waitForDeployment();
-		randomWalkNftAddr = await randomWalkNFT.getAddress();
+		randomWalkNft = await RandomWalkNFT.connect(deployerAcct).deploy();
+		await randomWalkNft.waitForDeployment();
+		randomWalkNftAddr = await randomWalkNft.getAddress();
 	} else {
-		randomWalkNFT = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
-		if (await randomWalkNFT.getAddress() !== randomWalkNftAddr) {
+		randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+		if (await randomWalkNft.getAddress() !== randomWalkNftAddr) {
 			throw new Error("Error 202411196.");
 		}
 	}
@@ -180,7 +180,7 @@ const basicDeploymentAdvanced = async function (
 		cosmicDAO,
 		charityWallet,
 		prizesWallet,
-		randomWalkNFT,
+		randomWalkNft,
 		stakingWalletCosmicSignatureNft,
 		stakingWalletRandomWalkNft,
 		marketingWallet,

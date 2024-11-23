@@ -126,10 +126,10 @@ interface ISystemEvents {
 	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
 
 	/// @notice Emitted when the number of NFT raffle winners for bidding is changed
-	/// @param newNumRaffleNFTWinnersBidding The new number of NFT raffle winners
-	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
+	/// @param newNumRaffleNftWinnersBidding The new number of NFT raffle winners
+	event NumRaffleNftWinnersBiddingChanged(uint256 newNumRaffleNftWinnersBidding);
 
 	/// @notice Emitted when the number of NFT raffle winners for RWalk staking is changed
-	/// @param newNumRaffleNFTWinnersStakingRWalk The new number of NFT raffle winners for RWalk staking
-	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
+	/// @param newNumRaffleNftWinnersStakingRWalk The new number of NFT raffle winners for RWalk staking
+	event NumRaffleNftWinnersStakingRWalkChanged(uint256 newNumRaffleNftWinnersStakingRWalk);
 }

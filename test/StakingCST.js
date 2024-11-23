@@ -21,7 +21,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -34,7 +34,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -46,7 +46,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		name: "BidParams",
 		components: [
 			{ name: "message", type: "string" },
-			{ name: "randomWalkNFTId", type: "int256" },
+			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
 	it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft from arbitrary address", async function () {
@@ -57,7 +57,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -81,7 +81,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -118,7 +118,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -179,7 +179,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -227,7 +227,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -289,7 +289,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -355,7 +355,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -416,7 +416,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -482,7 +482,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -554,7 +554,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -645,7 +645,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft
 		} = await basicDeploymentAdvanced(
@@ -742,7 +742,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft
 	// 	} = await basicDeploymentAdvanced(
@@ -792,7 +792,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await hre.ethers.provider.send('evm_increaseTime', [6000]); // prepare for unstake
 	//
 	// 	const bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	const bidParams = { message: "", randomWalkNFTId: -1 };
+	// 	const bidParams = { message: "", randomWalkNftId: -1 };
 	// 	const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.bid(params, { value: bidPrice });
 	//
@@ -812,7 +812,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -840,7 +840,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -882,7 +882,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	);
 	//
 	// 	const bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	const bidParams = { message: "", randomWalkNFTId: -1 };
+	// 	const bidParams = { message: "", randomWalkNftId: -1 };
 	// 	const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.bid(params, { value: bidPrice });
 	//
@@ -938,7 +938,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -985,7 +985,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		}
 
 		const bidPrice = await cosmicGameProxy.getBidPrice();
-		const bidParams = { message: "", randomWalkNFTId: -1 };
+		const bidParams = { message: "", randomWalkNftId: -1 };
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicGameProxy.bid(params, { value: bidPrice });
 
@@ -1024,7 +1024,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,
@@ -1032,7 +1032,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	} = await loadFixture(deployCosmic);
 	//
 	// 	let bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	let bidParams = { message: "", randomWalkNFTId: -1 };
+	// 	let bidParams = { message: "", randomWalkNftId: -1 };
 	// 	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr1).bid(params, { value: bidPrice });
 	// 	let prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -1040,14 +1040,14 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await cosmicGameProxy.connect(addr1).claimPrize();
 	//
 	// 	bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	bidParams = { message: "", randomWalkNFTId: -1 };
+	// 	bidParams = { message: "", randomWalkNftId: -1 };
 	// 	params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr2).bid(params, { value: bidPrice });
 	// 	prizeTime = await cosmicGameProxy.timeUntilPrize();
 	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
 	// 	await cosmicGameProxy.connect(addr2).claimPrize();
 	// 	bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	bidParams = { message: "", randomWalkNFTId: -1 };
+	// 	bidParams = { message: "", randomWalkNftId: -1 };
 	// 	params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 	// 	prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -1070,7 +1070,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	// CS tokens) with stake operation executed. Now we are ready to test staking
 	//
 	// 	bidPrice = await cosmicGameProxy.getBidPrice();
-	// 	bidParams = { message: "", randomWalkNFTId: -1 };
+	// 	bidParams = { message: "", randomWalkNftId: -1 };
 	// 	params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	await cosmicGameProxy.connect(addr3).bid(params, { value: bidPrice });
 	// 	prizeTime = await cosmicGameProxy.timeUntilPrize();
@@ -1114,7 +1114,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -1135,7 +1135,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 		const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
 		const newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(
-			await randomWalkNFT.getAddress()
+			await randomWalkNft.getAddress()
 		);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 
@@ -1145,7 +1145,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
 			await newCosmicSignature.connect(signer).setApprovalForAll(await newStakingWalletCosmicSignatureNft.getAddress(), true);
-			await randomWalkNFT.connect(signer).setApprovalForAll(await newStakingWalletRandomWalkNft.getAddress(), true);
+			await randomWalkNft.connect(signer).setApprovalForAll(await newStakingWalletRandomWalkNft.getAddress(), true);
 		}
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
@@ -1158,8 +1158,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
 			for (let j = 0; j < numLoops; j++) {
-				const mintPrice = await randomWalkNFT.getMintPrice();
-				await randomWalkNFT.connect(signer).mint({ value: mintPrice });
+				const mintPrice = await randomWalkNft.getMintPrice();
+				await randomWalkNft.connect(signer).mint({ value: mintPrice });
 				const nftId = i * numLoops + j;
 				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId);
 			}
@@ -1202,7 +1202,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -1252,7 +1252,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			charityWallet,
 			cosmicDAO,
 			prizesWallet,
-			randomWalkNFT,
+			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
@@ -1319,7 +1319,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		charityWallet,
 	// 		cosmicDAO,
 	// 		prizesWallet,
-	// 		randomWalkNFT,
+	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
 	// 		marketingWallet,

@@ -38,7 +38,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param isStaker Whether the winner is a staker
 	/// @param isRWalk Whether the NFT is a RandomWalk NFT
 	/// @dev todo-1 Name this better. Remove the word "Event".
-	event RaffleNFTWinnerEvent(
+	event RaffleNftWinnerEvent(
 		address indexed winnerAddress,
 		uint256 indexed roundNum,
 		uint256 indexed nftId,

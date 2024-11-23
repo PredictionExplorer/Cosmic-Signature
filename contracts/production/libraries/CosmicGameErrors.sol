@@ -77,7 +77,7 @@ library CosmicGameErrors {
 	/// @notice Thrown when attempting to use an already used RandomWalk NFT
 	/// @param errStr Description of the error
 	/// @param randomWalkTokenId The ID of the RandomWalk NFT
-	error UsedRandomWalkNFT(string errStr, uint256 randomWalkTokenId);
+	error UsedRandomWalkNft(string errStr, uint256 randomWalkTokenId);
 
 	// /// @notice Thrown when the bidder has insufficient CST balance
 	// /// @param errStr Description of the error
