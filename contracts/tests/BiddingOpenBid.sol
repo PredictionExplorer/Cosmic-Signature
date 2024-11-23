@@ -15,7 +15,12 @@ import { SystemManagement } from "../production/SystemManagement.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 
-abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
+abstract contract BiddingOpenBid is
+	ReentrancyGuardUpgradeable,
+	CosmicSignatureGameStorage,
+	SystemManagement,
+	BidStatistics,
+	IBidding {
 	// #region Data Types
 
 	/// @title Parameters needed to place a bid.
@@ -64,9 +69,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		uint256 newBidPrice = getBidPrice();
 		uint256 paidBidPrice;
 		if (params.randomWalkNFTId == -1) {
-			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
 			if (params.openBid) {
-				uint256 minPriceOpenBid = timesBidPrice * newBidPrice;
+				uint256 minPriceOpenBid = newBidPrice * timesBidPrice;
+
+				// Comment-202412045 applies.
 				require(
 					msg.value >= minPriceOpenBid,
 					CosmicGameErrors.BidPrice("The value submitted for open bid too low.", minPriceOpenBid, msg.value)
@@ -75,13 +81,36 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 				// [Comment-202412035/]
 				paidBidPrice = msg.value;
 			} else {
-				paidBidPrice = newBidPrice;
+				// Comment-202412045 applies.
 				require(
-					msg.value >= paidBidPrice,
-					CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+					msg.value >= newBidPrice,
+					CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", newBidPrice, msg.value)
 				);
+				
+				paidBidPrice = newBidPrice;
 			}
+			bidPrice = paidBidPrice;
+			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
 		} else {
+			// Issue. Somewhere around here, we probably should evaluate `params.openBid` and act differently if it's `true`.
+
+			paidBidPrice = newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+
+			// Comment-202412045 applies.
+			require(
+				msg.value >= paidBidPrice,
+				CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+			);
+
+			bidPrice = newBidPrice;
+			require(
+				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
+				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
+				CosmicGameErrors.UsedRandomWalkNFT(
+					"This RandomWalk NFT has already been used for bidding.",
+					uint256(params.randomWalkNFTId)
+				)
+			);
 			require(
 				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
 				CosmicGameErrors.IncorrectERC721TokenOwner(
@@ -91,28 +120,10 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 					msg.sender
 				)
 			);
-			require(
-				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
-				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
-				CosmicGameErrors.UsedRandomWalkNFT(
-					"This RandomWalk NFT has already been used for bidding.",
-					uint256(params.randomWalkNFTId)
-				)
-			);
 			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
 			// bidType = CosmicGameConstants.BidType.RandomWalk;
-
-			// todo-3 Somewhere around here, we probably should evaluate `params.openBid`
-			// todo-3 and act differently if it's `true`.
-
-			paidBidPrice = newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-			require(
-				msg.value >= paidBidPrice,
-				CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
-			);
 		}
-		bidPrice = params.openBid ? msg.value : newBidPrice;
 
 		// Updating bidding statistics.
 		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
@@ -134,9 +145,9 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 			// Refunding excess ETH if the bidder sent more than required.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
-			(bool success, ) = msg.sender.call{ value: amountToSend }("");
+			(bool isSuccess, ) = msg.sender.call{ value: amountToSend }("");
 			require(
-				success,
+				isSuccess,
 				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 			);
 		}
@@ -147,13 +158,19 @@ abstract contract BiddingOpenBid is ReentrancyGuardUpgradeable, CosmicSignatureG
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 
-	function bidWithCst(string memory message_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(message_);
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
 	}
 
-	function _bidWithCst(string memory message_) internal /*onlyActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*onlyActive*/ {
 		// Comment-202409179 applies.
 		uint256 price = getCurrentBidPriceCST();
+
+		// Comment-202412045 applies.
+		require(
+			price <= priceMaxLimit_,
+			CosmicGameErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
+		);
 
 		// uint256 userBalance = token.balanceOf(msg.sender);
 

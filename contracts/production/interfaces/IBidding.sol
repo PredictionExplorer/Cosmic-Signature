@@ -46,8 +46,9 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 
 	/// @notice Places a bid using CST tokens.
 	/// @dev This function allows bidding with CST tokens, adjusting the CST price dynamically.
+	/// @param priceMaxLimit_ The maximum price the bidder is willing to pay.
 	/// @param message_ The bidder's message, if any.
-	function bidWithCst(string memory message_) external;
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// In our game, the price decreases linearly over the Dutch auction duration, and can become zero.

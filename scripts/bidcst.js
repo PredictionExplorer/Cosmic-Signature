@@ -20,7 +20,7 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicGameProxy = await getCosmicGameProxyContract();
-	await cosmicGameProxy.connect(testingAcct).bidWithCst("cst bid", { gasLimit: 30000000 });
+	await cosmicGameProxy.connect(testingAcct).bidWithCst(10n ** 30n, "cst bid", { gasLimit: 30000000 });
 }
 main()
 	.then(() => process.exit(0))

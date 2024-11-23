@@ -123,8 +123,8 @@ contract CosmicGameOpenBid is
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
-	function bidWithCstAndDonateToken(string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(message_);
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
@@ -134,8 +134,8 @@ contract CosmicGameOpenBid is
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
-	function bidWithCstAndDonateNft(string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(message_);
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}

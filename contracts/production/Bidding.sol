@@ -16,7 +16,12 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
-abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IBidding {
+abstract contract Bidding is
+	ReentrancyGuardUpgradeable,
+	CosmicSignatureGameStorage,
+	SystemManagement,
+	BidStatistics,
+	IBidding {
 	// #region Data Types
 
 	/// @title Parameters needed to place a bid.
@@ -47,20 +52,22 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		BidParams memory params = abi.decode(_data, (BidParams));
 		// CosmicGameConstants.BidType bidType;
 		uint256 newBidPrice = getBidPrice();
-		uint256 paidBidPrice;
+		uint256 paidBidPrice =
+			(params.randomWalkNFTId == -1) ?
+			newBidPrice :
+			(newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR);
+
+		// [Comment-202412045]
+		// Performing this validatin as early as possible to minimize gas fee in case the validation fails.
+		// [/Comment-202412045]
+		require(
+			msg.value >= paidBidPrice,
+			CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+		);
+
 		if (params.randomWalkNFTId == -1) {
 			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
-			paidBidPrice = newBidPrice;
 		} else {
-			require(
-				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
-				CosmicGameErrors.IncorrectERC721TokenOwner(
-					"You must be the owner of the RandomWalk NFT.",
-					address(randomWalkNft),
-					uint256(params.randomWalkNFTId),
-					msg.sender
-				)
-			);
 			require(
 				// !usedRandomWalkNFTs[uint256(params.randomWalkNFTId)],
 				usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] == 0,
@@ -73,15 +80,19 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 					uint256(params.randomWalkNFTId)
 				)
 			);
+			require(
+				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNFTId)),
+				CosmicGameErrors.IncorrectERC721TokenOwner(
+					"You must be the owner of the RandomWalk NFT.",
+					address(randomWalkNft),
+					uint256(params.randomWalkNFTId),
+					msg.sender
+				)
+			);
 			// usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = true;
 			usedRandomWalkNFTs[uint256(params.randomWalkNFTId)] = 1;
 			// bidType = CosmicGameConstants.BidType.RandomWalk;
-			paidBidPrice = newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 		}
-		require(
-			msg.value >= paidBidPrice,
-			CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
-		);
 		bidPrice = newBidPrice;
 
 		// Updating bidding statistics.
@@ -101,9 +112,9 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 			// Refunding excess ETH if the bidder sent more than required.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
-			(bool success, ) = msg.sender.call{ value: amountToSend }("");
+			(bool isSuccess, ) = msg.sender.call{ value: amountToSend }("");
 			require(
-				success,
+				isSuccess,
 				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 			);
 		}
@@ -114,11 +125,11 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
 	}
 
-	function bidWithCst(string memory message_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(message_);
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
 	}
 
-	function _bidWithCst(string memory message_) internal /*onlyActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*onlyActive*/ {
 		// [Comment-202409179]
 		// This can be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
@@ -130,6 +141,12 @@ abstract contract Bidding is ReentrancyGuardUpgradeable, CosmicSignatureGameStor
 		// todo-1 Or better add another smaller min limit.
 		// [/Comment-202409179]
 		uint256 price = getCurrentBidPriceCST();
+
+		// Comment-202412045 applies.
+		require(
+			price <= priceMaxLimit_,
+			CosmicGameErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
+		);
 
 		// uint256 userBalance = token.balanceOf(msg.sender);
 

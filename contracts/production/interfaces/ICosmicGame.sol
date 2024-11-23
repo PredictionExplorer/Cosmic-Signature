@@ -26,7 +26,7 @@ interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IBidSta
 	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable;
 
 	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
-	function bidWithCstAndDonateToken(string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
 
 	/// @notice Bids and donates an NFT in a single transaction.
 	/// @param data_ Encoded bid parameters.
@@ -36,7 +36,7 @@ interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IBidSta
 	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
 	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
-	function bidWithCstAndDonateNft(string memory message_, IERC721 nftAddress_, uint256 nftId_) external;
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external;
 
 	/// @notice Fallback function to handle incoming ETH transactions
 	/// @dev This function is called for empty calldata (and any value)
