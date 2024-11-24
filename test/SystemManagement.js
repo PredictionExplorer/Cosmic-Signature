@@ -250,7 +250,7 @@ describe("SystemManagement", function () {
 		// todo-1 I have moved NFT donations to `PrizesWallet`.
 		await expect(cosmicGameProxy.connect(addr1).donateNft(await randomWalkNft.getAddress(), 0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 	});
-	it('The active and inactive modes function correctly', async function () {
+	it("The active and inactive modes function correctly", async function () {
 		const {signers, cosmicGameProxy,} = await loadFixture(deployCosmic);
 		const [owner, addr1, addr2,] = signers;
 		// let cosmicGameAddr = await cosmicGameProxy.getAddress();

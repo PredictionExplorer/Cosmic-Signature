@@ -635,8 +635,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		);
 		await expect(newStakingWalletCosmicSignatureNft.connect(addr1).unstakeMany([2])).not.to.be.reverted;
 	});
-	// it('It is not possible to claim reward if transfer to sender address fails', async function () {
-	it('It is not possible to unstake if transfer to sender address fails', async function () {
+	// it("It is not possible to claim reward if transfer to sender address fails", async function () {
+	it("It is not possible to unstake if transfer to sender address fails", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
@@ -733,7 +733,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// // todo-0 Nick, you might want to develop similar tests (possibly uncomment and modify those I commented out)
 	// // todo-0 for the cases listed in ToDo-202409226-0.
 	// // [/Comment-202409209]
-	// it('A failure to deposit to StakingWalletCosmicSignatureNft shouldn\'t abort the process of claiming main prize', async function () {
+	// it("A failure to deposit to StakingWalletCosmicSignatureNft shouldn't abort the process of claiming main prize", async function () {
 	// 	const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 	// 	const {
 	// 		cosmicGameProxy,
@@ -804,7 +804,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// });
 
 	// // Comment-202409209 applies.
-	// it('Changing charity address works', async function () {
+	// it("Changing charity address works", async function () {
 	// 	const {
 	// 		cosmicGameProxy,
 	// 		cosmicToken,
@@ -831,7 +831,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft,"AddressAlreadySet");
 	// });
 
-	// it('Internal staker state variables for checking uniquness are correctly set', async function () {
+	// it("Internal staker state variables for checking uniquness are correctly set", async function () {
 	// 	const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 	// 	const {
 	// 		cosmicGameProxy,
@@ -928,8 +928,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	// const m = await stakingWalletCosmicSignatureNft.modulo();
 	// 	// expect(m).to.equal(contractBalance);
 	// });
-	// it('User stakes his 10 CosmicSignature NFTs and gets all of them back after claim', async function () {
-	it('User stakes his 10 CosmicSignature NFTs and gets all of them back after unstake', async function () {
+	// it("User stakes his 10 CosmicSignature NFTs and gets all of them back after claim", async function () {
+	it("User stakes his 10 CosmicSignature NFTs and gets all of them back after unstake", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicGameProxy,
@@ -1015,7 +1015,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	// // Comment-202409209 applies.
-	// it('StakingWalletCosmicSignatureNft is properly distributing prize amount() (modulo check)', async function () {
+	// it("StakingWalletCosmicSignatureNft is properly distributing prize amount() (modulo check)", async function () {
 	// 	const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 	// 	const {
 	// 		cosmicGameProxy,

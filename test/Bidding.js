@@ -400,7 +400,7 @@ describe("Bidding", function () {
 		let expectedBalanceAfter = amountSent - bidPrice;
 		expect(expectedBalanceAfter).to.equal(balanceAfter);
 	});
-	it('Bidder is receiving correct refund amount when using larger bidPrice than required using RandomWalk', async function () {
+	it("Bidder is receiving correct refund amount when using larger bidPrice than required using RandomWalk", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
@@ -429,7 +429,7 @@ describe("Bidding", function () {
 		let expectedBalanceAfter = Number(amountSent) - discountedBidPrice;
 		expect(expectedBalanceAfter).to.equal(Number(balanceAfter));
 	});
-	it('Bidding a lot & staking a lot works correctly ', async function () {
+	it("Bidding a lot & staking a lot works correctly", async function () {
 		const [owner, addr1, addr2, addr3, addr4, addr5] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
@@ -591,7 +591,7 @@ describe("Bidding", function () {
 			}
 		}
 	});
-	it('Bidding with CST works', async function () {
+	it("Bidding with CST works", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
@@ -640,7 +640,7 @@ describe("Bidding", function () {
 		expect(args.lastBidderAddress).to.equal(addr1.address);
 		expect(args.message).to.equal('cst bid');
 	});
-	it('Function bidderAddress() works as expected', async function () {
+	it("Function bidderAddress() works as expected", async function () {
 		const [owner, addr1, addr2, addr3, addr4, addr5] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
@@ -702,7 +702,7 @@ describe("Bidding", function () {
 		bAddr = await cosmicGameProxy.bidderAddress(1,2);
 		expect(bAddr).to.equal(addr1.address);
 	});
-	it('Bid statistics are generating correct values and StellarSpender addr is assigned correctly', async function () {
+	it("Bid statistics are generating correct values and StellarSpender addr is assigned correctly", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
@@ -752,7 +752,7 @@ describe("Bidding", function () {
 		spent = await cosmicGameProxy.getTotalSpentByBidder(addr1.address);
 		expect(maxBidderAddr).to.equal(addr1.address);
 	});
-	it('It is not possible to bid with CST if balance is not enough', async function () {
+	it("It is not possible to bid with CST if balance is not enough", async function () {
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
@@ -762,7 +762,7 @@ describe("Bidding", function () {
 		// await expect(cosmicGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicTokenFactory, "ERC20InsufficientBalance");
 	});
-	it('getBidderAtPosition() reverts if invalid position index is provided', async function () {
+	it("getBidderAtPosition() reverts if invalid position index is provided", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicGameProxy, cosmicToken, cosmicSignature, charityWallet, cosmicDAO, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, cosmicGame, } =
 			await loadFixture(deployCosmic);

@@ -8,7 +8,7 @@ const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js")
 
 const SKIP_LONG_TESTS = "0";
 
-describe("Donations", function () {
+describe("Donating", function () {
 	// We define a fixture to reuse the same setup in every test.
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
