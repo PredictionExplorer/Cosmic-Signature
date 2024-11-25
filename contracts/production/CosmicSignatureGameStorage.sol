@@ -102,7 +102,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
 	/// Comment-202411077 relates.
 	/// [/Comment-202411078]
-	address public charity;
+	address public charityAddress;
 
 	// #endregion
 	// #region Donation Variables

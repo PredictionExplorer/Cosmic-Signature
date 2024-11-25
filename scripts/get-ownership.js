@@ -23,10 +23,10 @@ async function main() {
 	o = await prizesWalletContract.owner();
 	console.log("Owner of PrizesWallet: " + o);
 
-	addr = await cosmicSignatureGame.charity();
+	addr = await cosmicSignatureGame.charityAddress();
 	console.log("CharityWallet contract at CosmicSignatureGame contract: " + addr);
-	let charityContract = await hre.ethers.getContractAt("CharityWallet", addr);
-	addr = await charityContract.charityAddress();
+	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", addr);
+	addr = await charityWalletContract.charityAddress();
 	console.log("Charity address at CharityWallet contract: " + addr);
 }
 

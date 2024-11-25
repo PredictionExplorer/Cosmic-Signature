@@ -63,9 +63,9 @@ describe("ZeroAddressChecking", function () {
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(charityWallet.setCharity(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		await expect(charityWallet.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 	});
-	it("Shouldn't be possible to set a zero-address for charity in CosmicSignatureGame", async function () {
+	it("Shouldn't be possible to set a zero charity address in CosmicSignatureGame", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
@@ -88,7 +88,7 @@ describe("ZeroAddressChecking", function () {
 			true
 		);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(cosmicSignatureGameProxy.setCharity(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 	});
 	it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
 		const {

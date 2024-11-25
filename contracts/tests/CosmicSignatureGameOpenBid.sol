@@ -67,7 +67,7 @@ contract CosmicSignatureGameOpenBid is
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =
 		// stakingWalletRandomWalkNft =
-		// charity =
+		// charityAddress =
 		// numDonationInfoRecords =
 		// // numDonatedNfts =
 		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;

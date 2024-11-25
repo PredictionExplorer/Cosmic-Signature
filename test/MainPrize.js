@@ -187,7 +187,7 @@ describe("MainPrize", function () {
 
 		let donationAmount = hre.ethers.parseEther('1');
 		await cosmicSignatureGameProxy.donate({ value: donationAmount });
-		let charityAddr = await cosmicSignatureGameProxy.charity();
+		let charityAddr = await cosmicSignatureGameProxy.charityAddress();
 
 		await cosmicSignatureGameProxy.mintCST(addr1.address, 0); // mint a token so we can stake
 		await cosmicSignatureNft.connect(addr1).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);

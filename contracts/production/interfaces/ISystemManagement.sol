@@ -81,11 +81,10 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param stakingWalletRandomWalkNft_ The new RandomWalk staking wallet address
 	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external;
 
-	/// @notice Set the charity address
+	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _charity The new charity address
-	/// todo-1 Rename to `setCharityAddress`. Also rename respective events
-	function setCharity(address _charity) external;
+	/// @param newValue_ The new value.
+	function setCharityAddress(address newValue_) external;
 
 	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;
 

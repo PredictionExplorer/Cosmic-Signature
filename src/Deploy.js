@@ -127,7 +127,7 @@ const basicDeploymentAdvanced = async function (
 	// if (charityAddr.length === 0) {
 	// 	charityAddr = signers[1].address;
 	// }
-	await charityWallet.setCharity(charityAddr);
+	await charityWallet.setCharityAddress(charityAddr);
 	if (transferOwnership) {
 		await charityWallet.connect(deployerAcct).transferOwnership(cosmicSignatureDaoAddr);
 	}
@@ -178,7 +178,7 @@ const basicDeploymentAdvanced = async function (
 	await cosmicSignatureGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
-	await cosmicSignatureGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
 	if (activationTime !== 0) {
 		if (activationTime === 1) {
 			const latestBlock = await hre.ethers.provider.getBlock("latest");

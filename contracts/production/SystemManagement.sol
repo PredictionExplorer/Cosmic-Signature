@@ -171,10 +171,10 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit StakingWalletRandomWalkNftAddressChanged(stakingWalletRandomWalkNft_);
 	}
 
-	function setCharity(address _charity) external override onlyOwner onlyInactive {
-		require(_charity != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
-		charity = _charity;
-		emit CharityAddressChanged(_charity);
+	function setCharityAddress(address newValue_) external override onlyOwner onlyInactive {
+		require(newValue_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		charityAddress = newValue_;
+		emit CharityAddressChanged(newValue_);
 	}
 
 	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external override onlyOwner onlyInactive {

@@ -57,9 +57,9 @@ interface ISystemEvents {
 	/// @param newStakingWalletRandomWalkNft The new RandomWalk staking wallet address
 	event StakingWalletRandomWalkNftAddressChanged(address newStakingWalletRandomWalkNft);
 
-	/// @notice Emitted when the charity address is changed
-	/// @param newCharity The new charity address
-	event CharityAddressChanged(address newCharity);
+	/// @notice Emitted when `charityAddress` is changed.
+	/// @param newValue The new value.
+	event CharityAddressChanged(address indexed newValue);
 
 	/// @notice Emitted when the nano seconds extra is changed
 	/// @param newNanoSecondsExtra The new nano seconds extra value

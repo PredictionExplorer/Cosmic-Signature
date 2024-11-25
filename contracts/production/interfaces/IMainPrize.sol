@@ -99,23 +99,18 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// todo-1 Specify prize type everywhere: claim(?:.(?!main))*?prize
 	function claimPrize() external;
 
-	/// @notice Obtains the current main prize amount.
 	/// @return The current main prize amount, in Wei.
 	function mainPrizeAmount() external view returns(uint256);
 
-	/// @notice Obtains the current Chrono-Warrior ETH prize amount.
 	/// @return The current Chrono-Warrior ETH prize amount, in Wei.
 	function chronoWarriorEthPrizeAmount() external view returns(uint256);
 
-	/// @notice Obtains the current raffle amount.
 	/// @return The current raffle amount, in Wei.
 	function raffleAmount() external view returns(uint256);
 
-	/// @notice Obtains the current staking amount.
 	/// @return The current staking amount, in Wei.
 	function stakingAmount() external view returns(uint256);
 
-	/// @notice Obtains the current charity amount.
 	/// @return The current charity amount, in Wei.
 	function charityAmount() external view returns(uint256);
 
