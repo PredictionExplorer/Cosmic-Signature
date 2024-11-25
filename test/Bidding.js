@@ -200,7 +200,7 @@ describe("Bidding", function () {
 		params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		await cosmicSignatureGameProxy.connect(addr1).bid(params, { value: bidPrice });
 		expect(await cosmicSignatureGameProxy.getTotalBids()).to.equal(1);
-		expect(await cosmicSignatureGameProxy.getBidderAtPosition(0)).to.equal(addr1.address);
+		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(0)).to.equal(addr1.address);
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		await hre.ethers.provider.send("evm_mine");
@@ -762,7 +762,7 @@ describe("Bidding", function () {
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureTokenFactory, "ERC20InsufficientBalance");
 	});
-	it("getBidderAtPosition() reverts if invalid position index is provided", async function () {
+	it("getBidderAddressAtPosition() reverts if invalid position index is provided", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, } =
 			await loadFixture(deployCosmicSignature);
@@ -777,9 +777,9 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.connect(addr2).bid(params, { value: bidPrice });
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 
-		expect(await cosmicSignatureGameProxy.getBidderAtPosition(0)).to.equal(addr1.address);
-		expect(await cosmicSignatureGameProxy.getBidderAtPosition(1)).to.equal(addr2.address);
-		await expect(cosmicSignatureGameProxy.getBidderAtPosition(2)).to.be.revertedWith("Position out of bounds");
+		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(0)).to.equal(addr1.address);
+		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(1)).to.equal(addr2.address);
+		await expect(cosmicSignatureGameProxy.getBidderAddressAtPosition(2)).to.be.revertedWith("Position out of bounds");
 	});
 	// todo-1 Are this and the next tests exactly the same? If so is it a bug or a feature?
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails", async function () {

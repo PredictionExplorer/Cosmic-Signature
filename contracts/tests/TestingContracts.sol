@@ -51,7 +51,7 @@ contract BrokenERC20 {
 	}
 }
 
-/// @notice Used to test `revert` statements for charity deposits
+/// @notice Used to test `revert` statements for charity deposits.
 contract BrokenCharity {
 	// uint256 private counter;
 	receive() external payable {
@@ -59,10 +59,9 @@ contract BrokenCharity {
 	}
 }
 
-/// @notice used to test revert() statements for charity deposits
+/// @notice used to test `revert` statements for charity deposits.
 contract BrokenCharityWallet is CharityWallet {
-	// uint256 counter;
-	function setCharityToZeroAddress() external {
+	function clearCharityAddress() external {
 		charityAddress = address(0);
 	}
 }
@@ -116,8 +115,8 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_blockDeposits = false;
 	}
 
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft sw_) external {
-		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(sw_));
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external {
+		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}
 
 	function doSetApprovalForAll(IERC721 nft_) external {
@@ -181,11 +180,9 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}
 
-	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
-	/// todo-1 Rename to `setCharityAddressRaw`.
-	function setCharityRaw(address newValue_) external {
-		charity = newValue_;
-	}
+	// function setCharityAddressRaw(address newValue_) external {
+	// 	charityAddress = newValue_;
+	// }
 
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?

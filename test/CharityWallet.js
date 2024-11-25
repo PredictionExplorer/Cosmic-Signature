@@ -77,7 +77,7 @@ describe("CharityWallet", function () {
 		await brokenCharity.waitForDeployment();
 
 		await owner.sendTransaction({ to: await charityWallet.getAddress(), value: hre.ethers.parseUnits("3",18)});
-		await charityWallet.setCharity(await brokenCharity.getAddress());
+		await charityWallet.setCharityAddress(await brokenCharity.getAddress());
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		await expect(charityWallet.send()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
 
@@ -85,9 +85,9 @@ describe("CharityWallet", function () {
 		const BrokenCharityWallet = await hre.ethers.getContractFactory("BrokenCharityWallet");
 		let brokenCharityWallet = await BrokenCharityWallet.deploy();
 		await brokenCharityWallet.waitForDeployment();
-		await brokenCharityWallet.setCharityToZeroAddress();
+		await brokenCharityWallet.clearCharityAddress();
 		await expect(brokenCharityWallet.send()).to.be.revertedWithCustomError(brokenCharityWallet, "ZeroAddress");
-		await brokenCharityWallet.setCharity(addr1.address);
+		await brokenCharityWallet.setCharityAddress(addr1.address);
 		await expect(brokenCharityWallet.send()).to.be.revertedWithCustomError(brokenCharityWallet, "ZeroBalance");
 	});
 	it("Change charityAddress via DAO (Governor) is working", async function () {
@@ -130,7 +130,7 @@ describe("CharityWallet", function () {
 		await cosmicSignatureToken.connect(addr1).delegate(addr1.address);
 		await cosmicSignatureToken.connect(addr2).delegate(addr2.address);
 		await cosmicSignatureToken.connect(addr3).delegate(addr3.address);
-		let proposal_func = charityWallet.interface.encodeFunctionData("setCharity", [addr1.address]);
+		let proposal_func = charityWallet.interface.encodeFunctionData("setCharityAddress", [addr1.address]);
 		let proposal_desc = "set charityWallet to new addr";
 		tx = await cosmicSignatureDao.connect(owner).propose([await charityWallet.getAddress()], [0], [proposal_func], proposal_desc);
 		receipt = await tx.wait();

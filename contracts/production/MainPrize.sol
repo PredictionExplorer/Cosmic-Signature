@@ -17,7 +17,7 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 // import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+// import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -170,11 +170,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
 		// Comment-202411078 relates.
 		// [/Comment-202411077]
-		(bool isSuccess, ) = charity.call{ value: charityAmount_ }("");
+		(bool isSuccess, ) = charityAddress.call{ value: charityAmount_ }("");
 		if (isSuccess) {
-			emit CosmicSignatureEvents.FundsTransferredToCharity(charity, charityAmount_);
+			emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityAmount_);
 		} else {
-			emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charity, charityAmount_);
+			emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress, charityAmount_);
 		}
 
 		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_);
@@ -205,7 +205,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// Stellar Spender prize.
 		if (stellarSpender != address(0)) {
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
-			// todo-1 Remember that payment to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
+			// todo-1 Remember that transfer to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
 			uint256 nftId = nft.mint(stellarSpender, roundNum);
 			// todo-1 `erc20RewardMultiplier` shold already be multiplied by `1 ether`.
 			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
@@ -271,12 +271,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
-		// uint256 numStakedTokensRWalk = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).numStakedNfts();
+		// uint256 numStakedTokensRWalk = stakingWalletRandomWalkNft.numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNftWinnersStakingRWalk; i++) {
 				_updateRaffleEntropy();
-				address luckyStakerAddress_ = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
+				address luckyStakerAddress_ = stakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(raffleEntropy);
 
 				if (luckyStakerAddress_ == address(0)) {
 					break;

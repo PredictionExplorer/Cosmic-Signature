@@ -63,7 +63,7 @@ describe("Security", function () {
 		await cosmicSignatureGameProxy.setTokenContract(await cosmicSignatureToken.getAddress());
 		await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
 		await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
-		await cosmicSignatureGameProxy.setCharity(await charityWallet.getAddress());
+		await cosmicSignatureGameProxy.setCharityAddress(await charityWallet.getAddress());
 		await cosmicSignatureGameProxy.setMainPrizePercentage(10n);
 
 		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.

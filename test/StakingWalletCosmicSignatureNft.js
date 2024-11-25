@@ -729,7 +729,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 	// // [Comment-202409209]
 	// // This test no longer makes sense due to refactorings described in Comment-202409208.
-	// // todo-0 I have now removed that comment. It was about the elimination of `modulo` and `charity`. So revisit this comment or (eventually) remove it.
+	// // todo-0 I have now removed that comment. It was about the elimination of `modulo` and `charityAddress`. So revisit this comment or (eventually) remove it.
 	// // todo-0 Nick, you might want to develop similar tests (possibly uncomment and modify those I commented out)
 	// // todo-0 for the cases listed in ToDo-202409226-0.
 	// // [/Comment-202409209]
@@ -820,14 +820,14 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	} = await loadFixture(deployCosmicSignature);
 	// 	const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 	//
-	// 	await stakingWalletCosmicSignatureNft.setCharity(addr3.address);
-	// 	const charityAddr = await stakingWalletCosmicSignatureNft.charity();
+	// 	await stakingWalletCosmicSignatureNft.setCharityAddress(addr3.address);
+	// 	const charityAddr = await stakingWalletCosmicSignatureNft.charityAddress();
 	// 	expect(charityAddr).to.equal(addr3.address);
-	// 	await expect(stakingWalletCosmicSignatureNft.connect(addr1).setCharity(addr2.address))
+	// 	await expect(stakingWalletCosmicSignatureNft.connect(addr1).setCharityAddress(addr2.address))
 	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft,"OwnableUnauthorizedAccount");
-	// 	await expect(stakingWalletCosmicSignatureNft.setCharity(hre.ethers.ZeroAddress))
+	// 	await expect(stakingWalletCosmicSignatureNft.setCharityAddress(hre.ethers.ZeroAddress))
 	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft, "ZeroAddress");
-	// 	await expect(stakingWalletCosmicSignatureNft.setCharity(addr3.address))
+	// 	await expect(stakingWalletCosmicSignatureNft.setCharityAddress(addr3.address))
 	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft,"AddressAlreadySet");
 	// });
 
@@ -1093,9 +1093,9 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	let brokenCharity = await BrokenCharity.deploy();
 	// 	await brokenCharity.waitForDeployment();
 	//
-	// 	await stakingWalletCosmicSignatureNft.setCharity(await brokenCharity.getAddress());
+	// 	await stakingWalletCosmicSignatureNft.setCharityAddress(await brokenCharity.getAddress());
 	// 	await expect(stakingWalletCosmicSignatureNft.moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft, "FundTransferFailed");
-	// 	await stakingWalletCosmicSignatureNft.setCharity(addr3.address);
+	// 	await stakingWalletCosmicSignatureNft.setCharityAddress(addr3.address);
 	// 	await expect(stakingWalletCosmicSignatureNft.moduloToCharity()).not.to.be.reverted;
 	// 	await expect(stakingWalletCosmicSignatureNft.connect(addr1).moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft,"OwnableUnauthorizedAccount");
 	// 	await expect(stakingWalletCosmicSignatureNft.moduloToCharity()).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft,"ModuloIsZero");

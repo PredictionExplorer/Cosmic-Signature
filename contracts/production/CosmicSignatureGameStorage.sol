@@ -77,6 +77,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	CosmicSignatureToken public token;
 
 	/// @notice Comment-202411064 applies.
+	/// @dev It's currently unnecessary to make this variable strongly typed.
 	address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.
@@ -89,8 +90,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 Make this strongly typed.
-	address public stakingWalletRandomWalkNft;
+	StakingWalletRandomWalkNft public stakingWalletRandomWalkNft;
 
 	/// @notice Comment-202411064 applies.
 	/// @dev
@@ -102,7 +102,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
 	/// Comment-202411077 relates.
 	/// [/Comment-202411078]
-	address public charity;
+	address public charityAddress;
 
 	// #endregion
 	// #region Donation Variables

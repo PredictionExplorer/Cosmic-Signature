@@ -9,16 +9,16 @@ async function main() {
 
 	let activationTime = await cosmicSignatureGame.activationTime();
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
-	let charityAddr = await cosmicSignatureGame.charity();
-	let charityContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
-	let charityContractOwner = await charityContract.owner();
-	let charityDonationsReceiver = await charityContract.charityAddress();
+	let charityAddr = await cosmicSignatureGame.charityAddress();
+	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
+	let charityWalletContractOwner = await charityWalletContract.owner();
+	let charityDonationsReceiverAddress = await charityWalletContract.charityAddress();
 
 	console.log("activation time = " + activationTime);
 	console.log("randomWalkNft address = " + randomWalkNftAddr_);
 	console.log("charity wallet contract address = " + charityAddr);
-	console.log("owner of charity wallet contract = " + charityContractOwner);
-	console.log("charity donations receiver = " + charityDonationsReceiver);
+	console.log("owner of charity wallet contract = " + charityWalletContractOwner);
+	console.log("charity donations receiver address = " + charityDonationsReceiverAddress);
 }
 
 main()

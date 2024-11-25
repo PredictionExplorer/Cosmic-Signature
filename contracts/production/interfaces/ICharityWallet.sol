@@ -10,9 +10,9 @@ pragma solidity 0.8.27;
 /// todo-0 On the other hand, SMTChecker needs to know exactly which contract we call.
 /// todo-0 Besides, it needs to see a high level call.
 interface ICharityWallet {
-	/// @notice Emitted after the designated charity address was updated
-	/// @param newCharityAddress The new charity address
-	event CharityUpdatedEvent(address indexed newCharityAddress);
+	/// @notice Emitted when `charityAddress` is changed.
+	/// @param newValue The new value.
+	event CharityAddressChanged(address indexed newValue);
 
 	/// @notice Emitted after a donation was received
 	/// @param donorAddress Donor address
@@ -20,23 +20,23 @@ interface ICharityWallet {
 	event DonationReceivedEvent(address indexed donorAddress, uint256 amount);
 
 	/// @notice Emitted after accumulated donations were sent to the charity.
-	/// @param charity The address of the charity receiving the donation.
+	/// @param charityAddress Charity address.
 	/// @param amount The amount of ETH transferred to the charity.
 	/// @dev
 	/// [ToDo-202409212-1]
 	/// Consider eliminating this and using `CosmicSignatureEvents.FundsTransferredToCharity` instead.
 	/// [/ToDo-202409212-1]
-	event DonationSentEvent(address indexed charity, uint256 amount);
+	event DonationSentEvent(address indexed charityAddress, uint256 amount);
 
 	/// @notice Allows the contract to receive ETH donations
 	/// @dev This function is called for plain ETH transfers without data
 	/// todo-1 That dev comment is unnecessary. It's a well known fact.
 	receive() external payable;
 
-	/// @notice Sets or updates the address of the designated charity
+	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param newCharityAddress The new charity address
-	function setCharity(address newCharityAddress) external;
+	/// @param newValue_ The new value.
+	function setCharityAddress(address newValue_) external;
 
 	/// @notice Sends all accumulated donations to the designated charity
 	/// Expected to be called approximately once a month, but frequency may vary
