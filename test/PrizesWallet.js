@@ -7,7 +7,7 @@ const { basicDeployment } = require("../src/Deploy.js");
 
 describe("PrizesWallet", function () {
 	/// ToDo-202411224-1 applies.
-	async function deployCosmic() {
+	async function deployCosmicSignature() {
 		const signers = await hre.ethers.getSigners();
 		const [owner,] = signers;
 		const contracts = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
@@ -23,9 +23,9 @@ describe("PrizesWallet", function () {
 	// 	],
 	// };
 	it("depositEth works correctly", async function () {
-		const {signers,} = await loadFixture(deployCosmic);
+		const {signers,} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1,] = signers;
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		const NewPrizesWallet = await hre.ethers.getContractFactory("PrizesWallet");
 		let newPrizesWallet = await NewPrizesWallet.deploy(owner.address);
@@ -42,9 +42,9 @@ describe("PrizesWallet", function () {
 		await expect(newPrizesWallet.depositEth(0, addr1.address)).not.to.be.reverted;
 	});
 	it("withdrawEth works correctly", async function () {
-		const {signers,} = await loadFixture(deployCosmic);
+		const {signers,} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2,] = signers;
-		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicGameErrors");
+		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		const NewPrizesWallet = await hre.ethers.getContractFactory("PrizesWallet");
 		let newPrizesWallet = await NewPrizesWallet.deploy(owner.address);

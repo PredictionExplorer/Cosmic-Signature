@@ -7,9 +7,9 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 // import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 // import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-// import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+// import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 // import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
@@ -50,28 +50,28 @@ abstract contract Bidding is
 		// todo-1 Why do we need this ugly data thing? Why can't we simply pass parameters to the method the normal way?
 		// todo-1 But keep in mind that `BidParams` is different in `BiddingOpenBid`.
 		BidParams memory params = abi.decode(_data, (BidParams));
-		// CosmicGameConstants.BidType bidType;
+		// CosmicSignatureConstants.BidType bidType;
 		uint256 newBidPrice = getBidPrice();
 		uint256 paidBidPrice =
 			(params.randomWalkNftId == -1) ?
 			newBidPrice :
-			(newBidPrice / CosmicGameConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR);
+			(newBidPrice / CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR);
 
 		// [Comment-202412045]
 		// Performing this validatin as early as possible to minimize gas fee in case the validation fails.
 		// [/Comment-202412045]
 		require(
 			msg.value >= paidBidPrice,
-			CosmicGameErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+			CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
 		);
 
 		if (params.randomWalkNftId == -1) {
-			// // #enable_asserts assert(bidType == CosmicGameConstants.BidType.ETH);
+			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
 		} else {
 			require(
 				// !usedRandomWalkNfts[uint256(params.randomWalkNftId)],
 				usedRandomWalkNfts[uint256(params.randomWalkNftId)] == 0,
-				CosmicGameErrors.UsedRandomWalkNft(
+				CosmicSignatureErrors.UsedRandomWalkNft(
 					// todo-1 Nick wrote about reducing contract bytecode size:
 					// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
 					// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
@@ -82,7 +82,7 @@ abstract contract Bidding is
 			);
 			require(
 				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNftId)),
-				CosmicGameErrors.IncorrectERC721TokenOwner(
+				CosmicSignatureErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
 					uint256(params.randomWalkNftId),
@@ -91,7 +91,7 @@ abstract contract Bidding is
 			);
 			// usedRandomWalkNfts[uint256(params.randomWalkNftId)] = true;
 			usedRandomWalkNfts[uint256(params.randomWalkNftId)] = 1;
-			// bidType = CosmicGameConstants.BidType.RandomWalk;
+			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
 		}
 		bidPrice = newBidPrice;
 
@@ -115,14 +115,14 @@ abstract contract Bidding is
 			(bool isSuccess, ) = msg.sender.call{ value: amountToSend }("");
 			require(
 				isSuccess,
-				CosmicGameErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
+				CosmicSignatureErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 			);
 		}
 	}
 
 	function getBidPrice() public view override returns (uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
-		return bidPrice * priceIncrease / CosmicGameConstants.MILLION;
+		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
 	}
 
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {
@@ -145,7 +145,7 @@ abstract contract Bidding is
 		// Comment-202412045 applies.
 		require(
 			price <= priceMaxLimit_,
-			CosmicGameErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
+			CosmicSignatureErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
 		);
 
 		// uint256 userBalance = token.balanceOf(msg.sender);
@@ -155,7 +155,7 @@ abstract contract Bidding is
 		// // [/Comment-202409181]
 		// require(
 		// 	userBalance >= price,
-		// 	CosmicGameErrors.InsufficientCSTBalance(
+		// 	CosmicSignatureErrors.InsufficientCSTBalance(
 		// 		"Insufficient CST token balance to make a bid with CST.",
 		// 		price,
 		// 		userBalance
@@ -180,11 +180,11 @@ abstract contract Bidding is
 		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.
 		// [/Comment-202409163]
 		uint256 newStartingBidPriceCst_ =
-			Math.max(price * CosmicGameConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
+			Math.max(price * CosmicSignatureConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
 		startingBidPriceCST = newStartingBidPriceCst_;
 
 		lastCstBidTimeStamp = block.timestamp;
-		_bidCommon(message_ /* , CosmicGameConstants.BidType.CST */);
+		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
@@ -200,8 +200,8 @@ abstract contract Bidding is
 				return 0;
 			}
 
-			// uint256 fraction = CosmicGameConstants.MILLION - (CosmicGameConstants.MILLION * elapsedDuration_ / duration_);
-			// return fraction * startingBidPriceCST / CosmicGameConstants.MILLION;
+			// uint256 fraction = CosmicSignatureConstants.MILLION - (CosmicSignatureConstants.MILLION * elapsedDuration_ / duration_);
+			// return fraction * startingBidPriceCST / CosmicSignatureConstants.MILLION;
 
 			return startingBidPriceCST * remainingDuration_ / duration_;
 		}
@@ -224,16 +224,16 @@ abstract contract Bidding is
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , CosmicGameConstants.BidType bidType */) internal onlyActive {
+	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
-			CosmicGameErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
+			CosmicSignatureErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
 		);
 
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
 			// todo-1 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
-			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
 			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
 
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
@@ -260,8 +260,8 @@ abstract contract Bidding is
 		// {
 		// } catch {
 		// 	revert
-		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken.mint failed to mint reward tokens for the bidder.",
+		// 		CosmicSignatureErrors.ERC20Mint(
+		// 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
 		// 			/*lastBidderAddress*/ msg.sender,
 		// 			tokenReward
 		// 		);
@@ -272,8 +272,8 @@ abstract contract Bidding is
 		// {
 		// } catch {
 		// 	revert
-		// 		CosmicGameErrors.ERC20Mint(
-		// 			"CosmicToken.mint failed to mint reward tokens for MarketingWallet.",
+		// 		CosmicSignatureErrors.ERC20Mint(
+		// 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
 		// 			marketingWallet,
 		// 			marketingReward
 		// 		);
@@ -285,10 +285,10 @@ abstract contract Bidding is
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _pushBackPrizeTime() internal {
-		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
 		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp, nanoSecondsExtra);
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicGameConstants.MICROSECONDS_PER_SECOND;
+		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 
 	function getTotalBids() public view override returns (uint256) {
@@ -298,7 +298,7 @@ abstract contract Bidding is
 	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
 		require(
 			roundNum_ <= roundNum,
-			CosmicGameErrors.InvalidBidderQueryRoundNum(
+			CosmicSignatureErrors.InvalidBidderQueryRoundNum(
 				"The provided bidding round number is greater than the current one's.",
 				roundNum_,
 				roundNum
@@ -312,11 +312,11 @@ abstract contract Bidding is
 		// todo-1 Remember to make the same changes in `BiddingOpenBid`.
 		require(
 			numRaffleParticipants_ > 0,
-			CosmicGameErrors.BidderQueryNoBidsYet("No bids have been made in this round yet.", roundNum_)
+			CosmicSignatureErrors.BidderQueryNoBidsYet("No bids have been made in this round yet.", roundNum_)
 		);
 		require(
 			_positionFromEnd < numRaffleParticipants_,
-			CosmicGameErrors.InvalidBidderQueryOffset(
+			CosmicSignatureErrors.InvalidBidderQueryOffset(
 				"Provided index is larger than array length",
 				roundNum_,
 				_positionFromEnd,

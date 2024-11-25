@@ -7,7 +7,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author Cosmic Signature Development Team.
 /// @notice This library contains custom errors used throughout the Cosmic Signature contracts.
 /// @dev Use these errors to provide more detailed and gas-efficient error handling.
-library CosmicGameErrors {
+library CosmicSignatureErrors {
 	// #region Common Errors
 
 	error UnknownError(string errStr);
@@ -193,7 +193,7 @@ library CosmicGameErrors {
 	// error ERC20Mint(string errStr, address receiverAddress, uint256 tokenAmount);
 
 	/// @notice Thrown when an ERC20 token transfer fails
-	/// See also: `CosmicGameEvents.ERC20TransferFailed`
+	/// See also: `CosmicSignatureEvents.ERC20TransferFailed`
 	/// @param errStr Description of the error
 	/// @param destinationAddress The intended receiver of the tokens
 	/// @param amount The amount of tokens to transfer
@@ -247,7 +247,7 @@ library CosmicGameErrors {
 	// #region Monetary Transfer Errors
 
 	/// @notice Thrown when a fund transfer fails
-	/// See also: `CosmicGameEvents.FundTransferFailed`
+	/// See also: `CosmicSignatureEvents.FundTransferFailed`
 	/// @param errStr Description of the error
 	/// @param destinationAddress The intended destination of the funds
 	/// @param amount The amount that failed to transfer

@@ -3,7 +3,7 @@ pragma solidity 0.8.27;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
+import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
 
 /// @title A wallet to hold the Cosmic Signature Game prizes and donations.
 /// @author Cosmic Signature Development Team.
@@ -22,7 +22,7 @@ interface IPrizesWallet {
 	/// @param roundNum The current bidding round number.
 	/// @param roundPrizeWinnerAddress Bidding round prize winner address.
 	/// @param amount ETH amount.
-	/// @dev Issue. This event is kinda redundant, given that `CosmicGame` already emits
+	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
 	/// todo-1 Maybe talk to Nick again about that later.
 	event EthReceived(uint256 indexed roundNum, address indexed roundPrizeWinnerAddress, uint256 amount);
@@ -96,8 +96,8 @@ interface IPrizesWallet {
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
 
-	/// @notice `CosmicGame` calls this method on bidding round main prize claim.
-	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// @notice `CosmicSignatureGame` calls this method on bidding round main prize claim.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param roundMainPrizeWinnerAddress_ Bidding round main prize winner address.
 	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external;
@@ -105,13 +105,13 @@ interface IPrizesWallet {
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
 	function withdrawEverything(
 		bool withdrawEth_,
-		CosmicGameConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
+		CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndices_
 	) external;
 
 	/// @notice Receives an ETH prize for a bidding round prize winner.
 	/// This is used only for secondary (non-main) prizes.
-	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
 	/// @dev
@@ -130,15 +130,15 @@ interface IPrizesWallet {
 
 	/// @return Details on ETH balance belonging to `msg.sender`.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo() external view returns(CosmicGameConstants.BalanceInfo memory);
+	function getEthBalanceInfo() external view returns(CosmicSignatureConstants.BalanceInfo memory);
 
 	/// @return Details on ETH balance belonging to the given address.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view returns(CosmicGameConstants.BalanceInfo memory);
+	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view returns(CosmicSignatureConstants.BalanceInfo memory);
 
 	/// @notice This method allows anybody to make an ERC-20 token donation.
-	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param tokenAddress_ The ERC-20 contract address.
@@ -160,7 +160,7 @@ interface IPrizesWallet {
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external;
 
 	/// @notice Similarly to `claimDonatedToken`, claims zero or more ERC-20 token donations in a single transaction.
-	function claimManyDonatedTokens(CosmicGameConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
+	function claimManyDonatedTokens(CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
 
 	/// @return The ERC-20 token amount donated during the given bidding round that has not been claimed yet.
 	/// @param roundNum_ Bidding round number.
@@ -168,7 +168,7 @@ interface IPrizesWallet {
 	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns(uint256);
 
 	/// @notice This method allows anybody to donate an NFT.
-	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param nftAddress_ NFT contract address.

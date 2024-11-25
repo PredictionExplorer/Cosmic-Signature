@@ -8,7 +8,7 @@ pragma solidity 0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
 /// @dev
@@ -27,7 +27,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	uint256 public price = 0.001 ether;
 
 	/// @notice How long to wait until the last minter can withdraw (30 days)
-	uint256 public constant withdrawalWaitSeconds = 30 * CosmicGameConstants.SECONDS_PER_DAY;
+	uint256 public constant withdrawalWaitSeconds = 30 * CosmicSignatureConstants.SECONDS_PER_DAY;
 
 	/// @notice Seeds
 	mapping(uint256 => bytes32) public seeds;

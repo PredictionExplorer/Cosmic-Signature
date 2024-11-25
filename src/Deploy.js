@@ -22,7 +22,7 @@ const basicDeployment = async function (
 	// switchToRuntime = true
 ) {
 	return await basicDeploymentAdvanced(
-		"CosmicGame",
+		"CosmicSignatureGame",
 		deployerAcct,
 		randomWalkNftAddr,
 		activationTime,
@@ -63,44 +63,62 @@ const basicDeploymentAdvanced = async function (
 	const hre = HardhatContext.getHardhatContext().environment;
 
 	// const signers = await hre.ethers.getSigners();
-
-	// if (deployerAcct === null ) {
+	// if (deployerAcct === null) {
 	// 	deployerAcct = signers[0];
 	// }
 
-	const CosmicGame = await hre.ethers.getContractFactory(cosmicSignatureGameContractName);
-	const cosmicGameProxy = await hre.upgrades.deployProxy(
-		CosmicGame,
-		args = [deployerAcct.address],
-		opts = {
-			kind: "uups"
-		}
-	);
-	const cosmicGameProxyAddr = await cosmicGameProxy.getAddress();
-	// todo-1 This is not used. Do we need this?
-	const cosmicGameAddr =
-		await cosmicGameProxy.runner.provider.getStorage(
-			cosmicGameProxyAddr,
-			// todo-1 Magic number hardcoded. Is it correct?
-			"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+	const CosmicSignatureGame = await hre.ethers.getContractFactory(cosmicSignatureGameContractName);
+	const cosmicSignatureGameProxy =
+		await hre.upgrades.deployProxy(
+			CosmicSignatureGame,
+			args = [deployerAcct.address],
+			opts = {
+				kind: "uups"
+			}
 		);
-	const cosmicGame = await CosmicGame.attach(cosmicGameProxyAddr);
+	const cosmicSignatureGameProxyAddr = await cosmicSignatureGameProxy.getAddress();
 
-	const CosmicSignature = await hre.ethers.getContractFactory("CosmicSignature");
-	const cosmicSignature = await CosmicSignature.connect(deployerAcct).deploy(cosmicGameProxyAddr);
-	await cosmicSignature.waitForDeployment();
-	const cosmicSignatureAddr = await cosmicSignature.getAddress();
+	// // [Comment-202412061]
+	// // Issue. This is not used. So I have commehted this out.
+	// // Comment-202412059 relates.
+	// // [/Comment-202412061]
+	// const cosmicSignatureGameAddr =
+	// 	await cosmicSignatureGameProxy.runner.provider.getStorage(
+	// 		cosmicSignatureGameProxyAddr,
+	//
+	// 		// [Comment-202412063]
+	// 		// This appears to be a known magic number.
+	// 		// todo-1 What if this location collides with a big array item location?
+	// 		// todo-1 To be safe, should we validate that this storage slot is zero and then zero it out?
+	// 		// todo-1 But currently there are no big arrays in the game contract.
+	// 		// todo-1 Cross-ref this comment with `CosmicSignatureGameStorage`.
+	// 		// [/Comment-202412063]
+	// 		"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+	// 	);
 
-	const CosmicToken = await hre.ethers.getContractFactory("CosmicToken");
-	const cosmicToken = await CosmicToken.connect(deployerAcct).deploy();
-	await cosmicToken.waitForDeployment();
-	const cosmicTokenAddr = await cosmicToken.getAddress();
-	await cosmicToken.connect(deployerAcct).transferOwnership(cosmicGameProxyAddr);
+	// [Comment-202412059]
+	// Issue. This points at the same address as `cosmicSignatureGameProxy`. Is it a bug or a feature?
+	// Comment-202412061 relates.
+	// todo-1 So maybe better don't return this?
+	// todo-1 Discuss with Nick.
+	// [/Comment-202412059]
+	const cosmicSignatureGame = await CosmicSignatureGame.attach(cosmicSignatureGameProxyAddr);
 
-	const CosmicDAO = await hre.ethers.getContractFactory("CosmicDAO");
-	const cosmicDAO = await CosmicDAO.connect(deployerAcct).deploy(cosmicTokenAddr);
-	await cosmicDAO.waitForDeployment();
-	const cosmicDAOAddr = await cosmicDAO.getAddress();
+	const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
+	const cosmicSignatureNft = await CosmicSignatureNft.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr);
+	await cosmicSignatureNft.waitForDeployment();
+	const cosmicSignatureNftAddr = await cosmicSignatureNft.getAddress();
+
+	const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
+	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy();
+	await cosmicSignatureToken.waitForDeployment();
+	const cosmicSignatureTokenAddr = await cosmicSignatureToken.getAddress();
+	await cosmicSignatureToken.connect(deployerAcct).transferOwnership(cosmicSignatureGameProxyAddr);
+
+	const CosmicSignatureDao = await hre.ethers.getContractFactory("CosmicSignatureDao");
+	const cosmicSignatureDao = await CosmicSignatureDao.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
+	await cosmicSignatureDao.waitForDeployment();
+	const cosmicSignatureDaoAddr = await cosmicSignatureDao.getAddress();
 
 	const CharityWallet = await hre.ethers.getContractFactory("CharityWallet");
 	const charityWallet = await CharityWallet.connect(deployerAcct).deploy();
@@ -111,11 +129,11 @@ const basicDeploymentAdvanced = async function (
 	// }
 	await charityWallet.setCharity(charityAddr);
 	if (transferOwnership) {
-		await charityWallet.connect(deployerAcct).transferOwnership(cosmicDAOAddr);
+		await charityWallet.connect(deployerAcct).transferOwnership(cosmicSignatureDaoAddr);
 	}
 
 	const PrizesWallet = await hre.ethers.getContractFactory("PrizesWallet");
-	const prizesWallet = await PrizesWallet.connect(deployerAcct).deploy(cosmicGameProxyAddr);
+	const prizesWallet = await PrizesWallet.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr);
 	await prizesWallet.waitForDeployment();
 	const prizesWalletAddr = await prizesWallet.getAddress();
 
@@ -134,8 +152,8 @@ const basicDeploymentAdvanced = async function (
 
 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	const stakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.connect(deployerAcct).deploy(
-		cosmicSignatureAddr,
-		cosmicGameProxyAddr
+		cosmicSignatureNftAddr,
+		cosmicSignatureGameProxyAddr
 
 		// // Issue. It could make sense to use `charityWalletAddr` instead.
 		// charityAddr
@@ -149,42 +167,42 @@ const basicDeploymentAdvanced = async function (
 	const stakingWalletRandomWalkNftAddr = await stakingWalletRandomWalkNft.getAddress();
 
 	const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
-	const marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicToken);
+	const marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
 	await marketingWallet.waitForDeployment();
 	const marketingWalletAddr = await marketingWallet.getAddress();
 
-	await cosmicGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
-	await cosmicGameProxy.connect(deployerAcct).setTokenContract(cosmicTokenAddr);
-	await cosmicGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
-	await cosmicGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureAddr);
-	await cosmicGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
-	await cosmicGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
-	await cosmicGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
-	await cosmicGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setTokenContract(cosmicSignatureTokenAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setCharity(charityWalletAddr);
 	if (activationTime !== 0) {
 		if (activationTime === 1) {
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
 			activationTime = latestBlock.timestamp;
 		}
-		await cosmicGameProxy.connect(deployerAcct).setActivationTime(activationTime);
+		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}
 	// if (switchToRuntime) {
-	// 	await cosmicGameProxy.connect(deployerAcct).setRuntimeMode();
+	// 	await cosmicSignatureGameProxy.connect(deployerAcct).setRuntimeMode();
 	// }
 
 	return {
 		// signers,
-		cosmicGameProxy,
-		cosmicSignature,
-		cosmicToken,
-		cosmicDAO,
+		cosmicSignatureGameProxy,
+		cosmicSignatureNft,
+		cosmicSignatureToken,
+		cosmicSignatureDao,
 		charityWallet,
 		prizesWallet,
 		randomWalkNft,
 		stakingWalletCosmicSignatureNft,
 		stakingWalletRandomWalkNft,
 		marketingWallet,
-		cosmicGame,
+		cosmicSignatureGame,
 	};
 };
 

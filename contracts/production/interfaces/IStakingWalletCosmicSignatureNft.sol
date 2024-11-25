@@ -19,7 +19,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	event NftUnstaked(
 		uint256 /*indexed*/ actionCounter,
 		uint256 indexed stakeActionId,
-		// CosmicGameConstants.NftTypeCode nftTypeCode,
+		// CosmicSignatureConstants.NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts,
@@ -122,9 +122,9 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 
 	/// @notice Receives an ETH deposit to be distributed to stakers.
 	/// This method is not designed to handle the case when there are no staked NFTs, which is why it's named "if possible",
-	/// so in that case it will revert the transaction with the `CosmicGameErrors.NoStakedNfts` error,
+	/// so in that case it will revert the transaction with the `CosmicSignatureErrors.NoStakedNfts` error,
 	/// which the caller must be prepared to handle (it is, indeed, prepared).
-	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ Bidding round number.
 	/// @dev We have to restrict who is permitted to call us because otherwise a malicious actor could attempt to DoS us.
 	/// The deposited amount isn't supposed to be zero, and is unlikely to ever be, but a zero would not break things,

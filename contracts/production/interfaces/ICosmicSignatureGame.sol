@@ -5,8 +5,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { IBidding } from "./IBidding.sol";
+import { IEthDonations } from "./IEthDonations.sol";
 import { INftDonations } from "./INftDonations.sol";
-import { IETHDonations } from "./IETHDonations.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISpecialPrizes } from "./ISpecialPrizes.sol";
 import { IMainPrize } from "./IMainPrize.sol";
@@ -15,8 +15,8 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 /// @title Cosmic Signature Game.
 /// @author Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the main functionality of the Cosmic Signature Game.
-//interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IMainPrize, INftDonations, IETHDonations {
-interface ICosmicGame is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics, IBidding, IMainPrize, INftDonations, IETHDonations, ISpecialPrizes {
+//interface ICosmicSignatureGame is ICosmicSignatureGameStorage, ISystemManagement, IMainPrize, IEthDonations, INftDonations {
+interface ICosmicSignatureGame is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics, IBidding, IMainPrize, IEthDonations, INftDonations, ISpecialPrizes {
 
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.

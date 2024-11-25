@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
-import { CosmicGameConstants } from "../libraries/CosmicGameConstants.sol";
+import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
 
 interface IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is staked.
@@ -12,7 +12,7 @@ interface IStakingWalletNftBase {
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftStaked(
 		uint256 indexed stakeActionId,
-		CosmicGameConstants.NftTypeCode nftTypeCode,
+		CosmicSignatureConstants.NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts

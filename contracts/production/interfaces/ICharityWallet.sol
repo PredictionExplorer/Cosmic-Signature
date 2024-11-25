@@ -24,7 +24,7 @@ interface ICharityWallet {
 	/// @param amount The amount of ETH transferred to the charity.
 	/// @dev
 	/// [ToDo-202409212-1]
-	/// Consider eliminating this and using `CosmicGameEvents.FundsTransferredToCharity` instead.
+	/// Consider eliminating this and using `CosmicSignatureEvents.FundsTransferredToCharity` instead.
 	/// [/ToDo-202409212-1]
 	event DonationSentEvent(address indexed charity, uint256 amount);
 

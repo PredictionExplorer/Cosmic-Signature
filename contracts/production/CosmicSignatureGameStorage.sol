@@ -6,11 +6,11 @@ pragma solidity 0.8.27;
 // #endregion
 // #region
 
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
-import { CosmicToken } from "./CosmicToken.sol";
+import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 // import { MarketingWallet } from "./MarketingWallet.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
+import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
@@ -72,15 +72,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202411064 applies.
 	PrizesWallet public prizesWallet;
 
-	/// @notice `CosmicToken` contract address.
+	/// @notice `CosmicSignatureToken` contract address.
 	/// Comment-202411064 applies.
-	CosmicToken public token;
+	CosmicSignatureToken public token;
 
 	/// @notice Comment-202411064 applies.
 	address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.
-	CosmicSignature public nft;
+	CosmicSignatureNft public nft;
 
 	/// @notice Comment-202411064 applies.
 	RandomWalkNFT public randomWalkNft;
@@ -108,9 +108,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Donation Variables
 
 	uint256 public numDonationInfoRecords;
-	mapping(uint256 index => CosmicGameConstants.DonationInfoRecord) public donationInfoRecords;
+	mapping(uint256 index => CosmicSignatureConstants.DonationInfoRecord) public donationInfoRecords;
 	// uint256 public numDonatedNfts;
-	// mapping(uint256 index => CosmicGameConstants.DonatedNft) public donatedNfts;
+	// mapping(uint256 index => CosmicSignatureConstants.DonatedNft) public donatedNfts;
 
 	// #endregion
 	// #region Game Parameters and Variables
@@ -201,7 +201,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	address public lastBidderAddress;
 
 	// /// todo-1 Rename to `lastBidTypeCode`.
-	// CosmicGameConstants.BidType public lastBidType;
+	// CosmicSignatureConstants.BidType public lastBidType;
 
 	/// @dev ToDo-202411098-0 applies.
 	/// todo-1 Rename to `roundNumBids`.
@@ -220,7 +220,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev ToDo-202411098-0 applies.
 	/// todo-0 Rename to `biddersInfo`.
-	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicGameConstants.BidderInfo)) public bidderInfo;
+	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
 
 	// #endregion
 	// #region Game Prize Percentage Parameters

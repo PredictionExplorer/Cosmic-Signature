@@ -3,13 +3,13 @@ pragma solidity 0.8.27;
 
 /// @title The official ERC-20 token for the Cosmic Signature ecosystem.
 /// @author Cosmic Signature Development Team.
-/// @notice A contract implementing this interface implements the CosmicToken (CST), an ERC20 token with additional features.
+/// @notice A contract implementing this interface implements the CosmicSignatureToken (CST), an ERC20 token with additional features.
 /// @dev This token includes burning, ownership, permit, and voting capabilities.
 /// [Comment-202412033]
 /// The total supply of these tokens is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
 /// [/Comment-202412033]
-interface ICosmicToken {
+interface ICosmicSignatureToken {
 	/// @notice Mints new tokens and assigns them to the specified address.
 	/// Only the contract owner is permitted to call this method.
 	/// @param to The address that will receive the minted tokens

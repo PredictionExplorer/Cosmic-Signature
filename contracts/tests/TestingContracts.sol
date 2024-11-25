@@ -3,14 +3,14 @@ pragma solidity 0.8.27;
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { CosmicGameConstants } from "../production/libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "../production/libraries/CosmicGameErrors.sol";
+import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
 // import { PrizesWallet } from "../production/PrizesWallet.sol";
-import { ICosmicToken } from "../production/interfaces/ICosmicToken.sol";
-import { CosmicToken } from "../production/CosmicToken.sol";
-import { ICosmicSignature } from "../production/interfaces/ICosmicSignature.sol";
-import { CosmicSignature } from "../production/CosmicSignature.sol";
+import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
+import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
+import { ICosmicSignatureNft } from "../production/interfaces/ICosmicSignatureNft.sol";
+import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
@@ -18,8 +18,8 @@ import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWal
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
-import { ICosmicGame } from "../production/interfaces/ICosmicGame.sol";
-import { CosmicGame } from "../production/CosmicGame.sol";
+import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureGame.sol";
+import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract BrokenToken {
 	/// notice used to test revert() statements in token transfers in claimPrize() function
@@ -35,9 +35,9 @@ contract BrokenToken {
 	}
 }
 
+/// @notice used to test revert() statements in CosmicSignatureGame contract
 /// todo-1 Rename to `BrokenErc20`.
 contract BrokenERC20 {
-	// used to test revert() statements in CosmicGameImplementation contract
 	uint256 counter;
 	constructor(uint256 _counter) {
 		counter = _counter;
@@ -78,13 +78,13 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		require(!_blockDeposits, "I am not accepting deposits");
 	}
 
-	// /// @dev we don't call it doDeposit() because this method is called from CosmicGame.sol
+	// /// @dev we don't call it doDeposit() because this method is called from CosmicSignatureGame.sol
 	// function deposit() external payable {
 	// 	require(!_blockDeposits, "I am not accepting deposits");
 	// 	_stakingWalletCosmicSignatureNft.deposit();
 	// }
 
-	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicGame.sol
+	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicSignatureGame.sol
 	function depositIfPossible(uint256 roundNum_) external payable {
 		require(!_blockDeposits, "I am not accepting deposits");
 		_stakingWalletCosmicSignatureNft.depositIfPossible(roundNum_);
@@ -125,18 +125,17 @@ contract BrokenStakingWalletCosmicSignatureNft {
 	}
 }
 
-/// todo-1 Rename to `SelfDestructibleCosmicSignatureGame`.
-contract SelfdestructibleCosmicGame is CosmicGame {
+contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
 
-	constructor() CosmicGame() {}
+	constructor() CosmicSignatureGame() {}
 
 	// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function finalizeTesting() external onlyOwner {
 	// 	// returns all the assets to the creator of the contract and self-destroys
 	//
-	// 	// CosmicSignature tokens
+	// 	// CosmicSignature NFTs.
 	// 	uint256 cosmicSupply = nft.totalSupply();
 	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
 	// 		address owner = nft.ownerOf(i);
@@ -147,24 +146,35 @@ contract SelfdestructibleCosmicGame is CosmicGame {
 	// 	cosmicSupply = token.balanceOf(address(this));
 	// 	token.transfer(this.owner(), cosmicSupply);
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
-	// 		CosmicGameConstants.DonatedNft memory dnft = donatedNfts[i];
+	// 		CosmicSignatureConstants.DonatedNft memory dnft = donatedNfts[i];
 	// 		dnft.nftAddress.transferFrom(address(this), this.owner(), dnft.nftId);
 	// 	}
 	// 	selfdestruct(payable(this.owner()));
 	// }
 }
 
-/// @notice special CosmicGame contract to be used in unit tests to create special test setups
-/// todo-1 Rename to `SpecialCosmicSignatureGame`.
-contract SpecialCosmicGame is CosmicGame {
-	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
-	function setCharityRaw(address newValue_) external {
-		charity = newValue_;
-	}
+/// @notice special CosmicSignatureGame contract to be used in unit tests to create special test setups
+contract SpecialCosmicSignatureGame is CosmicSignatureGame {
+	// function setActivationTimeRaw(uint256 newValue_) external {
+	// 	activationTime = newValue_;
+	//
+	// 	// Comment-202411168 applies.
+	// 	lastCstBidTimeStamp = newValue_;
+	// }
 
 	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
 	// 	prizesWallet = PrizesWallet(address(newValue_));
 	// }
+
+	// function setCosmicSignatureTokenRaw(ICosmicSignatureToken newValue_) external {
+	// 	token = CosmicSignatureToken(address(newValue_));
+	// }
+
+	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
+	/// todo-1 Rename to `setCosmicSignatureNftRaw`.
+	function setNftContractRaw(ICosmicSignatureNft newValue_) external {
+		nft = CosmicSignatureNft(address(newValue_));
+	}
 
 	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
@@ -172,20 +182,10 @@ contract SpecialCosmicGame is CosmicGame {
 	}
 
 	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
-	function setNftContractRaw(ICosmicSignature newValue_) external {
-		nft = CosmicSignature(address(newValue_));
+	/// todo-1 Rename to `setCharityAddressRaw`.
+	function setCharityRaw(address newValue_) external {
+		charity = newValue_;
 	}
-
-	// function setTokenContractRaw(ICosmicToken newValue_) external {
-	// 	token = CosmicToken(address(newValue_));
-	// }
-
-	// function setActivationTimeRaw(uint256 newValue_) external {
-	// 	activationTime = newValue_;
-	//
-	// 	// Comment-202411168 applies.
-	// 	lastCstBidTimeStamp = newValue_;
-	// }
 
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
@@ -208,7 +208,7 @@ contract SpecialCosmicGame is CosmicGame {
 	
 	function mintCST(address to_, uint256 roundNum_) external {
 		// todo-1 Should we make a high level call here?
-		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignature.mint.selector, to_, roundNum_));
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, to_, roundNum_));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -221,7 +221,7 @@ contract SpecialCosmicGame is CosmicGame {
 }
 
 contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
-	constructor(CosmicSignature nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
+	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
 
 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 	// 	_insertToken(_nftId, stakeActionId_);
@@ -275,7 +275,7 @@ contract MaliciousNft2 is ERC721 {
 	/// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
 	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
 		// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
-		CosmicGame.BidParams memory defaultParams;
+		CosmicSignatureGame.BidParams memory defaultParams;
 		defaultParams.message = "";
 		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data;
@@ -283,8 +283,8 @@ contract MaliciousNft2 is ERC721 {
 		// the following call should revert
 		// todo-1 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
-			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicGame`.
-			msg.sender.call(abi.encodeWithSelector(ICosmicGame.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
+			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+			msg.sender.call(abi.encodeWithSelector(ICosmicSignatureGame.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)

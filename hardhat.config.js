@@ -132,7 +132,7 @@ console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidit
 // require("hardhat-tracer");
 // require("@nomiclabs/hardhat-solhint");
 // require("@nomiclabs/hardhat-etherscan");
-// require("./tasks/cosmic-tasks.js");
+// require("./tasks/cosmic-signature-tasks.js");
 
 // #endregion
 // #region
@@ -166,7 +166,7 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-solhint");
 
 // Comment-202409255 relates.
-require("./tasks/cosmic-tasks.js");
+require("./tasks/cosmic-signature-tasks.js");
 
 // #endregion
 // #region
@@ -358,17 +358,15 @@ const hardhatUserConfig = {
 
 		clear: true,
 		flat: true,
-
 		only: [
 			'CharityWallet',
-			'CosmicDAO',
-			'CosmicGameProxy',
-			'CosmicSignature',
-			'CosmicToken',
+			'CosmicSignatureDao',
+			// 'CosmicSignatureGameProxy',
+			'CosmicSignatureNft',
+			'CosmicSignatureToken',
 			'PrizesWallet',
 			'RandomWalkNFT',
 		],
-
 		spacing: 2,
 		pretty: true,
 	},
@@ -431,10 +429,10 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [/Comment-202409013]
 		contracts: {
 			// "contracts/production/CharityWallet.sol": ["CharityWallet"],
-			// "contracts/production/CosmicDAO.sol": ["CosmicDAO"],
-			// "contracts/production/CosmicGame.sol": ["CosmicGame"],
-			// "contracts/production/CosmicSignature.sol": ["CosmicSignature"],
-			// "contracts/production/CosmicToken.sol": ["CosmicToken"],
+			// "contracts/production/CosmicSignatureDao.sol": ["CosmicSignatureDao"],
+			// "contracts/production/CosmicSignatureGame.sol": ["CosmicSignatureGame"],
+			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
+			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
 			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
 			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],

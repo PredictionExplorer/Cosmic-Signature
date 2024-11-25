@@ -1,34 +1,35 @@
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function main() {
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	let o = await cosmicGameProxy.owner();
-	console.log("Owner of CosmicGameProxy: " + o);
+	let o = await cosmicSignatureGame.owner();
+	console.log("Owner of CosmicSignatureGame: " + o);
 
-	let addr = cosmicGameProxy.token();
-	let tokenContract = await hre.ethers.getContractAt("CosmicToken", addr);
-	o = await tokenContract.owner();
-	console.log("Owner of CosmicToken: " + o);
+	let addr = cosmicSignatureGame.token();
+	let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", addr);
+	o = await cosmicSignatureToken.owner();
+	console.log("Owner of CosmicSignatureToken: " + o);
 
-	addr = cosmicGameProxy.nft();
-	let cstContract = await hre.ethers.getContractAt("CosmicSignature", addr);
-	o = await cstContract.owner();
-	console.log("Owner of CosmicSignature: " + o);
+	addr = cosmicSignatureGame.nft();
+	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", addr);
+	o = await cosmicSignatureNft.owner();
+	console.log("Owner of CosmicSignatureNft: " + o);
 
-	addr = cosmicGameProxy.prizesWallet();
+	addr = cosmicSignatureGame.prizesWallet();
 	let prizesWalletContract = await hre.ethers.getContractAt("PrizesWallet", addr);
 	o = await prizesWalletContract.owner();
 	console.log("Owner of PrizesWallet: " + o);
 
-	addr = await cosmicGameProxy.charity();
-	console.log("CharityWallet contract at CosmicGameProxy contract: " + addr);
+	addr = await cosmicSignatureGame.charity();
+	console.log("CharityWallet contract at CosmicSignatureGame contract: " + addr);
 	let charityContract = await hre.ethers.getContractAt("CharityWallet", addr);
 	addr = await charityContract.charityAddress();
 	console.log("Charity address at CharityWallet contract: " + addr);
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

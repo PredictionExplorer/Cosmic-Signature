@@ -2,9 +2,9 @@
 pragma solidity 0.8.27;
 
 import { IPrizesWallet } from "./IPrizesWallet.sol";
-import { ICosmicToken } from "./ICosmicToken.sol";
+import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 // import { IMarketingWallet } from "./IMarketingWallet.sol";
-import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
@@ -35,7 +35,7 @@ interface ISystemEvents {
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event TokenContractAddressChanged(ICosmicToken newValue);
+	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
 
 	/// @notice Emitted when `marketingWallet` is changed.
 	/// @param newValue The new value.
@@ -43,7 +43,7 @@ interface ISystemEvents {
 
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.
-	event CosmicSignatureNftAddressChanged(ICosmicSignature newValue);
+	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
 
 	/// @notice Emitted when the `RandomWalkNFT` address is changed
 	/// @param newRandomWalkNft The new `RandomWalkNFT` address

@@ -72,7 +72,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param roundNum The bidding round number.
 	/// todo-1 Make sense to reorder `roundNum` to the beginning?
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
-	/// @param cstPrizeAmount The amount of Cosmic Tokens awarded.
+	/// @param cstPrizeAmount The amount of Cosmic Signature Tokens awarded.
 	/// ---param winnerIndex Winner index.
 	/// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
 	event EnduranceChampionPrizePaid(

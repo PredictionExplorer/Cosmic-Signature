@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.27;
 
-import { ICosmicToken } from "./ICosmicToken.sol";
+import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
 /// @title Marketer reward wallet.
 /// @author Cosmic Signature Development Team.
@@ -29,7 +29,7 @@ import { ICosmicToken } from "./ICosmicToken.sol";
 interface IMarketingWallet {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event TokenContractAddressChanged(ICosmicToken newValue);
+	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
 
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
@@ -39,7 +39,8 @@ interface IMarketingWallet {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setTokenContract(ICosmicToken newValue_) external;
+	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
+	function setTokenContract(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.
 	/// Only the contract owner is permitted to call this method.

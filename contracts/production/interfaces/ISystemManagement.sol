@@ -2,9 +2,9 @@
 pragma solidity 0.8.27;
 
 import { IPrizesWallet } from "./IPrizesWallet.sol";
-import { ICosmicToken } from "./ICosmicToken.sol";
+import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 // import { IMarketingWallet } from "./IMarketingWallet.sol";
-import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
@@ -53,7 +53,8 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setTokenContract(ICosmicToken newValue_) external;
+	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
+	function setTokenContract(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Sets `marketingWallet`.
 	/// Only the contract owner is permitted to call this method.
@@ -63,7 +64,7 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @notice Sets `nft`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setCosmicSignatureNft(ICosmicSignature newValue_) external;
+	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external;
 
 	/// @notice Set the `RandomWalkNFT` contract address
 	/// Only the contract owner is permitted to call this method.
@@ -83,6 +84,7 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @notice Set the charity address
 	/// Only the contract owner is permitted to call this method.
 	/// @param _charity The new charity address
+	/// todo-1 Rename to `setCharityAddress`. Also rename respective events
 	function setCharity(address _charity) external;
 
 	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;

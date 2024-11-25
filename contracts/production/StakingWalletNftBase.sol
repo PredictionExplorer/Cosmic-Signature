@@ -6,7 +6,7 @@ pragma solidity 0.8.27;
 // #endregion
 // #region
 
-// import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
+// import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 
 // #endregion
@@ -31,7 +31,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 	/// @dev Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
 	/// But it should be 256 bits long.
 	/// Comment-202410274 applies.
-	// CosmicGameConstants.BooleanWithPadding[1 << 64] internal _usedNfts;
+	// CosmicSignatureConstants.BooleanWithPadding[1 << 64] internal _usedNfts;
 	uint256[1 << 64] internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
@@ -93,7 +93,7 @@ abstract contract StakingWalletNftBase is IStakingWalletNftBase {
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    // `CosmicGameConstants.BooleanWithPadding`.
+	///    // `CosmicSignatureConstants.BooleanWithPadding`.
 	///    `_usedNfts`.
 	function wasNftUsed(uint256 nftId_) external view override returns(/*bool*/ uint256) {
 		// return _usedNfts[nftId_].value;

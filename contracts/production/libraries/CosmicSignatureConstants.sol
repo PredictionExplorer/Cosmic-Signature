@@ -8,7 +8,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @author Cosmic Signature Development Team.
 /// @notice Default values and types used across the Cosmic Signature ecosystem.
 /// @dev These constants are used for initial state variables but may be updated later.
-library CosmicGameConstants {
+library CosmicSignatureConstants {
 	/// @notice Represents one million. Useful for calculations involving millions
 	uint256 public constant MILLION = 1e6;
 
@@ -34,7 +34,7 @@ library CosmicGameConstants {
 	uint256 public constant TIMESTAMP_9999_12_31 = 253_402_214_400;
 
 	// /// @notice System mode constants.
-	// /// @dev These define the operational states of the CosmicGameProxy contract.
+	// /// @dev These define the operational states of the `CosmicSignatureGame` contract.
 	// uint256 public constant MODE_RUNTIME = 0; // Normal operation.
 	// uint256 public constant MODE_PREPARE_MAINTENANCE = 1; // Preparing for maintenance.
 	// uint256 public constant MODE_MAINTENANCE = 2; // System under maintenance.
@@ -159,7 +159,7 @@ library CosmicGameConstants {
 	// 	/// todo-1 Rename to `EthPlusRandomWalkNft`.
 	// 	RandomWalk,
 	//
-	// 	/// @notice Bid using Cosmic Tokens.
+	// 	/// @notice Bid using Cosmic Signature Tokens.
 	// 	/// todo-1 Rename to `Cst`.
 	// 	CST
 	// }

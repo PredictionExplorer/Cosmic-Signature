@@ -6,7 +6,7 @@ pragma solidity 0.8.27;
 // #endregion
 // #region
 
-// import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+// import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 

@@ -2,7 +2,7 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 const numRWalkToMint = 4;
 
@@ -16,8 +16,8 @@ async function mint_random_walk_token(testingAcct, randomWalkNft_) {
 	let nftId = parsed_log.args.tokenId;
 	return nftId;
 }
-async function mint_random_walks(testingAcct, cosmicGameProxy) {
-	let randomWalkNftAddr_ = await cosmicGameProxy.randomWalkNft();
+async function mint_random_walks(testingAcct, cosmicSignatureGame) {
+	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 	let output = "";
 	for (let i = 0; i < numRWalkToMint; i++) {
@@ -38,9 +38,9 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	let token_list = await mint_random_walks(testingAcct, cosmicGameProxy);
+	let token_list = await mint_random_walks(testingAcct, cosmicSignatureGame);
 	console.log(token_list);
 }
 main()
