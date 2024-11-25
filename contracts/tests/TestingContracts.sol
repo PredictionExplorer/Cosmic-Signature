@@ -115,8 +115,8 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_blockDeposits = false;
 	}
 
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft sw_) external {
-		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(sw_));
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external {
+		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}
 
 	function doSetApprovalForAll(IERC721 nft_) external {

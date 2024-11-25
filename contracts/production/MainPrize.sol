@@ -17,7 +17,7 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 // import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+// import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -271,12 +271,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
-		// uint256 numStakedTokensRWalk = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).numStakedNfts();
+		// uint256 numStakedTokensRWalk = stakingWalletRandomWalkNft.numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNftWinnersStakingRWalk; i++) {
 				_updateRaffleEntropy();
-				address luckyStakerAddress_ = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
+				address luckyStakerAddress_ = stakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(raffleEntropy);
 
 				if (luckyStakerAddress_ == address(0)) {
 					break;

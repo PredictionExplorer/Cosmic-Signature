@@ -66,20 +66,20 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external;
 
-	/// @notice Set the `RandomWalkNFT` contract address
+	/// @notice Sets `randomWalkNft`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param randomWalkNft_ The new `RandomWalkNFT` contract address
-	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external;
+	/// @param newValue_ The new value.
+	function setRandomWalkNft(IRandomWalkNFT newValue_) external;
 
-	/// @notice Set the CST staking wallet address
+	/// @notice Sets `stakingWalletCosmicSignatureNft`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param stakingWalletCosmicSignatureNft_ The new CST staking wallet address
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external;
+	/// @param newValue_ The new value.
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external;
 
-	/// @notice Set the RandomWalk staking wallet address
+	/// @notice Sets `stakingWalletRandomWalkNft`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param stakingWalletRandomWalkNft_ The new RandomWalk staking wallet address
-	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external;
+	/// @param newValue_ The new value.
+	function setStakingWalletRandomWalkNft(IStakingWalletRandomWalkNft newValue_) external;
 
 	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.

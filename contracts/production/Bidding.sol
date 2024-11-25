@@ -295,6 +295,11 @@ abstract contract Bidding is
 		return numRaffleParticipants[roundNum];
 	}
 
+	function getBidderAddressAtPosition(uint256 position) public view override returns (address) {
+		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
+		return raffleParticipants[roundNum][position];
+	}
+
 	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
 		require(
 			roundNum_ <= roundNum,
@@ -307,7 +312,7 @@ abstract contract Bidding is
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
 		// todo-1 Is this validation redundant?
 		// todo-1 Maybe skip all validations and check them only if the bidder address is zero.
-		// todo-1 The same applies to `getBidderAtPosition`.
+		// todo-1 The same applies to `getBidderAddressAtPosition`.
 		// todo-1 Speking of which, would it make sense to call it from here?
 		// todo-1 Remember to make the same changes in `BiddingOpenBid`.
 		require(
@@ -326,11 +331,6 @@ abstract contract Bidding is
 		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
 		address bidderAddress_ = raffleParticipants[roundNum_][offset];
 		return bidderAddress_;
-	}
-
-	function getBidderAtPosition(uint256 position) public view override returns (address) {
-		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
-		return raffleParticipants[roundNum][position];
 	}
 
 	function getTotalSpentByBidder(address bidderAddress_) public view override returns (uint256, uint256) {

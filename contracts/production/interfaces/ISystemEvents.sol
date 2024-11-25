@@ -7,6 +7,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
+import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 
 interface ISystemEvents {
 	// /// @notice Emitted when the system mode is changed.
@@ -45,17 +46,17 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
 
-	/// @notice Emitted when the `RandomWalkNFT` address is changed
-	/// @param newRandomWalkNft The new `RandomWalkNFT` address
-	event RandomWalkNftAddressChanged(IRandomWalkNFT newRandomWalkNft);
+	/// @notice Emitted when `randomWalkNft` is changed.
+	/// @param newValue The new value.
+	event RandomWalkNftAddressChanged(IRandomWalkNFT newValue);
 
-	/// @notice Emitted when the CST staking wallet address is changed
-	/// @param newStakingWalletCosmicSignatureNft The new CST staking wallet address
-	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft newStakingWalletCosmicSignatureNft);
+	/// @notice Emitted when `stakingWalletCosmicSignatureNft` is changed.
+	/// @param newValue The new value.
+	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft newValue);
 
-	/// @notice Emitted when the RandomWalk staking wallet address is changed
-	/// @param newStakingWalletRandomWalkNft The new RandomWalk staking wallet address
-	event StakingWalletRandomWalkNftAddressChanged(address newStakingWalletRandomWalkNft);
+	/// @notice Emitted when `stakingWalletRandomWalkNft` is changed.
+	/// @param newValue The new value.
+	event StakingWalletRandomWalkNftAddressChanged(IStakingWalletRandomWalkNft newValue);
 
 	/// @notice Emitted when `charityAddress` is changed.
 	/// @param newValue The new value.

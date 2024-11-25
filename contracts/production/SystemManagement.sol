@@ -18,6 +18,8 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
+import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWalkNft.sol";
+import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
@@ -153,22 +155,22 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit CosmicSignatureNftAddressChanged(newValue_);
 	}
 
-	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyInactive {
-		require(address(randomWalkNft_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
-		randomWalkNft = RandomWalkNFT(address(randomWalkNft_));
-		emit RandomWalkNftAddressChanged(randomWalkNft_);
+	function setRandomWalkNft(IRandomWalkNFT newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		randomWalkNft = RandomWalkNFT(address(newValue_));
+		emit RandomWalkNftAddressChanged(newValue_);
 	}
 
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external override onlyOwner onlyInactive {
-		require(address(stakingWalletCosmicSignatureNft_) != address(0),CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(stakingWalletCosmicSignatureNft_));
-		emit StakingWalletCosmicSignatureNftAddressChanged(stakingWalletCosmicSignatureNft_);
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
+		emit StakingWalletCosmicSignatureNftAddressChanged(newValue_);
 	}
 
-	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external override onlyOwner onlyInactive {
-		require(stakingWalletRandomWalkNft_ != address(0),CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
-		stakingWalletRandomWalkNft = stakingWalletRandomWalkNft_;
-		emit StakingWalletRandomWalkNftAddressChanged(stakingWalletRandomWalkNft_);
+	function setStakingWalletRandomWalkNft(IStakingWalletRandomWalkNft newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		stakingWalletRandomWalkNft = StakingWalletRandomWalkNft(address(newValue_));
+		emit StakingWalletRandomWalkNftAddressChanged(newValue_);
 	}
 
 	function setCharityAddress(address newValue_) external override onlyOwner onlyInactive {

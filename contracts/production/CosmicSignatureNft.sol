@@ -33,6 +33,7 @@ contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 
 	/// @notice The `CosmicSignatureGame` contract address.
 	/// todo-1 Declare some other variables `immutable`.
+	/// todo-1 But first think which variables should be changeable and which should not be.
 	address public immutable game;
 
 	/// @notice IPFS link to the script that generates images and videos for each NFT based on seed

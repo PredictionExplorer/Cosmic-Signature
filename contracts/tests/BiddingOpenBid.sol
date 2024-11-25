@@ -302,6 +302,11 @@ abstract contract BiddingOpenBid is
 		return numRaffleParticipants[roundNum];
 	}
 
+	function getBidderAddressAtPosition(uint256 position) public view override returns (address) {
+		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
+		return raffleParticipants[roundNum][position];
+	}
+
 	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
 		require(
 			roundNum_ <= roundNum,
@@ -328,11 +333,6 @@ abstract contract BiddingOpenBid is
 		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
 		address bidderAddr = raffleParticipants[roundNum_][offset];
 		return bidderAddr;
-	}
-
-	function getBidderAtPosition(uint256 position) public view override returns (address) {
-		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
-		return raffleParticipants[roundNum][position];
 	}
 
 	function getTotalSpentByBidder(address bidderAddress_) public view override returns (uint256, uint256) {
