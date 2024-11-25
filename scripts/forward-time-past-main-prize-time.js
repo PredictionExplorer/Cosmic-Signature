@@ -2,17 +2,17 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function main() {
-	const cosmicGameProxy = await getCosmicGameProxyContract();
-	//console.log(cosmicGameProxy);
-	let durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+	const cosmicSignatureGame = await getCosmicSignatureGameContract();
+	//console.log(cosmicSignatureGame);
+	let durationUntilMainPrize_ = await cosmicSignatureGame.timeUntilPrize();
 	console.log("Duration until main prize before: " + durationUntilMainPrize_.toString());
-	// durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+	// durationUntilMainPrize_ = await cosmicSignatureGame.timeUntilPrize();
 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize_.add(1).toNumber()]);
 	await hre.ethers.provider.send("evm_mine");
-	durationUntilMainPrize_ = await cosmicGameProxy.timeUntilPrize();
+	durationUntilMainPrize_ = await cosmicSignatureGame.timeUntilPrize();
 	console.log("Duration until main prize after: " + durationUntilMainPrize_.toString());
 }
 

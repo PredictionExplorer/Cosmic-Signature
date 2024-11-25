@@ -10,12 +10,12 @@ pragma solidity 0.8.27;
 // import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 // import { PrizesWallet } from "./PrizesWallet.sol";
-// import { CosmicToken } from "./CosmicToken.sol";
-// import { CosmicSignature } from "./CosmicSignature.sol";
+// import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
+// import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
@@ -32,19 +32,20 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.
 	function claimPrize() external override nonReentrant /*onlyActive*/ {
-		// todo-1 Maybe remove this unchecked here. It complicates things, but doesn't add a lot of value.
+		// todo-1 Maybe remove this `unchecked` here. It complicates things, but doesn't add a lot of value.
+		// todo-1 Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			require(lastBidder != address(0), CosmicGameErrors.NoLastBidder("There is no last bidder."));
+			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoLastBidder("There is no last bidder."));
 
 			// [Comment-202411169/]
 			// #enable_asserts assert(block.timestamp >= activationTime);
 
 			require(
 				block.timestamp >= prizeTime,
-				CosmicGameErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
+				CosmicSignatureErrors.EarlyClaim("Not enough time has elapsed.", prizeTime, block.timestamp)
 			);
 
 			// // toto-1 We don't need this. `msg.sender` is the winner.
@@ -58,17 +59,18 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			//
 			// todo-0 Eliminate the above `require`.
 			// todo-0 Rewrite this:
-			// todo-0 (msg.sender == lastBidder) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutDurationToClaimMainPrize)
-			// todo-0 Throw `CosmicGameErrors.EarlyClaim` if not.
-			// todo-0 Eliminate `CosmicGameErrors.LastBidderOnly`.
+			// todo-0 (msg.sender == lastBidderAddress) ? (block.timestamp >= prizeTime) : (block.timestamp >= prizeTime + timeoutDurationToClaimMainPrize)
+			// todo-0 Throw `CosmicSignatureErrors.EarlyClaim` if not.
+			// todo-0 Eliminate `CosmicSignatureErrors.LastBidderOnly`.
 			//
-			// todo-0 But I can eliminate the prev `require` too and check it only if `msg.sender != lastBidder`.
+			// todo-0 But I can eliminate the prev `require` too and check it only if `msg.sender != lastBidderAddress`.
 			// todo-0 Otherwie only assert it.
-			if ( ! (/*winner*/ msg.sender == lastBidder || block.timestamp - prizeTime >= timeoutDurationToClaimMainPrize) ) {
+			if ( ! (/*winner*/ msg.sender == lastBidderAddress || block.timestamp - prizeTime >= timeoutDurationToClaimMainPrize) ) {
 				revert
-					CosmicGameErrors.LastBidderOnly(
+					CosmicSignatureErrors.LastBidderOnly(
+						// todo-1 Rephrase: the bidding round main prize
 						"Only the last bidder may claim the prize until a timeout expires.",
-						lastBidder,
+						lastBidderAddress,
 						/*winner*/ msg.sender,
 						// todo-1 Make sure this can't overflow.
 						timeoutDurationToClaimMainPrize - (block.timestamp - prizeTime)
@@ -81,16 +83,16 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// // Prevent reentrancy
 			// // todo-1 Reentrancy is no longer possible. Moved to `_roundEndResets`.
 			// // todo-1 Remove this garbage soon.
-			// lastBidder = address(0);
+			// lastBidderAddress = address(0);
 
-			// todo-0 Assign `lastBidder` here.
-			// todo-0 Comment: Even if `lastBidder` forgets to claim the prize, we will still record them as the winner.
+			// todo-0 Assign `lastBidderAddress` here.
+			// todo-0 Comment: Even if `lastBidderAddress` forgets to claim the prize, we will still record them as the winner.
 			// todo-0 This will allow them to claim donated NFTs.
 			// todo-0 But I have now moved NFT donations to `PrizesWallet`. ToDo-202411257-1 relates.
 			// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
-			winners[roundNum] = /*winner*/ msg.sender /*lastBidder*/;
+			winners[roundNum] = /*winner*/ msg.sender /*lastBidderAddress*/;
 			// todo-1 Think if this is the best place to call this method. Maybe call it after disrtibuting prizes. Or maybe leave it alone.
-			prizesWallet.registerRoundEnd(roundNum, /*winner*/ msg.sender /*lastBidder*/);
+			prizesWallet.registerRoundEnd(roundNum, /*winner*/ msg.sender /*lastBidderAddress*/);
 
 			// todo-1 Calculate these at the point where we need these, not here.
 			uint256 mainPrizeAmount_ = mainPrizeAmount();
@@ -144,7 +146,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 				bytes4 errorSelector;
 				assembly { errorSelector := mload(add(errorDetails, 0x20)) }
-				unexpectedErrorOccurred = errorSelector != CosmicGameErrors.NoStakedNfts.selector;
+				unexpectedErrorOccurred = errorSelector != CosmicSignatureErrors.NoStakedNfts.selector;
 			} else {
 				// [Comment-202410299/]
 				// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails.length);
@@ -153,7 +155,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			}
 			if (unexpectedErrorOccurred) {
 				revert
-					CosmicGameErrors.FundTransferFailed(
+					CosmicSignatureErrors.FundTransferFailed(
 						"Transfer to StakingWalletCosmicSignatureNft failed.",
 						address(stakingWalletCosmicSignatureNft),
 						stakingAmount_
@@ -170,9 +172,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// [/Comment-202411077]
 		(bool isSuccess, ) = charity.call{ value: charityAmount_ }("");
 		if (isSuccess) {
-			emit CosmicGameEvents.FundsTransferredToCharity(charity, charityAmount_);
+			emit CosmicSignatureEvents.FundsTransferredToCharity(charity, charityAmount_);
 		} else {
-			emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charity, charityAmount_);
+			emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charity, charityAmount_);
 		}
 
 		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_);
@@ -191,7 +193,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// todo-1 See also: Comment-202411077, Comment-202411078.
 		// todo-1 Make sure all external calls whose fails we don't ignore cannot fail.
 		(isSuccess, ) = /*winner*/ msg.sender.call{ value: mainPrizeAmount_ }("");
-		require(isSuccess, CosmicGameErrors.FundTransferFailed("Transfer to bidding round main prize claimer failed.", /*winner*/ msg.sender, mainPrizeAmount_));
+		require(isSuccess, CosmicSignatureErrors.FundTransferFailed("Transfer to bidding round main prize claimer failed.", /*winner*/ msg.sender, mainPrizeAmount_));
 	}
 
 	// #endregion
@@ -205,6 +207,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that payment to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
 			uint256 nftId = nft.mint(stellarSpender, roundNum);
+			// todo-1 `erc20RewardMultiplier` shold already be multiplied by `1 ether`.
 			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
 			// try
 			// ToDo-202409245-0 applies.
@@ -250,36 +253,37 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
 	function _distributeRafflePrizes(uint256 raffleAmount_) internal {
 		// Distribute ETH prizes
+		// todo-1 How about increasing the number of raffle and/or other kinds of winnes if there are more bidders? Like 5% of bidders.
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			_updateRaffleEntropy();
-			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinner);
-			emit RaffleETHWinnerEvent(raffleWinner, roundNum, i, perWinnerAmount);
+			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
+			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinnerAddress_);
+			emit RaffleETHWinnerEvent(raffleWinnerAddress_, roundNum, i, perWinnerAmount);
 		}
 
 		// Distribute NFT prizes to bidders
-		for (uint256 i = 0; i < numRaffleNFTWinnersBidding; i++) {
+		for (uint256 i = 0; i < numRaffleNftWinnersBidding; i++) {
 			_updateRaffleEntropy();
-			address raffleWinner = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			uint256 nftId = nft.mint(raffleWinner, roundNum);
-			emit RaffleNFTWinnerEvent(raffleWinner, roundNum, nftId, i, false, false);
+			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
+			uint256 nftId = nft.mint(raffleWinnerAddress_, roundNum);
+			emit RaffleNftWinnerEvent(raffleWinnerAddress_, roundNum, nftId, i, false, false);
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
 		// uint256 numStakedTokensRWalk = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).numStakedNfts();
 		// if (numStakedTokensRWalk > 0)
 		{
-			for (uint256 i = 0; i < numRaffleNFTWinnersStakingRWalk; i++) {
+			for (uint256 i = 0; i < numRaffleNftWinnersStakingRWalk; i++) {
 				_updateRaffleEntropy();
-				address rwalkWinner = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerIfPossible(raffleEntropy);
+				address luckyStakerAddress_ = StakingWalletRandomWalkNft(stakingWalletRandomWalkNft).pickRandomStakerAddressIfPossible(raffleEntropy);
 
-				if (rwalkWinner == address(0)) {
+				if (luckyStakerAddress_ == address(0)) {
 					break;
 				}
 
-				uint256 nftId = nft.mint(rwalkWinner, roundNum);
-				emit RaffleNFTWinnerEvent(rwalkWinner, roundNum, nftId, i, true, true);
+				uint256 nftId = nft.mint(luckyStakerAddress_, roundNum);
+				emit RaffleNftWinnerEvent(luckyStakerAddress_, roundNum, nftId, i, true, true);
 			}
 		}
 	}
@@ -292,6 +296,10 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// todo-1 Ideally, this should return the updated value so that the caller didn't have to spend gas to read it from the storage.
 	/// todo-1 Or better add a function to a library: `generateRandomNumber(uint256 seed_) returns(uint256 randomNumber_)`.
 	/// todo-1 Call it in loops. Load and save `raffleEntropy` only once.
+	/// todo-1 uint256 randomNumber_ = /* block.prevrandao ^ */ block.timestamp ^ raffleEntropy;
+	/// todo-1 for(...;...;...) randomNumber_ = generateRandomNumber(randomNumber_);
+	/// todo-1 raffleEntropy = randomNumber_;
+	/// todo-1 But maybe use `block.prevrandao`, after all? See `CosmicSignatureHelpers`.
 	function _updateRaffleEntropy() internal {
 		// #enable_smtchecker /*
 		unchecked
@@ -321,32 +329,32 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @dev This function is called after a prize is claimed to prepare for the next round
 	function _roundEndResets() internal {
 		++ roundNum;
-		lastBidder = address(0);
-		lastBidType = CosmicGameConstants.BidType.ETH;
+		lastBidderAddress = address(0);
+		// lastBidType = CosmicSignatureConstants.BidType.ETH;
 
 		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength =
 		// 	roundStartCstAuctionLength *
-		// 	(nanoSecondsExtra + CosmicGameConstants.DEFAULT_AUCTION_HOUR) /
-		// 	CosmicGameConstants.DEFAULT_AUCTION_HOUR;
+		// 	(nanoSecondsExtra + CosmicSignatureConstants.DEFAULT_AUCTION_HOUR) /
+		// 	CosmicSignatureConstants.DEFAULT_AUCTION_HOUR;
 
 		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength =
 		// 	roundStartCstAuctionLength *
-		// 	(nanoSecondsExtra + CosmicGameConstants.DEFAULT_AUCTION_LENGTH) /
-		// 	CosmicGameConstants.DEFAULT_AUCTION_LENGTH;
+		// 	(nanoSecondsExtra + CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH) /
+		// 	CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
 
 		// // todo-0 Incorrect! Remove!
 		// cstAuctionLength = roundStartCstAuctionLength + nanoSecondsExtra;
 
 		// // todo-0 Incorrect! Remove!
-		// cstAuctionLength = roundStartCstAuctionLength * nanoSecondsExtra / CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA;
+		// cstAuctionLength = roundStartCstAuctionLength * nanoSecondsExtra / CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
 
 		// todo-0 Nick has confirmed that this is correct.
 		// Assuming this will neither overflow nor underflow.
 		// todo-0 Should we use this formula before the 1st round too?
 		// todo-0 Should `setRoundStartCstAuctionLength` and `setNanoSecondsExtra` use it too?
-		cstAuctionLength = roundStartCstAuctionLength + (nanoSecondsExtra - CosmicGameConstants.INITIAL_NANOSECONDS_EXTRA) / CosmicGameConstants.NANOSECONDS_PER_SECOND;
+		cstAuctionLength = roundStartCstAuctionLength + (nanoSecondsExtra - CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
 
 		// todo-1 Add 1 to ensure that the result is a nonzero?
 		bidPrice = address(this).balance / initialBidAmountFraction;
@@ -359,8 +367,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		chronoWarrior = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
 
-		// if (systemMode == CosmicGameConstants.MODE_PREPARE_MAINTENANCE) {
-		// 	systemMode = CosmicGameConstants.MODE_MAINTENANCE;
+		// if (systemMode == CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE) {
+		// 	systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		// 	emit SystemModeChanged(systemMode);
 		// }
 
@@ -427,9 +435,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	}
 
 	// #endregion
-	// #region `tryGetWinnerByRoundNum`
+	// #region `tryGetRoundMainPrizeWinnerAddress`
 
-	function tryGetWinnerByRoundNum(uint256 roundNum_) public view override returns(address) {
+	function tryGetRoundMainPrizeWinnerAddress(uint256 roundNum_) public view override returns(address) {
 		return winners[roundNum_];
 	}
 

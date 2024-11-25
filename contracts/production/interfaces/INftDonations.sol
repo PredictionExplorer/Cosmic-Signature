@@ -8,13 +8,13 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 /// @dev todo-1 Eliminate this interface and contract.
 interface INftDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	// /// @notice Emitted when an NFT is donated
-	// /// @param donor The address of the donor
+	// /// @param donorAddress The address of the donor
 	// /// @param nftAddress The address of the NFT contract
 	// /// @param roundNum The current bidding round number.
 	// /// @param nftId The ID of the donated NFT
 	// /// @param index The index of the donated NFT in the storage array
 	// event NftDonationEvent(
-	// 	address indexed donor,
+	// 	address indexed donorAddress,
 	// 	IERC721 indexed nftAddress,
 	// 	uint256 indexed roundNum,
 	// 	uint256 nftId,
@@ -25,6 +25,7 @@ interface INftDonations is ICosmicSignatureGameStorage, ISystemManagement {
 	// /// @param roundNum The bidding round number.
 	// /// @param index The index of the donated NFT
 	// /// @param winner The address of the winner claiming the NFT
+	// /// todo-9 Name it better, like in `IPrizesWallet`.
 	// /// @param nftAddress The address of the NFT contract
 	// /// @param nftId The ID of the claimed NFT
 	// event DonatedNftClaimedEvent(

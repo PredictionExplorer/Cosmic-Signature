@@ -2,29 +2,29 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 const numRWalkToMint = 4;
 
-async function mint_random_walk_token(testingAcct, randomWalkNft) {
-	let tokenPrice = await randomWalkNft.getMintPrice();
-	let tx = await randomWalkNft.connect(testingAcct).mint({ value: tokenPrice });
+async function mint_random_walk_token(testingAcct, randomWalkNft_) {
+	let tokenPrice = await randomWalkNft_.getMintPrice();
+	let tx = await randomWalkNft_.connect(testingAcct).mint({ value: tokenPrice });
 	let receipt = await tx.wait();
-	let topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
+	let topic_sig = randomWalkNft_.interface.getEventTopic("MintEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-	let parsed_log = randomWalkNft.interface.parseLog(event_logs[0]);
+	let parsed_log = randomWalkNft_.interface.parseLog(event_logs[0]);
 	let nftId = parsed_log.args.tokenId;
 	return nftId;
 }
-async function mint_random_walks(testingAcct, cosmicGameProxy) {
-	let rwalkAddr = await cosmicGameProxy.randomWalkNft();
-	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", rwalkAddr);
+async function mint_random_walks(testingAcct, cosmicSignatureGame) {
+	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
+	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 	let output = "";
 	for (let i = 0; i < numRWalkToMint; i++) {
 		if (output.length > 0) {
 			output = output + ",";
 		}
-		let nftId = await mint_random_walk_token(testingAcct, randomWalkNft);
+		let nftId = await mint_random_walk_token(testingAcct, randomWalkNft_);
 		output = output + nftId.toString();
 	}
 	return output;
@@ -38,9 +38,9 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	let token_list = await mint_random_walks(testingAcct, cosmicGameProxy);
+	let token_list = await mint_random_walks(testingAcct, cosmicSignatureGame);
 	console.log(token_list);
 }
 main()

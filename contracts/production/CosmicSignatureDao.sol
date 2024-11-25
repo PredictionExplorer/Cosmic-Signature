@@ -6,18 +6,18 @@ import { GovernorSettings } from "@openzeppelin/contracts/governance/extensions/
 import { GovernorCountingSimple } from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import { GovernorVotes, IVotes } from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
-import { ICosmicDAO } from "./interfaces/ICosmicDAO.sol";
+import { ICosmicSignatureDao } from "./interfaces/ICosmicSignatureDao.sol";
 
 /// @dev Extends various OpenZeppelin Governor modules to create a comprehensive DAO
-contract CosmicDAO is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction, ICosmicDAO {
-	/// @notice Initializes the CosmicDAO contract
+contract CosmicSignatureDao is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction, ICosmicSignatureDao {
+	/// @notice Initializes the CosmicSignatureDao contract
 	/// @dev Sets up the governance parameters and links the voting token
 	/// @param _token The address of the token used for voting power
 	constructor(
 		IVotes _token
 	)
-		Governor("CosmicDAO")
-		// todo-0 Magic numbers hardcoded. Can I move some to `CosmicGameConstants` and/or reuse some that are already in there?
+		Governor("CosmicSignatureDao")
+		// todo-0 Magic numbers hardcoded. Can I move some to `CosmicSignatureConstants` and/or reuse some that are already in there?
 		// todo-0 Besides, a day contains a different number of seconds.
 		GovernorSettings(7200 /* 1 day */, 216000 /* 1 month */, 100 ether)
 		GovernorVotes(_token)

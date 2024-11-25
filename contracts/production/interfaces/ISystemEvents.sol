@@ -2,8 +2,9 @@
 pragma solidity 0.8.27;
 
 import { IPrizesWallet } from "./IPrizesWallet.sol";
-import { ICosmicToken } from "./ICosmicToken.sol";
-import { ICosmicSignature } from "./ICosmicSignature.sol";
+import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
+// import { IMarketingWallet } from "./IMarketingWallet.sol";
+import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
@@ -20,7 +21,7 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
 
-	/// @notice Emitted when the marketing reward amount is changed.
+	/// @notice Emitted when `marketingReward` is changed.
 	/// @param newValue The new value.
 	event MarketingRewardChanged(uint256 newValue);
 
@@ -32,17 +33,17 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event PrizesWalletAddressChanged(IPrizesWallet newValue);
 
-	/// @notice Emitted when the Cosmic Token address is changed
-	/// @param newCosmicToken The new Cosmic Token address
-	event CosmicTokenAddressChanged(ICosmicToken newCosmicToken);
+	/// @notice Emitted when `token` is changed.
+	/// @param newValue The new value.
+	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
 
-	/// @notice Emitted when the marketing wallet address is changed
-	/// @param newMarketingWallet The new marketing wallet address
-	event MarketingWalletAddressChanged(address newMarketingWallet);
+	/// @notice Emitted when `marketingWallet` is changed.
+	/// @param newValue The new value.
+	event MarketingWalletAddressChanged(address newValue);
 
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.
-	event CosmicSignatureNftAddressChanged(ICosmicSignature newValue);
+	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
 
 	/// @notice Emitted when the `RandomWalkNFT` address is changed
 	/// @param newRandomWalkNft The new `RandomWalkNFT` address
@@ -125,10 +126,10 @@ interface ISystemEvents {
 	event NumRaffleETHWinnersBiddingChanged(uint256 newNumRaffleETHWinnersBidding);
 
 	/// @notice Emitted when the number of NFT raffle winners for bidding is changed
-	/// @param newNumRaffleNFTWinnersBidding The new number of NFT raffle winners
-	event NumRaffleNFTWinnersBiddingChanged(uint256 newNumRaffleNFTWinnersBidding);
+	/// @param newNumRaffleNftWinnersBidding The new number of NFT raffle winners
+	event NumRaffleNftWinnersBiddingChanged(uint256 newNumRaffleNftWinnersBidding);
 
 	/// @notice Emitted when the number of NFT raffle winners for RWalk staking is changed
-	/// @param newNumRaffleNFTWinnersStakingRWalk The new number of NFT raffle winners for RWalk staking
-	event NumRaffleNFTWinnersStakingRWalkChanged(uint256 newNumRaffleNFTWinnersStakingRWalk);
+	/// @param newNumRaffleNftWinnersStakingRWalk The new number of NFT raffle winners for RWalk staking
+	event NumRaffleNftWinnersStakingRWalkChanged(uint256 newNumRaffleNftWinnersStakingRWalk);
 }

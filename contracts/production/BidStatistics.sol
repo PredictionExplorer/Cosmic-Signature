@@ -6,7 +6,7 @@ pragma solidity 0.8.27;
 // #endregion
 // #region
 
-// import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+// import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
@@ -18,13 +18,13 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 
 	/// @notice Tries to update the endurance champion and chrono-warrior info.
 	function _updateChampionsIfNeeded() internal {
-		// if (lastBidder == address(0)) return;
-		// #enable_asserts assert(lastBidder != address(0));
+		// if (lastBidderAddress == address(0)) return;
+		// #enable_asserts assert(lastBidderAddress != address(0));
 
-		uint256 lastBidTimeStampCopy_ = bidderInfo[roundNum][lastBidder].lastBidTimeStamp;
+		uint256 lastBidTimeStampCopy_ = bidderInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 		uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
 		if (enduranceChampion == address(0)) {
-			enduranceChampion = lastBidder;
+			enduranceChampion = lastBidderAddress;
 			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
 			enduranceChampionDuration = lastBidDuration_;
 			// #enable_asserts assert(chronoWarrior == address(0));
@@ -34,7 +34,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 				_updateChronoWarriorIfNeeded(chronoEndTimeStamp_);
 			}
 			prevEnduranceChampionDuration = enduranceChampionDuration;
-			enduranceChampion = lastBidder;
+			enduranceChampion = lastBidderAddress;
 			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
 			enduranceChampionDuration = lastBidDuration_;
 		}

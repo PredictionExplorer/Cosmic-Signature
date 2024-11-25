@@ -3,23 +3,23 @@ pragma solidity 0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 // import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import { CosmicGame } from "../production/CosmicGame.sol";
+import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract ReClaim {
-	CosmicGame public cosmicGame;
+	CosmicSignatureGame public cosmicSignatureGame;
 	uint public numIterations = 0;
-	constructor(address payable _cosmicGame) {
-		cosmicGame = CosmicGame(_cosmicGame);
+	constructor(CosmicSignatureGame cosmicSignatureGame_) {
+		cosmicSignatureGame = cosmicSignatureGame_;
 	}
 	receive() external payable {
 		if (numIterations == 0) {
 			return;
 		}
 		numIterations--;
-		cosmicGame.claimPrize();
+		cosmicSignatureGame.claimPrize();
 	}
 	function claimAndReset(uint256 pNumIterations) public {
 		numIterations = pNumIterations;
-		cosmicGame.claimPrize();
+		cosmicSignatureGame.claimPrize();
 	}
 }

@@ -1,17 +1,18 @@
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function main() {
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
 	const [owner] = await hre.ethers.getSigners();
 	const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-	let bidderContract = await BidderContract.connect(owner).deploy(cosmicGameProxy.address);
+	let bidderContract = await BidderContract.connect(owner).deploy(cosmicSignatureGame.address);
 	await bidderContract.deployed();
 
 	console.log("BidderContract address: " + bidderContract.address);
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

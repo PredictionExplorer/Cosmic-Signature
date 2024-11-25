@@ -4,14 +4,16 @@ pragma solidity 0.8.27;
 // import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
-import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
-import { CosmicToken } from "./CosmicToken.sol";
-import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
+import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
+// import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
+// import { MarketingWallet } from "./MarketingWallet.sol";
+import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
+import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
@@ -23,8 +25,8 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	// /// @dev Replaced with `onlyInactive`.
 	// modifier onlyMaintenance() {
 	// 	require(
-	// 		systemMode == CosmicGameConstants.MODE_MAINTENANCE,
-	// 		CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
+	// 		systemMode == CosmicSignatureConstants.MODE_MAINTENANCE,
+	// 		CosmicSignatureErrors.SystemMode(CosmicSignatureConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
 	// 	);
 	// 	_;
 	// }
@@ -32,8 +34,8 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	// /// @dev Replaced with `onlyActive`.
 	// modifier onlyRuntime() {
 	// 	require(
-	// 		systemMode < CosmicGameConstants.MODE_MAINTENANCE,
-	// 		CosmicGameErrors.SystemMode(CosmicGameConstants.ERR_STR_MODE_RUNTIME, systemMode)
+	// 		systemMode < CosmicSignatureConstants.MODE_MAINTENANCE,
+	// 		CosmicSignatureErrors.SystemMode(CosmicSignatureConstants.ERR_STR_MODE_RUNTIME, systemMode)
 	// 	);
 	// 	_;
 	// }
@@ -42,7 +44,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp < activationTimeCopy_,
-			CosmicGameErrors.SystemIsActive("Already active.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsActive("Already active.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
@@ -51,22 +53,22 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp >= activationTimeCopy_,
-			CosmicGameErrors.SystemIsInactive("Not active yet.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsInactive("Not active yet.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
 
 	// function prepareMaintenance() external override onlyOwner /*onlyRuntime*/ {
 	// 	require(
-	// 		systemMode == CosmicGameConstants.MODE_RUNTIME,
-	// 		CosmicGameErrors.SystemMode("System must be in runtime mode.", systemMode)
+	// 		systemMode == CosmicSignatureConstants.MODE_RUNTIME,
+	// 		CosmicSignatureErrors.SystemMode("System must be in runtime mode.", systemMode)
 	// 	);
-	// 	systemMode = CosmicGameConstants.MODE_PREPARE_MAINTENANCE;
+	// 	systemMode = CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE;
 	// 	emit SystemModeChanged(systemMode);
 	// }   
 	//
 	// function setRuntimeMode() external override onlyOwner onlyMaintenance {
-	// 	systemMode = CosmicGameConstants.MODE_RUNTIME;
+	// 	systemMode = CosmicSignatureConstants.MODE_RUNTIME;
 	// 	emit SystemModeChanged(systemMode);
 	// }
 
@@ -78,8 +80,8 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `bidPrice`.
 		// [/Comment-202411236]
 		require(
-			lastBidder == address(0),
-			CosmicGameErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
+			lastBidderAddress == address(0),
+			CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
 		);
 
 		_setActivationTime(newValue_);
@@ -128,49 +130,49 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	}
 
 	function setPrizesWallet(IPrizesWallet newValue_) external override onlyOwner onlyInactive {
-		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
 		prizesWallet = PrizesWallet(address(newValue_));
 		emit PrizesWalletAddressChanged(newValue_);
 	}
 
-	function setTokenContract(ICosmicToken _token) external override onlyOwner onlyInactive {
-		require(address(_token) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		token = CosmicToken(address(_token));
-		emit CosmicTokenAddressChanged(_token);
+	function setTokenContract(ICosmicSignatureToken newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		token = CosmicSignatureToken(address(newValue_));
+		emit TokenContractAddressChanged(newValue_);
 	}
 
-	function setMarketingWallet(address _marketingWallet) external override onlyOwner onlyInactive {
-		require(_marketingWallet != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		marketingWallet = _marketingWallet;
-		emit MarketingWalletAddressChanged(_marketingWallet);
+	function setMarketingWallet(address newValue_) external override onlyOwner onlyInactive {
+		require(newValue_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		marketingWallet = newValue_;
+		emit MarketingWalletAddressChanged(newValue_);
 	}
 
-	function setCosmicSignatureNft(ICosmicSignature newValue_) external override onlyOwner onlyInactive {
-		require(address(newValue_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		nft = CosmicSignature(address(newValue_));
+	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override onlyOwner onlyInactive {
+		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		nft = CosmicSignatureNft(address(newValue_));
 		emit CosmicSignatureNftAddressChanged(newValue_);
 	}
 
 	function setRandomWalkNft(IRandomWalkNFT randomWalkNft_) external override onlyOwner onlyInactive {
-		require(address(randomWalkNft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(address(randomWalkNft_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
 		randomWalkNft = RandomWalkNFT(address(randomWalkNft_));
 		emit RandomWalkNftAddressChanged(randomWalkNft_);
 	}
 
 	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft stakingWalletCosmicSignatureNft_) external override onlyOwner onlyInactive {
-		require(address(stakingWalletCosmicSignatureNft_) != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(address(stakingWalletCosmicSignatureNft_) != address(0),CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(stakingWalletCosmicSignatureNft_));
 		emit StakingWalletCosmicSignatureNftAddressChanged(stakingWalletCosmicSignatureNft_);
 	}
 
 	function setStakingWalletRandomWalkNft(address stakingWalletRandomWalkNft_) external override onlyOwner onlyInactive {
-		require(stakingWalletRandomWalkNft_ != address(0),CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(stakingWalletRandomWalkNft_ != address(0),CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
 		stakingWalletRandomWalkNft = stakingWalletRandomWalkNft_;
 		emit StakingWalletRandomWalkNftAddressChanged(stakingWalletRandomWalkNft_);
 	}
 
 	function setCharity(address _charity) external override onlyOwner onlyInactive {
-		require(_charity != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(_charity != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
 		charity = _charity;
 		emit CharityAddressChanged(_charity);
 	}
@@ -206,18 +208,15 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 	}
 
 	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external override onlyOwner onlyInactive {
-		// This ensures that SMTChecker won't flag the logic or an `assert` near Comment-202409163 or Comment-202409162.
-		// We probably don't need a `require` to enforce this condition.
-		// #enable_asserts assert(newStartingBidPriceCSTMinLimit <= type(uint256).max / CosmicGameConstants.MILLION);
-
-		require(
-			newStartingBidPriceCSTMinLimit >= CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-			CosmicGameErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
-				"Provided starting bid price in CST min limit is too small",
-				newStartingBidPriceCSTMinLimit,
-				CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
-			)
-		);
+		// require(
+		// 	newStartingBidPriceCSTMinLimit >= CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
+		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+		// 		// todo-9 Can I phrase this better? Maybe "starting CST bid price".
+		// 		"The provided starting bid price in CST min limit is too small.",
+		// 		newStartingBidPriceCSTMinLimit,
+		// 		CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
+		// 	)
+		// );
 		startingBidPriceCSTMinLimit = newStartingBidPriceCSTMinLimit;
 		emit StartingBidPriceCSTMinLimitChanged(newStartingBidPriceCSTMinLimit);
 	}
@@ -231,7 +230,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 percentageSum_ = mainPrizePercentage_ + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage + charityPercentage;
 		require(
 			percentageSum_ < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
+			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
 		mainPrizePercentage = mainPrizePercentage_;
 		emit MainPrizePercentageChanged(mainPrizePercentage_);
@@ -241,7 +240,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage_ + rafflePercentage + stakingPercentage + charityPercentage;
 		require(
 			percentageSum_ < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
+			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
 		chronoWarriorEthPrizePercentage = chronoWarriorEthPrizePercentage_;
 		emit ChronoWarriorEthPrizePercentageChanged(chronoWarriorEthPrizePercentage_);
@@ -251,7 +250,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage_ + stakingPercentage + charityPercentage;
 		require(
 			percentageSum_ < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
+			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
 		rafflePercentage = rafflePercentage_;
 		emit RafflePercentageChanged(rafflePercentage_);
@@ -261,7 +260,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage_ + charityPercentage;
 		require(
 			percentageSum_ < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
+			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
 		stakingPercentage = stakingPercentage_;
 		emit StakingPercentageChanged(stakingPercentage_);
@@ -271,7 +270,7 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage + charityPercentage_;
 		require(
 			percentageSum_ < 100,
-			CosmicGameErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
+			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
 		charityPercentage = charityPercentage_;
 		emit CharityPercentageChanged(charityPercentage_);
@@ -292,13 +291,13 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit NumRaffleETHWinnersBiddingChanged(numRaffleETHWinnersBidding);
 	}
 
-	function setNumRaffleNFTWinnersBidding(uint256 newNumRaffleNFTWinnersBidding) external override onlyOwner onlyInactive {
-		numRaffleNFTWinnersBidding = newNumRaffleNFTWinnersBidding;
-		emit NumRaffleNFTWinnersBiddingChanged(numRaffleNFTWinnersBidding);
+	function setNumRaffleNftWinnersBidding(uint256 newNumRaffleNftWinnersBidding) external override onlyOwner onlyInactive {
+		numRaffleNftWinnersBidding = newNumRaffleNftWinnersBidding;
+		emit NumRaffleNftWinnersBiddingChanged(numRaffleNftWinnersBidding);
 	}
 
-	function setNumRaffleNFTWinnersStakingRWalk(uint256 newNumRaffleNFTWinnersStakingRWalk) external override onlyOwner onlyInactive {
-		numRaffleNFTWinnersStakingRWalk = newNumRaffleNFTWinnersStakingRWalk;
-		emit NumRaffleNFTWinnersStakingRWalkChanged(numRaffleNFTWinnersStakingRWalk);
+	function setNumRaffleNftWinnersStakingRWalk(uint256 newNumRaffleNftWinnersStakingRWalk) external override onlyOwner onlyInactive {
+		numRaffleNftWinnersStakingRWalk = newNumRaffleNftWinnersStakingRWalk;
+		emit NumRaffleNftWinnersStakingRWalkChanged(numRaffleNftWinnersStakingRWalk);
 	}
 }

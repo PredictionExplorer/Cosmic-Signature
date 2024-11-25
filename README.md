@@ -7,7 +7,7 @@ Cosmic Signature is an NFT project designed for those who love unique, engaging,
 - **Generative Art**: Cosmic Signature NFTs showcase mesmerizing patterns inspired by the three-body problem in physics, simulating planetary trajectories to create captivating cosmic visuals.
 - **Dynamic Bidding Game**: Compete in a high-stakes bidding game with a 24-hour countdown and an initial low bid price. Each bid increases the price by approximately 1% and adds an hour to the clock. Be the last bidder when the timer runs out to win the main prize!
 - **Raffle System**: Each bid doubles as a raffle ticket for a chance to win additional rewards. Each round includes three ETH raffle prizes (4% of the pot each) and five newly minted Cosmic Signature NFTs.
-- **Cosmic Tokens (CST) & DAO**: Earn Cosmic Tokens with every bid and use them to vote in the Cosmic DAO, helping to decide on charitable contributions and taking part in other governance decisions.
+- **Cosmic Signature Tokens (CST) & DAO**: Earn Cosmic Signature Tokens with every bid and use them to vote in the Cosmic Signature DAO, helping to decide on charitable contributions and taking part in other governance decisions.
 - **Random Walk NFT Integration**: If you're a Random Walk NFT holder, enjoy a 50% discount on ETH bids in Cosmic Signature, adding more excitement and opportunities to win.
 
 ## How It Works
@@ -22,16 +22,16 @@ Cosmic Signature is an NFT project designed for those who love unique, engaging,
 - **Raffle Prizes**: Each round includes three ETH raffle prizes (4% of the pot each) and five newly minted Cosmic Signature NFTs, distributed randomly among bidders.
 - **Total NFTs Minted Per Round**: Ten Cosmic Signature NFTs are minted per round—one for the main winner, five for the raffle winners, and four additional raffle winners.
 
-### Cosmic Tokens (CST) and DAO
+### Cosmic Signature Tokens (CST) and DAO
 - **Earning CST**: Every bid earns 100 CST tokens for the bidder and 15 CST tokens for the marketing wallet.
 - **Marketing Wallet**: Controlled by the DAO, used for promotional activities and community rewards.
-- **Governance**: Use CST tokens to vote in the Cosmic DAO, influencing charitable contributions and other project decisions.
+- **Governance**: Use CST tokens to vote in the Cosmic Signature DAO, influencing charitable contributions and other project decisions.
 
 ### Random Walk NFT Integration
 - **Discounted Bidding**: Random Walk NFT holders can bid at a 50% discount in ETH. Once used, a Random Walk NFT cannot be reused for bidding.
 
 ## Community and Governance
-- **Cosmic DAO**: A decentralized autonomous organization where 1 CST token equals 1 vote. The DAO decides on charitable contributions and marketing strategies.
+- **Cosmic Signature DAO**: A decentralized autonomous organization where 1 CST token equals 1 vote. The DAO decides on charitable contributions and marketing strategies.
 - **Charitable Contributions**: A portion of the pot is allocated to charity, as decided by the DAO.
 
 ## Staking
@@ -47,7 +47,7 @@ Cosmic Signature is an NFT project designed for those who love unique, engaging,
 ## Getting Started
 1. **Join Our Community**: Follow us on Twitter, join our Discord, and engage with our growing community.
 2. **Participate in Bidding**: Place your bids using ETH or CST and compete to win exclusive NFTs and rewards.
-3. **Earn and Use Cosmic Tokens**: Earn CST through bidding and participate in the Cosmic DAO to influence the project’s future.
+3. **Earn and Use Cosmic Signature Tokens**: Earn CST through bidding and participate in the Cosmic Signature DAO to influence the project’s future.
 4. **Stake Your NFTs**: Stake your Cosmic Signature NFTs to earn additional rewards over time.
 
 ## FAQs
@@ -61,7 +61,7 @@ The images for Cosmic Signature NFTs are generated based on the three-body probl
 ### How can other NFT projects donate their NFTs to the game?
 Projects interested in donating their NFTs can contact us through our website. Donated NFTs will be displayed on the Cosmic Signature page during the round.
 
-### How can I trade or sell my Cosmic Signature NFTs or Cosmic Tokens?
+### How can I trade or sell my Cosmic Signature NFTs or Cosmic Signature Tokens?
 Cosmic Signature NFTs and CST can be traded on any marketplace or exchange that supports ERC721 and ERC20 tokens, such as OpenSea and Uniswap.
 
 ### Are there any fees involved in the game?

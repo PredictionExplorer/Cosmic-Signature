@@ -2,14 +2,14 @@
 
 const hre = require("hardhat");
 
-async function getCosmicGameProxyContract() {
-	let cosmicGameProxyAddr = process.env.COSMIC_GAME_ADDRESS;
-	if (typeof cosmicGameProxyAddr === "undefined" || cosmicGameProxyAddr.length != 42) {
-		console.log("COSMIC_GAME_ADDRESS environment variable does not contain contract address");
+async function getCosmicSignatureGameContract() {
+	let cosmicSignatureGameAddr = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
+	if (typeof cosmicSignatureGameAddr === "undefined" || cosmicSignatureGameAddr.length != 42) {
+		console.log("COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address");
 		process.exit(1);
 	}
-	let cosmicGameProxy = await hre.ethers.getContractAt("CosmicGame", cosmicGameProxyAddr);
-	return cosmicGameProxy;
+	let cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
+	return cosmicSignatureGame;
 }
 
 async function main() {
@@ -21,17 +21,17 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
 	// todo-1 Why do we need error handling here?
 	try {
 		// todo-0 This function no longer exists.
-		await cosmicGameProxy.connect(testingAcct).setRuntimeMode();
+		await cosmicSignatureGame.connect(testingAcct).setRuntimeMode();
 	} catch(e) {
 		console.log(e);
 	}
 	// todo-0 This function no longer exists.
-	let sysMode = await cosmicGameProxy.systemMode();
+	let sysMode = await cosmicSignatureGame.systemMode();
 	console.log("systemMode = "+sysMode.toString());
 	if (sysMode.toString() == "1") {
 		console.log("System is set for maintenance right after next claimPrize() call")

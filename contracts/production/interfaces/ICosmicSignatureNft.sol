@@ -4,11 +4,11 @@ pragma solidity 0.8.27;
 
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-/// @title NFT for the Cosmic Game ecosystem
-/// @author Cosmic Game Development Team
+/// @title NFT for the Cosmic Signature ecosystem.
+/// @author Cosmic Signature Development Team.
 /// @notice A contract implementing this interaface implements the CosmicSignature NFT
-/// with unique features for the Cosmic Game
-interface ICosmicSignature is IERC721Enumerable {
+/// with unique features for the Cosmic Signature ecosystem.
+interface ICosmicSignatureNft is IERC721Enumerable {
 	/// @notice Emitted when a token's name is set or changed
 	/// @param nftId The ID of the token
 	/// @param newName The new name of the token
@@ -42,10 +42,11 @@ interface ICosmicSignature is IERC721Enumerable {
 	/// @param name The custom name to set for the token
 	function setTokenName(uint256 nftId, string memory name) external;
 
-	/// @notice Mints a new CosmicSignature token
-	/// Only the `CosmicGame` contract is permitted to call this method.
+	/// @notice Mints a new CosmicSignature NFT.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param owner The address that will receive the newly minted token
 	/// @param roundNum The bidding round number in which the token is minted.
 	/// @return The ID of the newly minted token
+	/// @dev todo-1 Reorder `roundNum` to the beginning? Or just eliminate it?
 	function mint(address owner, uint256 roundNum) external returns (uint256);
 }

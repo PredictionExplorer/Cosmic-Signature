@@ -4,13 +4,13 @@ pragma solidity 0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { ICosmicSignature } from "./interfaces/ICosmicSignature.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 
 /// @dev Extends ERC721Enumerable and includes custom minting and metadata management
 /// todo-0 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
 /// todo-0 At least write a comment here and near RandomWalkNFT.
-contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
+contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 	// #region State
 
 	/// @notice Mapping of token IDs to their unique seeds
@@ -20,31 +20,36 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	mapping(uint256 => string) public tokenNames;
 
 	/// @notice Entropy used for generating random seeds
+	/// todo-1 Allow the game (`onlyGame`) to provide entropy as a parameter. It would allow to optimize the game.
 	bytes32 public entropy;
 
 	/// @notice The total number of tokens minted
+	/// todo-1 We inherited `totalSupply`. Does it return the same value? If so can I eliminate this?
+	/// todo-1 If I do that write a comment in RWalk near the respective variable that it's possible to eliminate it.
 	uint256 public numTokens = 0;
 
 	/// @notice The base URI for token metadata
 	string private _baseTokenURI;
 
-	/// @notice Address of the CosmicGameProxy contract.
-	address public immutable cosmicGameProxyContract;
+	/// @notice The `CosmicSignatureGame` contract address.
+	/// todo-1 Declare some other variables `immutable`.
+	address public immutable game;
 
 	/// @notice IPFS link to the script that generates images and videos for each NFT based on seed
 	string public tokenGenerationScriptURL = "ipfs://TBD";
 
 	// #endregion
 
-	/// @notice Initializes the CosmicSignature contract
+	/// @notice Initializes the CosmicSignatureNft contract
 	/// todo-1 Why do we need the above comment? Don't we know what a constructor does?
-	/// @param _cosmicGameProxyContract The address of the CosmicGameProxy contract.
+	/// @param game_ The `CosmicSignatureGame` contract address.
+	/// todo-1 What about changing the symbol to "CSN"?
 	/// ToDo-202408114-1 applies.
-	constructor(address _cosmicGameProxyContract) ERC721("CosmicSignature", "CSS") Ownable(_msgSender()) {
-		require(_cosmicGameProxyContract != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+	constructor(address game_) ERC721("CosmicSignatureNft", "CSS") Ownable(_msgSender()) {
+		require(game_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		game = game_;
 		// entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
 		entropy = bytes32(0x9b4631c9a4f4800392c74f3d2ee9e04fa8742b7f86e87b7d4b67fd7400d26f1e);
-		cosmicGameProxyContract = _cosmicGameProxyContract;
 	}
 
 	function setTokenGenerationScriptURL(string memory newTokenGenerationScriptURL) external override onlyOwner {
@@ -60,22 +65,22 @@ contract CosmicSignature is ERC721Enumerable, Ownable, ICosmicSignature {
 	function setTokenName(uint256 nftId, string memory name) external override {
 		require(
 			_isAuthorized(_ownerOf(nftId), _msgSender(), nftId),
-			CosmicGameErrors.OwnershipError("setTokenName caller is not authorized.", nftId)
+			CosmicSignatureErrors.OwnershipError("setTokenName caller is not authorized.", nftId)
 		);
 		require(
 			bytes(name).length <= 32,
-			CosmicGameErrors.TokenNameLength("Token name is too long.", bytes(name).length)
+			CosmicSignatureErrors.TokenNameLength("Token name is too long.", bytes(name).length)
 		);
 		tokenNames[nftId] = name;
 		emit TokenNameEvent(nftId, name);
 	}
 
 	function mint(address owner, uint256 roundNum) external override returns (uint256) {
-		require(owner != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
+		require(owner != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		// todo-1 Move this validation to the `onlyGame` modifier.
 		require(
-			_msgSender() == cosmicGameProxyContract,
-			// todo-1 We no longer have a contract named CosmicGameProxy, right? Rephrase?
-			CosmicGameErrors.NoMintPrivileges("Only the CosmicGameProxy contract is permitted to mint.", _msgSender())
+			_msgSender() == game,
+			CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint.", _msgSender())
 		);
 
 		uint256 nftId = numTokens;

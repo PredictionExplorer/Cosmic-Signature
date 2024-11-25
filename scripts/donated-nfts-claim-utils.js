@@ -8,14 +8,14 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
-async function get_unclaimed_donated_nfts(cosmicGameProxy) {
-	let numDonatedNfts = await cosmicGameProxy.numDonatedNfts();
-	let numNFTs = numDonatedNfts.toNumber();
+async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
+	let numDonatedNfts = await cosmicSignatureGame.numDonatedNfts();
+	const numNfts_ = numDonatedNfts.toNumber();
 	let prizeData = [];
-	for (let i = 0; i < numNFTs; i++) {
-		let record_orig = await cosmicGameProxy.donatedNfts(i);
+	for (let i = 0; i < numNfts_; i++) {
+		let record_orig = await cosmicSignatureGame.donatedNfts(i);
 		let record = Object.assign({}, record_orig);
 		Object.defineProperty(record, "index", { value: i, writable: true });
 		// todo-1 The `claimed` variable no longer exists.
@@ -34,16 +34,16 @@ async function get_unclaimed_donated_nfts(cosmicGameProxy) {
 }
 async function list_donated_nfts(nfts) {
 	//console.log(nfts);
-	let numElts = nfts.length;
-	for (let i = 0; i < numElts; i++) {
-		let roundNFTs = nfts[i];
+	const numNfts_ = nfts.length;
+	for (let i = 0; i < numNfts_; i++) {
+		const roundNfts_ = nfts[i];
 		console.log("Round " + i);
-		if (typeof roundNFTs === "undefined" || roundNFTs.length == 0) {
+		if (typeof roundNfts_ === "undefined" || roundNfts_.length == 0) {
 			console.log("\t(no claimable tokens)");
 			continue;
 		}
-		for (let j = 0; j < roundNFTs.length; j++) {
-			let record = roundNFTs[j];
+		for (let j = 0; j < roundNfts_.length; j++) {
+			let record = roundNfts_[j];
 			console.log(
 				"\t" +
 					record.nftAddress.toString() +
@@ -69,8 +69,8 @@ async function main() {
 	let privKey = process.env.PRIVKEY;
 
 	let testingAcct;
-	let cosmicGameProxy = await getCosmicGameProxyContract();
-	let nfts = await get_unclaimed_donated_nfts(cosmicGameProxy);
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
+	let nfts = await get_unclaimed_donated_nfts(cosmicSignatureGame);
 	if (nfts.length == 0) {
 		console.log("Map of donated unclaimed tokens is empty, no claiming is possible");
 		return;
@@ -89,16 +89,16 @@ async function main() {
 	}
 	let roundToClaim = parseInt(roundNumStr, 10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
-	let prizeWinner = await cosmicGameProxy.winners(roundToClaim);
-	if (prizeWinner.toString() != testingAcct.address.toString()) {
-		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + prizeWinner.toString());
+	let roundMainPrizeWinnerAddress_ = await cosmicSignatureGame.winners(roundToClaim);
+	if (roundMainPrizeWinnerAddress_.toString() != testingAcct.address.toString()) {
+		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + roundMainPrizeWinnerAddress_.toString());
 		process.exit(1);
 	}
 
 	if (privKey.length > 0) {
 		if (paramList.length > 0) {
 			console.log("Sending claimMany transaction");
-			await cosmicGameProxy.connect(testingAcct).claimManyDonatedNfts(paramList);
+			await cosmicSignatureGame.connect(testingAcct).claimManyDonatedNfts(paramList);
 		}
 	}
 }

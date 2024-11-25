@@ -3,7 +3,7 @@
 pragma solidity 0.8.27;
 
 /// @title Charitable donations management
-/// @author Cosmic Game Development Team
+/// @author Cosmic Signature Development Team.
 /// @notice A contract implementing this interface collects donations and periodically sends them to a designated charity
 /// @dev As noted in Comment-202409273, this contract is designed to be transparent. It allows anyone to trigger a donation transfer.
 /// todo-0 Use this and other interfaces in some places where we use respective contracts.
@@ -15,16 +15,16 @@ interface ICharityWallet {
 	event CharityUpdatedEvent(address indexed newCharityAddress);
 
 	/// @notice Emitted after a donation was received
-	/// @param donor Donor address
+	/// @param donorAddress Donor address
 	/// @param amount The amount of ETH donated
-	event DonationReceivedEvent(address indexed donor, uint256 amount);
+	event DonationReceivedEvent(address indexed donorAddress, uint256 amount);
 
-	/// @notice Emitted after accumulated donations were sent to the charity
-	/// @param charity The address of the charity receiving the donation
-	/// @param amount The amount of ETH sent to the charity
+	/// @notice Emitted after accumulated donations were sent to the charity.
+	/// @param charity The address of the charity receiving the donation.
+	/// @param amount The amount of ETH transferred to the charity.
 	/// @dev
 	/// [ToDo-202409212-1]
-	/// Consider eliminating this and using `CosmicGameEvents.FundsTransferredToCharity` instead.
+	/// Consider eliminating this and using `CosmicSignatureEvents.FundsTransferredToCharity` instead.
 	/// [/ToDo-202409212-1]
 	event DonationSentEvent(address indexed charity, uint256 amount);
 

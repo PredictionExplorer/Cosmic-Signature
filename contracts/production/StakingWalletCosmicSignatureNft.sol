@@ -7,10 +7,10 @@ pragma solidity 0.8.27;
 // #region
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicGameErrors } from "./libraries/CosmicGameErrors.sol";
-import { CosmicGameConstants } from "./libraries/CosmicGameConstants.sol";
-import { CosmicGameEvents } from "./libraries/CosmicGameEvents.sol";
-import { CosmicSignature } from "./CosmicSignature.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
+import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
@@ -33,8 +33,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		/// A nonzero indicates that this NFT has been unstaked and it's likely that rewards from some `EthDeposit` instances
 		/// have not been paid yet. So the staker has an option to call `StakingWalletCosmicSignatureNft.payReward`,
 		/// possibly multiple times, to receieve yet to be paid rewards.
-		/// We used the word "likely" in the above comment
-		/// because this particular `EthDeposit` instance has not been evaluated yet,
+		/// The above comment uses the word "likely" because this particular `EthDeposit` instance has not been evaluated yet,
 		/// and therefore it's actually possible that the staker isn't entitled to get a reward from it.
 		/// Comment-202410142 relates.
 		/// [/Comment-202410268]
@@ -64,62 +63,59 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// This value is quite big, and, at the same time, it's nowhere close to the point of overflow.
 	uint256 public constant NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max / 256;
 
-	// /// @notice Precision factor for calculations
-	// /// Was this intended to be somethig similar to `CosmicGameConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT`?
+	// /// @notice Precision factor for calculations.
+	// /// Was this intended to be somethig similar to `CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT`?
 	// uint256 private constant _PRECISION = 1 ether;
 
 	// #endregion
 	// #region State
 
-	/// @notice The `CosmicSignature` contract address.
-	CosmicSignature public nft;
+	/// @notice The `CosmicSignatureNft` contract address.
+	CosmicSignatureNft public immutable nft;
 
-	/// @notice The `CosmicGame` contract address.
-	address public game;
-
-	/// @notice Info about currently staked NFTs.
-	/// This also contains unstaked, but not yet fully rewarded NFTs.
-	/// @dev Comment-202410117 applies to `stakeActionId`.
-	// mapping(uint256 stakeActionId => StakeAction) public stakeActions;
-	StakeAction[1 << 64] public stakeActions;
+	/// @notice The `CosmicSignatureGame` contract address.
+	address public immutable game;
 
 	/// @notice The current number of already unstaked and not yet fully rewarded NFTs.
 	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
-	/// @dev todo-1 In all staking contracts, reorder `num...` variables to before respective arrays.
 	uint256 public numUnpaidStakeActions;
 
+	/// @notice Info about currently staked NFTs.
+	/// This also contains unstaked, but not yet fully rewarded NFTs.
+	/// This array is sparse (can contain gaps).
+	/// Item index corresponds to stake action ID.
+	/// @dev Comment-202410117 applies to item index.
+	StakeAction[1 << 64] public stakeActions;
+
 	/// @notice This indicates whether an NFT stake action occurred after we received the last ETH deposit.
-	/// 1 (or zero) means false; 2 means true.
+	/// Zero means false; a nonzero means true.
 	/// @dev
 	/// [Comment-202410307]
 	/// After someone stakes an NFT, we must create a new `ethDeposits` item on the next deposit.
-	/// Although, if they also unstake it before the next deposit, it would be unnecessary to create a new item,
+	/// Although, if they also unstake it before we receive another deposit, it would be unnecessary to create a new item,
 	/// but we will anyway create one, which is probably not too bad.
 	/// At the same time, in case someone unstakes an NFT and we pay them their reward from the last `ethDeposits` item
 	/// before we receive another deposit, we will not need to create a new item. Given that on unstake we do pay
-	/// reward from at least the last `ethDeposits` item, we are covered.
+	/// reward from at least the last `ethDeposits` item (provided the staker is actually entitled to get it), we are covered.
 	/// [/Comment-202410307]
 	/// [Comment-202410168]
-	/// One might want to initialize this with 2, but the initial value doesn't actually matter
-	/// because before we get a chance to evaluate this we will assign to this.
-	/// The 1st staker will pay the gas fee to create a storage slot for this variable.
+	/// It might appear that we must initialize this with a nonzero, but the initial value doesn't actually matter
+	/// because before we get a chance to evaluate this, we will assign to this.
 	/// [/Comment-202410168]
-	/// To minimize gas fees, we never assign zero to this, and therefore this is not a `bool`.
-	/// In fact, this design doesn't necessarily improve net use of gas -- due to gas refunds for freeing storage slots.
-	/// But, at least, we avoid gas fee spikes that we would experience when saving a nonzero to a non-existent storage slot.
-	/// Besides, gas refunds are not guaranteed because they are capped.
-	/// todo-1 Maybe just use 0 and 1 here?
 	uint256 private _nftWasStakedAfterPrevEthDeposit;
-
-	/// @notice `ethDepositIndex` is 1-based.
-	/// @dev The item at the index of zero always remains zero.
-	/// If we executed logic near Comment-202410166, it's possible that this contains items
-	/// beyond `numEthDeposits`. Those are garbage that the client code must ignore.
-	// mapping(uint256 ethDepositIndex => EthDeposit) public ethDeposits;
-	EthDeposit[1 << 64] public ethDeposits;
 
 	/// @notice `ethDeposits` item count.
 	uint256 public numEthDeposits;
+
+	/// @notice Item index is 1-based.
+	/// The item at the index of zero always remains unassigned.
+	/// This array is not sparse (contains no gaps).
+	/// @dev
+	/// It's possible that all rewards from some items have already been paid out, but we will never delete the items.
+	/// If we executed logic near Comment-202410166, it's possible that this array contains items
+	/// beyond the index of `numEthDeposits`. Those are garbage that we are going to overwrite
+	/// and that the client code must ignore.
+	EthDeposit[1 << 64] public ethDeposits;
 
 	uint256 public numStateResets;
 
@@ -133,7 +129,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	modifier onlyGame() {
 		require(
 			msg.sender == game,
-			CosmicGameErrors.CallDenied("Only the CosmicGame contract is permitted to call this method.", msg.sender)
+			CosmicSignatureErrors.CallDenied("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
 		);
 		_;
 	}
@@ -142,12 +138,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region `constructor`
 
 	/// @notice Constructor.
-	/// @param nft_ The `CosmicSignature` contract address.
-	/// @param game_ The `CosmicGame` contract address.
+	/// @param nft_ The `CosmicSignatureNft` contract address.
+	/// @param game_ The `CosmicSignatureGame` contract address.
 	/// @dev
+	/// todo-1 Is `nft_` the same as `game_.nft()`?
+	/// todo-1 I am also going to add `nft_.game()`, right? So comment:
+	/// todo-1 Is `game_` the same as `nft_.game()`?
+	/// todo-1 Even if so it's not necessarily a good idea to get one from another, at least because it would cost more gas.
+	///
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicGameErrors.ZeroAddress`.
+	///    `CosmicSignatureErrors.ZeroAddress`.
 	///    `Ownable.constructor`. ToDo-202408114-1 applies.
 	///    `StakingWalletNftBase.constructor`.
 	///    `nft`.
@@ -156,16 +157,11 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `numEthDeposits`.
 	///    `numStateResets`.
-	///
-	/// todo-1 Is `nft_` the same as `game_.nft()`?
-	/// todo-1 But we don't import the `CosmicGame` contract.
-	/// todo-1 At least explain things in a comment.
-	/// todo-1 The same probably applies to `StakingWalletRandomWalkNft`. But there the `game_` member is different.
-	constructor(CosmicSignature nft_, address game_) Ownable(msg.sender) {
+	constructor(CosmicSignatureNft nft_, address game_) Ownable(msg.sender) {
 		// #region
 
-		require(address(nft_) != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the nft_."));
-		require(game_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given for the game_."));
+		require(address(nft_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given for the nft_."));
+		require(game_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given for the game_."));
 
 		// #endregion
 		// #region
@@ -193,21 +189,21 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// [Comment-202411023]
 	/// Issue. To eliminate a compile error, after the `override` keyword,
 	/// I had to specify both `IStakingWalletNftBase` and `StakingWalletNftBase`.
-	/// Problem is that there supposed to be only a single virtual function with this name. But this looks like we have 2 of them.
+	/// Problem is that there supposed to be only a single virtual method with this name. But this looks like we have 2 of them.
 	/// [/Comment-202411023]
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicGameErrors.NftOneTimeStaking`.
-	///    `CosmicGameConstants.BooleanWithPadding`.
-	///    `CosmicGameConstants.NftTypeCode`.
+	///    `CosmicSignatureErrors.NftOneTimeStaking`.
+	///    // `CosmicSignatureConstants.BooleanWithPadding`.
+	///    `CosmicSignatureConstants.NftTypeCode`.
 	///    `NftStaked`.
+	///    `_numStakedNfts`.
+	///    `_usedNfts`.
+	///    `actionCounter`.
 	///    `StakeAction`.
 	///    `nft`.
 	///    `stakeActions`.
-	///    `_numStakedNfts`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
-	///    `_usedNfts`.
-	///    `actionCounter`.
 	function stake(uint256 nftId_) public override(IStakingWalletNftBase, StakingWalletNftBase) {
 		// #region
 
@@ -217,13 +213,16 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		require(
-			( ! _usedNfts[nftId_].value ),
-			CosmicGameErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
+			// ( ! _usedNfts[nftId_].value ),
+			_usedNfts[nftId_] == 0,
+			CosmicSignatureErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #endregion
 		// #region
 
+		// _usedNfts[nftId_] = CosmicSignatureConstants.BooleanWithPadding(true, 0);
+		_usedNfts[nftId_] = 1;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
@@ -235,23 +234,23 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		_numStakedNfts = newNumStakedNfts_;
 
 		// Comment-202410168 relates.
-		_nftWasStakedAfterPrevEthDeposit = 2;
+		_nftWasStakedAfterPrevEthDeposit = 1;
 
-		_usedNfts[nftId_] = CosmicGameConstants.BooleanWithPadding(true, 0);
+		emit NftStaked(newStakeActionId_, CosmicSignatureConstants.NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
 		nft.transferFrom(msg.sender, address(this), nftId_);
-		emit NftStaked(newStakeActionId_, CosmicGameConstants.NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
 		
 		// #endregion
 		// #region
 
+		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
+		// // #enable_asserts assert(_usedNfts[nftId_].value);
+		// #enable_asserts assert(_usedNfts[nftId_] == 1);
+		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(nft.ownerOf(nftId_) == address(this));
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftId == nftId_);
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == msg.sender);
 		// #enable_asserts assert(stakeActions[newStakeActionId_].maxUnpaidEthDepositIndex == 0);
-		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
-		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 2);
-		// #enable_asserts assert(_usedNfts[nftId_].value);
-		// #enable_asserts assert(actionCounter > 0);
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
 
 		// #endregion
 	}
@@ -261,7 +260,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
+	///    `CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `_unstake`.
 	///    `_payReward`.
@@ -277,7 +276,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			numEthDepositsToEvaluateMaxLimit_ > 0 &&
 			
 			numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT,
-			CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
+			CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
 		);
 
 		(uint256 rewardAmount_, ) = _unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
@@ -289,9 +288,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
-	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
+	///    `CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
 	///    `_numStakedNfts`.
+	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `_unstake`.
 	///    `_payReward`.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
@@ -299,7 +298,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 		require(
 			numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT,
-			CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
+			CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
 		);
 
 		// [Comment-202410311]
@@ -335,7 +334,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
+	///    `CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `_preparePayReward`.
 	///    `_payReward`.
@@ -345,7 +344,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			numEthDepositsToEvaluateMaxLimit_ > 0
 			
 			&& numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT,
-			CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
+			CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
 		);
 
 		(uint256 rewardAmount_, ) = _preparePayReward(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
@@ -357,15 +356,15 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
-	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
+	///    `CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange`.
 	///    `_numStakedNfts`.
+	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `_preparePayReward`.
 	///    `_payReward`.
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external override {
 		require(
 			numEthDepositsToEvaluateMaxLimit_ <= NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT,
-			CosmicGameErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
+			CosmicSignatureErrors.NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange("numEthDepositsToEvaluateMaxLimit_ is out of the allowed range.", numEthDepositsToEvaluateMaxLimit_)
 		);
 
 		// Comment-202410311 applies.
@@ -391,16 +390,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `msg.value`.
-	///    `CosmicGameErrors.NoStakedNfts`.
+	///    `CosmicSignatureErrors.NoStakedNfts`.
 	///    `_numStakedNfts`.
 	///    `actionCounter`.
 	///    `EthDepositReceived`.
 	///    `EthDeposit`.
-	///    `onlyGame`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
-	///    `ethDeposits`.
 	///    `numEthDeposits`.
-	/// todo-1 Here and elsewhere, consider replacing functions like this with `receive`.
+	///    `ethDeposits`.
+	///    `onlyGame`.
+	///
+	/// todo-1 Here and elsewhere, consider replacing methods like this with `receive`.
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
 	/// todo-1 But in this particular case `receive` won't be sufficient for our needs.
@@ -415,27 +415,26 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 		if (numStakedNftsCopy_ == 0) {
 			// This string length affects the length we evaluate near Comment-202410149 and log near Comment-202410299.
-			revert CosmicGameErrors.NoStakedNfts("There are no staked NFTs.");
+			revert CosmicSignatureErrors.NoStakedNfts("There are no staked NFTs.");
 		}
 
 		// #endregion
 		// #region
 
-		EthDeposit memory newEthDeposit_;
-		uint256 newNumEthDeposits_ = numEthDeposits;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
+		uint256 newNumEthDeposits_ = numEthDeposits;
+		EthDeposit memory newEthDeposit_;
 
 		// #endregion
 		// #region
 
 		// Comment-202410168 relates.
-		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1 || _nftWasStakedAfterPrevEthDeposit == 2);
-		if (_nftWasStakedAfterPrevEthDeposit >= 2) {
+		if (_nftWasStakedAfterPrevEthDeposit != 0) {
 
 			// #region
 
-			_nftWasStakedAfterPrevEthDeposit = 1;
+			_nftWasStakedAfterPrevEthDeposit = 0;
 
 			// If we executed logic near Comment-202410166, it's possible that an `ethDeposits` item already exists at this position.
 			// We will overwrite it.
@@ -468,9 +467,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 		
 		// #enable_asserts assert(actionCounter > 0);
-		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
-		// #enable_asserts assert(ethDeposits[numEthDeposits].depositId > 0);
+		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 0);
 		// #enable_asserts assert(numEthDeposits - initialNumEthDeposits_ <= 1);
+		// #enable_asserts assert(ethDeposits[numEthDeposits].depositId > 0);
 
 		// #endregion
 	}
@@ -482,30 +481,31 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `address.call`.
 	///    `address.balance`.
-	///    `CosmicGameErrors.InvalidOperationInCurrentState`.
-	///    `CosmicGameEvents.FundTransferFailed`.
-	///    `CosmicGameEvents.FundsTransferredToCharity`.
 	///    `msg.sender` (indirectly).
-	///    `owner` (indirectly).
+	///    `CosmicSignatureErrors.InvalidOperationInCurrentState`.
+	///    `CosmicSignatureEvents.FundTransferFailed`.
+	///    `CosmicSignatureEvents.FundsTransferredToCharity`.
 	///    `_numStakedNfts`.
+	///    `owner` (indirectly).
+	///    `onlyOwner`.
 	///    `StateReset`.
 	///    `numUnpaidStakeActions`.
 	///    // `_nftWasStakedAfterPrevEthDeposit`.
 	///    `numEthDeposits`.
 	///    `numStateResets`.
-	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns (bool) {
+	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns(bool) {
 		// #region
 
-		// require(charityAddress_ != address(0), CosmicGameErrors.ZeroAddress("Zero-address was given."));
-		require(_numStakedNfts == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still staked NFTs."));
-		require(numUnpaidStakeActions == 0, CosmicGameErrors.InvalidOperationInCurrentState("There are still unpaid rewards."));
+		// require(charityAddress_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		require(_numStakedNfts == 0, CosmicSignatureErrors.InvalidOperationInCurrentState("There are still staked NFTs."));
+		require(numUnpaidStakeActions == 0, CosmicSignatureErrors.InvalidOperationInCurrentState("There are still unpaid rewards."));
 
 		// #endregion
 		// #region
 
 		if (resetState_) {
 			// // This would have no effect because of Comment-202410168.
-			// _nftWasStakedAfterPrevEthDeposit = 2;
+			// _nftWasStakedAfterPrevEthDeposit = 1;
 
 			// [Comment-202410166]
 			// It's unnecessary to also clear `ethDeposits`.
@@ -535,7 +535,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 				// [/Comment-202409214]
 				(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
 
-				// require(isSuccess_, CosmicGameErrors.FundTransferFailed("Transfer to charity failed.", charityAddress_, amount_));
+				// require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to charity failed.", charityAddress_, amount_));
 				if (isSuccess_) {
 					// [Comment-202410159]
 					// Issue. Because we can be reentered near Comment-202409214,
@@ -543,10 +543,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 					// [/Comment-202410159]
 					// #enable_asserts assert(address(this).balance == 0);
 
-					emit CosmicGameEvents.FundsTransferredToCharity(charityAddress_, amount_);
+					emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
 				} else {
 					// #enable_asserts assert(address(this).balance == amount_);
-					emit CosmicGameEvents.FundTransferFailed("Transfer to charity failed.", charityAddress_, amount_);
+					emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress_, amount_);
 					returnValue_ = false;
 				}
 			}
@@ -564,25 +564,25 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region `_unstake`
 
 	/// @notice Makes state updates needed to unstake an NFT.
-	/// The caller is required to pay the returned reward to the staker.
+	/// The caller is required to pay the returned reward amount to the staker.
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicGameErrors.NftStakeActionInvalidId`.
-	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
-	///    `CosmicGameErrors.NftAlreadyUnstaked`.
+	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
+	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
+	///    `CosmicSignatureErrors.NftAlreadyUnstaked`.
 	///    `_numStakedNfts`.
 	///    `actionCounter`.
 	///    `NftUnstaked`.
 	///    `StakeAction`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `nft`.
-	///    `stakeActions`.
 	///    `numUnpaidStakeActions`.
+	///    `stakeActions`.
 	///    `numEthDeposits`.
 	///    `_calculateRewardAmount`.
 	function _unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) private
-		returns (uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
+		returns(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
@@ -600,17 +600,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
-				revert CosmicGameErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
+				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
 			} else {
 				// [Comment-202410182]
 				// It's also possible that this stake action has already been deleted, but we have no knowledge about that.
 				// [/Comment-202410182]
-				revert CosmicGameErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
+				revert CosmicSignatureErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
 			}
 		}
 		require(
 			stakeActionCopy_.maxUnpaidEthDepositIndex == 0,
-			CosmicGameErrors.NftAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_)
+			CosmicSignatureErrors.NftAlreadyUnstaked("NFT has already been unstaked.", stakeActionId_)
 		);
 
 		// #endregion
@@ -628,10 +628,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		}
 		uint256 newNumStakedNfts_ = _numStakedNfts - 1;
 		_numStakedNfts = newNumStakedNfts_;
-		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
 
 		// #endregion
 		// #region
@@ -639,9 +639,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - 1);
 		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(nft.ownerOf(stakeActionCopy_.nftId) == msg.sender);
+		// #enable_asserts assert(numUnpaidStakeActions - initialNumUnpaidStakeActions_ <= 1);
 		// // #enable_asserts assert(stakeActions[stakeActionId_].nftId == 0);
 		// // #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
-		// #enable_asserts assert(numUnpaidStakeActions - initialNumUnpaidStakeActions_ <= 1);
 
 		// #endregion
 	}
@@ -650,22 +650,22 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region `_preparePayReward`
 
 	/// @notice Makes state updates needed to pay another, possibly the last, part of the reward.
-	/// The caller is required to pay the returned reward to the staker.
-	/// @dev This function is called after the `NftUnstaked` or `RewardPaid` event is emitted
+	/// The caller is required to pay the returned reward amount to the staker.
+	/// @dev This method is to be called after the `NftUnstaked` or `RewardPaid` event was emitted
 	/// with a nonzero `maxUnpaidEthDepositIndex`.
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicGameErrors.NftStakeActionInvalidId`.
-	///    `CosmicGameErrors.NftStakeActionAccessDenied`.
-	///    `CosmicGameErrors.NftNotUnstaked`.
+	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
+	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
+	///    `CosmicSignatureErrors.NftNotUnstaked`.
 	///    `RewardPaid`.
 	///    `StakeAction`.
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
-	///    `stakeActions`.
 	///    `numUnpaidStakeActions`.
+	///    `stakeActions`.
 	///    `_calculateRewardAmount`.
 	function _preparePayReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) private
-		returns (uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
+		returns(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
 		// #enable_asserts uint256 initialNumUnpaidStakeActions_ = numUnpaidStakeActions;
@@ -682,15 +682,15 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
-				revert CosmicGameErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to receive staking reward.", stakeActionId_, msg.sender);
+				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to receive staking reward.", stakeActionId_, msg.sender);
 			} else {
 				// Comment-202410182 applies.
-				revert CosmicGameErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
+				revert CosmicSignatureErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
 			}
 		}
 		require(
 			stakeActionCopy_.maxUnpaidEthDepositIndex > 0,
-			CosmicGameErrors.NftNotUnstaked("NFT has not been unstaked.", stakeActionId_)
+			CosmicSignatureErrors.NftNotUnstaked("NFT has not been unstaked.", stakeActionId_)
 		);
 
 		// #endregion
@@ -725,7 +725,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `ethDeposits`.
 	function _calculateRewardAmount(uint256 stakeActionId_, uint256 maxUnpaidEthDepositIndex_, uint256 numEthDepositsToEvaluateMaxLimit_) private view
-		returns (uint256 rewardAmount_, uint256 remainingMaxUnpaidEthDepositIndex_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
+		returns(uint256 rewardAmount_, uint256 remainingMaxUnpaidEthDepositIndex_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
 		// This can be zero.
@@ -770,7 +770,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 					// #enable_asserts assert(ethDepositIndex_ == remainingMaxUnpaidEthDepositIndex_);
 
 					// We have already calculated `remainingMaxUnpaidEthDepositIndex_`. Keeping the previously calculated value.
-					// If it equals zero, we have completed evaluating depsits for the given stake action.
+					// If it equals zero, we have completed evaluating deposits for the given stake action.
 					// Note that it's possible that we haven't evaluated any deposits due to `maxUnpaidEthDepositIndex_` being zero.
 				}
 				{
@@ -789,12 +789,12 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #endregion
 	// #region `_payReward`
 
-	/// @notice This stupid function just transfers the given ETH amount to whoever calls it.
+	/// @notice This stupid method just transfers the given ETH amount to whoever calls it.
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `address.call`.
 	///    `msg.sender`.
-	///    `CosmicGameErrors.FundTransferFailed`.
+	///    `CosmicSignatureErrors.FundTransferFailed`.
 	function _payReward(uint256 rewardAmount_) private {
 		// #region
 
@@ -826,7 +826,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 			require(
 				isSuccess_,
-				CosmicGameErrors.FundTransferFailed("NFT staking reward payment failed.", msg.sender, rewardAmount_)
+				CosmicSignatureErrors.FundTransferFailed("NFT staking reward payment failed.", msg.sender, rewardAmount_)
 			);
 		}
 

@@ -24,11 +24,11 @@ because eth_estimateGas function produces very low gasLimit values and because A
 
 ##### for local testnet:
 
-   npx hardhat deploy-cosmicgame --deployconfig ~/deploy-configs/deploy-local.json --network localhost
+    npx hardhat deploy-cosmicsignature --deployconfig ~/deploy-configs/deploy-local.json --network localhost
 
 ##### for Arbitrum Sepolia:
 
-    npx hardhat deploy-cosmicgame --deployconfig ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
+    npx hardhat deploy-cosmicsignature --deployconfig ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
 
 Note: the main difference between localnet and Sepolia deployment is that for localnet a donation is made for 2 ETH (this is set in the config file, but the deployment process is the same)
 
@@ -37,18 +37,18 @@ Note: the main difference between localnet and Sepolia deployment is that for lo
 
 ##### Set contract timing values to shorter interval for testing purposes
 
-    PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-short-time-intervals.js --network [network-name]
+    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-short-time-intervals.js --network [network-name]
 
 ##### Enable game-mode
 
     # todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
-    PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime.js --network [network-name])
+    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime.js --network [network-name])
 
-Copy the CosmicGameProxy contract address and run test scripts:
+Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
 ##### To mint Random Walk tokens
 
-	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
+	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
 
 	(note: this command will set RWALK_TOKENS shell variable to tokens minted)
 
@@ -63,8 +63,8 @@ Copy the CosmicGameProxy contract address and run test scripts:
 
 ##### Run the test set of bids
 
-    RWALK_TOKENS="[comma_separated_list_of_tokens]" PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
+    RWALK_TOKENS="[comma_separated_list_of_tokens]" PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
 
 ##### Wait for time to advance to be able to claimPrize() and execute second set of tests
 
-    PRIVKEY=[private_key] COSMIC_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part2.js --network [network-name]
+    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part2.js --network [network-name]

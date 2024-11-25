@@ -2,14 +2,14 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function main() {
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	let activationTime = await cosmicGameProxy.activationTime();
-	let randomWalkNftAddr_ = await cosmicGameProxy.randomWalkNft();
-	let charityAddr = await cosmicGameProxy.charity();
+	let activationTime = await cosmicSignatureGame.activationTime();
+	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
+	let charityAddr = await cosmicSignatureGame.charity();
 	let charityContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
 	let charityContractOwner = await charityContract.owner();
 	let charityDonationsReceiver = await charityContract.charityAddress();
@@ -18,8 +18,9 @@ async function main() {
 	console.log("randomWalkNft address = " + randomWalkNftAddr_);
 	console.log("charity wallet contract address = " + charityAddr);
 	console.log("owner of charity wallet contract = " + charityContractOwner);
-	console.log("charity donations receiver =" + charityDonationsReceiver);
+	console.log("charity donations receiver = " + charityDonationsReceiver);
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

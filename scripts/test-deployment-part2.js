@@ -2,50 +2,50 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicGameProxyContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 	const unique_winners = [];
 	for (let i = 0; i < event_logs.length; i++) {
 		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
-		let winner = wlog.args.winner;
-		if (winner.address == testingAcct.address) {
-			if (typeof unique_winners[winner] === "undefined") {
+		let roundPrizeWinnerAddress_ = wlog.args.roundPrizeWinnerAddress;
+		if (roundPrizeWinnerAddress_.address == testingAcct.address) {
+			if (typeof unique_winners[roundPrizeWinnerAddress_] === "undefined") {
 				await prizesWallet.connect(testingAcct).withdrawEth();
-				unique_winners[winner] = 1;
+				unique_winners[roundPrizeWinnerAddress_] = 1;
 			}
 		}
 	}
 }
-async function claim_prize(testingAcct, cosmicGameProxy) {
-	let mainPrizeAmount_ = await cosmicGameProxy.mainPrizeAmount();
-	let charityAmount = await cosmicGameProxy.charityAmount();
-	let tx = await cosmicGameProxy.connect(testingAcct).claimPrize({ gasLimit: 2500000 });
+async function claim_prize(testingAcct, cosmicSignatureGame) {
+	let mainPrizeAmount_ = await cosmicSignatureGame.mainPrizeAmount();
+	let charityAmount = await cosmicSignatureGame.charityAmount();
+	let tx = await cosmicSignatureGame.connect(testingAcct).claimPrize({ gasLimit: 2500000 });
 	let receipt = await tx.wait();
-	let topic_sig = cosmicGameProxy.interface.getEventTopic("MainPrizeClaimed");
+	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-	let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.beneficiary).to.equal(testingAcct.address);
+	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
+	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
 	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 
-	let prizesWalletAddr = await cosmicGameProxy.prizesWallet();
+	let prizesWalletAddr = await cosmicSignatureGame.prizesWallet();
 	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 
-	let cosmicSigAddr = await cosmicGameProxy.nft();
-	let cosmicSignature = await hre.ethers.getContractAt("CosmicSignature", cosmicSigAddr);
-	topic_sig = cosmicGameProxy.interface.getEventTopic("RaffleNFTWinnerEvent");
+	let cosmicSignatureNftAddr = await cosmicSignatureGame.nft();
+	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddr);
+	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleNftWinnerEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	for (let i = 0; i < event_logs.length; i++) {
-		let parsed_log = cosmicGameProxy.interface.parseLog(event_logs[i]);
-		let ownr = await cosmicSignature.ownerOf(parsed_log.args.nftId);
-		expect(ownr).to.equal(parsed_log.args.winner);
+		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);
+		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.nftId);
+		expect(ownr).to.equal(parsed_log.args.winnerAddress);
 	}
 
-	let CharityWalletAddr = await cosmicGameProxy.charity();
-	let charityWallet = await hre.ethers.getContractAt("CharityWallet", CharityWalletAddr);
+	let charityWalletAddr = await cosmicSignatureGame.charity();
+	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddr);
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceivedEvent");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
@@ -60,9 +60,9 @@ async function main() {
 		process.exit(1);
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicGameProxy = await getCosmicGameProxyContract();
+	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	await claim_prize(testingAcct, cosmicGameProxy);
+	await claim_prize(testingAcct, cosmicSignatureGame);
 
 	console.log("Claim prize test result: success");
 }

@@ -7,20 +7,23 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { ICosmicToken } from "./interfaces/ICosmicToken.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 
+/// todo-1 Move this comment to the interface?
 /// @notice The CST has the same scale as ETH, meaning the minimum amount equals 1 Wei,
 /// which makes it possible to use Solidity syntax, such as `1 ether`, to specify an amount in CST.
-/// todo-1 Make sense to move `Ownable` to the beginning of the base contract list?
-contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ICosmicToken {
-	/// @notice Initializes the CosmicToken contract
-	/// @dev Sets the token name to "CosmicToken" and symbol to "CST"
+/// todo-1 Make sense to move `Ownable` to the beginning of the base contract list? Then reorder it in the constructor too.
+/// todo-1 Do we need a method to send the same and/or different amounts to multiple recipients?
+/// todo-1 Review extensions to inherit from. Maybe `ERC20FlashMint`, `ERC20TemporaryApproval` (still a draft).
+contract CosmicSignatureToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ICosmicSignatureToken {
+	/// @notice Initializes the CosmicSignatureToken contract
+	/// @dev Sets the token name to "CosmicSignatureToken" and symbol to "CST"
 	/// ToDo-202408114-1 applies.
-	constructor() ERC20("CosmicToken", "CST") Ownable(msg.sender) ERC20Permit("CosmicToken") {}
+	constructor() ERC20("CosmicSignatureToken", "CST") Ownable(msg.sender) ERC20Permit("CosmicSignatureToken") {}
 
 	/// todo-1 `onlyOwner` is really meant to be only the game contract, right?
-	/// todo-1 See `CosmicSignature`. It's done right there.
-	/// todo-1 Maybe we need a big array of authorized minters/burners, also in `CosmicSignature`.
+	/// todo-1 See `CosmicSignatureNft`. It's done right there.
+	/// todo-1 Maybe we need a big array of authorized minters/burners, also in `CosmicSignatureNft`.
 	function mint(address to, uint256 value) public override onlyOwner {
 		_mint(to, value);
 	}
@@ -32,10 +35,11 @@ contract CosmicToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, 
 	}
 
 	// /// @dev todo-1 Idea.
-	// /// `oldAllowance_` is the allowance the caller has seen.
+	// /// `oldAllowance_` is the allowance the caller has seen before they sent a transaction request to call this method.
 	// /// Event if the allowance decreases before the transaction gets executed this method will do the right thing.
 	// /// This method won't offer any benefit if either `oldAllowance_` or `newAllowance_` is zero.
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
+	// /// todo-1 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
 	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) public /*virtual*/ {
 	// 	// Comment-202409215 applies.
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
