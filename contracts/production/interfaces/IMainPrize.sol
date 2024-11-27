@@ -20,50 +20,34 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`.
 	event MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiaryAddress, uint256 amount);
 
-	/// @notice Emitted when an ETH raffle winner is selected
-	/// @param winnerAddress The address of the winner
-	/// @param roundNum The bidding round number.
-	/// todo-1 Make sense to reorder `roundNum` to the beginning?
-	/// @param winnerIndex The index of the winner
-	/// @param amount ETH amount.
-	/// @dev todo-1 Name this better. Remove the word "Event".
-	event RaffleETHWinnerEvent(address indexed winnerAddress, uint256 indexed roundNum, uint256 winnerIndex, uint256 amount);
+	// /// @notice Emitted when the Stellar Spender receives their prize.
+	// /// @param stellarSpender Stellar Spender address.
+	// /// @param roundNum The bidding round number.
+	// /// todo-1 Make sense to reorder `roundNum` to the beginning?
+	// /// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
+	// /// @param cstPrizeAmount The amount of CosmicSignature Tokens minted and awarded.
+	// /// @param totalSpentCst The total CST amount spent by the winner.
+	// /// ---param winnerIndex Winner index.
+	// /// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
+	// event StellarSpenderPrizePaid(
+	// 	address indexed stellarSpender,
+	// 	uint256 indexed roundNum,
+	// 	uint256 indexed prizeCosmicSignatureNftId,
+	// 	uint256 cstPrizeAmount,
+	// 	uint256 totalSpentCst
+	// 	// uint256 winnerIndex
+	// );
 
-	/// @notice Emitted when an NFT raffle winner is selected
-	/// @param winnerAddress The address of the winner
+	/// @notice Emitted when the last CST bidder receives their prize.
 	/// @param roundNum The bidding round number.
-	/// todo-1 Make sense to reorder `roundNum` to the beginning?
-	/// @param nftId The ID of the NFT won
-	/// @param winnerIndex The index of the winner
-	/// @param isStaker Whether the winner is a staker
-	/// @param isRWalk Whether the NFT is a RandomWalk NFT
-	/// @dev todo-1 Name this better. Remove the word "Event".
-	event RaffleNftWinnerEvent(
-		address indexed winnerAddress,
+	/// @param lastCstBidderAddress The last CST bidder address.
+	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
+	/// @param cstPrizeAmount The amount of CosmicSignature Tokens minted and awarded.
+	event LastCstBidderPrizePaid(
 		uint256 indexed roundNum,
-		uint256 indexed nftId,
-		uint256 winnerIndex,
-		bool isStaker,
-		bool isRWalk
-	);
-
-	/// @dev todo-0 I renamed this and changed params. Tell Nick.
-	/// @notice Emitted when the Stellar Spender receives their prize.
-	/// @param stellarSpender Stellar Spender address.
-	/// @param roundNum The bidding round number.
-	/// todo-1 Make sense to reorder `roundNum` to the beginning?
-	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
-	/// @param cstPrizeAmount The amount of CST awarded.
-	/// @param totalSpentCst The total CST amount spent by the winner.
-	/// ---param winnerIndex Winner index.
-	/// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
-	event StellarSpenderPrizePaid(
-		address indexed stellarSpender,
-		uint256 indexed roundNum,
+		address indexed lastCstBidderAddress,
 		uint256 indexed prizeCosmicSignatureNftId,
-		uint256 cstPrizeAmount,
-		uint256 totalSpentCst
-		// uint256 winnerIndex
+		uint256 cstPrizeAmount
 	);
 
 	/// @dev todo-0 I renamed this and changed params. Tell Nick.
@@ -71,8 +55,8 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param enduranceChampion Endurance Champion address.
 	/// @param roundNum The bidding round number.
 	/// todo-1 Make sense to reorder `roundNum` to the beginning?
-	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT awarded.
-	/// @param cstPrizeAmount The amount of Cosmic Signature Tokens awarded.
+	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
+	/// @param cstPrizeAmount The amount of CosmicSignature Tokens minted and awarded.
 	/// ---param winnerIndex Winner index.
 	/// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
 	event EnduranceChampionPrizePaid(
@@ -91,6 +75,33 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 		address indexed chronoWarrior,
 		uint256 indexed roundNum,
 		uint256 ethPrizeAmount
+	);
+
+	/// @notice Emitted when an ETH raffle winner is selected
+	/// @param winnerAddress The address of the winner
+	/// @param roundNum The bidding round number.
+	/// todo-1 Make sense to reorder `roundNum` and `winnerIndex` to the beginning?
+	/// @param winnerIndex The index of the winner
+	/// @param amount ETH amount.
+	/// @dev todo-1 Name this better. Remove the word "Event".
+	event RaffleETHWinnerEvent(address indexed winnerAddress, uint256 indexed roundNum, uint256 winnerIndex, uint256 amount);
+
+	/// @notice Emitted when an NFT raffle winner is selected
+	/// @param winnerAddress The address of the winner
+	/// @param roundNum The bidding round number.
+	/// todo-1 Make sense to reorder `roundNum` and `winnerIndex` to the beginning?
+	/// @param nftId The ID of the NFT won
+	/// @param winnerIndex The index of the winner
+	/// @param isStaker Whether the winner is a staker
+	/// @param isRWalk Whether the NFT is a RandomWalk NFT
+	/// @dev todo-1 Name this better. Remove the word "Event".
+	event RaffleNftWinnerEvent(
+		address indexed winnerAddress,
+		uint256 indexed roundNum,
+		uint256 indexed nftId,
+		uint256 winnerIndex,
+		bool isStaker,
+		bool isRWalk
 	);
 
 	/// @notice Claim the prize for the current round

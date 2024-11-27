@@ -126,7 +126,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		uint256 raffleAmount_,
 		uint256 stakingAmount_
 	) internal {
-		// Paying Stellar Spender, Endurance Champion, Chrono-Warrior prizes.
+		// Paying The last CST bidder, Endurance Champion, Chrono-Warrior prizes.
 		_distributeSpecialPrizes();
 
 		// Paying raffle winner prizes.
@@ -199,24 +199,30 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	// #endregion
 	// #region `_distributeSpecialPrizes`
 
-	/// @notice Distributes so called "special" prizes to Stellar Spender, Endurance Champion, and Chrono-Warrior.
-	/// @dev This function mints NFTs and distributes CST tokens and ETH to the winners.
+	/// @notice Distributes so called "special" prizes to the last CST bidder, Endurance Champion, and Chrono-Warrior.
+	/// This method pays ETH, mints CSTs and CS NFTs to the winners.
 	function _distributeSpecialPrizes() internal {
-		// Stellar Spender prize.
-		if (stellarSpender != address(0)) {
-			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
-			// todo-1 Remember that transfer to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
-			uint256 nftId = nft.mint(stellarSpender, roundNum);
-			// todo-1 `erc20RewardMultiplier` shold already be multiplied by `1 ether`.
-			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
-			// try
-			// ToDo-202409245-0 applies.
-			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			token.mint(stellarSpender, cstReward_);
-			// {
-			// } catch {
-			// }
-			emit StellarSpenderPrizePaid(stellarSpender, roundNum, nftId, cstReward_, stellarSpenderTotalSpentCst /* , 1 */);
+		uint256 cstRewardAmount_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
+
+		// // Stellar Spender prize.
+		// if (stellarSpender != address(0)) {
+		// 	uint256 nftId_ = nft.mint(stellarSpender, roundNum);
+		// 	// try
+		// 	// ToDo-202409245-0 applies.
+		// 	// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+		// 	token.mint(stellarSpender, cstRewardAmount_);
+		// 	// {
+		// 	// } catch {
+		// 	// }
+		// 	emit StellarSpenderPrizePaid(stellarSpender, roundNum, nftId_, cstRewardAmount_, stellarSpenderTotalSpentCst /* , 1 */);
+		// }
+
+		// The last CST bidder prize.
+		if (lastCstBidderAddress != address(0)) {
+			uint256 nftId_ = nft.mint(lastCstBidderAddress, roundNum);
+		 	// ToDo-202409245-0 applies.
+			token.mint(lastCstBidderAddress, cstRewardAmount_);
+			emit LastCstBidderPrizePaid(roundNum, lastCstBidderAddress, nftId_, cstRewardAmount_);
 		}
 
 		// Endurance Champion prize.
@@ -224,16 +230,17 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// if (enduranceChampion != address(0))
 		// #enable_asserts assert(enduranceChampion != address(0));
 		{
-			uint256 nftId = nft.mint(enduranceChampion, roundNum);
-			uint256 cstReward_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
+			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
+			// todo-1 Remember that transfer to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
+			uint256 nftId_ = nft.mint(enduranceChampion, roundNum);
 			// try
 			// ToDo-202409245-0 applies.
-			// todo-0 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			token.mint(enduranceChampion, cstReward_);
+			// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+			token.mint(enduranceChampion, cstRewardAmount_);
 			// {
 			// } catch {
 			// }
-			emit EnduranceChampionPrizePaid(enduranceChampion, roundNum, nftId, cstReward_ /* , 0 */);
+			emit EnduranceChampionPrizePaid(enduranceChampion, roundNum, nftId_, cstRewardAmount_ /* , 0 */);
 		}
 
 		// Chrono-Warrior prize.
@@ -266,8 +273,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		for (uint256 i = 0; i < numRaffleNftWinnersBidding; i++) {
 			_updateRaffleEntropy();
 			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			uint256 nftId = nft.mint(raffleWinnerAddress_, roundNum);
-			emit RaffleNftWinnerEvent(raffleWinnerAddress_, roundNum, nftId, i, false, false);
+			uint256 nftId_ = nft.mint(raffleWinnerAddress_, roundNum);
+			emit RaffleNftWinnerEvent(raffleWinnerAddress_, roundNum, nftId_, i, false, false);
 		}
 
 		// Distribute CosmicSignature NFTs to random RandomWalk NFT stakers
@@ -282,8 +289,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 					break;
 				}
 
-				uint256 nftId = nft.mint(luckyStakerAddress_, roundNum);
-				emit RaffleNftWinnerEvent(luckyStakerAddress_, roundNum, nftId, i, true, true);
+				uint256 nftId_ = nft.mint(luckyStakerAddress_, roundNum);
+				emit RaffleNftWinnerEvent(luckyStakerAddress_, roundNum, nftId_, i, true, true);
 			}
 		}
 	}
@@ -330,6 +337,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	function _roundEndResets() internal {
 		++ roundNum;
 		lastBidderAddress = address(0);
+		lastCstBidderAddress = address(0);
 		// lastBidType = CosmicSignatureConstants.BidType.ETH;
 
 		// // todo-0 Incorrect! Remove!
@@ -358,8 +366,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 		// todo-1 Add 1 to ensure that the result is a nonzero?
 		bidPrice = address(this).balance / initialBidAmountFraction;
-		stellarSpender = address(0);
-		stellarSpenderTotalSpentCst = 0;
+		// stellarSpender = address(0);
+		// stellarSpenderTotalSpentCst = 0;
 		enduranceChampion = address(0);
 		enduranceChampionStartTimeStamp = 0;
 		enduranceChampionDuration = 0;

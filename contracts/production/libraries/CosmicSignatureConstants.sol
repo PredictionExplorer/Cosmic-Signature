@@ -167,6 +167,7 @@ library CosmicSignatureConstants {
 	/// @notice Information about a bidder
 	/// @dev Stores the total amount spent and the time of the last bid
 	struct BidderInfo {
+		// todo-1 Eliminate these total spens? It appears that they are not used in the logic.
 		uint256 totalSpentEth;
 		uint256 totalSpentCst;
 		uint256 lastBidTimeStamp;

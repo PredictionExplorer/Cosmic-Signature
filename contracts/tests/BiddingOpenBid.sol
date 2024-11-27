@@ -188,10 +188,10 @@ abstract contract BiddingOpenBid is
 		token.burn(msg.sender, price);
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
-		if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
-			stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
-			stellarSpender = msg.sender;
-		}
+		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
+		// 	stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
+		// 	stellarSpender = msg.sender;
+		// }
 
 		// Comment-202409163 applies.
 		uint256 newStartingBidPriceCst_ =
@@ -199,6 +199,7 @@ abstract contract BiddingOpenBid is
 		startingBidPriceCST = newStartingBidPriceCst_;
 
 		lastCstBidTimeStamp = block.timestamp;
+		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}

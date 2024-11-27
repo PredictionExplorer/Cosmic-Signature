@@ -200,6 +200,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// @notice The address of the account that placed the last bid.
 	address public lastBidderAddress;
 
+	// @notice The address of the account that placed the last CST bid.
+	/// todo-1 Move some comments to here from near `stellarSpender`.
+	address public lastCstBidderAddress;
+
 	// /// todo-1 Rename to `lastBidTypeCode`.
 	// CosmicSignatureConstants.BidType public lastBidType;
 
@@ -219,6 +223,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
 	/// @dev ToDo-202411098-0 applies.
+	/// todo-1 Do we really need this?
 	/// todo-1 Rename to `biddersInfo`.
 	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
 
@@ -268,12 +273,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/ToDo-202411257-1]
 	mapping(uint256 roundNum => address winnerAddress) public winners;
 
-	/// @notice Stellar Spender address.
-	/// @dev This will remain zero if nobody bids with CST or everybody bids with a zero CST price.
-	/// Comment-202409179 relates.
-	address public stellarSpender;
-
-	uint256 public stellarSpenderTotalSpentCst;
+	// /// @notice Stellar Spender address.
+	// /// This will remain zero if nobody bids with CST or everybody bids with a zero CST price.
+	// /// Comment-202409179 relates.
+	// /// todo-1 Move some of these comments to near `lastCstBidderAddress`.
+	// address public stellarSpender;
+	//
+	// uint256 public stellarSpenderTotalSpentCst;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
 	/// [Comment-202411075]
@@ -297,10 +303,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public chronoWarriorDuration;
 
-	/// @notice Stellar Spender and Endurance Champion CST reward amount multiplier.
+	/// @notice The last CST bidder and Endurance Champion CST reward amount multiplier.
 	/// Comment-202411064 applies.
-	/// todo-1 Rename to `cstRewardAmountMultiplier`.
-	/// todo-1 Also rename `ERC20_REWARD_MULTIPLIER`.
 	uint256 public erc20RewardMultiplier;
 
 	/// @notice Comment-202411064 applies.

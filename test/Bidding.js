@@ -702,6 +702,7 @@ describe("Bidding", function () {
 		bAddr = await cosmicSignatureGameProxy.bidderAddress(1,2);
 		expect(bAddr).to.equal(addr1.address);
 	});
+	// todo-1 This test is now broken because I have replaced the stellar spender with the last CST bidder.
 	it("Bid statistics are generating correct values and StellarSpender addr is assigned correctly", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft, stakingWalletCosmicSignatureNft, stakingWalletRandomWalkNft, marketingWallet, } =

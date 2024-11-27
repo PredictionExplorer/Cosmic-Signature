@@ -115,6 +115,7 @@ contract CosmicSignatureGame is
 		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
 		// todo-0 Is this redundant? Assert?
 		lastBidderAddress = address(0);
+		// lastCstBidderAddress =
 		// // lastBidType =
 		mainPrizePercentage = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicSignatureConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
@@ -122,8 +123,8 @@ contract CosmicSignatureGame is
 		stakingPercentage = CosmicSignatureConstants.INITIAL_STAKING_PERCENTAGE;
 		charityPercentage = CosmicSignatureConstants.INITIAL_CHARITY_PERCENTAGE;
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
-		// stellarSpender =
-		// stellarSpenderTotalSpentCst =
+		// // stellarSpender =
+		// // stellarSpenderTotalSpentCst =
 		// enduranceChampion =
 		// enduranceChampionStartTimeStamp =
 		// enduranceChampionDuration =
