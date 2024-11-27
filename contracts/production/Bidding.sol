@@ -171,10 +171,10 @@ abstract contract Bidding is
 		token.burn(msg.sender, price);
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
-		if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
-			stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
-			stellarSpender = msg.sender;
-		}
+		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
+		// 	stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
+		// 	stellarSpender = msg.sender;
+		// }
 
 		// [Comment-202409163]
 		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.
@@ -184,6 +184,9 @@ abstract contract Bidding is
 		startingBidPriceCST = newStartingBidPriceCst_;
 
 		lastCstBidTimeStamp = block.timestamp;
+		// todo-1 Should we not save this if `price` is zero?
+		// todo-1 But better don't allow zero bids.
+		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
@@ -232,6 +235,7 @@ abstract contract Bidding is
 
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
+			
 			// todo-1 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
 			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
 			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;

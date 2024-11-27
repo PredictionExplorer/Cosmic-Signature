@@ -150,8 +150,8 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setTimeoutDurationToClaimMainPrize(99n);
 		expect(await cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize()).to.equal(99n);
 
-		await cosmicSignatureGameProxy.setErc20RewardMultiplier(99n);
-		expect(await cosmicSignatureGameProxy.erc20RewardMultiplier()).to.equal(99n);
+		await cosmicSignatureGameProxy.setCstRewardAmountMultiplier(99n);
+		expect(await cosmicSignatureGameProxy.cstRewardAmountMultiplier()).to.equal(99n);
 
 		await cosmicSignatureGameProxy.setNumRaffleETHWinnersBidding(99n);
 		expect(await cosmicSignatureGameProxy.numRaffleETHWinnersBidding()).to.equal(99n);
@@ -212,7 +212,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setStakingPercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCharityPercentage(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTimeoutDurationToClaimMainPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicSignatureGameProxy.setErc20RewardMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setCstRewardAmountMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNumRaffleETHWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNumRaffleNftWinnersBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNumRaffleNftWinnersStakingRWalk(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -365,7 +365,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setTimeoutDurationToClaimMainPrize(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(addr1).setErc20RewardMultiplier(12n))
+		await expect(cosmicSignatureGameProxy.connect(addr1).setCstRewardAmountMultiplier(12n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setNumRaffleETHWinnersBidding(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");

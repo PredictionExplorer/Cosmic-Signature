@@ -2,8 +2,10 @@
 pragma solidity 0.8.27;
 
 /// todo-1 Use this to generate entropy.
+/// todo-1 But see my random number generation prototype.
+/// todo-1 Comment and cross-ref a link to the prototype.
 library CosmicSignatureHelpers {
-	function generateLowQualityRandomNumber() internal view returns(uint256) {
+	function generateInitialRandomNumber() internal view returns(uint256) {
 		return block.prevrandao ^ block.timestamp;
 	}
 

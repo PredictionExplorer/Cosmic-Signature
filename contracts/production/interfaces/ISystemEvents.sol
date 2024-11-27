@@ -118,9 +118,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event TimeoutDurationToClaimMainPrizeChanged(uint256 newValue);
 
-	/// @notice Emitted when the ERC20 reward multiplier is changed
-	/// @param newMultiplier The new ERC20 reward multiplier
-	event Erc20RewardMultiplierChanged(uint256 newMultiplier);
+	/// @notice Emitted when `cstRewardAmountMultiplier` is changed.
+	/// @param newValue The new value.
+	event CstRewardAmountMultiplierChanged(uint256 newValue);
 
 	/// @notice Emitted when the number of ETH raffle winners for bidding is changed
 	/// @param newNumRaffleETHWinnersBidding The new number of ETH raffle winners

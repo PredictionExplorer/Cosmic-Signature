@@ -283,9 +283,9 @@ abstract contract SystemManagement is OwnableUpgradeable, CosmicSignatureGameSto
 		emit TimeoutDurationToClaimMainPrizeChanged(newValue_);
 	}
 
-	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external override onlyOwner onlyInactive {
-		erc20RewardMultiplier = _erc20RewardMultiplier;
-		emit Erc20RewardMultiplierChanged(_erc20RewardMultiplier);
+	function setCstRewardAmountMultiplier(uint256 newValue_) external override onlyOwner onlyInactive {
+		cstRewardAmountMultiplier = newValue_;
+		emit CstRewardAmountMultiplierChanged(newValue_);
 	}
 
 	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external override onlyOwner onlyInactive {

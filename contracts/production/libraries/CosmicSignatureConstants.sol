@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title Constants and structures.
-/// @author Cosmic Signature Development Team.
+/// @author The Cosmic Signature Development Team.
 /// @notice Default values and types used across the Cosmic Signature ecosystem.
 /// @dev These constants are used for initial state variables but may be updated later.
 library CosmicSignatureConstants {
@@ -121,8 +121,8 @@ library CosmicSignatureConstants {
 	/// todo-1 Create another thread to discuss.
 	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 * SECONDS_PER_DAY;
 
-	/// @notice Default `erc20RewardMultiplier`.
-	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
+	/// @notice Default `cstRewardAmountMultiplier`.
+	uint256 public constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
 
 	uint256 public constant INITIAL_RAFFLE_ETH_WINNERS_BIDDING = 3;
 	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
@@ -167,6 +167,7 @@ library CosmicSignatureConstants {
 	/// @notice Information about a bidder
 	/// @dev Stores the total amount spent and the time of the last bid
 	struct BidderInfo {
+		// todo-1 Eliminate these total spens? It appears that they are not used in the logic.
 		uint256 totalSpentEth;
 		uint256 totalSpentCst;
 		uint256 lastBidTimeStamp;
