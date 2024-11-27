@@ -148,10 +148,10 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
 
-	/// @notice Set the ERC20 reward multiplier
+	/// @notice Sets `cstRewardAmountMultiplier`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _erc20RewardMultiplier The new ERC20 reward multiplier
-	function setErc20RewardMultiplier(uint256 _erc20RewardMultiplier) external;
+	/// @param newValue_ The new value.
+	function setCstRewardAmountMultiplier(uint256 newValue_) external;
 
 	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external;
 

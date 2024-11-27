@@ -305,7 +305,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The last CST bidder and Endurance Champion CST reward amount multiplier.
 	/// Comment-202411064 applies.
-	uint256 public erc20RewardMultiplier;
+	uint256 public cstRewardAmountMultiplier;
 
 	/// @notice Comment-202411064 applies.
 	uint256 public numRaffleETHWinnersBidding;

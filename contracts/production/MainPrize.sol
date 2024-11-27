@@ -202,7 +202,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @notice Distributes so called "special" prizes to the last CST bidder, Endurance Champion, and Chrono-Warrior.
 	/// This method pays ETH, mints CSTs and CS NFTs to the winners.
 	function _distributeSpecialPrizes() internal {
-		uint256 cstRewardAmount_ = erc20RewardMultiplier * numRaffleParticipants[roundNum] * 1 ether;
+		uint256 cstRewardAmount_ = numRaffleParticipants[roundNum] * cstRewardAmountMultiplier;
 
 		// // Stellar Spender prize.
 		// if (stellarSpender != address(0)) {

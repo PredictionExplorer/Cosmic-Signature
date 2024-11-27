@@ -121,8 +121,8 @@ library CosmicSignatureConstants {
 	/// todo-1 Create another thread to discuss.
 	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 * SECONDS_PER_DAY;
 
-	/// @notice Default `erc20RewardMultiplier`.
-	uint256 public constant ERC20_REWARD_MULTIPLIER = 10;
+	/// @notice Default `cstRewardAmountMultiplier`.
+	uint256 public constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
 
 	uint256 public constant INITIAL_RAFFLE_ETH_WINNERS_BIDDING = 3;
 	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;

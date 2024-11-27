@@ -107,7 +107,7 @@ contract CosmicSignatureGameOpenBid is
 		// prevEnduranceChampionDuration =
 		// chronoWarrior =
 		chronoWarriorDuration = uint256(int256(-1));
-		erc20RewardMultiplier = CosmicSignatureConstants.ERC20_REWARD_MULTIPLIER;
+		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
 		numRaffleNftWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
 		numRaffleNftWinnersStakingRWalk = CosmicSignatureConstants.INITIAL_STAKING_WINNERS_RWALK;
