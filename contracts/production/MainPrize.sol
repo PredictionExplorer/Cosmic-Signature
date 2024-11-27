@@ -179,7 +179,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_);
 
-		// Paying main prize.
+		// Paying the main prize.
 		// Doing it at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
 		// which would inflict damage if we ignore that error.

@@ -219,7 +219,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
 	/// @dev ToDo-202411098-0 applies.
-	/// todo-0 Rename to `biddersInfo`.
+	/// todo-1 Rename to `biddersInfo`.
 	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
 
 	// #endregion
@@ -299,7 +299,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Stellar Spender and Endurance Champion CST reward amount multiplier.
 	/// Comment-202411064 applies.
-	/// todo-0 Rename to `cstRewardAmountMultiplier`.
+	/// todo-1 Rename to `cstRewardAmountMultiplier`.
+	/// todo-1 Also rename `ERC20_REWARD_MULTIPLIER`.
 	uint256 public erc20RewardMultiplier;
 
 	/// @notice Comment-202411064 applies.

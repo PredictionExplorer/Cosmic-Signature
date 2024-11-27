@@ -126,8 +126,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		withdrawalAmounts[tokenId] = amount;
 
 		// Transfer half of the balance to the last minter.
-		(bool success, ) = destination.call{ value: amount }("");
-		require(success, "Transfer failed.");
+		(bool isSuccess, ) = destination.call{ value: amount }("");
+		require(isSuccess, "Transfer failed.");
 
 		// todo-0 Slither dislikes it that we make external calls and then emit events.
 		// todo-0 In Slither report, see: reentrancy-events
@@ -153,8 +153,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 		if (msg.value > price) {
 			// Return the extra money to the minter.
-			(bool success, ) = lastMinter.call{ value: msg.value - price }("");
-			require(success, "Transfer failed.");
+			(bool isSuccess, ) = lastMinter.call{ value: msg.value - price }("");
+			require(isSuccess, "Transfer failed.");
 		}
 
 		emit MintEvent(tokenId, lastMinter, entropy, price);

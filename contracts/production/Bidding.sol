@@ -170,6 +170,7 @@ abstract contract Bidding is
 		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 
+		// todo-1 Do we really need to save `totalSpentCst`?
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
 			stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;

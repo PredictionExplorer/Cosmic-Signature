@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Custom errors.
-/// @author Cosmic Signature Development Team.
+/// @author The Cosmic Signature Development Team.
 /// @notice This library contains custom errors used throughout the Cosmic Signature contracts.
 /// @dev Use these errors to provide more detailed and gas-efficient error handling.
 library CosmicSignatureErrors {

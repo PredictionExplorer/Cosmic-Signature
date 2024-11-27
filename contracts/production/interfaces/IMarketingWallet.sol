@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
 /// @title Marketer reward wallet.
-/// @author Cosmic Signature Development Team.
+/// @author The Cosmic Signature Development Team.
 /// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media.
 /// Eventually, the founders of the project will transfer this wallet ownership to the DAO.
 /// @dev

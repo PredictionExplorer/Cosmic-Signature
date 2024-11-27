@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title Constants and structures.
-/// @author Cosmic Signature Development Team.
+/// @author The Cosmic Signature Development Team.
 /// @notice Default values and types used across the Cosmic Signature ecosystem.
 /// @dev These constants are used for initial state variables but may be updated later.
 library CosmicSignatureConstants {

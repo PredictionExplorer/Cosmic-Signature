@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 /// @title The official ERC-20 token for the Cosmic Signature ecosystem.
-/// @author Cosmic Signature Development Team.
+/// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the CosmicSignatureToken (CST), an ERC20 token with additional features.
 /// @dev This token includes burning, ownership, permit, and voting capabilities.
 /// [Comment-202412033]

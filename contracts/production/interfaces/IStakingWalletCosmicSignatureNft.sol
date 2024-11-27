@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
 /// @title Staking wallet for CosmicSignature NFTs.
-/// @author Cosmic Signature Development Team.
+/// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface allows users to stake their CosmicSignature NFTs and earn rewards.
 /// Supports CosmicSignature NFT staking and unstaking, as well as staker reward deposits and distribution.
 interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
