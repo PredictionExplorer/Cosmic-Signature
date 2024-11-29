@@ -9,6 +9,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
+/// todo-1 Is it really necessary to derive from `ReentrancyGuardUpgradeable` here?
 abstract contract NftDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, INftDonations {
 	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive {
 	// 	nftAddress.safeTransferFrom(msg.sender, address(this), nftId);

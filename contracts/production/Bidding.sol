@@ -17,6 +17,7 @@ import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
 abstract contract Bidding is
+	// todo-1 Does this use transient storage?
 	ReentrancyGuardUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,

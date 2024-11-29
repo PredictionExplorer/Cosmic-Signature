@@ -9,6 +9,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
+/// todo-1 Is it really necessary to derive from `ReentrancyGuardUpgradeable` here?
 abstract contract EthDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, IEthDonations {
 	/// todo-1 Should we allow donations even while the system is inactive?
 	function donate() external payable override onlyActive {
