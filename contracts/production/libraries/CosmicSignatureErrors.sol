@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -17,7 +17,7 @@ library CosmicSignatureErrors {
 	/// @dev In .NET, `InvalidOperationException` serves the same purpose.
 	error InvalidOperationInCurrentState(string errStr);
 
-	/// @notice Thrown when an unauthorized caller calls a privileged method.
+	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
 	/// @param errStr Description of the error.
 	/// @param callerAddress Caller address.
 	error CallDenied(string errStr, address callerAddress);
@@ -56,27 +56,36 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when percentage validation fails
 	/// @param errStr Description of the error
 	/// @param percentageSum The sum of percentages (should be 100)
+	/// todo-1 100 or less than 100? Misleading comment?
+	/// todo-1 Maybe eliminate this validation?
+	/// todo-1 Rename this to `InvalidPrizePercentage`.
 	error PercentageValidation(string errStr, uint256 percentageSum);
 
 	// #endregion
 	// #region Bidding Errors
 
-	/// @notice Thrown when the bid price is incorrect
-	/// todo-1 Incorrect or too low? Rename to make it clear? Fix the comment too.
+	/// @notice Thrown when the amount received for a bid is less than the required minimum.
 	/// @param errStr Description of the error
 	/// @param amountRequired The required bid amount
+	/// todo-1 Rename the above param to `amountMinLimit`.
 	/// @param amountSent The amount actually sent
+	/// todo-1 Rename the above param to `receivedAmount`.
+	/// todo-1 Rename this to `InsufficientBidAmount`.
 	error BidPrice(string errStr, uint256 amountRequired, uint256 amountSent);
 
-	/// @notice Thrown when the bid message length exceeds the maximum allowed
+	/// @notice Thrown when a bid message length exceeds the maximum allowed.
+	/// See also: `TokenNameLength`.
 	/// @param errStr Description of the error
-	/// @param msgLength The length of the provided message
-	/// @dev todo-1 I dislike the word `Overflow`.
+	/// @param msgLength The provided message length.
+	/// todo-1 Rename the above param to `messageLength`.
+	/// Comment-202409143 relates.
+	/// todo-1 Rename this to `TooLongBidMessage`.
 	error BidMessageLengthOverflow(string errStr, uint256 msgLength);
 
 	/// @notice Thrown when attempting to use an already used RandomWalk NFT
 	/// @param errStr Description of the error
 	/// @param randomWalkTokenId The ID of the RandomWalk NFT
+	/// todo-1 Rename the above param to `randomWalkNftId`.
 	error UsedRandomWalkNft(string errStr, uint256 randomWalkTokenId);
 
 	// /// @notice Thrown when the bidder has insufficient CST balance
@@ -90,6 +99,7 @@ library CosmicSignatureErrors {
 	/// @param providedRoundNum The provided bidding round number.
 	/// @param providedOffset The offset provided
 	/// @param numParticipants The number of participants in the round
+	/// todo-1 Eliminate this? Otherwise name this event and its params better.
 	error InvalidBidderQueryOffset(
 		string errStr,
 		uint256 providedRoundNum,
@@ -101,6 +111,7 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	/// @param providedRoundNum The provided bidding round number.
 	/// @param currentRoundNum The current bidding round number.
+	/// todo-1 Eliminate this? Otherwise name this event and its params better.
 	error InvalidBidderQueryRoundNum(string errStr, uint256 providedRoundNum, uint256 currentRoundNum);
 
 	/// @notice Thrown when the bidder query offset overflows
@@ -108,11 +119,13 @@ library CosmicSignatureErrors {
 	/// @param providedOffset The offset provided
 	/// @param offsetFromStart The offset from the start
 	/// @dev todo-1 I dislike the word `Overflow`.
+	/// todo-1 Eliminate this? Otherwise name this event and its params better.
 	error BidderQueryOffsetOverflow(string errStr, uint256 providedOffset, uint256 offsetFromStart);
 
 	/// @notice Thrown when querying bidders for a round with no bids yet
 	/// @param errStr Description of the error
 	/// @param providedRoundNum The provided bidding round number.
+	/// todo-1 Eliminate this? Otherwise name this event and its params better.
 	error BidderQueryNoBidsYet(string errStr, uint256 providedRoundNum);
 
 	// #endregion
@@ -121,18 +134,19 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when attempting to claim a bidding round main prize too early.
 	/// See also: `EarlyWithdrawal`.
 	/// @param errStr Description of the error.
-	/// @param claimTime The time when claiming is allowed.
-	/// todo-1 Name it better. It should be named like the respective storage variable. Or see how I named this in `EarlyWithdrawal`.
+	/// @param claimTime The time when this operation will be permitted.
+	/// todo-1 Rename the above param to `operationPermittedTime`.
 	/// @param blockTimeStamp The current block timestamp.
-	/// @dev todo-1 Rename to `RoundMainPrizeEarlyClaim`.
+	/// @dev todo-1 Rename to `MainPrizeEarlyClaim`.
 	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error
 	/// @param lastBidderAddress Last bidder address.
 	/// @param beneficiaryAddress The address that attempted to claim the prize.
-	/// @param timeToWait The time left to wait before claiming is allowed
-	/// todo-1 Rename the param to `durationToWait`. Or how the function to calculate it is named?
+	/// @param timeToWait The duration until this operation will be permitted.
+	/// todo-1 Rename the param to `durationUntilOperationIsPermitted`.
+	/// todo-1 Rename this to `LastBidderOnlyPermission`. Or maybe `LastBidderOnlyPrivilege`.
 	error LastBidderOnly(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 timeToWait);
 
 	/// @notice Thrown when there is no last bidder
@@ -147,7 +161,8 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when attempting to withdraw a prize or whatever too early.
 	/// See also: `EarlyClaim`.
 	/// @param errStr Description of the error.
-	/// @param operationAllowedTime The time when this operation will be allowed.
+	/// @param operationAllowedTime The time when this operation will be permitted.
+	/// todo-1 Rename the above param to `operationPermittedTime`.
 	/// @param blockTimeStamp The current block timestamp.
 	error EarlyWithdrawal(string errStr, uint256 operationAllowedTime, uint256 blockTimeStamp);
 
@@ -197,23 +212,30 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error
 	/// @param destinationAddress The intended receiver of the tokens
 	/// @param amount The amount of tokens to transfer
+	/// todo-1 Rename this to `TokenTransferFailed`.
 	error ERC20TransferFailed(string errStr, address destinationAddress, uint256 amount);
 
-	/// @notice Thrown when ERC721 token minting fails
-	/// @param errStr Description of the error
-	/// @param receiverAddress The intended receiver of the token
-	/// @param roundNum The bidding round number for the token.
-	/// todo-1 Reorder `roundNum` to after `errStr`?
-	error ERC721Mint(string errStr, address receiverAddress, uint256 roundNum);
+	// /// @notice Thrown when ERC721 token minting fails
+	// /// @param errStr Description of the error
+	// /// @param receiverAddress The intended receiver of the token
+	// /// @param roundNum The bidding round number for the token.
+	// /// todo-1 Reorder `roundNum` to after `errStr`?
+	// /// todo-1 Rename this to `NftMintFailed`.
+	// error ERC721Mint(string errStr, address receiverAddress, uint256 roundNum);
 
-	/// @notice Thrown when the token name length is invalid
+	/// @notice Thrown when the given NFT name is too long.
+	/// See also: `BidMessageLengthOverflow`.
+	/// todo-1 Reference comments that are referenced near `BidMessageLengthOverflow`.
 	/// @param errStr Description of the error
-	/// @param len The length of the token name
+	/// @param len The NFT name length.
+	/// todo-1 Rename the above param to `length`.
+	/// todo-1 Rename this to `TooLongNftName`.
 	error TokenNameLength(string errStr, uint256 len);
 
 	/// @notice Thrown when an address without minting privileges attempts to mint
 	/// @param errStr Description of the error
 	/// @param requesterAddress The address attempting to mint
+	/// todo-1 Rename to `NoMintPermission`.
 	error NoMintPrivileges(string errStr, address requesterAddress);
 
 	/// @notice Thrown when the token owner is incorrect
@@ -221,11 +243,13 @@ library CosmicSignatureErrors {
 	/// @param nftAddress NFT contract address.
 	/// @param nftId The ID of the token
 	/// @param senderAddress The address of the sender
+	/// todo-1 Rename this to `NftOwnerOnlyPermission`.
 	error IncorrectERC721TokenOwner(string errStr, address nftAddress, uint256 nftId, address senderAddress);
 
 	/// @notice Thrown when there's an ownership error for an NFT.
 	/// @param errStr Description of the error
 	/// @param nftId The ID of the token
+	/// todo-1 Eliminate this and use `IncorrectERC721TokenOwner` instead.
 	error OwnershipError(string errStr, uint256 nftId);
 
 	// #endregion
@@ -233,6 +257,7 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when a non-zero value is required but zero is provided
 	/// @param errStr Description of the error
+	/// todo-1 Rename this to `ZeroValue`.
 	error NonZeroValueRequired(string errStr);
 
 	/// @notice Thrown when a non-zero address is required but the zero address is provided
@@ -331,6 +356,7 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when attempting to stake an NFT more than once
 	/// @param errStr Description of the error
 	/// @param nftId The ID of the token
+	/// todo-1 Rename this to `NftOneTimeOnlyStaking`.
 	error NftOneTimeStaking(string errStr, uint256 nftId);
 
 	// /// @notice Thrown when attempting to set address that have already been set

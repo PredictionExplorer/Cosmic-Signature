@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 // #endregion
 // #region
@@ -24,6 +24,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice Stores details about an NFT stake action.
 	struct StakeAction {
 		uint256 nftId;
+		/// todo-1 ??? Reorder this to before `nftId`.
 		address nftOwnerAddress;
 
 		/// @notice

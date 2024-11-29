@@ -52,11 +52,11 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // It's documented at https://github.com/crytic/solc-select .
 // Install it.
 // To switch to a particular solc version, use this command:
-//    solc-select use 0.8.27 --always-install
+//    solc-select use 0.8.28 --always-install
 // It's OK if then you switch to a different version. As long as the given version remains installed,
 // we should be able to find and use it.
 // Note that Hardhat will not necessarily validate solc of what version it's executing,
-// so it's your responsibility to correctly configure all the relevant parameters here that reference this comment.
+// so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
 // Remember that depending on how your system upates are configured and how you installed the solc package,
 // the package can be updated at any moment, so you might want to disable quiet automatic updates.
 // [/Comment-202409011]
@@ -65,7 +65,7 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // [ToDo-202409098-1]
 // When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
 // [/ToDo-202409098-1]
-const solidityVersion = "0.8.27";
+const solidityVersion = "0.8.28";
 
 // Comment-202409011 applies.
 // [Comment-202411136]
@@ -75,7 +75,7 @@ const solidityVersion = "0.8.27";
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
 // We print it near Comment-202411143.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
+const solidityCompilerLongVersion = solidityVersion + "+commit.7893614a.Linux.g++";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
@@ -92,12 +92,10 @@ if( ! nodeFSModule.existsSync(solidityCompilerPath) ) {
 
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
-
 	if (ENABLE_SMTCHECKER <= 0 && ( ! ENABLE_ASSERTS )) {
 		// [Comment-202409025/]
 		console.warn("Warning. Neither SMTChecker nor asserts are enabled. Assuming it's intentional.");
 	}
-
 	if (ENABLE_SMTCHECKER > 0 && ( ! ENABLE_ASSERTS )) {
 		console.warn("Warning. SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
@@ -111,59 +109,30 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
 
 // #endregion
-// #region //
-
-// // [ToDo-202408311-0]
-// // This is how I want imports to look like.
-// // But this generates the following compile error:
-// //    Error HH209: Redefinition of task verify:get-contract-information failed. Unsupported operation adding mandatory (non optional) param definitions in an overridden task.
-// //    For more info go to https://hardhat.org/HH209 or run Hardhat with --show-stack-traces
-// // Removing the import of "@nomiclabs/hardhat-etherscan" would fix the error.
-// // Do we really need that import here?
-// // I prototyped contract deployment and verification, and it worked without explicitly importing that package.
-// // ToDo-202408312-0 relates.
-// // [/ToDo-202408311-0]
-// require("@nomicfoundation/hardhat-toolbox");
-// // require("@nomicfoundation/hardhat-ethers");
-// // require("@nomicfoundation/hardhat-chai-matchers");
-// require("hardhat-abi-exporter");
-// require("hardhat-docgen");
-// require("@openzeppelin/hardhat-upgrades");
-// require("hardhat-tracer");
-// require("@nomiclabs/hardhat-solhint");
-// require("@nomiclabs/hardhat-etherscan");
-// require("./tasks/cosmic-signature-tasks.js");
-
-// #endregion
 // #region
 
-// // todo-0 In a newly generated Hardhat project, this is the only import.
-// // todo-0 Why did someone quietly remove this import?
-// require("@nomicfoundation/hardhat-toolbox");
-
-const { subtask, } = require("hardhat/config");
-const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
+// This imports a bunch of other packages. Don't import them here.
+require("@nomicfoundation/hardhat-toolbox");
 
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
-
 require("hardhat-abi-exporter");
-require("@nomiclabs/hardhat-etherscan");
-
-// todo-0 "@nomicfoundation/hardhat-toolbox" imports this.
-// todo-0 So if you decide to import "@nomicfoundation/hardhat-toolbox", this import would be redundant.
-require("@nomicfoundation/hardhat-ethers");
-
-require("hardhat-tracer");
 require("hardhat-docgen");
-
-// todo-0 "@nomicfoundation/hardhat-toolbox" imports this.
-// todo-0 So if you decide to import "@nomicfoundation/hardhat-toolbox", this import would be redundant.
-require("@nomicfoundation/hardhat-chai-matchers");
-
-require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-solhint");
+require("hardhat-tracer");
+
+// // [ToDo-202412098-1]
+// // Use "@nomicfoundation/hardhat-verify" instead.
+// // "@nomicfoundation/hardhat-toolbox" imports it, so it could be unnecessary to explicitly import it.
+// // Maybe comment about that where we import "@nomicfoundation/hardhat-toolbox".
+// // ToDo-202412097-1 relates.
+// // [/ToDo-202412098-1]
+// require("@nomiclabs/hardhat-etherscan");
+
+const { subtask, } = require("hardhat/config");
+const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
+require("@openzeppelin/hardhat-upgrades");
 
 // Comment-202409255 relates.
 require("./tasks/cosmic-signature-tasks.js");
@@ -194,7 +163,6 @@ function populateNetworkIsMainNetOnce(hre) {
 			networkIsMainNet = false;
 			break;
 		}
-
 		default: {
 			networkIsMainNet = true;
 			break;
@@ -257,7 +225,6 @@ function createSolidityLinePreProcessingRegExp()
 */
 function preProcessSolidityLine(hre, line) {
 	populateNetworkIsMainNetOnce(hre);
-
 	if (networkIsMainNet) {
 		// [Comment-202408261/]
 		throw new Error("The network is a mainnet, but you forgot to disable Hardhat Preprocessor.");
@@ -274,9 +241,10 @@ function preProcessSolidityLine(hre, line) {
 
 /** @type import("hardhat/config").HardhatUserConfig */
 const hardhatUserConfig = {
+	// #region
+
 	solidity: {
 		version: solidityVersion,
-
 		settings: {
 			// [Comment-202408026]
 			// By default, this is "paris".
@@ -289,13 +257,12 @@ const hardhatUserConfig = {
 			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.27, this is `false` by default.
+			// As of the 0.8.28, this is `false` by default.
 			viaIR: true,
 
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
@@ -305,7 +272,6 @@ const hardhatUserConfig = {
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
-
 				runs: 20000,
 			},
 
@@ -320,6 +286,9 @@ const hardhatUserConfig = {
 			},
 		},
 	},
+
+	// #endregion
+	// #region
 
 	// "hardhat-preprocessor" package configuration.
 	preprocess: {
@@ -350,6 +319,9 @@ const hardhatUserConfig = {
 			),
 	},
 
+	// #endregion
+	// #region
+
 	abiExporter: {
 		// [Comment-202408024]
 		// This folder name exists in multiple places.
@@ -370,6 +342,9 @@ const hardhatUserConfig = {
 		spacing: 2,
 		pretty: true,
 	},
+
+	// #endregion
+	// #region
 
 	// When you make changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
@@ -399,13 +374,33 @@ const hardhatUserConfig = {
 		},
 	},
 
-	etherscan: {
-		apiKey: process.env.API_KEY,
-	},
+	// #endregion
+	// #region
 
+	// [ToDo-202412097-1]
+	// Use the "@nomicfoundation/hardhat-verify" plugin.
+	// See https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify
+	// Uncomment one or both of these settings.
+	// Sourcify could be a better option than EtherScan.
+	// Write and cross-ref comments here and where we will import "@nomicfoundation/hardhat-verify".
+	// Actually "@nomicfoundation/hardhat-toolbox" already imports it.
+	// ToDo-202412098-1 relates.
+	// [/ToDo-202412097-1]
+	// etherscan: {
+	// 	apiKey: process.env.API_KEY,
+	// },
+	// sourcify: {
+	// 	enabled: true
+	// },
+
+	// #endregion
+	// #region
+	
 	mocha: {
 		timeout: 10 * 60 * 1000,
 	},
+
+	// #endregion
 };
 
 // #endregion

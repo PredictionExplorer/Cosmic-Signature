@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 /// @title Governance interface for the Cosmic Signature ecosystem.
 /// @author The Cosmic Signature Development Team.

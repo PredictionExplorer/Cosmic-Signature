@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -10,26 +10,9 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 /// @dev Extends ERC721Enumerable and includes custom minting and metadata management
 /// todo-0 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
 /// todo-0 At least write a comment here and near RandomWalkNFT.
+/// todo-1  Reorder `Ownable` to the beginning, also in constructor.
 contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 	// #region State
-
-	/// @notice Mapping of token IDs to their unique seeds
-	mapping(uint256 => bytes32) public seeds;
-
-	/// @notice Mapping of token IDs to their custom names
-	mapping(uint256 => string) public tokenNames;
-
-	/// @notice Entropy used for generating random seeds
-	/// todo-1 Allow the game (`onlyGame`) to provide entropy as a parameter. It would allow to optimize the game.
-	bytes32 public entropy;
-
-	/// @notice The total number of tokens minted
-	/// todo-1 We inherited `totalSupply`. Does it return the same value? If so can I eliminate this?
-	/// todo-1 If I do that write a comment in RWalk near the respective variable that it's possible to eliminate it.
-	uint256 public numTokens = 0;
-
-	/// @notice The base URI for token metadata
-	string private _baseTokenURI;
 
 	/// @notice The `CosmicSignatureGame` contract address.
 	/// todo-1 Declare some other variables `immutable`.
@@ -37,7 +20,30 @@ contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 	address public immutable game;
 
 	/// @notice IPFS link to the script that generates images and videos for each NFT based on seed
+	/// todo-1 Rename this to `nftGenerationScriptUri`.
 	string public tokenGenerationScriptURL = "ipfs://TBD";
+
+	/// @notice The base URI for token metadata
+	/// todo-1 Rename this to `_nftBaseUri`.
+	string private _baseTokenURI;
+
+	/// @notice The total number of tokens minted
+	/// todo-1 We inherited `totalSupply`. Does it return the same value? If so can I eliminate this?
+	/// todo-1 If I do that write a comment in RWalk near the respective variable that it's possible to eliminate it.
+	/// todo-1 Rename this to `numNfts`.
+	uint256 public numTokens = 0;
+
+	/// @notice Mapping of token IDs to their unique seeds
+	/// todo-1 Rename this to `nftSeeds`.
+	mapping(uint256 => bytes32) public seeds;
+
+	/// @notice Mapping of token IDs to their custom names
+	/// todo-1 Rename this to `nftNames`.
+	mapping(uint256 => string) public tokenNames;
+
+	/// @notice Entropy used for generating random seeds
+	/// todo-1 Allow the game (`onlyGame`) to provide entropy as a parameter. It would allow to optimize the game.
+	bytes32 public entropy;
 
 	// #endregion
 
@@ -58,9 +64,14 @@ contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 		emit TokenGenerationScriptURLEvent(newTokenGenerationScriptURL);
 	}
 
-	function setBaseURI(string memory value) external override onlyOwner {
-		_baseTokenURI = value;
-		emit BaseURIEvent(value);
+	function setBaseURI(string memory newValue_) external override onlyOwner {
+		_baseTokenURI = newValue_;
+		emit BaseURIEvent(newValue_);
+	}
+
+	/// @return The base URI for token metadata
+	function _baseURI() internal view override returns (string memory) {
+		return _baseTokenURI;
 	}
 
 	function setTokenName(uint256 nftId, string memory name) external override {
@@ -69,8 +80,10 @@ contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 			CosmicSignatureErrors.OwnershipError("setTokenName caller is not authorized.", nftId)
 		);
 		require(
+			// todo-1 Magic number hardcoded.
+			// todo-1 Make it a constant and reference Comment-202409143.
 			bytes(name).length <= 32,
-			CosmicSignatureErrors.TokenNameLength("Token name is too long.", bytes(name).length)
+			CosmicSignatureErrors.TokenNameLength("NFT name is too long.", bytes(name).length)
 		);
 		tokenNames[nftId] = name;
 		emit TokenNameEvent(nftId, name);
@@ -92,10 +105,5 @@ contract CosmicSignatureNft is ERC721Enumerable, Ownable, ICosmicSignatureNft {
 		_mint(owner, nftId);
 		emit MintEvent(nftId, owner, roundNum, entropy);
 		return nftId;
-	}
-
-	/// @return The base URI for token metadata
-	function _baseURI() internal view override returns (string memory) {
-		return _baseTokenURI;
 	}
 }

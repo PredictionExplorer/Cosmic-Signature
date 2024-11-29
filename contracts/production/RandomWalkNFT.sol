@@ -4,7 +4,7 @@
 // todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -146,8 +146,11 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		price = newPrice;
 		uint256 tokenId = nextTokenId;
 		++ nextTokenId;
-		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but comment.
+
+		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but reference relevant comments.
+		// Issue. `blockhash(block.number)` is always zero.
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number), tokenId, lastMinter));
+
 		seeds[tokenId] = entropy;
 		_safeMint(lastMinter, tokenId);
 

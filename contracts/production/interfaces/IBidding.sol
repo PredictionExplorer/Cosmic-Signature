@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
@@ -17,10 +17,15 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Emitted when a bid is placed
 	/// @param lastBidderAddress The address of the bidder who placed this bid.
 	/// @param roundNum The current bidding round number.
+	/// todo-1 Reorder the above to the beginning.
 	/// @param bidPrice The price of the bid
+	/// todo-1 Rename the above param to `ethBidPrice`.
 	/// @param randomWalkNftId The ID of the RandomWalk NFT used (if any)
 	/// @param numCSTTokens The number of CST tokens used (if any)
+	/// todo-1 Rename the above param to `cstBidPrice`.
+	/// todo-1 Maybe reorder the above param to after `bidPrice`.
 	/// @param prizeTime The time when the prize can be claimed
+	/// todo-1 Rename the above param to how I am going to name the respective state variable.
 	/// @param message An optional message from the bidder
 	/// todo-1 Rename to `BidPlaced`.
 	event BidEvent(
@@ -42,6 +47,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 
 	/// @notice Obtains the current price that a bidder is required to pay to place an ETH bid
 	/// @return The ETH price, in Wei
+	/// todo-1 Rename this to `getEthBidPrice`.
 	function getBidPrice() external view returns (uint256);
 
 	/// @notice Places a bid using CST tokens.
@@ -55,6 +61,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// todo-1 Maybe don't let it to become zero. Require at least 1 Wei.
 	/// @return The CST price, in Wei.
 	/// @dev Comment-202409179 relates.
+	/// todo-1 Rename this to `getCstBidPrice`.
 	function getCurrentBidPriceCST() external view returns (uint256);
 
 	/// @return A tuple containing the elapsed and total durations of the current auction.
@@ -66,12 +73,14 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
+	/// todo-1 Rename this to `getTotalNumBids`.
 	function getTotalBids() external view returns (uint256);
 
 	/// @notice Get the address of a bidder at a specific position in the current round
 	/// @param position The position of the bidder (0-indexed)
 	/// @return The address of the bidder at the specified position
 	/// @dev todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
+	/// todo-1 Otherwise name this better.
 	function getBidderAddressAtPosition(uint256 position) external view returns (address);
 
 	/// @notice Get the address of a bidder at a specific position from the end in a given round
@@ -80,6 +89,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @return The address of the bidder
 	/// @dev todo-1 Rename to reflect the fact that this is position from end.
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
+	/// todo-1 Otherwise name this better.
 	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns (address);
 
 	/// @notice Get the total amount spent by a bidder in the current round
@@ -88,6 +98,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// @dev todo-1 Rename to `getBidderTotalSpentInRound`.
 	/// todo-1 This is ETH, right? Rename to make it clear. Actually it's both ETH and CST, right? Make it clear in this comment.
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
+	/// todo-1 Otherwise name this better.
 	function getTotalSpentByBidder(address bidderAddress_) external view returns (uint256, uint256);
 
 	// /// @notice Checks if a RandomWalk NFT has ever been used for bidding.

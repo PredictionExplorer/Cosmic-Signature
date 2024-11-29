@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 // #region Imports
 
@@ -144,6 +144,27 @@ contract CosmicSignatureGame is
 		raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
+	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
+	function _authorizeUpgrade(address newImplementation_) internal override {
+	}
+
+	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
+	function upgradeTo(address _newImplementation) public override onlyOwner {
+		_authorizeUpgrade(_newImplementation);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
+		// todo-0 This event has been eliminated.
+		// todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
+		// todo-0 So I have refactored this to emit that same event.
+		// todo-0 But would it be better to call that function here?
+		// todo-0 Nick, please take a closer look at this.
+		//
+		// todo-0 OpenZeppelin docs says:
+		// todo-0 ERC1967Utils: Removed duplicate declaration of the Upgraded, AdminChanged and BeaconUpgraded events. These events are still available through the IERC1967 interface located under the contracts/interfaces/ directory.
+		//
+		// emit ERC1967Utils.Upgraded(_newImplementation);
+		emit IERC1967.Upgraded(_newImplementation);
+	}
+
 	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
 		_bid(data_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
@@ -186,21 +207,5 @@ contract CosmicSignatureGame is
 
 	fallback() external payable override {
 		revert("Method does not exist.");
-	}
-
-	function _authorizeUpgrade(address newImplementation_) internal override {
-	}
-
-	/// todo-1 Should this be `onlyInactive`?
-	function upgradeTo(address _newImplementation) public override onlyOwner {
-		_authorizeUpgrade(_newImplementation);
-		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		// todo-0 This event has been eliminated.
-		// todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
-		// todo-0 So I have refactored this to emit that same event.
-		// todo-0 But would it be better to call that function here?
-		// todo-0 Nick, please take a closer look at this.
-		// emit ERC1967Utils.Upgraded(_newImplementation);
-		emit IERC1967.Upgraded(_newImplementation);
 	}
 }

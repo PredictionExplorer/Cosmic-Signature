@@ -42,7 +42,7 @@ describe("Contract", function () {
 			bidLogic,
 		};
 	}
-	it("Contract can win prize", async function () {
+	it("A contract can win main prize", async function () {
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, randomWalkNft } = await loadFixture(
 			deployCosmicSignature,
 		);

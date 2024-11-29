@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 /// todo-1 Use this to generate entropy.
 /// todo-1 But see my random number generation prototype.

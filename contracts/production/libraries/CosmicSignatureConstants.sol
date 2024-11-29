@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -63,6 +63,7 @@ library CosmicSignatureConstants {
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
 	uint256 public constant INITIAL_NANOSECONDS_EXTRA = NANOSECONDS_PER_HOUR;
+	/// todo-1 Rename `INITIAL...` to `DEFAULT...`.
 	uint256 public constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
 	/// todo-0 Rename to `INITIAL_INITIAL_...`?
 	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.

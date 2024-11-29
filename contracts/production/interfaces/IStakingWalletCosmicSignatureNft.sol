@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
@@ -13,6 +13,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Unstaked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
+	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param numStakedNfts Staked NFT count after this action.
 	/// @param rewardAmount Reward amount paid to the staker.
 	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
@@ -31,6 +32,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Unstaked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
+	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param rewardAmount Reward amount paid to the staker.
 	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
 	event RewardPaid(

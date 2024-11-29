@@ -7,7 +7,6 @@
 
 	if [ ${OutcomeCode} -lt 2 ]; then
 		'cd' '--' '..'
-
 		if [ $? -ne 0 ]; then
 			echo 'Error 202409123.'
 			OutcomeCode=2
@@ -21,7 +20,6 @@
 		SolHintOutputFileName='solhint/check-1-output.txt'
 
 		'gio' 'trash' '--force' "${SolHintOutputFileName}"
-
 		if [ $? -ne 0 ]; then
 			echo 'Error 202409125.'
 			OutcomeCode=2
@@ -30,7 +28,6 @@
 
 	if [ ${OutcomeCode} -lt 2 ]; then
 		'npx' 'hardhat' 'check' >> "${SolHintOutputFileName}"
-
 		if [ $? -ne 0 ]; then
 			echo 'Error. Hardhat Check failed.'
 			OutcomeCode=2

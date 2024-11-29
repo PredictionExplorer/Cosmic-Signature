@@ -12,7 +12,6 @@
 		SlitherOutputFileName='slither-1-output.md'
 
 		'gio' 'trash' '--force' "${SlitherOutputFileName}"
-
 		if [ $? -ne 0 ]; then
 			echo 'Error 202409118.'
 			OutcomeCode=2
@@ -36,7 +35,6 @@
 
 	# if [ ${OutcomeCode} -lt 2 ]; then
 	# 	'sed' '-i' 's/\(](\)\(\w\+\/\)/\1..\/\2/g' "${SlitherOutputFileRelativePath}"
-	# 
 	# 	if [ $? -ne 0 ]; then
 	# 		echo 'Error 202409117.'
 	# 		OutcomeCode=2

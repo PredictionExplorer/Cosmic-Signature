@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 /// @title Charitable donations management
 /// @author The Cosmic Signature Development Team.
@@ -17,6 +17,7 @@ interface ICharityWallet {
 	/// @notice Emitted after a donation was received
 	/// @param donorAddress Donor address
 	/// @param amount The amount of ETH donated
+	/// todo-1 Rename this to `DonationReceived`.
 	event DonationReceivedEvent(address indexed donorAddress, uint256 amount);
 
 	/// @notice Emitted after accumulated donations were sent to the charity.
@@ -26,6 +27,7 @@ interface ICharityWallet {
 	/// [ToDo-202409212-1]
 	/// Consider eliminating this and using `CosmicSignatureEvents.FundsTransferredToCharity` instead.
 	/// [/ToDo-202409212-1]
+	/// todo-1 Rename this to `DonationSent`.
 	event DonationSentEvent(address indexed charityAddress, uint256 amount);
 
 	/// @notice Allows the contract to receive ETH donations

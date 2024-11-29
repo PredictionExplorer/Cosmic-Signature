@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { Governor, IGovernor } from "@openzeppelin/contracts/governance/Governor.sol";
 import { GovernorSettings } from "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";

@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 // #endregion
 // #region
@@ -334,6 +334,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @notice Reset various parameters at the end of a bidding round
 	/// @dev This function is called after a prize is claimed to prepare for the next round
+	/// todo-1 Rename this to `_prepareNextRound`.
 	function _roundEndResets() internal {
 		++ roundNum;
 		lastBidderAddress = address(0);
