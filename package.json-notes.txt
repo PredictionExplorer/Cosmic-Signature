@@ -1,8 +1,1 @@
 @ ToDo-202409098-1 applies to the "hardhat" package version.
-
-@ [ToDo-202408312-0]
-  https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan
-  It says:
-     The @nomiclabs/hardhat-etherscan package is deprecated, please use @nomicfoundation/hardhat-verify instead
-  ToDo-202408311-0 relates.
-  [/ToDo-202408312-0]

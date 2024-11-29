@@ -109,57 +109,30 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
 
 // #endregion
-// #region //
-
-// // [ToDo-202408311-0]
-// // This is how I want imports to look like.
-// // But this generates the following compile error:
-// //    Error HH209: Redefinition of task verify:get-contract-information failed. Unsupported operation adding mandatory (non optional) param definitions in an overridden task.
-// //    For more info go to https://hardhat.org/HH209 or run Hardhat with --show-stack-traces
-// // Removing the import of "@nomiclabs/hardhat-etherscan" would fix the error.
-// // Do we really need that import here?
-// // I prototyped contract deployment and verification, and it worked without explicitly importing that package.
-// // ToDo-202408312-0 relates.
-// // [/ToDo-202408311-0]
-// require("@nomicfoundation/hardhat-toolbox");
-// // require("@nomicfoundation/hardhat-ethers");
-// // require("@nomicfoundation/hardhat-chai-matchers");
-// require("hardhat-abi-exporter");
-// require("hardhat-docgen");
-// require("@openzeppelin/hardhat-upgrades");
-// require("hardhat-tracer");
-// require("@nomiclabs/hardhat-solhint");
-// require("@nomiclabs/hardhat-etherscan");
-// require("./tasks/cosmic-signature-tasks.js");
-
-// #endregion
 // #region
 
-// // todo-0 In a newly generated Hardhat project, this is the only import.
-// // todo-0 Why did someone quietly remove this import?
-// require("@nomicfoundation/hardhat-toolbox");
+// This imports a bunch of other packages. Don't import them here.
+require("@nomicfoundation/hardhat-toolbox");
 
-const { subtask, } = require("hardhat/config");
-const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
 require("hardhat-abi-exporter");
-require("@nomiclabs/hardhat-etherscan");
-
-// todo-0 "@nomicfoundation/hardhat-toolbox" imports this.
-// todo-0 So if you decide to import "@nomicfoundation/hardhat-toolbox", this import would be redundant.
-require("@nomicfoundation/hardhat-ethers");
-
-require("hardhat-tracer");
 require("hardhat-docgen");
-
-// todo-0 "@nomicfoundation/hardhat-toolbox" imports this.
-// todo-0 So if you decide to import "@nomicfoundation/hardhat-toolbox", this import would be redundant.
-require("@nomicfoundation/hardhat-chai-matchers");
-
-require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-solhint");
+require("hardhat-tracer");
+
+// // [ToDo-202412098-1]
+// // Use "@nomicfoundation/hardhat-verify" instead.
+// // "@nomicfoundation/hardhat-toolbox" imports it, so it could be unnecessary to explicitly import it.
+// // Maybe comment about that where we import "@nomicfoundation/hardhat-toolbox".
+// // ToDo-202412097-1 relates.
+// // [/ToDo-202412098-1]
+// require("@nomiclabs/hardhat-etherscan");
+
+const { subtask, } = require("hardhat/config");
+const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
+require("@openzeppelin/hardhat-upgrades");
 
 // Comment-202409255 relates.
 require("./tasks/cosmic-signature-tasks.js");
@@ -404,9 +377,25 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	etherscan: {
-		apiKey: process.env.API_KEY,
-	},
+	// [ToDo-202412097-1]
+	// Use the "@nomicfoundation/hardhat-verify" plugin.
+	// See https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify
+	// Uncomment one or both of these settings.
+	// Sourcify could be a better option than EtherScan.
+	// Write and cross-ref comments here and where we will import "@nomicfoundation/hardhat-verify".
+	// Actually "@nomicfoundation/hardhat-toolbox" already imports it.
+	// ToDo-202412098-1 relates.
+	// [/ToDo-202412097-1]
+	// etherscan: {
+	// 	apiKey: process.env.API_KEY,
+	// },
+	// sourcify: {
+	// 	enabled: true
+	// },
+
+	// #endregion
+	// #region
+	
 	mocha: {
 		timeout: 10 * 60 * 1000,
 	},
