@@ -52,11 +52,11 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // It's documented at https://github.com/crytic/solc-select .
 // Install it.
 // To switch to a particular solc version, use this command:
-//    solc-select use 0.8.27 --always-install
+//    solc-select use 0.8.28 --always-install
 // It's OK if then you switch to a different version. As long as the given version remains installed,
 // we should be able to find and use it.
 // Note that Hardhat will not necessarily validate solc of what version it's executing,
-// so it's your responsibility to correctly configure all the relevant parameters here that reference this comment.
+// so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
 // Remember that depending on how your system upates are configured and how you installed the solc package,
 // the package can be updated at any moment, so you might want to disable quiet automatic updates.
 // [/Comment-202409011]
@@ -65,7 +65,7 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // [ToDo-202409098-1]
 // When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
 // [/ToDo-202409098-1]
-const solidityVersion = "0.8.27";
+const solidityVersion = "0.8.28";
 
 // Comment-202409011 applies.
 // [Comment-202411136]
@@ -75,7 +75,7 @@ const solidityVersion = "0.8.27";
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
 // We print it near Comment-202411143.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.40a35a09.Linux.g++";
+const solidityCompilerLongVersion = solidityVersion + "+commit.7893614a.Linux.g++";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
@@ -257,7 +257,7 @@ const hardhatUserConfig = {
 			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.27, this is `false` by default.
+			// As of the 0.8.28, this is `false` by default.
 			viaIR: true,
 
 			// Comment-202408025 applies.

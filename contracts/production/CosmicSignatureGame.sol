@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 // #region Imports
 
@@ -157,6 +157,10 @@ contract CosmicSignatureGame is
 		// todo-0 So I have refactored this to emit that same event.
 		// todo-0 But would it be better to call that function here?
 		// todo-0 Nick, please take a closer look at this.
+		//
+		// todo-0 OpenZeppelin docs says:
+		// todo-0 ERC1967Utils: Removed duplicate declaration of the Upgraded, AdminChanged and BeaconUpgraded events. These events are still available through the IERC1967 interface located under the contracts/interfaces/ directory.
+		//
 		// emit ERC1967Utils.Upgraded(_newImplementation);
 		emit IERC1967.Upgraded(_newImplementation);
 	}

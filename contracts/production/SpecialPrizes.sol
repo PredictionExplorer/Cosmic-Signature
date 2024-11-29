@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { ISpecialPrizes } from "./interfaces/ISpecialPrizes.sol";

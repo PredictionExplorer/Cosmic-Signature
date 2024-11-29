@@ -1,1 +1,4 @@
 @ ToDo-202409098-1 applies to the "hardhat" package version.
+
+@ I removed this package reference. Hardhat includes it.
+		"solidity-coverage": "^0.8.14"

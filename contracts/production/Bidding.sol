@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -18,6 +18,7 @@ import { IBidding } from "./interfaces/IBidding.sol";
 
 abstract contract Bidding is
 	// todo-1 Does this use transient storage?
+	// todo-1 They now have `ReentrancyGuardTransient`. But is it upgradeable?
 	ReentrancyGuardUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,

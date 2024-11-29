@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 // #endregion
 // #region
@@ -219,6 +219,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		CosmicSignatureConstants.DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
 		newDonatedTokenReference_.amount += amount_;
 		emit TokenDonated(roundNum_, /*msg.sender*/ donorAddress_, tokenAddress_, amount_);
+		// todo-1 Make sense to use `SafeERC20` here?`
 		bool isSuccess = tokenAddress_.transferFrom(/*msg.sender*/ donorAddress_, address(this), amount_);
 		require(isSuccess, CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", address(this), amount_));
 	}
@@ -253,6 +254,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 
 		delete donatedTokenReference_.amount;
 		emit DonatedTokenClaimed(roundNum_, msg.sender, tokenAddress_, donatedTokenCopy_.amount);
+		// todo-1 Make sense to use `SafeERC20` here?`
 		bool isSuccess = tokenAddress_.transfer(msg.sender, donatedTokenCopy_.amount);
 		require(isSuccess, CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", msg.sender, donatedTokenCopy_.amount));
 	}
