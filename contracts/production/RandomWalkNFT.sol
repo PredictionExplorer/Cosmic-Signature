@@ -146,8 +146,11 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		price = newPrice;
 		uint256 tokenId = nextTokenId;
 		++ nextTokenId;
-		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but comment.
+
+		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but reference relevant comments.
+		// Issue. `blockhash(block.number)` is always zero.
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number), tokenId, lastMinter));
+
 		seeds[tokenId] = entropy;
 		_safeMint(lastMinter, tokenId);
 

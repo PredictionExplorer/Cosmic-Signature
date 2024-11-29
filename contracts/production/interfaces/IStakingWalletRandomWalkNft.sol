@@ -12,6 +12,7 @@ interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Unstaked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
+	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftUnstaked(
 		uint256 indexed stakeActionId,

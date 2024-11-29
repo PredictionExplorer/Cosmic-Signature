@@ -26,6 +26,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		uint256 index;
 
 		uint256 nftId;
+		/// todo-1 ??? Reorder this to before `nftId`.
 		address nftOwnerAddress;
 	}
 
@@ -227,6 +228,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActionIds`.
 	///
 	/// todo-1 Why is entropy `bytes32`? Can I make it `uint256`? The caller should cast it to `uint256`.
+	/// todo-1 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
 	function pickRandomStakerAddressIfPossible(bytes32 entropy_) external view override returns(address) {
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 

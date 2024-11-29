@@ -64,6 +64,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
+	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
 	uint256 public maxMessageLength;
 
 	// #endregion
@@ -115,6 +116,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Game Parameters and Variables
 
+	/// On each bid, we add this to `prizeTime`.
+	/// We use this on a number of other occasions as well.
+	/// todo-1 Review where we use this. Maybe comment here about all those uses.
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// [Comment-202411174]
@@ -124,19 +128,25 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
 	/// [/Comment-202411067]
+	/// todo-1 Rename this to `roundDurationIncrementInNanoSeconds`.
+	/// todo-1 Maybe express this in microseconds, like we do `timeIncrease`.
+	/// todo-1 Even if `timeIncrease` equals 1 million plus 1, the integer math will still not truncate anything back to the same value.
+	/// todo-1 This appears to be the only value expressed in nanoseconds.
 	uint256 public nanoSecondsExtra;
 
 	/// @notice Comment-202411064 applies.
 	/// Equals the number of microseonds per second plus a small fraction of it.
 	/// Comment-202411067 relates.
-	/// todo-1 Rename to `nanoSecondsExtraIncreaseParam`.
+	/// todo-1 Rename to `roundDurationIncrementIncreaseParam`.
 	uint256 public timeIncrease;
 
 	/// @notice Comment-202411064 applies.
 	/// todo-1 Rename to `roundInitialDuration`.
 	uint256 public initialSecondsUntilPrize;
 
+	/// When the last bidder will be granted the premission to claim the main prize.
 	/// todo-1 Rename to `mainPrizeTime` or `roundEndTime`.
+	/// todo-1 Actually it's not going to be round end yet.
 	uint256 public prizeTime;
 
 	/// @notice Bidding round counter.
@@ -152,16 +162,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public bidPrice;
 
 	/// @notice Comment-202411064 applies.
+	/// todo-1 Revisit relevant logic. We really should use the double of the 1st bid price of the prev round and start a Dutch auction.
 	/// todo-1 Rename to `roundFirstEthBidPriceDivisor`.
 	uint256 public initialBidAmountFraction;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411065 relates.
-	// Equals a million plus a small fraction of it.
-	// todo-1 Rename to `ethBidPriceIncreaseParam`.
+	/// Equals a million plus a small fraction of it.
+	/// todo-1 Rename to `ethBidPriceIncreaseParam`.
 	uint256 public priceIncrease;
 
 	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
+	/// todo-1 We use `nanoSecondsExtra` for this. Comment and ross-ref with it.
 	/// todo-1 Rename to `cstDutchAuctionDuration`.
 	uint256 public cstAuctionLength;
 
@@ -182,15 +194,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We don't let this fall below `startingBidPriceCSTMinLimit`.
 	/// [/Comment-202411066]
 	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
+	/// todo-1 Rename to `cstDutchAuctionStartingBidPrice`.
 	uint256 public startingBidPriceCST;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.
+	/// todo-1 Rename to `cstDutchAuctionStartingBidPriceMinLimit`.
 	uint256 public startingBidPriceCSTMinLimit;
 
 	/// @notice Comment-202411064 applies.
 	/// This number of CSTs is minted as a reward for each bid.
-	/// todo-1 Rename to `cstRewardAmountForBidding`. Or is it only for non-CST bid? If so reflect that in the name.
+	/// todo-1 Rename to `cstRewardAmountForBidding` or `cstRewardAmountForBid`.
+	/// todo-1 Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
 	uint256 public tokenReward;
 
 	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
@@ -208,7 +223,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// CosmicSignatureConstants.BidType public lastBidType;
 
 	/// @dev ToDo-202411098-0 applies.
-	/// todo-1 Rename to `roundNumBids`.
+	/// todo-1 Rename to `roundNumBids` or better `numBids`.
+	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
 
 	/// @notice We add an item on each bid.
@@ -219,7 +235,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
 	/// [/ToDo-202411098-0]
-	/// todo-1 Rename to `roundBids`.
+	/// todo-1 Rename to `roundBids` or  better `bids`.
+	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
 	/// @dev ToDo-202411098-0 applies.
@@ -232,7 +249,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize winner.
 	/// Comment-202411064 applies.
-	/// @dev todo-1 Rename to `roundMainEthPrizePercentage`.
+	/// @dev todo-1 Rename to `roundMainEthPrizePercentage`. Or better without the word "Round".
 	uint256 public mainPrizePercentage;
 
 	/// @notice ETH.
@@ -260,7 +277,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice If bidding round main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
 	/// Comment-202411064 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
-	/// @dev todo-1 Rename to `timeoutDurationToClaimRoundMainPrize`.
+	/// @dev todo-1 Rename to `timeoutDurationToClaimRoundMainPrize`. Or better without the word "Round".
 	uint256 public timeoutDurationToClaimMainPrize;
 
 	/// @notice Bidding round main prize winners.
@@ -290,6 +307,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Relevant logic prototype:
 	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/ChampionFinder.sol
 	/// [/Comment-202411099]
+	/// todo-1 Rename this to `enduranceChampionAddress`.
 	address public enduranceChampion;
 
 	uint256 public enduranceChampionStartTimeStamp;
@@ -299,6 +317,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
 	/// Comment-202411075 applies.
 	/// Comment-202411099 applies.
+	/// todo-1 Rename this to `chronoWarriorAddress`.
 	address public chronoWarrior;
 
 	uint256 public chronoWarriorDuration;
@@ -308,12 +327,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public cstRewardAmountMultiplier;
 
 	/// @notice Comment-202411064 applies.
+	/// todo-1 Name this better.
 	uint256 public numRaffleETHWinnersBidding;
 
 	/// @notice Comment-202411064 applies.
+	/// todo-1 Name this better.
 	uint256 public numRaffleNftWinnersBidding;
 
 	/// @notice Comment-202411064 applies.
+	/// todo-1 Name this better.
 	uint256 public numRaffleNftWinnersStakingRWalk;
 
 	/// @dev todo-1 The type of this and other similar variables should be `uint256`.

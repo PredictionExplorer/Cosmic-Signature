@@ -283,11 +283,13 @@ abstract contract Bidding is
 		// 		);
 		// }
 
+		// todo-1 ??? Don't call this on first bid in a round?
 		_pushBackPrizeTime();
 	}
 
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
+	/// todo-1 Rename this similarly to how I am going to rename `prizeTime`.
 	function _pushBackPrizeTime() internal {
 		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
 		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;

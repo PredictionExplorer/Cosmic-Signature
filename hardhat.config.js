@@ -92,12 +92,10 @@ if( ! nodeFSModule.existsSync(solidityCompilerPath) ) {
 
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
-
 	if (ENABLE_SMTCHECKER <= 0 && ( ! ENABLE_ASSERTS )) {
 		// [Comment-202409025/]
 		console.warn("Warning. Neither SMTChecker nor asserts are enabled. Assuming it's intentional.");
 	}
-
 	if (ENABLE_SMTCHECKER > 0 && ( ! ENABLE_ASSERTS )) {
 		console.warn("Warning. SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
@@ -143,11 +141,9 @@ console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidit
 
 const { subtask, } = require("hardhat/config");
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
-
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
-
 require("hardhat-abi-exporter");
 require("@nomiclabs/hardhat-etherscan");
 
@@ -194,7 +190,6 @@ function populateNetworkIsMainNetOnce(hre) {
 			networkIsMainNet = false;
 			break;
 		}
-
 		default: {
 			networkIsMainNet = true;
 			break;
@@ -257,7 +252,6 @@ function createSolidityLinePreProcessingRegExp()
 */
 function preProcessSolidityLine(hre, line) {
 	populateNetworkIsMainNetOnce(hre);
-
 	if (networkIsMainNet) {
 		// [Comment-202408261/]
 		throw new Error("The network is a mainnet, but you forgot to disable Hardhat Preprocessor.");
@@ -274,9 +268,10 @@ function preProcessSolidityLine(hre, line) {
 
 /** @type import("hardhat/config").HardhatUserConfig */
 const hardhatUserConfig = {
+	// #region
+
 	solidity: {
 		version: solidityVersion,
-
 		settings: {
 			// [Comment-202408026]
 			// By default, this is "paris".
@@ -295,7 +290,6 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
@@ -305,7 +299,6 @@ const hardhatUserConfig = {
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
-
 				runs: 20000,
 			},
 
@@ -320,6 +313,9 @@ const hardhatUserConfig = {
 			},
 		},
 	},
+
+	// #endregion
+	// #region
 
 	// "hardhat-preprocessor" package configuration.
 	preprocess: {
@@ -350,6 +346,9 @@ const hardhatUserConfig = {
 			),
 	},
 
+	// #endregion
+	// #region
+
 	abiExporter: {
 		// [Comment-202408024]
 		// This folder name exists in multiple places.
@@ -370,6 +369,9 @@ const hardhatUserConfig = {
 		spacing: 2,
 		pretty: true,
 	},
+
+	// #endregion
+	// #region
 
 	// When you make changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
@@ -399,13 +401,17 @@ const hardhatUserConfig = {
 		},
 	},
 
+	// #endregion
+	// #region
+
 	etherscan: {
 		apiKey: process.env.API_KEY,
 	},
-
 	mocha: {
 		timeout: 10 * 60 * 1000,
 	},
+
+	// #endregion
 };
 
 // #endregion

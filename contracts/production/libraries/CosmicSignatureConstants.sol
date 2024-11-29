@@ -63,6 +63,7 @@ library CosmicSignatureConstants {
 	uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
 	uint256 public constant INITIAL_NANOSECONDS_EXTRA = NANOSECONDS_PER_HOUR;
+	/// todo-1 Rename `INITIAL...` to `DEFAULT...`.
 	uint256 public constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
 	/// todo-0 Rename to `INITIAL_INITIAL_...`?
 	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.

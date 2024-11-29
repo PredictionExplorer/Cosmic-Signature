@@ -21,6 +21,7 @@ interface IPrizesWallet {
 	/// This is used only for secondary (non-main) prizes.
 	/// @param roundNum The current bidding round number.
 	/// @param roundPrizeWinnerAddress Bidding round prize winner address.
+	/// todo-1 Rename to `prizeWinnerAddress`.
 	/// @param amount ETH amount.
 	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
@@ -29,6 +30,7 @@ interface IPrizesWallet {
 
 	/// @notice Emitted when someone withdraws ETH.
 	/// @param roundPrizeWinnerAddress Bidding round prize winner address.
+	/// todo-1 Rename to `prizeWinnerAddress`.
 	/// @param beneficiaryAddress Withdrawer address.
 	/// [Comment-202411285]
 	/// It's typically different from `roundPrizeWinnerAddress` when withdrawing an unclaimed prize.
@@ -100,6 +102,7 @@ interface IPrizesWallet {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param roundMainPrizeWinnerAddress_ Bidding round main prize winner address.
+	/// todo-1 Rename the above to `mainPrizeWinnerAddress_`.
 	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external;
 
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
@@ -114,6 +117,7 @@ interface IPrizesWallet {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
+	/// todo-1 Rename the above to `prizeWinnerAddress_`.
 	/// @dev
 	/// todo-1 Do we need a method to deposit for multiple winnes? That method can even be combined with `registerRoundEnd`.
 	/// todo-1 Ideally, it should accept an array of structs, each being 32 bytes long (or maybe don't bother with that kind of optimization).
@@ -126,6 +130,7 @@ interface IPrizesWallet {
 	/// @notice Anybody is welcomed to call this method after a timeout expires
 	/// to withdraw a biddig round prize winner's unclaimed ETH.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
+	/// todo-1 Rename the above to `prizeWinnerAddress_`.
 	function withdrawEth(address roundPrizeWinnerAddress_) external;
 
 	/// @return Details on ETH balance belonging to `msg.sender`.
@@ -134,6 +139,7 @@ interface IPrizesWallet {
 
 	/// @return Details on ETH balance belonging to the given address.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
+	/// todo-1 Rename the above to `prizeWinnerAddress_`.
 	/// @dev Comment-202410274 relates.
 	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view returns(CosmicSignatureConstants.BalanceInfo memory);
 

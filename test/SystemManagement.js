@@ -307,7 +307,7 @@ describe("SystemManagement", function () {
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(params, { value: bidPrice });
 	});
-	it("Unauthorized access to privileged methods is denied", async function () {
+	it("Unauthorized access to restricted methods is denied", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1,] = signers;
 

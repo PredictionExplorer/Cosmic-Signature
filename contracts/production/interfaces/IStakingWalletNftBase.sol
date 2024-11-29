@@ -9,6 +9,7 @@ interface IStakingWalletNftBase {
 	/// @param nftTypeCode NFT type code.
 	/// @param nftId Staked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
+	/// todo-1 ??? Reorder the above param to before `nftTypeCode`.
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftStaked(
 		uint256 indexed stakeActionId,

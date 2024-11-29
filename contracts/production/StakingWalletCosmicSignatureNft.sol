@@ -24,6 +24,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice Stores details about an NFT stake action.
 	struct StakeAction {
 		uint256 nftId;
+		/// todo-1 ??? Reorder this to before `nftId`.
 		address nftOwnerAddress;
 
 		/// @notice

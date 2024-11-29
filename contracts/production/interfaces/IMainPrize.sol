@@ -17,7 +17,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// Comment-202411285 relates.
 	/// [/Comment-202411254]
 	/// @param amount ETH amount.
-	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`.
+	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`. Actully leave it alone.
 	event MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiaryAddress, uint256 amount);
 
 	// /// @notice Emitted when the Stellar Spender receives their prize.
@@ -93,8 +93,11 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param nftId The ID of the NFT won
 	/// @param winnerIndex The index of the winner
 	/// @param isStaker Whether the winner is a staker
+	/// todo-1 Should the above param type be an enum?
 	/// @param isRWalk Whether the NFT is a RandomWalk NFT
-	/// @dev todo-1 Name this better. Remove the word "Event".
+	/// todo-1 Rename the above param to `isRandomWalkNft`.
+	/// todo-1 Actually the above param always equals `isStaker`, right? So remove it.
+	/// @dev todo-1 Name this better. Remove the word "Event". Maybe `RaffleNftPrizeMinted`.
 	event RaffleNftWinnerEvent(
 		address indexed winnerAddress,
 		uint256 indexed roundNum,
@@ -106,27 +109,33 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @notice Claim the prize for the current round
 	/// @dev This function distributes prizes, updates game state, and starts a new round
-	/// todo-1 Rename to `claimMainPrize` or `claimRoundMainPrize`.
+	/// todo-1 Rename to `claimMainPrize`.
 	/// todo-1 Specify prize type everywhere: claim(?:.(?!main))*?prize
 	function claimPrize() external;
 
 	/// @return The current main prize amount, in Wei.
+	/// todo-1 Rename this to `getMainEthPrizeAmount`.
 	function mainPrizeAmount() external view returns(uint256);
 
 	/// @return The current Chrono-Warrior ETH prize amount, in Wei.
+	/// todo-1 Rename this to `getChronoWarriorEthPrizeAmount`.
 	function chronoWarriorEthPrizeAmount() external view returns(uint256);
 
 	/// @return The current raffle amount, in Wei.
+	/// todo-1 Rename this to `getRaffleEthPrizeAmount`.
 	function raffleAmount() external view returns(uint256);
 
 	/// @return The current staking amount, in Wei.
+	/// todo-1 Rename this to `getStakingEthRewardAmount`.
 	function stakingAmount() external view returns(uint256);
 
 	/// @return The current charity amount, in Wei.
+	/// todo-1 Rename this to `getCharityEthAmount`.
 	function charityAmount() external view returns(uint256);
 
 	/// @notice Get the time until the next prize can be claimed
 	/// @return The number of seconds until the prize can be claimed, or 0 if claimable now
+	/// todo-1 Rename this to `getDurationUntilMainPrize`.
 	function timeUntilPrize() external view returns(uint256);
 
 	/// @return The given bidding round main prize winner address,

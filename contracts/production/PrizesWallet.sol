@@ -25,6 +25,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 
 	/// @notice For each bidding round number, contains the main prize winner address.
 	/// ToDo-202411257-1 relates.
+	/// todo-1 Rename to `mainPrizeWinnerAddresses`.
 	address[1 << 64] public roundMainPrizeWinnerAddresses;
 
 	/// @notice If a prize winner doesn't withdraw their prize within this timeout, anybody will be welcomed to withdraw it.
@@ -36,6 +37,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 	/// @notice For each bidding round number, contains a timeout time
 	/// starting at which anybody will be welcomed to withdraw any unclaimed prizes won in that bidding round.
 	/// If an item equals zero the timeout is considered not expired yet.
+	/// todo-1 Rename to `timeoutTimesToWithdrawPrizes`.
 	uint256[1 << 64] public roundTimeoutTimesToWithdrawPrizes;
 
 	/// @notice For each prize winner address, contains a `CosmicSignatureConstants.BalanceInfo`.

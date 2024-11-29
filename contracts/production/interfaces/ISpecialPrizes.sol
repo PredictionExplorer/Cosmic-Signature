@@ -15,5 +15,6 @@ interface ISpecialPrizes is ICosmicSignatureGameStorage {
 	/// It's a stretch to separate prizes into multiple contracts.
 	/// Then rename `MainPrize` to `Prizes`.
 	/// [/ToDo-202411179-1]
+	/// todo-1 Rename this to `tryGetCurrentEnduranceChampionAddress`.
 	function currentEnduranceChampion() external view returns (address, uint256);
 }
