@@ -129,6 +129,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
 	/// [/Comment-202411067]
 	/// todo-1 Rename this to `roundDurationIncrementInNanoSeconds`.
+	/// todo-1 But Nick commented on the above: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732924267222049?thread_ts=1732921541.079509&cid=C02EDDE5UF8
+	/// todo-1 It's really not round duration, but rather duration until the main prize.
 	/// todo-1 Maybe express this in microseconds, like we do `timeIncrease`.
 	/// todo-1 Even if `timeIncrease` equals 1 million plus 1, the integer math will still not truncate anything back to the same value.
 	/// todo-1 This appears to be the only value expressed in nanoseconds.
@@ -138,15 +140,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Equals the number of microseonds per second plus a small fraction of it.
 	/// Comment-202411067 relates.
 	/// todo-1 Rename to `roundDurationIncrementIncreaseParam`.
+	/// todo-1 It's really not round duration, but rather duration until the main prize.
 	uint256 public timeIncrease;
 
 	/// @notice Comment-202411064 applies.
 	/// todo-1 Rename to `roundInitialDuration`.
+	/// todo-1 It's really not round duration, but rather duration until the main prize.
 	uint256 public initialSecondsUntilPrize;
 
 	/// When the last bidder will be granted the premission to claim the main prize.
 	/// todo-1 Rename to `mainPrizeTime` or `roundEndTime`.
-	/// todo-1 Actually it's not going to be round end yet.
+	/// todo-1 It's really not round end, but rather the main prize time.
 	uint256 public prizeTime;
 
 	/// @notice Bidding round counter.

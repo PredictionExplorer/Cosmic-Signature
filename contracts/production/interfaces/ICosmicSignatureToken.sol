@@ -9,6 +9,7 @@ pragma solidity 0.8.28;
 /// The total supply of these tokens is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
 /// [/Comment-202412033]
+/// ToDo-202412106-1 relates and/or applies.
 interface ICosmicSignatureToken {
 	/// @notice Mints new tokens and assigns them to the specified address.
 	/// Only the contract owner is permitted to call this method.

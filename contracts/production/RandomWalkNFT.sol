@@ -7,7 +7,7 @@
 pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { ERC721Enumerable, ERC721 } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
@@ -46,6 +46,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	/// @dev Issue. Slither: RandomWalkNFT.lastMintTime is set pre-construction with a non-constant function or state variable: saleTime
 	uint256 public lastMintTime = saleTime;
 
+	/// @dev Issue. We don't need this variable. We can use `totalSupply` instead.
 	uint256 public nextTokenId = 0;
 
 	/// @notice The base URI for token metadata
@@ -67,6 +68,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",
 				block.timestamp,
+
+				// Comment-202412103 applies.
 				blockhash(block.number)
 			)
 		);
@@ -148,7 +151,9 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		++ nextTokenId;
 
 		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but reference relevant comments.
+		// [Comment-202412103]
 		// Issue. `blockhash(block.number)` is always zero.
+		// [/Comment-202412103]
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number), tokenId, lastMinter));
 
 		seeds[tokenId] = entropy;

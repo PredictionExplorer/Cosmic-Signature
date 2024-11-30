@@ -59,7 +59,7 @@ describe("Events", function () {
 		const tx = await cosmicSignatureGameProxy.connect(bidder1).claimPrize();
 		await tx.wait();
 		let seed = await cosmicSignatureNft.seeds(0);
-		expect(tx).to.emit(cosmicSignatureNft, "MintEvent").withArgs(0, bidder1.address, seed);
+		expect(tx).to.emit(cosmicSignatureNft, "NftMinted").withArgs(0, bidder1.address, seed, 0);
 	});
 	it("should emit the correct events in the CharityWallet contract", async function () {
 		const [owner, charityAddress, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();

@@ -384,7 +384,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureToken, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureToken.connect(addr1)["burn(uint256)"](10000n));
 
-		await expect(cosmicSignatureNft.connect(addr1).setBaseURI("://uri"))
+		await expect(cosmicSignatureNft.connect(addr1).setNftBaseUri("://uri"))
 			.to.be.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");
 	});
 	it("The timeUntilActivation method functions correctly", async function () {

@@ -129,6 +129,11 @@ library CosmicSignatureConstants {
 	uint256 public constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
 	uint256 public constant INITIAL_STAKING_WINNERS_RWALK = 4;
 
+	/// @notice Comment-202409143 applies.
+	uint256 public constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;
+
+	// todo-1 Move some structs to interfaces?
+
 	// /// @dev It appears that this was a bad idea.
 	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
 	// struct BooleanWithPadding {
