@@ -36,7 +36,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, ICosmicSignatureNft {
 
 	// /// @notice The total number of NFTs minted.
 	// /// @dev todo-9 We don't need this because we can use `totalSupply` instead.
-	// /// todo-1 Write a comment in RWalk near the respective variable that it's possible to eliminate it. Cross-ref with this one.
 	// /// todo-9 Rename this to `numNfts`.
 	// uint256 public numTokens = 0;
 
@@ -52,6 +51,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, ICosmicSignatureNft {
 	NftInfo[1 << 64] private _nftsInfo;
 
 	// /// @notice Entropy used to generate random seeds.
+	// /// @dev todo-9 The type of this and other similar variables should be `uint256`.
 	// bytes32 public entropy;
 
 	// #endregion
@@ -111,7 +111,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, ICosmicSignatureNft {
 		// entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), nftId_, nftOwnerAddress_));
 		// seeds[nftId_] = entropy;
 		_nftsInfo[nftId_].seed = nftSeed_;
-		emit NftMinted(roundNum_, nftOwnerAddress_, /*entropy*/ nftSeed_, nftId_);
+		emit NftMinted(roundNum_, nftOwnerAddress_, /*uint256(entropy)*/ nftSeed_, nftId_);
 		return nftId_;
 	}
 

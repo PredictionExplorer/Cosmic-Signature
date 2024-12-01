@@ -4,6 +4,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 describe("CosmicSignatureNft", function () {
@@ -61,17 +62,20 @@ describe("CosmicSignatureNft", function () {
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
 
-		await expect(
-			cosmicSignatureNft.connect(addr1).mint(addr1.address, 0n),
-		).to.be.revertedWithCustomError(cosmicSignatureNft,"NoMintPrivileges");
-	
-		// const NewCosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
-		// const newCosmicSignatureNft = await NewCosmicSignatureNft.deploy(owner.address);
-		// await newCosmicSignatureNft.waitForDeployment();
+		const NewCosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
+		const newCosmicSignatureNft = await NewCosmicSignatureNft.deploy(owner.address);
+		await newCosmicSignatureNft.waitForDeployment();
 
 		await expect(
-			cosmicSignatureNft.connect(owner).mint(hre.ethers.ZeroAddress, 0n),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "ZeroAddress");
+			cosmicSignatureNft.mint(0n, addr1.address, 0x167c41a5ddd8b94379899bacc638fe9a87929d7738bc7e1d080925709c34330en),
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "NoMintPrivileges");
+		await expect(
+			cosmicSignatureNft.connect(addr1).mint(0n, addr1.address, 0xf5df7ce30f2a4e696109a2a3d544e48dd0cda03367cfd816d53083edd06e5638n),
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "NoMintPrivileges");
+		await expect(
+			newCosmicSignatureNft.mint(0n, hre.ethers.ZeroAddress, 0x3a61b868abd2e4597e6ed0bc53ec665f068523ad614e1affd22434e3edb8e523n),
+		).to.be.revertedWithCustomError(newCosmicSignatureNft, /*"ZeroAddress"*/ "ERC721InvalidReceiver");
+		newCosmicSignatureNft.mint(0n, await addr2.getAddress(), generateRandomUInt256())
 	});
 	it("setNftGenerationScriptUri() works as expected", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
@@ -114,10 +118,10 @@ describe("CosmicSignatureNft", function () {
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		parsed_log = cosmicSignatureNft.interface.parseLog(log);
 		args = parsed_log.args.toObject();
-		expect(args.nftNewName).to.equal("name 0");
+		expect(args.nftName).to.equal("name 0");
 		expect(token_id).to.equal(args.nftId);
 
-		let remote_token_name = await cosmicSignatureNft.connect(addr1).tokenNames(token_id);
+		let remote_token_name = await cosmicSignatureNft.connect(addr1).getNftName(token_id);
 		expect(remote_token_name).to.equal("name 0");
 
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");

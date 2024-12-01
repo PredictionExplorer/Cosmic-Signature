@@ -46,7 +46,7 @@ describe("CharityWallet", function () {
 		],
 	};
 	it("CharityWallet is sending the right amount", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let amountSent = hre.ethers.parseUnits("9",18);
@@ -63,7 +63,6 @@ describe("CharityWallet", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -97,7 +96,7 @@ describe("CharityWallet", function () {
 				await hre.ethers.provider.send("evm_mine");
 			}
 		};
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 

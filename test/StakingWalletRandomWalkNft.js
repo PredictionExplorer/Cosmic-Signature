@@ -50,7 +50,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -102,7 +101,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -146,7 +144,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -198,8 +195,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			let evt = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[i]);
 		}
 
-		numTokens = await newStakingWalletRandomWalkNft.numStakedNfts();
-		expect(numTokens).to.equal(3);
+		let numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
+		expect(numStakedNfts_).to.equal(3);
 		let isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r1);
 		expect(isStaked).to.equal(true);
 		isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r2);
@@ -209,15 +206,14 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		await hre.ethers.provider.send("evm_increaseTime", [600+1]);
 		await newStakingWalletRandomWalkNft.unstakeMany([r1,r2,r3]);
-		numTokens = await newStakingWalletRandomWalkNft.numStakedNfts();
-		expect(numTokens).to.equal(0);
+		numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
+		expect(numStakedNfts_).to.equal(0);
 	});
 	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -263,7 +259,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -340,7 +335,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,

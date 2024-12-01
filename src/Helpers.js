@@ -1,64 +1,87 @@
-// todo-0 I added this file. Was it a good idea?
-// todo-0 Maybe this code belongs to "../scripts/helper.js"?
+// todo-1 I added this file. Was it a good idea?
+// todo-1 Maybe this code belongs to "../scripts/helper.js"?
 
 // #region
 
 "use strict";
 
 // #endregion
-// #region parseBooleanEnvironmentVariable
+// #region
+
+// Comment-202409255 applies.
+// const hre = require("hardhat");
+const { HardhatContext } = require("hardhat/internal/context");
+
+// #endregion
+// #region `generateRandomUInt256`
+
+function generateRandomUInt256() {
+	// Comment-202409255 applies.
+	const hre_ = HardhatContext.getHardhatContext().environment;
+
+	const randomBytes_ = hre_.ethers.randomBytes(32);
+	const randomBigInt_ = hre_.ethers.toBigInt(randomBytes_);
+	return randomBigInt_;
+}
+
+// #endregion
+// #region `parseBooleanEnvironmentVariable`
 
 /**
- * @param {string?} environmentVariableName
- * @param {boolean} defaultValue
+ * @param {string?} environmentVariableName_
+ * @param {boolean} defaultValue_
  * @returns {boolean}
  * @throws {Error}
  */
-function parseBooleanEnvironmentVariable(environmentVariableName, defaultValue) {
-	const rawValue = process.env[environmentVariableName];
+function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_) {
+	const rawValue_ = process.env[environmentVariableName_];
 
-	switch (rawValue) {
+	switch (rawValue_) {
 		case undefined:
-			return defaultValue;
+			return defaultValue_;
 		case "true":
 			return true;
 		case "false":
 			return false;
 		default:
-			throw new Error(`Invalid value for environment variable ${environmentVariableName}: "${rawValue}". Expected "true" or "false".`);
+			throw new Error(`Invalid value for environment variable ${environmentVariableName_}: "${rawValue_}". Expected "true" or "false".`);
 	}
 }
 
 // #endregion
-// #region parseIntegerEnvironmentVariable
+// #region `parseIntegerEnvironmentVariable`
 
 /**
- * @param {string?} environmentVariableName
- * @param {number} defaultValue
+ * @param {string?} environmentVariableName_
+ * @param {number} defaultValue_
  * @returns {number}
  * @throws {Error}
  */
-function parseIntegerEnvironmentVariable(environmentVariableName, defaultValue) {
-	const rawValue = process.env[environmentVariableName];
+function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
+	const rawValue_ = process.env[environmentVariableName_];
 
-	if(rawValue === undefined)
+	if(rawValue_ === undefined)
 	{
-		return defaultValue;
+		return defaultValue_;
 	}
 
-	const value = parseInt(rawValue);
+	const value_ = parseInt(rawValue_);
 
-	if(isNaN(value))
+	if(isNaN(value_))
 	{
-		throw new Error(`Invalid value for environment variable ${environmentVariableName}: "${rawValue}". Expected an integer.`);
+		throw new Error(`Invalid value for environment variable ${environmentVariableName_}: "${rawValue_}". Expected an integer.`);
 	}
 	
-	return value;
+	return value_;
 }
 
 // #endregion
 // #region
 
-module.exports = { parseBooleanEnvironmentVariable, parseIntegerEnvironmentVariable };
+module.exports = {
+	generateRandomUInt256,
+	parseBooleanEnvironmentVariable,
+	parseIntegerEnvironmentVariable,
+};
 
 // #endregion

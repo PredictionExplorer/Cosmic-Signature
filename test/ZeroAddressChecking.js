@@ -51,7 +51,6 @@ describe("ZeroAddressChecking", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -70,7 +69,6 @@ describe("ZeroAddressChecking", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -94,7 +92,6 @@ describe("ZeroAddressChecking", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,

@@ -342,8 +342,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Name this better.
 	uint256 public numRaffleNftWinnersStakingRWalk;
 
-	/// @dev todo-1 The type of this and other similar variables should be `uint256`.
-	bytes32 public raffleEntropy;
+	// /// @dev todo-9 The type of this and other similar variables should be `uint256`.
+	// bytes32 public raffleEntropy;
 
 	// #endregion
 }

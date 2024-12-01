@@ -189,7 +189,7 @@ describe("MainPrize", function () {
 		await cosmicSignatureGameProxy.donate({ value: donationAmount });
 		let charityAddr = await cosmicSignatureGameProxy.charityAddress();
 
-		await cosmicSignatureGameProxy.mintCST(addr1.address, 0); // mint a token so we can stake
+		await cosmicSignatureGameProxy.mintCosmicSignatureNft(addr1.address); // mint an NFT so we can stake
 		await cosmicSignatureNft.connect(addr1).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
 		await stakingWalletCosmicSignatureNft.connect(addr1).stake(0); // we need to stake, otherwise the deposit would be rejected
 
@@ -263,7 +263,6 @@ describe("MainPrize", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,

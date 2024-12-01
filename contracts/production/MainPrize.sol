@@ -13,6 +13,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 // import { PrizesWallet } from "./PrizesWallet.sol";
 // import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
@@ -112,7 +113,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	// #endregion
 	// #region `_distributePrizes`
 
-	/// @notice Distribute prizes to various recipients
+	/// @notice Distribute prizes to various winners.
 	/// @dev This function handles the distribution of ETH and NFT prizes
 	/// // param winner Bidding round main prize winner address.
 	/// @param mainPrizeAmount_ ETH main prize amount.
@@ -126,11 +127,13 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		uint256 raffleAmount_,
 		uint256 stakingAmount_
 	) internal {
-		// Paying The last CST bidder, Endurance Champion, Chrono-Warrior prizes.
-		_distributeSpecialPrizes();
+		uint256 randomNumber_ = CosmicSignatureHelpers.generateInitialRandomNumber();
+
+		// Paying the last CST bidder, Endurance Champion, Chrono-Warrior prizes.
+		randomNumber_ = _distributeSpecialPrizes(randomNumber_);
 
 		// Paying raffle winner prizes.
-		_distributeRafflePrizes(raffleAmount_);
+		/* randomNumber_ = */ _distributeRafflePrizes(raffleAmount_, randomNumber_);
 
 		// Paying staking rewards.
 		try stakingWalletCosmicSignatureNft.depositIfPossible{ value: stakingAmount_ }(roundNum) {
@@ -162,7 +165,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 					);
 			}
 			charityAmount_ += stakingAmount_;
-			// stakingAmount_ = 0;
+
+			// One might want to reset `stakingAmount_` to zero here, but it's unnecessary.
 		}
 
 		// [Comment-202411077]
@@ -170,8 +174,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
 		// Comment-202411078 relates.
 		// [/Comment-202411077]
-		(bool isSuccess, ) = charityAddress.call{ value: charityAmount_ }("");
-		if (isSuccess) {
+		(bool isSuccess_, ) = charityAddress.call{ value: charityAmount_ }("");
+		if (isSuccess_) {
 			emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityAmount_);
 		} else {
 			emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress, charityAmount_);
@@ -192,8 +196,10 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// todo-1 Really, the only potentially vulnerable external call is the one near Comment-202411077.
 		// todo-1 See also: Comment-202411077, Comment-202411078.
 		// todo-1 Make sure all external calls whose fails we don't ignore cannot fail.
-		(isSuccess, ) = /*winner*/ msg.sender.call{ value: mainPrizeAmount_ }("");
-		require(isSuccess, CosmicSignatureErrors.FundTransferFailed("Transfer to bidding round main prize claimer failed.", /*winner*/ msg.sender, mainPrizeAmount_));
+		// todo-1 If this fails, maybe send the funds to `prizesWallet`.
+		// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
+		(isSuccess_, ) = /*winner*/ msg.sender.call{ value: mainPrizeAmount_ }("");
+		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to bidding round main prize claimer failed.", /*winner*/ msg.sender, mainPrizeAmount_));
 	}
 
 	// #endregion
@@ -201,12 +207,13 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @notice Distributes so called "special" prizes to the last CST bidder, Endurance Champion, and Chrono-Warrior.
 	/// This method pays ETH, mints CSTs and CS NFTs to the winners.
-	function _distributeSpecialPrizes() internal {
+	function _distributeSpecialPrizes(uint256 randomNumber_) internal returns(uint256) {
 		uint256 cstRewardAmount_ = numRaffleParticipants[roundNum] * cstRewardAmountMultiplier;
 
 		// // Stellar Spender prize.
 		// if (stellarSpender != address(0)) {
-		// 	uint256 nftId_ = nft.mint(stellarSpender, roundNum);
+		//		// todo-9 Update and use `randomNumber_` here.
+		// 	uint256 nftId_ = nft.mint(roundNum, stellarSpender);
 		// 	// try
 		// 	// ToDo-202409245-0 applies.
 		// 	// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
@@ -219,7 +226,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 		// The last CST bidder prize.
 		if (lastCstBidderAddress != address(0)) {
-			uint256 nftId_ = nft.mint(lastCstBidderAddress, roundNum);
+			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			uint256 nftId_ = nft.mint(roundNum, lastCstBidderAddress, randomNumber_);
 		 	// ToDo-202409245-0 applies.
 			token.mint(lastCstBidderAddress, cstRewardAmount_);
 			emit LastCstBidderPrizePaid(roundNum, lastCstBidderAddress, nftId_, cstRewardAmount_);
@@ -230,9 +238,10 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// if (enduranceChampion != address(0))
 		// #enable_asserts assert(enduranceChampion != address(0));
 		{
+			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that transfer to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
-			uint256 nftId_ = nft.mint(enduranceChampion, roundNum);
+			uint256 nftId_ = nft.mint(roundNum, enduranceChampion, randomNumber_);
 			// try
 			// ToDo-202409245-0 applies.
 			// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
@@ -250,6 +259,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// todo-1 Here and elsewhere, if this address happends to be the same as the main prize winner, don't deposit here,
 		// todo-1 but later send this to the main prize winner directly.
 		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarrior);
+
+		return randomNumber_;
 	}
 
 	// #endregion
@@ -258,22 +269,25 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @notice Distribute raffle prizes including ETH and NFTs
 	/// @dev This function selects random winners for both ETH and NFT prizes
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
-	function _distributeRafflePrizes(uint256 raffleAmount_) internal {
+	function _distributeRafflePrizes(uint256 raffleAmount_, uint256 randomNumber_) internal /*returns(uint256)*/ {
 		// Distribute ETH prizes
 		// todo-1 How about increasing the number of raffle and/or other kinds of winnes if there are more bidders? Like 5% of bidders.
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
-			_updateRaffleEntropy();
-			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
+			// _updateRaffleEntropy();
+			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
 			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinnerAddress_);
 			emit RaffleETHWinnerEvent(raffleWinnerAddress_, roundNum, i, perWinnerAmount);
 		}
 
 		// Distribute NFT prizes to bidders
 		for (uint256 i = 0; i < numRaffleNftWinnersBidding; i++) {
-			_updateRaffleEntropy();
-			address raffleWinnerAddress_ = raffleParticipants[roundNum][uint256(raffleEntropy) % numRaffleParticipants[roundNum]];
-			uint256 nftId_ = nft.mint(raffleWinnerAddress_, roundNum);
+			// _updateRaffleEntropy();
+			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
+			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			uint256 nftId_ = nft.mint(roundNum, raffleWinnerAddress_, randomNumber_);
 			emit RaffleNftWinnerEvent(raffleWinnerAddress_, roundNum, nftId_, i, false, false);
 		}
 
@@ -282,52 +296,38 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// if (numStakedTokensRWalk > 0)
 		{
 			for (uint256 i = 0; i < numRaffleNftWinnersStakingRWalk; i++) {
-				_updateRaffleEntropy();
-				address luckyStakerAddress_ = stakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(raffleEntropy);
+				// _updateRaffleEntropy();
+				randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+				address luckyStakerAddress_ = stakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*uint256(raffleEntropy)*/ randomNumber_);
 
 				if (luckyStakerAddress_ == address(0)) {
 					break;
 				}
 
-				uint256 nftId_ = nft.mint(luckyStakerAddress_, roundNum);
+				randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+				uint256 nftId_ = nft.mint(roundNum, luckyStakerAddress_, randomNumber_);
 				emit RaffleNftWinnerEvent(luckyStakerAddress_, roundNum, nftId_, i, true, true);
 			}
 		}
+
+		// return randomNumber_;
 	}
 
 	// #endregion
-	// #region `_updateRaffleEntropy`
+	// #region // `_updateRaffleEntropy`
 
-	/// @notice Update the entropy used for random selection
-	/// @dev This function updates the entropy using the current block information
-	/// todo-1 Ideally, this should return the updated value so that the caller didn't have to spend gas to read it from the storage.
-	/// todo-1 Or better add a function to a library: `generateRandomNumber(uint256 seed_) returns(uint256 randomNumber_)`.
-	/// todo-1 Call it in loops. Load and save `raffleEntropy` only once.
-	/// todo-1 uint256 randomNumber_ = /* block.prevrandao ^ */ block.timestamp ^ raffleEntropy;
-	/// todo-1 for(...;...;...) randomNumber_ = generateRandomNumber(randomNumber_);
-	/// todo-1 raffleEntropy = randomNumber_;
-	/// todo-1 But maybe use `block.prevrandao`, after all? See `CosmicSignatureHelpers`.
-	function _updateRaffleEntropy() internal {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// todo-1 Everywhere, better do this:
-			// todo-1 raffleEntropy = keccak256(abi.encodePacked(/* block.prevrandao ^ */ block.timestamp ^ raffleEntropy));
-			// todo-1 `block.prevrandao` belongs to the previous block, meaning it's already known.
-			// todo-1 So if we use it alone, a user can initiate a transaction to be executed within the current block,
-			// todo-1 while knowing what random number is going to be generated.
-			// todo-1 The same applies to `blockhash(block.number - 1)`.
-			// todo-1 On the other hand, `block.timestamp` belongs to the currently being built block,
-			// todo-1 which makes it less predictable by the user, even though it's predictable to some degree,
-			// todo-1 but the block proposer can manipulate it within a range.
-			// todo-1 So let's use `block.timestamp` alone. Mixing it with `block.prevrandao` would make the result
-			// todo-1 neither less predictable nor less resistant to manipulation.
-			// todo-1 A better conversion to `bytes`: https://stackoverflow.com/questions/49231267/how-to-convert-uint256-to-bytes-and-bytes-convert-to-uint256
-			// todo-1 But ChatGPT is saying that it a bit less gas efficient.
-			raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
-		}
-	}
+	// /// @notice Update the entropy used for random selection
+	// /// @dev This function updates the entropy using the current block information
+	// function _updateRaffleEntropy() internal {
+	// 	// #enable_smtchecker /*
+	// 	unchecked
+	// 	// #enable_smtchecker */
+	// 	{
+	// 		// todo-1 A better conversion to `bytes`: https://stackoverflow.com/questions/49231267/how-to-convert-uint256-to-bytes-and-bytes-convert-to-uint256
+	// 		// todo-1 But ChatGPT is saying that it a bit less gas efficient than `abi.encodePacked`.
+	// 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
+	// 	}
+	// }
 
 	// #endregion
 	// #region `_roundEndResets`

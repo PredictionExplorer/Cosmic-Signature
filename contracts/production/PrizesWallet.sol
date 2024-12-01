@@ -165,8 +165,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
 		emit EthWithdrawn(msg.sender, msg.sender, ethBalanceAmountCopy_);
-		(bool isSuccess, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
-		require(isSuccess, CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
+		(bool isSuccess_, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
+		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
 	}
 
 	// #endregion
@@ -187,8 +187,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
 		emit EthWithdrawn(roundPrizeWinnerAddress_, msg.sender, ethBalanceAmountCopy_);
-		(bool isSuccess, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
-		require(isSuccess, CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
+		(bool isSuccess_, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
+		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
 	}
 
 	// #endregion
@@ -220,8 +220,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		newDonatedTokenReference_.amount += amount_;
 		emit TokenDonated(roundNum_, /*msg.sender*/ donorAddress_, tokenAddress_, amount_);
 		// todo-1 Make sense to use `SafeERC20` here?`
-		bool isSuccess = tokenAddress_.transferFrom(/*msg.sender*/ donorAddress_, address(this), amount_);
-		require(isSuccess, CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", address(this), amount_));
+		bool isSuccess_ = tokenAddress_.transferFrom(/*msg.sender*/ donorAddress_, address(this), amount_);
+		require(isSuccess_, CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", address(this), amount_));
 	}
 
 	// #endregion
@@ -255,8 +255,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		delete donatedTokenReference_.amount;
 		emit DonatedTokenClaimed(roundNum_, msg.sender, tokenAddress_, donatedTokenCopy_.amount);
 		// todo-1 Make sense to use `SafeERC20` here?`
-		bool isSuccess = tokenAddress_.transfer(msg.sender, donatedTokenCopy_.amount);
-		require(isSuccess, CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", msg.sender, donatedTokenCopy_.amount));
+		bool isSuccess_ = tokenAddress_.transfer(msg.sender, donatedTokenCopy_.amount);
+		require(isSuccess_, CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", msg.sender, donatedTokenCopy_.amount));
 	}
 
 	// #endregion

@@ -326,18 +326,18 @@ const hardhatUserConfig = {
 		// [Comment-202408024]
 		// This folder name exists in multiple places.
 		// [/Comment-202408024]
-		path: './abi',
+		path: "./abi",
 
 		clear: true,
 		flat: true,
 		only: [
-			'CharityWallet',
-			'CosmicSignatureDao',
-			// 'CosmicSignatureGameProxy',
-			'CosmicSignatureNft',
-			'CosmicSignatureToken',
-			'PrizesWallet',
-			'RandomWalkNFT',
+			"CharityWallet",
+			"CosmicSignatureDao",
+			// "CosmicSignatureGameProxy",
+			"CosmicSignatureNft",
+			"CosmicSignatureToken",
+			"PrizesWallet",
+			"RandomWalkNFT",
 		],
 		spacing: 2,
 		pretty: true,

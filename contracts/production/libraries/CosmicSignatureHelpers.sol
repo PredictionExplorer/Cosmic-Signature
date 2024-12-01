@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 library CosmicSignatureHelpers {
 	/// @dev
 	/// [Comment-202412104]
-	/// A random number generation prototype is available at
+	/// A random number generation prototype is located at
 	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/RandomNumberGenerator.sol
 	/// [/Comment-202412104]
 	function generateInitialRandomNumber() internal view returns(uint256) {

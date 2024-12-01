@@ -14,7 +14,7 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 /// @dev
 /// [Comment-202409149]
 /// This contract has already been deployed, so it makes little sense to refactor it.
-/// todo-0 Compare this to an old version to make sure I didn't mess anything up.
+/// todo-1 Compare this to an old version to make sure I didn't mess anything up.
 /// [/Comment-202409149]
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
@@ -39,6 +39,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	mapping(uint256 => uint256) public withdrawalAmounts;
 
 	/// @notice Entropy
+	/// @dev Issue. Random number generation could have been implemented better here.
+	/// Comment-202412104 relates.
 	bytes32 public entropy;
 
 	address public lastMinter = address(0);
@@ -63,7 +65,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// I have provided a simple one, but this implementation is to be revisited everywhere this ToDo is referenced.
 	// [/ToDo-202408114-1]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
-		// Issue. It would be more efficient and not less random to initialize this with a hardcoded number.
+		// Issue. It would be more efficient and not any less random to initialize this with a hardcoded number.
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",
@@ -129,8 +131,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		withdrawalAmounts[tokenId] = amount;
 
 		// Transfer half of the balance to the last minter.
-		(bool isSuccess, ) = destination.call{ value: amount }("");
-		require(isSuccess, "Transfer failed.");
+		(bool isSuccess_, ) = destination.call{ value: amount }("");
+		require(isSuccess_, "Transfer failed.");
 
 		// todo-0 Slither dislikes it that we make external calls and then emit events.
 		// todo-0 In Slither report, see: reentrancy-events
@@ -150,7 +152,6 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		uint256 tokenId = nextTokenId;
 		++ nextTokenId;
 
-		// todo-1 I wrote a todo to refactor random number generation. Don't do it here, but reference relevant comments.
 		// [Comment-202412103]
 		// Issue. `blockhash(block.number)` is always zero.
 		// [/Comment-202412103]
@@ -161,8 +162,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 		if (msg.value > price) {
 			// Return the extra money to the minter.
-			(bool isSuccess, ) = lastMinter.call{ value: msg.value - price }("");
-			require(isSuccess, "Transfer failed.");
+			(bool isSuccess_, ) = lastMinter.call{ value: msg.value - price }("");
+			require(isSuccess_, "Transfer failed.");
 		}
 
 		emit MintEvent(tokenId, lastMinter, entropy, price);

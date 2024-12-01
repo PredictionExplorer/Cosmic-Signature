@@ -227,9 +227,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	///
-	/// todo-1 Why is entropy `bytes32`? Can I make it `uint256`? The caller should cast it to `uint256`.
 	/// todo-1 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
-	function pickRandomStakerAddressIfPossible(bytes32 entropy_) external view override returns(address) {
+	function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns(address) {
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 
 		// require(numStakedNftsCopy_ > 0, CosmicSignatureErrors.NoStakedNfts("There are no staked NFTs."));
@@ -237,7 +236,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 			return address(0);
 		}
 
-		uint256 luckyStakeActionIndex_ = uint256(entropy_) % numStakedNftsCopy_;
+		uint256 luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_;
 		uint256 luckyStakeActionId_ = stakeActionIds[luckyStakeActionIndex_];
 		// #enable_asserts assert(stakeActions[luckyStakeActionId_].index == luckyStakeActionIndex_);
 		address luckyStakerAddress_ = stakeActions[luckyStakeActionId_].nftOwnerAddress;
