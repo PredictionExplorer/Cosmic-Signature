@@ -21,7 +21,9 @@ interface ICosmicSignatureNft /*is IERC721Enumerable*/ {
 		string name;
 
 		/// @notice A unique seed generated for the NFT.
-		/// todo-1 I changed seed type from `bytes32` to `uint256`. Did doing so break anything?
+		/// @dev One might prefer this parameter to be a byte-array or `bytes32`, but for now it's simpler to treat it as a number,
+		/// even though `bytes32` would probably not be any less efficient. It would make sense to change this parameter type
+		/// if we need more than 32 bytes.
 		uint256 seed;
 	}
 
