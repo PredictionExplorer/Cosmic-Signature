@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
 // import { PrizesWallet } from "../production/PrizesWallet.sol";
@@ -154,6 +155,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 
 /// @notice special CosmicSignatureGame contract to be used in unit tests to create special test setups
 contract SpecialCosmicSignatureGame is CosmicSignatureGame {
+	uint256 private _entropy;
+
 	// function setActivationTimeRaw(uint256 newValue_) external {
 	// 	activationTime = newValue_;
 	//
@@ -203,17 +206,22 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
 	}
 	
-	function mintCST(address to_, uint256 roundNum_) external {
+	function mintCosmicSignatureNft(address to_) external {
+		_updateEntropy();
 		// todo-1 Should we make a high level call here?
-		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, to_, roundNum_));
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, to_, _entropy));
 		if ( ! isSuccess_ ) {
 			assembly {
-				let ptr := mload(0x40)
-				let size := returndatasize()
-				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
+				let ptr_ := mload(0x40)
+				let size_ := returndatasize()
+				returndatacopy(ptr_, 0, size_)
+				revert(ptr_, size_)
 			}
 		}
+	}
+
+	function _updateEntropy() private {
+		_entropy = CosmicSignatureHelpers.calculateHashSumOf((_entropy == 0) ? block.prevrandao : _entropy);
 	}
 }
 

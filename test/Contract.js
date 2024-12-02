@@ -103,19 +103,20 @@ describe("Contract", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		tx = await bidderContract.connect(owner).doClaim();
 		receipt = await tx.wait();
-		topic_sig = cosmicSignatureNft.interface.getEvent("MintEvent").topicHash;
+		topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		await bidderContract.withdrawAll();
 
 		for (let i = 0; i < mint_logs.length; i++) {
 			let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[i]);
-			if (parsed_log.args.owner != (await bidderContract.getAddress())) {
+			if (parsed_log.args.nftOwnerAddress != (await bidderContract.getAddress())) {
 				continue;
 			}
 			let tokId = parsed_log.args.nftId;
 			let ownerAddr = await cosmicSignatureNft.ownerOf(tokId);
 			expect(ownerAddr).to.equal(owner.address);
 		}
+		
 		let donatedNftOwner_ = await randomWalkNft.ownerOf(donatedNftId_);
 		expect(donatedNftOwner_).to.equal(owner.address);
 	});
@@ -141,7 +142,7 @@ describe("Contract", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
 		let tx = await bnonrec.connect(owner).doClaim();
 		let receipt = await tx.wait();
-		const topic_sig = cosmicSignatureNft.interface.getEvent("MintEvent").topicHash;
+		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let prizeWinnerTokenIndex = 0;
 		let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[prizeWinnerTokenIndex]);

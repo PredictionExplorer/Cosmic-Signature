@@ -106,8 +106,8 @@ contract BidderContract is IERC721Receiver {
 	// 	// todo-1 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
 	// 	// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
 	// 	// todo-1 In any case, write comments.
-	// 	(bool isSuccess, ) = creator.call{ value: address(this).balance }("");
-	// 	isSuccess = false;
+	// 	(bool isSuccess_, ) = creator.call{ value: address(this).balance }("");
+	// 	isSuccess_ = false;
 	// 	uint256 totalSupply = nft_.totalSupply();
 	// 	for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 	// 		address tokenOwner = nft_.ownerOf(i);

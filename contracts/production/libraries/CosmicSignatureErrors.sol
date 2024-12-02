@@ -236,6 +236,7 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error
 	/// @param requesterAddress The address attempting to mint
 	/// todo-1 Rename to `NoMintPermission`.
+	/// todo-1 Use this for CST too?
 	error NoMintPrivileges(string errStr, address requesterAddress);
 
 	/// @notice Thrown when the token owner is incorrect

@@ -145,9 +145,9 @@ abstract contract BiddingOpenBid is
 			// Refunding excess ETH if the bidder sent more than required.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
-			(bool isSuccess, ) = msg.sender.call{ value: amountToSend }("");
+			(bool isSuccess_, ) = msg.sender.call{ value: amountToSend }("");
 			require(
-				isSuccess,
+				isSuccess_,
 				CosmicSignatureErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
 			);
 		}

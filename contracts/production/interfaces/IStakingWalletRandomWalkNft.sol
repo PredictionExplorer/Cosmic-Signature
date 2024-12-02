@@ -31,9 +31,9 @@ interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// @param stakeActionIds_ Stake action IDs.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external;
 
-	/// @notice Picks a random NFT based on the provided entropy.
-	/// @param entropy_ A random number.
+	/// @notice Picks a random NFT based on the provided random number.
+	/// @param randomNumber_ A random number.
 	/// @return Selected NFT staker address, or zero if there are no staked NFTs.
 	/// @dev This method is named "if possible" because it does nothing when there are no staked NFTs.
-	function pickRandomStakerAddressIfPossible(bytes32 entropy_) external view returns(address);
+	function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view returns(address);
 }

@@ -48,7 +48,7 @@ describe("CosmicSignatureGame", function () {
 		],
 	};
 	it("Should set the right unlockTime", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		expect(await cosmicSignatureGameProxy.nanoSecondsExtra()).to.equal(3600 * 1000 * 1000 * 1000);
 		expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
@@ -58,7 +58,6 @@ describe("CosmicSignatureGame", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
@@ -84,7 +83,6 @@ describe("CosmicSignatureGame", function () {
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
-			cosmicSignatureNft,
 			charityWallet,
 			cosmicSignatureDao,
 			prizesWallet,
