@@ -86,10 +86,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			// // todo-1 Remove this garbage soon.
 			// lastBidderAddress = address(0);
 
-			// todo-0 Assign `lastBidderAddress` here.
-			// todo-0 Comment: Even if `lastBidderAddress` forgets to claim the prize, we will still record them as the winner.
-			// todo-0 This will allow them to claim donated NFTs.
-			// todo-0 But I have now moved NFT donations to `PrizesWallet`. ToDo-202411257-1 relates.
+			// One might want to pass `lastBidderAddress` to `prizesWallet.registerRoundEnd` here.
+			// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
+			// which would allow them to claim donated NFTs and ERC-20 tokens.
+			// But we feel that the definition of the main prize winner should be the guy who clicks "claim".
+			// todo-0 I still want to remove `winners`.
 			// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
 			winners[roundNum] = /*winner*/ msg.sender /*lastBidderAddress*/;
 			// todo-1 Think if this is the best place to call this method. Maybe call it after disrtibuting prizes. Or maybe leave it alone.
@@ -105,7 +106,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			_distributePrizes(/*winner,*/ mainPrizeAmount_, charityAmount_, raffleAmount_, stakingAmount_);
 
 			_roundEndResets();
-			// emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_);
+			// emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_, ???);
 			// ++ roundNum;
 		}
 	}
@@ -133,7 +134,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		randomNumber_ = _distributeSpecialPrizes(randomNumber_);
 
 		// Paying raffle winner prizes.
-		/* randomNumber_ = */ _distributeRafflePrizes(raffleAmount_, randomNumber_);
+		randomNumber_ = _distributeRafflePrizes(raffleAmount_, randomNumber_);
 
 		// Paying staking rewards.
 		try stakingWalletCosmicSignatureNft.depositIfPossible{ value: stakingAmount_ }(roundNum) {
@@ -181,7 +182,9 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress, charityAmount_);
 		}
 
-		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_);
+		randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+		uint256 nftId_ = nft.mint(roundNum, /*winner*/ msg.sender, randomNumber_);
+		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_, nftId_);
 
 		// Paying the main prize.
 		// Doing it at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
@@ -269,7 +272,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @notice Distribute raffle prizes including ETH and NFTs
 	/// @dev This function selects random winners for both ETH and NFT prizes
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
-	function _distributeRafflePrizes(uint256 raffleAmount_, uint256 randomNumber_) internal /*returns(uint256)*/ {
+	function _distributeRafflePrizes(uint256 raffleAmount_, uint256 randomNumber_) internal returns(uint256) {
 		// Distribute ETH prizes
 		// todo-1 How about increasing the number of raffle and/or other kinds of winnes if there are more bidders? Like 5% of bidders.
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
@@ -310,7 +313,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			}
 		}
 
-		// return randomNumber_;
+		return randomNumber_;
 	}
 
 	// #endregion
