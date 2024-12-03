@@ -16,9 +16,15 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// It's possible to find out from other events who is the actual winner.
 	/// Comment-202411285 relates.
 	/// [/Comment-202411254]
-	/// @param amount ETH amount.
+	/// @param ethPrizeAmount ETH prize amount.
+	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`. Actully leave it alone.
-	event MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiaryAddress, uint256 amount);
+	event MainPrizeClaimed(
+		uint256 indexed roundNum,
+		address indexed beneficiaryAddress,
+		uint256 ethPrizeAmount,
+		uint256 indexed prizeCosmicSignatureNftId
+	);
 
 	// /// @notice Emitted when the Stellar Spender receives their prize.
 	// /// @param stellarSpender Stellar Spender address.
@@ -91,6 +97,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param roundNum The bidding round number.
 	/// todo-1 Make sense to reorder `roundNum` and `winnerIndex` to the beginning?
 	/// @param nftId The ID of the NFT won
+	/// todo-1 Rename the above param to `prizeCosmicSignatureNftId`.
 	/// @param winnerIndex The index of the winner
 	/// @param isStaker Whether the winner is a staker
 	/// todo-1 Should the above param type be an enum?
