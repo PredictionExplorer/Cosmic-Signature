@@ -66,6 +66,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// [/ToDo-202408114-1]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
 		// Issue. It would be more efficient and not any less random to initialize this with a hardcoded number.
+		// Comment-202412104 relates.
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",

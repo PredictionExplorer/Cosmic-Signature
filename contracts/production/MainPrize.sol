@@ -128,13 +128,13 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		uint256 raffleAmount_,
 		uint256 stakingAmount_
 	) internal {
-		uint256 randomNumber_ = CosmicSignatureHelpers.generateInitialRandomNumber();
+		uint256 randomNumberSeed_ = CosmicSignatureHelpers.generateInitialRandomNumber();
 
 		// Paying the last CST bidder, Endurance Champion, Chrono-Warrior prizes.
-		randomNumber_ = _distributeSpecialPrizes(randomNumber_);
+		randomNumberSeed_ = _distributeSpecialPrizes(randomNumberSeed_);
 
 		// Paying raffle winner prizes.
-		randomNumber_ = _distributeRafflePrizes(raffleAmount_, randomNumber_);
+		randomNumberSeed_ = _distributeRafflePrizes(raffleAmount_, randomNumberSeed_);
 
 		// Paying staking rewards.
 		try stakingWalletCosmicSignatureNft.depositIfPossible{ value: stakingAmount_ }(roundNum) {
@@ -182,7 +182,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 			emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress, charityAmount_);
 		}
 
-		randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+		unchecked { ++ randomNumberSeed_; }
+		uint256 randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 		uint256 nftId_ = nft.mint(roundNum, /*winner*/ msg.sender, randomNumber_);
 		emit MainPrizeClaimed(roundNum, /*winner*/ msg.sender, mainPrizeAmount_, nftId_);
 
@@ -210,12 +211,12 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 	/// @notice Distributes so called "special" prizes to the last CST bidder, Endurance Champion, and Chrono-Warrior.
 	/// This method pays ETH, mints CSTs and CS NFTs to the winners.
-	function _distributeSpecialPrizes(uint256 randomNumber_) internal returns(uint256) {
+	function _distributeSpecialPrizes(uint256 randomNumberSeed_) internal returns(uint256) {
 		uint256 cstRewardAmount_ = numRaffleParticipants[roundNum] * cstRewardAmountMultiplier;
 
 		// // Stellar Spender prize.
 		// if (stellarSpender != address(0)) {
-		//		// todo-9 Update and use `randomNumber_` here.
+		//		// todo-9 Update and use `randomNumberSeed_` here.
 		// 	uint256 nftId_ = nft.mint(roundNum, stellarSpender);
 		// 	// try
 		// 	// ToDo-202409245-0 applies.
@@ -229,7 +230,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 
 		// The last CST bidder prize.
 		if (lastCstBidderAddress != address(0)) {
-			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			unchecked { ++ randomNumberSeed_; }
+			uint256 randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 			uint256 nftId_ = nft.mint(roundNum, lastCstBidderAddress, randomNumber_);
 		 	// ToDo-202409245-0 applies.
 			token.mint(lastCstBidderAddress, cstRewardAmount_);
@@ -241,7 +243,8 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// if (enduranceChampion != address(0))
 		// #enable_asserts assert(enduranceChampion != address(0));
 		{
-			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			unchecked { ++ randomNumberSeed_; }
+			uint256 randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that transfer to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
 			uint256 nftId_ = nft.mint(roundNum, enduranceChampion, randomNumber_);
@@ -263,7 +266,7 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// todo-1 but later send this to the main prize winner directly.
 		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarrior);
 
-		return randomNumber_;
+		return randomNumberSeed_;
 	}
 
 	// #endregion
@@ -272,13 +275,14 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 	/// @notice Distribute raffle prizes including ETH and NFTs
 	/// @dev This function selects random winners for both ETH and NFT prizes
 	/// @param raffleAmount_ Total amount of ETH to distribute in the raffle
-	function _distributeRafflePrizes(uint256 raffleAmount_, uint256 randomNumber_) internal returns(uint256) {
+	function _distributeRafflePrizes(uint256 raffleAmount_, uint256 randomNumberSeed_) internal returns(uint256) {
 		// Distribute ETH prizes
 		// todo-1 How about increasing the number of raffle and/or other kinds of winnes if there are more bidders? Like 5% of bidders.
 		uint256 perWinnerAmount = raffleAmount_ / numRaffleETHWinnersBidding;
 		for (uint256 i = 0; i < numRaffleETHWinnersBidding; i++) {
 			// _updateRaffleEntropy();
-			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			unchecked { ++ randomNumberSeed_; }
+			uint256 randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 			address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
 			prizesWallet.depositEth{value: perWinnerAmount}(roundNum, raffleWinnerAddress_);
 			emit RaffleETHWinnerEvent(raffleWinnerAddress_, roundNum, i, perWinnerAmount);
@@ -287,9 +291,11 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		// Distribute NFT prizes to bidders
 		for (uint256 i = 0; i < numRaffleNftWinnersBidding; i++) {
 			// _updateRaffleEntropy();
-			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			unchecked { ++ randomNumberSeed_; }
+			uint256 randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 			address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
-			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+			unchecked { ++ randomNumberSeed_; }
+			randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 			uint256 nftId_ = nft.mint(roundNum, raffleWinnerAddress_, randomNumber_);
 			emit RaffleNftWinnerEvent(raffleWinnerAddress_, roundNum, nftId_, i, false, false);
 		}
@@ -300,20 +306,22 @@ abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameSt
 		{
 			for (uint256 i = 0; i < numRaffleNftWinnersStakingRWalk; i++) {
 				// _updateRaffleEntropy();
-				randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+				unchecked { ++ randomNumberSeed_; }
+				uint256 randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 				address luckyStakerAddress_ = stakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*uint256(raffleEntropy)*/ randomNumber_);
 
 				if (luckyStakerAddress_ == address(0)) {
 					break;
 				}
 
-				randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumber_);
+				unchecked { ++ randomNumberSeed_; }
+				randomNumber_ = CosmicSignatureHelpers.calculateHashSumOf(randomNumberSeed_);
 				uint256 nftId_ = nft.mint(roundNum, luckyStakerAddress_, randomNumber_);
 				emit RaffleNftWinnerEvent(luckyStakerAddress_, roundNum, nftId_, i, true, true);
 			}
 		}
 
-		return randomNumber_;
+		return randomNumberSeed_;
 	}
 
 	// #endregion
