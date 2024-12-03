@@ -25,6 +25,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
+	// todo-1 Assert 2 more params passed to the event.
 	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
 	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 

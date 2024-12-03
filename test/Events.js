@@ -143,6 +143,7 @@ describe("Events", function () {
 
 		await expect(cosmicSignatureGameProxy.connect(bidder1).claimPrize())
 			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed")
+			// todo-1 Assert 1 more param passed to the event.
 			.withArgs(0, bidder1.address, mainPrizeAmountBeforeClaim_);
 
 		const roundMainPrizeWinnerAddress_ = await cosmicSignatureGameProxy.winners(0);
@@ -181,6 +182,7 @@ describe("Events", function () {
 		mainPrizeAmountBeforeClaim_ = await cosmicSignatureGameProxy.mainPrizeAmount();
 		await expect(cosmicSignatureGameProxy.connect(donor).claimPrize())
 			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed")
+			// todo-1 Assert 1 more param passed to the event.
 			.withArgs(1, donor.address, mainPrizeAmountBeforeClaim_);
 
 		expect(await randomWalkNft.balanceOf(donor.address)).to.equal(1);
