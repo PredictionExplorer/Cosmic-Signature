@@ -87,8 +87,7 @@ contract CosmicSignatureGameOpenBid is
 			lastCstBidTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		}
 
-		// ToDo-202409199-0 applies.
-		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT / 2;
+		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
 		lastBidderAddress = address(0);

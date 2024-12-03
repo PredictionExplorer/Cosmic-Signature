@@ -348,8 +348,15 @@ const hardhatUserConfig = {
 
 	// When you make changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
-		hardhat :{
-			allowUnlimitedContractSize: true
+		hardhat: {
+			allowUnlimitedContractSize: true,
+			mining: {
+				auto: true,
+				interval: 1000,
+				mempool: {
+					order: "fifo"
+				},
+			},
 		},
 		localhost: {
 			url: `http://localhost:8545/`,
