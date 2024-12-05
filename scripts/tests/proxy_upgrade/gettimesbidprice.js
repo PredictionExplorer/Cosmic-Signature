@@ -20,7 +20,7 @@ async function main() {
 	}
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
 	let value = await cosmicSignatureGame.timesBidPrice();
-	console.log("timesBidPrice = "+value);
+	console.log("timesBidPrice =", value);
 }
 
 main()
