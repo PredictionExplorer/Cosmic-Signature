@@ -48,12 +48,15 @@ contract CosmicSignatureGameOpenBid is
 	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// #enable_asserts // #disable_smtchecker console.log("2 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
 		_disableInitializers();
 	}
 
 	function initialize(address ownerAddress_) external override initializer {
-		// #enable_asserts // #disable_smtchecker console.log("2 initialize");
+		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
+		// #enable_asserts assert(activationTime == 0);
+
+		// todo-1 Order these like in the inheritance list.
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
@@ -78,7 +81,7 @@ contract CosmicSignatureGameOpenBid is
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// prizeTime =
-		roundNum = 0;
+		// roundNum = 0;
 		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
 		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
@@ -94,8 +97,9 @@ contract CosmicSignatureGameOpenBid is
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
-		lastBidderAddress = address(0);
+		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
+		// // lastBidType =
 		mainPrizePercentage = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicSignatureConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicSignatureConstants.INITIAL_RAFFLE_PERCENTAGE;
@@ -118,13 +122,19 @@ contract CosmicSignatureGameOpenBid is
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	/// todo-1 Should this be `onlyInactive`?
-	function _authorizeUpgrade(address newImplementationAddress_) internal override onlyOwner {
-		// #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
+	/// @dev todo-2 This method should be declared in an inherited interface.
+	function initialize2() reinitializer(2) public {
+		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
+		// #enable_asserts assert(timesBidPrice == 0);
+		timesBidPrice = 3;
+	}
+
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
 	}
 
 	function upgradeTo(address newImplementationAddress_) external override {
-		// #enable_asserts // #disable_smtchecker console.log("2 upgradeTo");
+		// // #enable_asserts // #disable_smtchecker console.log("2 upgradeTo");
 		_authorizeUpgrade(newImplementationAddress_);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
 		emit IERC1967.Upgraded(newImplementationAddress_);

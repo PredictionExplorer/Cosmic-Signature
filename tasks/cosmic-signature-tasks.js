@@ -89,7 +89,10 @@ task("deploy-cosmicsignature", "Deploys contracts to a network", async (args, hr
 			"','" +
 			await marketingWallet.getAddress() +
 			"','" +
+
+			// Issue. According to Comment-202412059, this is the same as `cosmicSignatureGameProxy`.
 			await cosmicSignatureGame.getAddress() +
+
 			"')",
 	);
 }).addParam("deployconfig", "Config file (JSON)");

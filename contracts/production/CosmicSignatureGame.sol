@@ -58,23 +58,19 @@ contract CosmicSignatureGame is
 	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// #enable_asserts // #disable_smtchecker console.log("1 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("1 constructor");
 		_disableInitializers();
 	}
 
 	function initialize(address ownerAddress_) external override initializer {
-		// #enable_asserts // #disable_smtchecker console.log("1 initialize");
+		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
+		// #enable_asserts assert(activationTime == 0);
+
+		// todo-1 Order these like in the inheritance list.
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
 		__Ownable_init(ownerAddress_);
-
-		// todo-1 Think again which of these should not be reset on upgrade. Comment.
-		// todo-1 I wrote some comments already.
-		// todo-1 Really,it looks like most variables should not be reset on upgrade.
-		// todo-1 So maybe write one common comment to revisit this when developing a new upgrade contract.
-		// todo-1 Write and cross-ref that in `CosmicSignatureGameOpenBid` most of these should not be done.
-		// todo-1 Revisit and cross-ref with Comment-202412064.
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
@@ -95,13 +91,8 @@ contract CosmicSignatureGame is
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// prizeTime =
-		// todo-1 This is already zero, right? Assert?
-		// todo-1 But on ipgrade this won't be zero, right? So don't reset this back to zero on upgrade?
-		roundNum = 0;
-
-		// Issue. It appears that on upgrade this will be incorrect.
+		// roundNum = 0;
 		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
-
 		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
 		cstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
@@ -119,8 +110,7 @@ contract CosmicSignatureGame is
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
-		// todo-0 Is this redundant? Assert?
-		lastBidderAddress = address(0);
+		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
 		// // lastBidType =
 		mainPrizePercentage = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
@@ -136,27 +126,21 @@ contract CosmicSignatureGame is
 		// enduranceChampionDuration =
 		// prevEnduranceChampionDuration =
 		// chronoWarrior =
-
-		// Issue. It appears that on upgrade this will be redundant.
 		chronoWarriorDuration = uint256(int256(-1));
-
 		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
 		numRaffleNftWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
 		numRaffleNftWinnersStakingRWalk = CosmicSignatureConstants.INITIAL_STAKING_WINNERS_RWALK;
-
-		// // Issue. It appears that on upgrade this will be unnecessary.
 		// raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	/// todo-1 Should this be `onlyInactive`?
-	function _authorizeUpgrade(address newImplementationAddress_) internal override onlyOwner {
-		// #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 
 	function upgradeTo(address newImplementationAddress_) external override {
-		// #enable_asserts // #disable_smtchecker console.log("1 upgradeTo");
+		// // #enable_asserts // #disable_smtchecker console.log("1 upgradeTo");
 		_authorizeUpgrade(newImplementationAddress_);
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
 		emit IERC1967.Upgraded(newImplementationAddress_);

@@ -9,7 +9,6 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 // import { SystemManagement } from "./SystemManagement.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
-/// todo-1 Is it really necessary to derive from `ReentrancyGuardUpgradeable` here?
 abstract contract NftDonations is
 	// ReentrancyGuardUpgradeable,
 	CosmicSignatureGameStorage,

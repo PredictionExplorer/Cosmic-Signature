@@ -9,7 +9,6 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
-/// todo-1 Is it really necessary to derive from `ReentrancyGuardUpgradeable` here?
 abstract contract EthDonations is
 	// ReentrancyGuardUpgradeable, <<< todo-1 Commented out. Is it OK?
 	CosmicSignatureGameStorage,

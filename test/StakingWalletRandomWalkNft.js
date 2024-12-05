@@ -23,7 +23,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 		return {
 			cosmicSignatureGameProxy,
@@ -36,7 +36,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		};
 	}
 	const bidParamsEncoding = {

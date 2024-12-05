@@ -70,9 +70,9 @@ const basicDeploymentAdvanced = async function (
 	const CosmicSignatureGame = await hre.ethers.getContractFactory(cosmicSignatureGameContractName);
 	const cosmicSignatureGameProxy =
 		await hre.upgrades.deployProxy(
-			CosmicSignatureGame,
-			args = [deployerAcct.address],
-			opts = {
+			CosmicSignatureGame.connect(deployerAcct),
+			[deployerAcct.address],
+			{
 				kind: "uups"
 			}
 		);
@@ -82,25 +82,23 @@ const basicDeploymentAdvanced = async function (
 	// // Issue. This is not used. So I have commehted this out.
 	// // Comment-202412059 relates.
 	// // [/Comment-202412061]
-	// const cosmicSignatureGameAddr =
+	// const cosmicSignatureGameAddressAsString_ =
 	// 	await cosmicSignatureGameProxy.runner.provider.getStorage(
 	// 		cosmicSignatureGameProxyAddr,
 	//
 	// 		// [Comment-202412063]
-	// 		// This appears to be a known magic number.
-	// 		// todo-1 What if this location collides with a big array item location?
-	// 		// todo-1 To be safe, should we validate that this storage slot is zero and then zero it out?
-	// 		// todo-1 But currently there are no big arrays in the game contract.
-	// 		// todo-1 Cross-ref this comment with `CosmicSignatureGameStorage`.
+	// 		// This is a documented magic number that in Solidity code is stored in `ERC1967Utils.IMPLEMENTATION_SLOT`.
 	// 		// [/Comment-202412063]
 	// 		"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 	// 	);
 
 	// [Comment-202412059]
-	// Issue. This points at the same address as `cosmicSignatureGameProxy`. Is it a bug or a feature?
+	// Issue. This points at the same address as `cosmicSignatureGameProxy`.
+	// That makes sense because it would be incorrect to use the actual contract rather than its proxy
+	// because the actual contract state is not meant to be used.
+	// Few, if any callers use this.
+	// So it could make sense to not even create or return this object, but let's leave it alone for now.
 	// Comment-202412061 relates.
-	// todo-1 So maybe better don't return this?
-	// todo-1 Discuss with Nick.
 	// [/Comment-202412059]
 	const cosmicSignatureGame = await CosmicSignatureGame.attach(cosmicSignatureGameProxyAddr);
 
