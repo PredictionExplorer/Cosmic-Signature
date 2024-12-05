@@ -9,6 +9,7 @@ import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/
 import { ICosmicSignatureDao } from "./interfaces/ICosmicSignatureDao.sol";
 
 /// @dev Extends various OpenZeppelin Governor modules to create a comprehensive DAO
+/// todo-1 Review https://docs.openzeppelin.com/contracts/5.x/governance
 contract CosmicSignatureDao is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction, ICosmicSignatureDao {
 	/// @notice Initializes the CosmicSignatureDao contract
 	/// @dev Sets up the governance parameters and links the voting token

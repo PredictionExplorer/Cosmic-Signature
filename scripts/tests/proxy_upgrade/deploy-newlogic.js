@@ -41,6 +41,8 @@ async function main() {
 	// because there can't be an initialize() method for proxy upgrade (because contract is already live)
 	// we need to do execute any initialization process manually (only for those variables that are added extra)
 	// todo-1 So will `initialize` be called on upgrade?
+	// todo-1 No, it looks like it won't be, The `reinitializer` `modifier` will be needed.
+	// todo-1 See https://docs.openzeppelin.com/upgrades-plugins/1.x/faq#internal-function-storage
 	// [/Comment-202412064]
 	await cosmicSignatureGameProxy.setTimesBidPrice(10n);	// initialize timesBidPrice to 10
 

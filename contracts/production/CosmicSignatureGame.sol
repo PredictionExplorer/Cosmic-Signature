@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 // #region Imports
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -29,8 +31,14 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicSignatureGame is
+	// todo-1 What about `ReentrancyGuardUpgradeable`. Some inherited contracts derive from it. Maybe the game contract should too?
+
+	// todo-1 An alternative Ownable contract:
+	// todo-1 https://docs.openzeppelin.com/contracts/5.x/api/access#Ownable2Step
+	// todo-1 But we probably don't need it.
 	OwnableUpgradeable,
-	UUPSUpgradeable,
+
+	UUPSUpgradeable, // <<< shoud this be first in the inheritance list?
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
@@ -46,18 +54,20 @@ contract CosmicSignatureGame is
 	// todo-1 Review all uses of `IERC20`. Make sure we check the return value.
 	using SafeERC20 for IERC20;
 
+	/// @notice Constructor.
+	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
-	/// @notice Contract constructor
-	/// @dev This constructor is only used to disable initializers for the implementation contract	
 	constructor() {
+		// #enable_asserts // #disable_smtchecker console.log("1 constructor");
 		_disableInitializers();
 	}
 
-	function initialize(address _gameAdministrator) public override initializer {
+	function initialize(address ownerAddress_) external override initializer {
+		// #enable_asserts // #disable_smtchecker console.log("1 initialize");
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
-		__Ownable_init(_gameAdministrator);
+		__Ownable_init(ownerAddress_);
 
 		// todo-1 Think again which of these should not be reset on upgrade. Comment.
 		// todo-1 I wrote some comments already.
@@ -140,25 +150,16 @@ contract CosmicSignatureGame is
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function _authorizeUpgrade(address newImplementation_) internal override {
+	/// todo-1 Should this be `onlyInactive`?
+	function _authorizeUpgrade(address newImplementationAddress_) internal override onlyOwner {
+		// #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function upgradeTo(address _newImplementation) public override onlyOwner {
-		_authorizeUpgrade(_newImplementation);
-		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		// todo-0 This event has been eliminated.
-		// todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
-		// todo-0 So I have refactored this to emit that same event.
-		// todo-0 But would it be better to call that function here?
-		// todo-0 Nick, please take a closer look at this.
-		//
-		// todo-0 OpenZeppelin docs says:
-		// todo-0 ERC1967Utils: Removed duplicate declaration of the Upgraded, AdminChanged and BeaconUpgraded events. These events are still available through the IERC1967 interface located under the contracts/interfaces/ directory.
-		//
-		// emit ERC1967Utils.Upgraded(_newImplementation);
-		emit IERC1967.Upgraded(_newImplementation);
+	function upgradeTo(address newImplementationAddress_) external override {
+		// #enable_asserts // #disable_smtchecker console.log("1 upgradeTo");
+		_authorizeUpgrade(newImplementationAddress_);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
+		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
 
 	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {

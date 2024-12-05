@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 // #region Imports
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -42,18 +44,20 @@ contract CosmicSignatureGameOpenBid is
 	ICosmicSignatureGame {
 	using SafeERC20 for IERC20;
 
+	/// @notice Constructor.
+	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
-	/// @notice Contract constructor
-	/// @dev This constructor is only used to disable initializers for the implementation contract	
 	constructor() {
+		// #enable_asserts // #disable_smtchecker console.log("2 constructor");
 		_disableInitializers();
 	}
 
-	function initialize(address _gameAdministrator) public override initializer {
+	function initialize(address ownerAddress_) external override initializer {
+		// #enable_asserts // #disable_smtchecker console.log("2 initialize");
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
-		__Ownable_init(_gameAdministrator);
+		__Ownable_init(ownerAddress_);
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
@@ -114,16 +118,16 @@ contract CosmicSignatureGameOpenBid is
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function _authorizeUpgrade(address newImplementation_) internal override {
+	/// todo-1 Should this be `onlyInactive`?
+	function _authorizeUpgrade(address newImplementationAddress_) internal override onlyOwner {
+		// #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function upgradeTo(address _newImplementation) public override onlyOwner {
-		_authorizeUpgrade(_newImplementation);
-		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		// todo-0 See todos in `CosmicSignatureGame.upgradeTo` about making sure that this is correct.
-		emit IERC1967.Upgraded(_newImplementation);
+	function upgradeTo(address newImplementationAddress_) external override {
+		// #enable_asserts // #disable_smtchecker console.log("2 upgradeTo");
+		_authorizeUpgrade(newImplementationAddress_);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
+		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
 
 	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {

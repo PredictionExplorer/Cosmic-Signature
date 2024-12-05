@@ -20,9 +20,13 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 interface ICosmicSignatureGame is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics, IBidding, IMainPrize, IEthDonations, INftDonations, ISpecialPrizes {
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
-	function initialize(address _gameAdministrator) external;
+	function initialize(address ownerAddress_) external;
 
-	function upgradeTo(address _newImplementation) external;
+	/// @dev todo-1 It appears that we don't need this because the inherited `upgradeToAndCall` is sufficient.
+	/// todo-1 But `upgradeToAndCall` does a bunch of thngs that don't quite benefot us, but cost some gas.
+	/// todo-1 But test that this one is actually called.
+	/// todo-1 Comment better.
+	function upgradeTo(address newImplementationAddress_) external;
 
 	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
 	/// todo-1 Rename this to `bidWithEthAndDonateToken`.

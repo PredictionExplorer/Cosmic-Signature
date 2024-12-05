@@ -28,7 +28,12 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 // #region
 
 // ToDo-202411179-1 relates and/or applies.
-abstract contract MainPrize is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, BidStatistics, IMainPrize {
+abstract contract MainPrize is
+	ReentrancyGuardUpgradeable,
+	CosmicSignatureGameStorage,
+	SystemManagement,
+	BidStatistics,
+	IMainPrize {
 	// #region `claimPrize`
 
 	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.

@@ -347,6 +347,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// bytes32 public raffleEntropy;
 
 	// #endregion
+
+	// todo-1 Add a reserved gap?
+	// todo-1 Maybe this is not needed because we aren't going to have any derived contracts.
+	// todo-1 uint256[(1 << 64) * (1 << 160) * (1 << 8)] private __gap;
 }
 
 // #endregion

@@ -83,6 +83,7 @@ abstract contract Bidding is
 				)
 			);
 			require(
+				// todo-1 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
 				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNftId)),
 				CosmicSignatureErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
