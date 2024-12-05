@@ -29,7 +29,7 @@ describe("CosmicSignatureGame", function () {
 		expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
 	});
 	it("The receive method is executing a bid", async function () {
-		const {cosmicSignatureGameProxy, signers,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
 		const [owner,] = signers;
 		const bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await owner.sendTransaction({
