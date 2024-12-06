@@ -15,14 +15,25 @@ import { ISystemManagement } from "./ISystemManagement.sol";
 /// @title The Cosmic Signature Game.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the main functionality of the Cosmic Signature Game.
-/// todo-1 This contract is upgradable. So should it support a `selfdestruct` after upgrade?
+/// todo-1 This contract is upgradeable. So should it support a `selfdestruct` after upgrade?
 //interface ICosmicSignatureGame is ICosmicSignatureGameStorage, ISystemManagement, IMainPrize, IEthDonations, INftDonations {
 interface ICosmicSignatureGame is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics, IBidding, IMainPrize, IEthDonations, INftDonations, ISpecialPrizes {
 	/// @notice Initializes the contract
 	/// @dev This function should be called right after deployment. It sets up initial state variables and game parameters.
-	function initialize(address _gameAdministrator) external;
+	function initialize(address ownerAddress_) external;
 
-	function upgradeTo(address _newImplementation) external;
+	/// @dev
+	/// [Comment-202412129]
+	/// To upgrade a contract, OpenZeppelin recommends calling `HardhatRuntimeEnvironment.upgrades.upgradeProxy`,
+	/// which calls `upgradeToAndCall`, which we inherited from `UUPSUpgradeable`.
+	/// I believe that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would call `upgradeTo`
+	/// if `upgradeToAndCall` didn't exist.
+	/// A little problem is that `upgradeToAndCall` does a bunch of thngs that not necessarily benefot us, while costing some gas.
+	/// So this `upgradeTo` method performs only the actions that we do need.
+	/// To use it, we simply need to call it directly instead of calling `HardhatRuntimeEnvironment.upgrades.upgradeProxy`.
+	/// A little problem is that this minimalistic approach is unsafe.
+	/// [/Comment-202412129]
+	function upgradeTo(address newImplementationAddress_) external;
 
 	/// @dev todo-1 Move this method to `IBidding` and `Bidding`.
 	/// todo-1 Rename this to `bidWithEthAndDonateToken`.

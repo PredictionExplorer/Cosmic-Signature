@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 // #region Imports
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -29,8 +31,14 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicSignatureGame is
+	// todo-1 What about `ReentrancyGuardUpgradeable`. Some inherited contracts derive from it. Maybe the game contract should too?
+
+	// todo-1 An alternative Ownable contract:
+	// todo-1 https://docs.openzeppelin.com/contracts/5.x/api/access#Ownable2Step
+	// todo-1 But we probably don't need it.
 	OwnableUpgradeable,
-	UUPSUpgradeable,
+
+	UUPSUpgradeable, // <<< shoud this be first in the inheritance list?
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
@@ -46,25 +54,23 @@ contract CosmicSignatureGame is
 	// todo-1 Review all uses of `IERC20`. Make sure we check the return value.
 	using SafeERC20 for IERC20;
 
+	/// @notice Constructor.
+	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
-	/// @notice Contract constructor
-	/// @dev This constructor is only used to disable initializers for the implementation contract	
 	constructor() {
+		// // #enable_asserts // #disable_smtchecker console.log("1 constructor");
 		_disableInitializers();
 	}
 
-	function initialize(address _gameAdministrator) public override initializer {
+	function initialize(address ownerAddress_) external override initializer {
+		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
+		// #enable_asserts assert(activationTime == 0);
+
+		// todo-1 Order these like in the inheritance list.
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
-		__Ownable_init(_gameAdministrator);
-
-		// todo-1 Think again which of these should not be reset on upgrade. Comment.
-		// todo-1 I wrote some comments already.
-		// todo-1 Really,it looks like most variables should not be reset on upgrade.
-		// todo-1 So maybe write one common comment to revisit this when developing a new upgrade contract.
-		// todo-1 Write and cross-ref that in `CosmicSignatureGameOpenBid` most of these should not be done.
-		// todo-1 Revisit and cross-ref with Comment-202412064.
+		__Ownable_init(ownerAddress_);
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
@@ -85,13 +91,8 @@ contract CosmicSignatureGame is
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// prizeTime =
-		// todo-1 This is already zero, right? Assert?
-		// todo-1 But on ipgrade this won't be zero, right? So don't reset this back to zero on upgrade?
-		roundNum = 0;
-
-		// Issue. It appears that on upgrade this will be incorrect.
+		// roundNum = 0;
 		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
-
 		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
 		cstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
@@ -109,8 +110,7 @@ contract CosmicSignatureGame is
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
-		// todo-0 Is this redundant? Assert?
-		lastBidderAddress = address(0);
+		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
 		// // lastBidType =
 		mainPrizePercentage = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
@@ -121,44 +121,29 @@ contract CosmicSignatureGame is
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
 		// // stellarSpender =
 		// // stellarSpenderTotalSpentCst =
-		// enduranceChampion =
+		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =
 		// enduranceChampionDuration =
 		// prevEnduranceChampionDuration =
-		// chronoWarrior =
-
-		// Issue. It appears that on upgrade this will be redundant.
+		// chronoWarriorAddress =
 		chronoWarriorDuration = uint256(int256(-1));
-
 		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
 		numRaffleNftWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
 		numRaffleNftWinnersStakingRWalk = CosmicSignatureConstants.INITIAL_STAKING_WINNERS_RWALK;
-
-		// // Issue. It appears that on upgrade this will be unnecessary.
 		// raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function _authorizeUpgrade(address newImplementation_) internal override {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function upgradeTo(address _newImplementation) public override onlyOwner {
-		_authorizeUpgrade(_newImplementation);
-		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		// todo-0 This event has been eliminated.
-		// todo-0 But this library now includes a a function named `upgradeToAndCall`, which appears to emit an equivalent event.
-		// todo-0 So I have refactored this to emit that same event.
-		// todo-0 But would it be better to call that function here?
-		// todo-0 Nick, please take a closer look at this.
-		//
-		// todo-0 OpenZeppelin docs says:
-		// todo-0 ERC1967Utils: Removed duplicate declaration of the Upgraded, AdminChanged and BeaconUpgraded events. These events are still available through the IERC1967 interface located under the contracts/interfaces/ directory.
-		//
-		// emit ERC1967Utils.Upgraded(_newImplementation);
-		emit IERC1967.Upgraded(_newImplementation);
+	function upgradeTo(address newImplementationAddress_) external override {
+		// // #enable_asserts // #disable_smtchecker console.log("1 upgradeTo");
+		_authorizeUpgrade(newImplementationAddress_);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
+		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
 
 	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {

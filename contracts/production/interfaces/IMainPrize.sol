@@ -58,7 +58,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @dev todo-0 I renamed this and changed params. Tell Nick.
 	/// @notice Emitted when the Endurance Champion receives their prize.
-	/// @param enduranceChampion Endurance Champion address.
+	/// @param enduranceChampionAddress Endurance Champion address.
 	/// @param roundNum The bidding round number.
 	/// todo-1 Make sense to reorder `roundNum` to the beginning?
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
@@ -66,7 +66,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// ---param winnerIndex Winner index.
 	/// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
 	event EnduranceChampionPrizePaid(
-		address indexed enduranceChampion,
+		address indexed enduranceChampionAddress,
 		uint256 indexed roundNum,
 		uint256 indexed prizeCosmicSignatureNftId,
 		uint256 cstPrizeAmount
@@ -74,11 +74,11 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	);
 
 	/// @notice Emitted when the Chrono-Warrior receives their prize. The prize ETH is transferred to `EthPrizesWalet`.
-	/// @param chronoWarrior Chrono-Warrior address.
+	/// @param chronoWarriorAddress Chrono-Warrior address.
 	/// @param roundNum The bidding round number.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	event ChronoWarriorPrizePaid(
-		address indexed chronoWarrior,
+		address indexed chronoWarriorAddress,
 		uint256 indexed roundNum,
 		uint256 ethPrizeAmount
 	);

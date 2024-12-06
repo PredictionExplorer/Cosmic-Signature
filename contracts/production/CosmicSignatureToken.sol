@@ -15,6 +15,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 /// todo-1 Make sense to move `Ownable` to the beginning of the base contract list? Then reorder it in the constructor too.
 /// todo-1 Do we need a method to send the same and/or different amounts to multiple recipients?
 /// todo-1 Review extensions to inherit from. Maybe `ERC20FlashMint`, `ERC20TemporaryApproval` (still a draft).
+/// todo-1 Take a look at the wizard at https://docs.openzeppelin.com/contracts/5.x/wizard
 contract CosmicSignatureToken is ERC20, ERC20Burnable, Ownable, ERC20Permit, ERC20Votes, ICosmicSignatureToken {
 	/// @notice Initializes the CosmicSignatureToken contract
 	/// @dev Sets the token name to "CosmicSignatureToken" and symbol to "CST"

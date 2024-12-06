@@ -303,6 +303,7 @@ describe("MainPrize", function () {
 		let topic_sig = cosmicSignatureGameProxy.interface.getEvent('MainPrizeClaimed').topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignatureGameProxy.interface.parseLog(log);
+		// todo-1 Assert 2 more params passed to the event.
 		expect(parsed_log.args.beneficiaryAddress).to.equal(await bContract.getAddress());
 	});
 });

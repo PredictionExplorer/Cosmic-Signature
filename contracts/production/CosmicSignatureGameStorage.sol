@@ -23,7 +23,7 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 But where we do so, consider validating that a big array item index passed to a method,
 /// todo-1 such as `roundNum_`,  is not too big.
 /// todo-1 Otherwise a collision can create a vulnerability.
-/// todo-1 Really, `mapping`s and dynamic arrays are evil. Avoid them!
+/// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Parameters and Variables
@@ -109,6 +109,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Donation Variables
 
 	uint256 public numDonationInfoRecords;
+	/// todo-1 Do we need to store round number when each donation was made?
 	mapping(uint256 index => CosmicSignatureConstants.DonationInfoRecord) public donationInfoRecords;
 	// uint256 public numDonatedNfts;
 	// mapping(uint256 index => CosmicSignatureConstants.DonatedNft) public donatedNfts;
@@ -311,8 +312,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Relevant logic prototype:
 	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/ChampionFinder.sol
 	/// [/Comment-202411099]
-	/// todo-1 Rename this to `enduranceChampionAddress`.
-	address public enduranceChampion;
+	address public enduranceChampionAddress;
 
 	uint256 public enduranceChampionStartTimeStamp;
 	uint256 public enduranceChampionDuration;
@@ -321,8 +321,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
 	/// Comment-202411075 applies.
 	/// Comment-202411099 applies.
-	/// todo-1 Rename this to `chronoWarriorAddress`.
-	address public chronoWarrior;
+	address public chronoWarriorAddress;
 
 	uint256 public chronoWarriorDuration;
 
@@ -346,6 +345,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// bytes32 public raffleEntropy;
 
 	// #endregion
+
+	// todo-1 Add a reserved gap?
+	// todo-1 Maybe this is not needed because we aren't going to have any derived contracts.
+	// todo-1 uint256[(1 << 64) * (1 << 160) * (1 << 8)] private __gap;
 }
 
 // #endregion

@@ -20,6 +20,9 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
 	/// @param errStr Description of the error.
 	/// @param callerAddress Caller address.
+	/// @dev todo-1 Rename to `FunctionAccessDenied` or `OperationAccessDenied` or `UnauthorizedCaller`?
+	/// todo-1 Note that `Ownable` error is named `OwnableUnauthorizedAccount`.
+	/// todo-1 Try to eliminate other errors of this kind.
 	error CallDenied(string errStr, address callerAddress);
 
 	// #endregion
@@ -229,7 +232,7 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error
 	/// @param len The NFT name length.
 	/// todo-1 Rename the above param to `length`.
-	/// todo-1 Rename this to `TooLongNftName`.
+	/// todo-1 Rename this to `TooLongNftName` or `NftNameIsTooLong`.
 	error TokenNameLength(string errStr, uint256 len);
 
 	/// @notice Thrown when an address without minting privileges attempts to mint
@@ -237,6 +240,7 @@ library CosmicSignatureErrors {
 	/// @param requesterAddress The address attempting to mint
 	/// todo-1 Rename to `NoMintPermission`.
 	/// todo-1 Use this for CST too?
+	/// todo-1 Maybe we don't need this? Use `CallDenied` instead?
 	error NoMintPrivileges(string errStr, address requesterAddress);
 
 	/// @notice Thrown when the token owner is incorrect
@@ -244,7 +248,7 @@ library CosmicSignatureErrors {
 	/// @param nftAddress NFT contract address.
 	/// @param nftId The ID of the token
 	/// @param senderAddress The address of the sender
-	/// todo-1 Rename this to `NftOwnerOnlyPermission`.
+	/// todo-1 Rename this to `NftOwnerOnlyPermission` or `NftAccessDenied`.
 	error IncorrectERC721TokenOwner(string errStr, address nftAddress, uint256 nftId, address senderAddress);
 
 	/// @notice Thrown when there's an ownership error for an NFT.

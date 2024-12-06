@@ -2,15 +2,18 @@
 
 pragma solidity 0.8.28;
 
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+// import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 
-/// todo-1 Is it really necessary to derive from `ReentrancyGuardUpgradeable` here?
-abstract contract EthDonations is ReentrancyGuardUpgradeable, CosmicSignatureGameStorage, SystemManagement, IEthDonations {
+abstract contract EthDonations is
+	// ReentrancyGuardUpgradeable, <<< todo-1 Commented out. Is it OK?
+	CosmicSignatureGameStorage,
+	SystemManagement,
+	IEthDonations {
 	/// todo-1 Should we allow donations even while the system is inactive?
 	function donate() external payable override onlyActive {
 		// todo-1 See Comment-202409215.

@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 // #region Imports
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -42,18 +44,23 @@ contract CosmicSignatureGameOpenBid is
 	ICosmicSignatureGame {
 	using SafeERC20 for IERC20;
 
+	/// @notice Constructor.
+	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
-	/// @notice Contract constructor
-	/// @dev This constructor is only used to disable initializers for the implementation contract	
 	constructor() {
+		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
 		_disableInitializers();
 	}
 
-	function initialize(address _gameAdministrator) public override initializer {
+	function initialize(address ownerAddress_) external override initializer {
+		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
+		// #enable_asserts assert(activationTime == 0);
+
+		// todo-1 Order these like in the inheritance list.
 		__UUPSUpgradeable_init();
 		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
-		__Ownable_init(_gameAdministrator);
+		__Ownable_init(ownerAddress_);
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
@@ -74,7 +81,7 @@ contract CosmicSignatureGameOpenBid is
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// prizeTime =
-		roundNum = 0;
+		// roundNum = 0;
 		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
 		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
@@ -90,8 +97,9 @@ contract CosmicSignatureGameOpenBid is
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
-		lastBidderAddress = address(0);
+		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
+		// // lastBidType =
 		mainPrizePercentage = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
 		chronoWarriorEthPrizePercentage = CosmicSignatureConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
 		rafflePercentage = CosmicSignatureConstants.INITIAL_RAFFLE_PERCENTAGE;
@@ -100,11 +108,11 @@ contract CosmicSignatureGameOpenBid is
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
 		// // stellarSpender =
 		// // stellarSpenderTotalSpentCst =
-		// enduranceChampion =
+		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =
 		// enduranceChampionDuration =
 		// prevEnduranceChampionDuration =
-		// chronoWarrior =
+		// chronoWarriorAddress =
 		chronoWarriorDuration = uint256(int256(-1));
 		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
@@ -114,16 +122,22 @@ contract CosmicSignatureGameOpenBid is
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function _authorizeUpgrade(address newImplementation_) internal override {
+	/// @dev todo-2 This method should be declared in an inherited interface.
+	function initialize2() reinitializer(2) public {
+		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
+		// #enable_asserts assert(timesBidPrice == 0);
+		timesBidPrice = 3;
 	}
 
-	/// todo-1 Should `_authorizeUpgrade` and/or `upgradeTo` be `onlyInactive`?
-	function upgradeTo(address _newImplementation) public override onlyOwner {
-		_authorizeUpgrade(_newImplementation);
-		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = _newImplementation;
-		// todo-0 See todos in `CosmicSignatureGame.upgradeTo` about making sure that this is correct.
-		emit IERC1967.Upgraded(_newImplementation);
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
+	}
+
+	function upgradeTo(address newImplementationAddress_) external override {
+		// // #enable_asserts // #disable_smtchecker console.log("2 upgradeTo");
+		_authorizeUpgrade(newImplementationAddress_);
+		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
+		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
 
 	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {

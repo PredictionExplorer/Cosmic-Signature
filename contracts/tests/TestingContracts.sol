@@ -155,6 +155,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 
 /// @notice special CosmicSignatureGame contract to be used in unit tests to create special test setups
 contract SpecialCosmicSignatureGame is CosmicSignatureGame {
+	/// @dev Issue. Random number generation logic in this test contract smells bad, but keeping it simple.
+	/// Comment-202412104 relates.
 	uint256 private _entropy;
 
 	// function setActivationTimeRaw(uint256 newValue_) external {

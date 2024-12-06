@@ -4,6 +4,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
 const SKIP_LONG_TESTS = "0";
@@ -22,7 +23,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 		return {
 			cosmicSignatureGameProxy,
@@ -35,7 +36,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -278,9 +279,9 @@ describe("StakingWalletRandomWalkNft", function () {
 		);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 
-		// await expect(newStakingWalletRandomWalkNft.pickRandomStakerAddress(hre.ethers.hashMessage('0xffff'))).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NoStakedNfts");
+		// await expect(newStakingWalletRandomWalkNft.pickRandomStakerAddress(hre.ethers.hashMessage("0xffff"))).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NoStakedNfts");
 		{
-			const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(hre.ethers.hashMessage('0xffff'));
+			const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*hre.ethers.hashMessage("0xffff")*/ 101n);
 			expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
 		}
 
@@ -308,8 +309,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			const luckyStakers = {};
 			const numSamples = 300;
 			for (let i = 0; i < numSamples; i++) {
-				const r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
-				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(hre.ethers.hashMessage('0x'+r));
+				// const r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
+				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*hre.ethers.hashMessage("0x" + r)*/ generateRandomUInt256());
 				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {

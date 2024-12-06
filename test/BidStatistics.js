@@ -25,7 +25,7 @@ describe("BidStatistics", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicSignatureGameProxy,
@@ -38,7 +38,7 @@ describe("BidStatistics", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -93,7 +93,7 @@ describe("BidStatistics", function () {
 		
 		// todo-1 We now also have chrono-warrior.
 		maxbtime = await cosmicSignatureGameProxy.enduranceChampionDuration();
-		maxbaddr = await cosmicSignatureGameProxy.enduranceChampion();
+		maxbaddr = await cosmicSignatureGameProxy.enduranceChampionAddress();
 		expect(maxbtime).to.equal(5000);
 		expect(maxbaddr).to.equal(addr2.address);
 	});
@@ -169,7 +169,7 @@ describe("BidStatistics", function () {
 		
 		// todo-1 We now also have chrono-warrior.
 		maxbtime = await cosmicSignatureGameProxy.enduranceChampionDuration();
-		maxbaddr = await cosmicSignatureGameProxy.enduranceChampion();
+		maxbaddr = await cosmicSignatureGameProxy.enduranceChampionAddress();
 		expect(maxbtime).to.equal(1000);
 		expect(maxbaddr).to.equal(addr1.address);
 	});
@@ -206,9 +206,10 @@ describe("BidStatistics", function () {
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [1800088000]);
 		await cosmicSignatureGameProxy.connect(addr3).bid(params, { value: bidPrice });	// bid4 (close everything)
 
-		let result,champion,duration;
-		result = await cosmicSignatureGameProxy.currentEnduranceChampion();
-		champion = result[0]; duration = result[1];
+		// todo-1 We now also have chrono-warrior.
+		// const result = await cosmicSignatureGameProxy.tryGetCurrentEnduranceChampion();
+		const result = await cosmicSignatureGameProxy.tryGetCurrentChampions();
+		const [champion, duration] = result;
 		expect(champion).to.equal(addr2.address);
 		expect(duration).to.equal(5000);
 	});

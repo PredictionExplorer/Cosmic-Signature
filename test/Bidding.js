@@ -32,7 +32,7 @@ describe("Bidding", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
 		return {
 			cosmicSignatureGameProxy,
@@ -45,7 +45,7 @@ describe("Bidding", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -72,7 +72,8 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.donate({ value: donationAmount });
 		expect(await cosmicSignatureGameProxy.mainPrizeAmount()).to.equal((donationAmount * 25n) / 100n);
 		// todo-1 We now also have chrono-warrior.
-		let echamp = await cosmicSignatureGameProxy.currentEnduranceChampion();
+		// let echamp = await cosmicSignatureGameProxy.tryGetCurrentEnduranceChampion();
+		let echamp = await cosmicSignatureGameProxy.tryGetCurrentChampions();
 		expect(echamp[0]).to.equal(hre.ethers.ZeroAddress);
 		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -104,7 +105,8 @@ describe("Bidding", function () {
 		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
 
 		// todo-1 We now also have chrono-warrior.
-		echamp = await cosmicSignatureGameProxy.currentEnduranceChampion();
+		// echamp = await cosmicSignatureGameProxy.tryGetCurrentEnduranceChampion();
+		echamp = await cosmicSignatureGameProxy.tryGetCurrentChampions();
 		expect(echamp[0]).to.equal(addr1.address);
 
 		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
@@ -156,7 +158,8 @@ describe("Bidding", function () {
 		await hre.ethers.provider.send("evm_mine");
 
 		// todo-1 We now also have chrono-warrior.
-		echamp = await cosmicSignatureGameProxy.currentEnduranceChampion();
+		// echamp = await cosmicSignatureGameProxy.tryGetCurrentEnduranceChampion();
+		echamp = await cosmicSignatureGameProxy.tryGetCurrentChampions();
 		expect(echamp[0]).to.equal(addr2.address);
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.timeUntilPrize();

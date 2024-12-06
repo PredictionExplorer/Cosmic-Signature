@@ -26,7 +26,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		} = await basicDeployment(contractDeployerAcct, '', 1, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
 		return {
 			cosmicSignatureGameProxy,
@@ -39,7 +39,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			cosmicSignatureGame,
+			// cosmicSignatureGame,
 		};
 	}
 	const bidParamsEncoding = {
@@ -1154,8 +1154,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			const luckyStakers = {};
 			const numSamples = 1000;
 			for (let i = 0; i < numSamples; i++) {
-				const r = Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, "0")
-				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(hre.ethers.hashMessage('0x'+r));
+				// const r = Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, "0")
+				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*hre.ethers.hashMessage("0x" + r)*/ generateRandomUInt256());
 				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
 				let numToks = luckyStakers[luckyAddr];
 				if (numToks === undefined) {
