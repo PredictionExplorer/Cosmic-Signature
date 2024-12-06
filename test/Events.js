@@ -65,7 +65,7 @@ describe("Events", function () {
 		const [owner, charityAddress, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
 			await basicDeployment(owner, "", 1, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", false);
-		// DonationReceivedEvent
+		// DonationReceived
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -75,7 +75,7 @@ describe("Events", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 3600]);
 		await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicSignatureGameProxy.connect(bidder1).claimPrize())
-			.to.emit(charityWallet, "DonationReceivedEvent")
+			.to.emit(charityWallet, "DonationReceived")
 			.withArgs(await cosmicSignatureGameProxy.getAddress(), charityAmount + stakingAmount);
 		const balance = await hre.ethers.provider.getBalance(await charityWallet.getAddress());
 		expect(balance).to.equal(charityAmount + stakingAmount);
@@ -85,9 +85,9 @@ describe("Events", function () {
 			.to.emit(charityWallet, "CharityAddressChanged")
 			.withArgs(bidder3.address);
 
-		// DonationSentEvent
+		// DonationSent
 		await expect(charityWallet.connect(bidder2).send())
-			.to.emit(charityWallet, "DonationSentEvent")
+			.to.emit(charityWallet, "DonationSent")
 			.withArgs(bidder3.address, balance);
 	});
 	it("should emit DonationEvent on successful donation", async function () {

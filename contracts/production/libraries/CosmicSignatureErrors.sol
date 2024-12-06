@@ -271,6 +271,7 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when a non-zero balance is required but the balance is zero
 	/// @param errStr Description of the error
+	/// todo-1 Rename this to `ZeroBalanceAmount`.
 	error ZeroBalance(string errStr);
 
 	// #endregion
