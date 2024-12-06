@@ -121,11 +121,11 @@ contract CosmicSignatureGame is
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
 		// // stellarSpender =
 		// // stellarSpenderTotalSpentCst =
-		// enduranceChampion =
+		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =
 		// enduranceChampionDuration =
 		// prevEnduranceChampionDuration =
-		// chronoWarrior =
+		// chronoWarriorAddress =
 		chronoWarriorDuration = uint256(int256(-1));
 		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
 		numRaffleETHWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;

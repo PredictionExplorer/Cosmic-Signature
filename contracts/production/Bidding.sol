@@ -188,7 +188,7 @@ abstract contract Bidding is
 
 		lastCstBidTimeStamp = block.timestamp;
 		// todo-1 Should we not save this if `price` is zero?
-		// todo-1 But better don't allow zero bids.
+		// todo-1 But better don't allow zero price bids.
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);

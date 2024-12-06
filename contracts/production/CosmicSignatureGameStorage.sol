@@ -312,8 +312,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Relevant logic prototype:
 	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/ChampionFinder.sol
 	/// [/Comment-202411099]
-	/// todo-1 Rename this to `enduranceChampionAddress`.
-	address public enduranceChampion;
+	address public enduranceChampionAddress;
 
 	uint256 public enduranceChampionStartTimeStamp;
 	uint256 public enduranceChampionDuration;
@@ -322,8 +321,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
 	/// Comment-202411075 applies.
 	/// Comment-202411099 applies.
-	/// todo-1 Rename this to `chronoWarriorAddress`.
-	address public chronoWarrior;
+	address public chronoWarriorAddress;
 
 	uint256 public chronoWarriorDuration;
 

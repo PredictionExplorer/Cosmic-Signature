@@ -27,7 +27,6 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 // #endregion
 // #region
 
-// ToDo-202411179-1 relates and/or applies.
 abstract contract MainPrize is
 	ReentrancyGuardUpgradeable,
 	CosmicSignatureGameStorage,
@@ -248,30 +247,30 @@ abstract contract MainPrize is
 
 		// Endurance Champion prize.
 		// todo-1 Can this address really be zero? Maybe just assert this? Done. Make sure this is correct.
-		// if (enduranceChampion != address(0))
-		// #enable_asserts assert(enduranceChampion != address(0));
+		// if (enduranceChampionAddress != address(0))
+		// #enable_asserts assert(enduranceChampionAddress != address(0));
 		{
 			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that transfer to charity is allowed to fail; other calls are not (to be discussed with Nick and Taras again).
-			uint256 nftId_ = nft.mint(roundNum, enduranceChampion, randomNumber_);
+			uint256 nftId_ = nft.mint(roundNum, enduranceChampionAddress, randomNumber_);
 			// try
 			// ToDo-202409245-0 applies.
 			// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			token.mint(enduranceChampion, cstRewardAmount_);
+			token.mint(enduranceChampionAddress, cstRewardAmount_);
 			// {
 			// } catch {
 			// }
-			emit EnduranceChampionPrizePaid(enduranceChampion, roundNum, nftId_, cstRewardAmount_ /* , 0 */);
+			emit EnduranceChampionPrizePaid(enduranceChampionAddress, roundNum, nftId_, cstRewardAmount_ /* , 0 */);
 		}
 
 		// Chrono-Warrior prize.
-		// #enable_asserts assert(chronoWarrior != address(0));
+		// #enable_asserts assert(chronoWarriorAddress != address(0));
 		uint256 chronoWarriorEthPrizeAmount_ = chronoWarriorEthPrizeAmount();
-		emit ChronoWarriorPrizePaid(chronoWarrior, roundNum, chronoWarriorEthPrizeAmount_);
+		emit ChronoWarriorPrizePaid(chronoWarriorAddress, roundNum, chronoWarriorEthPrizeAmount_);
 		// todo-1 Here and elsewhere, if this address happends to be the same as the main prize winner, don't deposit here,
 		// todo-1 but later send this to the main prize winner directly.
-		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarrior);
+		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarriorAddress);
 	}
 
 	// #endregion
@@ -378,11 +377,11 @@ abstract contract MainPrize is
 		bidPrice = address(this).balance / initialBidAmountFraction;
 		// stellarSpender = address(0);
 		// stellarSpenderTotalSpentCst = 0;
-		enduranceChampion = address(0);
+		enduranceChampionAddress = address(0);
 		enduranceChampionStartTimeStamp = 0;
 		enduranceChampionDuration = 0;
 		prevEnduranceChampionDuration = 0;
-		chronoWarrior = address(0);
+		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
 
 		// if (systemMode == CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE) {
