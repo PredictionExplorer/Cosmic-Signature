@@ -10,30 +10,26 @@ async function main() {
 		process.exit(1);
 	}
 	const deployerAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	const {
-		cosmicSignatureGameProxy,
-		cosmicSignatureNft,
-		cosmicSignatureToken,
-		cosmicSignatureDao,
-		charityWallet,
-		prizesWallet,
-		randomWalkNft,
-		stakingWalletCosmicSignatureNft,
-		stakingWalletRandomWalkNft,
-		marketingWallet,
-		// cosmicSignatureGame,
-	} = await basicDeploymentAdvanced("SelfDestructibleCosmicSignatureGame", deployerAcct, "", 1, "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5", true);
-	console.log("CosmicSignatureGame proxy address:", cosmicSignatureGameProxy.address);
-	console.log("CosmicSignatureNft address:", cosmicSignatureNft.address);
-	console.log("CosmicSignatureToken address:", cosmicSignatureToken.address);
-	console.log("CosmicSignatureDao address:", cosmicSignatureDao.address);
-	console.log("CharityWallet address:", charityWallet.address);
-	console.log("PrizesWallet address:", prizesWallet.address);
-	console.log("RandomWalkNFT address:", randomWalkNft.address);
-	console.log("StakingWalletCosmicSignatureNft address:", stakingWalletCosmicSignatureNft.address);
-	console.log("StakingWalletRandomWalkNft address:", stakingWalletRandomWalkNft.address);
-	console.log("MarketingWallet address:", marketingWallet.address);
-	// console.log("CosmicSignatureGame address:", cosmicSignatureGame.address);
+	const contracts =
+		await basicDeploymentAdvanced(
+			"SelfDestructibleCosmicSignatureGame",
+			deployerAcct,
+			"", //"0x1111111111111111111111111111111111111111",
+			1,
+			"0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
+			true
+		);
+	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());
+	console.log("CosmicSignatureNft address:", await contracts.cosmicSignatureNft.getAddress());
+	console.log("CosmicSignatureToken address:", await contracts.cosmicSignatureToken.getAddress());
+	console.log("CosmicSignatureDao address:", await contracts.cosmicSignatureDao.getAddress());
+	console.log("CharityWallet address:", await contracts.charityWallet.getAddress());
+	console.log("PrizesWallet address:", await contracts.prizesWallet.getAddress());
+	console.log("RandomWalkNFT address:", await contracts.randomWalkNft.getAddress());
+	console.log("StakingWalletCosmicSignatureNft address:", await contracts.stakingWalletCosmicSignatureNft.getAddress());
+	console.log("StakingWalletRandomWalkNft address:", await contracts.stakingWalletRandomWalkNft.getAddress());
+	console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
+	console.log("CosmicSignatureGame address:", await contracts.cosmicSignatureGame.getAddress());
 }
 
 main()
