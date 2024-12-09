@@ -352,10 +352,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This makes the contract more future-proof.
 	/// This technique is described at https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable .
 	/// [/Comment-202412142]
+	/// [Comment-202412148]
+	/// Although it's probably not needed here that much
+	/// because `CosmicSignatureGameStorage` is going to be the last in the inheritance list.
+	/// [/Comment-202412148]
 	uint256[1 << 255] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
 	// /// @notice Comment-202412142 applies.
+	// /// Comment-202412148 applies.
 	// uint256[1 << 255] private transient __gap_transient;
 
 	// #endregion
