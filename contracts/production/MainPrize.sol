@@ -178,6 +178,7 @@ abstract contract MainPrize is
 		// If this fails we won't revert the transaction. The funds would simply stay in the game.
 		// Comment-202411078 relates.
 		// [/Comment-202411077]
+		// #enable_asserts assert(charityAddress != address(0));
 		(bool isSuccess_, ) = charityAddress.call{ value: charityAmount_ }("");
 		if (isSuccess_) {
 			emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityAmount_);

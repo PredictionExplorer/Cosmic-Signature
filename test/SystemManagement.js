@@ -15,8 +15,8 @@ describe("SystemManagement", function () {
 	/// [/ToDo-202411224-1]
 	async function deployCosmicSignature() {
 		const signers = await hre.ethers.getSigners();
-		const [owner,] = signers;
-		const contracts = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		const [owner, addr1,] = signers;
+		const contracts = await basicDeployment(owner, "", 1, addr1.address, true);
 		contracts.signers = signers;
 		return contracts;
 	}
@@ -31,9 +31,9 @@ describe("SystemManagement", function () {
 	it("In the inactive mode, setters function correctly", async function () {
 		const isRuntimeMode_ = false;
 		const signers = await hre.ethers.getSigners();
-		const [owner,] = signers;
+		const [owner, addr1,] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, addr1.address, true /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		let testAcct_;
@@ -172,9 +172,9 @@ describe("SystemManagement", function () {
 	it("In the active mode, setters are not available", async function () {
 		const isRuntimeMode_ = true;
 		const signers = await hre.ethers.getSigners();
-		const [owner,] = signers;
+		const [owner, addr1,] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, addr1.address, true /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
@@ -223,7 +223,7 @@ describe("SystemManagement", function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1,] = signers;
 		const {cosmicSignatureGameProxy, randomWalkNft,} =
-			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, addr1.address, true /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.be.greaterThan(0n);
@@ -389,9 +389,9 @@ describe("SystemManagement", function () {
 	});
 	it("The timeUntilActivation method functions correctly", async function () {
 		const signers = await hre.ethers.getSigners();
-		const [owner,] = signers;
+		const [owner, addr1,] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+			await basicDeployment(owner, "", 0, addr1.address, true);
 
 		const bnum = await hre.ethers.provider.getBlockNumber();
 		const bdata = await hre.ethers.provider.getBlock(bnum);
@@ -419,7 +419,7 @@ describe("SystemManagement", function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, addr2,] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+			await basicDeployment(owner, "", 0, addr1.address, true);
 
 		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.be.greaterThan(0n);
 

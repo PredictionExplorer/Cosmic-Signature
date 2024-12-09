@@ -169,7 +169,6 @@ describe("MainPrize", function () {
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
@@ -181,7 +180,7 @@ describe("MainPrize", function () {
 			owner,
 			'',
 			1,
-			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			addr1.address,
 			true
 		);
 
@@ -259,21 +258,20 @@ describe("MainPrize", function () {
 		expect(expectedBalanceStakingAfter).to.equal(balanceStakingAfter);
 	});
 	it("The msg.sender will get the prize if the lastBidderAddress won't claim it", async function () {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			stakingWallet,
 			marketingWallet
 		} = await basicDeployment(
-			contractDeployerAcct,
-			'',
+			owner,
+			"",
 			1,
-			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			addr1.address,
 			true
 		);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -286,8 +284,6 @@ describe("MainPrize", function () {
 
 		let donationAmount = hre.ethers.parseEther('10');
 		await cosmicSignatureGameProxy.donate({ value: donationAmount });
-
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNftId: -1 };

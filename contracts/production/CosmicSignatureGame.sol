@@ -13,9 +13,9 @@ import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
@@ -36,7 +36,7 @@ contract CosmicSignatureGame is
 	// todo-1 An alternative Ownable contract:
 	// todo-1 https://docs.openzeppelin.com/contracts/5.x/api/access#Ownable2Step
 	// todo-1 But we probably don't need it.
-	OwnableUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
 
 	UUPSUpgradeable, // <<< shoud this be first in the inheritance list?
 	CosmicSignatureGameStorage,
@@ -109,7 +109,7 @@ contract CosmicSignatureGame is
 
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
-		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
+		tokenReward = CosmicSignatureConstants.DEFAULT_TOKEN_REWARD;
 		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
 		// // lastBidType =

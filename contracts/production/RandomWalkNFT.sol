@@ -1,14 +1,13 @@
 // todo-1 Is license supposed to be the same in all files? Currently it's not.
 // todo-1 Near `IRandomWalkNFT`, I specified a different license.
+// todo-1 But, given Comment-202409149, maybe remove that interface?
 // todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
 // todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721 } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
 /// @dev
@@ -27,7 +26,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	uint256 public price = 0.001 ether;
 
 	/// @notice How long to wait until the last minter can withdraw (30 days)
-	uint256 public constant withdrawalWaitSeconds = 30 * CosmicSignatureConstants.SECONDS_PER_DAY;
+	uint256 public constant withdrawalWaitSeconds = 30 days;
 
 	/// @notice Seeds
 	mapping(uint256 => bytes32) public seeds;

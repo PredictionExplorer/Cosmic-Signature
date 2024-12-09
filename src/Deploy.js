@@ -35,6 +35,8 @@ const basicDeployment = async function (
 /**
  * @param {string} cosmicSignatureGameContractName 
  * @param {import("@nomicfoundation/hardhat-ethers/signers").HardhatEthersSigner} deployerAcct 
+ * todo-1 +++ Test a non-default `deployerAcct`.
+ * todo-1 After deployment all restricted functions should revert for the default signer and work for the given signer.
  * @param {string} randomWalkNftAddr May be empty.
  * @param {number} activationTime 
  * Possible values:
@@ -100,7 +102,7 @@ const basicDeploymentAdvanced = async function (
 	// So it could make sense to not even create or return this object, but let's leave it alone for now.
 	// Comment-202412061 relates.
 	// [/Comment-202412059]
-	const cosmicSignatureGame = await CosmicSignatureGame.attach(cosmicSignatureGameProxyAddr);
+	const cosmicSignatureGame = await CosmicSignatureGame.connect(deployerAcct).attach(cosmicSignatureGameProxyAddr);
 
 	const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 	const cosmicSignatureNft = await CosmicSignatureNft.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr);
@@ -125,7 +127,7 @@ const basicDeploymentAdvanced = async function (
 	// if (charityAddr.length === 0) {
 	// 	charityAddr = signers[1].address;
 	// }
-	await charityWallet.setCharityAddress(charityAddr);
+	await charityWallet.connect(deployerAcct).setCharityAddress(charityAddr);
 	if (transferOwnership) {
 		await charityWallet.connect(deployerAcct).transferOwnership(cosmicSignatureDaoAddr);
 	}
@@ -142,20 +144,21 @@ const basicDeploymentAdvanced = async function (
 		await randomWalkNft.waitForDeployment();
 		randomWalkNftAddr = await randomWalkNft.getAddress();
 	} else {
-		randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+		randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr, deployerAcct);
 		if (await randomWalkNft.getAddress() !== randomWalkNftAddr) {
 			throw new Error("Error 202411196.");
 		}
 	}
 
 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
-	const stakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.connect(deployerAcct).deploy(
-		cosmicSignatureNftAddr,
-		cosmicSignatureGameProxyAddr
+	const stakingWalletCosmicSignatureNft =
+		await StakingWalletCosmicSignatureNft.connect(deployerAcct).deploy(
+			cosmicSignatureNftAddr,
+			cosmicSignatureGameProxyAddr
 
-		// // Issue. It could make sense to use `charityWalletAddr` instead.
-		// charityAddr
-	);
+			// // Issue. It could make sense to use `charityWalletAddr` instead.
+			// charityAddr
+		);
 	await stakingWalletCosmicSignatureNft.waitForDeployment();
 	const stakingWalletCosmicSignatureNftAddr = await stakingWalletCosmicSignatureNft.getAddress();
 

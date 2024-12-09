@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-const SKIP_LONG_TESTS = "0";
+const SKIP_LONG_TESTS = false;
 
 describe("Donating", function () {
 	// We define a fixture to reuse the same setup in every test.
@@ -51,7 +51,7 @@ describe("Donating", function () {
 	};
 	it("donateWithInfo() works as expected", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		let donationAmount = hre.ethers.parseEther("10");
@@ -75,7 +75,7 @@ describe("Donating", function () {
 	// todo-1 and NFT donation without making a bid is now prohibited.
 	it("donateNft() without making a bid works", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
@@ -90,7 +90,7 @@ describe("Donating", function () {
 	});
 
 	it("Should not be possible to donate 0 value", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -99,7 +99,7 @@ describe("Donating", function () {
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("claimManyDonatedNfts() works properly", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 

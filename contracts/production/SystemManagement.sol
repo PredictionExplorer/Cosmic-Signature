@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 // import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
@@ -23,7 +23,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
 abstract contract SystemManagement is
-	OwnableUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	ISystemManagement {
 	// /// @dev Replaced with `onlyInactive`.

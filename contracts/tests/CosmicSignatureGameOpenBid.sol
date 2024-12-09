@@ -13,9 +13,9 @@ import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
@@ -31,7 +31,7 @@ import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureG
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicSignatureGameOpenBid is
-	OwnableUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
 	UUPSUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,
@@ -96,7 +96,7 @@ contract CosmicSignatureGameOpenBid is
 
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
-		tokenReward = CosmicSignatureConstants.TOKEN_REWARD;
+		tokenReward = CosmicSignatureConstants.DEFAULT_TOKEN_REWARD;
 		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
 		// // lastBidType =

@@ -13,6 +13,7 @@ pragma solidity 0.8.28;
 /// from their respective interfaces too.
 /// Take a look at `IRandomWalkNFT` as well. Possibly write comment there.
 /// [/ToDo-202412106-1]
+/// todo-1 +++ Review https://wizard.openzeppelin.com/#erc721
 interface ICosmicSignatureNft /*is IERC721Enumerable*/ {
 	/// @notice Details about a CosmicSignature NFT.
 	struct NftInfo {

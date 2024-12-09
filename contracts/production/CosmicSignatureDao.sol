@@ -1,60 +1,58 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-import { Governor, IGovernor } from "@openzeppelin/contracts/governance/Governor.sol";
+import { Governor } from "@openzeppelin/contracts/governance/Governor.sol";
 import { GovernorSettings } from "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
 import { GovernorCountingSimple } from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
-import { GovernorVotes, IVotes } from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
+import { IVotes, GovernorVotes } from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { ICosmicSignatureDao } from "./interfaces/ICosmicSignatureDao.sol";
 
-/// @dev Extends various OpenZeppelin Governor modules to create a comprehensive DAO
-/// todo-1 Review https://docs.openzeppelin.com/contracts/5.x/governance
-contract CosmicSignatureDao is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction, ICosmicSignatureDao {
-	/// @notice Initializes the CosmicSignatureDao contract
-	/// @dev Sets up the governance parameters and links the voting token
-	/// @param _token The address of the token used for voting power
+contract CosmicSignatureDao is
+	Governor,
+	GovernorSettings,
+	GovernorCountingSimple,
+	GovernorVotes,
+	GovernorVotesQuorumFraction,
+	ICosmicSignatureDao {
+	/// @notice Constructor.
+	/// @notice Sets up the governance parameters and links the voting token.
+	/// @param tokenAddress_ The address of the token to be used for voting power.
 	constructor(
-		IVotes _token
+		IVotes tokenAddress_
 	)
 		Governor("CosmicSignatureDao")
-		// todo-0 Magic numbers hardcoded. Can I move some to `CosmicSignatureConstants` and/or reuse some that are already in there?
-		// todo-0 Besides, a day contains a different number of seconds.
-		GovernorSettings(7200 /* 1 day */, 216000 /* 1 month */, 100 ether)
-		GovernorVotes(_token)
-		GovernorVotesQuorumFraction(4)
-	{}
+		// todo-0 By default, Governor` `votingDelay` and `votingPeriod` are expessed in the number of blocks.
+		// todo-0 I changed those to be expressed in seconds.
+		// todo-0 OpenZellepin docs says:
+		// todo-0    The internal clock used by the token to store voting balances will dictate the operating mode
+		// todo-0    of the Governor contract attached to it. By default, block numbers are used. Since v4.9,
+		// todo-0    developers can override the IERC6372 clock to use timestamps instead of block numbers.
+		// todo-0 Tell the guys.
+		//
+		// todo-0 OpenZellepin recommends to set voting period to 1 week. In our code, it was set to 30 days,
+		// todo-0 which seems to be unnecessarily long. So I have reduced it to 2 weeks. Tell the guys.
+		// todo-1 There are setters for these settings. Develop tests that change them. Unnecesary?
+		// todo-1 Write comments near these constants in `CosmicSignatureConstants`.
+		GovernorSettings(
+			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_DELAY,
+			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_PERIOD,
+			CosmicSignatureConstants.DEFAULT_TOKEN_REWARD
+		)
+		GovernorVotes(tokenAddress_)
+		// todo-0 I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
+		// todo-0 Another reason is because the marketing wallet can hold a lot of tokens, and it's not going to vote.
+		// todo-0 Tell the guys.
+		// todo-1 There are setters for these settings. Develop tests that change them. Unnecesary?
+		// todo-1 Write comments near these constants in `CosmicSignatureConstants`.
+		GovernorVotesQuorumFraction(CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
+	}
 
 	// The following functions are overrides required by Solidity.
 
-	/// @notice Retrieves the voting delay
-	/// @dev Overrides the Governor and GovernorSettings implementations
-	/// @return The number of blocks between proposal creation and the start of voting
-	function votingDelay() public view override(Governor, GovernorSettings) returns (uint256) {
-		return super.votingDelay();
-	}
-
-	/// @notice Retrieves the voting period
-	/// @dev Overrides the Governor and GovernorSettings implementations
-	/// @return The duration of voting on a proposal, in blocks
-	function votingPeriod() public view override(Governor, GovernorSettings) returns (uint256) {
-		return super.votingPeriod();
-	}
-
-	/// @notice Calculates the quorum for a specific block number
-	/// @dev Overrides the Governor and GovernorVotesQuorumFraction implementations
-	/// @param blockNumber The block number to check the quorum at
-	/// @return The number of votes required for a quorum
-	function quorum(
-		uint256 blockNumber
-	) public view override(Governor, GovernorVotesQuorumFraction) returns (uint256) {
-		return super.quorum(blockNumber);
-	}
-
-	/// @notice Retrieves the proposal threshold
-	/// @dev Overrides the Governor and GovernorSettings implementations
-	/// @return The minimum number of votes an account must have to create a proposal
-	function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
+	// todo-1 Test what these return: votingDelay, votingPeriod, proposalThreshold, quorum. Done in part.
+	function proposalThreshold() public view override(Governor, GovernorSettings) returns(uint256) {
 		return super.proposalThreshold();
 	}
 }

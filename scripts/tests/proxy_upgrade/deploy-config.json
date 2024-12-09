@@ -3,8 +3,6 @@
 	"randomWalkNftAddr": "",
 	"activationTime": 0,
 	"charityAddr": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-	"transferOwnership": false
-	// // todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
-	// // todo-0 So I have commented this out.
-	// "switchToRuntime": false
+	"transferOwnership": false,
+	"donateToContract": false
 }

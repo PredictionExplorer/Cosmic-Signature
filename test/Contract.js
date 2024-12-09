@@ -43,7 +43,7 @@ describe("Contract", function () {
 		};
 	}
 	it("A contract can win main prize", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, randomWalkNft } = await loadFixture(
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
 			deployCosmicSignature,
 		);
 
@@ -121,7 +121,7 @@ describe("Contract", function () {
 		expect(donatedNftOwner_).to.equal(owner.address);
 	});
 	it("Non-ERC721 receiver contract can bid", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, randomWalkNft } = await loadFixture(
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
 			deployCosmicSignature,
 		);
 

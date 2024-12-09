@@ -47,7 +47,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 
 	let charityWalletAddr = await cosmicSignatureGame.charityAddress();
 	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddr);
-	topic_sig = charityWallet.interface.getEventTopic("DonationReceivedEvent");
+	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.amount).to.equal(charityAmount);
