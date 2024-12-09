@@ -345,10 +345,20 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// bytes32 public raffleEntropy;
 
 	// #endregion
+	// #region Gap
 
-	// todo-1 Add a reserved gap?
-	// todo-1 Maybe this is not needed because we aren't going to have any derived contracts.
-	// todo-1 uint256[(1 << 64) * (1 << 160) * (1 << 8)] private __gap;
+	/// @notice
+	/// [Comment-202412142]
+	/// This makes the contract more future-proof.
+	/// This technique is described at https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable .
+	/// [/Comment-202412142]
+	uint256[1 << 255] private __gap_persistent;
+
+	// todo-1 Transient storage is not yet supported for reference types.
+	// /// @notice Comment-202412142 applies.
+	// uint256[1 << 255] private transient __gap_transient;
+
+	// #endregion
 }
 
 // #endregion

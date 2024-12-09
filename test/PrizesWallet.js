@@ -9,8 +9,8 @@ describe("PrizesWallet", function () {
 	/// ToDo-202411224-1 applies.
 	async function deployCosmicSignature() {
 		const signers = await hre.ethers.getSigners();
-		const [owner,] = signers;
-		const contracts = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		const [owner, addr1,] = signers;
+		const contracts = await basicDeployment(owner, "", 1, addr1.address, true);
 		contracts.signers = signers;
 		return contracts;
 	}

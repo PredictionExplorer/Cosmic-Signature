@@ -129,7 +129,9 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// This contract will return all the assets before selfdestruct transaction,
 	// required for testing on the MainNet (Arbitrum) (prior to launch)
 
-	constructor() CosmicSignatureGame() {}
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() CosmicSignatureGame() {
+	}
 
 	// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function finalizeTesting() external onlyOwner {
@@ -138,18 +140,18 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 	// CosmicSignature NFTs.
 	// 	uint256 cosmicSupply = nft.totalSupply();
 	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
-	// 		address owner = nft.ownerOf(i);
-	// 		if (owner == address(this)) {
-	// 			nft.transferFrom(address(this), this.owner(), i);
+	// 		address nftOwnerAddress_ = nft.ownerOf(i);
+	// 		if (nftOwnerAddress_ == address(this)) {
+	// 			nft.transferFrom(address(this), owner(), i);
 	// 		}
 	// 	}
 	// 	cosmicSupply = token.balanceOf(address(this));
-	// 	token.transfer(this.owner(), cosmicSupply);
+	// 	token.transfer(owner(), cosmicSupply);
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
 	// 		CosmicSignatureConstants.DonatedNft memory dnft = donatedNfts[i];
-	// 		dnft.nftAddress.transferFrom(address(this), this.owner(), dnft.nftId);
+	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);
 	// 	}
-	// 	selfdestruct(payable(this.owner()));
+	// 	selfdestruct(payable(owner()));
 	// }
 }
 

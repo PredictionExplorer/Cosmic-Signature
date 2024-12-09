@@ -52,7 +52,6 @@ describe("ZeroAddressChecking", function () {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
@@ -70,7 +69,6 @@ describe("ZeroAddressChecking", function () {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
@@ -82,7 +80,7 @@ describe("ZeroAddressChecking", function () {
 			owner,
 			'',
 			0,
-			'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+			addr1.address,
 			true
 		);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -93,7 +91,6 @@ describe("ZeroAddressChecking", function () {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,

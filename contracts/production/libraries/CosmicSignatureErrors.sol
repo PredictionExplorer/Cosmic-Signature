@@ -82,7 +82,7 @@ library CosmicSignatureErrors {
 	/// @param msgLength The provided message length.
 	/// todo-1 Rename the above param to `messageLength`.
 	/// Comment-202409143 relates.
-	/// todo-1 Rename this to `TooLongBidMessage`.
+	/// todo-1 Rename this to `TooLongBidMessage` or better `BidMessageIsTooLong`.
 	error BidMessageLengthOverflow(string errStr, uint256 msgLength);
 
 	/// @notice Thrown when attempting to use an already used RandomWalk NFT
@@ -232,7 +232,7 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error
 	/// @param len The NFT name length.
 	/// todo-1 Rename the above param to `length`.
-	/// todo-1 Rename this to `TooLongNftName` or `NftNameIsTooLong`.
+	/// todo-1 Rename this to `TooLongNftName` or better `NftNameIsTooLong`.
 	error TokenNameLength(string errStr, uint256 len);
 
 	/// @notice Thrown when an address without minting privileges attempts to mint

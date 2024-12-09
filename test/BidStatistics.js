@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
 
-const SKIP_LONG_TESTS = "0";
+const SKIP_LONG_TESTS = false;
 
 describe("BidStatistics", function () {
 	// We define a fixture to reuse the same setup in every test.
@@ -60,7 +60,7 @@ describe("BidStatistics", function () {
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 
 		// test case description:
@@ -99,7 +99,7 @@ describe("BidStatistics", function () {
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 
 		// test case description:

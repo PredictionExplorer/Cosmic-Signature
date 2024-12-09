@@ -212,8 +212,8 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		require(address(tokenAddress_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
 
 		// Comment-202409215 applies to validating that `amount_` is a nonzero.
-		// But the front end should prohibit zero donations and hide any zero donations from other users.
-		// todo-1 Tell Nick about the above.
+		// But the front end should prohibit zero donations and ignore or hide any zero donations.
+		// todo-1  Done. Tell Nick about the above.
 
 		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
 		CosmicSignatureConstants.DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
@@ -344,6 +344,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, IPrizesWallet {
 		// ToDo-202411267-1 applies.
 		// todo-1 Maybe we should validate NFT receiver off-chain. Although maybe that's unnecessary too.
 		// todo-1 But at least warn the user to make sure that they can receive an NFT.
+		// todo-1 This needs to be documented in a user manual.
 		// todo-1 Is there a similar method that accepts only the destination address?
 		donatedNftCopy_.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNftCopy_.nftId);
 	}

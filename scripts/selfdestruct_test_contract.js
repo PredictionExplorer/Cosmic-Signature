@@ -1,17 +1,8 @@
 // Confirms that deployed contracts are fully operational
 
 // const { expect } = require("chai");
-const hre = require("hardhat");
-
-async function getSelfDestructableCosmicSignatureGameContract() {
-	let cosmicSignatureGameAddr = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
-	if (typeof cosmicSignatureGameAddr === "undefined" || cosmicSignatureGameAddr.length != 42) {
-		console.log("COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address");
-		process.exit(1);
-	}
-	let cosmicSignatureGame = await hre.ethers.getContractAt("SelfDestructibleCosmicSignatureGame", cosmicSignatureGameAddr);
-	return cosmicSignatureGame;
-}
+// const hre = require("hardhat");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function main() {
 	// let privKey = process.env.PRIVKEY;
@@ -22,7 +13,7 @@ async function main() {
 	// 	process.exit(1);
 	// }
 	// let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicSignatureGame = await getSelfDestructableCosmicSignatureGameContract();
+	const cosmicSignatureGame = await getCosmicSignatureGameContract("SelfDestructibleCosmicSignatureGame");
 	await cosmicSignatureGame.finalizeTesting();
 }
 

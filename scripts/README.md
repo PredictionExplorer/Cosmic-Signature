@@ -24,11 +24,11 @@ because eth_estimateGas function produces very low gasLimit values and because A
 
 ##### for local testnet:
 
-    npx hardhat deploy-cosmicsignature --deployconfig ~/deploy-configs/deploy-local.json --network localhost
+    npx hardhat deploy-cosmic-signature --deployconfig ~/deploy-configs/deploy-local.json --network localhost
 
 ##### for Arbitrum Sepolia:
 
-    npx hardhat deploy-cosmicsignature --deployconfig ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
+    npx hardhat deploy-cosmic-signature --deployconfig ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
 
 Note: the main difference between localnet and Sepolia deployment is that for localnet a donation is made for 2 ETH (this is set in the config file, but the deployment process is the same)
 

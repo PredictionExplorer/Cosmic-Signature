@@ -44,12 +44,14 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region State
 
-	/// @notice multiples of bid price that open bid has to be
+	/// @notice Multiples of bid price that open bid has to be.
+	/// @dev This really belongs to a new version of `CosmicSignatureGameStorage`, but keeping it simple.
 	uint256 public timesBidPrice;
 
 	// #endregion
 	// #region Events
 
+	/// @dev Issue. This should be moved to an interface.
 	event TimesBidPriceChangedEvent(uint256 newValue);
 
 	// #endregion

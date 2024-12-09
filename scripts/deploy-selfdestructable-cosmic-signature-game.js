@@ -1,3 +1,7 @@
+// PRIVKEY=0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba npx hardhat run scripts/deploy-selfdestructable-cosmic-signature-game.js
+
+"use strict";
+
 const hre = require("hardhat");
 const { basicDeploymentAdvanced } = require("../src/Deploy.js");
 

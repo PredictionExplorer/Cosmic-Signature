@@ -29,7 +29,7 @@ describe("Security", function () {
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, '', 1, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', false);
+		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
 		return {
 			cosmicSignatureGameProxy: cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -51,12 +51,11 @@ describe("Security", function () {
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			stakingWallet,
 			marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 0, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		} = await basicDeployment(contractDeployerAcct, "", 0, addr1.address, true);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());
@@ -94,7 +93,7 @@ describe("Security", function () {
 		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
 	});
 	it("Is possible to take prize before activation", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, ...addrs] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -112,9 +111,9 @@ describe("Security", function () {
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	// todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
 	it("donateNft() function is confirmed to be non-reentrant", async function () {
-		const [owner,] = await hre.ethers.getSigners();
+		const [owner, addr1,] = await hre.ethers.getSigners();
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+			await basicDeployment(owner, "", 1, addr1.address, true);
 		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// todo-1 Why do we need this donation here? Comment it out?
@@ -131,9 +130,9 @@ describe("Security", function () {
 	
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {
-		const [owner,] = await hre.ethers.getSigners();
+		const [owner, addr1,] = await hre.ethers.getSigners();
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+			await basicDeployment(owner, "", 1, addr1.address, true);
 		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 	
 		// todo-1 Why do we need this donation here? Comment it out?

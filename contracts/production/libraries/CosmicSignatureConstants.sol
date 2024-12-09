@@ -17,13 +17,10 @@ library CosmicSignatureConstants {
 
 	uint256 public constant NANOSECONDS_PER_SECOND = BILLION;
 	uint256 public constant MICROSECONDS_PER_SECOND = MILLION;
-	uint256 public constant SECONDS_PER_MINUTE = 60;
 	uint256 public constant MINUTES_PER_HOUR = 60;
 	uint256 public constant HOURS_PER_DAY = 24;
-	uint256 public constant SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
-	uint256 public constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * SECONDS_PER_HOUR;
-	uint256 public constant SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY;
-	uint256 public constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * SECONDS_PER_DAY;
+	uint256 public constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
+	uint256 public constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
 
 	/// @notice This is equivalent to the midnight of 9999-12-31.
 	/// @dev JavaScript  code to calculate this.
@@ -53,7 +50,7 @@ library CosmicSignatureConstants {
 	uint256 public constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9999_12_31;
 
 	/// @notice Default `delayDurationBeforeNextRound`.
-	uint256 public constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = SECONDS_PER_DAY;
+	uint256 public constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = 1 days;
 
 	/// @notice Default `marketingReward`.
 	uint256 public constant MARKETING_REWARD = 15 ether;
@@ -67,7 +64,7 @@ library CosmicSignatureConstants {
 	uint256 public constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
 	/// todo-0 Rename to `INITIAL_INITIAL_...`?
 	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.
-	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = SECONDS_PER_DAY;
+	uint256 public constant INITIAL_SECONDS_UNTIL_PRIZE = 1 days;
 
 	/// @notice Initial `bidPrice` for the first bidding round.
 	uint256 public constant FIRST_ROUND_BID_PRICE = 0.0001 ether;
@@ -86,7 +83,7 @@ library CosmicSignatureConstants {
 	/// @notice Initial `cstAuctionLength`.
 	/// Default `roundStartCstAuctionLength`.
 	/// @dev todo-1 I wrote a todo to rename `cstAuctionLength` and `roundStartCstAuctionLength`. So rename this too.
-	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 * SECONDS_PER_HOUR;
+	uint256 public constant DEFAULT_AUCTION_LENGTH = 12 hours;
 
 	uint256 public constant STARTING_BID_PRICE_CST_MULTIPLIER = 2;
 
@@ -102,8 +99,8 @@ library CosmicSignatureConstants {
 	// /// todo-1 The web site shows 2 digits after the decimal point. Maybe in the tooltip it should show the whole number with all the digits.
 	// uint256 public constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
 
-	/// @notice Default `tokenReward`.
-	uint256 public constant TOKEN_REWARD = 100 ether;
+	/// @notice Default `tokenReward` and `GovernorSettings.proposalThreshold()`.
+	uint256 public constant DEFAULT_TOKEN_REWARD = 100 ether;
 
 	uint256 public constant INITIAL_MAIN_PRIZE_PERCENTAGE = 25;
 	/// todo-1 I added this. So now other initial percentages should be readjusted.
@@ -113,14 +110,14 @@ library CosmicSignatureConstants {
 	uint256 public constant INITIAL_CHARITY_PERCENTAGE = 10;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
-	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = SECONDS_PER_DAY;
+	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
 	/// @dev todo-1 Increase to 31 days, just in case our front end crashes and remains down for too long?
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1731974036727899
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732036126494949
 	/// todo-1 Create another thread to discuss.
-	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 * SECONDS_PER_DAY;
+	uint256 public constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 days;
 
 	/// @notice Default `cstRewardAmountMultiplier`.
 	uint256 public constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
@@ -131,6 +128,10 @@ library CosmicSignatureConstants {
 
 	/// @notice Comment-202409143 applies.
 	uint256 public constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;
+
+	uint48 public constant GOVERNOR_DEFAULT_VOTING_DELAY = 1 days;
+	uint32 public constant GOVERNOR_DEFAULT_VOTING_PERIOD = 2 weeks;
+	uint256 public constant GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE = 2;
 
 	// todo-1 Move some structs to interfaces?
 

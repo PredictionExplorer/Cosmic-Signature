@@ -56,11 +56,10 @@ describe("CosmicSignatureNft", function () {
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
+		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
 
 		const NewCosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		const newCosmicSignatureNft = await NewCosmicSignatureNft.deploy(owner.address);
@@ -85,11 +84,10 @@ describe("CosmicSignatureNft", function () {
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
-			cosmicSignatureDao,
 			prizesWallet,
 			randomWalkNft,
 			marketingWallet,
-		} = await basicDeployment(owner, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", transferOwnership);
+		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
 
 		await cosmicSignatureNft.connect(owner).setNftGenerationScriptUri("url://");
 		expect(await cosmicSignatureNft.nftGenerationScriptUri()).to.equal("url://");
@@ -97,7 +95,7 @@ describe("CosmicSignatureNft", function () {
 	});
 	it("Should be possible to setNftName()", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNftId: -1 };
@@ -134,7 +132,7 @@ describe("CosmicSignatureNft", function () {
 		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenNameLength");
 	});
 	it("BaseURI/TokenURI works", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, cosmicSignatureDao, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, prizesWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
