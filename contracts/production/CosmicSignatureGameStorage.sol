@@ -7,13 +7,12 @@ pragma solidity 0.8.28;
 // #region
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { PrizesWallet } from "./PrizesWallet.sol";
 import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
-// import { MarketingWallet } from "./MarketingWallet.sol";
 import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { PrizesWallet } from "./PrizesWallet.sol";
 import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameStorage.sol";
 
 // #endregion
@@ -29,6 +28,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Parameters and Variables
 
 	// /// @notice Comment-202411064 applies.
+	// /// todo-9 Rename to `systemModeCode`.
 	// uint256 public systemMode;
 
 	/// @notice Bidding round activation time. Starting at this point, people will be allowed to place bids.
@@ -70,9 +70,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region External Contract and Other Addresses
 
-	/// @notice Comment-202411064 applies.
-	PrizesWallet public prizesWallet;
-
 	/// @notice `CosmicSignatureToken` contract address.
 	/// Comment-202411064 applies.
 	CosmicSignatureToken public token;
@@ -94,6 +91,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	StakingWalletRandomWalkNft public stakingWalletRandomWalkNft;
 
 	/// @notice Comment-202411064 applies.
+	PrizesWallet public prizesWallet;
+
+	/// @notice Comment-202411064 applies.
 	/// @dev
 	/// [Comment-202411078]
 	/// We transfer ETH directly to this address.
@@ -108,19 +108,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Donation Variables
 
-	uint256 public numDonationInfoRecords;
-	/// todo-1 Do we need to store round number when each donation was made?
-	mapping(uint256 index => CosmicSignatureConstants.DonationInfoRecord) public donationInfoRecords;
+	CosmicSignatureConstants.DonationWithInfoRecord[] public ethDonationWithInfoRecords;
 	// uint256 public numDonatedNfts;
 	// mapping(uint256 index => CosmicSignatureConstants.DonatedNft) public donatedNfts;
 
 	// #endregion
 	// #region Game Parameters and Variables
 
-	/// On each bid, we add this to `prizeTime`.
+	/// @notice Comment-202412152 relates.
 	/// We use this on a number of other occasions as well.
-	/// todo-1 Review where we use this. Maybe comment here about all those uses.
-	/// @notice Comment-202411064 applies.
+	/// todo-1 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
+	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// [Comment-202411174]
 	/// But in that case the logic does not emit an event.
@@ -132,9 +130,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Rename this to `roundDurationIncrementInNanoSeconds`.
 	/// todo-1 But Nick commented on the above: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732924267222049?thread_ts=1732921541.079509&cid=C02EDDE5UF8
 	/// todo-1 It's really not round duration, but rather duration until the main prize.
+	/// todo-1 This appears to be the only value expressed in nanoseconds.
 	/// todo-1 Maybe express this in microseconds, like we do `timeIncrease`.
 	/// todo-1 Even if `timeIncrease` equals 1 million plus 1, the integer math will still not truncate anything back to the same value.
-	/// todo-1 This appears to be the only value expressed in nanoseconds.
+	/// todo-1 But review all uses to make sure that microseconds will be OK.
 	uint256 public nanoSecondsExtra;
 
 	/// @notice Comment-202411064 applies.
@@ -149,7 +148,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 It's really not round duration, but rather duration until the main prize.
 	uint256 public initialSecondsUntilPrize;
 
-	/// When the last bidder will be granted the premission to claim the main prize.
+	/// @notice When the last bidder will be granted the premission to claim the main prize.
+	/// [Comment-202412152]
+	/// On each bid, we add `nanoSecondsExtra` to `max(prizeTime, block.timestamp)`.
+	/// [/Comment-202412152]
 	/// todo-1 Rename to `mainPrizeTime` or `roundEndTime`.
 	/// todo-1 It's really not round end, but rather the main prize time.
 	uint256 public prizeTime;
@@ -178,6 +180,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public priceIncrease;
 
 	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
+	/// Comment-202411174 applies
 	/// todo-1 We use `nanoSecondsExtra` for this. Comment and ross-ref with it.
 	/// todo-1 Rename to `cstDutchAuctionDuration`.
 	uint256 public cstAuctionLength;
@@ -329,15 +332,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public cstRewardAmountMultiplier;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The number of ETH raffle winners for bidding.
+	/// Comment-202411064 applies.
 	/// todo-1 Name this better.
 	uint256 public numRaffleETHWinnersBidding;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The number of NFT raffle winners for bidding.
+	/// Comment-202411064 applies.
 	/// todo-1 Name this better.
 	uint256 public numRaffleNftWinnersBidding;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The number of NFT raffle winners for RandomWalk NFT staking.
+	/// Comment-202411064 applies.
 	/// todo-1 Name this better.
 	uint256 public numRaffleNftWinnersStakingRWalk;
 
@@ -347,19 +353,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Gap
 
-	/// @notice
+	/// @dev
 	/// [Comment-202412142]
-	/// This makes the contract more future-proof.
+	/// This makes this upgradeable contract more future-proof.
 	/// This technique is described at https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable .
 	/// [/Comment-202412142]
 	/// [Comment-202412148]
 	/// Although it's probably not needed here that much
-	/// because `CosmicSignatureGameStorage` is going to be the last in the inheritance list.
+	/// because this contract is the last in the inheritance list.
 	/// [/Comment-202412148]
 	uint256[1 << 255] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
-	// /// @notice Comment-202412142 applies.
+	// /// @dev Comment-202412142 applies.
 	// /// Comment-202412148 applies.
 	// uint256[1 << 255] private transient __gap_transient;
 

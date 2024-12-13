@@ -58,11 +58,11 @@ describe("Security", function () {
 		} = await basicDeployment(contractDeployerAcct, "", 0, addr1.address, true);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
-		await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());
-		await cosmicSignatureGameProxy.setTokenContract(await cosmicSignatureToken.getAddress());
-		await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
-		await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
-		await cosmicSignatureGameProxy.setCharityAddress(await charityWallet.getAddress());
+		// await cosmicSignatureGameProxy.setTokenContract(await cosmicSignatureToken.getAddress());
+		// await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
+		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
+		// await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());
+		// await cosmicSignatureGameProxy.setCharityAddress(await charityWallet.getAddress());
 		await cosmicSignatureGameProxy.setMainPrizePercentage(10n);
 
 		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
@@ -77,7 +77,7 @@ describe("Security", function () {
 		const reclaim = await ReClaim.deploy(await cosmicSignatureGameProxy.getAddress());
 
 		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNftId: -1 };
@@ -98,7 +98,7 @@ describe("Security", function () {
 		const [owner, addr1, ...addrs] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		await hre.ethers.provider.send("evm_mine"); // begin
 		const prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 1]);
@@ -118,7 +118,7 @@ describe("Security", function () {
 
 		// todo-1 Why do we need this donation here? Comment it out?
 		const donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 
 		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft1");
 		const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
@@ -137,7 +137,7 @@ describe("Security", function () {
 	
 		// todo-1 Why do we need this donation here? Comment it out?
 		const donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 	
 		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft2");
 		const maliciousNft = await MaliciousNft.deploy(/*await cosmicSignatureGameProxy.getAddress(),*/ "Bad NFT", "BAD");

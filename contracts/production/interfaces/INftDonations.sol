@@ -3,10 +3,10 @@ pragma solidity 0.8.28;
 
 // import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { ISystemManagement } from "./ISystemManagement.sol";
+// import { ISystemManagement } from "./ISystemManagement.sol";
 
 /// @dev todo-1 Eliminate this interface and contract.
-interface INftDonations is ICosmicSignatureGameStorage, ISystemManagement {
+interface INftDonations is ICosmicSignatureGameStorage /* , ISystemManagement */ {
 	// /// @notice Emitted when an NFT is donated
 	// /// @param donorAddress The address of the donor
 	// /// @param nftAddress The address of the NFT contract

@@ -44,9 +44,9 @@ describe("CosmicSignatureDao", function () {
 		}
 
 		const votingDelay_ = await cosmicSignatureDao.votingDelay();
-		expect(votingDelay_).equal(24 * 60 * 60);
+		expect(votingDelay_).equal(24n * 60n * 60n);
 		const votingPeriod_ = await cosmicSignatureDao.votingPeriod();
-		expect(votingPeriod_).equal(30 * 24 * 60 * 60);
+		expect(votingPeriod_).equal(2n * 7n * 24n * 60n * 60n);
 
 		await cosmicSignatureToken.connect(owner).delegate(owner.address);
 		await cosmicSignatureToken.connect(addr1).delegate(addr1.address);

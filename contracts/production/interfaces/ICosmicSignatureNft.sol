@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 // import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title The Cosmic Signature ecosystem NFT.
 /// @author The Cosmic Signature Development Team.
@@ -14,7 +15,7 @@ pragma solidity 0.8.28;
 /// Take a look at `IRandomWalkNFT` as well. Possibly write comment there.
 /// [/ToDo-202412106-1]
 /// todo-1 +++ Review https://wizard.openzeppelin.com/#erc721
-interface ICosmicSignatureNft /*is IERC721Enumerable*/ {
+interface ICosmicSignatureNft is /*IERC721Enumerable,*/ IAddressValidator {
 	/// @notice Details about a CosmicSignature NFT.
 	struct NftInfo {
 		/// @notice The custom name set for the NFT.

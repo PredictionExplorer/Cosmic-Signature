@@ -39,9 +39,9 @@ describe("SystemManagement", function () {
 		let testAcct_;
 
 		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(2);
+		// expect(systemModeCode_).to.equal(2n);
 
-		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.be.greaterThan(0n);
+		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.be.greaterThan(0n);
 
 		await cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(99n * 60n);
 		expect(await cosmicSignatureGameProxy.delayDurationBeforeNextRound()).to.equal(99n * 60n);
@@ -51,11 +51,6 @@ describe("SystemManagement", function () {
 
 		await cosmicSignatureGameProxy.setMaxMessageLength(1234567890n);
 		expect(await cosmicSignatureGameProxy.maxMessageLength()).to.equal(1234567890n);
-
-		await expect(cosmicSignatureGameProxy.setPrizesWallet(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
-		testAcct_ = hre.ethers.Wallet.createRandom();
-		await cosmicSignatureGameProxy.setPrizesWallet(testAcct_.address);
-		expect(await cosmicSignatureGameProxy.prizesWallet()).to.equal(testAcct_.address);
 
 		await expect(cosmicSignatureGameProxy.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 		testAcct_ = hre.ethers.Wallet.createRandom();
@@ -87,6 +82,11 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.stakingWalletRandomWalkNft()).to.equal(testAcct_.address);
 
+		await expect(cosmicSignatureGameProxy.setPrizesWallet(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		testAcct_ = hre.ethers.Wallet.createRandom();
+		await cosmicSignatureGameProxy.setPrizesWallet(testAcct_.address);
+		expect(await cosmicSignatureGameProxy.prizesWallet()).to.equal(testAcct_.address);
+
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await cosmicSignatureGameProxy.setCharityAddress(testAcct_.address);
@@ -101,7 +101,7 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setInitialSecondsUntilPrize(99n);
 		expect(await cosmicSignatureGameProxy.initialSecondsUntilPrize()).to.equal(99n);
 
-		await cosmicSignatureGameProxy.updateInitialBidAmountFraction(99n);
+		await cosmicSignatureGameProxy.setInitialBidAmountFraction(99n);
 		expect(await cosmicSignatureGameProxy.initialBidAmountFraction()).to.equal(99n);
 
 		await cosmicSignatureGameProxy.setPriceIncrease(99n);
@@ -118,31 +118,31 @@ describe("SystemManagement", function () {
 		expect(await cosmicSignatureGameProxy.tokenReward()).to.equal(1234567890n);
 
 		await expect(cosmicSignatureGameProxy.setMainPrizePercentage(75n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "PercentageValidation");
-		let mainPrizePercentage_ = await cosmicSignatureGameProxy.mainPrizePercentage();
+		const mainPrizePercentage_ = await cosmicSignatureGameProxy.mainPrizePercentage();
 		await cosmicSignatureGameProxy.setMainPrizePercentage(mainPrizePercentage_ + 1n);
 		expect(await cosmicSignatureGameProxy.mainPrizePercentage()).to.equal(mainPrizePercentage_ + 1n);
 		await cosmicSignatureGameProxy.setMainPrizePercentage(mainPrizePercentage_);
 
 		await expect(cosmicSignatureGameProxy.setChronoWarriorEthPrizePercentage(55n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "PercentageValidation");
-		let chronoWarriorEthPrizePercentage_ = await cosmicSignatureGameProxy.chronoWarriorEthPrizePercentage();
+		const chronoWarriorEthPrizePercentage_ = await cosmicSignatureGameProxy.chronoWarriorEthPrizePercentage();
 		await cosmicSignatureGameProxy.setChronoWarriorEthPrizePercentage(chronoWarriorEthPrizePercentage_ + 1n);
 		expect(await cosmicSignatureGameProxy.chronoWarriorEthPrizePercentage()).to.equal(chronoWarriorEthPrizePercentage_ + 1n);
 		await cosmicSignatureGameProxy.setChronoWarriorEthPrizePercentage(chronoWarriorEthPrizePercentage_);
 
 		await expect(cosmicSignatureGameProxy.setRafflePercentage(55n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "PercentageValidation");
-		let rafflePercentage_ = await cosmicSignatureGameProxy.rafflePercentage();
+		const rafflePercentage_ = await cosmicSignatureGameProxy.rafflePercentage();
 		await cosmicSignatureGameProxy.setRafflePercentage(rafflePercentage_ + 1n);
 		expect(await cosmicSignatureGameProxy.rafflePercentage()).to.equal(rafflePercentage_ + 1n);
 		await cosmicSignatureGameProxy.setRafflePercentage(rafflePercentage_);
 
 		await expect(cosmicSignatureGameProxy.setStakingPercentage(60n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "PercentageValidation");
-		let stakingPercentage_ = await cosmicSignatureGameProxy.stakingPercentage();
+		const stakingPercentage_ = await cosmicSignatureGameProxy.stakingPercentage();
 		await cosmicSignatureGameProxy.setStakingPercentage(stakingPercentage_ + 1n);
 		expect(await cosmicSignatureGameProxy.stakingPercentage()).to.equal(stakingPercentage_ + 1n);
 		await cosmicSignatureGameProxy.setStakingPercentage(stakingPercentage_);
 
 		await expect(cosmicSignatureGameProxy.setCharityPercentage(60n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "PercentageValidation");
-		let charityPercentage_ = await cosmicSignatureGameProxy.charityPercentage();
+		const charityPercentage_ = await cosmicSignatureGameProxy.charityPercentage();
 		await cosmicSignatureGameProxy.setCharityPercentage(charityPercentage_ + 1n);
 		expect(await cosmicSignatureGameProxy.charityPercentage()).to.equal(charityPercentage_ + 1n);
 		await cosmicSignatureGameProxy.setCharityPercentage(charityPercentage_);
@@ -164,7 +164,7 @@ describe("SystemManagement", function () {
 
 		await cosmicSignatureGameProxy.setActivationTime(123n);
 		expect(await cosmicSignatureGameProxy.activationTime()).to.equal(123n);
-		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.equal(0n);
+		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.equal(0n);
 
 		// await expect(cosmicSignatureGameProxy.prepareMaintenance()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemMode");
 		// await cosmicSignatureGameProxy.setRuntimeMode();
@@ -178,9 +178,9 @@ describe("SystemManagement", function () {
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(0);
+		// expect(systemModeCode_).to.equal(0n);
 
-		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.equal(0n);
+		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.equal(0n);
 
 		const testAcct_ = hre.ethers.Wallet.createRandom();
 		// const revertStr = "System must be in MODE_MAINTENANCE.";
@@ -190,18 +190,18 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(11n * 60n * 60n);
 		await expect(cosmicSignatureGameProxy.setMarketingReward(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setMaxMessageLength(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicSignatureGameProxy.setPrizesWallet(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTokenContract(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setMarketingWallet(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCosmicSignatureNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setRandomWalkNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setPrizesWallet(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCharityAddress(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNanoSecondsExtra(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTimeIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setInitialSecondsUntilPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicSignatureGameProxy.updateInitialBidAmountFraction(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setInitialBidAmountFraction(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setPriceIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setRoundStartCstAuctionLength(11n * 60n * 60n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -226,7 +226,7 @@ describe("SystemManagement", function () {
 			await basicDeployment(owner, "", isRuntimeMode_ ? 1 : 0, addr1.address, true /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
-		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.be.greaterThan(0n);
+		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.be.greaterThan(0n);
 
 		const bidParams = { message: "", randomWalkNftId: -1 };
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -241,8 +241,8 @@ describe("SystemManagement", function () {
 		// todo-1 I have moved NFT donations to `PrizesWallet`.
 		await expect(cosmicSignatureGameProxy.claimManyDonatedNfts([0])).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(owner.sendTransaction({ to: await cosmicSignatureGameProxy.getAddress(), value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.donate({value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.donateWithInfo("{}",{value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.donateEth({value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.donateEthWithInfo("{}",{value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 
 		const mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
@@ -260,13 +260,13 @@ describe("SystemManagement", function () {
 		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 
 		// let systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(0);
+		// expect(systemModeCode_).to.equal(0n);
 
-		let durationUntilActivation_ = await cosmicSignatureGameProxy.timeUntilActivation();
+		let durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
 		expect(durationUntilActivation_).to.equal(0n);
 
 		const donationAmount = hre.ethers.parseEther('10');
-		await cosmicSignatureGameProxy.connect(addr2).donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.connect(addr2).donateEth({ value: donationAmount });
 
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(params, { value: bidPrice });
@@ -278,7 +278,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(addr1).setDelayDurationBeforeNextRound(123n * 60n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 
 		// systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(1);
+		// expect(systemModeCode_).to.equal(1n);
 
 		const delayDurationBeforeNextRound_ = await cosmicSignatureGameProxy.delayDurationBeforeNextRound();
 		expect(delayDurationBeforeNextRound_).to.equal(123n * 60n);
@@ -289,18 +289,18 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.connect(addr1).claimPrize();
 
 		// systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(2);
+		// expect(systemModeCode_).to.equal(2n);
 
-		durationUntilActivation_ = await cosmicSignatureGameProxy.timeUntilActivation();
+		durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
 		expect(durationUntilActivation_).to.equal(delayDurationBeforeNextRound_);
 
 		// await cosmicSignatureGameProxy.setRuntimeMode();
 		// systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(0);
+		// expect(systemModeCode_).to.equal(0n);
 
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp);
-		durationUntilActivation_ = await cosmicSignatureGameProxy.timeUntilActivation();
+		durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
 		expect(durationUntilActivation_).to.equal(0);
 
 		// The next bidding round has started. So we are allowed to bid.
@@ -321,8 +321,6 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setMaxMessageLength(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(addr1).setPrizesWallet(addr1.address))
-			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setTokenContract(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setMarketingWallet(addr1.address))
@@ -335,6 +333,8 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setStakingWalletRandomWalkNft(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureGameProxy.connect(addr1).setPrizesWallet(addr1.address))
+			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setCharityAddress(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setNanoSecondsExtra(1n))
@@ -343,7 +343,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setInitialSecondsUntilPrize(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(addr1).updateInitialBidAmountFraction(1n))
+		await expect(cosmicSignatureGameProxy.connect(addr1).setInitialBidAmountFraction(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setPriceIncrease(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
@@ -387,7 +387,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureNft.connect(addr1).setNftBaseUri("://uri"))
 			.to.be.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");
 	});
-	it("The timeUntilActivation method functions correctly", async function () {
+	it("The getDurationUntilActivation method functions correctly", async function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1,] = signers;
 		const {cosmicSignatureGameProxy,} =
@@ -401,19 +401,19 @@ describe("SystemManagement", function () {
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [ts - 1]);
 		await hre.ethers.provider.send("evm_mine");
 		expect((await hre.ethers.provider.getBlock("latest")).timestamp).to.equal(ts - 1);
-		let tua = await cosmicSignatureGameProxy.timeUntilActivation();
-		expect(tua).to.equal(1n);
+		let durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
+		expect(durationUntilActivation_).to.equal(1n);
 		// await cosmicSignatureGameProxy.setRuntimeMode();
 		// await hre.ethers.provider.send("evm_setNextBlockTimestamp", [ts]);
 		await hre.ethers.provider.send("evm_mine");
 		expect((await hre.ethers.provider.getBlock("latest")).timestamp).to.equal(ts);
-		tua = await cosmicSignatureGameProxy.timeUntilActivation();
-		expect(tua).to.equal(0n);
+		durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
+		expect(durationUntilActivation_).to.equal(0n);
 		// await hre.ethers.provider.send("evm_setNextBlockTimestamp", [ts + 1]);
 		await hre.ethers.provider.send("evm_mine");
 		expect((await hre.ethers.provider.getBlock("latest")).timestamp).to.equal(ts + 1);
-		tua = await cosmicSignatureGameProxy.timeUntilActivation();
-		expect(tua).to.equal(0n);
+		durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
+		expect(durationUntilActivation_).to.equal(0n);
 	});
 	it("The transferOwnership method functions correctly", async function () {
 		const signers = await hre.ethers.getSigners();
@@ -421,7 +421,7 @@ describe("SystemManagement", function () {
 		const {cosmicSignatureGameProxy,} =
 			await basicDeployment(owner, "", 0, addr1.address, true);
 
-		expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.be.greaterThan(0n);
+		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.be.greaterThan(0n);
 
 		for ( let counter_ = 0; ; ++ counter_ ) {
 			await cosmicSignatureGameProxy.transferOwnership(addr2.address);
@@ -432,7 +432,7 @@ describe("SystemManagement", function () {
 				break;
 			}
 			await cosmicSignatureGameProxy.setActivationTime(123n);
-			expect(await cosmicSignatureGameProxy.timeUntilActivation()).to.equal(0n);
+			expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.equal(0n);
 		}
 	});
 	it("The initialize method is disabled", async function () {

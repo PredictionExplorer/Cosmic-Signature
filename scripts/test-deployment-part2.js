@@ -17,6 +17,7 @@ async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 		}
 	}
 }
+
 async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let mainPrizeAmount_ = await cosmicSignatureGame.mainPrizeAmount();
 	let charityAmount = await cosmicSignatureGame.charityAmount();
@@ -29,12 +30,6 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
 	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
 
-	let prizesWalletAddr = await cosmicSignatureGame.prizesWallet();
-	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
-	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
-	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-	claim_raffle_eth(testingAcct, prizesWallet, event_logs);
-
 	let cosmicSignatureNftAddr = await cosmicSignatureGame.nft();
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddr);
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleNftWinnerEvent");
@@ -45,6 +40,12 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 		expect(ownr).to.equal(parsed_log.args.winnerAddress);
 	}
 
+	let prizesWalletAddr = await cosmicSignatureGame.prizesWallet();
+	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
+	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
+	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	claim_raffle_eth(testingAcct, prizesWallet, event_logs);
+
 	let charityWalletAddr = await cosmicSignatureGame.charityAddress();
 	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddr);
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
@@ -52,6 +53,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.amount).to.equal(charityAmount);
 }
+
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (typeof privKey === "undefined" || privKey.length == 0) {
@@ -67,6 +69,7 @@ async function main() {
 
 	console.log("Claim prize test result: success");
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

@@ -3,11 +3,11 @@ pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
-import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
+import { AddressValidator } from "./AddressValidator.sol";
+import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
-contract MarketingWallet is Ownable, IMarketingWallet {
+contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	/// @notice The `CosmicSignatureToken` contract address.
 	/// Comment-202411064 applies.
 	CosmicSignatureToken public token;
@@ -15,20 +15,21 @@ contract MarketingWallet is Ownable, IMarketingWallet {
 	/// @notice Constructor.
 	/// @param token_ The `CosmicSignatureToken` contract address.
 	/// ToDo-202408114-1 applies.
-	constructor(CosmicSignatureToken token_) Ownable(msg.sender) {
-		require(address(token_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+	constructor(CosmicSignatureToken token_)
+		Ownable(msg.sender)
+		providedAddressIsNonZero(address(token_)) {
 		token = token_;
 	}
 
-	function setTokenContract(ICosmicSignatureToken newValue_) external override onlyOwner {
-		require(address(newValue_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+	function setTokenContract(ICosmicSignatureToken newValue_) external override
+		onlyOwner
+		providedAddressIsNonZero(address(newValue_)) {
 		token = CosmicSignatureToken(address(newValue_));
 		emit TokenContractAddressChanged(newValue_);
 	}
 
 	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
-		// // `token.transfer` will validate this.
-		// require(marketerAddress_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		// Not validating that `marketerAddress_` is a nonzero. `token.transfer` will do it.
 
 		// // Comment-202409215 applies.
 		// require(amount_ > 0, CosmicSignatureErrors.NonZeroValueRequired("Amount is zero."));

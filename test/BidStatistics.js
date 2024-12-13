@@ -60,7 +60,7 @@ describe("BidStatistics", function () {
 	};
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 
 		// test case description:
@@ -68,7 +68,7 @@ describe("BidStatistics", function () {
 		// 		addr2 will make a maximum duration of 5000 seconds in his bids
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
@@ -99,7 +99,7 @@ describe("BidStatistics", function () {
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 
 		// test case description:
@@ -112,7 +112,7 @@ describe("BidStatistics", function () {
 		// 		bid amount is 1000 for every bid
 		let maxbtime,maxbaddr,prevbst,prevbaddr;
 		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
@@ -186,7 +186,7 @@ describe("BidStatistics", function () {
 		// therefore addr2 is the Endurance Champion
 		
 		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 
 		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);

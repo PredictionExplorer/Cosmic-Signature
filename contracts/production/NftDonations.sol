@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-// import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 // import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 // import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -10,7 +9,6 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
 abstract contract NftDonations is
-	// ReentrancyGuardUpgradeable,
 	CosmicSignatureGameStorage,
 	// SystemManagement,
 	INftDonations {

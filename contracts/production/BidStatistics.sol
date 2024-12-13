@@ -6,7 +6,6 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-// import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
@@ -59,6 +58,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 		}
 
 		// #enable_asserts assert(chronoWarriorAddress != address(0));
+		// #enable_asserts assert(int256(chronoWarriorDuration) >= int256(0));
 	}
 
 	// #endregion

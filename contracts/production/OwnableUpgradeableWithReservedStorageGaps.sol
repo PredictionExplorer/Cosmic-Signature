@@ -3,17 +3,23 @@ pragma solidity 0.8.28;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-/// @notice
-/// [Comment-202412142]
+/// @dev
 /// A contract with reserved storage gaps.
 /// Comment-202412142 relates and/or applies.
-/// [/Comment-202412142]
-/// todo-1 We need similar contracts for all upgradeable contracts that we use.
+/// Issue. A problem is that this is not helpful because OpenZeppelin upgradeable contracts,
+/// at least those I have reviewed, including `OwnableUpgradeable`, `UUPSUpgradeable`,
+/// `ReentrancyGuardTransientUpgradeable`, use storage slots at hardcoded positions.
+/// Therefore we do not need contracts like this.
+/// Altough I have no immeiate plans to eliminate this one.
+///
+/// todo-1 An alternative Ownable contract:
+/// todo-1 https://docs.openzeppelin.com/contracts/5.x/api/access#Ownable2Step
+/// todo-1 But we probably don't need it.
 abstract contract OwnableUpgradeableWithReservedStorageGaps is OwnableUpgradeable {
-	/// @notice Comment-202412142 applies.
+	/// @dev Comment-202412142 applies.
 	uint256[256] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
-	// /// @notice Comment-202412142 applies.
+	// /// @dev Comment-202412142 applies.
 	// uint256[256] private transient __gap_transient;
 }

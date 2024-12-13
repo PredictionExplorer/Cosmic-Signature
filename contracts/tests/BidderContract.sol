@@ -3,13 +3,12 @@ pragma solidity 0.8.28;
 pragma abicoder v2;
 
 // import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import { PrizesWallet } from "../production/PrizesWallet.sol";
 // import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract BidderContract is IERC721Receiver {
@@ -93,7 +92,7 @@ contract BidderContract is IERC721Receiver {
 	//
 	// 	// Issue. `PrizesWallet.withdrawEth` won't revert on zero balance any more.
 	// 	// So it could make sense to call it without checking balance.
-	// 	// But it would cost more gas if the balance is zero.
+	// 	// But it would cost more gas if the balance amount is zero.
 	// 	// Comment-202409215 relates.
 	// 	uint256 bal_ = prizesWallet_.getEthBalanceInfo().amount;
 	// 	if (bal_ > 0) {
@@ -118,10 +117,10 @@ contract BidderContract is IERC721Receiver {
 	// 	if (totalSupply > 0) {
 	// 		lastTokenIdChecked = totalSupply - 1;
 	// 	}
-	// 	CosmicSignatureToken token = cosmicSignatureGame.token();
-	// 	uint ctokenBalance = token.balanceOf(address(this));
+	// 	CosmicSignatureToken token_ = cosmicSignatureGame.token();
+	// 	uint ctokenBalance = token_.balanceOf(address(this));
 	// 	if (ctokenBalance > 0) {
-	// 		token.transfer(creator, ctokenBalance);
+	// 		token_.transfer(creator, ctokenBalance);
 	// 	}
 	// 	for (uint256 i = 0; i < numMyDonatedNfts; i++) {
 	// 		uint256 num = myDonatedNfts[i];

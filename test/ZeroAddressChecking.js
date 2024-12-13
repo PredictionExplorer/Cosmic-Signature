@@ -1,3 +1,5 @@
+// todo-1 Consider moving these tests to where we test specific contracts.
+
 "use strict";
 
 const { expect } = require("chai");
@@ -47,6 +49,8 @@ describe("ZeroAddressChecking", function () {
 			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
+
+	// todo-1 We now allow a zero address in this case.
 	it("Shouldn't be possible to set a zero-address for CharityWallet", async function () {
 		const {
 			cosmicSignatureGameProxy,
@@ -61,8 +65,10 @@ describe("ZeroAddressChecking", function () {
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(charityWallet.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		// await expect(charityWallet.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		await charityWallet.setCharityAddress(hre.ethers.ZeroAddress);
 	});
+
 	it("Shouldn't be possible to set a zero charity address in CosmicSignatureGame", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const {
@@ -76,7 +82,7 @@ describe("ZeroAddressChecking", function () {
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
-			'SpecialCosmicSignatureGame',
+			"SpecialCosmicSignatureGame",
 			owner,
 			'',
 			0,

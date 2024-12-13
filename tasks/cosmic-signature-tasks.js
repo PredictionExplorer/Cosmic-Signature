@@ -2,7 +2,7 @@
 
 "use strict";
 
-const fs = require("fs");
+const nodeFsModule = require("node:fs");
 
 // Comment-202409255 relates.
 const { basicDeployment } = require("../src/Deploy.js");
@@ -13,7 +13,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 		console.log("Please provide config file : --deployconfig [file_path]");
 		return;
 	}
-	const config_params_file = fs.readFileSync(configFile, "utf8");
+	const config_params_file = nodeFsModule.readFileSync(configFile, "utf8");
 	let config_params;
 	try {
 		config_params = JSON.parse(config_params_file);
@@ -38,15 +38,15 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 			config_params.charityAddr,
 			config_params.transferOwnership
 
-			// // todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
-			// // todo-0 So I have commented this out.
-			// config_params.switchToRuntime
+			// // todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
+			// // todo-1 So I have commented this out.
+			// config_params.switchToRuntimeMode
 		);
 	console.log("contracts deployed");
 	if (config_params.donateToContract) {
 		const ethValue = "2";
 		const donationAmount = hre.ethers.parseEther(ethValue);
-		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donate({value: donationAmount});
+		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount});
 		console.log("Donated " + ethValue + " ETH to contract.");
 	}
 	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());

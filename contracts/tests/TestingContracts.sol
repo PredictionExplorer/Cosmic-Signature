@@ -1,25 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
-import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
-// import { PrizesWallet } from "../production/PrizesWallet.sol";
-import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
-import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
-import { ICosmicSignatureNft } from "../production/interfaces/ICosmicSignatureNft.sol";
-import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
+import { /*ICosmicSignatureToken,*/ CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
+import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
-import { IStakingWalletCosmicSignatureNft } from "../production/interfaces/IStakingWalletCosmicSignatureNft.sol";
-import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
+import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
 import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
-import { Bidding } from "../production/Bidding.sol";
+import { IBidding, Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
-import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureGame.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract BrokenToken {
@@ -293,7 +287,7 @@ contract MaliciousNft2 is ERC721 {
 		// todo-1 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
 			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
-			msg.sender.call(abi.encodeWithSelector(ICosmicSignatureGame.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
+			msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)

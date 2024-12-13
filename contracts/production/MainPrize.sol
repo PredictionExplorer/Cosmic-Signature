@@ -9,16 +9,16 @@ pragma solidity 0.8.28;
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 // import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 // import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
-// import { PrizesWallet } from "./PrizesWallet.sol";
 // import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 // import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+// import { PrizesWallet } from "./PrizesWallet.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -28,7 +28,7 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 // #region
 
 abstract contract MainPrize is
-	ReentrancyGuardUpgradeable,
+	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
@@ -431,12 +431,13 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `timeUntilPrize`
 
-	// todo-0 Slither dislikes some time comparisons.
-	// todo-0 Would it make sense to subtract the times as signed `int256` in most cases?
-	// todo-0 It could also make sense to do it from within an `unchecked` block.
-	// todo-0 All our times are supposed to be reasonable values that are close to `block.timestamp`.
-	// todo-0 `activationTime`, even though it's set externally, will also be reasonable, right?
-	// todo-0 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
+	/// todo-0 Slither dislikes some time comparisons.
+	/// todo-0 Would it make sense to subtract the times as signed `int256` in most cases?
+	/// todo-0 It could also make sense to do it from within an `unchecked` block.
+	/// todo-0 All our times are supposed to be reasonable values that are close to `block.timestamp`.
+	/// todo-0 `activationTime`, even though it's set externally, will also be reasonable, right?
+	/// todo-0 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
+	/// todo-1 Rename all `timeUntil...` functions to `getDurationUntil...`.
 	function timeUntilPrize() external view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked

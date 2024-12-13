@@ -56,7 +56,6 @@ describe("CosmicSignatureNft", function () {
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
-			prizesWallet,
 			randomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
@@ -84,7 +83,6 @@ describe("CosmicSignatureNft", function () {
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
-			prizesWallet,
 			randomWalkNft,
 			marketingWallet,
 		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
@@ -95,7 +93,7 @@ describe("CosmicSignatureNft", function () {
 	});
 	it("Should be possible to setNftName()", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNftId: -1 };
@@ -132,7 +130,7 @@ describe("CosmicSignatureNft", function () {
 		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenNameLength");
 	});
 	it("BaseURI/TokenURI works", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();

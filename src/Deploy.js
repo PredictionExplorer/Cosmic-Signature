@@ -19,7 +19,7 @@ const basicDeployment = async function (
 	activationTime,
 	charityAddr,
 	transferOwnership
-	// switchToRuntime = true
+	// switchToRuntimeMode = true
 ) {
 	return await basicDeploymentAdvanced(
 		"CosmicSignatureGame",
@@ -28,7 +28,7 @@ const basicDeployment = async function (
 		activationTime,
 		charityAddr,
 		transferOwnership
-		// switchToRuntime
+		// switchToRuntimeMode
 	);
 };
 
@@ -54,10 +54,10 @@ const basicDeploymentAdvanced = async function (
 	activationTime,
 	charityAddr,
 	transferOwnership
-	// switchToRuntime
+	// switchToRuntimeMode
 ) {
-	// if (switchToRuntime === undefined) {
-	// 	console.error("switchToRuntime is not set.");
+	// if (switchToRuntimeMode === undefined) {
+	// 	console.error("switchToRuntimeMode is not set.");
 	// 	process.exit(1);
 	// }
 
@@ -172,13 +172,13 @@ const basicDeploymentAdvanced = async function (
 	await marketingWallet.waitForDeployment();
 	const marketingWalletAddr = await marketingWallet.getAddress();
 
-	await cosmicSignatureGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setTokenContract(cosmicSignatureTokenAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
 	if (activationTime !== 0) {
 		if (activationTime === 1) {
@@ -187,7 +187,7 @@ const basicDeploymentAdvanced = async function (
 		}
 		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}
-	// if (switchToRuntime) {
+	// if (switchToRuntimeMode) {
 	// 	await cosmicSignatureGameProxy.connect(deployerAcct).setRuntimeMode();
 	// }
 

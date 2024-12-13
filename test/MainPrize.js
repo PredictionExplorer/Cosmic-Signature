@@ -72,8 +72,8 @@ describe("MainPrize", function () {
 		let totalSupplyBefore = Number(await cosmicSignatureNft.totalSupply());
 
 		// at this point all required data was initialized, we can proceed with the test
+
 		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
-		let tx, receipt, log, parsed_log;
 
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		bidParams = { message: "", randomWalkNftId: -1 };
@@ -94,9 +94,9 @@ describe("MainPrize", function () {
 
 		let roundNumBefore = await cosmicSignatureGameProxy.roundNum();
 
-		tx = await cosmicSignatureGameProxy.connect(addr3).claimPrize();
+		let tx = await cosmicSignatureGameProxy.connect(addr3).claimPrize();
 		roundNum = roundNum + 1;
-		receipt = await tx.wait();
+		let receipt = await tx.wait();
 
 		// check tnat roundNum is incremented
 		let roundNumAfter = await cosmicSignatureGameProxy.roundNum();
@@ -176,7 +176,7 @@ describe("MainPrize", function () {
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
-			'SpecialCosmicSignatureGame',
+			"SpecialCosmicSignatureGame",
 			owner,
 			'',
 			1,
@@ -185,7 +185,7 @@ describe("MainPrize", function () {
 		);
 
 		let donationAmount = hre.ethers.parseEther('1');
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		let charityAddr = await cosmicSignatureGameProxy.charityAddress();
 
 		await cosmicSignatureGameProxy.mintCosmicSignatureNft(addr1.address); // mint an NFT so we can stake
@@ -263,7 +263,6 @@ describe("MainPrize", function () {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			prizesWallet,
 			randomWalkNft,
 			stakingWallet,
 			marketingWallet
@@ -283,7 +282,7 @@ describe("MainPrize", function () {
 		const bContract = await BidderContract.deploy(await cosmicSignatureGameProxy.getAddress());
 
 		let donationAmount = hre.ethers.parseEther('10');
-		await cosmicSignatureGameProxy.donate({ value: donationAmount });
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		let bidParams = { message: "", randomWalkNftId: -1 };
