@@ -4,46 +4,42 @@ pragma solidity 0.8.28;
 // #region Imports
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
-
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
-import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
+import { AddressValidator } from "../production/AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
-import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
+import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { EthDonations } from "../production/EthDonations.sol";
 import { NftDonations } from "../production/NftDonations.sol";
-import { MainPrize } from "../production/MainPrize.sol";
 import { SpecialPrizes } from "../production/SpecialPrizes.sol";
+import { MainPrize } from "../production/MainPrize.sol";
 import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureGame.sol";
 
 // #endregion
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicSignatureGameOpenBid is
-	OwnableUpgradeableWithReservedStorageGaps,
+	ReentrancyGuardTransientUpgradeable,
 	UUPSUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
+	AddressValidator,
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
 	BiddingOpenBid,
-	MainPrize,
 	EthDonations,
 	NftDonations,
 	SpecialPrizes,
+	MainPrize,
 	ICosmicSignatureGame {
-	using SafeERC20 for IERC20;
-
 	/// @notice Constructor.
 	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -56,9 +52,9 @@ contract CosmicSignatureGameOpenBid is
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
 		// #enable_asserts assert(activationTime == 0);
 
-		// todo-1 Order these like in the inheritance list.
+		// todo-1 +++ Order these like in the inheritance list.
+		__ReentrancyGuardTransient_init();
 		__UUPSUpgradeable_init();
-		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
 		__Ownable_init(ownerAddress_);
 
@@ -67,15 +63,14 @@ contract CosmicSignatureGameOpenBid is
 		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingReward = CosmicSignatureConstants.MARKETING_REWARD;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
-		// prizesWallet =
 		// token =
 		// marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =
 		// stakingWalletRandomWalkNft =
+		// prizesWallet =
 		// charityAddress =
-		// numDonationInfoRecords =
 		// // numDonatedNfts =
 		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
@@ -140,28 +135,6 @@ contract CosmicSignatureGameOpenBid is
 		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
 
-	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
-		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
-	}
-
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
-		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
-	}
-
-	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
-		// _donateNft(nftAddress_, nftId_);
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
-	}
-
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
-		// _donateNft(nftAddress_, nftId_);
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
-	}
-
 	// Moved to `PrizesWallet`.
 	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
 	// /// todo-1 Someone forgot to derive `CosmicSignatureGameOpenBid` from `IERC721Receiver` and add the `override` keyword.
@@ -173,14 +146,14 @@ contract CosmicSignatureGameOpenBid is
 	receive() external payable override {
 		// Treating incoming ETH as a bid with default parameters.
 		BidParams memory defaultParams;
-		// todo-1 Is this assignment redundant? Replace it with an `assert`?
-		defaultParams.message = "";
+		// defaultParams.message = "";
 		defaultParams.randomWalkNftId = -1;
+		// defaultParams.openBid =
 		bytes memory param_data = abi.encode(defaultParams);
 		bid(param_data);
 	}
 
-	fallback() external payable override {
-		revert("Method does not exist.");
-	}
+	// fallback() external payable override {
+	// 	revert("Method does not exist.");
+	// }
 }

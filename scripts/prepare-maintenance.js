@@ -1,4 +1,4 @@
-// todo-0 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
+// todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
 
 const hre = require("hardhat");
 
@@ -25,24 +25,25 @@ async function main() {
 
 	// todo-1 Why do we need error handling here?
 	try {
-		// todo-0 This function no longer exists.
+		// todo-1 This function no longer exists.
 		await cosmicSignatureGame.connect(testingAcct).prepareMaintenance();
 	} catch(e) {
 		console.log(e);
 	}
-	// todo-0 This function no longer exists.
-	let sysMode = await cosmicSignatureGame.systemMode();
-	console.log("systemMode = "+sysMode.toString());
-	if (sysMode.toString() == "1") {
+	// todo-1 This function no longer exists.
+	let systemModeCode_ = await cosmicSignatureGame.systemMode();
+	console.log("systemMode =", systemModeCode_);
+	if (systemModeCode_.toString() == "1") {
 		console.log("System is set for maintenance right after next claimPrize() call")
 	} else {
-		if (sysMode.toString() == "2") {
+		if (systemModeCode_.toString() == "2") {
 			console.log("System is in maintenance mode already");
 		} else {
 			console.log("Call failed");
 		}
 	}
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

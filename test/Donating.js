@@ -49,33 +49,38 @@ describe("Donating", function () {
 			{ name: "randomWalkNftId", type: "int256" },
 		],
 	};
-	it("donateWithInfo() works as expected", async function () {
+	it("donateEthWithInfo() works as expected", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+		
 		let donationAmount = hre.ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
-		await cosmicSignatureGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
-		let numDonationInfoRecords_ = await cosmicSignatureGameProxy.numDonationInfoRecords();
-		expect(numDonationInfoRecords_).to.equal(1);
-		let donationInfoRec = await cosmicSignatureGameProxy.donationInfoRecords(0);
-		expect(donationInfoRec.donorAddress).to.equal(addr1.address);
-		expect(donationInfoRec.data).to.equal(dataStr);
+		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, { value: donationAmount });
+		let numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy.numEthDonationWithInfoRecords();
+		expect(numEthDonationWithInfoRecords_).to.equal(1);
+		// todo-1 Test that this emits the correct event. But I believe I've seen a relevant test elsewhere.
+		let ethDonationWithInfoRecord_ = await cosmicSignatureGameProxy.ethDonationWithInfoRecords(0);
+		expect(ethDonationWithInfoRecord_.roundNum).to.equal(0);
+		expect(ethDonationWithInfoRecord_.donorAddress).to.equal(addr1.address);
+		expect(ethDonationWithInfoRecord_.amount).to.equal(donationAmount);
+		expect(ethDonationWithInfoRecord_.data).to.equal(dataStr);
 
 		// check number of records is incrementing
-		await cosmicSignatureGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: donationAmount });
-		numDonationInfoRecords_ = await cosmicSignatureGameProxy.numDonationInfoRecords();
-		expect(numDonationInfoRecords_).to.equal(2);
+		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, { value: donationAmount });
+		numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy.numEthDonationWithInfoRecords();
+		expect(numEthDonationWithInfoRecords_).to.equal(2);
 
-		await expect(cosmicSignatureGameProxy.connect(addr1).donateWithInfo(dataStr,{ value: 0n})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "NonZeroValueRequired");
+		// await expect(cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, {value: 0n})).revertedWithCustomError(cosmicSignatureGameProxy, "NonZeroValueRequired");
+		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, {value: 0n});
 	});
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
 	// todo-1 and NFT donation without making a bid is now prohibited.
 	it("donateNft() without making a bid works", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
+		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
@@ -89,13 +94,13 @@ describe("Donating", function () {
 		await expect(cosmicSignatureGameProxy.getDonatedNftDetails(1)).to.be.revertedWith("Invalid donated NFT index.");
 	});
 
-	it("Should not be possible to donate 0 value", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(cosmicSignatureGameProxy.connect(addr1).donate()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
-	});
+	// it("Should not be possible to donate 0 value", async function () {
+	// 	const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
+	// 		await loadFixture(deployCosmicSignature);
+	// 	const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+	// 	await expect(cosmicSignatureGameProxy.connect(addr1).donateEth()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
+	// });
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("claimManyDonatedNfts() works properly", async function () {
@@ -110,7 +115,7 @@ describe("Donating", function () {
 		let mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
 		// await randomWalkNft.connect(addr1).setApprovalForAll(await cosmicSignatureGameProxy.getAddress(), true);
-		await randomWalkNft.connect(addr1).setApprovalForAll(await cosmicSignatureGameProxy.prizesWallet(), true);
+		await randomWalkNft.connect(addr1).setApprovalForAll(await prizesWallet.getAddress(), true);
 		let bidParams = { message: "", randomWalkNftId: -1 };
 		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let tx = await cosmicSignatureGameProxy

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
+// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-// import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-// import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 // import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
@@ -16,7 +16,7 @@ import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 
 abstract contract BiddingOpenBid is
-	ReentrancyGuardUpgradeable,
+	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
@@ -26,8 +26,9 @@ abstract contract BiddingOpenBid is
 	/// @title Parameters needed to place a bid.
 	/// @dev Comment-202411111 applies.
 	struct BidParams {
-		/// @notice The message associated with the bid
-		/// Can be used to store additional information or comments from the bidder
+		/// @notice The bidder's message associated with the bid.
+		/// May be empty.
+		/// Can be used to store additional information or comments from the bidder.
 		string message;
 
 		/// @notice The ID of the RandomWalk NFT to be used for bidding.
@@ -35,9 +36,9 @@ abstract contract BiddingOpenBid is
 		/// Comment-202412036 applies.
 		int256 randomWalkNftId;
 
-		/// @notice The flag used to mark a bid as "bid with open price" (any price user wants).
+		/// @notice Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
 		/// `bidPrice` will be updated to `msg.value` and stay at that level.
-		/// Set to `true` to send this type of bid.
+		/// todo-2 The above description of this parameter doesn't appear to be perfectly accurate. To be revisited.
 		bool openBid;
 	}
 
@@ -59,6 +60,17 @@ abstract contract BiddingOpenBid is
 	function setTimesBidPrice(uint256 newValue_) external onlyOwner {
 		timesBidPrice = newValue_;
 		emit TimesBidPriceChangedEvent(newValue_);
+	}
+
+	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
+	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
@@ -158,6 +170,17 @@ abstract contract BiddingOpenBid is
 	function getBidPrice() public view override returns (uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
+	}
+
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {

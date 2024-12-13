@@ -3,10 +3,9 @@ pragma solidity 0.8.28;
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-// import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-// import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 // import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
@@ -17,9 +16,7 @@ import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
 abstract contract Bidding is
-	// todo-1 Does this use transient storage?
-	// todo-1 They now have `ReentrancyGuardTransient`. But is it upgradeable?
-	ReentrancyGuardUpgradeable,
+	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
@@ -32,8 +29,9 @@ abstract contract Bidding is
 	/// Similar structures exist in multiple places.
 	/// [/Comment-202411111]
 	struct BidParams {
-		/// @notice The message associated with the bid
-		/// Can be used to store additional information or comments from the bidder
+		/// @notice The bidder's message associated with the bid.
+		/// May be empty.
+		/// Can be used to store additional information or comments from the bidder.
 		string message;
 
 		/// @notice The ID of the RandomWalk NFT to be used for bidding.
@@ -43,6 +41,17 @@ abstract contract Bidding is
 	}
 
 	// #endregion
+
+	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
+	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
+		_bid(data_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
+	}
 
 	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
 		_bid(_data);
@@ -126,6 +135,17 @@ abstract contract Bidding is
 	function getBidPrice() public view override returns (uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
+	}
+
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
+		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+	}
+
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
+		_bidWithCst(priceMaxLimit_, message_);
+		// _donateNft(nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {

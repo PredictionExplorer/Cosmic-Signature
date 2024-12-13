@@ -53,11 +53,10 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @param randomWalkNft_ The `RandomWalkNFT` contract address.
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicSignatureErrors.ZeroAddress`.
+	///    `providedAddressIsNonZero`.
 	///    `StakingWalletNftBase.constructor`.
 	///    `randomWalkNft`.
-	constructor(RandomWalkNFT randomWalkNft_) {
-		require(address(randomWalkNft_) != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given for the randomWalkNft_."));
+	constructor(RandomWalkNFT randomWalkNft_) providedAddressIsNonZero(address(randomWalkNft_)) {
 		randomWalkNft = randomWalkNft_;
 		// #enable_asserts assert(address(randomWalkNft) == address(randomWalkNft_));
 	}

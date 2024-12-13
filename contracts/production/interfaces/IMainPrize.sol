@@ -56,7 +56,6 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 		uint256 cstPrizeAmount
 	);
 
-	/// @dev todo-0 I renamed this and changed params. Tell Nick.
 	/// @notice Emitted when the Endurance Champion receives their prize.
 	/// @param enduranceChampionAddress Endurance Champion address.
 	/// @param roundNum The bidding round number.

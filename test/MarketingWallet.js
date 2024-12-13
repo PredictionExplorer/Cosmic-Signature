@@ -49,14 +49,13 @@ describe("MarketingWallet", function () {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			prizesWallet,
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
 			bidLogic
 		} = await basicDeploymentAdvanced(
-			'SpecialCosmicSignatureGame',
+			"SpecialCosmicSignatureGame",
 			owner,
 			'',
 			0,
@@ -75,7 +74,6 @@ describe("MarketingWallet", function () {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			charityWallet,
-			prizesWallet,
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,

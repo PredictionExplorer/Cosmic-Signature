@@ -5,10 +5,11 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
 interface IBidStatistics is ICosmicSignatureGameStorage {
 	// /// @return The current Endurance Champion address and duration.
-	// /// @dev Comment-202412135 applies.
-	// /// This method has been replaced with `tryGetCurrentChampions`.
+	// /// @dev This method has been replaced with `tryGetCurrentChampions`.
 	// function tryGetCurrentEnduranceChampion() external view returns(address, uint256);
 
+	/// @notice Calculates and returns the current Endurance Champion and Crono-Warrior info.
+	/// The result changes over time, even if the contract state doesn't change.
 	/// @dev
 	/// [Comment-202412135]
 	/// This method is intended to be called only off-chain.

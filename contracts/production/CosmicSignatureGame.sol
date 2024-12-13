@@ -4,56 +4,42 @@ pragma solidity 0.8.28;
 // #region Imports
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
-
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
-import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
+import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
-import { Bidding } from "./Bidding.sol";
 import { BidStatistics } from "./BidStatistics.sol";
+import { Bidding } from "./Bidding.sol";
 import { EthDonations } from "./EthDonations.sol";
 import { NftDonations } from "./NftDonations.sol";
-import { MainPrize } from "./MainPrize.sol";
 import { SpecialPrizes } from "./SpecialPrizes.sol";
+import { MainPrize } from "./MainPrize.sol";
 import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 
 // #endregion
 
 /// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicSignatureGame is
-	// todo-1 What about `ReentrancyGuardUpgradeable`. Some inherited contracts derive from it. Maybe the game contract should too?
-
-	// todo-1 An alternative Ownable contract:
-	// todo-1 https://docs.openzeppelin.com/contracts/5.x/api/access#Ownable2Step
-	// todo-1 But we probably don't need it.
+	ReentrancyGuardTransientUpgradeable,
+	UUPSUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
-
-	UUPSUpgradeable, // <<< shoud this be first in the inheritance list?
+	AddressValidator,
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
 	Bidding,
-	MainPrize,
 	EthDonations,
 	NftDonations,
 	SpecialPrizes,
+	MainPrize,
 	ICosmicSignatureGame {
-	// todo-1 Should we use this for `ERC20` instead, to give SMTChecker more info?
-	// todo-1 But it won't compile then, right?
-	// todo-1 Do we actually need this? I dislike this. Maybe comment this out.
-	// todo-1 Review all uses of `IERC20`. Make sure we check the return value.
-	using SafeERC20 for IERC20;
-
 	/// @notice Constructor.
 	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -66,9 +52,9 @@ contract CosmicSignatureGame is
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
 		// #enable_asserts assert(activationTime == 0);
 
-		// todo-1 Order these like in the inheritance list.
+		// todo-1 +++ Order these like in the inheritance list.
+		__ReentrancyGuardTransient_init();
 		__UUPSUpgradeable_init();
-		__ReentrancyGuard_init();
 		// ToDo-202408114-1 applies.
 		__Ownable_init(ownerAddress_);
 
@@ -77,15 +63,14 @@ contract CosmicSignatureGame is
 		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingReward = CosmicSignatureConstants.MARKETING_REWARD;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
-		// prizesWallet =
 		// token =
 		// marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =
 		// stakingWalletRandomWalkNft =
+		// prizesWallet =
 		// charityAddress =
-		// numDonationInfoRecords =
 		// // numDonatedNfts =
 		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
@@ -146,28 +131,6 @@ contract CosmicSignatureGame is
 		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
 
-	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
-		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
-	}
-
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
-		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
-	}
-
-	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
-		// _donateNft(nftAddress_, nftId_);
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
-	}
-
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
-		// _donateNft(nftAddress_, nftId_);
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
-	}
-
 	// Moved to `PrizesWallet`.
 	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
 	// /// todo-1 Someone forgot to derive `CosmicSignatureGame` from `IERC721Receiver` and add the `override` keyword.
@@ -179,14 +142,13 @@ contract CosmicSignatureGame is
 	receive() external payable override {
 		// Treating incoming ETH as a bid with default parameters.
 		BidParams memory defaultParams;
-		// todo-1 Is this assignment redundant? Replace it with an `assert`?
-		defaultParams.message = "";
+		// defaultParams.message = "";
 		defaultParams.randomWalkNftId = -1;
 		bytes memory param_data = abi.encode(defaultParams);
 		bid(param_data);
 	}
 
-	fallback() external payable override {
-		revert("Method does not exist.");
-	}
+	// fallback() external payable override {
+	// 	revert("Method does not exist.");
+	// }
 }

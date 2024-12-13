@@ -2,8 +2,9 @@
 pragma solidity 0.8.28;
 
 import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
+import { IAddressValidator } from "./IAddressValidator.sol";
 
-interface IStakingWalletNftBase {
+interface IStakingWalletNftBase is IAddressValidator {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.
 	/// @param nftTypeCode NFT type code.

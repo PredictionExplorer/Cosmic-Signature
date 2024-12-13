@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
+import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
 /// @title Marketer reward wallet.
@@ -26,7 +27,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// Better simply send all CST bids to marketing wallet and on main prize claim
 /// burn any excessive marketing wallet balance above a configurable value.
 /// [/ToDo-202411182-1]
-interface IMarketingWallet {
+interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
 	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
@@ -39,6 +40,7 @@ interface IMarketingWallet {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
+	/// todo-1 Maybe eliminate this method and declare `token` `immutable`.
 	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
 	function setTokenContract(ICosmicSignatureToken newValue_) external;
 

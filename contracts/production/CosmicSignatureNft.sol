@@ -10,6 +10,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721 } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 
 // #endregion
@@ -17,13 +18,16 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 
 /// todo-1 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
 /// todo-1 At least write a comment here and near `RandomWalkNFT` and/or near respective interfaces.
-contract CosmicSignatureNft is Ownable, ERC721Enumerable, ICosmicSignatureNft {
+contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
 	/// todo-1 Declare some other variables `immutable`.
 	/// todo-1 But first think which variables should be changeable and which should not be.
-	/// todo-1 Maybe allow to change this one.
+	/// todo-1 If we use the `CREATE2` opcode to deploy contracrs we will know their addresses in advance,
+	/// todo-1 so we will be able to declare all addresses `immutable`.
+	/// todo-1 But the use of `CREATE2` won't be helpful because the Game anyway can't contain `immutable` variables.
+	/// todo-1 In addition, do we want to have an option to deploy new versions of staking wallets?
 	address public immutable game;
 
 	/// @notice The base URI for NFT metadata.
@@ -60,8 +64,10 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, ICosmicSignatureNft {
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	/// todo-1 What about changing the symbol to "CSN"?
-	constructor(address game_) Ownable(_msgSender()) ERC721("CosmicSignatureNft", "CSS") {
-		require(game_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+	constructor(address game_)
+		Ownable(_msgSender())
+		ERC721("CosmicSignatureNft", "CSS")
+		providedAddressIsNonZero(game_) {
 		game = game_;
 		// entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
 		// entropy = bytes32(0x9b4631c9a4f4800392c74f3d2ee9e04fa8742b7f86e87b7d4b67fd7400d26f1e);
@@ -94,10 +100,10 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, ICosmicSignatureNft {
 	// #region `mint`
 
 	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 nftSeed_) external override returns(uint256) {
-		// // This validation is unnecessary. `_mint` will perform it.
-		// require(nftOwnerAddress_ != address(0), CosmicSignatureErrors.ZeroAddress("Zero-address was given."));
+		// Not validating that `nftOwnerAddress_` is a nonzero. `_mint` will do it.
+		// Besides, given that only the Game can call us, it's not going to provide a zero address.
 
-		// It could make sense to move this validation to the `onlyGame` modifier. But it uses a specific custom error. So let's leave it alone.
+		// It could make sense to move this validation to the `onlyGame` modifier. But it uses a specific custom error.
 		require(
 			_msgSender() == game,
 			CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender())

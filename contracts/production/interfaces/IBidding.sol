@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
+import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
-interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
+interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
 	/// @notice Emitted when the first bid is placed in a bidding round.
 	/// @param roundNum The current bidding round number.
 	/// @param blockTimeStamp The current block timestamp.
@@ -37,6 +40,18 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 		string message
 	);
 	
+	/// @dev
+	/// todo-1 Rename this to `bidWithEthAndDonateToken`.
+	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable;
+
+	/// @notice Bids and donates an NFT in a single transaction.
+	/// @param data_ Encoded bid parameters.
+	/// @param nftAddress_ NFT contract address.
+	/// @param nftId_ NFT ID.
+	/// @dev
+	/// todo-1 Rename this to `bidWithEthAndDonateNft`.
+	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable;
+
 	/// @notice Place a bid in the current round 
 	/// @dev This function handles ETH bids and RandomWalk NFT bids
 	/// todo-1 Rename to `bidWithEth`?
@@ -49,10 +64,16 @@ interface IBidding is ICosmicSignatureGameStorage, IBidStatistics {
 	/// todo-1 Rename this to `getEthBidPrice`.
 	function getBidPrice() external view returns (uint256);
 
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
+
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external;
+
 	/// @notice Places a bid using CST tokens.
 	/// @dev This function allows bidding with CST tokens, adjusting the CST price dynamically.
 	/// @param priceMaxLimit_ The maximum price the bidder is willing to pay.
-	/// @param message_ The bidder's message, if any.
+	/// @param message_ The bidder's message associated with the bid.
+	/// May be empty.
+	/// Can be used to store additional information or comments from the bidder.
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.

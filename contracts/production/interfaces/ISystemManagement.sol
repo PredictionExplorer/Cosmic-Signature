@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-import { IPrizesWallet } from "./IPrizesWallet.sol";
+import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
-// import { IMarketingWallet } from "./IMarketingWallet.sol";
 import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
+import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
+interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, ISystemEvents {
 	// function prepareMaintenance() external;
 	//
 	// function setRuntimeMode() external;
@@ -23,11 +23,9 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// Comment-202411168 relates and/or applies.
 	function setActivationTime(uint256 newValue_) external;
 
-	/// @notice Calculates the duration until the game activates.
-	/// @return The number of seconds until activation or 0 if already activated.
-	/// todo-0 Rename to `durationUntilActivation`.
-	/// todo-0 The same applies to all `timeUntil...` functions.
-	function timeUntilActivation() external view returns (uint256);
+	/// @notice Calculates the duration until the Game activates.
+	/// @return The number of seconds until the activation or 0 if already activated.
+	function getDurationUntilActivation() external view returns (uint256);
 
 	/// @notice Sets `delayDurationBeforeNextRound`.
 	/// Only the contract owner is permitted to call this method.
@@ -39,16 +37,11 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setMarketingReward(uint256 newValue_) external;
 
-	/// @notice Set the maximum message length
+	/// @notice Sets `maxMessageLength`.
 	/// Only the contract owner is permitted to call this method.
 	/// Comment-202409143 applies.
-	/// @param _maxMessageLength The new maximum message length
-	function setMaxMessageLength(uint256 _maxMessageLength) external;
-
-	/// @notice Sets `prizesWallet`.
-	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setPrizesWallet(IPrizesWallet newValue_) external;
+	function setMaxMessageLength(uint256 newValue_) external;
 
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
@@ -81,67 +74,71 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setStakingWalletRandomWalkNft(IStakingWalletRandomWalkNft newValue_) external;
 
+	/// @notice Sets `prizesWallet`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setPrizesWallet(IPrizesWallet newValue_) external;
+
 	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setCharityAddress(address newValue_) external;
 
-	function setNanoSecondsExtra(uint256 newNanoSecondsExtra) external;
+	function setNanoSecondsExtra(uint256 newValue_) external;
 
-	/// @notice Set the time increase factor
+	/// @notice Sets `timeIncrease`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _timeIncrease The new time increase factor
-	function setTimeIncrease(uint256 _timeIncrease) external;
+	/// @param newValue_ The new value.
+	function setTimeIncrease(uint256 newValue_) external;
 
-	/// @notice Set the initial seconds until prize
+	/// @notice Sets `initialSecondsUntilPrize`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _initialSecondsUntilPrize The new initial seconds until prize
-	function setInitialSecondsUntilPrize(uint256 _initialSecondsUntilPrize) external;
+	/// @param newValue_ The new value.
+	function setInitialSecondsUntilPrize(uint256 newValue_) external;
 
-	/// todo-0 Rename to `set...`.
-	function updateInitialBidAmountFraction(uint256 newInitialBidAmountFraction) external;
+	function setInitialBidAmountFraction(uint256 newValue_) external;
 
-	/// @notice Set the price increase factor
+	/// @notice Sets `priceIncrease`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _priceIncrease The new price increase factor
-	function setPriceIncrease(uint256 _priceIncrease) external;
+	/// @param newValue_ The new value.
+	function setPriceIncrease(uint256 newValue_) external;
 
-	/// @notice Set the round start CST auction length
+	/// @notice Sets `roundStartCstAuctionLength`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param roundStartCstAuctionLength_ The new round start CST auction length
-	function setRoundStartCstAuctionLength(uint256 roundStartCstAuctionLength_) external;
+	/// @param newValue_ The new value.
+	function setRoundStartCstAuctionLength(uint256 newValue_) external;
 
-	function setStartingBidPriceCSTMinLimit(uint256 newStartingBidPriceCSTMinLimit) external;
+	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external;
 
-	/// @notice Set the token reward amount
+	/// @notice Sets `tokenReward`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param _tokenReward The new token reward amount
-	function setTokenReward(uint256 _tokenReward) external;
+	/// @param newValue_ The new value.
+	function setTokenReward(uint256 newValue_) external;
 
-	/// @notice Sets the main prize percentage.
+	/// @notice Sets `mainPrizePercentage`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param mainPrizePercentage_ The new value.
-	function setMainPrizePercentage(uint256 mainPrizePercentage_) external;
+	/// @param newValue_ The new value.
+	function setMainPrizePercentage(uint256 newValue_) external;
 
-	/// @notice Sets the Chrono-Warrior ETH prize percentage.
+	/// @notice Sets `chronoWarriorEthPrizePercentage`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param chronoWarriorEthPrizePercentage_ The new value.
-	function setChronoWarriorEthPrizePercentage(uint256 chronoWarriorEthPrizePercentage_) external;
+	/// @param newValue_ The new value.
+	function setChronoWarriorEthPrizePercentage(uint256 newValue_) external;
 
-	/// @notice Sets the raffle percentage.
+	/// @notice Sets `rafflePercentage`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param rafflePercentage_ The new value.
-	function setRafflePercentage(uint256 rafflePercentage_) external;
+	/// @param newValue_ The new value.
+	function setRafflePercentage(uint256 newValue_) external;
 
-	/// @notice Sets the staking percentage.
+	/// @notice Sets `stakingPercentage`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param stakingPercentage_ The new value.
-	function setStakingPercentage(uint256 stakingPercentage_) external;
+	/// @param newValue_ The new value.
+	function setStakingPercentage(uint256 newValue_) external;
 
-	/// @notice Sets the charity percentage.
+	/// @notice Sets `charityPercentage`.
 	/// Only the contract owner is permitted to call this method.
-	/// @param charityPercentage_ The new value.
-	function setCharityPercentage(uint256 charityPercentage_) external;
+	/// @param newValue_ The new value.
+	function setCharityPercentage(uint256 newValue_) external;
 
 	/// @notice Sets `timeoutDurationToClaimMainPrize`.
 	/// Only the contract owner is permitted to call this method.
@@ -153,9 +150,9 @@ interface ISystemManagement is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @param newValue_ The new value.
 	function setCstRewardAmountMultiplier(uint256 newValue_) external;
 
-	function setNumRaffleETHWinnersBidding(uint256 newNumRaffleETHWinnersBidding) external;
+	function setNumRaffleETHWinnersBidding(uint256 newValue_) external;
 
-	function setNumRaffleNftWinnersBidding(uint256 newNumRaffleNftWinnersBidding) external;
+	function setNumRaffleNftWinnersBidding(uint256 newValue_) external;
 
-	function setNumRaffleNftWinnersStakingRWalk(uint256 newNumRaffleNftWinnersStakingRWalk) external;
+	function setNumRaffleNftWinnersStakingRWalk(uint256 newValue_) external;
 }

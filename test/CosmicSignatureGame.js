@@ -39,6 +39,9 @@ describe("CosmicSignatureGame", function () {
 		const bidPriceAfter = await cosmicSignatureGameProxy.getBidPrice();
 		expect(bidPriceAfter).not.to.equal(bidPrice);
 	});
+
+	// I have eliminated the `fallback` method.
+	// Now the call reverts without a reason.
 	it("The fallback method works", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
 		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -47,6 +50,7 @@ describe("CosmicSignatureGame", function () {
 				to: await cosmicSignatureGameProxy.getAddress(),
 				data: "0xffffffff", // non-existent selector
 			})
-		).to.be.revertedWith("Method does not exist.");
+		// ).to.be.revertedWith("Method does not exist.");
+		).to.be.reverted;
 	});
 });

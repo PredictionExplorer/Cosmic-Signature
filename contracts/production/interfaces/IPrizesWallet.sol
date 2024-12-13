@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
+import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title A wallet to hold the Cosmic Signature Game prizes and donations.
 /// @author The Cosmic Signature Development Team.
@@ -12,7 +13,7 @@ import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.
 /// @dev It's OK if the same NFT will be donated and claimed multiple times.
 /// Nothing would be broken if an ERC-20 or ERC-721 contract acts malitiosly.
 /// For example, a malitios NFT contract can allow donating an NFT multiple times without claiming it.
-interface IPrizesWallet {
+interface IPrizesWallet is IAddressValidator {
 	/// @notice Emitted when `timeoutDurationToWithdrawPrizes` is changed.
 	/// @param newValue The new value.
 	event TimeoutDurationToWithdrawPrizesChanged(uint256 newValue);

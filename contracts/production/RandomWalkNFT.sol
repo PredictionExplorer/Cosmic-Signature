@@ -1,6 +1,8 @@
 // todo-1 Is license supposed to be the same in all files? Currently it's not.
 // todo-1 Near `IRandomWalkNFT`, I specified a different license.
 // todo-1 But, given Comment-202409149, maybe remove that interface?
+// todo-1 But I use it for setters and events, so maybe leave it alone.
+// todo-1 Comment that I added it so that the code was simuilar to other contracts.
 // todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
 // todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT

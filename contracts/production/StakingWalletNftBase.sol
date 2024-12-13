@@ -7,12 +7,13 @@ pragma solidity 0.8.28;
 // #region
 
 // import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { AddressValidator } from "./AddressValidator.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 
 // #endregion
 // #region
 
-abstract contract StakingWalletNftBase is IStakingWalletNftBase {
+abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBase {
 	// #region State
 
 	/// @notice The current staked NFT count.
