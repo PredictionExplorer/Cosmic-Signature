@@ -31,8 +31,8 @@ import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureG
 
 contract CosmicSignatureGameOpenBid is
 	ReentrancyGuardTransientUpgradeable,
-	UUPSUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
+	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
 	SystemManagement,
@@ -62,9 +62,8 @@ contract CosmicSignatureGameOpenBid is
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
-		__UUPSUpgradeable_init();
-		// ToDo-202408114-1 applies.
 		__Ownable_init(ownerAddress_);
+		__UUPSUpgradeable_init();
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;

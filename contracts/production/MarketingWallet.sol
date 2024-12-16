@@ -14,7 +14,6 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 
 	/// @notice Constructor.
 	/// @param token_ The `CosmicSignatureToken` contract address.
-	/// ToDo-202408114-1 applies.
 	constructor(CosmicSignatureToken token_)
 		Ownable(msg.sender)
 		providedAddressIsNonZero(address(token_)) {

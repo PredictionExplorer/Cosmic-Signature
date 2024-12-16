@@ -149,7 +149,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `Ownable.constructor`. ToDo-202408114-1 applies.
+	///    `Ownable.constructor`.
 	///    `providedAddressIsNonZero`.
 	///    `StakingWalletNftBase.constructor`.
 	///    `nft`.

@@ -61,10 +61,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 	// #endregion
 
-	// [ToDo-202408114-1]
-	// `Ownable` `constructor` and `__Ownable_init` now require a nonzero `initialOwner`.
-	// I have provided a simple one, but this implementation is to be revisited everywhere this ToDo is referenced.
-	// [/ToDo-202408114-1]
+	/// @dev `Ownable.constructor` now requires a nonzero `initialOwner`.
+	/// So I had to provide one, despite Comment-202409149.
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
 		// Issue. It would be more efficient and not any less random to initialize this with a hardcoded number.
 		// Comment-202412104 relates.
