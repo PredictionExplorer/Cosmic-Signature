@@ -1,4 +1,4 @@
-// todo-1 Rename this file to "open-bid.js".
+"use strict";
 
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("../../helper.js");
