@@ -16,7 +16,6 @@ contract CosmicSignatureToken is
 	ERC20Votes,
 	ICosmicSignatureToken {
 	/// @notice Constructor.
-	/// @dev ToDo-202408114-1 applies.
 	constructor()
 		Ownable(msg.sender)
 		ERC20("CosmicSignatureToken", "CST")

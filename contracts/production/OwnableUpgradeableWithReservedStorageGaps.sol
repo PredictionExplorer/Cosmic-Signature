@@ -7,8 +7,8 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 /// A contract with reserved storage gaps.
 /// Comment-202412142 relates and/or applies.
 /// Issue. A problem is that this is not helpful because OpenZeppelin upgradeable contracts,
-/// at least those I have reviewed, including `OwnableUpgradeable`, `UUPSUpgradeable`,
-/// `ReentrancyGuardTransientUpgradeable`, use storage slots at hardcoded positions.
+/// at least those I have reviewed, including `ReentrancyGuardTransientUpgradeable`, `OwnableUpgradeable`,
+/// `UUPSUpgradeable` use storage slots at hardcoded positions.
 /// Therefore we do not need contracts like this.
 /// Altough I have no immeiate plans to eliminate this one.
 ///

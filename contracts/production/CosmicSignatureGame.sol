@@ -31,8 +31,8 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
-	UUPSUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
+	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
 	SystemManagement,
@@ -62,9 +62,8 @@ contract CosmicSignatureGame is
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
-		__UUPSUpgradeable_init();
-		// ToDo-202408114-1 applies.
 		__Ownable_init(ownerAddress_);
+		__UUPSUpgradeable_init();
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
@@ -144,17 +143,6 @@ contract CosmicSignatureGame is
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
-
-	// #endregion
-	// #region // `onERC721Received`
-
-	// Moved to `PrizesWallet`.
-	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
-	// /// todo-1 Someone forgot to derive `CosmicSignatureGame` from `IERC721Receiver` and add the `override` keyword.
-	// function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
-	// 	// todo-1 This should return `IERC721Receiver.onERC721Received.selector` instead.
-	// 	return this.onERC721Received.selector;
-	// }
 
 	// #endregion
 	// #region `receive`

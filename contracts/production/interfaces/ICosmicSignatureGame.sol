@@ -27,6 +27,8 @@ interface ICosmicSignatureGame is
 	IMainPrize {
 	/// @notice Initializes this upgradeable contract.
 	/// This method is to be called right after deployment.
+	/// @param ownerAddress_ Contract owner address.
+	/// It could make sense to eliminate this parameter and use `msg.sender` instead, but let's leave it alone.
 	function initialize(address ownerAddress_) external;
 
 	/// @dev

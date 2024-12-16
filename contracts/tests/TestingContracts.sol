@@ -256,9 +256,9 @@ contract MaliciousNft1 is ERC721 {
 	}
 
 	/// @notice sends donateNft() inside a call to transfer a token, generating reentrant function call
-	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
+	function transferFrom(address from, address to, uint256 nftId) public override {
 		// the following call should revert
-		// todo-1 This will probably revert now due to `onlyGame`.
+		// todo-1 This will probably now revert due to `onlyGame`.
 		// todo-1 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
 			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
@@ -282,7 +282,7 @@ contract MaliciousNft2 is ERC721 {
 
 	// /// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
 	// /// @dev todo-1 This method is now broken. See todos in its body.
-	// function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
+	// function transferFrom(address from, address to, uint256 nftId) public override {
 	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
 	// 	// todo-1 This structure no longer exists.
 	// 	CosmicSignatureGame.BidParams memory defaultParams;

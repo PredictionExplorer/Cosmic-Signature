@@ -13,7 +13,7 @@ abstract contract NftDonations is
 	// SystemManagement,
 	INftDonations {
 	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive {
-	// 	nftAddress.safeTransferFrom(msg.sender, address(this), nftId);
+	// 	nftAddress.transferFrom(msg.sender, address(this), nftId);
 	// 	donatedNfts[numDonatedNfts] = CosmicSignatureConstants.DonatedNft({
 	// 		roundNum: roundNum,
 	// 		nftAddress: nftAddress,
@@ -25,7 +25,7 @@ abstract contract NftDonations is
 	// }
 
 	// function _donateNft(IERC721 nftAddress_, uint256 nftId_) internal {
-	// 	nftAddress_.safeTransferFrom(msg.sender, address(this), nftId_);
+	// 	nftAddress_.transferFrom(msg.sender, address(this), nftId_);
 	// 	donatedNfts[numDonatedNfts] = CosmicSignatureConstants.DonatedNft({
 	// 		roundNum: roundNum,
 	// 		nftAddress: nftAddress_,
@@ -44,7 +44,7 @@ abstract contract NftDonations is
 	// 	require(winners[donatedNft.roundNum] == msg.sender, CosmicSignatureErrors.DonatedNftClaimDenied("Only the bidding round main prize winner is permitted to claim this NFT.", msg.sender, index));
 	//
 	// 	donatedNft.claimed = true;
-	// 	donatedNft.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNft.nftId);
+	// 	donatedNft.nftAddress.transferFrom(address(this), msg.sender, donatedNft.nftId);
 	//
 	// 	emit DonatedNftClaimedEvent(donatedNft.roundNum, index, msg.sender, address(donatedNft.nftAddress), donatedNft.nftId);
 	// }
