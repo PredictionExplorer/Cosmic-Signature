@@ -1,3 +1,5 @@
+"use strict";
+
 // [Comment-202409255]
 // Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
 // So we must do things differently here.
@@ -70,6 +72,8 @@ const basicDeploymentAdvanced = async function (
 	// }
 
 	const CosmicSignatureGame = await hre.ethers.getContractFactory(cosmicSignatureGameContractName);
+
+	// Comment-202412129 relates.
 	const cosmicSignatureGameProxy =
 		await hre.upgrades.deployProxy(
 			CosmicSignatureGame.connect(deployerAcct),
@@ -78,6 +82,7 @@ const basicDeploymentAdvanced = async function (
 				kind: "uups"
 			}
 		);
+		
 	const cosmicSignatureGameProxyAddr = await cosmicSignatureGameProxy.getAddress();
 
 	// // [Comment-202412061]

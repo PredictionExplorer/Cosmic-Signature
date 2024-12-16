@@ -24,46 +24,52 @@ contract BidderContract is IERC721Receiver {
 		cosmicSignatureGame = cosmicSignatureGame_;
 		creator = msg.sender;
 	}
+
 	receive() external payable {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
+
 	function doBid() external payable {
 		uint256 price = cosmicSignatureGame.getBidPrice();
-		CosmicSignatureGame.BidParams memory defaultParams;
-		defaultParams.message = "contract bid";
-		defaultParams.randomWalkNftId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(defaultParams);
-		cosmicSignatureGame.bid{ value: price }(param_data);
+		// CosmicSignatureGame.BidParams memory defaultParams;
+		// defaultParams.message = "contract bid";
+		// defaultParams.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(defaultParams);
+		// cosmicSignatureGame.bid{ value: price }(param_data);
+		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
 	}
+
 	function doBid2() external payable {
-		CosmicSignatureGame.BidParams memory defaultParams;
-		defaultParams.message = "contract bid";
-		defaultParams.randomWalkNftId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(defaultParams);
-		cosmicSignatureGame.bid{ value: msg.value }(param_data);
+		// CosmicSignatureGame.BidParams memory defaultParams;
+		// defaultParams.message = "contract bid";
+		// defaultParams.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(defaultParams);
+		// cosmicSignatureGame.bid{ value: msg.value }(param_data);
+		cosmicSignatureGame.bid{ value: msg.value }((-1), "contract bid");
 	}
+
 	function doBidRWalk(int256 nftId) external payable {
 		uint256 price = cosmicSignatureGame.getBidPrice();
-		CosmicSignatureGame.BidParams memory params;
-		params.message = "contract bid rwalk";
-		params.randomWalkNftId = nftId;
-		bytes memory param_data;
-		param_data = abi.encode(params);
-		cosmicSignatureGame.bid{ value: price }(param_data);
+		// CosmicSignatureGame.BidParams memory params;
+		// params.message = "contract bid rwalk";
+		// params.randomWalkNftId = nftId;
+		// bytes memory param_data = abi.encode(params);
+		// cosmicSignatureGame.bid{ value: price }(param_data);
+		cosmicSignatureGame.bid{ value: price }(nftId, "contract bid rwalk");
 	}
+
 	function doBidRWalk2(int256 nftId) external payable {
 		RandomWalkNFT rwalk = cosmicSignatureGame.randomWalkNft();
 		rwalk.setApprovalForAll(address(cosmicSignatureGame), true);
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
-		CosmicSignatureGame.BidParams memory params;
-		params.message = "contract bid rwalk";
-		params.randomWalkNftId = nftId;
-		bytes memory param_data;
-		param_data = abi.encode(params);
-		cosmicSignatureGame.bid{ value: msg.value }(param_data);
+		// CosmicSignatureGame.BidParams memory params;
+		// params.message = "contract bid rwalk";
+		// params.randomWalkNftId = nftId;
+		// bytes memory param_data = abi.encode(params);
+		// cosmicSignatureGame.bid{ value: msg.value }(param_data);
+		cosmicSignatureGame.bid{ value: msg.value }(nftId, "contract bid rwalk");
 	}
+
 	// todo-1 This function no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function doBidAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
 	// 	nftAddress_.setApprovalForAll(address(cosmicSignatureGame), true);
@@ -71,20 +77,23 @@ contract BidderContract is IERC721Receiver {
 	// 	myDonatedNfts.push(donatedTokenNum);
 	// 	numMyDonatedNfts++;
 	// 	uint256 price = cosmicSignatureGame.getBidPrice();
-	// 	CosmicSignatureGame.BidParams memory params;
-	// 	params.message = "contract bid with donation";
-	// 	params.randomWalkNftId = -1;
-	// 	bytes memory param_data;
-	// 	param_data = abi.encode(params);
-	// 	cosmicSignatureGame.bidAndDonateNft{ value: price }(param_data, nftAddress_, nftId_);
+	// 	// CosmicSignatureGame.BidParams memory params;
+	// 	// params.message = "contract bid with donation";
+	// 	// params.randomWalkNftId = -1;
+	// 	// bytes memory param_data = abi.encode(params);
+	// 	// cosmicSignatureGame.bidAndDonateNft{ value: price }(param_data, nftAddress_, nftId_);
+	// 	cosmicSignatureGame.bidAndDonateNft{ value: price }((-1), "contract bid with donation", nftAddress_, nftId_);
 	// }
+
 	function doClaim() external {
 		cosmicSignatureGame.claimPrize();
 	}
+
 	// function withdrawEthPrize(address destination) external {
 	// 	PrizesWallet prizesWallet_ = PrizesWallet(destination);
 	// 	prizesWallet_.withdrawEth();
 	// }
+
 	// // todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// // todo-1 Should this method now call `PrizesWallet.withdrawEverything`?
 	// function withdrawAll() external {
@@ -132,30 +141,34 @@ contract BidderContract is IERC721Receiver {
 	// 	delete myDonatedNfts;
 	// 	delete numMyDonatedNfts;
 	// }
+
 	function doFailedBid() external payable {
 		uint256 price = msg.value;
-		CosmicSignatureGame.BidParams memory defaultParams;
-		defaultParams.message = "contract bid";
-		defaultParams.randomWalkNftId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(defaultParams);
 		blockDeposits = true;
-		cosmicSignatureGame.bid{ value: price }(param_data);
+		// CosmicSignatureGame.BidParams memory defaultParams;
+		// defaultParams.message = "contract bid";
+		// defaultParams.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(defaultParams);
+		// cosmicSignatureGame.bid{ value: price }(param_data);
+		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
 		blockDeposits = false;
 	}
+
 	function startBlockingDeposits() external {
 		blockDeposits = true;
 	}
+
 	function stopBlockingDeposits() external {
 		blockDeposits = false;
 	}
+
 	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
 		// todo-1 This should return `IERC721Receiver.onERC721Received.selector` instead.
 		return this.onERC721Received.selector;
 	}
 }
 
-/// @notice Bidder Contract but not ERC721 receiver.
+/// @notice Bidder Contract but not an `IERC721Receiver`.
 /// ToDo-202411268-1 relates and/or applies.
 contract BidCNonRecv {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
@@ -165,16 +178,19 @@ contract BidCNonRecv {
 		cosmicSignatureGame = cosmicSignatureGame_;
 		creator = msg.sender;
 	}
+
 	receive() external payable {}
+
 	function doBid() external payable {
 		uint256 price = cosmicSignatureGame.getBidPrice();
-		CosmicSignatureGame.BidParams memory params;
-		params.message = "non-erc721 receiver bid";
-		params.randomWalkNftId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(params);
-		cosmicSignatureGame.bid{ value: price }(param_data);
+		// CosmicSignatureGame.BidParams memory params;
+		// params.message = "non-IERC721Receiver bid";
+		// params.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(params);
+		// cosmicSignatureGame.bid{ value: price }(param_data);
+		cosmicSignatureGame.bid{ value: price }((-1), "non-IERC721Receiver bid");
 	}
+	
 	function doClaim() external {
 		cosmicSignatureGame.claimPrize();
 	}

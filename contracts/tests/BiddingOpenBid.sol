@@ -23,24 +23,24 @@ abstract contract BiddingOpenBid is
 	IBidding {
 	// #region Data Types
 
-	/// @title Parameters needed to place a bid.
-	/// @dev Comment-202411111 applies.
-	struct BidParams {
-		/// @notice The bidder's message associated with the bid.
-		/// May be empty.
-		/// Can be used to store additional information or comments from the bidder.
-		string message;
-
-		/// @notice The ID of the RandomWalk NFT to be used for bidding.
-		/// Set to -1 if no RandomWalk NFT is to be used.
-		/// Comment-202412036 applies.
-		int256 randomWalkNftId;
-
-		/// @notice Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
-		/// `bidPrice` will be updated to `msg.value` and stay at that level.
-		/// todo-2 The above description of this parameter doesn't appear to be perfectly accurate. To be revisited.
-		bool openBid;
-	}
+	// /// @title Parameters needed to place a bid.
+	// /// @dev Comment-202411111 applies.
+	// struct BidParams {
+	// 	/// @notice The bidder's message associated with the bid.
+	// 	/// May be empty.
+	// 	/// Can be used to store additional information or comments from the bidder.
+	// 	string message;
+	//
+	// 	/// @notice The ID of the RandomWalk NFT to be used for bidding.
+	// 	/// Set to -1 if no RandomWalk NFT is to be used.
+	// 	/// Comment-202412036 applies.
+	// 	int256 randomWalkNftId;
+	//
+	// 	/// @notice Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
+	// 	/// `bidPrice` will be updated to `msg.value` and stay at that level.
+	// 	/// todo-2 The above description of this parameter doesn't appear to be perfectly accurate. To be revisited.
+	// 	bool isOpenBid;
+	// }
 
 	// #endregion
 	// #region State
@@ -57,33 +57,49 @@ abstract contract BiddingOpenBid is
 
 	// #endregion
 
+	/// @dev ToDo-202412164-2 applies.
 	function setTimesBidPrice(uint256 newValue_) external onlyOwner {
 		timesBidPrice = newValue_;
 		emit TimesBidPriceChangedEvent(newValue_);
 	}
 
-	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
+	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		revert("This method is not implemented.");
+	}
+
+	/// @dev ToDo-202412164-2 applies.
+	function bidAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyActive*/ {
+		_bid(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
-	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
+	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		revert("This method is not implemented.");
+	}
+
+	/// @dev ToDo-202412164-2 applies.
+	function bidAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyActive*/ {
+		_bid(randomWalkNftId_, isOpenBid_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
-	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
-		_bid(_data);
+	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		revert("This method is not implemented.");
 	}
 
-	function _bid(bytes memory _data) internal /*onlyActive*/ {
-		BidParams memory params = abi.decode(_data, (BidParams));
+	/// @dev ToDo-202412164-2 applies.
+	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*nonReentrant*/ /*onlyActive*/ {
+		_bid(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
+	}
+
+	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyActive*/ {
+		// BidParams memory params = abi.decode(data_, (BidParams));
 		// CosmicSignatureConstants.BidType bidType;
 		uint256 newBidPrice = getBidPrice();
 		uint256 paidBidPrice;
-		if (params.randomWalkNftId == -1) {
-			if (params.openBid) {
+		if (/*params.randomWalkNftId*/ randomWalkNftId_ == -1) {
+			if (/*params.isOpenBid*/ isOpenBid_) {
 				uint256 minPriceOpenBid = newBidPrice * timesBidPrice;
 
 				// Comment-202412045 applies.
@@ -106,7 +122,7 @@ abstract contract BiddingOpenBid is
 			bidPrice = paidBidPrice;
 			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
 		} else {
-			// Issue. Somewhere around here, we probably should evaluate `params.openBid` and act differently if it's `true`.
+			// Issue. Somewhere around here, we probably should evaluate `/*params.isOpenBid*/ isOpenBid_` and act differently if it's `true`.
 
 			paidBidPrice = newBidPrice / CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 
@@ -118,39 +134,37 @@ abstract contract BiddingOpenBid is
 
 			bidPrice = newBidPrice;
 			require(
-				// !usedRandomWalkNfts[uint256(params.randomWalkNftId)],
-				usedRandomWalkNfts[uint256(params.randomWalkNftId)] == 0,
+				usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
 					"This RandomWalk NFT has already been used for bidding.",
-					uint256(params.randomWalkNftId)
+					uint256(/*params.randomWalkNftId*/ randomWalkNftId_)
 				)
 			);
 			require(
-				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNftId)),
+				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
 				CosmicSignatureErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
-					uint256(params.randomWalkNftId),
+					uint256(/*params.randomWalkNftId*/ randomWalkNftId_),
 					msg.sender
 				)
 			);
-			// usedRandomWalkNfts[uint256(params.randomWalkNftId)] = true;
-			usedRandomWalkNfts[uint256(params.randomWalkNftId)] = 1;
+			usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] = 1;
 			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
 		}
 
 		// Updating bidding statistics.
 		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
 
-		_bidCommon(params.message /* , bidType */);
+		_bidCommon(/*params.message*/ message_ /* , bidType */);
 		emit BidEvent(
 			/*lastBidderAddress*/ msg.sender,
 			roundNum,
 			int256(paidBidPrice),
-			params.randomWalkNftId,
+			/*params.randomWalkNftId*/ randomWalkNftId_,
 			-1,
 			prizeTime,
-			params.message
+			/*params.message*/ message_
 		);
 
 		// This condition will be `false` if we assigned near Comment-202412035.
@@ -167,27 +181,27 @@ abstract contract BiddingOpenBid is
 		}
 	}
 
-	function getBidPrice() public view override returns (uint256) {
+	function getBidPrice() public view override returns(uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
 	}
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*onlyActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// Comment-202409179 applies.
 		uint256 price = getCurrentBidPriceCST();
 
@@ -229,7 +243,7 @@ abstract contract BiddingOpenBid is
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
-	function getCurrentBidPriceCST() public view override returns (uint256) {
+	function getCurrentBidPriceCST() public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -247,7 +261,7 @@ abstract contract BiddingOpenBid is
 		}
 	}
 
-	function getCstAuctionDuration() public view override returns (uint256, uint256) {
+	function getCstAuctionDuration() public view override returns(uint256, uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -264,7 +278,7 @@ abstract contract BiddingOpenBid is
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal onlyActive {
+	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal /*nonReentrant*/ onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicSignatureErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -324,16 +338,16 @@ abstract contract BiddingOpenBid is
 		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 
-	function getTotalBids() public view override returns (uint256) {
+	function getTotalBids() external view override returns(uint256) {
 		return numRaffleParticipants[roundNum];
 	}
 
-	function getBidderAddressAtPosition(uint256 position) public view override returns (address) {
+	function getBidderAddressAtPosition(uint256 position) external view override returns(address) {
 		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
 		return raffleParticipants[roundNum][position];
 	}
 
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view override returns(address) {
 		require(
 			roundNum_ <= roundNum,
 			CosmicSignatureErrors.InvalidBidderQueryRoundNum(
@@ -357,15 +371,15 @@ abstract contract BiddingOpenBid is
 			)
 		);
 		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
-		address bidderAddr = raffleParticipants[roundNum_][offset];
-		return bidderAddr;
+		address bidderAddress_ = raffleParticipants[roundNum_][offset];
+		return bidderAddress_;
 	}
 
-	function getTotalSpentByBidder(address bidderAddress_) public view override returns (uint256, uint256) {
+	function getTotalSpentByBidder(address bidderAddress_) external view override returns(uint256, uint256) {
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
-	// function wasRandomWalkNftUsed(uint256 nftId_) public view override returns (bool) {
+	// function wasRandomWalkNftUsed(uint256 nftId_) external view override returns(bool) {
 	// 	// todo-9 This is now a `uint256`.
 	// 	return usedRandomWalkNfts[nftId_];
 	// }

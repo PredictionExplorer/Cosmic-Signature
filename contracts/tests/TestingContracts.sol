@@ -34,9 +34,11 @@ contract BrokenToken {
 /// todo-1 Rename to `BrokenErc20`.
 contract BrokenERC20 {
 	uint256 counter;
+
 	constructor(uint256 _counter) {
 		counter = _counter;
 	}
+
 	function mint(address, uint256) external {
 		if (counter == 0 ) {
 			require(false, "Test mint() (ERC20) failed");
@@ -49,6 +51,7 @@ contract BrokenERC20 {
 /// @notice Used to test `revert` statements for charity deposits.
 contract BrokenCharity {
 	// uint256 private counter;
+	
 	receive() external payable {
 		require(false, "Test deposit failed.");
 	}
@@ -119,10 +122,9 @@ contract BrokenStakingWalletCosmicSignatureNft {
 	}
 }
 
+/// @notice This contract will return all the assets before selfdestruct transaction,
+/// required for testing on the MainNet (Arbitrum) (prior to launch).
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
-	// This contract will return all the assets before selfdestruct transaction,
-	// required for testing on the MainNet (Arbitrum) (prior to launch)
-
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {
 	}
@@ -223,24 +225,27 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	}
 }
 
+/// todo-1 These legacy functions no longer exist.
 contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
 	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
 
 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 	// 	_insertToken(_nftId, stakeActionId_);
 	// }
+
 	// function doRemoveToken(uint256 _nftId) external {
 	// 	_removeToken(_nftId);
 	// }
 }
 
+/// todo-1 These legacy functions no longer exist.
 contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
 	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
 
-	// // todo-0 Nick, these legacy functions no longer exist.
 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 	// 	_insertToken(_nftId, stakeActionId_);
 	// }
+	
 	// function doRemoveToken(uint256 _nftId) external {
 	// 	_removeToken(_nftId);
 	// }
@@ -275,26 +280,27 @@ contract MaliciousNft2 is ERC721 {
 		// game = game_;
 	}
 
-	/// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
-	function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
-		// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
-		CosmicSignatureGame.BidParams memory defaultParams;
-		defaultParams.message = "";
-		defaultParams.randomWalkNftId = -1;
-		bytes memory param_data;
-		param_data = abi.encode(defaultParams);
-		// the following call should revert
-		// todo-1 Should we make a high level call here?
-		(bool isSuccess_, /*bytes memory retval*/) =
-			// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
-			msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
-		if ( ! isSuccess_ ) {
-			assembly {
-				let ptr := mload(0x40)
-				let size := returndatasize()
-				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
-			}
-		}
-	}
+	// /// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
+	// /// @dev todo-1 This method is now broken. See todos in its body.
+	// function safeTransferFrom(address from, address to, uint256 nftId, bytes memory data) public override {
+	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
+	// 	// todo-1 This structure no longer exists.
+	// 	CosmicSignatureGame.BidParams memory defaultParams;
+	// 	// defaultParams.message = "";
+	// 	defaultParams.randomWalkNftId = -1;
+	// 	bytes memory param_data = abi.encode(defaultParams);
+	// 	// the following call should revert
+	// 	// todo-1 Should we make a high level call here?
+	// 	(bool isSuccess_, /*bytes memory retval*/) =
+	// 		// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+	// 		msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
+	// 	if ( ! isSuccess_ ) {
+	// 		assembly {
+	// 			let ptr := mload(0x40)
+	// 			let size := returndatasize()
+	// 			returndatacopy(ptr, 0, size)
+	// 			revert(ptr, size)
+	// 		}
+	// 	}
+	// }
 }

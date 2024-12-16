@@ -4,19 +4,20 @@ This new business logic contract allows bidding with no upper limit. After bid i
 
 ### Implementation
 
-`BidParams` struct is modified by adding boolean flag to indicate the bid is going to be unrestricted in price (openBid=true):
+`BidParams` struct is modified by adding boolean flag to indicate the bid is going to be unrestricted in price (isOpenBid=true):
 
+    // todo-1 This structure no longer exists.
     struct BidParams {
         string message;
         int256 randomWalkNftId;
-        bool openBid; // true if the value sent with the TX is the amount of bid
+        bool isOpenBid; // true if the value sent with the TX is the amount of bid
     }   
 
 The bidder now sends transaction for any amount in `msg.value`, that is multiple times bigger than `timesBidPrice` state variable which controls minium value for open bids. For example if current bid price is 1 ETH and `timesBidPrice` = 3, then the `msg.value` must be minimum 3 ETH (or bigger). If it is lower, transaction will be reverted.
 
 The call to `bid()` function must now be done in a new way:
 
-    let bidParams = {message: 'bid test', randomWalkNftId: -1, openBid: true};
+    let bidParams = {message: "bid test", randomWalkNftId: -1, isOpenBid: true};
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
     let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
     await cosmicSignatureGameProxy.connect(testingAcct).bid(params, { value: bidPrice.mul(multiplier), gasLimit: 30000000 }); 

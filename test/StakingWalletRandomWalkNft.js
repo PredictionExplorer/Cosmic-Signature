@@ -39,14 +39,14 @@ describe("StakingWalletRandomWalkNft", function () {
 			// cosmicSignatureGame,
 		};
 	}
-	const bidParamsEncoding = {
-		type: "tuple(string,int256)",
-		name: "BidParams",
-		components: [
-			{ name: "message", type: "string" },
-			{ name: "randomWalkNftId", type: "int256" },
-		],
-	};
+	// const bidParamsEncoding = {
+	// 	type: "tuple(string,int256)",
+	// 	name: "BidParams",
+	// 	components: [
+	// 		{ name: "message", type: "string" },
+	// 		{ name: "randomWalkNftId", type: "int256" },
+	// 	],
+	// };
 	it("Shouldn't be possible to unstake() twice", async function () {
 		const {
 			cosmicSignatureGameProxy,
@@ -56,7 +56,6 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			bidLogic,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -105,7 +104,6 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			bidLogic,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -225,10 +223,10 @@ describe("StakingWalletRandomWalkNft", function () {
 			let tx = await stakingWalletRandomWalkNft.stake(i);
 		}
 
+		// let bidParams = { message: "", randomWalkNftId: -1 };
+		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		let bidParams = { message: "", randomWalkNftId: -1 };
-		let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		await cosmicSignatureGameProxy.bid(params, { value: bidPrice });
+		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice });
 
 		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
@@ -331,7 +329,6 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			bidLogic,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");

@@ -1,23 +1,17 @@
-const hre = require("hardhat");
+// todo-1 Rename this file to "open-bid.js".
 
-const bidParamsEncoding = {
-	type: "tuple(string,int256,bool)",
-	name: "BidParams",
-	components: [
-		{ name: "message", type: "string" },
-		{ name: "randomWalkNftId", type: "int256" },
-		{ name: "openBid", type: "bool"},
-	],
-};
-async function getCosmicSignatureGameContract(contractName) {
-	let cosmicSignatureGameAddr = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
-	if (typeof cosmicSignatureGameAddr === "undefined" || cosmicSignatureGameAddr.length != 42) {
-		console.log("COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address");
-		process.exit(1);
-	}
-	let cosmicSignatureGame = await hre.ethers.getContractAt(contractName, cosmicSignatureGameAddr);
-	return cosmicSignatureGame;
-}
+const hre = require("hardhat");
+const { getCosmicSignatureGameContract } = require("../../helper.js");
+
+// const bidParamsEncoding = {
+// 	type: "tuple(string,int256,bool)",
+// 	name: "BidParams",
+// 	components: [
+// 		{ name: "message", type: "string" },
+// 		{ name: "randomWalkNftId", type: "int256" },
+// 		{ name: "isOpenBid", type: "bool"},
+// 	],
+// };
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
@@ -31,13 +25,13 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
 
 	let multiplier = await cosmicSignatureGame.timesBidPrice()
-	let bidParams = { message: "open bid", randomWalkNftId: -1, openBid: true };
-	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
+	// let bidParams = { message: "open bid", randomWalkNftId: -1, isOpenBid: true };
+	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicSignatureGame.getBidPrice();
-	console.log("bidPrice before: "+bidPrice);
-	await cosmicSignatureGame.connect(testingAcct).bid(params, { value: bidPrice * multiplier, gasLimit: 30000000 });
+	console.log("bidPrice before:", bidPrice);
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), true, "open bid", { value: bidPrice * multiplier, gasLimit: 30000000 });
 	bidPrice = await cosmicSignatureGame.getBidPrice();
-	console.log("bidPrice after: "+bidPrice);
+	console.log("bidPrice after:", bidPrice);
 }
 
 main()

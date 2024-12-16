@@ -41,14 +41,14 @@ describe("ZeroAddressChecking", function () {
 			// cosmicSignatureGame,
 		};
 	}
-	const bidParamsEncoding = {
-		type: "tuple(string,int256)",
-		name: "BidParams",
-		components: [
-			{ name: "message", type: "string" },
-			{ name: "randomWalkNftId", type: "int256" },
-		],
-	};
+	// const bidParamsEncoding = {
+	// 	type: "tuple(string,int256)",
+	// 	name: "BidParams",
+	// 	components: [
+	// 		{ name: "message", type: "string" },
+	// 		{ name: "randomWalkNftId", type: "int256" },
+	// 	],
+	// };
 
 	// todo-1 We now allow a zero address in this case.
 	it("Shouldn't be possible to set a zero-address for CharityWallet", async function () {
@@ -61,7 +61,6 @@ describe("ZeroAddressChecking", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			bidLogic,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -80,7 +79,6 @@ describe("ZeroAddressChecking", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			bidLogic
 		} = await basicDeploymentAdvanced(
 			"SpecialCosmicSignatureGame",
 			owner,
@@ -102,7 +100,6 @@ describe("ZeroAddressChecking", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			marketingWallet,
-			bidLogic,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");

@@ -35,14 +35,14 @@ describe("CosmicSignatureToken", function () {
 			marketingWallet,
 		};
 	}
-	const bidParamsEncoding = {
-		type: "tuple(string,int256)",
-		name: "BidParams",
-		components: [
-			{ name: "message", type: "string" },
-			{ name: "randomWalkNftId", type: "int256" },
-		],
-	};
+	// const bidParamsEncoding = {
+	// 	type: "tuple(string,int256)",
+	// 	name: "BidParams",
+	// 	components: [
+	// 		{ name: "message", type: "string" },
+	// 		{ name: "randomWalkNftId", type: "int256" },
+	// 	],
+	// };
 	it("ERC20 nonces() function exists", async function () {
 		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =

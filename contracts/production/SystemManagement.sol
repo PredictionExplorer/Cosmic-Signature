@@ -42,7 +42,7 @@ abstract contract SystemManagement is
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp < activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsActive("Already active.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsActive("A bidding round is already active.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
@@ -51,7 +51,7 @@ abstract contract SystemManagement is
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp >= activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsInactive("Not active yet.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsInactive("The next bidding round is not active yet.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
