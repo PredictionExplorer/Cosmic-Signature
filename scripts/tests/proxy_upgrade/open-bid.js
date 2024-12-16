@@ -1,3 +1,5 @@
+"use strict";
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("../../helper.js");
 
@@ -21,10 +23,15 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-	// let bidParams = { message: "bid test", randomWalkNftId: -1, isOpenBid: false };
+
+	let multiplier = await cosmicSignatureGame.timesBidPrice()
+	// let bidParams = { message: "open bid", randomWalkNftId: -1, isOpenBid: true };
 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
 	let bidPrice = await cosmicSignatureGame.getBidPrice();
-	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), false, "bid test", { value: bidPrice, gasLimit: 30000000 });
+	console.log("bidPrice before:", bidPrice);
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), true, "open bid", { value: bidPrice * multiplier, gasLimit: 30000000 });
+	bidPrice = await cosmicSignatureGame.getBidPrice();
+	console.log("bidPrice after:", bidPrice);
 }
 
 main()

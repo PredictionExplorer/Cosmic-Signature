@@ -40,29 +40,30 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 		string message
 	);
 	
-	/// @dev
-	/// todo-1 Rename this to `bidWithEthAndDonateToken`.
-	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable;
+	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an ERC-20 token amount in a single transaction.
+	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
 
-	/// @notice Bids and donates an NFT in a single transaction.
-	/// @param data_ Encoded bid parameters.
+	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an NFT in a single transaction.
 	/// @param nftAddress_ NFT contract address.
 	/// @param nftId_ NFT ID.
-	/// @dev
-	/// todo-1 Rename this to `bidWithEthAndDonateNft`.
-	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable;
+	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
-	/// @notice Place a bid in the current round 
-	/// @dev This function handles ETH bids and RandomWalk NFT bids
-	/// todo-1 Rename to `bidWithEth`?
+	/// @notice Places an ETH plus optional RandomWalk NFT bid.
+	/// ---param data_ Encoded `BidParams`.
+	/// @param randomWalkNftId_ The ID of the RandomWalk NFT to be used for bidding.
+	/// Set to -1 if no RandomWalk NFT is to be used.
+	/// Comment-202412036 applies.
+	/// @param message_ The bidder's message associated with the bid.
+	/// May be empty.
+	/// Can be used to store additional information or comments from the bidder.
+	/// todo-1 Rename this method to `bidWithEth`.
 	/// todo-1 Then also rename methods like `bidAndDonate...`.
-	/// @param _data Encoded bid parameters including message and RandomWalk NFT ID
-	function bid(bytes calldata _data) external payable;
+	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable;
 
 	/// @notice Obtains the current price that a bidder is required to pay to place an ETH bid
 	/// @return The ETH price, in Wei
 	/// todo-1 Rename this to `getEthBidPrice`.
-	function getBidPrice() external view returns (uint256);
+	function getBidPrice() external view returns(uint256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
 
@@ -82,26 +83,26 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @return The CST price, in Wei.
 	/// @dev Comment-202409179 relates.
 	/// todo-1 Rename this to `getCstBidPrice`.
-	function getCurrentBidPriceCST() external view returns (uint256);
+	function getCurrentBidPriceCST() external view returns(uint256);
 
 	/// @return A tuple containing the elapsed and total durations of the current auction.
 	/// @dev This function is used by `getCurrentBidPriceCST`
 	/// todo-1 I dislike it that this returns 2 numbers. This should return only seconds elapsed.
 	/// todo-1 Rename to `getDurationSinceCstDutchAuctionStart` or `getCstDutchAuctionElapsedDuration`.
-	function getCstAuctionDuration() external view returns (uint256, uint256);
+	function getCstAuctionDuration() external view returns(uint256, uint256);
 
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	/// todo-1 Rename this to `getTotalNumBids`.
-	function getTotalBids() external view returns (uint256);
+	function getTotalBids() external view returns(uint256);
 
 	/// @notice Get the address of a bidder at a specific position in the current round
 	/// @param position The position of the bidder (0-indexed)
 	/// @return The address of the bidder at the specified position
 	/// @dev todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	/// todo-1 Otherwise name this better.
-	function getBidderAddressAtPosition(uint256 position) external view returns (address);
+	function getBidderAddressAtPosition(uint256 position) external view returns(address);
 
 	/// @notice Get the address of a bidder at a specific position from the end in a given round
 	/// @param roundNum_ The bidding round number.
@@ -110,7 +111,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @dev todo-1 Rename to reflect the fact that this is position from end.
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	/// todo-1 Otherwise name this better.
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns (address);
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns(address);
 
 	/// @notice Get the total amount spent by a bidder in the current round
 	/// @param bidderAddress_ The address of the bidder
@@ -119,12 +120,12 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// todo-1 This is ETH, right? Rename to make it clear. Actually it's both ETH and CST, right? Make it clear in this comment.
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
 	/// todo-1 Otherwise name this better.
-	function getTotalSpentByBidder(address bidderAddress_) external view returns (uint256, uint256);
+	function getTotalSpentByBidder(address bidderAddress_) external view returns(uint256, uint256);
 
 	// /// @notice Checks if a RandomWalk NFT has ever been used for bidding.
 	// /// @param nftId_ NFT ID.
 	// /// @return `true` if the given NFT has been used; `false` otherwise.
 	// /// @dev I have eliminated this method. All involved variables are `public`. So anybody can query them.
 	// /// todo-9 It would be more efficient if this returns a number, like `IStakingWalletNftBase.wasNftUsed` does.
-	// function wasRandomWalkNftUsed(uint256 nftId_) external view returns (bool);
+	// function wasRandomWalkNftUsed(uint256 nftId_) external view returns(bool);
 }

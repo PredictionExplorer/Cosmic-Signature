@@ -1,7 +1,10 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-// #region Imports
+// #endregion
+// #region
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
@@ -24,8 +27,8 @@ import { MainPrize } from "./MainPrize.sol";
 import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 
 // #endregion
+// #region
 
-/// @dev This contract inherits from various OpenZeppelin contracts and custom game logic
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
 	UUPSUpgradeable,
@@ -40,6 +43,8 @@ contract CosmicSignatureGame is
 	SpecialPrizes,
 	MainPrize,
 	ICosmicSignatureGame {
+	// #region `constructor`
+
 	/// @notice Constructor.
 	/// @dev This constructor is only used to disable initializers for the implementation contract.
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -48,7 +53,10 @@ contract CosmicSignatureGame is
 		_disableInitializers();
 	}
 
-	function initialize(address ownerAddress_) external override initializer {
+	// #endregion
+	// #region `initialize`
+
+	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
 		// #enable_asserts assert(activationTime == 0);
 
@@ -120,9 +128,8 @@ contract CosmicSignatureGame is
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
 
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
-		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
-	}
+	// #endregion
+	// #region `upgradeTo`
 
 	function upgradeTo(address newImplementationAddress_) external override {
 		// // #enable_asserts // #disable_smtchecker console.log("1 upgradeTo");
@@ -130,6 +137,16 @@ contract CosmicSignatureGame is
 		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
 		emit IERC1967.Upgraded(newImplementationAddress_);
 	}
+
+	// #endregion
+	// #region `_authorizeUpgrade`
+
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
+	}
+
+	// #endregion
+	// #region // `onERC721Received`
 
 	// Moved to `PrizesWallet`.
 	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
@@ -139,16 +156,27 @@ contract CosmicSignatureGame is
 	// 	return this.onERC721Received.selector;
 	// }
 
-	receive() external payable override {
-		// Treating incoming ETH as a bid with default parameters.
-		BidParams memory defaultParams;
-		// defaultParams.message = "";
-		defaultParams.randomWalkNftId = -1;
-		bytes memory param_data = abi.encode(defaultParams);
-		bid(param_data);
+	// #endregion
+	// #region `receive`
+
+	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
+		// Bidding with default parameters.
+		// BidParams memory defaultParams;
+		// // defaultParams.message = "";
+		// defaultParams.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(defaultParams);
+		// bid(param_data);
+		_bid((-1), "");
 	}
+
+	// #endregion
+	// #region // `fallback`
 
 	// fallback() external payable override {
 	// 	revert("Method does not exist.");
 	// }
+
+	// #endregion
 }
+
+// #endregion

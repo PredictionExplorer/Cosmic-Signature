@@ -15,14 +15,14 @@ describe("CosmicSignatureDao", function () {
 		contracts.signers = signers;
 		return contracts;
 	}
-	const bidParamsEncoding = {
-		type: "tuple(string,int256)",
-		name: "BidParams",
-		components: [
-			{ name: "message", type: "string" },
-			{ name: "randomWalkNftId", type: "int256" },
-		],
-	};
+	// const bidParamsEncoding = {
+	// 	type: "tuple(string,int256)",
+	// 	name: "BidParams",
+	// 	components: [
+	// 		{ name: "message", type: "string" },
+	// 		{ name: "randomWalkNftId", type: "int256" },
+	// 	],
+	// };
 	it("Changing CharityWallet.charityAddress via CosmicSignatureDao", async function () {
 		const forward_blocks = async n => {
 			// for (let i = 0; i < n; i++) {
@@ -36,11 +36,11 @@ describe("CosmicSignatureDao", function () {
 			await loadFixture(deployCosmicSignature);
          const [owner, addr1, addr2, addr3, addr4, addr5,] = signers;
 
-		const bidParams = { message: "", randomWalkNftId: -1 };
-		const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		// const bidParams = { message: "", randomWalkNftId: -1 };
+		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		for( let counter_ = 0; counter_ < 4; ++ counter_ ) {
 			let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(params, { value: bidPrice });
+			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(/*params*/ (-1), "", { value: bidPrice });
 		}
 
 		const votingDelay_ = await cosmicSignatureDao.votingDelay();

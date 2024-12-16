@@ -86,10 +86,11 @@ contract PrizesWallet is Ownable, IERC721Receiver, AddressValidator, IPrizesWall
 	/// @dev
 	/// [ToDo-202411268-1]
 	/// Review all:
-	/// onERC721Received|IERC721Receiver|safeTransfer(From)?
+	/// ERC721\W*(Receiv|hold)|safeTransfer(From)?|safeMint
 	/// Only `PrizesWallet` needs this, right? Or it doesn't? What about some testing contracts?
 	/// But even `PrizesWallet` doesn't need this because it won't make the NFT claimable.
 	/// The front end should tell the user to make sure it can receive an NFT.
+	/// >>> OpenZeppelin provides an implementation of this: ERC721Holder
 	/// ToDo-202411267-1 relates.
 	/// [/ToDo-202411268-1]
 	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns(bytes4) {

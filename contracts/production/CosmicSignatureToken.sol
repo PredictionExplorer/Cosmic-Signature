@@ -33,6 +33,7 @@ contract CosmicSignatureToken is
 	/// todo-1 Make some `public` functions `external`.
 	/// todo-1 Make some `public`/`external` functions `private`.
 	/// todo-1 Document in a user manual that bidders don't need to set allowance to bid with CST.
+	/// todo-1 Will this apply to trading on our exchange as well?
 	function burn(address account, uint256 value) public override onlyOwner {
 		_burn(account, value);
 	}

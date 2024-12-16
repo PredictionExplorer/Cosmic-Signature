@@ -1,13 +1,13 @@
 const hre = require("hardhat");
 
-const bidParamsEncoding = {
-	type: "tuple(string,int256)",
-	name: "BidParams",
-	components: [
-		{ name: "message", type: "string" },
-		{ name: "randomWalkNftId", type: "int256" },
-	],
-};
+// const bidParamsEncoding = {
+// 	type: "tuple(string,int256)",
+// 	name: "BidParams",
+// 	components: [
+// 		{ name: "message", type: "string" },
+// 		{ name: "randomWalkNftId", type: "int256" },
+// 	],
+// };
 
 async function getCosmicSignatureGameContract() {
 	let cosmicSignatureGameAddr = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
@@ -29,10 +29,10 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
-	let bidParams = { message: "bid test", randomWalkNftId: -1 };
-	let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+	// let bidParams = { message: "bid test", randomWalkNftId: -1 };
+	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let bidPrice = await cosmicSignatureGame.getBidPrice();
-	await cosmicSignatureGame.connect(testingAcct).bid(params, { value: bidPrice, gasLimit: 30000000 });
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), "bid test", { value: bidPrice, gasLimit: 30000000 });
 }
 
 main()

@@ -35,14 +35,14 @@ describe("CharityWallet", function () {
 			marketingWallet,
 		};
 	}
-	const bidParamsEncoding = {
-		type: "tuple(string,int256)",
-		name: "BidParams",
-		components: [
-			{ name: "message", type: "string" },
-			{ name: "randomWalkNftId", type: "int256" },
-		],
-	};
+	// const bidParamsEncoding = {
+	// 	type: "tuple(string,int256)",
+	// 	name: "BidParams",
+	// 	components: [
+	// 		{ name: "message", type: "string" },
+	// 		{ name: "randomWalkNftId", type: "int256" },
+	// 	],
+	// };
 	it("CharityWallet is sending the right amount", async function () {
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
 			await loadFixture(deployCosmicSignature);

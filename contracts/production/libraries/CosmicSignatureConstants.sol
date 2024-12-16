@@ -155,7 +155,7 @@ library CosmicSignatureConstants {
 		RandomWalk
 	}
 
-	// /// @notice Types of bids that can be made in the game.
+	// /// @notice Types of bids that can be made in the Game.
 	// /// todo-1 Rename to `BidTypeCode`.
 	// enum BidType {
 	// 	/// @notice Bid using Ether.
@@ -171,8 +171,7 @@ library CosmicSignatureConstants {
 	// 	CST
 	// }
 
-	/// @notice Information about a bidder
-	/// @dev Stores the total amount spent and the time of the last bid
+	/// @notice Information about a bidder.
 	struct BidderInfo {
 		// todo-1 Eliminate these total spens? It appears that they are not used in the logic.
 		uint256 totalSpentEth;

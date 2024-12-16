@@ -23,48 +23,46 @@ abstract contract Bidding is
 	IBidding {
 	// #region Data Types
 
-	/// @title Parameters needed to place a bid.
-	/// @dev
-	/// [Comment-202411111]
-	/// Similar structures exist in multiple places.
-	/// [/Comment-202411111]
-	struct BidParams {
-		/// @notice The bidder's message associated with the bid.
-		/// May be empty.
-		/// Can be used to store additional information or comments from the bidder.
-		string message;
-
-		/// @notice The ID of the RandomWalk NFT to be used for bidding.
-		/// Set to -1 if no RandomWalk NFT is to be used.
-		/// Comment-202412036 applies.
-		int256 randomWalkNftId;
-	}
+	// /// @title Parameters needed to place a bid.
+	// /// @dev
+	// /// [Comment-202411111]
+	// /// Similar structures exist in multiple places.
+	// /// [/Comment-202411111]
+	// struct BidParams {
+	// 	/// @notice The bidder's message associated with the bid.
+	// 	/// May be empty.
+	// 	/// Can be used to store additional information or comments from the bidder.
+	// 	string message;
+	//
+	// 	/// @notice The ID of the RandomWalk NFT to be used for bidding.
+	// 	/// Set to -1 if no RandomWalk NFT is to be used.
+	// 	/// Comment-202412036 applies.
+	// 	int256 randomWalkNftId;
+	// }
 
 	// #endregion
 
-	function bidAndDonateToken(bytes calldata data_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
+	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		_bid(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
-	function bidAndDonateNft(bytes calldata data_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyActive*/ {
-		_bid(data_);
+	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		_bid(randomWalkNftId_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
-	function bid(bytes memory _data) public payable override nonReentrant /*onlyActive*/ {
-		_bid(_data);
+	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		_bid(/*data_*/ randomWalkNftId_, message_);
 	}
 
-	function _bid(bytes memory _data) internal /*onlyActive*/ {
-		// todo-1 Why do we need this ugly data thing? Why can't we simply pass parameters to the method the normal way?
-		// todo-1 But keep in mind that `BidParams` is different in `BiddingOpenBid`.
-		BidParams memory params = abi.decode(_data, (BidParams));
+	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyActive*/ {
+		// BidParams memory params = abi.decode(data_, (BidParams));
 		// CosmicSignatureConstants.BidType bidType;
 		uint256 newBidPrice = getBidPrice();
 		uint256 paidBidPrice =
-			(params.randomWalkNftId == -1) ?
+			(/*params.randomWalkNftId*/ randomWalkNftId_ == -1) ?
 			newBidPrice :
 			(newBidPrice / CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR);
 
@@ -76,33 +74,31 @@ abstract contract Bidding is
 			CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
 		);
 
-		if (params.randomWalkNftId == -1) {
+		if (/*params.randomWalkNftId*/ randomWalkNftId_ == -1) {
 			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
 		} else {
 			require(
-				// !usedRandomWalkNfts[uint256(params.randomWalkNftId)],
-				usedRandomWalkNfts[uint256(params.randomWalkNftId)] == 0,
+				usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
 					// todo-1 Nick wrote about reducing contract bytecode size:
 					// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
 					// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
 					// todo-1 I think we should go for it
 					"This RandomWalk NFT has already been used for bidding.",
-					uint256(params.randomWalkNftId)
+					uint256(/*params.randomWalkNftId*/ randomWalkNftId_)
 				)
 			);
 			require(
 				// todo-1 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
-				msg.sender == randomWalkNft.ownerOf(uint256(params.randomWalkNftId)),
+				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
 				CosmicSignatureErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
-					uint256(params.randomWalkNftId),
+					uint256(/*params.randomWalkNftId*/ randomWalkNftId_),
 					msg.sender
 				)
 			);
-			// usedRandomWalkNfts[uint256(params.randomWalkNftId)] = true;
-			usedRandomWalkNfts[uint256(params.randomWalkNftId)] = 1;
+			usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] = 1;
 			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
 		}
 		bidPrice = newBidPrice;
@@ -110,15 +106,15 @@ abstract contract Bidding is
 		// Updating bidding statistics.
 		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
 
-		_bidCommon(params.message /* , bidType */);
+		_bidCommon(/*params.message*/ message_ /* , bidType */);
 		emit BidEvent(
 			/*lastBidderAddress*/ msg.sender,
 			roundNum,
 			int256(paidBidPrice),
-			params.randomWalkNftId,
+			/*params.randomWalkNftId*/ randomWalkNftId_,
 			-1,
 			prizeTime,
-			params.message
+			/*params.message*/ message_
 		);
 		if (msg.value > paidBidPrice) {
 			// Refunding excess ETH if the bidder sent more than required.
@@ -132,27 +128,27 @@ abstract contract Bidding is
 		}
 	}
 
-	function getBidPrice() public view override returns (uint256) {
+	function getBidPrice() public view override returns(uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
 		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
 	}
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*onlyActive*/ {
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*onlyActive*/ {
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*onlyActive*/ {
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*onlyActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// [Comment-202409179]
 		// This can be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
@@ -211,10 +207,11 @@ abstract contract Bidding is
 		// todo-1 But better don't allow zero price bids.
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
+		// todo-1 When raising this event, in some cases pass zero instead of -1.
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
 	}
 
-	function getCurrentBidPriceCST() public view override returns (uint256) {
+	function getCurrentBidPriceCST() public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -233,7 +230,7 @@ abstract contract Bidding is
 		}
 	}
 
-	function getCstAuctionDuration() public view override returns (uint256, uint256) {
+	function getCstAuctionDuration() public view override returns(uint256, uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -250,7 +247,7 @@ abstract contract Bidding is
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal onlyActive {
+	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal /*nonReentrant*/ onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicSignatureErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
@@ -258,11 +255,8 @@ abstract contract Bidding is
 
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
-			
-			// todo-1 Why did Nick add this `secondsToAdd_` thing? `_pushBackPrizeTime` is about to add it anyway.
-			// uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
-			prizeTime = block.timestamp + initialSecondsUntilPrize; // + secondsToAdd_;
 
+			prizeTime = block.timestamp + initialSecondsUntilPrize;
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
@@ -306,7 +300,10 @@ abstract contract Bidding is
 		// 		);
 		// }
 
-		// todo-1 ??? Don't call this on first bid in a round?
+		// todo-1 On the first bid in a round, don't increase `prizeTime` here. Only increase `nanoSecondsExtra`.
+		// todo-1 So split this function into 2 functions
+		// todo-1 and call the one that increases `prizeTime` where we check `lastBidderAddress == address(0)`.
+		// todo-1 Remember to refactor `BiddingOpenBid` too.
 		_pushBackPrizeTime();
 	}
 
@@ -320,16 +317,16 @@ abstract contract Bidding is
 		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 
-	function getTotalBids() public view override returns (uint256) {
+	function getTotalBids() external view override returns(uint256) {
 		return numRaffleParticipants[roundNum];
 	}
 
-	function getBidderAddressAtPosition(uint256 position) public view override returns (address) {
+	function getBidderAddressAtPosition(uint256 position) external view override returns(address) {
 		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
 		return raffleParticipants[roundNum][position];
 	}
 
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) public view override returns (address) {
+	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view override returns(address) {
 		require(
 			roundNum_ <= roundNum,
 			CosmicSignatureErrors.InvalidBidderQueryRoundNum(
@@ -362,11 +359,11 @@ abstract contract Bidding is
 		return bidderAddress_;
 	}
 
-	function getTotalSpentByBidder(address bidderAddress_) public view override returns (uint256, uint256) {
+	function getTotalSpentByBidder(address bidderAddress_) external view override returns(uint256, uint256) {
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
-	// function wasRandomWalkNftUsed(uint256 nftId_) public view override returns (bool) {
+	// function wasRandomWalkNftUsed(uint256 nftId_) external view override returns(bool) {
 	// 	// todo-9 This is now a `uint256`.
 	// 	return usedRandomWalkNfts[nftId_];
 	// }
