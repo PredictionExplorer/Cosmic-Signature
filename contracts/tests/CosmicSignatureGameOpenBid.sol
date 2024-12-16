@@ -153,17 +153,6 @@ contract CosmicSignatureGameOpenBid is
 	}
 
 	// #endregion
-	// #region // `onERC721Received`
-
-	// Moved to `PrizesWallet`.
-	// /// @notice Makes it possible for the contract to receive NFTs by implementing the IERC721Receiver interface.
-	// /// todo-1 Someone forgot to derive `CosmicSignatureGameOpenBid` from `IERC721Receiver` and add the `override` keyword.
-	// function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
-	// 	// todo-1 This should return `IERC721Receiver.onERC721Received.selector` instead.
-	// 	return this.onERC721Received.selector;
-	// }
-
-	// #endregion
 	// #region `receive`
 
 	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {

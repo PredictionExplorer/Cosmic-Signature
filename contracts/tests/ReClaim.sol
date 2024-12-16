@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 // import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-// import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract ReClaim {

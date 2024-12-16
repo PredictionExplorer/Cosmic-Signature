@@ -4,14 +4,13 @@ pragma abicoder v2;
 
 // import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 // import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-contract BidderContract is IERC721Receiver {
+contract BidderContract {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	address public immutable creator;
 	uint256 public lastTokenIdChecked = 0;
@@ -120,7 +119,7 @@ contract BidderContract is IERC721Receiver {
 	// 	for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 	// 		address tokenOwner = nft_.ownerOf(i);
 	// 		if (tokenOwner == address(this)) {
-	// 			nft_.safeTransferFrom(address(this), creator, i);
+	// 			nft_.transferFrom(address(this), creator, i);
 	// 		}
 	// 	}
 	// 	if (totalSupply > 0) {
@@ -135,8 +134,7 @@ contract BidderContract is IERC721Receiver {
 	// 		uint256 num = myDonatedNfts[i];
 	// 		cosmicSignatureGame.claimDonatedNft(num);
 	// 		(IERC721 tokenAddr, uint256 nftId, , ) = cosmicSignatureGame.donatedNfts(num);
-	//
-	// 		tokenAddr.safeTransferFrom(address(this), creator, nftId);
+	// 		tokenAddr.transferFrom(address(this), creator, nftId);
 	// 	}
 	// 	delete myDonatedNfts;
 	// 	delete numMyDonatedNfts;
@@ -161,19 +159,14 @@ contract BidderContract is IERC721Receiver {
 	function stopBlockingDeposits() external {
 		blockDeposits = false;
 	}
-
-	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
-		// todo-1 This should return `IERC721Receiver.onERC721Received.selector` instead.
-		return this.onERC721Received.selector;
-	}
 }
 
 /// @notice Bidder Contract but not an `IERC721Receiver`.
-/// ToDo-202411268-1 relates and/or applies.
+/// ToDo-202412176-1 relates and/or applies.
 contract BidCNonRecv {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	address public immutable creator;
-	
+
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
 		creator = msg.sender;

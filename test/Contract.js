@@ -119,7 +119,12 @@ describe("Contract", function () {
 		let donatedNftOwner_ = await randomWalkNft.ownerOf(donatedNftId_);
 		expect(donatedNftOwner_).to.equal(owner.address);
 	});
-	it("Non-ERC721 receiver contract can bid", async function () {
+
+	// [ToDo-202412176-1]
+	// We no longer have any contracts that implement `IERC721Receiver'.
+	// So both `BidCNonRecv` and this test should be removed.
+	// [/ToDo-202412176-1]
+	it("Non-IERC721Receiver contract can bid", async function () {
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
 			deployCosmicSignature,
 		);

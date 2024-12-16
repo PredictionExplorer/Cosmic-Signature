@@ -10,9 +10,14 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface supports depositing ETH, donating ERC-20 tokens and ERC-721 NFTs,
 /// and allows prize winners (and after a timeout anybody) to withdraw their prizes.
+///
 /// @dev It's OK if the same NFT will be donated and claimed multiple times.
 /// Nothing would be broken if an ERC-20 or ERC-721 contract acts malitiosly.
 /// For example, a malitios NFT contract can allow donating an NFT multiple times without claiming it.
+/// 
+/// It would be incorrect to derive this contract from `ERC721Holder` because if someone makes it an owner of an NFT
+/// by making a direct call to an NFT contract, there would be no way to change that NFT owner again.
+/// ToDo-202412176-1 relates.
 interface IPrizesWallet is IAddressValidator {
 	/// @notice Emitted when `timeoutDurationToWithdrawPrizes` is changed.
 	/// @param newValue The new value.

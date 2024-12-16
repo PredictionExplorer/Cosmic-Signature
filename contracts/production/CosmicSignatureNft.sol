@@ -111,7 +111,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 
 		// uint256 nftId_ = numTokens;
 		uint256 nftId_ = totalSupply();
-		// todo-1 We use safeMint to mint a Random Walk NFT? Why not here? At least explain in a comment.
 		_mint(nftOwnerAddress_, nftId_);
 		// ++ numTokens;
 		// entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), nftId_, nftOwnerAddress_));

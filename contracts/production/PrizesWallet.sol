@@ -10,7 +10,6 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
@@ -19,7 +18,7 @@ import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 // #endregion
 // #region
 
-contract PrizesWallet is Ownable, IERC721Receiver, AddressValidator, IPrizesWallet {
+contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
@@ -77,24 +76,6 @@ contract PrizesWallet is Ownable, IERC721Receiver, AddressValidator, IPrizesWall
 		Ownable(msg.sender)
 		providedAddressIsNonZero(game_) {
 		game = game_;
-	}
-
-	// #endregion
-	// #region `onERC721Received`
-
-	/// @notice Implements `IERC721Receiver`.
-	/// @dev
-	/// [ToDo-202411268-1]
-	/// Review all:
-	/// ERC721\W*(Receiv|hold)|safeTransfer(From)?|safeMint
-	/// Only `PrizesWallet` needs this, right? Or it doesn't? What about some testing contracts?
-	/// But even `PrizesWallet` doesn't need this because it won't make the NFT claimable.
-	/// The front end should tell the user to make sure it can receive an NFT.
-	/// >>> OpenZeppelin provides an implementation of this: ERC721Holder
-	/// ToDo-202411267-1 relates.
-	/// [/ToDo-202411268-1]
-	function onERC721Received(address, address, uint256, bytes calldata) external pure override returns(bytes4) {
-		return IERC721Receiver.onERC721Received.selector;
 	}
 
 	// #endregion
@@ -311,12 +292,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, AddressValidator, IPrizesWall
 		emit NftDonated(roundNum_, /*msg.sender*/ donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
-		// [ToDo-202411267-1]
-		// Sometimes we use "safe" function and sometimes we don't. Review all NFT and ERC20 calls.
-		// It's unnecessary for this particular transfer to be "safe".
-		// ToDo-202411268-1 relates.
-		// [/ToDo-202411267-1]
-		nftAddress_.safeTransferFrom(/*msg.sender*/ donorAddress_, address(this), nftId_);
+		nftAddress_.transferFrom(/*msg.sender*/ donorAddress_, address(this), nftId_);
 	}
 
 	// #endregion
@@ -354,12 +330,7 @@ contract PrizesWallet is Ownable, IERC721Receiver, AddressValidator, IPrizesWall
 		delete donatedNftReference_.nftAddress;
 		delete donatedNftReference_.nftId;
 		emit DonatedNftClaimed(donatedNftCopy_.roundNum, msg.sender, donatedNftCopy_.nftAddress, donatedNftCopy_.nftId, index_);
-		// ToDo-202411267-1 applies.
-		// todo-1 Maybe we should validate NFT receiver off-chain. Although maybe that's unnecessary too.
-		// todo-1 But at least warn the user to make sure that they can receive an NFT.
-		// todo-1 This needs to be documented in a user manual.
-		// todo-1 Is there a similar method that accepts only the destination address?
-		donatedNftCopy_.nftAddress.safeTransferFrom(address(this), msg.sender, donatedNftCopy_.nftId);
+		donatedNftCopy_.nftAddress.transferFrom(address(this), msg.sender, donatedNftCopy_.nftId);
 	}
 
 	// #endregion
