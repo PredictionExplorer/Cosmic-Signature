@@ -17,7 +17,7 @@ def main():
     print("starting")
     # Set the program path, N (number of times you want to run the program), and max_concurrent_executions
     program_path = './target/release/rust_3body'
-    max_concurrent_executions = 4
+    max_concurrent_executions = 1
     N = 20
 
     # Specify the different parameters for each execution
@@ -29,16 +29,18 @@ def main():
     possible_velocities = [2]
     possible_min_mass = [100]
     possible_max_mass = [300]
-    possible_special = [None, "gold", "bronze", "white", "emerald", "sapphire", "quartz", "amethyst", "topaz", "turquoise", "aqua", "fuchsia"]
+    #possible_special = [None, "gold", "bronze", "white", "emerald", "sapphire", "quartz", "amethyst", "topaz", "turquoise", "aqua", "fuchsia"]
+    possible_special = [None, "gold"]
+    possible_dynamic_bounds = [True, False]
 
-    seed = '0x775500'
+    seed = '0x775579'
 
-    values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass, possible_special]
+    values = [possible_num_steps, possible_locations, possible_velocities, possible_min_mass, possible_max_mass, possible_special, possible_dynamic_bounds]
 
-    for num_steps, location, velocity, min_mass, max_mass, special in itertools.product(*values):
+    for num_steps, location, velocity, min_mass, max_mass, special, dynamic_bounds in itertools.product(*values):
 
         for i in range(N):
-            file_name = f'{num_steps:08}_{location:03}_{velocity:02}_{min_mass:03}_{max_mass:03}_{seed}{i:06}_{special if special else "nm"}'
+            file_name = f'{num_steps:08}_{location:03}_{velocity:02}_{min_mass:03}_{max_mass:03}_{seed}{i:06}_{special if special else "nm"}_{"dynamic" if dynamic_bounds else ""}'
 
             if os.path.isfile(f'vids/{file_name}.mp4'):
                 continue
@@ -47,11 +49,12 @@ def main():
             cur.append('--seed')
             cur.append(f'{seed}{i:06}')
 
-            '''
             cur.append('--num-steps')
             cur.append(str(num_steps))
 
-            # cur.append('--avoid-effects')
+
+            '''
+            cur.append('--avoid-effects')
 
             cur.append('--location')
             cur.append(str(float(location)))
@@ -76,11 +79,13 @@ def main():
                 cur.append('--special-color')
                 cur.append(special)
 
-            print(cur)
+            if dynamic_bounds:
+                cur.append('--dynamic-bounds')
 
             parameters.append(cur)
 
     random.shuffle(parameters)
+    print(parameters)
     print(len(parameters))
 
     # Run the program N times in parallel with different parameters, limiting concurrent executions
