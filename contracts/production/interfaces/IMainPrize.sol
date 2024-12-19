@@ -5,6 +5,8 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
+/// @notice Functionality that handles claiming and paying bidding round main prize,
+/// as well as distributing other (secondary) prizes.
 interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
 	/// @notice Emitted when a bidding round main prize is claimed.
 	/// This event indicates that the round has ended.
@@ -18,7 +20,6 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// [/Comment-202411254]
 	/// @param ethPrizeAmount ETH prize amount.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
-	/// @dev todo-1 Rename to `RoundMainPrizeClaimed`. Actully leave it alone.
 	event MainPrizeClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
@@ -45,108 +46,100 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	// );
 
 	/// @notice Emitted when the last CST bidder receives their prize.
-	/// @param roundNum The bidding round number.
+	/// @param roundNum The current bidding round number.
 	/// @param lastCstBidderAddress The last CST bidder address.
-	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	/// @param cstPrizeAmount The amount of CosmicSignature Tokens minted and awarded.
+	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	event LastCstBidderPrizePaid(
 		uint256 indexed roundNum,
 		address indexed lastCstBidderAddress,
-		uint256 indexed prizeCosmicSignatureNftId,
-		uint256 cstPrizeAmount
+		uint256 cstPrizeAmount,
+		uint256 indexed prizeCosmicSignatureNftId
 	);
 
 	/// @notice Emitted when the Endurance Champion receives their prize.
+	/// @param roundNum The current bidding round number.
 	/// @param enduranceChampionAddress Endurance Champion address.
-	/// @param roundNum The bidding round number.
-	/// todo-1 Make sense to reorder `roundNum` to the beginning?
-	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	/// @param cstPrizeAmount The amount of CosmicSignature Tokens minted and awarded.
-	/// ---param winnerIndex Winner index.
-	/// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
+	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	event EnduranceChampionPrizePaid(
-		address indexed enduranceChampionAddress,
 		uint256 indexed roundNum,
-		uint256 indexed prizeCosmicSignatureNftId,
-		uint256 cstPrizeAmount
-		// uint256 winnerIndex
+		address indexed enduranceChampionAddress,
+		uint256 cstPrizeAmount,
+		uint256 indexed prizeCosmicSignatureNftId
 	);
 
-	/// @notice Emitted when the Chrono-Warrior receives their prize. The prize ETH is transferred to `EthPrizesWalet`.
+	/// @notice Emitted when the Chrono-Warrior ETH prize gets prepared to be withdrawn.
+	/// The prize ETH is transferred to `prizesWallet`.
+	/// @param roundNum The current bidding round number.
 	/// @param chronoWarriorAddress Chrono-Warrior address.
-	/// @param roundNum The bidding round number.
 	/// @param ethPrizeAmount The ETH amount awarded.
-	event ChronoWarriorPrizePaid(
-		address indexed chronoWarriorAddress,
+	/// @dev
+	/// [Comment-202412189]
+	/// Using the word "Prepared" instead of something like "Paid" because we transfer the ETH to `prizesWallet`,
+	/// rather than to the winner directly.
+	/// [/Comment-202412189]
+	event ChronoWarriorPrizePrepared(
 		uint256 indexed roundNum,
+		address indexed chronoWarriorAddress,
 		uint256 ethPrizeAmount
 	);
 
-	/// @notice Emitted when an ETH raffle winner is selected
-	/// @param winnerAddress The address of the winner
-	/// @param roundNum The bidding round number.
-	/// todo-1 Make sense to reorder `roundNum` and `winnerIndex` to the beginning?
-	/// @param winnerIndex The index of the winner
-	/// @param amount ETH amount.
-	/// @dev todo-1 Name this better. Remove the word "Event".
-	event RaffleETHWinnerEvent(address indexed winnerAddress, uint256 indexed roundNum, uint256 winnerIndex, uint256 amount);
-
-	/// @notice Emitted when an NFT raffle winner is selected
-	/// @param winnerAddress The address of the winner
-	/// @param roundNum The bidding round number.
-	/// todo-1 Make sense to reorder `roundNum` and `winnerIndex` to the beginning?
-	/// @param nftId The ID of the NFT won
-	/// todo-1 Rename the above param to `prizeCosmicSignatureNftId`.
-	/// @param winnerIndex The index of the winner
-	/// @param isStaker Whether the winner is a staker
-	/// todo-1 Should the above param type be an enum?
-	/// @param isRWalk Whether the NFT is a RandomWalk NFT
-	/// todo-1 Rename the above param to `isRandomWalkNft`.
-	/// todo-1 Actually the above param always equals `isStaker`, right? So remove it.
-	/// @dev todo-1 Name this better. Remove the word "Event". Maybe `RaffleNftPrizeMinted`.
-	event RaffleNftWinnerEvent(
-		address indexed winnerAddress,
+	/// @notice Emitted when a raffle winner ETH prize gets prepared to be withdrawn.
+	/// The prize ETH is transferred to `prizesWallet`.
+	/// @param roundNum The current bidding round number.
+	/// @param winnerIndex Winner index.
+	/// @param winnerAddress Winner address.
+	/// @param ethPrizeAmount The ETH amount awarded.
+	/// @dev Comment-202412189 applies.
+	event RaffleWinnerEthPrizePrepared(
 		uint256 indexed roundNum,
-		uint256 indexed nftId,
 		uint256 winnerIndex,
-		bool isStaker,
-		bool isRWalk
+		address indexed winnerAddress,
+		uint256 ethPrizeAmount
 	);
 
-	/// @notice Claim the prize for the current round
-	/// @dev This function distributes prizes, updates game state, and starts a new round
-	/// todo-1 Rename to `claimMainPrize`.
-	/// todo-1 Specify prize type everywhere: claim(?:.(?!main))*?prize
-	function claimPrize() external;
+	/// @notice Emitted when a raffle winner receives their CosmicSignature NFT prize.
+	/// @param roundNum The current bidding round number.
+	/// @param winnerIsRandomWalkNftStaker Whether the winner is a RandomWalk NFT staker or a bidder.
+	/// @param winnerIndex Winner index.
+	/// @param winnerAddress Winner address.
+	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
+	event RaffleWinnerCosmicSignatureNftAwarded(
+		uint256 indexed roundNum,
+		bool winnerIsRandomWalkNftStaker,
+		uint256 winnerIndex,
+		address indexed winnerAddress,
+		uint256 indexed prizeCosmicSignatureNftId
+	);
 
-	/// @return The current main prize amount, in Wei.
-	/// todo-1 Rename this to `getMainEthPrizeAmount`.
-	function mainPrizeAmount() external view returns(uint256);
+	/// @notice Claims the current bidding round main prize.
+	/// This method distributes main and secondary prizes, updates game state, and prepares to start a new bidding round.
+	/// todo-1 Specify prize type in all names: claim(?:.(?!main))*?prize
+	function claimMainPrize() external;
+
+	/// @return The current main ETH prize amount, in Wei.
+	function getMainEthPrizeAmount() external view returns(uint256);
 
 	/// @return The current Chrono-Warrior ETH prize amount, in Wei.
-	/// todo-1 Rename this to `getChronoWarriorEthPrizeAmount`.
-	function chronoWarriorEthPrizeAmount() external view returns(uint256);
+	function getChronoWarriorEthPrizeAmount() external view returns(uint256);
 
-	/// @return The current raffle amount, in Wei.
-	/// todo-1 Rename this to `getRaffleEthPrizeAmount`.
-	function raffleAmount() external view returns(uint256);
+	/// @return The current raffle total ETH prize amount, in Wei.
+	function getRaffleTotalEthPrizeAmount() external view returns(uint256);
 
-	/// @return The current staking amount, in Wei.
-	/// todo-1 Rename this to `getStakingEthRewardAmount`.
-	function stakingAmount() external view returns(uint256);
+	/// @return The current staking total ETH reward amount, in Wei.
+	function getStakingTotalEthRewardAmount() external view returns(uint256);
 
-	/// @return The current charity amount, in Wei.
-	/// todo-1 Rename this to `getCharityEthAmount`.
-	function charityAmount() external view returns(uint256);
+	/// @return The current charity ETH donation amount, in Wei.
+	function getCharityEthDonationAmount() external view returns(uint256);
 
-	/// @notice Get the time until the next prize can be claimed
-	/// @return The number of seconds until the prize can be claimed, or 0 if claimable now
-	/// todo-1 Rename this to `getDurationUntilMainPrize`.
-	function timeUntilPrize() external view returns(uint256);
+	/// @return The number of seconds until the last bidder will be permitted to claim the main prize,
+	/// or 0 if that time has already come.
+	function getDurationUntilMainPrize() external view returns(uint256);
 
-	/// @return The given bidding round main prize winner address,
-	/// or zero if `roundNum_` is invalid or the round has not ended yet.
-	/// @param roundNum_ The bidding round number.
-	/// @dev todo-1 Eliminate this method?
-	function tryGetRoundMainPrizeWinnerAddress(uint256 roundNum_) external view returns(address);
+	// /// @return The given bidding round main prize winner address,
+	// /// or zero if `roundNum_` is invalid or the round has not ended yet.
+	// /// @param roundNum_ The bidding round number.
+	// /// @dev Don't use this. Instead, use `prizesWallet.mainPrizeWinnerAddresses`.
+	// function tryGetMainPrizeWinnerAddress(uint256 roundNum_) external view returns(address);
 }

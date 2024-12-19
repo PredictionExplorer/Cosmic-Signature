@@ -691,7 +691,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// // This test no longer makes sense due to refactorings described in Comment-202409208.
 	// // todo-0 I have now removed that comment. It was about the elimination of `modulo` and `charityAddress`. So revisit this comment or (eventually) remove it.
 	// // todo-0 Nick, you might want to develop similar tests (possibly uncomment and modify those I commented out)
-	// // todo-0 for the cases listed in ToDo-202409226-0.
+	// // todo-0 for the cases listed in ToDo-202409226-1.
 	// // [/Comment-202409209]
 	// it("A failure to deposit to StakingWalletCosmicSignatureNft shouldn't abort the process of claiming main prize", async function () {
 	// 	const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
@@ -753,11 +753,11 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 	// 	await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice });
 	//
-	// 	const prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+	// 	const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	//
-	// 	await expect(cosmicSignatureGameProxy.claimPrize()).not.to.be.reverted;
+	// 	await expect(cosmicSignatureGameProxy.claimMainPrize()).not.to.be.reverted;
 	// });
 
 	// // Comment-202409209 applies.
@@ -837,12 +837,12 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice });
 	//
 	// 	await hre.ethers.provider.send('evm_mine');
-	// 	let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+	// 	let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
 	// 	await hre.ethers.provider.send('evm_mine');
 	//
-	// 	prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await cosmicSignatureGameProxy.claimPrize();
+	// 	// durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await cosmicSignatureGameProxy.claimMainPrize();
 	//
 	// 	await cosmicSignatureNft.setApprovalForAll(await newStakingWalletCosmicSignatureNft.getAddress(), true);
 	// 	const tx = await newStakingWalletCosmicSignatureNft.stake(0);
@@ -935,10 +935,10 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice });
 
-		const prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
 		await hre.ethers.provider.send('evm_mine');
-		await cosmicSignatureGameProxy.claimPrize();
+		await cosmicSignatureGameProxy.claimMainPrize();
 
 		// forward timestamp se we can unstake
 		// todo-1 The forwarding no longer needed, right?
@@ -978,20 +978,20 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 	// 	await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
-	// 	let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
-	// 	await cosmicSignatureGameProxy.connect(addr1).claimPrize();
+	// 	let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
+	// 	await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 	//
 	// 	bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 	// 	await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: bidPrice });
-	// 	prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
-	// 	await cosmicSignatureGameProxy.connect(addr2).claimPrize();
+	// 	durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
+	// 	await cosmicSignatureGameProxy.connect(addr2).claimMainPrize();
 	// 	bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 	// 	await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
-	// 	prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
-	// 	await cosmicSignatureGameProxy.connect(addr3).claimPrize();
+	// 	durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
+	// 	await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
 	//
 	// 	await cosmicSignatureNft.connect(addr1).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
 	// 	await cosmicSignatureNft.connect(addr2).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
@@ -1010,14 +1010,14 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	//
 	// 	bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 	// 	await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
-	// 	prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(prizeTime)]);
+	// 	durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
 	//
 	// 	const previousModulo = await stakingWalletCosmicSignatureNft.modulo();
-	// 	const previousStakingAmount = await cosmicSignatureGameProxy.stakingAmount();
+	// 	const prevStakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getStakingTotalEthRewardAmount();
 	// 	const csTotalSupply = await cosmicSignatureNft.totalSupply();
 	// 	const roundNum = await cosmicSignatureGameProxy.roundNum();
-	// 	const tx = await cosmicSignatureGameProxy.connect(addr3).claimPrize();
+	// 	const tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
 	// 	const receipt = await tx.wait();
 	// 	const topic_sig = stakingWalletCosmicSignatureNft.interface.getEvent('EthDepositReceived').topicHash;
 	// 	const log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -1025,7 +1025,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const depositRecord = await stakingWalletCosmicSignatureNft.ethDeposits(parsed_log.args.depositNum);
 	// 	const amountInRound = depositRecord.depositAmount / depositRecord.numStaked;
 	// 	const moduloInRound = depositRecord.depositAmount % depositRecord.numStaked;
-	// 	expect(parsed_log.args.amount).to.equal(previousStakingAmount);
+	// 	expect(parsed_log.args.amount).to.equal(prevStakingTotalEthRewardAmount_);
 	// 	expect(parsed_log.args.modulo).to.equal(moduloInRound);
 	//
 	// 	const BrokenCharity = await hre.ethers.getContractFactory("BrokenCharity");
@@ -1084,8 +1084,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			const signer = signers[i];
 			for (let j = 0; j < numLoops; j++) {
 				await newCosmicSignatureNft.connect(owner).mint(0n, signer.address, generateRandomUInt256());
-				const nftId = i * numLoops + j;
-				await newStakingWalletCosmicSignatureNft.connect(signer).stake(nftId);
+				const nftId_ = i * numLoops + j;
+				await newStakingWalletCosmicSignatureNft.connect(signer).stake(nftId_);
 			}
 		}
 		for (let i = 0; i < numSigners; i++) {
@@ -1093,8 +1093,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			for (let j = 0; j < numLoops; j++) {
 				const mintPrice = await randomWalkNft.getMintPrice();
 				await randomWalkNft.connect(signer).mint({ value: mintPrice });
-				const nftId = i * numLoops + j;
-				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId);
+				const nftId_ = i * numLoops + j;
+				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId_);
 			}
 		}
 		// verification algorithm is simple: if from 400 staked tokens at least

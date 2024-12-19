@@ -16,8 +16,8 @@ import { IBidding, Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
+/// @notice used to test revert() statements in token transfers in claimMainPrize() function
 contract BrokenToken {
-	/// notice used to test revert() statements in token transfers in claimPrize() function
 	uint256 private _counter;
 
 	function mint(address, uint256 roundNum_) public {

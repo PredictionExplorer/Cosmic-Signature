@@ -53,7 +53,7 @@ interface ICosmicSignatureGame is
 
 	/// @notice Handles incoming ETH transfers.
 	/// See also: `IEthDonations.donateEth`.
-	/// todo-1 Do we have a test for this?
+	/// todo-1 +++ Do we have a test for this?
 	receive() external payable;
 
 	// /// @dev It appears that we don't need this.

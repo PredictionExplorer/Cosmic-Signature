@@ -19,24 +19,24 @@ async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 }
 
 async function claim_prize(testingAcct, cosmicSignatureGame) {
-	let mainPrizeAmount_ = await cosmicSignatureGame.mainPrizeAmount();
-	let charityAmount = await cosmicSignatureGame.charityAmount();
-	let tx = await cosmicSignatureGame.connect(testingAcct).claimPrize({ gasLimit: 2500000 });
+	let mainEthPrizeAmount_ = await cosmicSignatureGame.getMainEthPrizeAmount();
+	let charityEthDonationAmount_ = await cosmicSignatureGame.getCharityEthDonationAmount();
+	let tx = await cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	// todo-1 Assert 2 more params passed to the event.
 	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.amount).to.equal(mainPrizeAmount_);
+	expect(parsed_log.args.amount).to.equal(mainEthPrizeAmount_);
 
 	let cosmicSignatureNftAddr = await cosmicSignatureGame.nft();
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddr);
-	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleNftWinnerEvent");
+	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerCosmicSignatureNftAwarded");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	for (let i = 0; i < event_logs.length; i++) {
 		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);
-		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.nftId);
+		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.prizeCosmicSignatureNftId);
 		expect(ownr).to.equal(parsed_log.args.winnerAddress);
 	}
 
@@ -51,7 +51,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.amount).to.equal(charityAmount);
+	expect(parsed_log.args.amount).to.equal(charityEthDonationAmount_);
 }
 
 async function main() {

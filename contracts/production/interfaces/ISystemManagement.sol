@@ -115,30 +115,30 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setTokenReward(uint256 newValue_) external;
 
-	/// @notice Sets `mainPrizePercentage`.
+	/// @notice Sets `mainEthPrizeAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setMainPrizePercentage(uint256 newValue_) external;
+	function setMainEthPrizeAmountPercentage(uint256 newValue_) external;
 
-	/// @notice Sets `chronoWarriorEthPrizePercentage`.
+	/// @notice Sets `chronoWarriorEthPrizeAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setChronoWarriorEthPrizePercentage(uint256 newValue_) external;
+	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external;
 
-	/// @notice Sets `rafflePercentage`.
+	/// @notice Sets `raffleTotalEthPrizeAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setRafflePercentage(uint256 newValue_) external;
+	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external;
 
-	/// @notice Sets `stakingPercentage`.
+	/// @notice Sets `stakingTotalEthRewardAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setStakingPercentage(uint256 newValue_) external;
+	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external;
 
-	/// @notice Sets `charityPercentage`.
+	/// @notice Sets `charityEthDonationAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setCharityPercentage(uint256 newValue_) external;
+	function setCharityEthDonationAmountPercentage(uint256 newValue_) external;
 
 	/// @notice Sets `timeoutDurationToClaimMainPrize`.
 	/// Only the contract owner is permitted to call this method.
@@ -150,9 +150,9 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setCstRewardAmountMultiplier(uint256 newValue_) external;
 
-	function setNumRaffleETHWinnersBidding(uint256 newValue_) external;
+	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
 
-	function setNumRaffleNftWinnersBidding(uint256 newValue_) external;
+	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external;
 
-	function setNumRaffleNftWinnersStakingRWalk(uint256 newValue_) external;
+	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
 }

@@ -16,11 +16,11 @@ contract ReClaim {
 			return;
 		}
 		numIterations--;
-		cosmicSignatureGame.claimPrize();
+		cosmicSignatureGame.claimMainPrize();
 	}
 	
 	function claimAndReset(uint256 pNumIterations) public {
 		numIterations = pNumIterations;
-		cosmicSignatureGame.claimPrize();
+		cosmicSignatureGame.claimMainPrize();
 	}
 }
