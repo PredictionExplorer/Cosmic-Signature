@@ -113,7 +113,7 @@ abstract contract Bidding is
 			int256(paidBidPrice),
 			/*params.randomWalkNftId*/ randomWalkNftId_,
 			-1,
-			prizeTime,
+			mainPrizeTime,
 			/*params.message*/ message_
 		);
 		if (msg.value > paidBidPrice) {
@@ -208,7 +208,7 @@ abstract contract Bidding is
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		// todo-1 When raising this event, in some cases pass zero instead of -1.
-		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
+		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns(uint256) {
@@ -256,8 +256,8 @@ abstract contract Bidding is
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
 
-			prizeTime = block.timestamp + initialSecondsUntilPrize;
-			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp);
+			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
+			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp);
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
@@ -300,20 +300,19 @@ abstract contract Bidding is
 		// 		);
 		// }
 
-		// todo-1 On the first bid in a round, don't increase `prizeTime` here. Only increase `nanoSecondsExtra`.
+		// todo-1 On the first bid in a round, don't increase `mainPrizeTime` here. Only increase `nanoSecondsExtra`.
 		// todo-1 So split this function into 2 functions
-		// todo-1 and call the one that increases `prizeTime` where we check `lastBidderAddress == address(0)`.
+		// todo-1 and call the one that increases `mainPrizeTime` where we check `lastBidderAddress == address(0)`.
 		// todo-1 Remember to refactor `BiddingOpenBid` too.
-		_pushBackPrizeTime();
+		_extendMainPrizeTime();
 	}
 
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
-	/// todo-1 Rename this similarly to how I am going to rename `prizeTime`.
-	function _pushBackPrizeTime() internal {
+	function _extendMainPrizeTime() internal {
 		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
-		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
-		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, prizeTime, prizeTime - block.timestamp, nanoSecondsExtra);
+		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + secondsToAdd_;
+		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, nanoSecondsExtra);
 		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 

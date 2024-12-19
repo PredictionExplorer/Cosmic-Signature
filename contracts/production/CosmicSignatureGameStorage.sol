@@ -31,7 +31,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// todo-9 Rename to `systemModeCode`.
 	// uint256 public systemMode;
 
-	/// @notice Bidding round activation time. Starting at this point, people will be allowed to place bids.
+	/// @notice The current bidding round activation time. Starting at this point, people will be allowed to place bids.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// [/Comment-202411064]
@@ -55,7 +55,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	/// @dev ToDo-202411182-1 relates.
 	/// todo-1 Rename to `marketingCstRewardAmount`.
-	/// todo-1 Even better, rename to `marketingWaletCstContributionAmount`.
+	/// todo-1 Even better, rename to `marketingWalletCstContributionAmount`.
 	/// todo-1 If I eliminate `MarketingWallet`, eliminate this too.
 	uint256 public marketingReward;
 
@@ -148,13 +148,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 It's really not round duration, but rather duration until the main prize.
 	uint256 public initialSecondsUntilPrize;
 
-	/// @notice When the last bidder will be granted the premission to claim the main prize.
+	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
 	/// [Comment-202412152]
-	/// On each bid, we add `nanoSecondsExtra` to `max(prizeTime, block.timestamp)`.
+	/// On each bid, we add `nanoSecondsExtra` to `max(mainPrizeTime, block.timestamp)`.
 	/// [/Comment-202412152]
-	/// todo-1 Rename to `mainPrizeTime` or `roundEndTime`.
-	/// todo-1 It's really not round end, but rather the main prize time.
-	uint256 public prizeTime;
+	uint256 public mainPrizeTime;
 
 	/// @notice Bidding round counter.
 	/// For the first round, this equals zero.
@@ -257,27 +255,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize winner.
 	/// Comment-202411064 applies.
-	/// @dev todo-1 Rename to `roundMainEthPrizePercentage`. Or better without the word "Round".
-	uint256 public mainPrizePercentage;
+	uint256 public mainEthPrizeAmountPercentage;
 
-	/// @notice ETH.
-	/// Comment-202411064 applies.
-	uint256 public chronoWarriorEthPrizePercentage;
+	/// @notice Comment-202411064 applies.
+	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
-	/// @notice ETH.
-	/// Comment-202411064 applies.
-	/// @dev todo-1 Name this better. Include the word "ETH".
-	uint256 public rafflePercentage;
+	/// @notice Comment-202411064 applies.
+	uint256 public raffleTotalEthPrizeAmountPercentage;
 
-	/// @notice ETH.
-	/// Comment-202411064 applies.
-	/// @dev todo-1 Name this better. Include the word "ETH".
-	uint256 public stakingPercentage;
+	/// @notice Comment-202411064 applies.
+	uint256 public stakingTotalEthRewardAmountPercentage;
 
-	/// @notice ETH.
-	/// Comment-202411064 applies.
-	/// @dev todo-1 Name this better. Include the word "ETH".
-	uint256 public charityPercentage;
+	/// @notice Comment-202411064 applies.
+	uint256 public charityEthDonationAmountPercentage;
 
 	// #endregion
 	// #region Game Prize Other Parameters and Variables
@@ -332,20 +322,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public cstRewardAmountMultiplier;
 
-	/// @notice The number of ETH raffle winners for bidding.
+	/// @notice The number of raffle ETH prizes to be distributed to bidders.
 	/// Comment-202411064 applies.
-	/// todo-1 Name this better.
-	uint256 public numRaffleETHWinnersBidding;
+	uint256 public numRaffleEthPrizesForBidders;
 
-	/// @notice The number of NFT raffle winners for bidding.
+	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to bidders.
 	/// Comment-202411064 applies.
-	/// todo-1 Name this better.
-	uint256 public numRaffleNftWinnersBidding;
+	uint256 public numRaffleCosmicSignatureNftsForBidders;
 
-	/// @notice The number of NFT raffle winners for RandomWalk NFT staking.
+	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to RandomWalk NFT stakers.
 	/// Comment-202411064 applies.
-	/// todo-1 Name this better.
-	uint256 public numRaffleNftWinnersStakingRWalk;
+	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
 	// /// @dev todo-9 The type of this and other similar variables should be `uint256`.
 	// bytes32 public raffleEntropy;

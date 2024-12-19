@@ -26,8 +26,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	/// @notice For each bidding round number, contains the main prize winner address.
 	/// ToDo-202411257-1 relates.
-	/// todo-1 Rename to `mainPrizeWinnerAddresses`.
-	address[1 << 64] public roundMainPrizeWinnerAddresses;
+	address[1 << 64] public mainPrizeWinnerAddresses;
 
 	/// @notice If a prize winner doesn't withdraw their prize within this timeout, anybody will be welcomed to withdraw it.
 	/// This timeout applies to all kinds of prizes, including ETH.
@@ -90,12 +89,12 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `registerRoundEnd`
 
 	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external override onlyGame {
-		// #enable_asserts assert(roundMainPrizeWinnerAddresses[roundNum_] == address(0));
-		// #enable_asserts assert(roundNum_ == 0 || roundMainPrizeWinnerAddresses[roundNum_ - 1] != address(0));
+		// #enable_asserts assert(mainPrizeWinnerAddresses[roundNum_] == address(0));
+		// #enable_asserts assert(roundNum_ == 0 || mainPrizeWinnerAddresses[roundNum_ - 1] != address(0));
 		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
 		// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
 		// #enable_asserts assert(roundMainPrizeWinnerAddress_ != address(0));
-		roundMainPrizeWinnerAddresses[roundNum_] = roundMainPrizeWinnerAddress_;
+		mainPrizeWinnerAddresses[roundNum_] = roundMainPrizeWinnerAddress_;
 		roundTimeoutTimesToWithdrawPrizes[roundNum_] = block.timestamp + timeoutDurationToWithdrawPrizes;
 	}
 
@@ -218,11 +217,11 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// Comment-202409215 applies to validating that `tokenAddress_` is a nonzero.
 
 		// [Comment-202411286]
-		// Nothing will be broken if the `roundMainPrizeWinnerAddresses` item is still zero.
+		// Nothing will be broken if the `mainPrizeWinnerAddresses` item is still zero.
 		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
 		// [/Comment-202411286]
 		// [Comment-202411287/]
-		if (msg.sender != roundMainPrizeWinnerAddresses[roundNum_]) {
+		if (msg.sender != mainPrizeWinnerAddresses[roundNum_]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
@@ -314,7 +313,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		}
 
 		// Comment-202411286 applies.
-		if (msg.sender != roundMainPrizeWinnerAddresses[donatedNftCopy_.roundNum]) {
+		if (msg.sender != mainPrizeWinnerAddresses[donatedNftCopy_.roundNum]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[donatedNftCopy_.roundNum];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,

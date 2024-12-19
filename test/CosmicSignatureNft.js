@@ -99,9 +99,9 @@ describe("CosmicSignatureNft", function () {
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
-		let tx = await cosmicSignatureGameProxy.connect(addr1).claimPrize();
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		let tx = await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 		let receipt = await tx.wait();
 		let topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -137,9 +137,9 @@ describe("CosmicSignatureNft", function () {
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
-		let tx = await cosmicSignatureGameProxy.connect(addr1).claimPrize();
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		let tx = await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 		let receipt = await tx.wait();
 		await cosmicSignatureNft.connect(owner).setNftBaseUri("somebase/");
 		expect(await cosmicSignatureNft.tokenURI(0n)).to.equal("somebase/0");

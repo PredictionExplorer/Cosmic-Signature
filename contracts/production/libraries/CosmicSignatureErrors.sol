@@ -1,7 +1,15 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
+// #endregion
+// #region
+
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// #endregion
+// #region
 
 /// @title Custom errors.
 /// @author The Cosmic Signature Development Team.
@@ -134,14 +142,9 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region Claim Prize Errors
 
-	/// @notice Thrown when attempting to claim a bidding round main prize too early.
-	/// See also: `EarlyWithdrawal`.
+	/// @notice Thrown when there have been no bids in the current bidding round.
 	/// @param errStr Description of the error.
-	/// @param claimTime The time when this operation will be permitted.
-	/// todo-1 Rename the above param to `operationPermittedTime`.
-	/// @param blockTimeStamp The current block timestamp.
-	/// @dev todo-1 Rename to `MainPrizeEarlyClaim`.
-	error EarlyClaim(string errStr, uint256 claimTime, uint256 blockTimeStamp);
+	error NoBidsInRound(string errStr);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error.
@@ -152,9 +155,12 @@ library CosmicSignatureErrors {
 	/// todo-1 Rename this to `LastBidderOnlyPermission`. Or maybe `LastBidderOnlyPrivilege`.
 	error LastBidderOnly(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 timeToWait);
 
-	/// @notice Thrown when there is no last bidder
+	/// @notice Thrown when attempting to claim a bidding round main prize too early.
+	/// See also: `EarlyWithdrawal`.
 	/// @param errStr Description of the error.
-	error NoLastBidder(string errStr);
+	/// @param mainPrizeTime The time when this operation will be permitted.
+	/// @param blockTimeStamp The current block timestamp.
+	error MainPrizeEarlyClaim(string errStr, uint256 mainPrizeTime, uint256 blockTimeStamp);
 
 	// /// @notice Thrown when the provided bidding round number is invalid.
 	// /// @param errStr Description of the error.
@@ -162,12 +168,11 @@ library CosmicSignatureErrors {
 	// error InvalidRoundNum(string errStr, uint256 roundNum);
 
 	/// @notice Thrown when attempting to withdraw a prize or whatever too early.
-	/// See also: `EarlyClaim`.
+	/// See also: `MainPrizeEarlyClaim`.
 	/// @param errStr Description of the error.
-	/// @param operationAllowedTime The time when this operation will be permitted.
-	/// todo-1 Rename the above param to `operationPermittedTime`.
+	/// @param operationPermittedTime The time when this operation will be permitted.
 	/// @param blockTimeStamp The current block timestamp.
-	error EarlyWithdrawal(string errStr, uint256 operationAllowedTime, uint256 blockTimeStamp);
+	error EarlyWithdrawal(string errStr, uint256 operationPermittedTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone attempts to claim an ERC-20 token donation, but is not permitted to do so.
 	/// @param errStr Description of the error.
@@ -176,16 +181,16 @@ library CosmicSignatureErrors {
 	/// @param tokenAddress The ERC-20 contract address.
 	error DonatedTokenClaimDenied(string errStr, uint256 roundNum, address beneficiaryAddress, IERC20 tokenAddress);
 
+	/// @notice Thrown when attempting to claim a non-existent donated NFT.
+	/// @param errStr Description of the error.
+	/// @param index `donatedNfts` non-existent item index.
+	error InvalidDonatedNftIndex(string errStr, uint256 index);
+
 	/// @notice Thrown when someone attempts to claim a donated NFT, but is not permitted to do so.
 	/// @param errStr Description of the error.
 	/// @param beneficiaryAddress The address that attempted to claim the donation.
 	/// @param index Donated NFT index in an array.
 	error DonatedNftClaimDenied(string errStr, address beneficiaryAddress, uint256 index);
-
-	/// @notice Thrown when attempting to claim a non-existent donated NFT.
-	/// @param errStr Description of the error.
-	/// @param index `donatedNfts` non-existent item index.
-	error InvalidDonatedNftIndex(string errStr, uint256 index);
 
 	/// @notice Thrown when attempting to claim an already claimed donated NFT.
 	/// @param errStr Description of the error.
@@ -374,3 +379,5 @@ library CosmicSignatureErrors {
 
 	// #endregion
 }
+
+// #endregion

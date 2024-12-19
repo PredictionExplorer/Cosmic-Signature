@@ -46,7 +46,7 @@ async function main() {
 	await randomWalkNft_.connect(owner).transferFrom(owner.address, bidderContract.address, nftId_);
 	await bidderContract.connect(owner).doBidRWalk(nftId_);
 
-	let durationUntilMainPrize_ = await cosmicSignatureGame.timeUntilPrize();
+	let durationUntilMainPrize_ = await cosmicSignatureGame.getDurationUntilMainPrize();
 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize_.toNumber()]);
 
 	await bidderContract.connect(owner).doClaim();

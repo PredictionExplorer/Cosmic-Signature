@@ -22,13 +22,13 @@ library CosmicSignatureConstants {
 	uint256 internal constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
 	uint256 internal constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
 
-	/// @notice This is equivalent to the midnight of 9999-12-31.
+	/// @notice This is equivalent to the midnight of 9000-01-01.
 	/// @dev JavaScript  code to calculate this.
-	///		const n = (new Date(9999, 12 - 1, 31)).getTime() / 1000;
+	///		const n = (new Date(9000, 1 - 1, 1)).getTime() / 1000;
 	///		console.log(n);
 	///		const d = new Date(n * 1000);
 	///		console.log(d);
-	uint256 internal constant TIMESTAMP_9999_12_31 = 253_402_214_400;
+	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
 
 	// /// @notice System mode constants.
 	// /// @dev These define the operational states of the `CosmicSignatureGame` contract.
@@ -44,10 +44,11 @@ library CosmicSignatureConstants {
 	// todo-1 And maybe in rare cases replace it with `DEFAULT_`.
 
 	/// @notice Initial `activationTime`.
-	/// @dev This should be in the future -- to configure our contract after the deployment
-	/// without calling `setActivationTime`.
+	/// @dev This must be in the future -- to configure our contract after the deployment
+	/// without calling `setActivationTime` and to ensure that hackers won't attempt to bid
+	/// before we are done with configuring the contract.
 	/// Comment-202411168 relates.
-	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9999_12_31;
+	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `delayDurationBeforeNextRound`.
 	uint256 internal constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = 1 days;
@@ -102,12 +103,12 @@ library CosmicSignatureConstants {
 	/// @notice Default `tokenReward` and `GovernorSettings.proposalThreshold()`.
 	uint256 internal constant DEFAULT_TOKEN_REWARD = 100 ether;
 
-	uint256 internal constant INITIAL_MAIN_PRIZE_PERCENTAGE = 25;
+	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
 	/// todo-1 I added this. So now other initial percentages should be readjusted.
-	uint256 internal constant INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE = 7;
-	uint256 internal constant INITIAL_RAFFLE_PERCENTAGE = 5;
-	uint256 internal constant INITIAL_STAKING_PERCENTAGE = 10;
-	uint256 internal constant INITIAL_CHARITY_PERCENTAGE = 10;
+	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
+	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_PERCENTAGE = 5;
+	uint256 internal constant DEFAULT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
+	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE = 10;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
@@ -122,9 +123,9 @@ library CosmicSignatureConstants {
 	/// @notice Default `cstRewardAmountMultiplier`.
 	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
 
-	uint256 internal constant INITIAL_RAFFLE_ETH_WINNERS_BIDDING = 3;
-	uint256 internal constant INITIAL_RAFFLE_NFT_WINNERS_BIDDING = 5;
-	uint256 internal constant INITIAL_STAKING_WINNERS_RWALK = 4;
+	uint256 internal constant DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3;
+	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS = 5;
+	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
 
 	/// @notice Comment-202409143 applies.
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;

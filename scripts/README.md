@@ -65,6 +65,6 @@ Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
     RWALK_TOKENS="[comma_separated_list_of_tokens]" PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
 
-##### Wait for time to advance to be able to claimPrize() and execute second set of tests
+##### Wait for time to advance to be able to claimMainPrize() and execute second set of tests
 
     PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part2.js --network [network-name]

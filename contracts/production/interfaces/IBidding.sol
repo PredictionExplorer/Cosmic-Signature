@@ -26,7 +26,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @param numCSTTokens The number of CST tokens used (if any)
 	/// todo-1 Rename the above param to `cstBidPrice`.
 	/// todo-1 Maybe reorder the above param to after `bidPrice`.
-	/// @param prizeTime The time when the prize can be claimed
+	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
 	/// todo-1 Rename the above param to how I am going to name the respective state variable.
 	/// @param message An optional message from the bidder
 	/// todo-1 Rename to `BidPlaced`.
@@ -36,7 +36,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 		int256 bidPrice,
 		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
 		int256 numCSTTokens,
-		uint256 prizeTime,
+		uint256 mainPrizeTime,
 		string message
 	);
 	
