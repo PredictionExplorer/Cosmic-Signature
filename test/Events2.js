@@ -65,9 +65,9 @@ describe("Events2", function () {
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let p = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: p });
-		let ptime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(ptime)]);
-		await cosmicSignatureGameProxy.connect(addr1).claimPrize();
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 
 		// we need to stake tokens to have holder owners to earn raffle tokens
 		let ts = await cosmicSignatureNft.totalSupply();
@@ -100,25 +100,24 @@ describe("Events2", function () {
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
 
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+1]);
+		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
 		await hre.ethers.provider.send("evm_mine");
 
-		let tx = await cosmicSignatureGameProxy.connect(addr3).claimPrize();
+		let tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
 		let receipt = await tx.wait();
 
-		let num_raffle_nft_winners_bidding = await cosmicSignatureGameProxy.numRaffleNftWinnersBidding();
-		let num_raffle_nft_winners_staking_rwalk = await cosmicSignatureGameProxy.numRaffleNftWinnersStakingRWalk();
-		let total_nft_winners = Number(num_raffle_nft_winners_bidding) + 
-								Number(num_raffle_nft_winners_staking_rwalk);
-		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("RaffleNftWinnerEvent").topicHash;
+		let numRaffleCosmicSignatureNftsForBidders_ = await cosmicSignatureGameProxy.numRaffleCosmicSignatureNftsForBidders();
+		let numRaffleCosmicSignatureNftsForRandomWalkNftStakers_ = await cosmicSignatureGameProxy.numRaffleCosmicSignatureNftsForRandomWalkNftStakers();
+		let total_nft_winners = numRaffleCosmicSignatureNftsForBidders_ + numRaffleCosmicSignatureNftsForRandomWalkNftStakers_;
+		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerCosmicSignatureNftAwarded").topicHash;
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		expect(total_nft_winners).to.equal(deposit_logs.length);
 
-		let num_eth_winners = await cosmicSignatureGameProxy.numRaffleETHWinnersBidding();
+		let numRaffleEthPrizesForBidders_ = await cosmicSignatureGameProxy.numRaffleEthPrizesForBidders();
 		const numChronoWarriors_ = 1n;
 		topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		expect(num_eth_winners + numChronoWarriors_).to.equal(deposit_logs.length);
+		expect(numRaffleEthPrizesForBidders_ + numChronoWarriors_).to.equal(deposit_logs.length);
 	});
 });

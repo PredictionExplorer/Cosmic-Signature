@@ -84,7 +84,7 @@ contract BidderContract {
 	// }
 
 	function doClaim() external {
-		cosmicSignatureGame.claimPrize();
+		cosmicSignatureGame.claimMainPrize();
 	}
 
 	// function withdrawEthPrize(address destination) external {
@@ -184,6 +184,6 @@ contract BidCNonRecv {
 	}
 	
 	function doClaim() external {
-		cosmicSignatureGame.claimPrize();
+		cosmicSignatureGame.claimMainPrize();
 	}
 }

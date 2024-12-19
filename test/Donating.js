@@ -133,10 +133,10 @@ describe("Donating", function () {
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bidAndDonateNft(/*params*/ (-1), "", await randomWalkNft.getAddress(), 1, { value: bidPrice });
 
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)+100]);
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)+100]);
 		await hre.ethers.provider.send("evm_mine");
-		await expect(cosmicSignatureGameProxy.connect(addr1).claimPrize()).not.to.be.reverted;
+		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).not.to.be.reverted;
 
 		tx = await cosmicSignatureGameProxy.connect(addr1).claimManyDonatedNfts([0, 1]);
 		receipt = await tx.wait();

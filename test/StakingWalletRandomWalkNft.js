@@ -228,14 +228,14 @@ describe("StakingWalletRandomWalkNft", function () {
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice });
 
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		await hre.ethers.provider.send("evm_mine");
-		await cosmicSignatureGameProxy.claimPrize();
+		await cosmicSignatureGameProxy.claimMainPrize();
 
 		// forward timestamp se we can unstake
 		// todo-1 The forwarding no longer needed, right?
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 60*3600*24]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 60*3600*24]);
 		await hre.ethers.provider.send("evm_mine");
 
 		for (let i=0; i < 10; i++) {
@@ -285,8 +285,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			for (let j = 0; j < numLoops; j++) {
 				let mintPrice = await randomWalkNft.getMintPrice();
 				await randomWalkNft.connect(signer).mint({ value: mintPrice });
-				const nftId = i * numLoops + j;
-				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId);
+				const nftId_ = i * numLoops + j;
+				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId_);
 			}
 		}
 		// verification algorithm is simple: if from 1000 staked tokens at least

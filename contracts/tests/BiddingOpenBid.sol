@@ -163,7 +163,7 @@ abstract contract BiddingOpenBid is
 			int256(paidBidPrice),
 			/*params.randomWalkNftId*/ randomWalkNftId_,
 			-1,
-			prizeTime,
+			mainPrizeTime,
 			/*params.message*/ message_
 		);
 
@@ -240,7 +240,7 @@ abstract contract BiddingOpenBid is
 		lastCstBidTimeStamp = block.timestamp;
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
-		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), prizeTime, message_);
+		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
 
 	function getCurrentBidPriceCST() public view override returns(uint256) {
@@ -287,7 +287,7 @@ abstract contract BiddingOpenBid is
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
 
-			prizeTime = block.timestamp + initialSecondsUntilPrize;
+			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
@@ -327,14 +327,14 @@ abstract contract BiddingOpenBid is
 		// 		);
 		// }
 
-		_pushBackPrizeTime();
+		_extendMainPrizeTime();
 	}
 
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
-	function _pushBackPrizeTime() internal {
+	function _extendMainPrizeTime() internal {
 		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
-		prizeTime = Math.max(prizeTime, block.timestamp) + secondsToAdd_;
+		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + secondsToAdd_;
 		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 

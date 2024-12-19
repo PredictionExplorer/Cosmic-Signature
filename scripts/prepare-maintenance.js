@@ -34,7 +34,7 @@ async function main() {
 	let systemModeCode_ = await cosmicSignatureGame.systemMode();
 	console.log("systemMode =", systemModeCode_);
 	if (systemModeCode_.toString() == "1") {
-		console.log("System is set for maintenance right after next claimPrize() call")
+		console.log("System is set for maintenance right after next claimMainPrize() call")
 	} else {
 		if (systemModeCode_.toString() == "2") {
 			console.log("System is in maintenance mode already");

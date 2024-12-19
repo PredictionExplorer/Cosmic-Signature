@@ -82,7 +82,7 @@ contract CosmicSignatureGameOpenBid is
 		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
-		// prizeTime =
+		// mainPrizeTime =
 		// roundNum = 0;
 		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
 		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
@@ -91,7 +91,7 @@ contract CosmicSignatureGameOpenBid is
 		roundStartCstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
 
 		// Comment-202411211 applies.
-		if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9999_12_31) {
+		if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
 			// Comment-202411168 applies.
 			lastCstBidTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		}
@@ -102,11 +102,11 @@ contract CosmicSignatureGameOpenBid is
 		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =
 		// // lastBidType =
-		mainPrizePercentage = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_PERCENTAGE;
-		chronoWarriorEthPrizePercentage = CosmicSignatureConstants.INITIAL_CHRONO_WARRIOR_ETH_PRIZE_PERCENTAGE;
-		rafflePercentage = CosmicSignatureConstants.INITIAL_RAFFLE_PERCENTAGE;
-		stakingPercentage = CosmicSignatureConstants.INITIAL_STAKING_PERCENTAGE;
-		charityPercentage = CosmicSignatureConstants.INITIAL_CHARITY_PERCENTAGE;
+		mainEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE;
+		chronoWarriorEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE;
+		raffleTotalEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_PERCENTAGE;
+		stakingTotalEthRewardAmountPercentage = CosmicSignatureConstants.DEFAULT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE;
+		charityEthDonationAmountPercentage = CosmicSignatureConstants.DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE;
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
 		// // stellarSpender =
 		// // stellarSpenderTotalSpentCst =
@@ -117,9 +117,9 @@ contract CosmicSignatureGameOpenBid is
 		// chronoWarriorAddress =
 		chronoWarriorDuration = uint256(int256(-1));
 		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
-		numRaffleETHWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_ETH_WINNERS_BIDDING;
-		numRaffleNftWinnersBidding = CosmicSignatureConstants.INITIAL_RAFFLE_NFT_WINNERS_BIDDING;
-		numRaffleNftWinnersStakingRWalk = CosmicSignatureConstants.INITIAL_STAKING_WINNERS_RWALK;
+		numRaffleEthPrizesForBidders = CosmicSignatureConstants.DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS;
+		numRaffleCosmicSignatureNftsForBidders = CosmicSignatureConstants.DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS;
+		numRaffleCosmicSignatureNftsForRandomWalkNftStakers = CosmicSignatureConstants.DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS;
 		// raffleEntropy = keccak256(abi.encode("Cosmic Signature 2023", block.timestamp, blockhash(block.number - 1)));
 		// raffleEntropy = bytes32(0x4e48fcb2afb4dabb2bc40604dc13d21579f2ce6b3a3f60b8dca0227d0535b31a);
 	}
@@ -147,7 +147,8 @@ contract CosmicSignatureGameOpenBid is
 	// #endregion
 	// #region `_authorizeUpgrade`
 
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+	/// @dev Comment-202412188 applies.
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner /*onlyInactive*/ {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
 	}
 

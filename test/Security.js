@@ -44,7 +44,7 @@ describe("Security", function () {
 	// 		{ name: "randomWalkNftId", type: "int256" },
 	// 	],
 	// };
-	it("Vulnerability to claimPrize() multiple times", async function () {
+	it("Vulnerability to claimMainPrize() multiple times", async function () {
 		const [contractDeployerAcct, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
@@ -63,7 +63,7 @@ describe("Security", function () {
 		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
 		// await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());
 		// await cosmicSignatureGameProxy.setCharityAddress(await charityWallet.getAddress());
-		await cosmicSignatureGameProxy.setMainPrizePercentage(10n);
+		await cosmicSignatureGameProxy.setMainEthPrizeAmountPercentage(10n);
 
 		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
 		// But, hopefully, it will work somehow.
@@ -83,11 +83,11 @@ describe("Security", function () {
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice }); // this works
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 24 * 3600]);
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 24 * 3600]);
 		await hre.ethers.provider.send("evm_mine");
 
-		let mainPrizeAmount_ = await cosmicSignatureGameProxy.mainPrizeAmount();
+		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		let reclaim_bal_before = await hre.ethers.provider.getBalance(await reclaim.getAddress());
 		// Make sure there is no re-entrancy
 		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
@@ -100,12 +100,12 @@ describe("Security", function () {
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		await hre.ethers.provider.send("evm_mine"); // begin
-		const prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime) + 1]);
+		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
 		await hre.ethers.provider.send("evm_mine");
-		let mainPrizeAmount_ = await cosmicSignatureGameProxy.mainPrizeAmount();
+		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		let balance_before = await hre.ethers.provider.getBalance(addr1);
-		await expect(cosmicSignatureGameProxy.connect(addr1).claimPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoLastBidder");
+		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsInRound");
 	});
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.

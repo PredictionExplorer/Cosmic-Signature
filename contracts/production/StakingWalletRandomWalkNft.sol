@@ -226,6 +226,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	///
+	/// todo-1 Do we need a method to pick multiple random stakers at once?
 	/// todo-1 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
 	function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns(address) {
 		uint256 numStakedNftsCopy_ = _numStakedNfts;

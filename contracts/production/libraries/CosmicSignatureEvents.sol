@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
+/// @dev todo-1 Everywhere, review which events params need to be declared `indexed`.
 library CosmicSignatureEvents {
 	/// @notice This is similar to `CosmicSignatureErrors.FundTransferFailed`.
 	/// @dev todo-1 Make sure we use this. Otherwie comment this out.

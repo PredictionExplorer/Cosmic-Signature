@@ -240,55 +240,55 @@ abstract contract SystemManagement is
 		emit TokenRewardChanged(newValue_);
 	}
 
-	function setMainPrizePercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
 		// todo-1 Maybe remove this validation everywhere.
-		uint256 percentageSum_ = newValue_ + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage + charityPercentage;
+		uint256 percentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		require(
 			percentageSum_ < 100,
 			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		mainPrizePercentage = newValue_;
-		emit MainPrizePercentageChanged(newValue_);
+		mainEthPrizeAmountPercentage = newValue_;
+		emit MainEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setChronoWarriorEthPrizePercentage(uint256 newValue_) external override onlyOwner onlyInactive {
-		uint256 percentageSum_ = mainPrizePercentage + newValue_ + rafflePercentage + stakingPercentage + charityPercentage;
+	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+		uint256 percentageSum_ = mainEthPrizeAmountPercentage + newValue_ + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		require(
 			percentageSum_ < 100,
 			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		chronoWarriorEthPrizePercentage = newValue_;
-		emit ChronoWarriorEthPrizePercentageChanged(newValue_);
+		chronoWarriorEthPrizeAmountPercentage = newValue_;
+		emit ChronoWarriorEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setRafflePercentage(uint256 newValue_) external override onlyOwner onlyInactive {
-		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + newValue_ + stakingPercentage + charityPercentage;
+	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+		uint256 percentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + newValue_ + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		require(
 			percentageSum_ < 100,
 			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		rafflePercentage = newValue_;
-		emit RafflePercentageChanged(newValue_);
+		raffleTotalEthPrizeAmountPercentage = newValue_;
+		emit RaffleTotalEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setStakingPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
-		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage + newValue_ + charityPercentage;
+	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+		uint256 percentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + newValue_ + charityEthDonationAmountPercentage;
 		require(
 			percentageSum_ < 100,
 			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		stakingPercentage = newValue_;
-		emit StakingPercentageChanged(newValue_);
+		stakingTotalEthRewardAmountPercentage = newValue_;
+		emit StakingTotalEthRewardAmountPercentageChanged(newValue_);
 	}
 
-	function setCharityPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
-		uint256 percentageSum_ = mainPrizePercentage + chronoWarriorEthPrizePercentage + rafflePercentage + stakingPercentage + newValue_;
+	function setCharityEthDonationAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+		uint256 percentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + newValue_;
 		require(
 			percentageSum_ < 100,
 			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", percentageSum_)
 		);
-		charityPercentage = newValue_;
-		emit CharityPercentageChanged(newValue_);
+		charityEthDonationAmountPercentage = newValue_;
+		emit CharityEthDonationAmountPercentageChanged(newValue_);
 	}
 
 	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external override onlyOwner onlyInactive {
@@ -301,18 +301,18 @@ abstract contract SystemManagement is
 		emit CstRewardAmountMultiplierChanged(newValue_);
 	}
 
-	function setNumRaffleETHWinnersBidding(uint256 newValue_) external override onlyOwner onlyInactive {
-		numRaffleETHWinnersBidding = newValue_;
-		emit NumRaffleETHWinnersBiddingChanged(newValue_);
+	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external override onlyOwner onlyInactive {
+		numRaffleEthPrizesForBidders = newValue_;
+		emit NumRaffleEthPrizesForBiddersChanged(newValue_);
 	}
 
-	function setNumRaffleNftWinnersBidding(uint256 newValue_) external override onlyOwner onlyInactive {
-		numRaffleNftWinnersBidding = newValue_;
-		emit NumRaffleNftWinnersBiddingChanged(newValue_);
+	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external override onlyOwner onlyInactive {
+		numRaffleCosmicSignatureNftsForBidders = newValue_;
+		emit NumRaffleCosmicSignatureNftsForBiddersChanged(newValue_);
 	}
 
-	function setNumRaffleNftWinnersStakingRWalk(uint256 newValue_) external override onlyOwner onlyInactive {
-		numRaffleNftWinnersStakingRWalk = newValue_;
-		emit NumRaffleNftWinnersStakingRWalkChanged(newValue_);
+	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external override onlyOwner onlyInactive {
+		numRaffleCosmicSignatureNftsForRandomWalkNftStakers = newValue_;
+		emit NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(newValue_);
 	}
 }

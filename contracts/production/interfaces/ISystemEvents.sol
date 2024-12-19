@@ -93,25 +93,25 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event TokenRewardChanged(uint256 newValue);
 
-	/// @notice Emitted when `mainPrizePercentage` is changed.
+	/// @notice Emitted when `mainEthPrizeAmountPercentage` is changed.
 	/// @param newValue The new value.
-	event MainPrizePercentageChanged(uint256 newValue);
+	event MainEthPrizeAmountPercentageChanged(uint256 newValue);
 
-	/// @notice Emitted when `chronoWarriorEthPrizePercentage` is changed.
+	/// @notice Emitted when `chronoWarriorEthPrizeAmountPercentage` is changed.
 	/// @param newValue The new value.
-	event ChronoWarriorEthPrizePercentageChanged(uint256 newValue);
+	event ChronoWarriorEthPrizeAmountPercentageChanged(uint256 newValue);
 
-	/// @notice Emitted when `rafflePercentage` is changed.
+	/// @notice Emitted when `raffleTotalEthPrizeAmountPercentage` is changed.
 	/// @param newValue The new value.
-	event RafflePercentageChanged(uint256 newValue);
+	event RaffleTotalEthPrizeAmountPercentageChanged(uint256 newValue);
 
-	/// @notice Emitted when `stakingPercentage` is changed.
+	/// @notice Emitted when `stakingTotalEthRewardAmountPercentage` is changed.
 	/// @param newValue The new value.
-	event StakingPercentageChanged(uint256 newValue);
+	event StakingTotalEthRewardAmountPercentageChanged(uint256 newValue);
 
-	/// @notice Emitted when `charityPercentage` is changed.
+	/// @notice Emitted when `charityEthDonationAmountPercentage` is changed.
 	/// @param newValue The new value.
-	event CharityPercentageChanged(uint256 newValue);
+	event CharityEthDonationAmountPercentageChanged(uint256 newValue);
 
 	/// @notice Emitted when `timeoutDurationToClaimMainPrize` is changed.
 	/// @param newValue The new value.
@@ -121,15 +121,15 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CstRewardAmountMultiplierChanged(uint256 newValue);
 
-	/// @notice Emitted when `numRaffleETHWinnersBidding` is changed.
+	/// @notice Emitted when `numRaffleEthPrizesForBidders` is changed.
 	/// @param newValue The new value.
-	event NumRaffleETHWinnersBiddingChanged(uint256 newValue);
+	event NumRaffleEthPrizesForBiddersChanged(uint256 newValue);
 
-	/// @notice Emitted when `numRaffleNftWinnersBidding` is changed.
+	/// @notice Emitted when `numRaffleCosmicSignatureNftsForBidders` is changed.
 	/// @param newValue The new value.
-	event NumRaffleNftWinnersBiddingChanged(uint256 newValue);
+	event NumRaffleCosmicSignatureNftsForBiddersChanged(uint256 newValue);
 
-	/// @notice Emitted when `numRaffleNftWinnersStakingRWalk` is changed.
+	/// @notice Emitted when `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` is changed.
 	/// @param newValue The new value.
-	event NumRaffleNftWinnersStakingRWalkChanged(uint256 newValue);
+	event NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(uint256 newValue);
 }

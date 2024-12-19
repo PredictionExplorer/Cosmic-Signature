@@ -98,8 +98,8 @@ describe("Contract", function () {
 		await randomWalkNft.connect(owner).transferFrom(owner.address,await bidderContract.getAddress(), rwalk_token_id);
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await bidderContract.connect(owner).doBidRWalk(rwalk_token_id, { value: bidPrice });
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		tx = await bidderContract.connect(owner).doClaim();
 		receipt = await tx.wait();
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
@@ -141,8 +141,8 @@ describe("Contract", function () {
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		await bnonrec.connect(owner).doBid({ value: bidPrice });
 
-		let prizeTime = await cosmicSignatureGameProxy.timeUntilPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(prizeTime)]);
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		let tx = await bnonrec.connect(owner).doClaim();
 		let receipt = await tx.wait();
 		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
