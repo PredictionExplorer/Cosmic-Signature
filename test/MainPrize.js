@@ -233,7 +233,7 @@ describe("MainPrize", function () {
 		let balanceCharityAfter = await hre.ethers.provider.getBalance(charityAddr);
 		let balanceStakingAfter = await hre.ethers.provider.getBalance(await stakingWalletCosmicSignatureNft.getAddress());
 
-		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerEthPrizePrepared").topicHash;
+		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerEthPrizeAllocated").topicHash;
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const unique_winners = [];
 		let sumDeposits = 0n;
