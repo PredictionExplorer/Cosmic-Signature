@@ -273,7 +273,7 @@ abstract contract MainPrize is
 
 		// Chrono-Warrior prize.
 		// #enable_asserts assert(chronoWarriorAddress != address(0));
-		emit ChronoWarriorPrizePrepared(roundNum, chronoWarriorAddress, chronoWarriorEthPrizeAmount_);
+		emit ChronoWarriorPrizeAllocated(roundNum, chronoWarriorAddress, chronoWarriorEthPrizeAmount_);
 		// todo-1 Here and elsewhere, if this address happends to be the same as the main prize winner, don't deposit here,
 		// todo-1 but later send this to the main prize winner directly.
 		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarriorAddress);
@@ -303,7 +303,7 @@ abstract contract MainPrize is
 				address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
 				prizesWallet.depositEth{value: raffleEthPrizeAmount_}(roundNum, raffleWinnerAddress_);
 				-- winnerIndex_;
-				emit RaffleWinnerEthPrizePrepared(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmount_);
+				emit RaffleWinnerEthPrizeAllocated(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmount_);
 			} while (winnerIndex_ > 0);
 		}
 

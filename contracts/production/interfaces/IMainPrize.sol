@@ -69,7 +69,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 		uint256 indexed prizeCosmicSignatureNftId
 	);
 
-	/// @notice Emitted when the Chrono-Warrior ETH prize gets prepared to be withdrawn.
+	/// @notice Emitted when the Chrono-Warrior ETH prize becomes available to be withdrawn.
 	/// The prize ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param chronoWarriorAddress Chrono-Warrior address.
@@ -79,20 +79,20 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// Using the word "Prepared" instead of something like "Paid" because we transfer the ETH to `prizesWallet`,
 	/// rather than to the winner directly.
 	/// [/Comment-202412189]
-	event ChronoWarriorPrizePrepared(
+	event ChronoWarriorPrizeAllocated(
 		uint256 indexed roundNum,
 		address indexed chronoWarriorAddress,
 		uint256 ethPrizeAmount
 	);
 
-	/// @notice Emitted when a raffle winner ETH prize gets prepared to be withdrawn.
+	/// @notice Emitted when a raffle winner ETH prize becomes available to be withdrawn.
 	/// The prize ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIndex Winner index.
 	/// @param winnerAddress Winner address.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	/// @dev Comment-202412189 applies.
-	event RaffleWinnerEthPrizePrepared(
+	event RaffleWinnerEthPrizeAllocated(
 		uint256 indexed roundNum,
 		uint256 winnerIndex,
 		address indexed winnerAddress,
