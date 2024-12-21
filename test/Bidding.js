@@ -793,7 +793,7 @@ describe("Bidding", function () {
 		const activationTime_ = await cosmicSignatureGameProxy.activationTime();
 		cosmicSignatureGameProxy.setActivationTime(activationTime_ + 60n);
 
-		const BrokenToken = await hre.ethers.getContractFactory("BrokenERC20");
+		const BrokenToken = await hre.ethers.getContractFactory("BrokenErc20");
 		const brokenToken= await BrokenToken.deploy(0);
 		await brokenToken.waitForDeployment();
 		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
@@ -825,7 +825,7 @@ describe("Bidding", function () {
 		const activationTime_ = await cosmicSignatureGameProxy.activationTime();
 		cosmicSignatureGameProxy.setActivationTime(activationTime_ + 60n);
 
-		const BrokenToken = await hre.ethers.getContractFactory("BrokenERC20");
+		const BrokenToken = await hre.ethers.getContractFactory("BrokenErc20");
 		const brokenToken= await BrokenToken.deploy(1);
 		await brokenToken.waitForDeployment();
 		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
@@ -836,6 +836,8 @@ describe("Bidding", function () {
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
+		cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		// See ToDo-202409245-0.
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice })).to.be.revertedWith("Test mint() (ERC20) failed");

@@ -378,10 +378,11 @@ describe("SystemManagement", function () {
 		await expect(charityWallet.connect(addr1).setCharityAddress(addr1.address))
 			.to.be.revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
 
+		// todo-1 Add `transferToMarketingWalletOrBurn` to all tests.
 		await expect(cosmicSignatureToken.connect(addr1).mint(addr1.address, 10000n))
-			.to.be.revertedWithCustomError(cosmicSignatureToken, "OwnableUnauthorizedAccount");
+			.to.be.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "CallDenied");
 		await expect(cosmicSignatureToken.mint(addr1.address, 10000n))
-			.to.be.revertedWithCustomError(cosmicSignatureToken, "OwnableUnauthorizedAccount");
+			.to.be.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "CallDenied");
 		// await expect(cosmicSignatureToken.connect(addr1)["burn(address,uint256)"](addr1.address, 10000n))
 		// 	.to.be.revertedWithCustomError(cosmicSignatureToken, "OwnableUnauthorizedAccount");
 		// await expect(cosmicSignatureToken.connect(addr1)["burn(uint256)"](10000n));
