@@ -13,7 +13,7 @@ describe("ZeroAddressChecking", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -24,9 +24,9 @@ describe("ZeroAddressChecking", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
+		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, false);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -37,7 +37,7 @@ describe("ZeroAddressChecking", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
 		};
 	}
@@ -60,7 +60,6 @@ describe("ZeroAddressChecking", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -78,7 +77,6 @@ describe("ZeroAddressChecking", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await basicDeploymentAdvanced(
 			"SpecialCosmicSignatureGame",
 			owner,
@@ -90,21 +88,21 @@ describe("ZeroAddressChecking", function () {
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 	});
-	it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			marketingWallet,
-		} = await loadFixture(deployCosmicSignature);
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(marketingWallet.setTokenContract(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
-	});
+	// it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
+	// 	const {
+	// 		cosmicSignatureGameProxy,
+	// 		cosmicSignatureToken,
+	// 		charityWallet,
+	// 		prizesWallet,
+	// 		randomWalkNft,
+	// 		stakingWalletCosmicSignatureNft,
+	// 		stakingWalletRandomWalkNft,
+	// 		marketingWallet,
+	// 	} = await loadFixture(deployCosmicSignature);
+	// 	const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+	// 	await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+	// });
 	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -126,11 +124,11 @@ describe("ZeroAddressChecking", function () {
 		const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		await expect(CosmicSignatureNft.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 	});
-	it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
-		await expect(MarketingWallet.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
-	});
+	// it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
+	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+	// 	const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
+	// 	await expect(MarketingWallet.deploy(hre.ethers.ZeroAddress,{gasLimit:3000000})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+	// });
 	it("Shouldn't be possible to deploy PrizesWallet with zero-address-ed parameters", async function () {
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		const PrizesWallet = await hre.ethers.getContractFactory("PrizesWallet");

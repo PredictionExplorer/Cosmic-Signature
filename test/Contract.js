@@ -8,7 +8,7 @@ const { basicDeployment } = require("../src/Deploy.js");
 
 describe("Contract", function () {
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -18,9 +18,9 @@ describe("Contract", function () {
 			prizesWallet,
 			randomWalkNft,
 			stakingWallet,
-			marketingWallet,
+			// marketingWallet,
 			// bidLogic,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -30,7 +30,7 @@ describe("Contract", function () {
 			prizesWallet,
 			randomWalkNft,
 			stakingWallet,
-			marketingWallet,
+			// marketingWallet,
 			// bidLogic,
 		};
 	}

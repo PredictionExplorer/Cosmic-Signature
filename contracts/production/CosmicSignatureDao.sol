@@ -17,7 +17,7 @@ contract CosmicSignatureDao is
 	GovernorVotesQuorumFraction,
 	ICosmicSignatureDao {
 	/// @notice Constructor.
-	/// @notice Sets up the governance parameters and links the voting token.
+	/// Sets up the governance parameters and links the voting token.
 	/// @param tokenAddress_ The address of the token to be used for voting power.
 	constructor(
 		IVotes tokenAddress_

@@ -1,41 +1,131 @@
+// #region
+
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+// #endregion
+// #region
+
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
-import { ERC20, ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
+
+// #endregion
+// #region
 
 contract CosmicSignatureToken is
 	Ownable,
 	ERC20,
-	ERC20Burnable,
+	// ERC20Burnable,
 	ERC20Permit,
 	ERC20Votes,
+	AddressValidator,
 	ICosmicSignatureToken {
-	/// @notice Constructor.
-	constructor()
-		Ownable(msg.sender)
-		ERC20("CosmicSignatureToken", "CST")
-		ERC20Permit("CosmicSignatureToken") {
+	// #region State
+
+	/// @notice The `CosmicSignatureGame` contract address.
+	address public immutable game;
+
+	/// @notice This address holds some CST amount.
+	/// The held amount is replenished when someone bids with CST.
+	/// Comment-202412201 relates and/or applies.
+	/// The funds are to be used to reward people for marketing the project on social media.
+	/// This can be the address of an externally owned account controlled by the project founders.
+	/// The project founders plan to eventually transfer this wallet control to the DAO.
+	/// @dev
+	/// [ToDo-202412202-1]
+	/// So develop a test in which the DAO rewards someone.
+	/// But the DAO is too slow to vote. I've set voting period to 2 weeks, right? Discuss this issue with the guys.
+	/// ToDo-202412203-1 relates.
+	/// [/ToDo-202412202-1]
+	address public marketingWalletAddress;
+
+	/// @notice
+	/// [Comment-202412201]
+	/// If `marketingWalletAddress` already holds at least this amount, any new received funds will be burned.
+	/// This limit can be exceeded by a little.
+	/// [/Comment-202412201]
+	uint256 public marketingWalletBalanceAmountMaxLimit;
+
+	// #endregion
+	// #region `onlyGame`
+
+	/// @dev Comment-202411253 applies.
+	modifier onlyGame() {
+		require(
+			msg.sender == game,
+			CosmicSignatureErrors.CallDenied("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+		);
+		_;
 	}
 
-	/// todo-1 `onlyOwner` is really meant to be only the game contract, right?
-	/// todo-1 See `CosmicSignatureNft`. It's done right there.
-	/// todo-1 ??? Maybe we need a big array of authorized minters/burners, also in `CosmicSignatureNft`.
-	function mint(address account, uint256 value) public override onlyOwner {
+	// #endregion
+	// #region `constructor`
+
+	/// @notice Constructor.
+	/// @param game_ The `CosmicSignatureGame` contract address.
+	/// @param marketingWalletAddress_ To be assigned to `marketingWalletAddress`.
+	constructor(address game_, address marketingWalletAddress_)
+		Ownable(msg.sender)
+		ERC20("CosmicSignatureToken", "CST")
+		ERC20Permit("CosmicSignatureToken")
+		providedAddressIsNonZero(game_)
+		providedAddressIsNonZero(marketingWalletAddress_) {
+		game = game_;
+		marketingWalletAddress = marketingWalletAddress_;
+		marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
+	}
+
+	// #endregion
+	// #region `setMarketingWalletAddress`
+
+	function setMarketingWalletAddress(address newValue_) external override onlyOwner providedAddressIsNonZero(newValue_) {
+		marketingWalletAddress = newValue_;
+		emit MarketingWalletAddressChanged(newValue_);
+	}
+
+	// #endregion
+	// #region `setMarketingWalletBalanceAmountMaxLimit`
+
+	function setMarketingWalletBalanceAmountMaxLimit(uint256 newValue_) external override onlyOwner {
+		marketingWalletBalanceAmountMaxLimit = newValue_;
+		emit MarketingWalletBalanceAmountMaxLimitChanged(newValue_);
+	}
+
+	// #endregion
+	// #region `transferToMarketingWalletOrBurn`
+
+	function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override onlyGame {
+		if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {
+			_transfer(fromAddress_, marketingWalletAddress, amount_);
+		} else {
+			_burn(fromAddress_, amount_);
+		}
+	}
+
+	// #endregion
+	// #region `mint`
+
+	function mint(address account, uint256 value) external override onlyGame {
 		_mint(account, value);
 	}
 
-	/// todo-1 Make some `public` functions `external`.
-	/// todo-1 Make some `public`/`external` functions `private`.
-	/// todo-1 Document in a user manual that bidders don't need to set allowance to bid with CST.
-	/// todo-1 Will this apply to trading on our exchange as well?
-	function burn(address account, uint256 value) public override onlyOwner {
-		_burn(account, value);
-	}
+	// #endregion
+	// #region // `burn`
+
+	// function burn(address account, uint256 value) external override onlyGame {
+	// 	_burn(account, value);
+	// }
+
+	// #endregion
+	// #region // `safeApprove`
 
 	// /// @dev todo-1 Idea.
 	// /// `oldAllowance_` is the allowance the caller has seen before they sent a transaction request to call this method.
@@ -43,7 +133,7 @@ contract CosmicSignatureToken is
 	// /// This method offers no benefit if either `oldAllowance_` or `newAllowance_` is zero.
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
 	// /// todo-1 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
-	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) public /*virtual*/ {
+	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) external /*override*/ {
 	// 	// Comment-202409215 applies.
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
 	//
@@ -59,16 +149,23 @@ contract CosmicSignatureToken is
 	// 	_approve(msg.sender, spender_, newAllowance_);
 	// }
 
+	// #endregion
+	// #region `CLOCK_MODE`
+
 	// solhint-disable-next-line func-name-mixedcase
 	function CLOCK_MODE() public pure override returns(string memory) {
 		return "mode=timestamp";
 	}
 
+	// #endregion
+	// #region `clock`
+
 	function clock() public view override returns(uint48) {
 		return uint48(block.timestamp);
 	}
 
-	// The following functions are overrides required by Solidity.
+	// #endregion
+	// #region Overrides Required By Solidity
 
 	function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
 		super._update(from, to, value);
@@ -77,4 +174,8 @@ contract CosmicSignatureToken is
 	function nonces(address owner) public view override(ERC20Permit, Nonces) returns(uint256) {
 		return super.nonces(owner);
 	}
+
+	// #endregion
 }
+
+// #endregion

@@ -170,7 +170,8 @@ abstract contract Bidding is
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// // [Comment-202409181]
-		// // This validation is unnecessary, given that `token.burn` called near Comment-202409177 is going to perform it too.
+		// // This validation is unnecessary, given that `token.transferToMarketingWalletOrBurn` called near Comment-202409177
+		// // is going to perform it too.
 		// // [/Comment-202409181]
 		// require(
 		// 	userBalance >= price,
@@ -182,12 +183,13 @@ abstract contract Bidding is
 		// );
 
 		// [Comment-202409177]
-		// Burn the CST tokens used for bidding.
+		// Transfer to marketing wallet or burn the CST tokens used for bidding.
 		// ToDo-202411182-1 relates and/or applies.
-		// todo-1 What about calling `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` here?
-		// todo-1 It would be a safer option.
+		// todo-1 ??? What about calling `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` here?
+		// todo-1 ??? It would be a safer option.
 		// [/Comment-202409177]
-		token.burn(msg.sender, price);
+		// token.burn(msg.sender, price);
+		token.transferToMarketingWalletOrBurn(msg.sender, price);
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
@@ -287,18 +289,19 @@ abstract contract Bidding is
 		// 			tokenReward
 		// 		);
 		// }
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(marketingWallet, marketingReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicSignatureErrors.ERC20Mint(
-		// 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// 			marketingWallet,
-		// 			marketingReward
-		// 		);
-		// }
+
+		// // try
+		// // ToDo-202409245-0 applies.
+		// token.mint(marketingWallet, marketingReward);
+		// // {
+		// // } catch {
+		// // 	revert
+		// // 		CosmicSignatureErrors.ERC20Mint(
+		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
+		// // 			marketingWallet,
+		// // 			marketingReward
+		// // 		);
+		// // }
 
 		// todo-1 On the first bid in a round, don't increase `mainPrizeTime` here. Only increase `nanoSecondsExtra`.
 		// todo-1 So split this function into 2 functions

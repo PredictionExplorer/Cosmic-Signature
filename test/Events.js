@@ -8,7 +8,7 @@ const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js")
 describe("Events", function () {
 	const INITIAL_AMOUNT = hre.ethers.parseUnits("10", 18);
 	async function deployCosmicSignature() {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -19,9 +19,9 @@ describe("Events", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// bidLogic,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", true);
+		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -32,7 +32,7 @@ describe("Events", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// bidLogic,
 		};
 	}
@@ -63,7 +63,7 @@ describe("Events", function () {
 	it("should emit the correct events in the CharityWallet contract", async function () {
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-			await basicDeployment(owner, "", 1, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", false);
+			await basicDeployment(owner, "", 1, charity.address, false);
 		// DonationReceived
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -271,7 +271,6 @@ describe("Events", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		// } = await basicDeploymentAdvanced("SpecialCosmicSignatureGame", owner, "", 1, charity.address, true);
 		} = await basicDeployment(owner, "", 0, charity.address, true);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -330,7 +329,6 @@ describe("Events", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await basicDeployment(owner, "", 0, addr1.address, true);
 
 		const activationTime_ = 123_456_789_012n;
@@ -341,17 +339,17 @@ describe("Events", function () {
 
 		// todo-1 setDelayDurationBeforeNextRound
 
-		// todo-1 setMarketingReward
+		// todo-1 setMarketingReward (but I have eliminated it)
 
 		// todo-1 setMaxMessageLength
 
 		let testAcct_ = hre.ethers.Wallet.createRandom();
-		await expect(cosmicSignatureGameProxy.connect(owner).setTokenContract(testAcct_.address))
-			.to.emit(cosmicSignatureGameProxy, "TokenContractAddressChanged")
+		await expect(cosmicSignatureGameProxy.connect(owner).setCosmicSignatureToken(testAcct_.address))
+			.to.emit(cosmicSignatureGameProxy, "CosmicSignatureTokenAddressChanged")
 			.withArgs(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.token()).to.equal(testAcct_.address);
 
-		// todo-1 setMarketingWallet
+		// todo-1 setMarketingWallet (but I have eliminated it)
 
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicSignatureGameProxy.connect(owner).setCosmicSignatureNft(testAcct_.address))

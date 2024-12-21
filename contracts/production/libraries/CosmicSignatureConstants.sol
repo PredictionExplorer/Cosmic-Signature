@@ -53,8 +53,8 @@ library CosmicSignatureConstants {
 	/// @notice Default `delayDurationBeforeNextRound`.
 	uint256 internal constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = 1 days;
 
-	/// @notice Default `marketingReward`.
-	uint256 internal constant MARKETING_REWARD = 15 ether;
+	// /// @notice Default `marketingReward`.
+	// uint256 internal constant DEFAULT_MARKETING_REWARD = 15 ether;
 
 	/// @notice Default `maxMessageLength`.
 	/// Comment-202409143 applies.
@@ -126,6 +126,10 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3;
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS = 5;
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
+
+	/// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
+	/// @dev todo-1 Is this amount OK?
+	uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 3_000 ether;
 
 	/// @notice Comment-202409143 applies.
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;

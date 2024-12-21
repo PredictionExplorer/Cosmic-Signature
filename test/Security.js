@@ -8,7 +8,7 @@ const { basicDeployment } = require("../src/Deploy.js");
 
 describe("Security", function () {
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -19,9 +19,9 @@ describe("Security", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
+		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, false);
 		return {
 			cosmicSignatureGameProxy: cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -32,7 +32,7 @@ describe("Security", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
 		};
 	}
@@ -54,11 +54,10 @@ describe("Security", function () {
 			prizesWallet,
 			randomWalkNft,
 			stakingWallet,
-			marketingWallet,
 		} = await basicDeployment(contractDeployerAcct, "", 0, addr1.address, true);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
-		// await cosmicSignatureGameProxy.setTokenContract(await cosmicSignatureToken.getAddress());
+		// await cosmicSignatureGameProxy.setCosmicSignatureToken(await cosmicSignatureToken.getAddress());
 		// await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
 		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
 		// await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());

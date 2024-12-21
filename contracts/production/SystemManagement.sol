@@ -117,31 +117,31 @@ abstract contract SystemManagement is
 		emit DelayDurationBeforeNextRoundChanged(newValue_);
 	}
 
-	function setMarketingReward(uint256 newValue_) external override onlyOwner onlyInactive {
-		marketingReward = newValue_;
-		emit MarketingRewardChanged(newValue_);
-	}
+	// function setMarketingReward(uint256 newValue_) external override onlyOwner onlyInactive {
+	// 	marketingReward = newValue_;
+	// 	emit MarketingRewardChanged(newValue_);
+	// }
 
 	function setMaxMessageLength(uint256 newValue_) external override onlyOwner onlyInactive {
 		maxMessageLength = newValue_;
 		emit MaxMessageLengthChanged(newValue_);
 	}
 
-	function setTokenContract(ICosmicSignatureToken newValue_) external override
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
 		onlyOwner
 		onlyInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		token = CosmicSignatureToken(address(newValue_));
-		emit TokenContractAddressChanged(newValue_);
+		emit CosmicSignatureTokenAddressChanged(newValue_);
 	}
 
-	function setMarketingWallet(address newValue_) external override
-		onlyOwner
-		onlyInactive
-		providedAddressIsNonZero(newValue_) {
-		marketingWallet = newValue_;
-		emit MarketingWalletAddressChanged(newValue_);
-	}
+	// function setMarketingWallet(address newValue_) external override
+	// 	onlyOwner
+	// 	onlyInactive
+	// 	providedAddressIsNonZero(newValue_) {
+	// 	marketingWallet = newValue_;
+	// 	emit MarketingWalletAddressChanged(newValue_);
+	// }
 
 	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override
 		onlyOwner

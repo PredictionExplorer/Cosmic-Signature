@@ -36,7 +36,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 			config_params.randomWalkNftAddr,
 			config_params.activationTime,
 			config_params.charityAddr,
-			config_params.transferOwnership
+			config_params.transferOwnershipToCosmicSignatureDao
 
 			// // todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
 			// // todo-1 So I have commented this out.
@@ -58,7 +58,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	console.log("RandomWalkNFT address:", await contracts.randomWalkNft.getAddress());
 	console.log("StakingWalletCosmicSignatureNft address:", await contracts.stakingWalletCosmicSignatureNft.getAddress());
 	console.log("StakingWalletRandomWalkNft address:", await contracts.stakingWalletRandomWalkNft.getAddress());
-	console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
+	// console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
 	console.log("CosmicSignatureGame address:", await contracts.cosmicSignatureGame.getAddress());
 	console.log(
 		"INSERT INTO cg_contracts VALUES('" +
@@ -80,8 +80,10 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 		"','" +
 		await contracts.stakingWalletRandomWalkNft.getAddress() +
 		"','" +
-		await contracts.marketingWallet.getAddress() +
-		"','" +
+
+		// // todo-1 Make sure that the elimination of this didn't break the backend database integrity. Tell Nick.
+		// await contracts.marketingWallet.getAddress() +
+		// "','" +
 
 		// Issue. According to Comment-202412059, this is the same as `cosmicSignatureGameProxy`.
 		await contracts.cosmicSignatureGame.getAddress() +

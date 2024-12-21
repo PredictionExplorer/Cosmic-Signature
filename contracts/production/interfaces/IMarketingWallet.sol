@@ -7,7 +7,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// @title Marketer reward wallet.
 /// @author The Cosmic Signature Development Team.
 /// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media.
-/// Eventually, the founders of the project will transfer this wallet ownership to the DAO.
+/// Eventually, the project founders will transfer this wallet ownership to the DAO.
 /// @dev
 /// [ToDo-202411182-1]
 /// We mint CST for this wallet on each bid, which I dislike.
@@ -24,13 +24,12 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// ---Then the game won't need to store an address of this in its storage.
 /// 
 /// No, the above is not necessarily a good idea.
-/// Better simply send all CST bids to marketing wallet and on main prize claim
-/// burn any excessive marketing wallet balance above a configurable value.
+/// Better simply send all CST bids to marketing wallet, or in case it already has enough, just burn any new received amounts.
 /// [/ToDo-202411182-1]
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
 
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
@@ -41,8 +40,7 @@ interface IMarketingWallet is IAddressValidator {
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	/// todo-1 Maybe eliminate this method and declare `token` `immutable`.
-	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
-	function setTokenContract(ICosmicSignatureToken newValue_) external;
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.
 	/// Only the contract owner is permitted to call this method.

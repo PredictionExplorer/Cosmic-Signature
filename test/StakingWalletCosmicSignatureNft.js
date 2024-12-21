@@ -14,7 +14,7 @@ const SKIP_LONG_TESTS = false;
 describe("StakingWalletCosmicSignatureNft", function () {
 	// ToDo-202410075-0 applies.
 	async function deployCosmicSignature(/*deployerAcct*/) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -25,9 +25,9 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", false);
+		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, false);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -38,7 +38,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
 		};
 	}
@@ -58,7 +58,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await loadFixture(deployCosmicSignature);
 		// const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -78,7 +77,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await loadFixture(deployCosmicSignature);
 	// 	const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -111,7 +109,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -168,7 +165,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -214,7 +210,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeploymentAdvanced(
 	// 		"SpecialCosmicSignatureGame",
 	// 		owner,
@@ -272,7 +267,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeploymentAdvanced(
 	// 		"SpecialCosmicSignatureGame",
 	// 		owner,
@@ -334,7 +328,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeploymentAdvanced(
 	// 		"SpecialCosmicSignatureGame",
 	// 		owner,
@@ -391,7 +384,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeploymentAdvanced(
 	// 		"SpecialCosmicSignatureGame",
 	// 		owner,
@@ -453,7 +445,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeploymentAdvanced(
 	// 		"SpecialCosmicSignatureGame",
 	// 		owner,
@@ -521,7 +512,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await basicDeploymentAdvanced(
 			"SpecialCosmicSignatureGame",
 			owner,
@@ -769,7 +759,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await loadFixture(deployCosmicSignature);
 	// 	const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 	//
@@ -794,7 +783,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeployment(owner, "", 0, addr1.address, false);
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 	//		
@@ -888,7 +876,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await basicDeployment(owner, '', 0, addr1.address, false);
 
 		const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
@@ -971,7 +958,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await loadFixture(deployCosmicSignature);
 	//
 	// 	// let bidParams = { message: "", randomWalkNftId: -1 };
@@ -1051,7 +1037,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await basicDeployment(owner, "", 0, addr1.address, false);
 
 		const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
@@ -1135,7 +1120,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -1181,7 +1165,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
 		} = await basicDeploymentAdvanced(
 			"SpecialCosmicSignatureGame",
 			owner,
@@ -1244,7 +1227,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		randomWalkNft,
 	// 		stakingWalletCosmicSignatureNft,
 	// 		stakingWalletRandomWalkNft,
-	// 		marketingWallet,
 	// 	} = await basicDeploymentAdvanced(
 	// 		"SpecialCosmicSignatureGame",
 	// 		owner,

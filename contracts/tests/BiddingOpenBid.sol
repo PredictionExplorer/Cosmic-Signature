@@ -224,7 +224,8 @@ abstract contract BiddingOpenBid is
 		// );
 
 		// Comment-202409177 applies.
-		token.burn(msg.sender, price);
+		// token.burn(msg.sender, price);
+		token.transferToMarketingWalletOrBurn(msg.sender, price);
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
@@ -314,18 +315,19 @@ abstract contract BiddingOpenBid is
 		// 			tokenReward
 		// 		);
 		// }
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(marketingWallet, marketingReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicSignatureErrors.ERC20Mint(
-		// 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// 			marketingWallet,
-		// 			marketingReward
-		// 		);
-		// }
+
+		// // try
+		// // ToDo-202409245-0 applies.
+		// token.mint(marketingWallet, marketingReward);
+		// // {
+		// // } catch {
+		// // 	revert
+		// // 		CosmicSignatureErrors.ERC20Mint(
+		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
+		// // 			marketingWallet,
+		// // 			marketingReward
+		// // 		);
+		// // }
 
 		_extendMainPrizeTime();
 	}
