@@ -1,5 +1,7 @@
 // Used to check the three main fields of deployed contracts: activationTime, charityAddress and randomWalkNft address
 
+// todo-1 Add the testing/logging of `marketingWalletAddr` to this?
+
 // const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");

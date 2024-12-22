@@ -13,7 +13,7 @@ describe("ZeroAddressChecking", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
+		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -26,7 +26,7 @@ describe("ZeroAddressChecking", function () {
 			stakingWalletRandomWalkNft,
 			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, false);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, false, 1);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -68,7 +68,7 @@ describe("ZeroAddressChecking", function () {
 	});
 
 	it("Shouldn't be possible to set a zero charity address in CosmicSignatureGame", async function () {
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -80,10 +80,11 @@ describe("ZeroAddressChecking", function () {
 		} = await basicDeploymentAdvanced(
 			"SpecialCosmicSignatureGame",
 			owner,
-			'',
-			0,
+			"",
+			addr7.address,
 			addr1.address,
-			true
+			true,
+			0
 		);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");

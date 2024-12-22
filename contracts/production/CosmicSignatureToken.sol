@@ -103,9 +103,10 @@ contract CosmicSignatureToken is
 	// #region `transferToMarketingWalletOrBurn`
 
 	function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override onlyGame {
-		// This is a common sense requirement. The marketing wallet isn't going to bid.
-		// The behavior isn't necessarily going to be correct if this condition is not met.
-		// It's probably unnecessary to spend gas to `require` this.
+		// This is a common sense requirement. The marketing wallet isn't supposed to bid.
+		// The behavior isn't necessarily going to be correct if this condition is not met,
+		// but it appears that it's not going to be too bad,
+		// so it's probably unnecessary to spend gas to `require` this.
 		// #enable_asserts assert(fromAddress_ != marketingWalletAddress);
 
 		if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {

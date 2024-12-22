@@ -11,7 +11,7 @@ describe("CosmicSignatureToken", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
+		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -22,7 +22,7 @@ describe("CosmicSignatureToken", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			// marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,

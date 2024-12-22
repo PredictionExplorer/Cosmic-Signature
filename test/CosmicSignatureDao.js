@@ -10,8 +10,8 @@ describe("CosmicSignatureDao", function () {
 	/// ToDo-202411224-1 applies.
 	async function deployCosmicSignature() {
 		const signers = await hre.ethers.getSigners();
-		const [owner, addr1,] = signers;
-		const contracts = await basicDeployment(owner, "", 1, addr1.address, true);
+		const [owner, addr1, , , , , , addr7,] = signers;
+		const contracts = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
 		contracts.signers = signers;
 		return contracts;
 	}

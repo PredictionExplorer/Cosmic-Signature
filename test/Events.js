@@ -8,7 +8,7 @@ const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js")
 describe("Events", function () {
 	const INITIAL_AMOUNT = hre.ethers.parseUnits("10", 18);
 	async function deployCosmicSignature() {
-		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
+		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -21,7 +21,7 @@ describe("Events", function () {
 			stakingWalletRandomWalkNft,
 			// marketingWallet,
 			// bidLogic,
-		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -61,9 +61,9 @@ describe("Events", function () {
 		expect(tx).to.emit(cosmicSignatureNft, "NftMinted").withArgs(0n, bidder1.address, seed, 0n);
 	});
 	it("should emit the correct events in the CharityWallet contract", async function () {
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner, marketingWallet,] = await hre.ethers.getSigners();
 		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-			await basicDeployment(owner, "", 1, charity.address, false);
+			await basicDeployment(owner, "", marketingWallet.address, charity.address, false, 1);
 		// DonationReceived
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -141,7 +141,8 @@ describe("Events", function () {
 			// todo-1 Assert 1 more param passed to the event.
 			.withArgs(0, bidder1.address, mainEthPrizeAmountBeforeClaim_);
 
-		const roundMainPrizeWinnerAddress_ = await cosmicSignatureGameProxy.winners(0);
+		// const roundMainPrizeWinnerAddress_ = await cosmicSignatureGameProxy.winners(0);
+		const roundMainPrizeWinnerAddress_ = await prizesWallet.mainPrizeWinnerAddresses(0);
 		expect(roundMainPrizeWinnerAddress_).to.equal(bidder1.address);
 
 		const mainEthPrizeAmountAfterClaim_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
@@ -263,7 +264,7 @@ describe("Events", function () {
 	});
 
 	it("should not be possible to bid before activation", async function () {
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner, marketingWallet,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -271,8 +272,8 @@ describe("Events", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-		// } = await basicDeploymentAdvanced("SpecialCosmicSignatureGame", owner, "", 1, charity.address, true);
-		} = await basicDeployment(owner, "", 0, charity.address, true);
+		// } = await basicDeploymentAdvanced("SpecialCosmicSignatureGame", owner, "", marketingWallet.address, charity.address, true, 1);
+		} = await basicDeployment(owner, "", marketingWallet.address, charity.address, true, 0);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		const blockNumBefore = await hre.ethers.provider.getBlockNumber();
@@ -321,7 +322,7 @@ describe("Events", function () {
 	// todo-1 Move this to "SystemManagement.js"?
 	it("Admin events should work", async function () {
 		const signers = await hre.ethers.getSigners();
-		const [owner, addr1,] = signers;
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -329,7 +330,7 @@ describe("Events", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-		} = await basicDeployment(owner, "", 0, addr1.address, true);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 0);
 
 		const activationTime_ = 123_456_789_012n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setActivationTime(activationTime_))

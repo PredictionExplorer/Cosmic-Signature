@@ -19,9 +19,10 @@ async function main() {
 			"SelfDestructibleCosmicSignatureGame",
 			deployerAcct,
 			"", //"0x1111111111111111111111111111111111111111",
-			1,
 			"0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
-			true
+			"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+			true,
+			1
 		);
 	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());
 	console.log("CosmicSignatureNft address:", await contracts.cosmicSignatureNft.getAddress());

@@ -11,7 +11,7 @@ describe("MainPrize", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
+		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -23,7 +23,7 @@ describe("MainPrize", function () {
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
 			// marketingWallet,
-		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -167,7 +167,7 @@ describe("MainPrize", function () {
 		}
 	});
 	it("Distribution of prize amounts matches specified business logic", async function () {
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -180,10 +180,11 @@ describe("MainPrize", function () {
 		} = await basicDeploymentAdvanced(
 			"SpecialCosmicSignatureGame",
 			owner,
-			'',
-			1,
+			"",
+			addr7.address,
 			addr1.address,
-			true
+			true,
+			1
 		);
 
 		let donationAmount = hre.ethers.parseEther('1');
@@ -260,7 +261,7 @@ describe("MainPrize", function () {
 		expect(expectedBalanceStakingAfter).to.equal(balanceStakingAfter);
 	});
 	it("The msg.sender will get the prize if the lastBidderAddress won't claim it", async function () {
-		const [owner, addr1, addr2, addr3,] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -270,9 +271,10 @@ describe("MainPrize", function () {
 		} = await basicDeployment(
 			owner,
 			"",
-			1,
+			addr7.address,
 			addr1.address,
-			true
+			true,
+			1
 		);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 

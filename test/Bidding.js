@@ -20,7 +20,7 @@ describe("Bidding", function () {
 	// >>> Actually this probably works correct. But the order of variables still should be fixed.
 	// [/ToDo-202410075-0]
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
+		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -33,7 +33,7 @@ describe("Bidding", function () {
 			stakingWalletRandomWalkNft,
 			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -786,7 +786,6 @@ describe("Bidding", function () {
 			charityWallet,
 			randomWalkNft,
 			stakingWallet,
-		// } = await basicDeploymentAdvanced("SpecialCosmicSignatureGame", owner, "", 1, addr1.address, true);
 		} = await loadFixture(deployCosmicSignature);
 		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
@@ -818,7 +817,6 @@ describe("Bidding", function () {
 			// todo-1 Everywhere, specify what kind of staking wallet is this.
 			// todo-1 Search for reg-ex pattern, case insensitive: stakingWallet(?!CST|RWalk)
 			stakingWallet,
-		// } = await basicDeploymentAdvanced("SpecialCosmicSignatureGame", owner, "", 1, addr1.address, true);
 		} = await loadFixture(deployCosmicSignature);
 		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
@@ -836,7 +834,7 @@ describe("Bidding", function () {
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
 		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
 		// See ToDo-202409245-0.
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");

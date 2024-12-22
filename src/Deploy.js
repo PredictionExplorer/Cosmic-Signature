@@ -10,26 +10,29 @@ const { HardhatContext } = require("hardhat/internal/context");
 /**
  * @param {import("@nomicfoundation/hardhat-ethers/signers").HardhatEthersSigner} deployerAcct 
  * @param {string} randomWalkNftAddr 
- * @param {number} activationTime 
+ * @param {string} marketingWalletAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
+ * @param {number} activationTime 
  * @returns 
  */
 const basicDeployment = async function (
 	deployerAcct,
 	randomWalkNftAddr,
-	activationTime,
+	marketingWalletAddr,
 	charityAddr,
-	transferOwnershipToCosmicSignatureDao
+	transferOwnershipToCosmicSignatureDao,
+	activationTime
 	// switchToRuntimeMode = true
 ) {
 	return await basicDeploymentAdvanced(
 		"CosmicSignatureGame",
 		deployerAcct,
 		randomWalkNftAddr,
-		activationTime,
+		marketingWalletAddr,
 		charityAddr,
-		transferOwnershipToCosmicSignatureDao
+		transferOwnershipToCosmicSignatureDao,
+		activationTime
 		// switchToRuntimeMode
 	);
 };
@@ -40,22 +43,24 @@ const basicDeployment = async function (
  * todo-1 +++ Test a non-default `deployerAcct`.
  * todo-1 After deployment all restricted functions should revert for the default signer and work for the given signer.
  * @param {string} randomWalkNftAddr May be empty.
+ * @param {string} marketingWalletAddr 
+ * @param {string} charityAddr 
+ * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @param {number} activationTime 
  * Possible values:
  *    0: leave the default value hardcoded in the contract.
  *    1: use the latest block timestamp.
  *    Any other value: use the given value as is.
- * @param {string} charityAddr 
- * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @returns 
  */
 const basicDeploymentAdvanced = async function (
 	cosmicSignatureGameContractName,
 	deployerAcct,
 	randomWalkNftAddr,
-	activationTime,
+	marketingWalletAddr,
 	charityAddr,
-	transferOwnershipToCosmicSignatureDao
+	transferOwnershipToCosmicSignatureDao,
+	activationTime
 	// switchToRuntimeMode
 ) {
 	// if (switchToRuntimeMode === undefined) {
@@ -116,7 +121,7 @@ const basicDeploymentAdvanced = async function (
 
 	const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
 	// const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy();
-	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr, deployerAcct.address);
+	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr, marketingWalletAddr);
 	await cosmicSignatureToken.waitForDeployment();
 	const cosmicSignatureTokenAddr = await cosmicSignatureToken.getAddress();
 	// await cosmicSignatureToken.connect(deployerAcct).transferOwnership(cosmicSignatureGameProxyAddr);

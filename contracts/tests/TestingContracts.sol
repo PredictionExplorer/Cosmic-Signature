@@ -31,7 +31,6 @@ contract BrokenToken {
 }
 
 /// @notice used to test revert() statements in CosmicSignatureGame contract
-/// todo-1 Rename to `BrokenErc20`.
 contract BrokenErc20 {
 	uint256 private _counter;
 

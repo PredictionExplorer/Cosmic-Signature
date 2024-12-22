@@ -11,7 +11,7 @@ const SKIP_LONG_TESTS = false;
 
 describe("StakingWalletRandomWalkNft", function () {
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
+		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -24,7 +24,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			stakingWalletRandomWalkNft,
 			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, false);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, false, 1);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -133,7 +133,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		await expect(newStakingWalletRandomWalkNft.connect(addr1).unstake(1)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftStakeActionAccessDenied");
 	});
 	it("Internal staker state variables for checking uniquness are correctly set", async function () {
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -141,7 +141,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-		} = await basicDeployment(owner, "", 0, addr1.address, false);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, false, 0);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft");
@@ -200,7 +200,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		expect(numStakedNfts_).to.equal(0);
 	});
 	it("User stakes his 10 RandomWalk tokens and gets all 10 tokens back after claim", async function () {
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -208,7 +208,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-		} = await basicDeployment(owner, "", 1, addr1.address, false);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, false, 1);
 
 		for(let i=0; i < 10 ;i++) {
 			let tokenPrice = await randomWalkNft.getMintPrice();
@@ -242,7 +242,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 	it("The random picking of winner from StakingWalletRandomWalkNft is really random", async function () {
 		const signers = await hre.ethers.getSigners();
-		const [owner, addr1,] = signers;
+		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
@@ -250,7 +250,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-		} = await basicDeployment(owner, "", 0, addr1.address, false);
+		} = await basicDeployment(owner, "", addr7.address, addr1.address, false, 0);
 
 		// const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		// const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
