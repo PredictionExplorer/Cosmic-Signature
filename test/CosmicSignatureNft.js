@@ -12,7 +12,7 @@ describe("CosmicSignatureNft", function () {
 	// We use loadFixture to run this setup once, snapshot that state,
 	// and reset Hardhat Network to that snapshot in every test.
 	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
+		const [contractDeployerAcct, addr1,] = await hre.ethers.getSigners();
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureNft,
@@ -23,9 +23,9 @@ describe("CosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
+		} = await basicDeployment(contractDeployerAcct, "", 1, addr1.address, true);
 		return {
 			cosmicSignatureGameProxy,
 			cosmicSignatureNft,
@@ -36,7 +36,7 @@ describe("CosmicSignatureNft", function () {
 			randomWalkNft,
 			stakingWalletCosmicSignatureNft,
 			stakingWalletRandomWalkNft,
-			marketingWallet,
+			// marketingWallet,
 			// cosmicSignatureGame,
 		};
 	}
@@ -50,15 +50,14 @@ describe("CosmicSignatureNft", function () {
 	// };
 	it("mint() function works properly", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const transferOwnership = false;
+		const transferOwnershipToCosmicSignatureDao = false;
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
 			randomWalkNft,
-			marketingWallet,
-		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
+		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnershipToCosmicSignatureDao);
 
 		const NewCosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		const newCosmicSignatureNft = await NewCosmicSignatureNft.deploy(owner.address);
@@ -77,15 +76,14 @@ describe("CosmicSignatureNft", function () {
 	});
 	it("setNftGenerationScriptUri() works as expected", async function () {
 		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const transferOwnership = false;
+		const transferOwnershipToCosmicSignatureDao = false;
 		const {
 			cosmicSignatureGameProxy,
 			cosmicSignatureToken,
 			cosmicSignatureNft,
 			charityWallet,
 			randomWalkNft,
-			marketingWallet,
-		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
+		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnershipToCosmicSignatureDao);
 
 		await cosmicSignatureNft.connect(owner).setNftGenerationScriptUri("url://");
 		expect(await cosmicSignatureNft.nftGenerationScriptUri()).to.equal("url://");

@@ -29,6 +29,8 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 // #endregion
 // #region
 
+/// todo-1 Everywhere, make some `public` functions `external`.
+/// todo-1 Everywhere, make some `public`/`external` functions `private`.
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
@@ -68,10 +70,10 @@ contract CosmicSignatureGame is
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
-		marketingReward = CosmicSignatureConstants.MARKETING_REWARD;
+		// marketingReward = CosmicSignatureConstants.DEFAULT_MARKETING_REWARD;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
-		// marketingWallet =
+		// // marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =

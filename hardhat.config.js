@@ -435,7 +435,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 			// "contracts/production/CosmicSignatureGame.sol": ["CosmicSignatureGame"],
 			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
 			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
-			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
+			// // "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
 			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
 			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],

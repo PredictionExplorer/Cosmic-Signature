@@ -32,10 +32,10 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
 
-	/// @notice Sets `marketingReward`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMarketingReward(uint256 newValue_) external;
+	// /// @notice Sets `marketingReward`.
+	// /// Only the contract owner is permitted to call this method.
+	// /// @param newValue_ The new value.
+	// function setMarketingReward(uint256 newValue_) external;
 
 	/// @notice Sets `maxMessageLength`.
 	/// Only the contract owner is permitted to call this method.
@@ -46,13 +46,12 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
-	function setTokenContract(ICosmicSignatureToken newValue_) external;
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
-	/// @notice Sets `marketingWallet`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMarketingWallet(address newValue_) external;
+	// /// @notice Sets `marketingWallet`.
+	// /// Only the contract owner is permitted to call this method.
+	// /// @param newValue_ The new value.
+	// function setMarketingWallet(address newValue_) external;
 
 	/// @notice Sets `nft`.
 	/// Only the contract owner is permitted to call this method.

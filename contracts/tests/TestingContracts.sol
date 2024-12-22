@@ -32,25 +32,22 @@ contract BrokenToken {
 
 /// @notice used to test revert() statements in CosmicSignatureGame contract
 /// todo-1 Rename to `BrokenErc20`.
-contract BrokenERC20 {
-	uint256 counter;
+contract BrokenErc20 {
+	uint256 private _counter;
 
-	constructor(uint256 _counter) {
-		counter = _counter;
+	constructor(uint256 counter_) {
+		_counter = counter_;
 	}
 
 	function mint(address, uint256) external {
-		if (counter == 0 ) {
-			require(false, "Test mint() (ERC20) failed");
-		} else {
-			counter = counter - 1;
-		}
+		require(_counter > 0, "Test mint() (ERC20) failed");
+		-- _counter;
 	}
 }
 
 /// @notice Used to test `revert` statements for charity deposits.
 contract BrokenCharity {
-	// uint256 private counter;
+	// uint256 private _counter;
 	
 	receive() external payable {
 		require(false, "Test deposit failed.");

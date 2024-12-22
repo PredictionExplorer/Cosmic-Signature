@@ -32,7 +32,7 @@ async function main() {
 	console.log("RandomWalkNFT address:", await contracts.randomWalkNft.getAddress());
 	console.log("StakingWalletCosmicSignatureNft address:", await contracts.stakingWalletCosmicSignatureNft.getAddress());
 	console.log("StakingWalletRandomWalkNft address:", await contracts.stakingWalletRandomWalkNft.getAddress());
-	console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
+	// console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
 	console.log("CosmicSignatureGame address:", await contracts.cosmicSignatureGame.getAddress());
 }
 

@@ -68,10 +68,10 @@ contract CosmicSignatureGameOpenBid is
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
-		marketingReward = CosmicSignatureConstants.MARKETING_REWARD;
+		// marketingReward = CosmicSignatureConstants.DEFAULT_MARKETING_REWARD;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
-		// marketingWallet =
+		// // marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =

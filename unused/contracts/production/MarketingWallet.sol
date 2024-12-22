@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+// import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
@@ -20,11 +20,11 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 		token = token_;
 	}
 
-	function setTokenContract(ICosmicSignatureToken newValue_) external override
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
 		onlyOwner
 		providedAddressIsNonZero(address(newValue_)) {
 		token = CosmicSignatureToken(address(newValue_));
-		emit TokenContractAddressChanged(newValue_);
+		emit CosmicSignatureTokenAddressChanged(newValue_);
 	}
 
 	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {

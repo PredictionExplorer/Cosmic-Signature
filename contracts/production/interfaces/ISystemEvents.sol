@@ -21,9 +21,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
 
-	/// @notice Emitted when `marketingReward` is changed.
-	/// @param newValue The new value.
-	event MarketingRewardChanged(uint256 newValue);
+	// /// @notice Emitted when `marketingReward` is changed.
+	// /// @param newValue The new value.
+	// event MarketingRewardChanged(uint256 newValue);
 
 	/// @notice Emitted when `maxMessageLength` is changed.
 	/// @param newValue The new value.
@@ -31,11 +31,11 @@ interface ISystemEvents {
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
 
-	/// @notice Emitted when `marketingWallet` is changed.
-	/// @param newValue The new value.
-	event MarketingWalletAddressChanged(address newValue);
+	// /// @notice Emitted when `marketingWallet` is changed.
+	// /// @param newValue The new value.
+	// event MarketingWalletAddressChanged(address newValue);
 
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.

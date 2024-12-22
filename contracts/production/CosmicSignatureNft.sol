@@ -104,6 +104,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 		// Besides, given that only the Game can call us, it's not going to provide a zero address.
 
 		// It could make sense to move this validation to the `onlyGame` modifier. But it uses a specific custom error.
+		// todo-1 But maybe we don't need that custom error, after all. Simplify things!
 		require(
 			_msgSender() == game,
 			CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender())

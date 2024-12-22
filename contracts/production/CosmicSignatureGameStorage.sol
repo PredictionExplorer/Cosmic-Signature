@@ -51,13 +51,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public delayDurationBeforeNextRound;
 
-	/// @notice On each bid, we mint this CST amount for `marketingWallet`.
-	/// Comment-202411064 applies.
-	/// @dev ToDo-202411182-1 relates.
-	/// todo-1 Rename to `marketingCstRewardAmount`.
-	/// todo-1 Even better, rename to `marketingWalletCstContributionAmount`.
-	/// todo-1 If I eliminate `MarketingWallet`, eliminate this too.
-	uint256 public marketingReward;
+	// /// @notice On each bid, we mint this CST amount for `marketingWallet`.
+	// /// Comment-202411064 applies.
+	// /// @dev ToDo-202411182-1 relates.
+	// /// todo-1 Rename to `marketingCstRewardAmount`.
+	// /// todo-1 Even better, rename to `marketingWalletCstContributionAmount`.
+	// uint256 public marketingReward;
 
 	/// @notice The maximum allowed length of a bid message.
 	/// [Comment-202409143]
@@ -70,13 +69,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region External Contract and Other Addresses
 
-	/// @notice `CosmicSignatureToken` contract address.
+	/// @notice The `CosmicSignatureToken` contract address.
 	/// Comment-202411064 applies.
 	CosmicSignatureToken public token;
 
-	/// @notice Comment-202411064 applies.
-	/// @dev It's currently unnecessary to make this variable strongly typed.
-	address public marketingWallet;
+	// /// @notice Comment-202411064 applies.
+	// /// @dev It's currently unnecessary to make this variable strongly typed.
+	// address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.
 	CosmicSignatureNft public nft;
