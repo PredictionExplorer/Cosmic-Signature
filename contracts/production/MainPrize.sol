@@ -78,9 +78,7 @@ abstract contract MainPrize is
 		// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
 		// which would allow them to claim donated NFTs and ERC-20 tokens.
 		// But we feel that it's better to simply treat the guy who clicked "Claim" as the winner.
-		// todo-0 I still want to remove `winners`.
-		// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
-		winners[roundNum] = msg.sender;
+		// winners[roundNum] = msg.sender;
 		prizesWallet.registerRoundEnd(roundNum, msg.sender);
 
 		_distributePrizes();

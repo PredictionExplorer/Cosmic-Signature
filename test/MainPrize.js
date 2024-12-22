@@ -45,7 +45,7 @@ describe("MainPrize", function () {
 	// 		{ name: "randomWalkNftId", type: "int256" },
 	// 	],
 	// };
-	it("The number of distributed prizes", async function () {
+	it("The number of distributed prizes is correct", async function () {
 		const {cosmicSignatureGameProxy, cosmicSignatureNft, prizesWallet, randomWalkNft, stakingWalletRandomWalkNft,} =
 			await loadFixture(deployCosmicSignature);
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, ...addrs] = await hre.ethers.getSigners();
@@ -100,12 +100,13 @@ describe("MainPrize", function () {
 		roundNum = roundNum + 1;
 		let receipt = await tx.wait();
 
-		// check tnat roundNum is incremented
+		// check that roundNum is incremented
 		let roundNumAfter = await cosmicSignatureGameProxy.roundNum();
 		expect(roundNumAfter).to.equal(roundNumBefore + 1n);
 
 		// check winners[] map contains correct winner value
-		let curWinnerAddress_ = await cosmicSignatureGameProxy.winners(roundNumBefore);
+		// let curWinnerAddress_ = await cosmicSignatureGameProxy.winners(roundNumBefore);
+		let curWinnerAddress_ = await prizesWallet.mainPrizeWinnerAddresses(roundNumBefore);
 		expect(curWinnerAddress_).to.equal(addr3.address);
 
 		// make sure the number of deposits matches numRaffleWinnersPerRound variable

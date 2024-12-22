@@ -277,15 +277,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev todo-1 Rename to `timeoutDurationToClaimRoundMainPrize`. Or better without the word "Round".
 	uint256 public timeoutDurationToClaimMainPrize;
 
-	/// @notice Bidding round main prize winners.
-	/// @dev ToDo-202411098-0 applies.
-	/// [ToDo-202411257-1]
-	/// I have now added a similar variable to `PrizesWallet`.
-	/// Can I now eliminate this?
-	/// Or keep this, just in case a future version needs it, but don't populate.
-	/// At least rename this like it is in `PrizesWallet`.
-	/// [/ToDo-202411257-1]
-	mapping(uint256 roundNum => address winnerAddress) public winners;
+	// /// @notice Bidding round main prize winners.
+	// /// @dev ToDo-202411098-0 applies.
+	// /// I have replaced this with `PrizesWallet.mainPrizeWinnerAddresses`.
+	// mapping(uint256 roundNum => address winnerAddress) public winners;
 
 	// /// @notice Stellar Spender address.
 	// /// This will remain zero if nobody bids with CST or everybody bids with a zero CST price.

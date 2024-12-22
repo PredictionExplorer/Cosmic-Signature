@@ -32,6 +32,7 @@ async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 	}
 	return prizeData;
 }
+
 async function list_donated_nfts(nfts) {
 	//console.log(nfts);
 	const numNfts_ = nfts.length;
@@ -55,6 +56,7 @@ async function list_donated_nfts(nfts) {
 		}
 	}
 }
+
 function build_parameter_list(token_list) {
 	let output = [];
 	for (let i = 0; i < token_list.length; i++) {
@@ -65,6 +67,7 @@ function build_parameter_list(token_list) {
 	}
 	return output;
 }
+
 async function main() {
 	let privKey = process.env.PRIVKEY;
 
@@ -102,6 +105,7 @@ async function main() {
 		}
 	}
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

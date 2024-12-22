@@ -25,7 +25,6 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	address public game;
 
 	/// @notice For each bidding round number, contains the main prize winner address.
-	/// ToDo-202411257-1 relates.
 	address[1 << 64] public mainPrizeWinnerAddresses;
 
 	/// @notice If a prize winner doesn't withdraw their prize within this timeout, anybody will be welcomed to withdraw it.
