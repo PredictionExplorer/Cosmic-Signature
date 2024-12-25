@@ -3,44 +3,12 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 const SKIP_LONG_TESTS = false;
 
 describe("BidStatistics", function () {
-	// We define a fixture to reuse the same setup in every test.
-	// We use loadFixture to run this setup once, snapshot that state,
-	// and reset Hardhat Network to that snapshot in every test.
-	async function deployCosmicSignature(deployerAcct) {
-		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureNft,
-			cosmicSignatureToken,
-			cosmicSignatureDao,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			// marketingWallet,
-			// cosmicSignatureGame,
-		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
-		return {
-			cosmicSignatureGameProxy,
-			cosmicSignatureNft,
-			cosmicSignatureToken,
-			cosmicSignatureDao,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			// marketingWallet,
-			// cosmicSignatureGame,
-		};
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -59,8 +27,8 @@ describe("BidStatistics", function () {
 	// 	],
 	// };
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const {cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2,] = signers;
 
 		// test case description:
 		// 		addr1 will make a maximum duration of 1000 seconds in his bids
@@ -97,8 +65,8 @@ describe("BidStatistics", function () {
 		expect(maxbaddr).to.equal(addr2.address);
 	});
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const {cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2, addr3,] = signers;
 
 		// test case description:
 		// 		all 3 bidders make bids of the same length
@@ -173,8 +141,8 @@ describe("BidStatistics", function () {
 	});
 	// todo-1 We now also have chrono-warrior.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const {cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2, addr3,] = signers;
 
 		// test case description:
 		// first bid is made by owner, to initialize all the variables, duration of 1000 seconds

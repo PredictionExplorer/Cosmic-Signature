@@ -5,21 +5,9 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { basicDeployment } = require("../src/Deploy.js");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("SystemManagement", function () {
-	/// [ToDo-202411224-1]
-	/// This TODO is done where it's mentioned.
-	/// Rewrite all deployment functions this way.
-	/// Remove other calls to `getSigners`. Use `signers` from the returned object.
-	/// Find (case insensitive, not whole word, reg ex): DeployerAcct|deployCosmicSignature|basicDeployment|signers|owner(?!ship\b)|addr[\ds]
-	/// [/ToDo-202411224-1]
-	async function deployCosmicSignature() {
-		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, , , , , , addr7,] = signers;
-		const contracts = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
-		contracts.signers = signers;
-		return contracts;
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -33,7 +21,7 @@ describe("SystemManagement", function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, true, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", addr7.address, addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		let testAcct_;
@@ -174,7 +162,7 @@ describe("SystemManagement", function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, true, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", addr7.address, addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
@@ -223,7 +211,7 @@ describe("SystemManagement", function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
 		const {cosmicSignatureGameProxy, randomWalkNft,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, true, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", addr7.address, addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.be.greaterThan(0n);
@@ -242,7 +230,7 @@ describe("SystemManagement", function () {
 		// await expect(cosmicSignatureGameProxy.claimManyDonatedNfts([0])).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(owner.sendTransaction({ to: await cosmicSignatureGameProxy.getAddress(), value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicSignatureGameProxy.donateEth({value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.donateEthWithInfo("{}",{value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.donateEthWithInfo("{}", {value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 
 		const mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
@@ -252,7 +240,7 @@ describe("SystemManagement", function () {
 		// await expect(cosmicSignatureGameProxy.connect(addr1).donateNft(await randomWalkNft.getAddress(), 0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 	});
 	it("The active and inactive modes function correctly", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
 		// let cosmicSignatureGameProxyAddr = await cosmicSignatureGameProxy.getAddress();
 		// let ownableErr = cosmicSignatureGameProxy.interface.getError("OwnableUnauthorizedAccount");
@@ -309,7 +297,8 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
 	});
 	it("Unauthorized access to restricted methods is denied", async function () {
-		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
+			await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
 		// await expect(cosmicSignatureGameProxy.connect(addr1).setRuntimeMode())
@@ -391,10 +380,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");
 	});
 	it("The getDurationUntilActivation method functions correctly", async function () {
-		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
-		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, true, 0);
+		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 
 		const bnum = await hre.ethers.provider.getBlockNumber();
 		const bdata = await hre.ethers.provider.getBlock(bnum);
@@ -418,28 +404,26 @@ describe("SystemManagement", function () {
 		durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
 		expect(durationUntilActivation_).to.equal(0n);
 	});
-	it("The transferOwnership method functions correctly", async function () {
-		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
-		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, true, 0);
+	it("The transferOwnership method behaves correctly", async function () {
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2,] = signers;
 
-		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.be.greaterThan(0n);
-
-		for ( let counter_ = 0; ; ++ counter_ ) {
-			await cosmicSignatureGameProxy.transferOwnership(addr2.address);
-			expect((await cosmicSignatureGameProxy.owner()).toString()).to.equal(addr2.address.toString());
-			await cosmicSignatureGameProxy.connect(addr2).transferOwnership(owner.address);
-			expect((await cosmicSignatureGameProxy.owner()).toString()).to.equal(owner.address.toString());
-			if (counter_ > 0) {
-				break;
+		expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
+		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
+			await cosmicSignatureGameProxy.setActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
+			if (counter_ <= 0) {
+				expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).greaterThan(0n);
+			} else {
+				expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).equal(0n);
 			}
-			await cosmicSignatureGameProxy.setActivationTime(123n);
-			expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.equal(0n);
+			await cosmicSignatureGameProxy.transferOwnership(addr2.address);
+			expect(await cosmicSignatureGameProxy.owner()).to.equal(addr2.address);
+			await cosmicSignatureGameProxy.connect(addr2).transferOwnership(owner.address);
+			expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
 		}
 	});
 	it("The initialize method is disabled", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 
 		await expect(cosmicSignatureGameProxy.initialize(owner.address)).revertedWithCustomError(cosmicSignatureGameProxy, "InvalidInitialization");
@@ -447,8 +431,9 @@ describe("SystemManagement", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using the recommended approach", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
+
 		const implementation1AddressAsString_ =
 			await cosmicSignatureGameProxy.runner.provider.getStorage(
 				await cosmicSignatureGameProxy.getAddress(),
@@ -486,8 +471,9 @@ describe("SystemManagement", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using our minimalistic unsafe approach", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
+		
 		const implementation1AddressAsString_ =
 			await cosmicSignatureGameProxy.runner.provider.getStorage(
 				await cosmicSignatureGameProxy.getAddress(),
@@ -523,7 +509,7 @@ describe("SystemManagement", function () {
 	// `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would not allow doing this.
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade to a completely different contract using our minimalistic unsafe approach", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 
 		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
@@ -541,7 +527,7 @@ describe("SystemManagement", function () {
 
 	// Comment-202412129 relates.
 	it("Only the owner is permitted to upgrade CosmicSignatureGame", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
 
 		// The recommended approach.

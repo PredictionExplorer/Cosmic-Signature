@@ -8,7 +8,7 @@
 const { HardhatContext } = require("hardhat/internal/context");
 
 /**
- * @param {import("@nomicfoundation/hardhat-ethers/signers").HardhatEthersSigner} deployerAcct 
+ * @param {import("ethers").Signer} deployerAcct 
  * @param {string} randomWalkNftAddr 
  * @param {string} marketingWalletAddr 
  * @param {string} charityAddr 
@@ -39,7 +39,7 @@ const basicDeployment = async function (
 
 /**
  * @param {string} cosmicSignatureGameContractName 
- * @param {import("@nomicfoundation/hardhat-ethers/signers").HardhatEthersSigner} deployerAcct 
+ * @param {import("ethers").Signer} deployerAcct 
  * todo-1 +++ Test a non-default `deployerAcct`.
  * todo-1 After deployment all restricted functions should revert for the default signer and work for the given signer.
  * @param {string} randomWalkNftAddr May be empty.

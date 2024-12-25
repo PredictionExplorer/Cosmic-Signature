@@ -1,13 +1,15 @@
+"use strict";
+
 // const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function main() {
-	let cosmicSignatureGame = await getCosmicSignatureGameContract();
+	const cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	const [owner] = await hre.ethers.getSigners();
+	const [owner,] = await hre.ethers.getSigners();
 	const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-	let bidderContract = await BidderContract.connect(owner).deploy(cosmicSignatureGame.address);
+	const bidderContract = await BidderContract.connect(owner).deploy(cosmicSignatureGame.address);
 	await bidderContract.deployed();
 
 	console.log("BidderContract address: " + bidderContract.address);

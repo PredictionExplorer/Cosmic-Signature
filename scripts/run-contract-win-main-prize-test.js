@@ -5,7 +5,7 @@ const hre = require("hardhat");
 const { /*getCosmicSignatureGameContract,*/ getBidderContract } = require("./helper.js");
 
 async function main() {
-	const [owner, addr1, addr2] = await hre.ethers.getSigners();
+	const [owner, addr1, addr2,] = await hre.ethers.getSigners();
 	let bidderContract = await getBidderContract();
 	let cosmicSignatureGameAddr = await bidderContract.cosmicSignatureGame();
 	let cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);

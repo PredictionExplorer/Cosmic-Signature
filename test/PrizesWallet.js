@@ -2,18 +2,11 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { basicDeployment } = require("../src/Deploy.js");
+// const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+// const { basicDeployment } = require("../src/Deploy.js");
+// const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("PrizesWallet", function () {
-	/// ToDo-202411224-1 applies.
-	async function deployCosmicSignature() {
-		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, , , , , , addr7,] = signers;
-		const contracts = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
-		contracts.signers = signers;
-		return contracts;
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -23,7 +16,7 @@ describe("PrizesWallet", function () {
 	// 	],
 	// };
 	it("depositEth works correctly", async function () {
-		const {signers,} = await loadFixture(deployCosmicSignature);
+		const signers = await hre.ethers.getSigners();
 		const [owner, addr1,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
@@ -42,9 +35,8 @@ describe("PrizesWallet", function () {
 		await expect(newPrizesWallet.depositEth(0, addr1.address)).not.to.be.reverted;
 	});
 	it("withdrawEth works correctly", async function () {
-		const {signers,} = await loadFixture(deployCosmicSignature);
+		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, addr2,] = signers;
-		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		const NewPrizesWallet = await hre.ethers.getContractFactory("PrizesWallet");
 		let newPrizesWallet = await NewPrizesWallet.deploy(owner.address);
@@ -53,7 +45,7 @@ describe("PrizesWallet", function () {
 		await newPrizesWallet.depositEth(0, addr1.address, {value: 1000n});
 
 		// Comment-202409215 relates.
-		// await expect(newPrizesWallet.connect(addr2).withdrawEth()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroBalance");
+		// await expect(newPrizesWallet.connect(addr2).withdrawEth()).to.be.revertedWithCustomError(newPrizesWallet, "ZeroBalance");
 		await expect(newPrizesWallet.connect(addr2).withdrawEth()).not.to.be.reverted;
 	});
 });

@@ -3,44 +3,13 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+// const { basicDeployment } = require("../src/Deploy.js");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 const SKIP_LONG_TESTS = false;
 
 describe("Donating", function () {
-	// We define a fixture to reuse the same setup in every test.
-	// We use loadFixture to run this setup once, snapshot that state,
-	// and reset Hardhat Network to that snapshot in every test.
-	async function deployCosmicSignature(deployerAcct) {
-		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureNft,
-			cosmicSignatureToken,
-			cosmicSignatureDao,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			// marketingWallet,
-			// cosmicSignatureGame,
-		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
-		return {
-			cosmicSignatureGameProxy,
-			cosmicSignatureNft,
-			cosmicSignatureToken,
-			cosmicSignatureDao,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			// marketingWallet,
-			// cosmicSignatureGame,
-		};
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -50,10 +19,8 @@ describe("Donating", function () {
 	// 	],
 	// };
 	it("donateEthWithInfo() works as expected", async function () {
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		// const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1,] = signers;
 		
 		let donationAmount = hre.ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
@@ -79,10 +46,8 @@ describe("Donating", function () {
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
 	// todo-1 and NFT donation without making a bid is now prohibited.
 	it("donateNft() without making a bid works", async function () {
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
+		const [owner,] = signers;
 
 		let mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(owner).mint({ value: mintPrice });
@@ -95,18 +60,18 @@ describe("Donating", function () {
 	});
 
 	// it("Should not be possible to donate 0 value", async function () {
-	// 	const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-	// 		await loadFixture(deployCosmicSignature);
-	// 	const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+	// 	const [owner, addr1,] = signers;
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+	//
 	// 	await expect(cosmicSignatureGameProxy.connect(addr1).donateEth()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
 	// });
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("claimManyDonatedNfts() works properly", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =
+			await loadFixture(deployContractsForTesting);
+		const [owner, addr1,] = signers;
 
 		// ToDo-202411202-1 applies.
 		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0);

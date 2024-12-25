@@ -87,7 +87,6 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_stakingWalletCosmicSignatureNft.stake(nftId);
 	}
 
-	// todo-0 Nick, I added the 2nd param. Tests that call this function are broken now.
 	function doUnstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external {
 		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}

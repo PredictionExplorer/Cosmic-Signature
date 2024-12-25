@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+const { getCosmicSignatureGameContract } = require("./helper.js");
 
 // const bidParamsEncoding = {
 // 	type: "tuple(string,int256)",
@@ -8,16 +9,6 @@ const hre = require("hardhat");
 // 		{ name: "randomWalkNftId", type: "int256" },
 // 	],
 // };
-
-async function getCosmicSignatureGameContract() {
-	let cosmicSignatureGameAddr = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
-	if (typeof cosmicSignatureGameAddr === "undefined" || cosmicSignatureGameAddr.length != 42) {
-		console.log("COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address");
-		process.exit(1);
-	}
-	let cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
-	return cosmicSignatureGame;
-}
 
 async function main() {
 	let privKey = process.env.PRIVKEY;

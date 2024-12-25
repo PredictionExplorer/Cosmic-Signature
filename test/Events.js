@@ -2,40 +2,11 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+// const { basicDeployment } = require("../src/Deploy.js");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("Events", function () {
-	const INITIAL_AMOUNT = hre.ethers.parseUnits("10", 18);
-	async function deployCosmicSignature() {
-		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			cosmicSignatureDao,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			// marketingWallet,
-			// bidLogic,
-		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
-		return {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			cosmicSignatureDao,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			// marketingWallet,
-			// bidLogic,
-		};
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -45,9 +16,9 @@ describe("Events", function () {
 	// 	],
 	// };
 	it("should emit the correct events in the CosmicSignatureNft contract", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} =
+			await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 		
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -61,9 +32,9 @@ describe("Events", function () {
 		expect(tx).to.emit(cosmicSignatureNft, "NftMinted").withArgs(0n, bidder1.address, seed, 0n);
 	});
 	it("should emit the correct events in the CharityWallet contract", async function () {
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner, marketingWallet,] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-			await basicDeployment(owner, "", marketingWallet.address, charity.address, false, 1);
+		const {signers, cosmicSignatureGameProxy, charityWallet,} = await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
+
 		// DonationReceived
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -90,8 +61,10 @@ describe("Events", function () {
 			.withArgs(bidder3.address, balance);
 	});
 	it("should emit EthDonated on successful donation", async function () {
-		const {cosmicSignatureGameProxy,} = await loadFixture(deployCosmicSignature);
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
+
+		const INITIAL_AMOUNT = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.connect(owner).donateEth({ value: INITIAL_AMOUNT });
 
 		const donationAmount = hre.ethers.parseEther("1");
@@ -106,9 +79,9 @@ describe("Events", function () {
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("should emit MainPrizeClaimed and update winner on successful prize claim", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =
+			await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// ToDo-202411202-1 applies.
@@ -188,13 +161,8 @@ describe("Events", function () {
 	});
 
 	it("BidEvent is correctly emitted", async function () {
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			charityWallet,
-			randomWalkNft,
-		} = await loadFixture(deployCosmicSignature);
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1,] = signers;
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
 		// let bidParams = { message: "simple text", randomWalkNftId: -1 };
@@ -214,13 +182,8 @@ describe("Events", function () {
 			.withArgs(addr1.address, 0, 1020100000000000, 0, -1, 2100003601, "random walk");
 	});
 	it("bidPrice for RandomWalk is 50% lower", async function () {
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			charityWallet,
-			randomWalkNft,
-		} = await loadFixture(deployCosmicSignature);
-		const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1,] = signers;
 
 		const mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
@@ -236,9 +199,9 @@ describe("Events", function () {
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("DonatedNftClaimedEvent is correctly emitted", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, prizesWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =
+			await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 
 		// ToDo-202411202-1 applies.
 		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0);
@@ -264,16 +227,8 @@ describe("Events", function () {
 	});
 
 	it("should not be possible to bid before activation", async function () {
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner, marketingWallet,] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			charityWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-		// } = await basicDeploymentAdvanced("SpecialCosmicSignatureGame", owner, "", marketingWallet.address, charity.address, true, 1);
-		} = await basicDeployment(owner, "", marketingWallet.address, charity.address, true, 0);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		const blockNumBefore = await hre.ethers.provider.getBlockNumber();
@@ -303,9 +258,9 @@ describe("Events", function () {
 		expect((await cosmicSignatureGameProxy.getBidPrice()) > bidPrice);
 	});
 	it("should be possible to bid by sending to the contract", async function () {
-		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
+
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
@@ -321,16 +276,8 @@ describe("Events", function () {
 	});
 	// todo-1 Move this to "SystemManagement.js"?
 	it("Admin events should work", async function () {
-		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			charityWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 0);
+		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const [owner,] = signers;
 
 		const activationTime_ = 123_456_789_012n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setActivationTime(activationTime_))

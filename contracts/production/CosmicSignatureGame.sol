@@ -146,6 +146,7 @@ contract CosmicSignatureGame is
 	/// [Comment-202412188]
 	/// Let's not impose the `onlyInactive` requirement on this -- to leave the door open for the contract owner
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` failing.
+	/// todo-0 But Taras dislikes this: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734903929140319?thread_ts=1734565291.159669&cid=C02EDDE5UF8
 	/// [/Comment-202412188]
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner /*onlyInactive*/ {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");

@@ -3,37 +3,11 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { basicDeployment } = require("../src/Deploy.js");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+// const { basicDeployment } = require("../src/Deploy.js");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("Contract", function () {
-	async function deployCosmicSignature(deployerAcct) {
-		const [owner, addr1, , , , , , addr7,] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			cosmicSignatureDao,
-			prizesWallet,
-			randomWalkNft,
-			stakingWallet,
-			// marketingWallet,
-			// bidLogic,
-		} = await basicDeployment(owner, "", addr7.address, addr1.address, true, 1);
-		return {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			cosmicSignatureDao,
-			prizesWallet,
-			randomWalkNft,
-			stakingWallet,
-			// marketingWallet,
-			// bidLogic,
-		};
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -43,11 +17,10 @@ describe("Contract", function () {
 	// 	],
 	// };
 	it("A contract can win main prize", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
-			deployCosmicSignature,
-		);
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, randomWalkNft,} =
+			await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2,] = signers;
 
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		let bidderContract = await BidderContract.connect(owner).deploy(await cosmicSignatureGameProxy.getAddress());
 		await bidderContract.waitForDeployment();
@@ -125,11 +98,9 @@ describe("Contract", function () {
 	// So both `BidCNonRecv` and this test should be removed.
 	// [/ToDo-202412176-1]
 	it("Non-IERC721Receiver contract can bid", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
-			deployCosmicSignature,
-		);
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
+		const [owner,] = signers;
 
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const BNonRec = await hre.ethers.getContractFactory("BidCNonRecv");
 		let bnonrec = await BNonRec.connect(owner).deploy(await cosmicSignatureGameProxy.getAddress());
 		await bnonrec.waitForDeployment();
