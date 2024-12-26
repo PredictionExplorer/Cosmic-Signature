@@ -16,19 +16,19 @@ import { IBidding, Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-/// @notice used to test revert() statements in token transfers in claimMainPrize() function
-contract BrokenToken {
-	uint256 private _counter;
-
-	function mint(address, uint256 roundNum_) public {
-		_counter = roundNum_;
-		require(false, "Test mint() failed.");
-	}
-	
-	function totalSupply() public pure returns (uint256) {
-		return 1;
-	}
-}
+// /// @notice used to test revert() statements in token transfers in claimMainPrize() function
+// contract BrokenToken {
+// 	uint256 private _counter;
+// 
+// 	function mint(address, uint256 roundNum_) public {
+// 		_counter = roundNum_;
+// 		require(false, "Test mint() failed.");
+// 	}
+// 
+// 	function totalSupply() public pure returns (uint256) {
+// 		return 1;
+// 	}
+// }
 
 /// @notice used to test revert() statements in CosmicSignatureGame contract
 contract BrokenErc20 {
@@ -36,6 +36,9 @@ contract BrokenErc20 {
 
 	constructor(uint256 counter_) {
 		_counter = counter_;
+	}
+
+	function mintToMarketingWallet(uint256) external {
 	}
 
 	function mint(address, uint256) external {

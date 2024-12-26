@@ -22,7 +22,6 @@ describe("StakingWalletRandomWalkNft", function () {
 	it("Shouldn't be possible to unstake() twice", async function () {
 		const {signers, randomWalkNft, stakingWalletRandomWalkNft,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		// const cBidder = await BidderContract.deploy(await cosmicSignatureGameProxy.getAddress());
@@ -55,9 +54,9 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		await hre.ethers.provider.send("evm_mine");
-		await newStakingWalletRandomWalkNft.unstake(0);
+		await newStakingWalletRandomWalkNft.unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.unstake(0)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
+		await expect(newStakingWalletRandomWalkNft.unstake(1)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
 	});
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {signers, randomWalkNft, stakingWalletRandomWalkNft,} = await loadFixture(deployContractsForTesting);

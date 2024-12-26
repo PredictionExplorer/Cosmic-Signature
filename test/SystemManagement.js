@@ -373,7 +373,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureToken.mint(addr1.address, 10000n))
 			.to.be.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "CallDenied");
 		await expect(cosmicSignatureToken.connect(addr1)["burn(address,uint256)"](addr1.address, 10000n))
-			.to.be.revertedWithCustomError(cosmicSignatureToken, "OwnableUnauthorizedAccount");
+			.to.be.revertedWithCustomError(cosmicSignatureToken, "CallDenied");
 		// // todo-1 This method is from `ERC20Burnable`. Am I going to uncomment it?
 		// await expect(cosmicSignatureToken.connect(addr1)["burn(uint256)"](10000n));
 
@@ -385,7 +385,11 @@ describe("SystemManagement", function () {
 
 		const bnum = await hre.ethers.provider.getBlockNumber();
 		const bdata = await hre.ethers.provider.getBlock(bnum);
-		const ts = bdata.timestamp + 60;
+
+		// Issue. For some reason, when we add 60 here, it complains that we try to set block timestamp to a lesser value
+		// than that of the previous block.
+		const ts = bdata.timestamp + 2 * 60;
+
 		await cosmicSignatureGameProxy.setActivationTime(ts);
 		// const at = await cosmicSignatureGameProxy.activationTime();
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [ts - 1]);

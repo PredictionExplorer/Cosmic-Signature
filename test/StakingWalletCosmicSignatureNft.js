@@ -1061,7 +1061,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		await hre.ethers.provider.send('evm_mine');
 		await newStakingWalletCosmicSignatureNft.depositIfPossible(1); // msg.value = 0
 		// await expect(newStakingWalletCosmicSignatureNft.unstakeClaim(3, 1)).not.to.be.reverted;
-		await newStakingWalletCosmicSignatureNft.unstakeMany([4, 3], 1000);
+		await newStakingWalletCosmicSignatureNft.unstakeMany([5, 4], 1000);
 	});
 	// it("User can't claim rewards on his second deposit", async function () {
 	// 	const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
