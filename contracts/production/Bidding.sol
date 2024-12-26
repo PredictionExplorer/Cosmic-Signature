@@ -159,6 +159,8 @@ abstract contract Bidding is
 		// todo-1 An alternative would be to enforce `startingBidPriceCSTMinLimit`.
 		// todo-1 Or better add another smaller min limit.
 		// todo-1 That said, given that we mint 100 CSTs for each bid, it's almost impossible that the bid price will fall below that.
+		// todo-1 So maybe leave this logic and comment that it minimizes transaction fees.
+		// todo-1 Cros-ref with where we mint 100 CSTs for each bidder.
 		// [/Comment-202409179]
 		uint256 price = getCurrentBidPriceCST();
 
