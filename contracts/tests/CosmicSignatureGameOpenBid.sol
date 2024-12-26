@@ -148,7 +148,7 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner /*onlyInactive*/ {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
 	}
 
