@@ -21,9 +21,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
 
-	// /// @notice Emitted when `marketingReward` is changed.
-	// /// @param newValue The new value.
-	// event MarketingRewardChanged(uint256 newValue);
+	/// @notice Emitted when `marketingWalletCstContributionAmount` is changed.
+	/// @param newValue The new value.
+	event MarketingWalletCstContributionAmountChanged(uint256 newValue);
 
 	/// @notice Emitted when `maxMessageLength` is changed.
 	/// @param newValue The new value.

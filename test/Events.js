@@ -287,7 +287,7 @@ describe("Events", function () {
 
 		// todo-1 setDelayDurationBeforeNextRound
 
-		// todo-1 setMarketingReward (but I have eliminated it)
+		// todo-1 setMarketingWalletCstContributionAmount
 
 		// todo-1 setMaxMessageLength
 

@@ -51,12 +51,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public delayDurationBeforeNextRound;
 
-	// /// @notice On each bid, we mint this CST amount for `marketingWallet`.
-	// /// Comment-202411064 applies.
-	// /// @dev ToDo-202411182-1 relates.
-	// /// todo-1 Rename to `marketingCstRewardAmount`.
-	// /// todo-1 Even better, rename to `marketingWalletCstContributionAmount`.
-	// uint256 public marketingReward;
+	/// @notice On each bid, we mint this CST amount to `marketingWallet`.
+	/// todo-1 Actually I have eliminated `marketingWallet`. A similar field now lives in the Token contract.
+	/// todo-1 So revisit this comment.
+	/// Comment-202411064 applies.
+	/// @dev ToDo-202411182-1 relates.
+	// todo-1 Consider moving this to the token contract.
+	// todo-1 Then also reorder `DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT`.
+	uint256 public marketingWalletCstContributionAmount;
 
 	/// @notice The maximum allowed length of a bid message.
 	/// [Comment-202409143]

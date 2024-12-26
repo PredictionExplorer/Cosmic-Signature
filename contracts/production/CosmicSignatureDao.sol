@@ -44,7 +44,7 @@ contract CosmicSignatureDao is
 		// todo-0 I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
 		// todo-0 Another reason is because the marketing wallet can hold a lot of tokens, and it's not going to vote.
 		// todo-0 Tell the guys.
-		// todo-1 There are setters for these settings. Develop tests that change them. Unnecesary?
+		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		// todo-1 Write comments near these constants in `CosmicSignatureConstants`.
 		GovernorVotesQuorumFraction(CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
 	}

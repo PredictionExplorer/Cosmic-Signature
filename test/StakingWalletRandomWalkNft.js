@@ -207,7 +207,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
 		}
 
-		// todo-0 Make sure this logic doesn't result in marketing wallet bidding with CST. Reference the comment in `CosmicSignatureToken.transferToMarketingWalletOrBurn` explaining things.
+		// todo-1 Make sure this logic doesn't result in marketing wallet bidding with CST.
+		// todo-1 Reference Comment-202412251.
 		const numSigners = 20;
 		const numLoops = 50;
 		// const randomSeed = 11235813; // fib

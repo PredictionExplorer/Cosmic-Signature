@@ -32,10 +32,10 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
 
-	// /// @notice Sets `marketingReward`.
-	// /// Only the contract owner is permitted to call this method.
-	// /// @param newValue_ The new value.
-	// function setMarketingReward(uint256 newValue_) external;
+	/// @notice Sets `marketingWalletCstContributionAmount`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMarketingWalletCstContributionAmount(uint256 newValue_) external;
 
 	/// @notice Sets `maxMessageLength`.
 	/// Only the contract owner is permitted to call this method.

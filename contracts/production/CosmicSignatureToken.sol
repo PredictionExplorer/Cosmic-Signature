@@ -45,14 +45,18 @@ contract CosmicSignatureToken is
 	/// But the DAO is too slow to vote. I've set voting period to 2 weeks, right? Discuss this issue with the guys.
 	/// ToDo-202412203-1 relates.
 	/// [/ToDo-202412202-1]
+	/// todo-1 ??? Consider moving this to the Game contract. Then don't derive from `Ownable`.
+	/// todo-1 Or maybe don't do it to make it easier to restore `transferToMarketingWalletOrBurn`.
+	/// todo-1 In addition, move `marketingWalletCstContributionAmount` here.
+	/// todo-1 Write comments.
 	address public marketingWalletAddress;
 
-	/// @notice
-	/// [Comment-202412201]
-	/// If `marketingWalletAddress` already holds at least this amount, any new received funds will be burned.
-	/// This limit can be exceeded by a little.
-	/// [/Comment-202412201]
-	uint256 public marketingWalletBalanceAmountMaxLimit;
+	// /// @notice
+	// /// [Comment-202412201]
+	// /// If `marketingWalletAddress` already holds at least this token amount, any new received funds will be burned.
+	// /// This limit can be exceeded by a little.
+	// /// [/Comment-202412201]
+	// uint256 public marketingWalletBalanceAmountMaxLimit;
 
 	// #endregion
 	// #region `onlyGame`
@@ -80,7 +84,7 @@ contract CosmicSignatureToken is
 		providedAddressIsNonZero(marketingWalletAddress_) {
 		game = game_;
 		marketingWalletAddress = marketingWalletAddress_;
-		marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
+		// marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 	}
 
 	// #endregion
@@ -92,28 +96,32 @@ contract CosmicSignatureToken is
 	}
 
 	// #endregion
-	// #region `setMarketingWalletBalanceAmountMaxLimit`
+	// #region // `setMarketingWalletBalanceAmountMaxLimit`
 
-	function setMarketingWalletBalanceAmountMaxLimit(uint256 newValue_) external override onlyOwner {
-		marketingWalletBalanceAmountMaxLimit = newValue_;
-		emit MarketingWalletBalanceAmountMaxLimitChanged(newValue_);
-	}
+	// function setMarketingWalletBalanceAmountMaxLimit(uint256 newValue_) external override onlyOwner {
+	// 	marketingWalletBalanceAmountMaxLimit = newValue_;
+	// 	emit MarketingWalletBalanceAmountMaxLimitChanged(newValue_);
+	// }
 
 	// #endregion
-	// #region `transferToMarketingWalletOrBurn`
+	// #region // `transferToMarketingWalletOrBurn`
 
-	function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override onlyGame {
-		// This is a common sense requirement. The marketing wallet isn't supposed to bid.
-		// The behavior isn't necessarily going to be correct if this condition is not met,
-		// but it appears that it's not going to be too bad,
-		// so it's probably unnecessary to spend gas to `require` this.
-		// #enable_asserts assert(fromAddress_ != marketingWalletAddress);
+	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override onlyGame {
+	// 	// Comment-202412251 applies.
+	// 	// #enable_asserts assert(fromAddress_ != marketingWalletAddress);
+	//
+	// 	if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {
+	// 		_transfer(fromAddress_, marketingWalletAddress, amount_);
+	// 	} else {
+	// 		_burn(fromAddress_, amount_);
+	// 	}
+	// }
 
-		if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {
-			_transfer(fromAddress_, marketingWalletAddress, amount_);
-		} else {
-			_burn(fromAddress_, amount_);
-		}
+	// #endregion
+	// #region `mintToMarketingWallet`
+
+	function mintToMarketingWallet(uint256 amount_) external override onlyGame {
+		_mint(marketingWalletAddress, amount_);
 	}
 
 	// #endregion
@@ -124,11 +132,21 @@ contract CosmicSignatureToken is
 	}
 
 	// #endregion
-	// #region // `burn`
+	// #region `burn`
 
-	// function burn(address account, uint256 value) external override onlyGame {
-	// 	_burn(account, value);
-	// }
+	function burn(address account, uint256 value) external override onlyGame {
+		// [Comment-202412251]
+		// This is a common sense requirement.
+		// The marketing wallet isn't supposed to bid.
+		// The behavior isn't necessarily going to be correct if this condition is not met,
+		// but it appears that it's not going to be too bad,
+		// so it's probably unnecessary to spend gas to `require` this.
+		// todo-1 Further refactoring could make this requirement unnecessary.
+		// [/Comment-202412251]
+		// #enable_asserts assert(account != marketingWalletAddress);
+
+		_burn(account, value);
+	}
 
 	// #endregion
 	// #region // `safeApprove`
@@ -158,7 +176,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `CLOCK_MODE`
 
-	// solhint-disable-next-line func-name-mixedcase
+	/// solhint-disable-next-line func-name-mixedcase
 	function CLOCK_MODE() public pure override returns(string memory) {
 		return "mode=timestamp";
 	}

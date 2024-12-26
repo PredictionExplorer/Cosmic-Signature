@@ -918,7 +918,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 
-		// todo-0 Make sure this logic doesn't result in marketing wallet bidding with CST. Reference the comment in `CosmicSignatureToken.transferToMarketingWalletOrBurn` explaining things.
+		// todo-1 Make sure this logic doesn't result in marketing wallet bidding with CST.
+		// todo-1 Reference Comment-202412251.
 		const numSigners = 20;
 		const numLoops = 20;
 		// const randomSeed = 11235813; // fib

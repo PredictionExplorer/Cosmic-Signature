@@ -70,7 +70,7 @@ contract CosmicSignatureGame is
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
-		// marketingReward = CosmicSignatureConstants.DEFAULT_MARKETING_REWARD;
+		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
 		// // marketingWallet =

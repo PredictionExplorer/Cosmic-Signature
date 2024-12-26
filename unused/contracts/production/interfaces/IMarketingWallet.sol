@@ -24,7 +24,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// ---Then the game won't need to store an address of this in its storage.
 /// 
 /// No, the above is not necessarily a good idea.
-/// Better simply send all CST bids to marketing wallet, or in case it already has enough, just burn any new received amounts.
+/// Better simply send all CST bids to marketing wallet, or in case it already has enough, just burn any new received amount.
 /// [/ToDo-202411182-1]
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.

@@ -731,8 +731,7 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		const activationTime_ = await cosmicSignatureGameProxy.activationTime();
-		cosmicSignatureGameProxy.setActivationTime(activationTime_ + 60n);
+		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
 		const BrokenToken = await hre.ethers.getContractFactory("BrokenErc20");
 		const brokenToken= await BrokenToken.deploy(0);
@@ -740,7 +739,8 @@ describe("Bidding", function () {
 		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
 		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenToken.getAddress());
 
-		cosmicSignatureGameProxy.setActivationTime(activationTime_);
+		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
+		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp);
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
@@ -753,8 +753,7 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		const activationTime_ = await cosmicSignatureGameProxy.activationTime();
-		cosmicSignatureGameProxy.setActivationTime(activationTime_ + 60n);
+		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
 		const BrokenToken = await hre.ethers.getContractFactory("BrokenErc20");
 		const brokenToken= await BrokenToken.deploy(1);
@@ -762,7 +761,8 @@ describe("Bidding", function () {
 		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
 		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenToken.getAddress());
 
-		cosmicSignatureGameProxy.setActivationTime(activationTime_);
+		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
+		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp);
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);

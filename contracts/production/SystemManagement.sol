@@ -117,10 +117,10 @@ abstract contract SystemManagement is
 		emit DelayDurationBeforeNextRoundChanged(newValue_);
 	}
 
-	// function setMarketingReward(uint256 newValue_) external override onlyOwner onlyInactive {
-	// 	marketingReward = newValue_;
-	// 	emit MarketingRewardChanged(newValue_);
-	// }
+	function setMarketingWalletCstContributionAmount(uint256 newValue_) external override onlyOwner onlyInactive {
+		marketingWalletCstContributionAmount = newValue_;
+		emit MarketingWalletCstContributionAmountChanged(newValue_);
+	}
 
 	function setMaxMessageLength(uint256 newValue_) external override onlyOwner onlyInactive {
 		maxMessageLength = newValue_;
