@@ -167,8 +167,8 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

@@ -30,16 +30,16 @@ describe("Contract", function () {
 
 		// let bidParams = { message: "owner bids", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: ethBidPrice_ });
 		// bidParams = { message: "addr1 bids", randomWalkNftId: -1 };
 		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "addr1 bids", { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "addr1 bids", { value: ethBidPrice_ });
 		// bidParams = { message: "addr2 bids", randomWalkNftId: -1 };
 		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "addr2 bids", { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "addr2 bids", { value: ethBidPrice_ });
 
 		// const randomWalkNftAddr_ = await cosmicSignatureGameProxy.randomWalkNft();
 		const randomWalkNftAddr_ = await randomWalkNft.getAddress();
@@ -54,12 +54,12 @@ describe("Contract", function () {
 		let parsed_log = randomWalkNft.interface.parseLog(log);
 		let donatedNftId_ = parsed_log.args.tokenId;
 		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donatedNftId_);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		// todo-1 I have commented this method out.
-		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, { value: bidPrice });
+		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, { value: ethBidPrice_ });
 
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await bidderContract.connect(owner).doBid({ value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await bidderContract.connect(owner).doBid({ value: ethBidPrice_ });
 
 		rwalkPrice = await randomWalkNft.getMintPrice();
 		tx = await randomWalkNft.connect(owner).mint({ value: rwalkPrice });
@@ -69,8 +69,8 @@ describe("Contract", function () {
 		parsed_log = randomWalkNft.interface.parseLog(log);
 		let rwalk_token_id = parsed_log.args.tokenId;
 		await randomWalkNft.connect(owner).transferFrom(owner.address,await bidderContract.getAddress(), rwalk_token_id);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await bidderContract.connect(owner).doBidRWalk(rwalk_token_id, { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await bidderContract.connect(owner).doBidRWalk(rwalk_token_id, { value: ethBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		tx = await bidderContract.connect(owner).doClaim();
@@ -107,10 +107,10 @@ describe("Contract", function () {
 
 		// let bidParams = { message: "owner bids", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await bnonrec.connect(owner).doBid({ value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: ethBidPrice_ });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await bnonrec.connect(owner).doBid({ value: ethBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

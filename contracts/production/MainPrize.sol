@@ -384,7 +384,7 @@ abstract contract MainPrize is
 			((nanoSecondsExtra - CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
 
 		// todo-1 Maybe add 1 to ensure that the result is a nonzero.
-		bidPrice = address(this).balance / initialBidAmountFraction;
+		nextEthBidPrice = address(this).balance / roundInitialEthBidPriceDivisor;
 		// stellarSpender = address(0);
 		// stellarSpenderTotalSpentCst = 0;
 		enduranceChampionAddress = address(0);

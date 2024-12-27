@@ -25,13 +25,13 @@ describe("CosmicSignatureGame", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 
-		const bidPrice = await cosmicSignatureGameProxy.getBidPrice();
+		const ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await owner.sendTransaction({
 			to: await cosmicSignatureGameProxy.getAddress(),
-			value: bidPrice,
+			value: ethBidPrice_,
 		});
 		const bidPriceAfter = await cosmicSignatureGameProxy.getBidPrice();
-		expect(bidPriceAfter).greaterThan(bidPrice);
+		expect(bidPriceAfter).greaterThan(ethBidPrice_);
 	});
 
 	// I have eliminated the `fallback` method.

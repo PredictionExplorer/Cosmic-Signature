@@ -75,7 +75,7 @@ abstract contract SystemManagement is
 		// Imposing this requirement instead of `onlyInactive`.
 		// This design leaves the door open for the admin to change `activationTime` to a point in the future
 		// and then change some parameters.
-		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `bidPrice`.
+		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `nextEthBidPrice`.
 		// [/Comment-202411236]
 		require(
 			lastBidderAddress == address(0),
@@ -206,9 +206,14 @@ abstract contract SystemManagement is
 		emit InitialSecondsUntilPrizeChanged(newValue_);
 	}
 
-	function setInitialBidAmountFraction(uint256 newValue_) external override onlyOwner onlyInactive {
-		initialBidAmountFraction = newValue_;
-		emit InitialBidAmountFractionChanged(newValue_);
+	function setRoundInitialEthBidPriceMultiplier(uint256 newValue_) external override onlyOwner onlyInactive {
+		roundInitialEthBidPriceMultiplier = newValue_;
+		emit RoundInitialEthBidPriceMultiplierChanged(newValue_);
+	}
+
+	function setRoundInitialEthBidPriceDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		roundInitialEthBidPriceDivisor = newValue_;
+		emit RoundInitialEthBidPriceDivisorChanged(newValue_);
 	}
 
 	function setPriceIncrease(uint256 newValue_) external override onlyOwner onlyInactive {

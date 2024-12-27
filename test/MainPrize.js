@@ -41,8 +41,8 @@ describe("MainPrize", function () {
 		// and does not contain any tokens but we need them to test token distribution (the holder loop)
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
@@ -53,13 +53,13 @@ describe("MainPrize", function () {
 
 		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		await cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "");
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
@@ -104,12 +104,12 @@ describe("MainPrize", function () {
 		// let last_cosmic_signature_supply = sum_winners + numMainPrizeWinners_;
 
 		// let's begin a new round
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
@@ -160,12 +160,12 @@ describe("MainPrize", function () {
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		// we are using BidderContract for this test because there won't be any subtraction
 		// for paying gas price since it is accounted on the EOA that sends the TX,
@@ -174,8 +174,8 @@ describe("MainPrize", function () {
 		const cBidder = await BidderContract.deploy(await cosmicSignatureGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cBidder.doBid({ value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cBidder.doBid({ value: ethBidPrice_ });
 
 		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		let charityEthDonationAmount_ = await cosmicSignatureGameProxy.getCharityEthDonationAmount();
@@ -238,8 +238,8 @@ describe("MainPrize", function () {
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		// forward time 2 days
 		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_) + (2 * 24 * 60 * 60)]);

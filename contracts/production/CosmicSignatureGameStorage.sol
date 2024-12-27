@@ -56,8 +56,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 So revisit this comment.
 	/// Comment-202411064 applies.
 	/// @dev ToDo-202411182-1 relates.
-	// todo-1 Consider moving this to the token contract.
-	// todo-1 Then also reorder `DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT`.
+	/// todo-1 Ask Taras if he is eventually going to set this to zero.
+	/// todo-1 If so, before making the mint call check that this is a nonzero.
+	/// todo-1 ??? Reorder this to near other bid related variables?
+	/// todo-1 ??? Consider moving this to the token contract.
+	/// todo-1 ??? Then also reorder `DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT`.
 	uint256 public marketingWalletCstContributionAmount;
 
 	/// @notice The maximum allowed length of a bid message.
@@ -66,6 +69,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
 	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
+	/// todo-1 Reorder this to near other bid related variables?
+	/// todo-1 Also reorder the constant from which this is initialized.
 	uint256 public maxMessageLength;
 
 	// #endregion
@@ -77,6 +82,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	// /// @notice Comment-202411064 applies.
 	// /// @dev It's currently unnecessary to make this variable strongly typed.
+	// /// todo-9 Reorder this to before `charityAddress`?
 	// address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.
@@ -163,14 +169,16 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
-	/// todo-1 Rename to `ethBidPrice` or `lastEthBidPrice`.
 	/// todo-1 Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
-	uint256 public bidPrice;
+	/// todo-1 Comment and document that after the owner executes the setter, they must set activation time to a point in the past
+	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
+	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-1 Revisit relevant logic. We really should use the double of the 1st bid price of the prev round and start a Dutch auction.
-	/// todo-1 Rename to `roundFirstEthBidPriceDivisor`.
-	uint256 public initialBidAmountFraction;
+	uint256 public roundInitialEthBidPriceMultiplier;
+
+	/// @notice Comment-202411064 applies.
+	uint256 public roundInitialEthBidPriceDivisor;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411065 relates.

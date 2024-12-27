@@ -101,7 +101,7 @@ abstract contract Bidding is
 			usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] = 1;
 			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
 		}
-		bidPrice = newBidPrice;
+		nextEthBidPrice = newBidPrice;
 
 		// Updating bidding statistics.
 		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
@@ -118,6 +118,8 @@ abstract contract Bidding is
 		);
 		if (msg.value > paidBidPrice) {
 			// Refunding excess ETH if the bidder sent more than required.
+			// todo-1 Issue. Dutring the initial Dutch auction, we will lilely refund a very small amount that would not justify the gas fees.
+			// todo-1 At least comment.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
 			(bool isSuccess_, ) = msg.sender.call{ value: amountToSend }("");
@@ -130,7 +132,7 @@ abstract contract Bidding is
 
 	function getBidPrice() public view override returns(uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
-		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
+		return nextEthBidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
 	}
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {

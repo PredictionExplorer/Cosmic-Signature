@@ -27,11 +27,11 @@ async function main() {
 	let multiplier = await cosmicSignatureGame.timesBidPrice()
 	// let bidParams = { message: "open bid", randomWalkNftId: -1, isOpenBid: true };
 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
-	let bidPrice = await cosmicSignatureGame.getBidPrice();
-	console.log("bidPrice before:", bidPrice);
-	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), true, "open bid", { value: bidPrice * multiplier, gasLimit: 30000000 });
-	bidPrice = await cosmicSignatureGame.getBidPrice();
-	console.log("bidPrice after:", bidPrice);
+	let ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
+	console.log("ethBidPrice_ before:", ethBidPrice_);
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), true, "open bid", { value: ethBidPrice_ * multiplier, gasLimit: 30000000 });
+	ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
+	console.log("ethBidPrice_ after:", ethBidPrice_);
 }
 
 main()

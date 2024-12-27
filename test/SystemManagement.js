@@ -89,8 +89,11 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setInitialSecondsUntilPrize(99n);
 		expect(await cosmicSignatureGameProxy.initialSecondsUntilPrize()).to.equal(99n);
 
-		await cosmicSignatureGameProxy.setInitialBidAmountFraction(99n);
-		expect(await cosmicSignatureGameProxy.initialBidAmountFraction()).to.equal(99n);
+		await cosmicSignatureGameProxy.setRoundInitialEthBidPriceMultiplier(99n);
+		expect(await cosmicSignatureGameProxy.roundInitialEthBidPriceMultiplier()).to.equal(99n);
+
+		await cosmicSignatureGameProxy.setRoundInitialEthBidPriceDivisor(99n);
+		expect(await cosmicSignatureGameProxy.roundInitialEthBidPriceDivisor()).to.equal(99n);
 
 		await cosmicSignatureGameProxy.setPriceIncrease(99n);
 		expect(await cosmicSignatureGameProxy.priceIncrease()).to.equal(99n);
@@ -189,7 +192,8 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setNanoSecondsExtra(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTimeIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setInitialSecondsUntilPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicSignatureGameProxy.setInitialBidAmountFraction(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setRoundInitialEthBidPriceMultiplier(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setRoundInitialEthBidPriceDivisor(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setPriceIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setRoundStartCstAuctionLength(11n * 60n * 60n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -218,9 +222,9 @@ describe("SystemManagement", function () {
 
 		// const bidParams = { message: "", randomWalkNftId: -1 };
 		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		const bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await expect(cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.bidAndDonateNft(/*params*/ (-1), "", owner.address, 0, { value: bidPrice })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		const ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await expect(cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.bidAndDonateNft(/*params*/ (-1), "", owner.address, 0, { value: ethBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicSignatureGameProxy.bidWithCst(10n ** 30n, "")).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		// todo-1 This reverts with a different error. It's probably correct, but take another look. Comment.
 		await expect(cosmicSignatureGameProxy.claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsInRound");
@@ -228,9 +232,9 @@ describe("SystemManagement", function () {
 		// await expect(cosmicSignatureGameProxy.claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		// // todo-1 I have moved NFT donations to `PrizesWallet`.
 		// await expect(cosmicSignatureGameProxy.claimManyDonatedNfts([0])).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(owner.sendTransaction({ to: await cosmicSignatureGameProxy.getAddress(), value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.donateEth({value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.donateEthWithInfo("{}", {value: bidPrice})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(owner.sendTransaction({ to: await cosmicSignatureGameProxy.getAddress(), value: ethBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.donateEth({value: ethBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.donateEthWithInfo("{}", {value: ethBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 
 		const mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
@@ -257,8 +261,8 @@ describe("SystemManagement", function () {
 		const donationAmount = hre.ethers.parseEther('10');
 		await cosmicSignatureGameProxy.connect(addr2).donateEth({ value: donationAmount });
 
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		// await cosmicSignatureGameProxy.prepareMaintenance();
 		// await expect(cosmicSignatureGameProxy.connect(addr1).prepareMaintenance()).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
@@ -293,8 +297,8 @@ describe("SystemManagement", function () {
 		expect(durationUntilActivation_).to.equal(0);
 
 		// The next bidding round has started. So we are allowed to bid.
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 	});
 	it("Unauthorized access to restricted methods is denied", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
@@ -333,7 +337,9 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setInitialSecondsUntilPrize(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(addr1).setInitialBidAmountFraction(1n))
+		await expect(cosmicSignatureGameProxy.connect(addr1).setRoundInitialEthBidPriceMultiplier(1n))
+			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureGameProxy.connect(addr1).setRoundInitialEthBidPriceDivisor(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setPriceIncrease(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");

@@ -20,12 +20,11 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @param lastBidderAddress The address of the bidder who placed this bid.
 	/// @param roundNum The current bidding round number.
 	/// todo-1 Reorder the above to the beginning.
-	/// @param bidPrice The price of the bid
-	/// todo-1 Rename the above param to `ethBidPrice`.
+	/// @param ethBidPrice The price of the bid
 	/// @param randomWalkNftId The ID of the RandomWalk NFT used (if any)
 	/// @param numCSTTokens The number of CST tokens used (if any)
 	/// todo-1 Rename the above param to `cstBidPrice`.
-	/// todo-1 Maybe reorder the above param to after `bidPrice`.
+	/// todo-1 Maybe reorder the above param to after `ethBidPrice`.
 	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
 	/// todo-1 Rename the above param to how I am going to name the respective state variable.
 	/// @param message An optional message from the bidder
@@ -33,7 +32,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	event BidEvent(
 		address indexed lastBidderAddress,
 		uint256 indexed roundNum,
-		int256 bidPrice,
+		int256 ethBidPrice,
 		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
 		int256 numCSTTokens,
 		uint256 mainPrizeTime,

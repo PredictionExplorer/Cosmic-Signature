@@ -86,8 +86,9 @@ contract CosmicSignatureGame is
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// mainPrizeTime =
 		// roundNum = 0;
-		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
-		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
+		nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		roundInitialEthBidPriceMultiplier = CosmicSignatureConstants.DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER;
+		roundInitialEthBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR;
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
 		cstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
 		roundStartCstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;

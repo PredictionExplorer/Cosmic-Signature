@@ -37,7 +37,7 @@ abstract contract BiddingOpenBid is
 	// 	int256 randomWalkNftId;
 	//
 	// 	/// @notice Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
-	// 	/// `bidPrice` will be updated to `msg.value` and stay at that level.
+	// 	/// `nextEthBidPrice` will be updated to `msg.value` and stay at that level.
 	// 	/// todo-2 The above description of this parameter doesn't appear to be perfectly accurate. To be revisited.
 	// 	bool isOpenBid;
 	// }
@@ -47,6 +47,8 @@ abstract contract BiddingOpenBid is
 
 	/// @notice Multiples of bid price that open bid has to be.
 	/// @dev This really belongs to a new version of `CosmicSignatureGameStorage`, but keeping it simple.
+	/// todo-1 Rename to `timesEthBidPrice`.
+	/// todo-1 Also rename files with similar names.
 	uint256 public timesBidPrice;
 
 	// #endregion
@@ -119,7 +121,7 @@ abstract contract BiddingOpenBid is
 				
 				paidBidPrice = newBidPrice;
 			}
-			bidPrice = paidBidPrice;
+			nextEthBidPrice = paidBidPrice;
 			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
 		} else {
 			// Issue. Somewhere around here, we probably should evaluate `/*params.isOpenBid*/ isOpenBid_` and act differently if it's `true`.
@@ -132,7 +134,7 @@ abstract contract BiddingOpenBid is
 				CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
 			);
 
-			bidPrice = newBidPrice;
+			nextEthBidPrice = newBidPrice;
 			require(
 				usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
@@ -183,7 +185,7 @@ abstract contract BiddingOpenBid is
 
 	function getBidPrice() public view override returns(uint256) {
 		// todo-1 Add 1 to ensure that the result increases?
-		return bidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
+		return nextEthBidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
 	}
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {

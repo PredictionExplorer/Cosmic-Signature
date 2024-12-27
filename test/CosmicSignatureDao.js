@@ -31,8 +31,8 @@ describe("CosmicSignatureDao", function () {
 		// const bidParams = { message: "", randomWalkNftId: -1 };
 		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
-			let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(/*params*/ (-1), "", { value: bidPrice });
+			let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		}
 
 		const votingDelay_ = await cosmicSignatureDao.votingDelay();

@@ -22,8 +22,8 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 	// let bidParams = { message: "bid test", randomWalkNftId: -1 };
 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-	let bidPrice = await cosmicSignatureGame.getBidPrice();
-	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), "bid test", { value: bidPrice, gasLimit: 30000000 });
+	let ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), "bid test", { value: ethBidPrice_, gasLimit: 30000000 });
 }
 
 main()

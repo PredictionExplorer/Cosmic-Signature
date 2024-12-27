@@ -1,6 +1,6 @@
 ## OpenBidding (example of CosmicSignatureGame upgrade)
 OpenBidding is an example to show a possible upgrade of CosmicSignatureGame to a new version.
-This new business logic contract allows bidding with no upper limit. After bid is made, the `bidPrice` becomes the amount of last bid. This way players can rise the bid price to any amount in a few minutes. The purpose of this example is to how how the new CosmicSignatureGame contract can have its own state variables (explicitly declared in the body of the contract) modified via CosmicSignatureGameProxy contract while CosmicSignatureGameProxy being deployed earlier and having no knowledge of these state variables.
+This new business logic contract allows bidding with no upper limit. After bid is made, the `nextEthBidPrice` becomes the amount of last bid. This way players can rise the bid price to any amount in a few minutes. The purpose of this example is to how how the new CosmicSignatureGame contract can have its own state variables (explicitly declared in the body of the contract) modified via CosmicSignatureGameProxy contract while CosmicSignatureGameProxy being deployed earlier and having no knowledge of these state variables.
 
 ### Implementation
 
@@ -19,8 +19,8 @@ The call to `bid()` function must now be done in a new way:
 
     let bidParams = {message: "bid test", randomWalkNftId: -1, isOpenBid: true};
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
-    let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-    await cosmicSignatureGameProxy.connect(testingAcct).bid(params, { value: bidPrice.mul(multiplier), gasLimit: 30000000 }); 
+    let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+    await cosmicSignatureGameProxy.connect(testingAcct).bid(params, { value: ethBidPrice_.mul(multiplier), gasLimit: 30000000 }); 
 
 In this example the `multiplier` variable is the `timesBidPrice` state variable (discussed above) which was read from the contract prior to execution of this code.
 

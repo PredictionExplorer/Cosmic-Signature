@@ -51,7 +51,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `delayDurationBeforeNextRound`.
-	uint256 internal constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = 1 days;
+	uint256 internal constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = (1 hours) / 2;
 
 	/// @notice Default `marketingWalletCstContributionAmount`.
 	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 15 ether;
@@ -67,10 +67,11 @@ library CosmicSignatureConstants {
 	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.
 	uint256 internal constant INITIAL_SECONDS_UNTIL_PRIZE = 1 days;
 
-	/// @notice Initial `bidPrice` for the first bidding round.
-	uint256 internal constant FIRST_ROUND_BID_PRICE = 0.0001 ether;
+	/// @notice Initial `nextEthBidPrice` for the first bidding round.
+	uint256 internal constant FIRST_ROUND_INITIAL_ETH_BID_PRICE = 0.0001 ether;
 
-	uint256 internal constant INITIAL_BID_AMOUNT_FRACTION = 4_000;
+	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER = 2;
+	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR = 10;
 	uint256 internal constant INITIAL_PRICE_INCREASE = MILLION + 10_000;
 
 	/// @notice

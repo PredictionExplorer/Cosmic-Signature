@@ -73,9 +73,13 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event InitialSecondsUntilPrizeChanged(uint256 newValue);
 
-	/// @notice Emitted when `initialBidAmountFraction` is changed.
+	/// @notice Emitted when `roundInitialEthBidPriceMultiplier` is changed.
 	/// @param newValue The new value.
-	event InitialBidAmountFractionChanged(uint256 newValue);
+	event RoundInitialEthBidPriceMultiplierChanged(uint256 newValue);
+
+	/// @notice Emitted when `roundInitialEthBidPriceDivisor` is changed.
+	/// @param newValue The new value.
+	event RoundInitialEthBidPriceDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `priceIncrease` is changed.
 	/// @param newValue The new value.
