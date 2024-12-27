@@ -118,7 +118,7 @@ abstract contract Bidding is
 		);
 		if (msg.value > paidBidPrice) {
 			// Refunding excess ETH if the bidder sent more than required.
-			// todo-1 Issue. Dutring the initial Dutch auction, we will lilely refund a very small amount that would not justify the gas fees.
+			// todo-1 Issue. Dutring the initial Dutch auction, we will likely refund a very small amount that would not justify the gas fees.
 			// todo-1 At least comment.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
