@@ -9,7 +9,7 @@ pragma solidity 0.8.28;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
@@ -23,7 +23,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 contract CosmicSignatureToken is
 	Ownable,
 	ERC20,
-	// ERC20Burnable,
+	ERC20Burnable, // todo-1 This is needed -- confirmed.
 	ERC20Permit,
 	ERC20Votes,
 	AddressValidator,

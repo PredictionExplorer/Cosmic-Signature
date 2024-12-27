@@ -57,6 +57,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	/// @dev ToDo-202411182-1 relates.
 	/// todo-1 Ask Taras if he is eventually going to set this to zero.
+	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	/// todo-1 If so, before making the mint call check that this is a nonzero.
 	/// todo-1 ??? Reorder this to near other bid related variables?
 	/// todo-1 ??? Consider moving this to the token contract.

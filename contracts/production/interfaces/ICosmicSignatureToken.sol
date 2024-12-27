@@ -8,14 +8,12 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @notice A contract implementing this interface implements the CosmicSignatureToken (CST) --
 /// an ERC20 token with additional features.
 /// This token includes ownership, burning, permit, and voting capabilities.
-/// todo-1 The burning means derived from `ERC20Burnable`? Not any more? But we do have the `burn` method.
-/// todo-1 Maybe don't mention the ownership.
-/// todo-1 So revisit the above coment.
 /// @dev
 /// [Comment-202412033]
 /// The total supply of these tokens is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
 /// todo-1 Describe in a user manual under what conditions CSTs are minted and burned.
+/// todo-1 There is already a readme file describing it.
 /// [/Comment-202412033]
 ///
 /// ToDo-202412106-1 relates and/or applies.
