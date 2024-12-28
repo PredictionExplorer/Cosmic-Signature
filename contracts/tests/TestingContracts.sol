@@ -17,7 +17,7 @@ import { IBidding, Bidding } from "../production/Bidding.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 // /// @notice used to test revert() statements in token transfers in claimMainPrize() function
-// contract BrokenToken {
+// contract BrokenToken1 {
 // 	uint256 private _counter;
 // 
 // 	function mint(address, uint256 roundNum_) public {
@@ -31,15 +31,15 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 // }
 
 /// @notice used to test revert() statements in CosmicSignatureGame contract
-contract BrokenErc20 {
+contract BrokenToken2 {
 	uint256 private _counter;
 
 	constructor(uint256 counter_) {
 		_counter = counter_;
 	}
 
-	function mintToMarketingWallet(uint256) external {
-	}
+	// function mintToMarketingWallet(uint256) external {
+	// }
 
 	function mint(address, uint256) external {
 		require(_counter > 0, "Test mint() (ERC20) failed");
@@ -253,7 +253,7 @@ contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
 	}
 
-	/// @notice sends donateNft() inside a call to transfer a token, generating reentrant function call
+	/// @notice sends donateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// the following call should revert
 		// todo-1 This will probably now revert due to `onlyGame`.
@@ -278,7 +278,7 @@ contract MaliciousNft2 is ERC721 {
 		// game = game_;
 	}
 
-	// /// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
+	// /// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
 	// /// @dev todo-1 This method is now broken. See todos in its body.
 	// function transferFrom(address from, address to, uint256 nftId) public override {
 	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
