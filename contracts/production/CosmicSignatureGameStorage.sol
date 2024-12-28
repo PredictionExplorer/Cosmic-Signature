@@ -52,7 +52,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public delayDurationBeforeNextRound;
 
 	/// @notice On each bid, we mint this CST amount to `marketingWallet`.
-	/// todo-1 Actually I have eliminated `marketingWallet`. A similar field now lives in the Token contract.
+	/// todo-1 ---Actually I have eliminated `marketingWallet`. A similar field now lives in the Token contract.
 	/// todo-1 So revisit this comment.
 	/// Comment-202411064 applies.
 	/// @dev ToDo-202411182-1 relates.
@@ -81,11 +81,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	CosmicSignatureToken public token;
 
-	// /// @notice Comment-202411064 applies.
-	// /// @dev It's currently unnecessary to make this variable strongly typed.
-	// /// todo-9 Reorder this to before `charityAddress`?
-	// address public marketingWallet;
-
 	/// @notice Comment-202411064 applies.
 	CosmicSignatureNft public nft;
 
@@ -100,6 +95,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202411064 applies.
 	PrizesWallet public prizesWallet;
+
+	/// @notice Comment-202411064 applies.
+	/// @dev It's currently unnecessary to make this variable strongly typed.
+	/// todo-1 The above comment makes no sense any more because we have no marketing wallet contract any more.
+	/// todo-1 Move some comments from `CosmicSignatureToken.marketingWalletAddress` here.
+	/// todo-1 This is now a non-contract address (yet to be confirmed). So rename this to `marketingWalletAddress`.
+	address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.
 	/// @dev

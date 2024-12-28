@@ -9,18 +9,26 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @notice Default values and types used across the Cosmic Signature ecosystem.
 /// @dev These constants are used for initial state variables but may be updated later.
 library CosmicSignatureConstants {
-	/// @notice Represents one million. Useful for calculations involving millions
-	uint256 internal constant MILLION = 1e6;
+	/// @notice Represents one thousand. Useful for calculations involving thousands.
+	uint256 internal constant THOUSAND = 1e3;
 
-	/// @notice Represents one billion. Useful for calculations involving billions
-	uint256 internal constant BILLION = 1e3 * MILLION;
+	/// @notice Represents one million. Useful for calculations involving millions.
+	uint256 internal constant MILLION = THOUSAND * THOUSAND;
+
+	/// @notice Represents one billion. Useful for calculations involving billions.
+	uint256 internal constant BILLION = THOUSAND * MILLION;
 
 	uint256 internal constant NANOSECONDS_PER_SECOND = BILLION;
 	uint256 internal constant MICROSECONDS_PER_SECOND = MILLION;
-	uint256 internal constant MINUTES_PER_HOUR = 60;
-	uint256 internal constant HOURS_PER_DAY = 24;
+	uint256 internal constant MILLISECONDS_PER_SECOND = THOUSAND;
+	uint256 internal constant MINUTES_PER_HOUR = (1 hours) / (1 minutes);
+	uint256 internal constant HOURS_PER_DAY = (1 days) / (1 hours);
 	uint256 internal constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
 	uint256 internal constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MICROSECONDS_PER_HOUR = MICROSECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant MICROSECONDS_PER_DAY = MICROSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MILLISECONDS_PER_HOUR = MILLISECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
 
 	/// @notice This is equivalent to the midnight of 9000-01-01.
 	/// @dev JavaScript  code to calculate this.

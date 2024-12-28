@@ -6,7 +6,7 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+// import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -21,7 +21,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #region
 
 contract CosmicSignatureToken is
-	Ownable,
+	// Ownable,
 	ERC20,
 	ERC20Burnable, // todo-1 This is needed -- confirmed.
 	ERC20Permit,
@@ -33,23 +33,21 @@ contract CosmicSignatureToken is
 	/// @notice The `CosmicSignatureGame` contract address.
 	address public immutable game;
 
-	/// @notice This address holds some CST amount.
-	/// The held amount is replenished when someone bids with CST.
-	/// Comment-202412201 relates and/or applies.
-	/// The funds are to be used to reward people for marketing the project on social media.
-	/// This can be the address of an externally owned account controlled by the project founders.
-	/// The project founders plan to eventually transfer this wallet control to the DAO.
-	/// @dev
-	/// [ToDo-202412202-1]
-	/// So develop a test in which the DAO rewards someone.
-	/// But the DAO is too slow to vote. I've set voting period to 2 weeks, right? Discuss this issue with the guys.
-	/// ToDo-202412203-1 relates.
-	/// [/ToDo-202412202-1]
-	/// todo-1 ??? Consider moving this to the Game contract. Then don't derive from `Ownable`.
-	/// todo-1 Or maybe don't do it to make it easier to restore `transferToMarketingWalletOrBurn`.
-	/// todo-1 In addition, move `marketingWalletCstContributionAmount` here.
-	/// todo-1 Write comments.
-	address public marketingWalletAddress;
+	// /// todo-1 Move some of these comments to near `CosmicSignatureGameStorage.marketingWallet`.
+	// /// @notice This address holds some CST amount.
+	// /// The held amount is replenished when someone bids with CST.
+	// /// todo-1 The above comment is incorrect. We now mint at the end of a round.
+	// /// Comment-202412201 relates and/or applies.
+	// /// The funds are to be used to reward people for marketing the project on social media.
+	// /// This can be the address of an externally owned account controlled by the project founders.
+	// /// The project founders plan to eventually transfer this wallet control to the DAO.
+	// /// @dev
+	// /// [ToDo-202412202-1]
+	// /// So develop a test in which the DAO rewards a marketer.
+	// /// But the DAO is too slow to vote. I've set voting period to 2 weeks, right? Discuss this issue with the guys.
+	// /// ToDo-202412203-1 relates.
+	// /// [/ToDo-202412202-1]
+	// address public marketingWalletAddress;
 
 	// /// @notice
 	// /// [Comment-202412201]
@@ -75,25 +73,25 @@ contract CosmicSignatureToken is
 
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
-	/// @param marketingWalletAddress_ To be assigned to `marketingWalletAddress`.
-	constructor(address game_, address marketingWalletAddress_)
-		Ownable(msg.sender)
+	/// ---param marketingWalletAddress_ To be assigned to `marketingWalletAddress`.
+	constructor(address game_ /* , address marketingWalletAddress_ */)
+		// Ownable(msg.sender)
 		ERC20("CosmicSignatureToken", "CST")
 		ERC20Permit("CosmicSignatureToken")
 		providedAddressIsNonZero(game_)
-		providedAddressIsNonZero(marketingWalletAddress_) {
+		/*providedAddressIsNonZero(marketingWalletAddress_)*/ {
 		game = game_;
-		marketingWalletAddress = marketingWalletAddress_;
+		// marketingWalletAddress = marketingWalletAddress_;
 		// marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 	}
 
 	// #endregion
-	// #region `setMarketingWalletAddress`
+	// #region // `setMarketingWalletAddress`
 
-	function setMarketingWalletAddress(address newValue_) external override onlyOwner providedAddressIsNonZero(newValue_) {
-		marketingWalletAddress = newValue_;
-		emit MarketingWalletAddressChanged(newValue_);
-	}
+	// function setMarketingWalletAddress(address newValue_) external override onlyOwner providedAddressIsNonZero(newValue_) {
+	// 	marketingWalletAddress = newValue_;
+	// 	emit MarketingWalletAddressChanged(newValue_);
+	// }
 
 	// #endregion
 	// #region // `setMarketingWalletBalanceAmountMaxLimit`
@@ -118,11 +116,11 @@ contract CosmicSignatureToken is
 	// }
 
 	// #endregion
-	// #region `mintToMarketingWallet`
+	// #region // `mintToMarketingWallet`
 
-	function mintToMarketingWallet(uint256 amount_) external override onlyGame {
-		_mint(marketingWalletAddress, amount_);
-	}
+	// function mintToMarketingWallet(uint256 amount_) external override onlyGame {
+	// 	_mint(marketingWalletAddress, amount_);
+	// }
 
 	// #endregion
 	// #region `mint`
@@ -135,15 +133,8 @@ contract CosmicSignatureToken is
 	// #region `burn`
 
 	function burn(address account, uint256 value) external override onlyGame {
-		// [Comment-202412251]
-		// This is a common sense requirement.
-		// The marketing wallet isn't supposed to bid.
-		// The behavior isn't necessarily going to be correct if this condition is not met,
-		// but it appears that it's not going to be too bad,
-		// so it's probably unnecessary to spend gas to `require` this.
-		// todo-1 Further refactoring could make this requirement unnecessary.
-		// [/Comment-202412251]
-		// #enable_asserts assert(account != marketingWalletAddress);
+		// // This assert now lives in `Bidding`, near Comment-202412251.
+		// // #enable_asserts assert(account != marketingWalletAddress);
 
 		_burn(account, value);
 	}

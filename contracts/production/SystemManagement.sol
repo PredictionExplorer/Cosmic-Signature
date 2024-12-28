@@ -135,14 +135,6 @@ abstract contract SystemManagement is
 		emit CosmicSignatureTokenAddressChanged(newValue_);
 	}
 
-	// function setMarketingWallet(address newValue_) external override
-	// 	onlyOwner
-	// 	onlyInactive
-	// 	providedAddressIsNonZero(newValue_) {
-	// 	marketingWallet = newValue_;
-	// 	emit MarketingWalletAddressChanged(newValue_);
-	// }
-
 	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override
 		onlyOwner
 		onlyInactive
@@ -181,6 +173,14 @@ abstract contract SystemManagement is
 		providedAddressIsNonZero(address(newValue_)) {
 		prizesWallet = PrizesWallet(address(newValue_));
 		emit PrizesWalletAddressChanged(newValue_);
+	}
+
+	function setMarketingWallet(address newValue_) external override
+		onlyOwner
+		onlyInactive
+		providedAddressIsNonZero(newValue_) {
+		marketingWallet = newValue_;
+		emit MarketingWalletAddressChanged(newValue_);
 	}
 
 	function setCharityAddress(address newValue_) external override

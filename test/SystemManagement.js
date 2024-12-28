@@ -45,11 +45,6 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setCosmicSignatureToken(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.token()).to.equal(testAcct_.address);
 
-		// await expect(cosmicSignatureGameProxy.setMarketingWallet(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
-		// testAcct_ = hre.ethers.Wallet.createRandom();
-		// await cosmicSignatureGameProxy.setMarketingWallet(testAcct_.address);
-		// expect(await cosmicSignatureGameProxy.marketingWallet()).to.equal(testAcct_.address);
-
 		await expect(cosmicSignatureGameProxy.setCosmicSignatureNft(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await cosmicSignatureGameProxy.setCosmicSignatureNft(testAcct_.address);
@@ -74,6 +69,11 @@ describe("SystemManagement", function () {
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await cosmicSignatureGameProxy.setPrizesWallet(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.prizesWallet()).to.equal(testAcct_.address);
+
+		await expect(cosmicSignatureGameProxy.setMarketingWallet(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
+		testAcct_ = hre.ethers.Wallet.createRandom();
+		await cosmicSignatureGameProxy.setMarketingWallet(testAcct_.address);
+		expect(await cosmicSignatureGameProxy.marketingWallet()).to.equal(testAcct_.address);
 
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroAddress");
 		testAcct_ = hre.ethers.Wallet.createRandom();
@@ -182,12 +182,12 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setMarketingWalletCstContributionAmount(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setMaxMessageLength(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCosmicSignatureToken(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		// await expect(cosmicSignatureGameProxy.setMarketingWallet(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCosmicSignatureNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setRandomWalkNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setPrizesWallet(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setMarketingWallet(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCharityAddress(testAcct_.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNanoSecondsExtra(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTimeIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -317,8 +317,6 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setCosmicSignatureToken(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		// await expect(cosmicSignatureGameProxy.connect(addr1).setMarketingWallet(addr1.address))
-		// 	.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setCosmicSignatureNft(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setRandomWalkNft(addr1.address))
@@ -328,6 +326,8 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(addr1).setStakingWalletRandomWalkNft(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setPrizesWallet(addr1.address))
+			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureGameProxy.connect(addr1).setMarketingWallet(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setCharityAddress(addr1.address))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
@@ -380,8 +380,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "CallDenied");
 		await expect(cosmicSignatureToken.connect(addr1)["burn(address,uint256)"](addr1.address, 10000n))
 			.to.be.revertedWithCustomError(cosmicSignatureToken, "CallDenied");
-		// // todo-1 This method is from `ERC20Burnable`. Am I going to uncomment it?
-		// await expect(cosmicSignatureToken.connect(addr1)["burn(uint256)"](10000n));
+		await expect(cosmicSignatureToken.connect(addr1)["burn(uint256)"](10000n));
 
 		await expect(cosmicSignatureNft.connect(addr1).setNftBaseUri("://uri"))
 			.to.be.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");

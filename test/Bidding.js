@@ -242,7 +242,7 @@ describe("Bidding", function () {
 		const elapsedDuration_ = res[0];
 		expect(elapsedDuration_).to.equal(0);
 	});
-	it("There is an execution path for all bidders being RWalk token bidders", async function () {
+	it("There is an execution path for all bidders being RandomWalk NFT bidders", async function () {
 		async function mint_rwalk(a) {
 			const tokenPrice = await randomWalkNft.getMintPrice();
 			let tx = await randomWalkNft.connect(a).mint({ value: tokenPrice });
@@ -471,7 +471,7 @@ describe("Bidding", function () {
 				userTokens.push(i);
 				tokensByStaker[ownr] = userTokens;
 				if (i >= Number(totSupBefore)) {
-					// this is new token, it is not staked yet
+					// this is new NFT, it is not staked yet
 					continue;
 				}
 			}
@@ -506,7 +506,7 @@ describe("Bidding", function () {
 			await stakingWalletCosmicSignatureNft.connect(owner_signer).unstake(stakeActionIds_[i], 1000);
 		}
 
-		// at this point, all tokens were unstaked
+		// at this point, all NFTs were unstaked
 
 		// num_actions = await stakingWalletCosmicSignatureNft.numStakeActions();
 		num_actions = await stakingWalletCosmicSignatureNft.numStakedNfts();
@@ -530,7 +530,7 @@ describe("Bidding", function () {
 		// const m = await stakingWalletCosmicSignatureNft.modulo();
 		// expect(m).to.equal(contractBalance);
 
-		// check that every staker has its own tokens back
+		// check that every staker has its own NFTs back
 		for (let user in tokensByStaker) {
 			let userTokens = tokensByStaker[user];
 			for (let i = 0; i < userTokens.length; i++) {
@@ -734,7 +734,7 @@ describe("Bidding", function () {
 
 		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
-		const BrokenToken = await hre.ethers.getContractFactory("BrokenErc20");
+		const BrokenToken = await hre.ethers.getContractFactory("BrokenToken2");
 		const brokenToken= await BrokenToken.deploy(0);
 		await brokenToken.waitForDeployment();
 		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
@@ -748,7 +748,7 @@ describe("Bidding", function () {
 		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		// See ToDo-202409245-0.
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWith("Test mint() (ERC20) failed");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
@@ -756,8 +756,9 @@ describe("Bidding", function () {
 
 		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
-		const BrokenToken = await hre.ethers.getContractFactory("BrokenErc20");
-		const brokenToken= await BrokenToken.deploy(1);
+		const BrokenToken = await hre.ethers.getContractFactory("BrokenToken2");
+		const numTokenMintsPerBid_ = 2;
+		const brokenToken= await BrokenToken.deploy(numTokenMintsPerBid_);
 		await brokenToken.waitForDeployment();
 		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
 		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenToken.getAddress());
@@ -772,7 +773,7 @@ describe("Bidding", function () {
 		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		// See ToDo-202409245-0.
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWith("Test mint() (ERC20) failed");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 	it("Long term bidding with CST doesn't produce irregularities", async function () {
 		if (SKIP_LONG_TESTS) return;

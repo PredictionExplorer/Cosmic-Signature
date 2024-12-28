@@ -71,12 +71,12 @@ contract CosmicSignatureGameOpenBid is
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
-		// // marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =
 		// stakingWalletRandomWalkNft =
 		// prizesWallet =
+		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
 		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;

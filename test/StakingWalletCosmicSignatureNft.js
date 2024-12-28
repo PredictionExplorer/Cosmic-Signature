@@ -852,7 +852,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await cosmicSignatureNft.connect(addr2).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
 	// 	await cosmicSignatureNft.connect(addr3).setApprovalForAll(await stakingWalletCosmicSignatureNft.getAddress(), true);
 	//
-	// 	// make all winners to stake their tokens
+	// 	// make all winners to stake their NFTs
 	// 	const CSTtotalSupply = await cosmicSignatureNft.totalSupply();
 	// 	for (let i = 0; i < Number(CSTtotalSupply); i++) {
 	// 		const o = await cosmicSignatureNft.ownerOf(i);
@@ -945,8 +945,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId_);
 			}
 		}
-		// verification algorithm is simple: if from 400 staked tokens at least
-		// 1 staker is chosen (i.e. all stakers win at least 1 token)
+		// verification algorithm is simple: if from 400 staked NFTs at least
+		// 1 staker is chosen (i.e. all stakers win at least 1 NFT)
 		// then we consider randomness works. Sample size is 100 (25% of the population)
 		{
 			const luckyStakers = {};
@@ -975,7 +975,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			}
 		}
 	});
-	it("Shouldn't be possible to use a token twice for stake/unstake", async function () {
+	it("Shouldn't be possible to use an NFT twice for stake/unstake", async function () {
 		const {signers, cosmicSignatureGameProxy, stakingWalletCosmicSignatureNft,} =
 			await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
@@ -1009,8 +1009,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		await expect(newStakingWalletCosmicSignatureNft.unstake(1, 1000)).not.to.be.reverted;
 		await expect(newStakingWalletCosmicSignatureNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftOneTimeStaking");
 
-		// await newStakingWalletCosmicSignatureNft.doInsertToken(1n,1n);
-		// await expect(newStakingWalletCosmicSignatureNft.doInsertToken(1n,1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenAlreadyInserted");
+		// await newStakingWalletCosmicSignatureNft.doInsertToken(1n, 1n);
+		// await expect(newStakingWalletCosmicSignatureNft.doInsertToken(1n, 1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenAlreadyInserted");
 		// await expect(newStakingWalletCosmicSignatureNft.doRemoveToken(0n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenAlreadyDeleted");
 	});
 	it("Deposits with value=0 do not create irregularities in StakingWalletCosmicSignatureNft", async function () {

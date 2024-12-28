@@ -23,7 +23,7 @@ describe("Events2", function () {
 		// ToDo-202411202-1 applies.
 		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0);
 
-		// we need to mint RWalk tokens for all bidders that participate to avoid missing events
+		// we need to mint RandomWalk NFTs for all bidders that participate to avoid missing events
 		let tokenPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: tokenPrice });
 		tokenPrice = await randomWalkNft.getMintPrice();
@@ -40,7 +40,7 @@ describe("Events2", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 
-		// we need to stake tokens to have holder owners to earn raffle tokens
+		// we need to stake NFTs to have holder owners to earn raffle NFTs
 		let ts = await cosmicSignatureNft.totalSupply();
 		for (let i = 0; i<Number(ts); i++) {
 			let ownr = await cosmicSignatureNft.ownerOf(i)

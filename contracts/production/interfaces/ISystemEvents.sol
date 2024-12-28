@@ -33,10 +33,6 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
 
-	// /// @notice Emitted when `marketingWallet` is changed.
-	// /// @param newValue The new value.
-	// event MarketingWalletAddressChanged(address newValue);
-
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.
 	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
@@ -56,6 +52,10 @@ interface ISystemEvents {
 	/// @notice Emitted when `prizesWallet` is changed.
 	/// @param newValue The new value.
 	event PrizesWalletAddressChanged(IPrizesWallet newValue);
+
+	/// @notice Emitted when `marketingWallet` is changed.
+	/// @param newValue The new value.
+	event MarketingWalletAddressChanged(address newValue);
 
 	/// @notice Emitted when `charityAddress` is changed.
 	/// @param newValue The new value.

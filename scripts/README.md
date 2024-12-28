@@ -20,7 +20,7 @@ because eth_estimateGas function produces very low gasLimit values and because A
     Example config file is located at tasks/default-config (you should copy it and change values)
 	Note: the deployment must be executed with `switchToRuntimeMode` flag set to 'false' (because
 	(we will set time intervals for bidding and claiming prize to lower values)
-    todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
+    <!-- todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role. -->
 
 ##### for local testnet:
 
@@ -46,13 +46,13 @@ Note: the main difference between localnet and Sepolia deployment is that for lo
 
 Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
-##### To mint Random Walk tokens
+##### To mint Random Walk NFTs
 
 	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
 
-	(note: this command will set RWALK_TOKENS shell variable to tokens minted)
+	(note: this command will set RWALK_TOKENS shell variable to NFTs minted)
 
-##### Display the tokens to make sure they were minted
+##### Display the NFTs to make sure they were minted
 
     $ echo $RWALK_TOKENS
     24,25,26,27
@@ -63,7 +63,7 @@ Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
 ##### Run the test set of bids
 
-    RWALK_TOKENS="[comma_separated_list_of_tokens]" PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
+    RWALK_TOKENS="[comma_separated_list_of_NFTs]" PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
 
 ##### Wait for time to advance to be able to claimMainPrize() and execute second set of tests
 

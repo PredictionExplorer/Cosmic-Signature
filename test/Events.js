@@ -297,8 +297,6 @@ describe("Events", function () {
 			.withArgs(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.token()).to.equal(testAcct_.address);
 
-		// todo-1 setMarketingWallet (but I have eliminated it)
-
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicSignatureGameProxy.connect(owner).setCosmicSignatureNft(testAcct_.address))
 			.to.emit(cosmicSignatureGameProxy, "CosmicSignatureNftAddressChanged")
@@ -320,6 +318,8 @@ describe("Events", function () {
 			.to.emit(cosmicSignatureGameProxy, "PrizesWalletAddressChanged")
 			.withArgs(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.prizesWallet()).to.equal(testAcct_.address);
+
+		// todo-1 setMarketingWallet
 
 		testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicSignatureGameProxy.connect(owner).setCharityAddress(testAcct_.address))

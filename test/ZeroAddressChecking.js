@@ -33,7 +33,7 @@ describe("ZeroAddressChecking", function () {
 		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
 	});
-	// it("Shouldn't be possible to set a zero-address for token contract in MarketingWallet", async function () {
+	// it("Shouldn't be possible to set a zero-address for CosmicSignatureToken in MarketingWallet", async function () {
 	// 	const {marketingWallet,} = await loadFixture(deployContractsForTesting);
 	//
 	// 	await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");

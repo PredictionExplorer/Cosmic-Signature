@@ -213,6 +213,9 @@ abstract contract BiddingOpenBid is
 			CosmicSignatureErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
 		);
 
+		// Comment-202412251 applies.
+		// #enable_asserts assert(msg.sender != marketingWallet);
+
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
 		// // Comment-202409181 applies.
@@ -320,8 +323,8 @@ abstract contract BiddingOpenBid is
 
 		// try
 		// ToDo-202409245-0 applies.
-		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		token.mintToMarketingWallet(marketingWalletCstContributionAmount);
+		token.mint(marketingWallet, marketingWalletCstContributionAmount);
+		// token.mintToMarketingWallet(marketingWalletCstContributionAmount);
 		// {
 		// } catch {
 		// 	revert

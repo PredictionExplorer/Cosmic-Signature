@@ -109,12 +109,12 @@ async function main() {
 	}
 	let rwalkTokenList = process.env.RWALK_TOKENS;
 	if (typeof rwalkTokenList === "undefined" || rwalkTokenList.length == 0) {
-		console.log("Please provide RandomWalk token list in RWALK_TOKENS environment variable");
+		console.log("Please provide RandomWalk NFT list in RWALK_TOKENS environment variable");
 		process.exit(1);
 	}
 	let tokenList = rwalkTokenList.split(",");
 	if (tokenList.length != 4) {
-		console.log("This script needs 4 RandomWalk tokens (in RWALK_TOKENS environment variable)");
+		console.log("This script needs 4 RandomWalk NFTs (in RWALK_TOKENS environment variable)");
 		process.exit(1);
 	}
 

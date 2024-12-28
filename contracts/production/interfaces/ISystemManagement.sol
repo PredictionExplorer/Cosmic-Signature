@@ -48,11 +48,6 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
-	// /// @notice Sets `marketingWallet`.
-	// /// Only the contract owner is permitted to call this method.
-	// /// @param newValue_ The new value.
-	// function setMarketingWallet(address newValue_) external;
-
 	/// @notice Sets `nft`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
@@ -77,6 +72,11 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setPrizesWallet(IPrizesWallet newValue_) external;
+
+	/// @notice Sets `marketingWallet`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMarketingWallet(address newValue_) external;
 
 	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.

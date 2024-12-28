@@ -224,8 +224,8 @@ describe("StakingWalletRandomWalkNft", function () {
 				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId_);
 			}
 		}
-		// verification algorithm is simple: if from 1000 staked tokens at least
-		// 1 staker is chosen (i.e. all stakers win at least 1 token)
+		// verification algorithm is simple: if from 1000 staked NFTs at least
+		// 1 staker is chosen (i.e. all stakers win at least 1 NFT)
 		// then we consider randomness works. Sample size is 300 (30% of the population)
 		// Now the same process for RandomWalk verification
 		{
@@ -255,7 +255,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			}
 		}
 	});
-	it("Shouldn't be possible to use a token twice for stake/unstake", async function () {
+	it("Shouldn't be possible to use an NFT twice for stake/unstake", async function () {
 		const {randomWalkNft, stakingWalletRandomWalkNft,} = await loadFixture(deployContractsForTesting);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 

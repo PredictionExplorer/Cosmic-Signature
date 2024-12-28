@@ -121,11 +121,12 @@ const basicDeploymentAdvanced = async function (
 
 	const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
 	// const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy();
-	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr, marketingWalletAddr);
+	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr /* , marketingWalletAddr */);
 	await cosmicSignatureToken.waitForDeployment();
 	const cosmicSignatureTokenAddr = await cosmicSignatureToken.getAddress();
 	// await cosmicSignatureToken.connect(deployerAcct).transferOwnership(cosmicSignatureGameProxyAddr);
 	// ToDo-202412203-1 relates and/or applies.
+	// todo-1 But the above todo is no longer relevant here.
 
 	const CosmicSignatureDao = await hre.ethers.getContractFactory("CosmicSignatureDao");
 	const cosmicSignatureDao = await CosmicSignatureDao.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
@@ -142,7 +143,9 @@ const basicDeploymentAdvanced = async function (
 	await charityWallet.connect(deployerAcct).setCharityAddress(charityAddr);
 	// [ToDo-202412203-1]
 	// Make sense to do this kind of ownership transfer for `cosmicSignatureToken` as well?
+	// What about any other contracts? Maybe the game contract? But it could be a bad idea to give control over it to strangers.
 	// We would need to set `cosmicSignatureToken.marketingWalletAddress` to the DAO address too, right?
+	// >>> But now `marketingWallet` (possibly to be renamed to `marketingWalletAddress`) lives in the game contract.
 	// ToDo-202412202-1 relates.
 	// [/ToDo-202412203-1]
 	if (transferOwnershipToCosmicSignatureDao) {
@@ -190,12 +193,15 @@ const basicDeploymentAdvanced = async function (
 	// const marketingWalletAddr = await marketingWallet.getAddress();
 
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureToken(cosmicSignatureTokenAddr);
-	// await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
+	// todo-1 If `transferOwnershipToCosmicSignatureDao`, are we supposed to pass the DAO contract address here?
+	// todo-1 If I implement that, comment under what conditions `marketingWalletAddr` is ignored.
+	// ToDo-202412203-1 relates and/or applies.
+	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
 	if (activationTime !== 0) {
 		if (activationTime === 1) {

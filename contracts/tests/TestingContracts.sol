@@ -42,8 +42,11 @@ contract BrokenToken2 {
 	// }
 
 	function mint(address, uint256) external {
-		require(_counter > 0, "Test mint() (ERC20) failed");
+		require(_counter > 0, "Test mint() failed.");
 		-- _counter;
+	}
+
+	function burn(address, uint256) external {
 	}
 }
 

@@ -163,6 +163,8 @@ abstract contract Bidding is
 		// todo-1 That said, given that we mint 100 CSTs for each bid, it's almost impossible that the bid price will fall below that.
 		// todo-1 So maybe leave this logic and comment that it minimizes transaction fees.
 		// todo-1 Cros-ref with where we mint 100 CSTs for each bidder.
+		//
+		// todo-1 >>> Confirmed: zero bids are OK.
 		// [/Comment-202409179]
 		uint256 price = getCurrentBidPriceCST();
 
@@ -171,6 +173,17 @@ abstract contract Bidding is
 			price <= priceMaxLimit_,
 			CosmicSignatureErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
 		);
+
+		// [Comment-202412251]
+		// This is a common sense requirement.
+		// The marketing wallet isn't supposed to bid with CST.
+		// The behavior isn't necessarily going to be correct if this condition is not met,
+		// but it appears that it's not going to be too bad,
+		// so it's probably unnecessary to spend gas to `require` this.
+		// todo-1 Make sure related logic is correct.
+		// todo-1 Further refactoring could make this requirement unnecessary.
+		// [/Comment-202412251]
+		// #enable_asserts assert(msg.sender != marketingWallet);
 
 		// uint256 userBalance = token.balanceOf(msg.sender);
 
@@ -297,8 +310,8 @@ abstract contract Bidding is
 
 		// try
 		// ToDo-202409245-0 applies.
-		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		token.mintToMarketingWallet(marketingWalletCstContributionAmount);
+		token.mint(marketingWallet, marketingWalletCstContributionAmount);
+		// token.mintToMarketingWallet(marketingWalletCstContributionAmount);
 		// {
 		// } catch {
 		// 	revert
