@@ -136,15 +136,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411174]
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
+	/// todo-1 Not on every bid any more?
 	/// [/Comment-202411067]
-	/// todo-1 Rename this to `roundDurationIncrementInNanoSeconds`.
-	/// todo-1 But Nick commented on the above: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732924267222049?thread_ts=1732921541.079509&cid=C02EDDE5UF8
-	/// todo-1 It's really not round duration, but rather duration until the main prize.
-	/// todo-1 This appears to be the only value expressed in nanoseconds.
-	/// todo-1 Maybe express this in microseconds, like we do `timeIncrease`.
-	/// todo-1 Even if `timeIncrease` equals 1 million plus 1, the integer math will still not truncate anything back to the same value.
-	/// todo-1 But review all uses to make sure that microseconds will be OK.
-	uint256 public nanoSecondsExtra;
+	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
 	/// @notice Comment-202411064 applies.
 	/// Equals the number of microseonds per second plus a small fraction of it.
@@ -160,7 +154,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
 	/// [Comment-202412152]
-	/// On each bid, we add `nanoSecondsExtra` to `max(mainPrizeTime, block.timestamp)`.
+	/// On each bid, we calculate the new value of this variable
+	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
 	/// [/Comment-202412152]
 	uint256 public mainPrizeTime;
 
@@ -191,8 +186,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
 	/// Comment-202411174 applies
-	/// todo-1 We use `nanoSecondsExtra` for this. Comment and ross-ref with it.
+	/// todo-1 We use `mainPrizeTimeIncrementInMicroSeconds` for this. Comment and ross-ref with it.
 	/// todo-1 Rename to `cstDutchAuctionDuration`.
+	/// todo-1 But maybe eliminate this and add a method to calculate this on the fly from `mainPrizeTimeIncrementInMicroSeconds`.
 	uint256 public cstAuctionLength;
 
 	/// @notice Comment-202411064 applies.

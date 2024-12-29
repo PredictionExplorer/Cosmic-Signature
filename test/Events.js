@@ -327,11 +327,11 @@ describe("Events", function () {
 			.withArgs(testAcct_.address);
 		expect((await cosmicSignatureGameProxy.charityAddress()).toString()).to.equal(testAcct_.address.toString());
 
-		const nanoSecondsExtra_ = 1003n;
-		await expect(cosmicSignatureGameProxy.connect(owner).setNanoSecondsExtra(nanoSecondsExtra_))
-			.to.emit(cosmicSignatureGameProxy, "NanoSecondsExtraChanged")
-			.withArgs(nanoSecondsExtra_);
-		expect(await cosmicSignatureGameProxy.nanoSecondsExtra()).to.equal(nanoSecondsExtra_);
+		const mainPrizeTimeIncrementInMicroSeconds_ = 1003n;
+		await expect(cosmicSignatureGameProxy.connect(owner).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_))
+			.to.emit(cosmicSignatureGameProxy, "MainPrizeTimeIncrementInMicroSecondsChanged")
+			.withArgs(mainPrizeTimeIncrementInMicroSeconds_);
+		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).to.equal(mainPrizeTimeIncrementInMicroSeconds_);
 
 		const timeIncrease_ = 1001n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setTimeIncrease(timeIncrease_))

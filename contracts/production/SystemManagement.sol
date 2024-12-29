@@ -191,9 +191,9 @@ abstract contract SystemManagement is
 		emit CharityAddressChanged(newValue_);
 	}
 
-	function setNanoSecondsExtra(uint256 newValue_) external override onlyOwner onlyInactive {
-		nanoSecondsExtra = newValue_;
-		emit NanoSecondsExtraChanged(newValue_);
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyInactive {
+		mainPrizeTimeIncrementInMicroSeconds = newValue_;
+		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
 	}
 
 	function setTimeIncrease(uint256 newValue_) external override onlyOwner onlyInactive {

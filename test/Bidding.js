@@ -44,7 +44,7 @@ describe("Bidding", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).to.equal(0);
 
-		const nanoSecondsExtra1 = await cosmicSignatureGameProxy.nanoSecondsExtra();
+		const mainPrizeTimeIncrementInMicroSeconds1 = await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds();
 
 		// check that if we sent too much, we get our money back
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: (ethBidPrice_ + 1000n) }); // this works
@@ -67,21 +67,21 @@ describe("Bidding", function () {
 
 		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		expect(durationUntilMainPrize_).to.equal((24n * 60n * 60n) + (nanoSecondsExtra1 / 1000000000n) - 100n);
+		expect(durationUntilMainPrize_).to.equal((24n * 60n * 60n) + (mainPrizeTimeIncrementInMicroSeconds1 / 1000000n) - 100n);
 
-		const nanoSecondsExtra2 = await cosmicSignatureGameProxy.nanoSecondsExtra();
+		const mainPrizeTimeIncrementInMicroSeconds2 = await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds();
 		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		expect(durationUntilMainPrize_).to.equal((24n * 60n * 60n) + (nanoSecondsExtra1 / 1000000000n) - 100n + (nanoSecondsExtra2 / 1000000000n) - 1n);
+		expect(durationUntilMainPrize_).to.equal((24n * 60n * 60n) + (mainPrizeTimeIncrementInMicroSeconds1 / 1000000n) - 100n + (mainPrizeTimeIncrementInMicroSeconds2 / 1000000n) - 1n);
 
-		const nanoSecondsExtra3 = await cosmicSignatureGameProxy.nanoSecondsExtra();
+		const mainPrizeTimeIncrementInMicroSeconds3 = await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds();
 		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		// console.log((await hre.ethers.provider.getBlock("latest")).timestamp);
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		expect(durationUntilMainPrize_).to.equal((24n * 60n * 60n) + (nanoSecondsExtra1 / 1000000000n) - 100n + (nanoSecondsExtra2 / 1000000000n) - 1n + (nanoSecondsExtra3 / 1000000000n) - 1n);
+		expect(durationUntilMainPrize_).to.equal((24n * 60n * 60n) + (mainPrizeTimeIncrementInMicroSeconds1 / 1000000n) - 100n + (mainPrizeTimeIncrementInMicroSeconds2 / 1000000n) - 1n + (mainPrizeTimeIncrementInMicroSeconds3 / 1000000n) - 1n);
 		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "MainPrizeEarlyClaim");
 
 		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();

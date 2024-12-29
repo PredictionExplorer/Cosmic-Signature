@@ -83,7 +83,7 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setCharityAddress(address newValue_) external;
 
-	function setNanoSecondsExtra(uint256 newValue_) external;
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external;
 
 	/// @notice Sets `timeIncrease`.
 	/// Only the contract owner is permitted to call this method.

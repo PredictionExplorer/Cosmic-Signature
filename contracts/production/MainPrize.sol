@@ -378,10 +378,11 @@ abstract contract MainPrize is
 		// Assuming this will neither overflow nor underflow.
 		// todo-1 Take a closer look at this and other similar formulas.
 		// todo-1 Should we use this formula before the 1st round too?
-		// todo-1 Should `setRoundStartCstAuctionLength` and `setNanoSecondsExtra` use it too?
+		// todo-1 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
 		cstAuctionLength =
 			roundStartCstAuctionLength +
-			((nanoSecondsExtra - CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
+			// todo-0 This formula is now incorrect.
+			((mainPrizeTimeIncrementInMicroSeconds - CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
 
 		// todo-1 Maybe add 1 to ensure that the result is a nonzero.
 		nextEthBidPrice = address(this).balance / roundInitialEthBidPriceDivisor;

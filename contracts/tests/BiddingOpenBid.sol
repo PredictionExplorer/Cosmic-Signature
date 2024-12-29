@@ -341,9 +341,9 @@ abstract contract BiddingOpenBid is
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _extendMainPrizeTime() internal {
-		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
-		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + secondsToAdd_;
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
+		mainPrizeTimeIncrementInMicroSeconds = mainPrizeTimeIncrementInMicroSeconds * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 
 	function getTotalBids() external view override returns(uint256) {

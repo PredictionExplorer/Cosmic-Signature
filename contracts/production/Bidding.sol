@@ -90,6 +90,7 @@ abstract contract Bidding is
 			);
 			require(
 				// todo-1 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
+				// todo-1 But in OpenZeppelin 4.x the method doesn't exist. A similar method existed, named `_isApprovedOrOwner`.
 				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
 				CosmicSignatureErrors.IncorrectERC721TokenOwner(
 					"You must be the owner of the RandomWalk NFT.",
@@ -120,6 +121,8 @@ abstract contract Bidding is
 			// Refunding excess ETH if the bidder sent more than required.
 			// todo-1 Issue. Dutring the initial Dutch auction, we will likely refund a very small amount that would not justify the gas fees.
 			// todo-1 At least comment.
+			// todo-1 Maybe if the bid price a half a minute or a minute (make it a constant in `CosmicSignatureConstants`) ago
+			// todo-1 was >= `msg.value`, don't refund.
 			uint256 amountToSend = msg.value - paidBidPrice;
 			// todo-1 No reentrancy vulnerability?
 			(bool isSuccess_, ) = msg.sender.call{ value: amountToSend }("");
@@ -322,7 +325,7 @@ abstract contract Bidding is
 		// 		);
 		// }
 
-		// todo-1 On the first bid in a round, don't increase `mainPrizeTime` here. Only increase `nanoSecondsExtra`.
+		// todo-1 On the first bid in a round, don't increase `mainPrizeTime` here. Only increase `mainPrizeTimeIncrementInMicroSeconds`.
 		// todo-1 So split this function into 2 functions
 		// todo-1 and call the one that increases `mainPrizeTime` where we check `lastBidderAddress == address(0)`.
 		// todo-1 Remember to refactor `BiddingOpenBid` too.
@@ -332,10 +335,13 @@ abstract contract Bidding is
 	/// @notice Extend the time until the prize can be claimed
 	/// @dev This function increases the prize time and adjusts the time increase factor
 	function _extendMainPrizeTime() internal {
-		uint256 secondsToAdd_ = nanoSecondsExtra / CosmicSignatureConstants.NANOSECONDS_PER_SECOND;
-		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + secondsToAdd_;
-		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, nanoSecondsExtra);
-		nanoSecondsExtra = nanoSecondsExtra * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		// todo-1 Consider adding a method to calculate and return this.
+		// todo-1 Remember to add it to `BiddingOpenBid` too.
+		// todo-1 Or it belongs to `SystemManagement`?
+		uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
+		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, mainPrizeTimeIncrementInMicroSeconds);
+		mainPrizeTimeIncrementInMicroSeconds = mainPrizeTimeIncrementInMicroSeconds * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 
 	function getTotalBids() external view override returns(uint256) {

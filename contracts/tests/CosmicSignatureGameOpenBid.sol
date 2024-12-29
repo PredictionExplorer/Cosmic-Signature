@@ -79,7 +79,7 @@ contract CosmicSignatureGameOpenBid is
 		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
-		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
+		mainPrizeTimeIncrementInMicroSeconds = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT * CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// mainPrizeTime =

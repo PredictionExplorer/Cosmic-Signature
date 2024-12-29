@@ -18,7 +18,7 @@ describe("CosmicSignatureGame", function () {
 	it("Smoke test", async function () {
 		const {cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForTesting);
 
-		expect(await cosmicSignatureGameProxy.nanoSecondsExtra()).to.equal(60 * 60 * 1000 * 1000 * 1000);
+		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).to.equal(60 * 60 * 1000 * 1000);
 		expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
 	});
 	it("The receive method is executing a bid", async function () {

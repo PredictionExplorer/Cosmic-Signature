@@ -68,7 +68,7 @@ library CosmicSignatureConstants {
 	/// Comment-202409143 applies.
 	uint256 internal constant MAX_MESSAGE_LENGTH = 280;
 
-	uint256 internal constant INITIAL_NANOSECONDS_EXTRA = NANOSECONDS_PER_HOUR;
+	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
 	/// todo-1 Rename `INITIAL...` to `DEFAULT...`.
 	uint256 internal constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
 	/// todo-0 Rename to `INITIAL_INITIAL_...`?
@@ -80,7 +80,7 @@ library CosmicSignatureConstants {
 
 	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER = 2;
 	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR = 10;
-	uint256 internal constant INITIAL_PRICE_INCREASE = MILLION + 10_000;
+	uint256 internal constant INITIAL_PRICE_INCREASE = MILLION + 10 * THOUSAND;
 
 	/// @notice
 	/// [Comment-202412036]

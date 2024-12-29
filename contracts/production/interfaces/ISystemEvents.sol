@@ -61,9 +61,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CharityAddressChanged(address indexed newValue);
 
-	/// @notice Emitted when `nanoSecondsExtra` is changed.
+	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
 	/// @param newValue The new value.
-	event NanoSecondsExtraChanged(uint256 newValue);
+	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
 
 	/// @notice Emitted when `timeIncrease` is changed.
 	/// @param newValue The new value.

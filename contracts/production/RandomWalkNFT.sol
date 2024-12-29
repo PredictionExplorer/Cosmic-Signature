@@ -82,7 +82,10 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
+		// Issue. This method doesn't exist in the already deployed contract.
+		// In OpenZeppelin 4.x there was a similar method, named `_isApprovedOrOwner`.
 		require(_isAuthorized(_ownerOf(tokenId), _msgSender(), tokenId), "setTokenName caller is not owner nor approved");
+
 		require(bytes(name).length <= 32, "Token name is too long.");
 		tokenNames[tokenId] = name;
 		emit TokenNameEvent(tokenId, name);
