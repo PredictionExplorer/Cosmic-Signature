@@ -9,6 +9,8 @@ import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { ICosmicSignatureDao } from "./interfaces/ICosmicSignatureDao.sol";
 
+/// todo-0 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1733769207177129
+/// todo-0 Taras mostly approved the changes. So clean up todos and write better comments.
 contract CosmicSignatureDao is
 	Governor,
 	GovernorSettings,
@@ -51,7 +53,7 @@ contract CosmicSignatureDao is
 
 	// The following functions are overrides required by Solidity.
 
-	// todo-1 Test what these return: votingDelay, votingPeriod, proposalThreshold, quorum. Done in part.
+	/// todo-1 Test what these return: votingDelay, votingPeriod, proposalThreshold, quorum. Done in part.
 	function proposalThreshold() public view override(Governor, GovernorSettings) returns(uint256) {
 		return super.proposalThreshold();
 	}
