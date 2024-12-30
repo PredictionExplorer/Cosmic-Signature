@@ -14,12 +14,12 @@ const { basicDeployment } = require("./Deploy.js");
 /// This function is to be passed to `loadFixture`.
 async function deployContractsForTesting() {
 	const signers = await hre.ethers.getSigners();
-	const [owner, addr1, , , , , , addr7,] = signers;
+	const [owner, addr1, /*, , , , , addr7,*/] = signers;
 	const contracts =
 		await basicDeployment(
 			owner,
 			"",
-			addr7.address,
+			// addr7.address,
 			addr1.address,
 			false,
 			1

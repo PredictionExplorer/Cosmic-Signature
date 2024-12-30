@@ -6,10 +6,17 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
 /// @title Marketer reward wallet.
 /// @author The Cosmic Signature Development Team.
-/// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media.
-/// Eventually, the project founders will transfer this wallet ownership to the DAO.
+/// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media
+/// and to fund whatever other marketing activities. The Game contract mints a configurable CST amount to this wallet
+/// on main prize claim.
+/// Eventually, the project founders will transfer this wallet ownership to a treasurer elected by the DAO.
+/// todo-1 Develop a test in which the DAO changes the owner of the marketing wallet.
+/// todo-1 Ask Nick if he was able to do it with the Tally app.
+/// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434912738329?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434239454529?thread_ts=1733769207.177129&cid=C02EDDE5UF8
 /// @dev
 /// [ToDo-202411182-1]
+/// todo-0 Remove this todo. Other nearby comments are mostly OK.
 /// We mint CST for this wallet on each bid, which I dislike.
 /// One problem is that a lot of gas is wasted.
 /// This needs a redesign.
@@ -26,6 +33,8 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// No, the above is not necessarily a good idea.
 /// Better simply send all CST bids to marketing wallet, or in case it already has enough, just burn any new received amount.
 /// [/ToDo-202411182-1]
+///
+/// todo-1 Taras dislikes the idea to eliminate this contract.
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
@@ -39,7 +48,7 @@ interface IMarketingWallet is IAddressValidator {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// todo-1 Maybe eliminate this method and declare `token` `immutable`.
+	/// @dev todo-1 Maybe eliminate this method and declare `token` `immutable`.
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.

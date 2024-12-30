@@ -33,7 +33,6 @@ contract CosmicSignatureToken is
 	/// @notice The `CosmicSignatureGame` contract address.
 	address public immutable game;
 
-	// /// todo-1 Move some of these comments to near `CosmicSignatureGameStorage.marketingWallet`.
 	// /// @notice This address holds some CST amount.
 	// /// The held amount is replenished when someone bids with CST.
 	// /// todo-1 The above comment is incorrect. We now mint at the end of a round.

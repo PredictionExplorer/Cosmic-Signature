@@ -51,17 +51,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public delayDurationBeforeNextRound;
 
-	/// @notice On each bid, we mint this CST amount to `marketingWallet`.
-	/// todo-1 ---Actually I have eliminated `marketingWallet`. A similar field now lives in the Token contract.
-	/// todo-1 So revisit this comment.
+	/// @notice At the end of each bidding round, we mint this CST amount to `marketingWallet`.
 	/// Comment-202411064 applies.
 	/// @dev ToDo-202411182-1 relates.
 	/// todo-1 Ask Taras if he is eventually going to set this to zero.
 	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	/// todo-1 If so, before making the mint call check that this is a nonzero.
-	/// todo-1 ??? Reorder this to near other bid related variables?
-	/// todo-1 ??? Consider moving this to the token contract.
-	/// todo-1 ??? Then also reorder `DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT`.
+	/// todo-1 But maybe this should not be zero because the DAO will keep doing something.
 	uint256 public marketingWalletCstContributionAmount;
 
 	/// @notice The maximum allowed length of a bid message.
@@ -98,9 +94,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202411064 applies.
 	/// @dev It's currently unnecessary to make this variable strongly typed.
-	/// todo-1 The above comment makes no sense any more because we have no marketing wallet contract any more.
-	/// todo-1 Move some comments from `CosmicSignatureToken.marketingWalletAddress` here.
-	/// todo-1 This is now a non-contract address (yet to be confirmed). So rename this to `marketingWalletAddress`.
 	address public marketingWallet;
 
 	/// @notice Comment-202411064 applies.

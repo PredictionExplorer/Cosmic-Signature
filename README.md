@@ -26,7 +26,7 @@ Cosmic Signature is an NFT project designed for those who love unique, engaging,
 - **Earning CST**: Every bid earns 100 CST tokens for the bidder and 15 CST tokens for the marketing wallet.
 <!-- todo-1 Now minting marketing CSTs at the end of a bidding round. -->
 - **Marketing Wallet**: Controlled by the DAO, used for promotional activities and community rewards.
-<!-- todo-1 Marketing Wallet is now a field in the Game contract. It's an EOA or the DAO address. -->
+<!-- todo-1 Actually, the DAO will probably elect a treasurer to manage the marketing wallet. -->
 - **Governance**: Use CST tokens to vote in the Cosmic Signature DAO, influencing charitable contributions and other project decisions.
 
 ### Random Walk NFT Integration

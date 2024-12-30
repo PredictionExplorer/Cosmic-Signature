@@ -19,7 +19,7 @@ async function main() {
 			"SelfDestructibleCosmicSignatureGame",
 			deployerAcct,
 			"", //"0x1111111111111111111111111111111111111111",
-			"0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
+			// "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
 			"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
 			true,
 			1
@@ -33,7 +33,7 @@ async function main() {
 	console.log("RandomWalkNFT address:", await contracts.randomWalkNft.getAddress());
 	console.log("StakingWalletCosmicSignatureNft address:", await contracts.stakingWalletCosmicSignatureNft.getAddress());
 	console.log("StakingWalletRandomWalkNft address:", await contracts.stakingWalletRandomWalkNft.getAddress());
-	// console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
+	console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
 	console.log("CosmicSignatureGame address:", await contracts.cosmicSignatureGame.getAddress());
 }
 

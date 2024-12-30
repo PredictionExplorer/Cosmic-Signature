@@ -183,8 +183,7 @@ abstract contract Bidding is
 		// The behavior isn't necessarily going to be correct if this condition is not met,
 		// but it appears that it's not going to be too bad,
 		// so it's probably unnecessary to spend gas to `require` this.
-		// todo-1 Make sure related logic is correct.
-		// todo-1 Further refactoring could make this requirement unnecessary.
+		// That said, the marketing wallet is a contract. It can't possibly bid. So this assertion is guaranteed to succeed.
 		// [/Comment-202412251]
 		// #enable_asserts assert(msg.sender != marketingWallet);
 
@@ -311,19 +310,19 @@ abstract contract Bidding is
 		// 		);
 		// }
 
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		// token.mintToMarketingWallet(marketingWalletCstContributionAmount);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicSignatureErrors.ERC20Mint(
-		// 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// 			marketingWallet,
-		// 			marketingWalletCstContributionAmount
-		// 		);
-		// }
+		// // try
+		// // ToDo-202409245-0 applies.
+		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
+		// // token.mintToMarketingWallet(marketingWalletCstContributionAmount);
+		// // {
+		// // } catch {
+		// // 	revert
+		// // 		CosmicSignatureErrors.ERC20Mint(
+		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
+		// // 			marketingWallet,
+		// // 			marketingWalletCstContributionAmount
+		// // 		);
+		// // }
 
 		// todo-1 On the first bid in a round, don't increase `mainPrizeTime` here. Only increase `mainPrizeTimeIncrementInMicroSeconds`.
 		// todo-1 So split this function into 2 functions

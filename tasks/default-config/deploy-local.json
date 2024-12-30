@@ -1,7 +1,6 @@
 {
 	"privKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
 	"randomWalkNftAddr": "",
-	"marketingWalletAddr": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
 	"charityAddr": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
 	"transferOwnershipToCosmicSignatureDao": false,
 	"activationTime": 1,

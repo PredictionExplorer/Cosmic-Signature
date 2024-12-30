@@ -149,7 +149,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"SpecialCosmicSignatureGame",
 	// 			owner,
 	// 			"",
-	// 			addr7.address,
+	// 			// addr7.address,
 	// 			addr1.address,
 	// 			false,
 	// 			0
@@ -201,7 +201,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"SpecialCosmicSignatureGame",
 	// 			owner,
 	// 			"",
-	// 			addr7.address,
+	// 			// addr7.address,
 	// 			addr1.address,
 	// 			false,
 	// 			0
@@ -257,7 +257,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"SpecialCosmicSignatureGame",
 	// 			owner,
 	// 			"",
-	// 			addr7.address,
+	// 			// addr7.address,
 	// 			addr1.address,
 	// 			false,
 	// 			0
@@ -308,7 +308,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"SpecialCosmicSignatureGame",
 	// 			owner,
 	// 			"",
-	// 			addr7.address,
+	// 			// addr7.address,
 	// 			addr1.address,
 	// 			false,
 	// 			0
@@ -364,7 +364,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"SpecialCosmicSignatureGame",
 	// 			owner,
 	// 			"",
-	// 			addr7.address,
+	// 			// addr7.address,
 	// 			addr1.address,
 	// 			false,
 	// 			0
@@ -420,13 +420,13 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// });
 	// it("Shouldn't be possible to claim deposits with invalid stakeActionId or ethDepositId", async function () {
 	it("Shouldn't be possible to unstake with invalid stakeActionId", async function () {
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
+		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = await hre.ethers.getSigners();
 		const {cosmicSignatureGameProxy,} =
 			await basicDeploymentAdvanced(
 				"SpecialCosmicSignatureGame",
 				owner,
 				"",
-				addr7.address,
+				// addr7.address,
 				addr1.address,
 				false,
 				0
@@ -501,13 +501,13 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 	// it("It is not possible to claim reward if transfer to sender address fails", async function () {
 	it("It is not possible to unstake if transfer to sender address fails", async function () {
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
+		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = await hre.ethers.getSigners();
 		const {cosmicSignatureGameProxy, stakingWalletCosmicSignatureNft,} =
 			await basicDeploymentAdvanced(
 				"SpecialCosmicSignatureGame",
 				owner,
 				"",
-				addr7.address,
+				// addr7.address,
 				addr1.address,
 				false,
 				0
@@ -918,8 +918,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
 
-		// todo-1 Make sure this logic doesn't result in marketing wallet bidding with CST.
-		// todo-1 Reference Comment-202412251.
 		const numSigners = 20;
 		const numLoops = 20;
 		// const randomSeed = 11235813; // fib
@@ -1070,7 +1068,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"SpecialCosmicSignatureGame",
 	// 			owner,
 	// 			"",
-	// 			addr7.address,
+	// 			// addr7.address,
 	// 			addr1.address,
 	// 			false,
 	// 			0

@@ -10,7 +10,7 @@ const { HardhatContext } = require("hardhat/internal/context");
 /**
  * @param {import("ethers").Signer} deployerAcct 
  * @param {string} randomWalkNftAddr 
- * @param {string} marketingWalletAddr 
+ * ---param {string} marketingWalletAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @param {number} activationTime 
@@ -19,7 +19,7 @@ const { HardhatContext } = require("hardhat/internal/context");
 const basicDeployment = async function (
 	deployerAcct,
 	randomWalkNftAddr,
-	marketingWalletAddr,
+	// marketingWalletAddr,
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
 	activationTime
@@ -29,7 +29,7 @@ const basicDeployment = async function (
 		"CosmicSignatureGame",
 		deployerAcct,
 		randomWalkNftAddr,
-		marketingWalletAddr,
+		// marketingWalletAddr,
 		charityAddr,
 		transferOwnershipToCosmicSignatureDao,
 		activationTime
@@ -43,7 +43,7 @@ const basicDeployment = async function (
  * todo-1 +++ Test a non-default `deployerAcct`.
  * todo-1 After deployment all restricted functions should revert for the default signer and work for the given signer.
  * @param {string} randomWalkNftAddr May be empty.
- * @param {string} marketingWalletAddr 
+ * ---param {string} marketingWalletAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @param {number} activationTime 
@@ -57,7 +57,7 @@ const basicDeploymentAdvanced = async function (
 	cosmicSignatureGameContractName,
 	deployerAcct,
 	randomWalkNftAddr,
-	marketingWalletAddr,
+	// marketingWalletAddr,
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
 	activationTime
@@ -187,10 +187,10 @@ const basicDeploymentAdvanced = async function (
 	await stakingWalletRandomWalkNft.waitForDeployment();
 	const stakingWalletRandomWalkNftAddr = await stakingWalletRandomWalkNft.getAddress();
 
-	// const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
-	// const marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
-	// await marketingWallet.waitForDeployment();
-	// const marketingWalletAddr = await marketingWallet.getAddress();
+	const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
+	const marketingWallet = await MarketingWallet.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
+	await marketingWallet.waitForDeployment();
+	const marketingWalletAddr = await marketingWallet.getAddress();
 
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureToken(cosmicSignatureTokenAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
@@ -225,7 +225,7 @@ const basicDeploymentAdvanced = async function (
 		randomWalkNft,
 		stakingWalletCosmicSignatureNft,
 		stakingWalletRandomWalkNft,
-		// marketingWallet,
+		marketingWallet,
 		cosmicSignatureGame,
 	};
 };

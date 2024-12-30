@@ -321,19 +321,19 @@ abstract contract BiddingOpenBid is
 		// 		);
 		// }
 
-		// try
-		// ToDo-202409245-0 applies.
-		token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		// token.mintToMarketingWallet(marketingWalletCstContributionAmount);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicSignatureErrors.ERC20Mint(
-		// 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// 			marketingWallet,
-		// 			marketingWalletCstContributionAmount
-		// 		);
-		// }
+		// // try
+		// // ToDo-202409245-0 applies.
+		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
+		// // token.mintToMarketingWallet(marketingWalletCstContributionAmount);
+		// // {
+		// // } catch {
+		// // 	revert
+		// // 		CosmicSignatureErrors.ERC20Mint(
+		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
+		// // 			marketingWallet,
+		// // 			marketingWalletCstContributionAmount
+		// // 		);
+		// // }
 
 		_extendMainPrizeTime();
 	}

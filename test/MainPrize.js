@@ -138,13 +138,13 @@ describe("MainPrize", function () {
 		}
 	});
 	it("Distribution of prize amounts matches specified business logic", async function () {
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = await hre.ethers.getSigners();
+		const [owner, addr1, addr2, addr3, /*addr4, addr5, addr6, addr7,*/] = await hre.ethers.getSigners();
 		const {cosmicSignatureGameProxy, cosmicSignatureNft, prizesWallet, stakingWalletCosmicSignatureNft,} =
 			await basicDeploymentAdvanced(
 				"SpecialCosmicSignatureGame",
 				owner,
 				"",
-				addr7.address,
+				// addr7.address,
 				addr1.address,
 				false,
 				1

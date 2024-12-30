@@ -33,11 +33,11 @@ describe("ZeroAddressChecking", function () {
 		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
 	});
-	// it("Shouldn't be possible to set a zero-address for CosmicSignatureToken in MarketingWallet", async function () {
-	// 	const {marketingWallet,} = await loadFixture(deployContractsForTesting);
-	//
-	// 	await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
-	// });
+	it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
+		const {marketingWallet,} = await loadFixture(deployContractsForTesting);
+	
+		await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
+	});
 	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, addr2,] = signers;
@@ -57,10 +57,10 @@ describe("ZeroAddressChecking", function () {
 		const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		await expect(CosmicSignatureNft.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(CosmicSignatureNft, "ZeroAddress");
 	});
-	// it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
-	// 	const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
-	// 	await expect(MarketingWallet.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(MarketingWallet, "ZeroAddress");
-	// });
+	it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
+		const MarketingWallet = await hre.ethers.getContractFactory("MarketingWallet");
+		await expect(MarketingWallet.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(MarketingWallet, "ZeroAddress");
+	});
 	it("Shouldn't be possible to deploy PrizesWallet with zero-address-ed parameters", async function () {
 		const PrizesWallet = await hre.ethers.getContractFactory("PrizesWallet");
 		await expect(PrizesWallet.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(PrizesWallet, "ZeroAddress");

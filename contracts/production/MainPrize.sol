@@ -82,6 +82,8 @@ abstract contract MainPrize is
 		prizesWallet.registerRoundEnd(roundNum, msg.sender);
 
 		_distributePrizes();
+		// ToDo-202409245-0 applies.
+		token.mint(marketingWallet, marketingWalletCstContributionAmount);
 		_prepareNextRound();
 
 		// #endregion

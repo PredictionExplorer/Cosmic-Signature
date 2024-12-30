@@ -19,9 +19,9 @@ describe("SystemManagement", function () {
 	it("In the inactive mode, setters function correctly", async function () {
 		const isRuntimeMode_ = false;
 		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
+		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		let testAcct_;
@@ -163,9 +163,9 @@ describe("SystemManagement", function () {
 	it("In the active mode, setters are not available", async function () {
 		const isRuntimeMode_ = true;
 		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
+		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
@@ -213,9 +213,9 @@ describe("SystemManagement", function () {
 	it("In the inactive mode, active mode methods are not available", async function () {
 		const isRuntimeMode_ = false;
 		const signers = await hre.ethers.getSigners();
-		const [owner, addr1, addr2, addr3, addr4, addr5, addr6, addr7,] = signers;
+		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = signers;
 		const {cosmicSignatureGameProxy, randomWalkNft,} =
-			await basicDeployment(owner, "", addr7.address, addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).to.be.greaterThan(0n);
