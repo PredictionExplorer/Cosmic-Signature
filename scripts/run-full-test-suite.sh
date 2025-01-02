@@ -24,5 +24,5 @@ CONTRACT_ADDR=$CG_ADDR
 RW_TOKENS=$(PRIVKEY=$CG_PRIVKEY COSMIC_SIGNATURE_GAME_ADDRESS=$CONTRACT_ADDR npx hardhat run scripts/mint_rwalks.js --network $CG_NETWORK)
 echo Random walk NFTs: $RW_TOKENS
 RWALK_TOKENS=$RW_TOKENS PRIVKEY=$CG_PRIVKEY COSMIC_SIGNATURE_GAME_ADDRESS=$CONTRACT_ADDR npx hardhat run scripts/test-deployment-part1.js --network $CG_NETWORK
-PRIVKEY=$CG_PRIVKEY COSMIC_SIGNATURE_GAME_ADDRESS=$CONTRACT_ADDR npx hardhat run scripts/forward-time-past-claim-prize.js --network $CG_NETWORK
+PRIVKEY=$CG_PRIVKEY COSMIC_SIGNATURE_GAME_ADDRESS=$CONTRACT_ADDR npx hardhat run scripts/forward-time-past-main-prize-time.js --network $CG_NETWORK
 PRIVKEY=$CG_PRIVKEY COSMIC_SIGNATURE_GAME_ADDRESS=$CONTRACT_ADDR npx hardhat run scripts/test-deployment-part2.js --network $CG_NETWORK

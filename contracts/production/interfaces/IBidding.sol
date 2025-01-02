@@ -61,7 +61,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 
 	/// @notice Obtains the current price that a bidder is required to pay to place an ETH bid
 	/// @return The ETH price, in Wei
-	/// todo-1 Rename this to `getEthBidPrice`.
+	/// todo-1 Rename this to `getNextEthBidPrice`.
 	function getBidPrice() external view returns(uint256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
@@ -77,18 +77,22 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
-	/// In our game, the price decreases linearly over the Dutch auction duration, and can become zero.
-	/// todo-1 Maybe don't let it to become zero. Require at least 1 Wei.
-	/// @return The CST price, in Wei.
+	/// The price decreases linearly over the Dutch auction duration, and can become zero.
+	/// todo-1 Confirmed: it's OK that the price can become zero.
+	/// @return The next CST bid price, in Wei.
 	/// @dev Comment-202409179 relates.
-	/// todo-1 Rename this to `getCstBidPrice`.
+	/// todo-1 Rename this to `getNextCstBidPrice`.
 	function getCurrentBidPriceCST() external view returns(uint256);
 
-	/// @return A tuple containing the elapsed and total durations of the current auction.
-	/// @dev This function is used by `getCurrentBidPriceCST`
+	/// @return A tuple containing the elapsed and total durations of the current Dutch auction.
+	/// @dev
 	/// todo-1 I dislike it that this returns 2 numbers. This should return only seconds elapsed.
 	/// todo-1 Rename to `getDurationSinceCstDutchAuctionStart` or `getCstDutchAuctionElapsedDuration`.
 	function getCstAuctionDuration() external view returns(uint256, uint256);
+
+	/// @return The number of seconds until the current bidding round activates,
+	/// or a non-positive value if it's already active.
+	function getDurationUntilActivation() external view returns(int256);
 
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round

@@ -23,10 +23,6 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// Comment-202411168 relates and/or applies.
 	function setActivationTime(uint256 newValue_) external;
 
-	/// @notice Calculates the duration until the Game activates.
-	/// @return The number of seconds until the activation or 0 if already activated.
-	function getDurationUntilActivation() external view returns (uint256);
-
 	/// @notice Sets `delayDurationBeforeNextRound`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.

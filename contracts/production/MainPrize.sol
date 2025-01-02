@@ -42,22 +42,25 @@ abstract contract MainPrize is
 		// #region
 
 		if (msg.sender == lastBidderAddress) {
+			// Comment-202411169 relates.
 			// #enable_asserts assert(lastBidderAddress != address(0));
+			
 			require(
 				block.timestamp >= mainPrizeTime,
 				CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp)
 			);
 		} else {
+			// Comment-202411169 relates.
 			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsInRound("There have been no bids in the current bidding round."));
-			uint256 durationUntilOperationIsPermitted_ =
-				uint256(int256(mainPrizeTime) + int256(timeoutDurationToClaimMainPrize) - int256(block.timestamp));
+			
+			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			require(
-				int256(durationUntilOperationIsPermitted_) <= int256(0),
+				durationUntilOperationIsPermitted_ <= int256(0),
 				CosmicSignatureErrors.LastBidderOnly(
 					"Only the last bidder is permitted to claim the bidding round main prize until a timeout expires.",
 					lastBidderAddress,
 					msg.sender,
-					durationUntilOperationIsPermitted_
+					uint256(durationUntilOperationIsPermitted_)
 				)
 			);
 		}
@@ -378,9 +381,9 @@ abstract contract MainPrize is
 		// lastBidType = CosmicSignatureConstants.BidType.ETH;
 
 		// Assuming this will neither overflow nor underflow.
-		// todo-1 Take a closer look at this and other similar formulas.
-		// todo-1 Should we use this formula before the 1st round too?
-		// todo-1 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
+		// todo-0 Take a closer look at this and other similar formulas.
+		// todo-0 Should we use this formula before the 1st round too?
+		// todo-0 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
 		cstAuctionLength =
 			roundStartCstAuctionLength +
 			// todo-0 This formula is now incorrect.
@@ -468,22 +471,13 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getDurationUntilMainPrize`
 
-	/// todo-1 Slither dislikes some time comparisons.
-	/// todo-1 Would it make sense to subtract the times as signed `int256` in most cases?
-	/// todo-1 It could also make sense to do it from within an `unchecked` block.
-	/// todo-1 All our times are supposed to be reasonable values that are close to `block.timestamp`.
-	/// todo-1 `activationTime`, even though it's set externally, will also be reasonable, right?
-	/// todo-1 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
-	function getDurationUntilMainPrize() external view override returns(uint256) {
+	function getDurationUntilMainPrize() public view override returns(int256) {
 		// todo-1 Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 durationUntilMainPrize_ = uint256(int256(mainPrizeTime) - int256(block.timestamp));
-			if(int256(durationUntilMainPrize_) < int256(0)) {
-				durationUntilMainPrize_ = 0;
-			}
+			int256 durationUntilMainPrize_ = int256(mainPrizeTime) - int256(block.timestamp);
 			return durationUntilMainPrize_;
 		}
 	}

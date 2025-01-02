@@ -240,6 +240,7 @@ abstract contract Bidding is
 		{
 			(uint256 elapsedDuration_, uint256 duration_) = getCstAuctionDuration();
 			// // #enable_asserts // #disable_smtchecker console.log(202411119, elapsedDuration_, duration_);
+			// todo-0 Move this formula to a public method.
 			uint256 remainingDuration_ = uint256(int256(duration_) - int256(elapsedDuration_));
 			if (int256(remainingDuration_) <= int256(0)) {
 				return 0;
@@ -340,7 +341,18 @@ abstract contract Bidding is
 		uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
 		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, mainPrizeTimeIncrementInMicroSeconds);
+		// todo-0 Don't do this on each bid.
 		mainPrizeTimeIncrementInMicroSeconds = mainPrizeTimeIncrementInMicroSeconds * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+	}
+
+	function getDurationUntilActivation() external view override returns(int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			int256 durationUntilActivation_ = int256(activationTime) - int256(block.timestamp);
+			return durationUntilActivation_;
+		}
 	}
 
 	function getTotalBids() external view override returns(uint256) {
@@ -374,7 +386,7 @@ abstract contract Bidding is
 		require(
 			_positionFromEnd < numRaffleParticipants_,
 			CosmicSignatureErrors.InvalidBidderQueryOffset(
-				"Provided index is larger than array length",
+				"Provided index is larger than array length.",
 				roundNum_,
 				_positionFromEnd,
 				numRaffleParticipants_

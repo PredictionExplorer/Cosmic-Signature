@@ -53,7 +53,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(99)).to.equal(-2);
 
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
-		await hre.ethers.provider.send("evm_mine");
+		// await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.unstake(1);
 
 		await expect(newStakingWalletRandomWalkNft.unstake(1)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
@@ -85,7 +85,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const log = stakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
-		await hre.ethers.provider.send("evm_mine");
+		// await hre.ethers.provider.send("evm_mine");
 
 		await expect(newStakingWalletRandomWalkNft.connect(addr1).unstake(1)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftStakeActionAccessDenied");
 	});
@@ -102,7 +102,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	await cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(await newStakingWalletRandomWalkNft.getAddress());
 	// 	// await cosmicSignatureGameProxy.setRuntimeMode();
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-	// 	await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp);
+	// 	await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
 	// 	let sampleTokenId = 33;
 	// 	let tokenStaked = await newStakingWalletRandomWalkNft.isTokenStaked(sampleTokenId);
 	// 	expect(tokenStaked).to.equal(false);
@@ -146,7 +146,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r3);
 	// 	expect(isStaked).to.equal(true);
 	//
-	// 	await hre.ethers.provider.send("evm_increaseTime", [600+1]);
+	// 	await hre.ethers.provider.send("evm_increaseTime", [600 + 1]);
 	// 	await newStakingWalletRandomWalkNft.unstakeMany([r1, r2, r3]);
 	// 	numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
 	// 	expect(numStakedNfts_).to.equal(0);
@@ -172,13 +172,13 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-		await hre.ethers.provider.send("evm_mine");
+		// await hre.ethers.provider.send("evm_mine");
 		await cosmicSignatureGameProxy.claimMainPrize();
 
 		// forward timestamp se we can unstake
 		// todo-1 The forwarding no longer needed, right?
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 60*3600*24]);
-		await hre.ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 60 * 24 * 60 * 60]);
+		// await hre.ethers.provider.send("evm_mine");
 
 		for ( let stakeActionId_ = 1; stakeActionId_ <= 10; ++ stakeActionId_ ) {
 			await stakingWalletRandomWalkNft.unstake(stakeActionId_);
@@ -279,7 +279,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		let log = stakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
-		await hre.ethers.provider.send("evm_mine");
+		// await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.unstake(1);
 
 		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftOneTimeStaking");

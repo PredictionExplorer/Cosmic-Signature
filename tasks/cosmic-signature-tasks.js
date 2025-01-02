@@ -49,7 +49,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 			// config_params.switchToRuntimeMode
 		);
 	console.log("contracts deployed");
-	if (config_params.donateToContract) {
+	if (config_params.donateEthToGameContract) {
 		const ethValue = "2";
 		const donationAmount = hre.ethers.parseEther(ethValue);
 		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount});

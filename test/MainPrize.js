@@ -22,7 +22,7 @@ describe("MainPrize", function () {
 		const [owner, addr1, addr2, addr3,] = signers;
 	
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0);
+		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
 
 		let roundNum = 0;
 
@@ -62,8 +62,8 @@ describe("MainPrize", function () {
 		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
-		await hre.ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 
 		let roundNumBefore = await cosmicSignatureGameProxy.roundNum();
 
@@ -112,8 +112,8 @@ describe("MainPrize", function () {
 		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
-		await hre.ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 
 		// let raffleTotalEthPrizeAmount_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmount();
 		tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
@@ -190,7 +190,7 @@ describe("MainPrize", function () {
 		raffleTotalEthPrizeAmount_ -= raffleTotalEthPrizeAmountRemainder_; // clean the value from remainder if not divisible by numRaffleEthPrizesForBidders_
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_)]);
-		await hre.ethers.provider.send('evm_mine');
+		// await hre.ethers.provider.send('evm_mine');
 		let tx = await cBidder.doClaim();
 		let receipt = await tx.wait();
 		let balanceAfter = await hre.ethers.provider.getBalance(await cBidder.getAddress());
@@ -241,9 +241,10 @@ describe("MainPrize", function () {
 		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+
 		// forward time 2 days
 		await hre.ethers.provider.send('evm_increaseTime', [Number(durationUntilMainPrize_) + (2 * 24 * 60 * 60)]);
-		await hre.ethers.provider.send('evm_mine');
+		// await hre.ethers.provider.send('evm_mine');
 
 		let tx = await bContract.connect(addr2).doClaim();
 		let receipt = await tx.wait();

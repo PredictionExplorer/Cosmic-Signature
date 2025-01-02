@@ -1,3 +1,5 @@
+// todo-1 Rename this file to "deploy-bidder-contract.js".
+
 "use strict";
 
 // const { expect } = require("chai");

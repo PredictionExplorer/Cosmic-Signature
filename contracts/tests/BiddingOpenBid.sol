@@ -346,6 +346,16 @@ abstract contract BiddingOpenBid is
 		mainPrizeTimeIncrementInMicroSeconds = mainPrizeTimeIncrementInMicroSeconds * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 	}
 
+	function getDurationUntilActivation() external view override returns(int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			int256 durationUntilActivation_ = int256(activationTime) - int256(block.timestamp);
+			return durationUntilActivation_;
+		}
+	}
+
 	function getTotalBids() external view override returns(uint256) {
 		return numRaffleParticipants[roundNum];
 	}
@@ -372,7 +382,7 @@ abstract contract BiddingOpenBid is
 		require(
 			_positionFromEnd < numRaffleParticipants_,
 			CosmicSignatureErrors.InvalidBidderQueryOffset(
-				"Provided index is larger than array length",
+				"Provided index is larger than array length.",
 				roundNum_,
 				_positionFromEnd,
 				numRaffleParticipants_

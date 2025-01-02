@@ -41,8 +41,8 @@ Note: the main difference between localnet and Sepolia deployment is that for lo
 
 ##### Enable game-mode
 
-    # todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
-    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime.js --network [network-name])
+    <!-- todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role. -->
+    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime-mode.js --network [network-name])
 
 Copy the CosmicSignatureGameProxy contract address and run test scripts:
 

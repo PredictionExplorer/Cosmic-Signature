@@ -8,7 +8,7 @@ Execute the following commands:
 
 	#in another terminal run all the remaining commands:
 	# todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
-	# (previously set switchToRuntimeMode=false and donateToContract=false to get maintenance mode with no transactions)
+	# (previously set switchToRuntimeMode=false and donateEthToGameContract=false to get maintenance mode with no transactions)
 	npx hardhat deploy-cosmic-signature --deployconfig deploy-local.json --network localhost
 
 	#deploy new proxy implementation contract

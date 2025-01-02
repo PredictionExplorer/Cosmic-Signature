@@ -1,3 +1,5 @@
+// todo-1 Rename to "mint-random-walk-nfts.js".
+
 // Confirms that deployed contracts are fully operational
 
 // const { expect } = require("chai");
@@ -16,6 +18,7 @@ async function mint_random_walk_token(testingAcct, randomWalkNft_) {
 	let nftId = parsed_log.args.tokenId;
 	return nftId;
 }
+
 async function mint_random_walks(testingAcct, cosmicSignatureGame) {
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
@@ -29,10 +32,12 @@ async function mint_random_walks(testingAcct, cosmicSignatureGame) {
 	}
 	return output;
 }
+
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (typeof privKey === "undefined" || privKey.length == 0) {
 		console.log(
+			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
 		process.exit(1);
@@ -43,6 +48,7 @@ async function main() {
 	let token_list = await mint_random_walks(testingAcct, cosmicSignatureGame);
 	console.log(token_list);
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

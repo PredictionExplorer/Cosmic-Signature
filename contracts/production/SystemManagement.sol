@@ -42,7 +42,7 @@ abstract contract SystemManagement is
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp < activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsActive("A bidding round is already active.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsActive("The current bidding round is already active.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
@@ -51,7 +51,7 @@ abstract contract SystemManagement is
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp >= activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsInactive("The next bidding round is not active yet.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsInactive("The current bidding round is not active yet.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
@@ -75,6 +75,7 @@ abstract contract SystemManagement is
 		// Imposing this requirement instead of `onlyInactive`.
 		// This design leaves the door open for the admin to change `activationTime` to a point in the future
 		// and then change some parameters.
+		// todo-1 The backend and frontend must expect that activation time changes.
 		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `nextEthBidPrice`.
 		// [/Comment-202411236]
 		require(
@@ -89,6 +90,7 @@ abstract contract SystemManagement is
 		activationTime = newValue_;
 
 		// [Comment-202411168]
+		// todo-0 We no longer need this. Instead, assign this on the 1st bid, which is required to be ETH.
 		// One might want to ensure that this is not in the past.
 		// But `activationTime` is really not supposed to be in the past.
 		// So keeping it simple and effiicient.
@@ -96,20 +98,6 @@ abstract contract SystemManagement is
 		lastCstBidTimeStamp = newValue_;
 
 		emit ActivationTimeChanged(newValue_);
-	}
-
-	function getDurationUntilActivation() external view override returns (uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// return (block.timestamp >= activationTime) ? 0 : (activationTime - block.timestamp);
-			uint256 durationUntilActivation_ = uint256(int256(activationTime) - int256(block.timestamp));
-			if(int256(durationUntilActivation_) < int256(0)) {
-				durationUntilActivation_ = 0;
-			}
-			return durationUntilActivation_;
-		}
 	}
 
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {

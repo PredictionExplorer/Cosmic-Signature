@@ -203,10 +203,10 @@ const basicDeploymentAdvanced = async function (
 	// ToDo-202412203-1 relates and/or applies.
 	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
-	if (activationTime !== 0) {
-		if (activationTime === 1) {
+	if (activationTime != 0) {
+		if (activationTime == 1) {
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			activationTime = latestBlock.timestamp;
+			activationTime = latestBlock.timestamp + 1;
 		}
 		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}

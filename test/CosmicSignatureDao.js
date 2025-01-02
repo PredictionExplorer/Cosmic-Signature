@@ -17,6 +17,7 @@ describe("CosmicSignatureDao", function () {
 	// };
 	it("Changing CharityWallet.charityAddress via CosmicSignatureDao", async function () {
 		const forward_blocks = async n => {
+			// // todo-9 Use "hardhat_mine".
 			// for (let i = 0; i < n; i++) {
 			// 	await hre.ethers.provider.send("evm_mine");
 			// }

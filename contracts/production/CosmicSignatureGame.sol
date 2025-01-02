@@ -60,6 +60,10 @@ contract CosmicSignatureGame is
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
+
+		// [Comment-202501012]
+		// We are supposed to not be initialized yet.
+		// [/Comment-202501012]
 		// #enable_asserts assert(activationTime == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
@@ -69,7 +73,7 @@ contract CosmicSignatureGame is
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
+		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
@@ -94,6 +98,8 @@ contract CosmicSignatureGame is
 		roundStartCstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
 
 		// [Comment-202411211]
+		// todo-0 This logic is no longer needed.
+		// todo-0 Init `lastCstBidTimeStamp` on the 1st bid in a round.
 		// If this condition is `true` it's likely that `setActivationTime` will not be called,
 		// which implies that this is likely our last chance to initialize `lastCstBidTimeStamp`.
 		// [/Comment-202411211]

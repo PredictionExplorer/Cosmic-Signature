@@ -1,3 +1,4 @@
+// todo-1 Rename to "test-deployment-part-1.js".
 // todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
 
 // Confirms that deployed contracts are fully operational
@@ -103,6 +104,7 @@ async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (typeof privKey === "undefined" || privKey.length == 0) {
 		console.log(
+			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
 		process.exit(1);

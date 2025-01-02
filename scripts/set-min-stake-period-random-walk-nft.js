@@ -1,3 +1,5 @@
+// todo-1 Rename to "set-random-walk-nft-stake-duration-min-limit.js".
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 
@@ -9,6 +11,7 @@ async function main() {
 		);
 		process.exit(1);
 	}
+	// todo-1 There is no such thing as the minimum staking period any more, right?
 	let period = process.env.STAKE_PERIOD;
 	if (typeof period === "undefined" || period.length == 0) {
 		console.log(
@@ -21,6 +24,7 @@ async function main() {
 	let stakingWalletRandomWalkNftAddr = await cosmicSignatureGame.stakingWalletRandomWalkNft();
 	let stakingWalletRandomWalkNft = await hre.ethers.getContractAt("StakingWalletRandomWalkNft", stakingWalletRandomWalkNftAddr);
 	console.log("staking wallet");console.log(stakingWalletRandomWalkNftAddr);
+	// todo-1 Why do we need this error handling?
 	try {
 		// todo-1 This function no longer exists.
 		await stakingWalletRandomWalkNft.connect(testingAcct).setMinStakePeriod(period);
@@ -29,7 +33,7 @@ async function main() {
 	}
 	// todo-1 This function no longer exists.
 	period = await stakingWalletRandomWalkNft.minStakePeriod();
-	console.log("Period value: "+period.toNumber()+" seconds");
+	console.log("Period value: " + period.toString() + " seconds");
 }
 main()
 	.then(() => process.exit(0))

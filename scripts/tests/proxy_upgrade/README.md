@@ -13,7 +13,7 @@ This new business logic contract allows bidding with no upper limit. After bid i
         bool isOpenBid; // true if the value sent with the TX is the amount of bid
     }   
 
-The bidder now sends transaction for any amount in `msg.value`, that is multiple times bigger than `timesBidPrice` state variable which controls minium value for open bids. For example if current bid price is 1 ETH and `timesBidPrice` = 3, then the `msg.value` must be minimum 3 ETH (or bigger). If it is lower, transaction will be reverted.
+The bidder now sends transaction for any amount in `msg.value`, that is multiple times bigger than `timesBidPrice` state variable which controls minimum value for open bids. For example if current bid price is 1 ETH and `timesBidPrice` = 3, then the `msg.value` must be minimum 3 ETH (or bigger). If it is lower, transaction will be reverted.
 
 The call to `bid()` function must now be done in a new way:
 

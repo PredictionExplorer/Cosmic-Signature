@@ -58,6 +58,8 @@ contract CosmicSignatureGameOpenBid is
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
+
+		// Comment-202501012 applies.
 		// #enable_asserts assert(activationTime == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
@@ -67,7 +69,7 @@ contract CosmicSignatureGameOpenBid is
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
+		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
@@ -131,7 +133,10 @@ contract CosmicSignatureGameOpenBid is
 	/// [/ToDo-202412164-2]
 	function initialize2() reinitializer(2) public {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
+
+		// Comment-202501012 applies.
 		// #enable_asserts assert(timesBidPrice == 0);
+
 		timesBidPrice = 3;
 	}
 

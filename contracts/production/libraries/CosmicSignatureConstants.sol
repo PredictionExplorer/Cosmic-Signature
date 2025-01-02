@@ -23,10 +23,13 @@ library CosmicSignatureConstants {
 	uint256 internal constant MILLISECONDS_PER_SECOND = THOUSAND;
 	uint256 internal constant MINUTES_PER_HOUR = (1 hours) / (1 minutes);
 	uint256 internal constant HOURS_PER_DAY = (1 days) / (1 hours);
+	uint256 internal constant NANOSECONDS_PER_MINUTE = NANOSECONDS_PER_SECOND * (1 minutes);
 	uint256 internal constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
 	uint256 internal constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MICROSECONDS_PER_MINUTE = MICROSECONDS_PER_SECOND * (1 minutes);
 	uint256 internal constant MICROSECONDS_PER_HOUR = MICROSECONDS_PER_SECOND * (1 hours);
 	uint256 internal constant MICROSECONDS_PER_DAY = MICROSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MILLISECONDS_PER_MINUTE = MILLISECONDS_PER_SECOND * (1 minutes);
 	uint256 internal constant MILLISECONDS_PER_HOUR = MILLISECONDS_PER_SECOND * (1 hours);
 	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
 
@@ -54,15 +57,15 @@ library CosmicSignatureConstants {
 	/// @notice Initial `activationTime`.
 	/// @dev This must be in the future -- to configure our contract after the deployment
 	/// without calling `setActivationTime` and to ensure that hackers won't attempt to bid
-	/// before we are done with configuring the contract.
+	/// before the deployment script is done configuring the contract.
 	/// Comment-202411168 relates.
 	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `delayDurationBeforeNextRound`.
-	uint256 internal constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = (1 hours) / 2;
+	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND = (1 hours) / 2;
 
 	/// @notice Default `marketingWalletCstContributionAmount`.
-	/// @dev todo-1 Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
 
 	/// @notice Default `maxMessageLength`.
@@ -81,7 +84,7 @@ library CosmicSignatureConstants {
 
 	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER = 2;
 	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR = 10;
-	uint256 internal constant INITIAL_PRICE_INCREASE = MILLION + 10 * THOUSAND;
+	uint256 internal constant INITIAL_PRICE_INCREASE = MILLION + MILLION / 100;
 
 	/// @notice
 	/// [Comment-202412036]

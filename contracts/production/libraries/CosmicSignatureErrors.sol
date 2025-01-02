@@ -41,13 +41,13 @@ library CosmicSignatureErrors {
 	// /// @param systemMode The current system mode.
 	// error SystemMode(string errStr, uint256 systemMode);
 
-	/// @notice Thrown when an action is attempted before the bidding round activation time.
+	/// @notice Thrown when an action is attempted before the current bidding round activation time.
 	/// @param errStr Description of the error.
 	/// @param activationTime The activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	/// @notice Thrown when an action is attempted at or after the bidding round activation time.
+	/// @notice Thrown when an action is attempted at or after the current bidding round activation time.
 	/// @param errStr Description of the error.
 	/// @param activationTime The activation time.
 	/// @param blockTimeStamp The current block timestamp.

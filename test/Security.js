@@ -36,7 +36,7 @@ describe("Security", function () {
 
 		// await cosmicSignatureGameProxy.setRuntimeMode();
 		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		// await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp);
+		// await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
 
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(await cosmicSignatureGameProxy.getAddress());
@@ -49,28 +49,30 @@ describe("Security", function () {
 		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: ethBidPrice_ }); // this works
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 24 * 3600]);
-		await hre.ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 24 * 60 * 60]);
+		// await hre.ethers.provider.send("evm_mine");
 
-		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
-		let reclaim_bal_before = await hre.ethers.provider.getBalance(await reclaim.getAddress());
+		// let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
+		// let reclaim_bal_before = await hre.ethers.provider.getBalance(await reclaim.getAddress());
 		// Make sure there is no re-entrancy
 		await expect(reclaim.connect(addr3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
 	});
-	it("Is possible to take prize before activation", async function () {
+	it("It's impossible to claim the main prize before someone bids", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
-		await hre.ethers.provider.send("evm_mine"); // begin
+		// await hre.ethers.provider.send("evm_mine"); // begin
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 1]);
-		await hre.ethers.provider.send("evm_mine");
+		await expect(durationUntilMainPrize_).lessThan(-1e9);
+		// await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
-		let balance_before = await hre.ethers.provider.getBalance(addr1);
-		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsInRound");
+		await expect(mainEthPrizeAmount_).greaterThan(0);
+		// let balance_before = await hre.ethers.provider.getBalance(addr1);
+		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize())
+			.revertedWithCustomError(cosmicSignatureGameProxy, "NoBidsInRound");
 	});
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.

@@ -31,7 +31,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// todo-9 Rename to `systemModeCode`.
 	// uint256 public systemMode;
 
-	/// @notice The current bidding round activation time. Starting at this point, people will be allowed to place bids.
+	/// @notice The current bidding round activation time.
+	/// Starting at this point, people will be allowed to place bids.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// [/Comment-202411064]
@@ -46,9 +47,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411168 relates.
 	uint256 public activationTime;
 
-	/// @notice Delay duration before the next bidding round.
-	/// Specifies for how long to wait after main prize has been claimed to start the next bidding round.
+	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
 	/// Comment-202411064 applies.
+	/// @dev
+	/// [Comment-202412312]
+	/// We do not automatically increase this.
+	/// [/Comment-202412312]
 	uint256 public delayDurationBeforeNextRound;
 
 	/// @notice At the end of each bidding round, we mint this CST amount to `marketingWallet`.
@@ -58,6 +62,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	/// todo-1 If so, before making the mint call check that this is a nonzero.
 	/// todo-1 But maybe this should not be zero because the DAO will keep doing something.
+	/// todo-1 Besides, rounds will keep getting longer.
 	uint256 public marketingWalletCstContributionAmount;
 
 	/// @notice The maximum allowed length of a bid message.
@@ -120,7 +125,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202412152 relates.
 	/// We use this on a number of other occasions as well.
-	/// todo-1 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
+	/// todo-0 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// [Comment-202411174]
@@ -129,15 +134,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411174]
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
-	/// todo-1 Not on every bid any more?
+	/// todo-0 Not on every bid any more?
 	/// [/Comment-202411067]
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
 	/// @notice Comment-202411064 applies.
-	/// Equals the number of microseonds per second plus a small fraction of it.
+	/// Equals the number of microseconds per second plus a small fraction of it.
+	/// todo-0 But this will now be a divisor.
 	/// Comment-202411067 relates.
-	/// todo-1 Rename to `roundDurationIncrementIncreaseParam`.
-	/// todo-1 It's really not round duration, but rather duration until the main prize.
+	/// todo-1 Since we now increase `mainPrizeTimeIncrementInMicroSeconds` once per round,
+	/// todo-1 Taras needs to simulate a better value for this.
+	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
 	uint256 public timeIncrease;
 
 	/// @notice Comment-202411064 applies.
@@ -156,7 +163,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// For the first round, this equals zero.
 	uint256 public roundNum;
 
-	/// @notice ETH bid price.
+	/// @notice Next ETH bid price.
+	/// [Comment-202501022]
+	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
+	/// todo-1 Therefore declare this `internal` and rename to `_...` and add a smarter getter if needed.
+	/// todo-1 The same applies to other variables that are not always valid.
+	/// todo-1 Think where to eference this comment.
+	/// [/Comment-202501022]
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
@@ -179,7 +192,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
 	/// Comment-202411174 applies
-	/// todo-1 We use `mainPrizeTimeIncrementInMicroSeconds` for this. Comment and ross-ref with it.
+	/// todo-1 We use `mainPrizeTimeIncrementInMicroSeconds` for this. Comment and cross-ref with it.
 	/// todo-1 Rename to `cstDutchAuctionDuration`.
 	/// todo-1 But maybe eliminate this and add a method to calculate this on the fly from `mainPrizeTimeIncrementInMicroSeconds`.
 	uint256 public cstAuctionLength;
@@ -193,7 +206,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Last CST bid timestamp.
 	/// A.k.a. CST Dutch auction start timestamp.
+	/// Comment-202501022 applies.
 	/// @dev Comment-202411168 relates.
+	/// todo-0 This is really not last CST bid timestamp, but rather CST Dutch auction start timestamp.
+	/// todo-0 So rename this.
 	uint256 public lastCstBidTimeStamp;
 
 	/// @notice
@@ -276,7 +292,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice If bidding round main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
 	/// Comment-202411064 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
-	/// @dev todo-1 Rename to `timeoutDurationToClaimRoundMainPrize`. Or better without the word "Round".
+	/// @dev Comment-202412312 applies.
 	uint256 public timeoutDurationToClaimMainPrize;
 
 	// /// @notice Bidding round main prize winners.
