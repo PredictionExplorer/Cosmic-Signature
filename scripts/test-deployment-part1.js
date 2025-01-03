@@ -36,7 +36,7 @@ async function bid_randomwalk(testingAcct, cosmicSignatureGame, nftId) {
 	// let bidParams = { message: "rwalk bid", randomWalkNftId: nftId };
 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
-	let tx = await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ nftId, "rwalk bid", {value: ethBidPrice_});
+	let tx = await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ nftId, "rwalk bid", {value: ethBidPrice_ / 2n});
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

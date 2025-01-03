@@ -75,23 +75,23 @@ describe("Security", function () {
 			.revertedWithCustomError(cosmicSignatureGameProxy, "NoBidsInRound");
 	});
 
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
-	// todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
-	it("donateNft() function is confirmed to be non-reentrant", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
-
-		// todo-1 Why do we need this donation here? Comment it out?
-		const donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
-
-		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft1");
-		const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
-		await maliciousNft.waitForDeployment();
-
-		// todo-1 This will probably now revert due to `onlyGame`.
-		await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
-	});
+	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
+	// // todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
+	// it("donateNft() function is confirmed to be non-reentrant", async function () {
+	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+	// 	const [owner,] = signers;
+	//
+	// 	// todo-1 Why do we need this donation here? Comment it out?
+	// 	const donationAmount = hre.ethers.parseEther("10");
+	// 	await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+	//
+	// 	const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft1");
+	// 	const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
+	// 	await maliciousNft.waitForDeployment();
+	//
+	// 	// todo-1 This will probably now revert due to `onlyGame`.
+	// 	await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+	// });
 	
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {

@@ -209,9 +209,9 @@ abstract contract SystemManagement is
 		emit PriceIncreaseChanged(newValue_);
 	}
 
-	function setRoundStartCstAuctionLength(uint256 newValue_) external override onlyOwner onlyInactive {
-		roundStartCstAuctionLength = newValue_;
-		emit RoundStartCstAuctionLengthChanged(newValue_);
+	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		cstDutchAuctionDurationDivisor = newValue_;
+		emit CstDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
 	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {

@@ -100,10 +100,10 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setPriceIncrease(uint256 newValue_) external;
 
-	/// @notice Sets `roundStartCstAuctionLength`.
+	/// @notice Sets `cstDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setRoundStartCstAuctionLength(uint256 newValue_) external;
+	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
 
 	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external;
 

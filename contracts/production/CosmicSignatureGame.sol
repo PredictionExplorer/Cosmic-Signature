@@ -94,8 +94,7 @@ contract CosmicSignatureGame is
 		roundInitialEthBidPriceMultiplier = CosmicSignatureConstants.DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER;
 		roundInitialEthBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR;
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
-		cstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
-		roundStartCstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
+		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 
 		// [Comment-202411211]
 		// todo-0 This logic is no longer needed.

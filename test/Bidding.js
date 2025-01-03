@@ -218,7 +218,7 @@ describe("Bidding", function () {
 		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), longMsg, { value: ethBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "BidMessageLengthOverflow");
 	});
-	it("getCstAuctionDuration() method works", async function () {
+	it("getCstDutchAuctionDurations() method works", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
@@ -231,10 +231,10 @@ describe("Bidding", function () {
 
 		await cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid");
 
-		const res = await cosmicSignatureGameProxy.getCstAuctionDuration();
-		const elapsedDuration_ = res[0];
-		// const duration_ = res[1];
-		expect(elapsedDuration_).to.equal(0);
+		const res = await cosmicSignatureGameProxy.getCstDutchAuctionDurations();
+		// const cstDutchAuctionDuration_ = res[0];
+		const cstDutchAuctionElapsedDuration_ = res[1];
+		expect(cstDutchAuctionElapsedDuration_).to.equal(0n);
 	});
 	it("There is an execution path for all bidders being RandomWalk NFT bidders", async function () {
 		// todo-1 Move this function to a separate file and use it everywhere.
@@ -292,27 +292,29 @@ describe("Bidding", function () {
 		
 		let donationAmount = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: ethBidPrice_ });
 		// ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 
-		let aLen = await cosmicSignatureGameProxy.cstAuctionLength();
-		await hre.ethers.provider.send('evm_increaseTime', [Number(aLen)]); // make CST price drop to 0
-		// await hre.ethers.provider.send('evm_mine');
-
 		let tokenPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.mint({ value: tokenPrice }); // nftId=0
 
-		// bidParams = { message: "rwalk bid", randomWalkNftId: 0 };
+		// bidParams = { message: "rwalk bid", randomWalkNftId: 0n };
 		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.bid(/*params*/ 0, "rwalk bid", { value: ethBidPrice_ });
+		await cosmicSignatureGameProxy.bid(/*params*/ 0n, "rwalk bid", { value: ethBidPrice_ / 2n });
 
 		// let lastBidType = await cosmicSignatureGameProxy.lastBidType();
 		// expect(lastBidType).to.equal(1);
 
+		let [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_] = await cosmicSignatureGameProxy.getCstDutchAuctionDurations();
+		await hre.ethers.provider.send('evm_increaseTime', [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 1]); // make CST price drop to almost 0
+		// await hre.ethers.provider.send('evm_mine');
+
+		await expect(cosmicSignatureGameProxy.bidWithCst(0n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "BidPrice");
 		await cosmicSignatureGameProxy.bidWithCst(0n, "cst bid");
 
 		// lastBidType = await cosmicSignatureGameProxy.lastBidType();
@@ -569,24 +571,24 @@ describe("Bidding", function () {
 		expect(lastCstBidTimeStamp_).to.equal(await cosmicSignatureGameProxy.activationTime());
 		let latestBlockTimeStamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp);
 		let cstDutchAuctionRemainingDuration_ = (12n * 60n * 60n) - (latestBlockTimeStamp_ - lastCstBidTimeStamp_);
-		let cstBidExpectedPrice_ = startingBidPriceCST_ * cstDutchAuctionRemainingDuration_ / (12n * 60n * 60n);
-		let cstBidPrice_ = await cosmicSignatureGameProxy.getCurrentBidPriceCST();
-		expect(cstBidPrice_).to.equal(cstBidExpectedPrice_);
+		let nextCstBidExpectedPrice_ = startingBidPriceCST_ * cstDutchAuctionRemainingDuration_ / (12n * 60n * 60n);
+		let nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice();
+		expect(nextCstBidPrice_).to.equal(nextCstBidExpectedPrice_);
 		-- cstDutchAuctionRemainingDuration_;
-		cstBidExpectedPrice_ = startingBidPriceCST_ * cstDutchAuctionRemainingDuration_ / (12n * 60n * 60n);
-		await cosmicSignatureGameProxy.connect(addr1).bidWithCst(cstBidExpectedPrice_, "cst bid");
+		nextCstBidExpectedPrice_ = startingBidPriceCST_ * cstDutchAuctionRemainingDuration_ / (12n * 60n * 60n);
+		await cosmicSignatureGameProxy.connect(addr1).bidWithCst(nextCstBidExpectedPrice_, "cst bid");
 		startingBidPriceCST_ = await cosmicSignatureGameProxy.startingBidPriceCST();
-		expect(startingBidPriceCST_).to.equal(cstBidExpectedPrice_ * 2n);
+		expect(startingBidPriceCST_).to.equal(nextCstBidExpectedPrice_ * 2n);
 
 		cstDutchAuctionRemainingDuration_ = (12n * 60n * 60n) - 1n;
-		cstBidExpectedPrice_ = startingBidPriceCST_ * cstDutchAuctionRemainingDuration_ / (12n * 60n * 60n);
-		let tx = await cosmicSignatureGameProxy.connect(addr1).bidWithCst(cstBidExpectedPrice_ * 10n, "cst bid");
+		nextCstBidExpectedPrice_ = startingBidPriceCST_ * cstDutchAuctionRemainingDuration_ / (12n * 60n * 60n);
+		let tx = await cosmicSignatureGameProxy.connect(addr1).bidWithCst(nextCstBidExpectedPrice_ * 10n, "cst bid");
 		let receipt = await tx.wait();
 		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("BidEvent").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignatureGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
-		expect(args.numCSTTokens).to.equal(cstBidExpectedPrice_);
+		expect(args.numCSTTokens).to.equal(nextCstBidExpectedPrice_);
 		expect(args.ethBidPrice).to.equal(-1n);
 		expect(args.lastBidderAddress).to.equal(addr1.address);
 		expect(args.message).to.equal("cst bid");
@@ -655,9 +657,9 @@ describe("Bidding", function () {
 	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 	// 	const [owner, addr1,] = signers;
 	//
-	// 	let spent,spentEth,spentCst,cstAuctionDuration_,auctionLength,tx,topic_sig,receipt,log,evt,bidPriceCst;
-	// 	cstAuctionDuration_ = await cosmicSignatureGameProxy.getCstAuctionDuration();
-	// 	auctionLength = cstAuctionDuration_[1];
+	// 	let spent, spentEth, spentCst, tx, topic_sig, receipt, log, evt;
+	// 	let cstDutchAuctionDurations_ = await cosmicSignatureGameProxy.getCstDutchAuctionDurations();
+	// 	let cstDutchAuctionDuration_ = cstDutchAuctionDurations_[0];
 	// 	// let bidParams = { message: "", randomWalkNftId: -1 };
 	// 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	// 	let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
@@ -665,14 +667,14 @@ describe("Bidding", function () {
 	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
 	// 	spentEth = spent[0];
 	// 	expect(spentEth).to.equal(ethBidPrice_);
-	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(auctionLength) - 600]); // lower price to pay in CST
+	// 	await hre.ethers.provider.send('evm_increaseTime', [Number(cstDutchAuctionDuration_) - 600]); // lower price to pay in CST
 	// 	// await hre.ethers.provider.send('evm_mine');
 	// 	tx = await cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "");
 	// 	topic_sig = cosmicSignatureGameProxy.interface.getEvent("BidEvent").topicHash;
 	// 	receipt = await tx.wait();
 	// 	log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	evt = log.args.toObject();
-	// 	bidPriceCst = evt.numCSTTokens;
+	// 	let bidPriceCst = evt.numCSTTokens;
 	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
 	// 	spentCst = spent[1];
 	// 	expect(spentCst).to.equal(bidPriceCst);
@@ -780,7 +782,7 @@ describe("Bidding", function () {
 		const [owner,] = signers;
 		
 		// const timeBump = 24 * 60 * 60;
-		let balance, cstBidPrice_;
+		let balance, nextCstBidPrice_;
 		let numIterationsMain = 30;
 		let numIterationsSecondary = 100000;
 		// let bidParams = { message: "", randomWalkNftId: -1 };
@@ -792,10 +794,10 @@ describe("Bidding", function () {
 			let j = 0;
 			while (true) {
 				balance = await cosmicSignatureToken.balanceOf(owner.address);
-				cstBidPrice_ = await cosmicSignatureGameProxy.getCurrentBidPriceCST();
+				nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice();
 				ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 				await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: ethBidPrice_ });
-				if (balance > cstBidPrice_) {
+				if (balance > nextCstBidPrice_) {
 					break;
 				}
 				if (( ++ j ) >= numIterationsSecondary) {
@@ -805,7 +807,7 @@ describe("Bidding", function () {
 
 			// Issue. What was this ugly error handling for? I have commented it out.
 			// try {
-				await cosmicSignatureGameProxy.bidWithCst(cstBidPrice_, "");
+				await cosmicSignatureGameProxy.bidWithCst(nextCstBidPrice_, "");
 			// } catch (e) {
 			// 	console.log(e);
 			// 	let balanceEth = await hre.ethers.provider.getBalance(owner.address);
@@ -815,7 +817,7 @@ describe("Bidding", function () {
 
 			// await hre.ethers.provider.send("evm_increaseTime", [timeBump]);
 			// await hre.ethers.provider.send("evm_mine");
-			// let cstAuctionLength_ = await cosmicSignatureGameProxy.cstAuctionLength();
+			// let cstDutchAuctionDuration_ = await cosmicSignatureGameProxy.getCstDutchAuctionDurations()[0];
 		}
 	});
 });

@@ -360,7 +360,7 @@ describe("Events", function () {
 			.withArgs(priceIncrease_);
 		expect((await cosmicSignatureGameProxy.priceIncrease()).toString()).to.equal(priceIncrease_.toString());
 
-		// todo-1 setRoundStartCstAuctionLength
+		// todo-1 setCstDutchAuctionDurationDivisor
 
 		// todo-1 setStartingBidPriceCSTMinLimit
 

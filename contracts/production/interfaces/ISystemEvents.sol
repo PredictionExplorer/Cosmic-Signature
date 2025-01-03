@@ -85,9 +85,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event PriceIncreaseChanged(uint256 newValue);
 
-	/// @notice Emitted when `roundStartCstAuctionLength` is changed.
+	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.
-	event RoundStartCstAuctionLengthChanged(uint256 newValue);
+	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `startingBidPriceCSTMinLimit` is changed.
 	/// @param newValue The new value.

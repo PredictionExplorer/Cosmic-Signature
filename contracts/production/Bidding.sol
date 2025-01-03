@@ -154,6 +154,8 @@ abstract contract Bidding is
 	}
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
+		// todo-0 The 1st bid shall be ETH.
+
 		// [Comment-202409179]
 		// This can be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
@@ -169,7 +171,7 @@ abstract contract Bidding is
 		//
 		// todo-1 >>> Confirmed: zero bids are OK.
 		// [/Comment-202409179]
-		uint256 price = getCurrentBidPriceCST();
+		uint256 price = _getNextCstBidPrice();
 
 		// Comment-202412045 applies.
 		require(
@@ -233,36 +235,71 @@ abstract contract Bidding is
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
 
-	function getCurrentBidPriceCST() public view override returns(uint256) {
+	function getNextCstBidPrice() external view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			(uint256 elapsedDuration_, uint256 duration_) = getCstAuctionDuration();
-			// // #enable_asserts // #disable_smtchecker console.log(202411119, elapsedDuration_, duration_);
-			// todo-0 Move this formula to a public method.
-			uint256 remainingDuration_ = uint256(int256(duration_) - int256(elapsedDuration_));
-			if (int256(remainingDuration_) <= int256(0)) {
-				return 0;
-			}
-
-			// uint256 fraction = CosmicSignatureConstants.MILLION - (CosmicSignatureConstants.MILLION * elapsedDuration_ / duration_);
-			// return fraction * startingBidPriceCST / CosmicSignatureConstants.MILLION;
-
-			return startingBidPriceCST * remainingDuration_ / duration_;
+			uint256 nextCstBidPrice_ = (lastBidderAddress == address(0)) ? type(uint256).max : _getNextCstBidPrice();
+			return nextCstBidPrice_;
 		}
 	}
 
-	function getCstAuctionDuration() public view override returns(uint256, uint256) {
+	function _getNextCstBidPrice() internal view returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 elapsedDuration_ = uint256(int256(block.timestamp) - int256(lastCstBidTimeStamp));
-			if (int256(elapsedDuration_) < int256(0)) {
-				elapsedDuration_ = 0;
+			(uint256 cstDutchAuctionDuration_, int256 cstDutchAuctionRemainingDuration_) = _getCstDutchAuctionTotalAndRemainingDurations();
+			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
+				return 0;
 			}
-			return (elapsedDuration_, cstAuctionLength);
+			uint256 nextCstBidPrice_ = startingBidPriceCST * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
+			return nextCstBidPrice_;
+		}
+	}
+
+	function getCstDutchAuctionDurations() external view override returns(uint256, int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
+			int256 cstDutchAuctionElapsedDuration_ =
+				(lastBidderAddress == address(0)) ? type(int256).min : _getCstDutchAuctionElapsedDuration();
+			return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
+		}
+	}
+
+	function _getCstDutchAuctionDuration() internal view returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 cstDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / cstDutchAuctionDurationDivisor;
+			return cstDutchAuctionDuration_;
+		}
+	}
+
+	function _getCstDutchAuctionElapsedDuration() internal view returns(int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(lastCstBidTimeStamp);
+			return cstDutchAuctionElapsedDuration_;
+		}
+	}
+
+	function _getCstDutchAuctionTotalAndRemainingDurations() internal view returns(uint256, int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
+			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration_) - cstDutchAuctionElapsedDuration_;
+			return (cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_);
 		}
 	}
 

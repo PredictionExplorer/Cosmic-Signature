@@ -136,6 +136,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
 	/// todo-0 Not on every bid any more?
 	/// [/Comment-202411067]
+	/// todo-1 Reference Comment-202501025.
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
 	/// @notice Comment-202411064 applies.
@@ -190,19 +191,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Rename to `ethBidPriceIncreaseParam`.
 	uint256 public priceIncrease;
 
-	/// @notice This is initialized with a constant and is then slightly exponentially increased after every bidding round.
-	/// Comment-202411174 applies
-	/// todo-1 We use `mainPrizeTimeIncrementInMicroSeconds` for this. Comment and cross-ref with it.
-	/// todo-1 Rename to `cstDutchAuctionDuration`.
-	/// todo-1 But maybe eliminate this and add a method to calculate this on the fly from `mainPrizeTimeIncrementInMicroSeconds`.
-	uint256 public cstAuctionLength;
-
 	/// @notice Comment-202411064 applies.
-	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729547013232989
-	/// todo-1 Rename to `roundStartCstDutchAuctionDuration`.
-	/// todo-1 Rename any "Auction" to "Dutch Auction".
-	/// todo-1 But are we going to support a Dutch auction for ETH?
-	uint256 public roundStartCstAuctionLength;
+	/// [Comment-202501025]
+	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
+	/// [/Comment-202501025]
+	uint256 public cstDutchAuctionDurationDivisor;
 
 	/// @notice Last CST bid timestamp.
 	/// A.k.a. CST Dutch auction start timestamp.

@@ -96,8 +96,8 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setPriceIncrease(99n);
 		expect(await cosmicSignatureGameProxy.priceIncrease()).to.equal(99n);
 
-		await cosmicSignatureGameProxy.setRoundStartCstAuctionLength(11n * 60n * 60n);
-		expect(await cosmicSignatureGameProxy.roundStartCstAuctionLength()).to.equal(11n * 60n * 60n);
+		await cosmicSignatureGameProxy.setCstDutchAuctionDurationDivisor(11n);
+		expect(await cosmicSignatureGameProxy.cstDutchAuctionDurationDivisor()).to.equal(11n);
 
 		await cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(hre.ethers.parseEther("111"));
 		expect(await cosmicSignatureGameProxy.startingBidPriceCSTMinLimit()).to.equal(hre.ethers.parseEther("111"));
@@ -193,7 +193,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setRoundInitialEthBidPriceMultiplier(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setRoundInitialEthBidPriceDivisor(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setPriceIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicSignatureGameProxy.setRoundStartCstAuctionLength(11n * 60n * 60n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setCstDutchAuctionDurationDivisor(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTokenReward(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setMainEthPrizeAmountPercentage(26n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -345,7 +345,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setPriceIncrease(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(addr1).setRoundStartCstAuctionLength(11n * 60n * 60n))
+		await expect(cosmicSignatureGameProxy.connect(addr1).setCstDutchAuctionDurationDivisor(11n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setStartingBidPriceCSTMinLimit(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
@@ -389,6 +389,11 @@ describe("SystemManagement", function () {
 	});
 	it("The getDurationUntilActivation method behaves correctly", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+
+		// Issue. `loadFixture` doesn't remove blocks generated afterwards and/or has some other similar issues.
+		// So this should help to make latest block timestamp more deterministic.
+		// await hre.ethers.provider.send('evm_increaseTime', [1]);
+		await hre.ethers.provider.send("evm_mine");
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		const newActivationTime_ = latestBlock_.timestamp + 2;

@@ -78,17 +78,15 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration, and can become zero.
-	/// todo-1 Confirmed: it's OK that the price can become zero.
+	/// todo-1 Confirmed: zero price is OK.
 	/// @return The next CST bid price, in Wei.
+	/// If nobody placed a bid in the current bidding round yet, returns the maximum possible value.
 	/// @dev Comment-202409179 relates.
-	/// todo-1 Rename this to `getNextCstBidPrice`.
-	function getCurrentBidPriceCST() external view returns(uint256);
+	function getNextCstBidPrice() external view returns(uint256);
 
-	/// @return A tuple containing the elapsed and total durations of the current Dutch auction.
-	/// @dev
-	/// todo-1 I dislike it that this returns 2 numbers. This should return only seconds elapsed.
-	/// todo-1 Rename to `getDurationSinceCstDutchAuctionStart` or `getCstDutchAuctionElapsedDuration`.
-	function getCstAuctionDuration() external view returns(uint256, uint256);
+	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
+	/// If nobody placed a bid in the current bidding round yet, returns the minimum possible value for the elapsed duration.
+	function getCstDutchAuctionDurations() external view returns(uint256, int256);
 
 	/// @return The number of seconds until the current bidding round activates,
 	/// or a non-positive value if it's already active.

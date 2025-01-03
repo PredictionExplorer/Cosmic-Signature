@@ -43,21 +43,21 @@ describe("Donating", function () {
 		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, {value: 0n});
 	});
 
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
-	// todo-1 and NFT donation without making a bid is now prohibited.
-	it("donateNft() without making a bid works", async function () {
-		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
-
-		let mintPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(owner).mint({ value: mintPrice });
-		await randomWalkNft.connect(owner).setApprovalForAll(await cosmicSignatureGameProxy.getAddress(), true);
-
-		await cosmicSignatureGameProxy.connect(owner).donateNft(await randomWalkNft.getAddress(),0);
-		let details = await cosmicSignatureGameProxy.getDonatedNftDetails(0);
-		expect(details[0]).to.equal(await randomWalkNft.getAddress());
-		await expect(cosmicSignatureGameProxy.getDonatedNftDetails(1)).to.be.revertedWith("Invalid donated NFT index.");
-	});
+	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
+	// // todo-1 and NFT donation without making a bid is now prohibited.
+	// it("donateNft() without making a bid works", async function () {
+	// 	const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
+	// 	const [owner,] = signers;
+	//
+	// 	let mintPrice = await randomWalkNft.getMintPrice();
+	// 	await randomWalkNft.connect(owner).mint({ value: mintPrice });
+	// 	await randomWalkNft.connect(owner).setApprovalForAll(await cosmicSignatureGameProxy.getAddress(), true);
+	//
+	// 	await cosmicSignatureGameProxy.connect(owner).donateNft(await randomWalkNft.getAddress(),0);
+	// 	let details = await cosmicSignatureGameProxy.getDonatedNftDetails(0);
+	// 	expect(details[0]).to.equal(await randomWalkNft.getAddress());
+	// 	await expect(cosmicSignatureGameProxy.getDonatedNftDetails(1)).to.be.revertedWith("Invalid donated NFT index.");
+	// });
 
 	// it("Should not be possible to donate 0 value", async function () {
 	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);

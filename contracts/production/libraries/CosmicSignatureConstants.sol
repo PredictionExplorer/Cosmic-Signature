@@ -94,10 +94,9 @@ library CosmicSignatureConstants {
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
-	/// @notice Initial `cstAuctionLength`.
-	/// Default `roundStartCstAuctionLength`.
-	/// @dev todo-1 I wrote a todo to rename `cstAuctionLength` and `roundStartCstAuctionLength`. So rename this too.
-	uint256 internal constant DEFAULT_AUCTION_LENGTH = 12 hours;
+	/// @notice Default `cstDutchAuctionDurationDivisor`.
+	/// @dev todo-1 Rename any "Auction" to "Dutch Auction".
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
 	uint256 internal constant STARTING_BID_PRICE_CST_MULTIPLIER = 2;
 
