@@ -784,26 +784,24 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 		
-		// const timeBump = 24 * 60 * 60;
 		const numIterationsMain = 30;
-		const numIterationsSecondary = 10000;
+		// const numIterationsSecondary = 10000;
 
 		for ( let i = 0; i < numIterationsMain; ++ i ) {
-			for ( let j = 0; j < numIterationsSecondary; ++ j ) {
+			const timeBump = (i + 1) * 60;
+			for ( /*let j = 0*/; /*j < numIterationsSecondary*/; /*++ j*/ ) {
+				await hre.ethers.provider.send("evm_increaseTime", [timeBump]);
+				await hre.ethers.provider.send("evm_mine");
 				const ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
 				await cosmicSignatureGameProxy.bid((-1), "", { value: ethBidPrice_ });
 				const cstBalanceAmount_ = await cosmicSignatureToken.balanceOf(owner.address);
 				const nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice();
-				// console.log(i, j, Number(nextCstBidPrice_) / (10.0 ** 18.0), Number(cstBalanceAmount_) / (10.0 ** 18.0));
-				if (nextCstBidPrice_ <= cstBalanceAmount_) {
+				if (cstBalanceAmount_ >= nextCstBidPrice_) {
+					// console.log(i, j, Number(cstBalanceAmount_) / (10.0 ** 18.0), Number(nextCstBidPrice_) / (10.0 ** 18.0));
 					await cosmicSignatureGameProxy.bidWithCst(nextCstBidPrice_, "");
 					break;
 				}
 			}
-
-			// await hre.ethers.provider.send("evm_increaseTime", [timeBump]);
-			// await hre.ethers.provider.send("evm_mine");
-			// let cstDutchAuctionDuration_ = await cosmicSignatureGameProxy.getCstDutchAuctionDurations()[0];
 		}
 	});
 });
