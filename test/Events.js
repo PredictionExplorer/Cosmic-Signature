@@ -330,11 +330,11 @@ describe("Events", function () {
 			.withArgs(mainPrizeTimeIncrementInMicroSeconds_);
 		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).to.equal(mainPrizeTimeIncrementInMicroSeconds_);
 
-		const timeIncrease_ = 1001n;
-		await expect(cosmicSignatureGameProxy.connect(owner).setTimeIncrease(timeIncrease_))
-			.to.emit(cosmicSignatureGameProxy, "TimeIncreaseChanged")
-			.withArgs(timeIncrease_);
-		expect(await cosmicSignatureGameProxy.timeIncrease()).to.equal(timeIncrease_);
+		const mainPrizeTimeIncrementIncreaseDivisor_ = 1001n;
+		await expect(cosmicSignatureGameProxy.connect(owner).setMainPrizeTimeIncrementIncreaseDivisor(mainPrizeTimeIncrementIncreaseDivisor_))
+			.to.emit(cosmicSignatureGameProxy, "MainPrizeTimeIncrementIncreaseDivisorChanged")
+			.withArgs(mainPrizeTimeIncrementIncreaseDivisor_);
+		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementIncreaseDivisor()).to.equal(mainPrizeTimeIncrementIncreaseDivisor_);
 
 		const initialSecondsUntilPrize_ = 1004n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setInitialSecondsUntilPrize(initialSecondsUntilPrize_))

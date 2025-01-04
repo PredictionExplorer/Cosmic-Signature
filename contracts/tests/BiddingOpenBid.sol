@@ -205,7 +205,7 @@ abstract contract BiddingOpenBid is
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// Comment-202409179 applies.
-		uint256 price = _getNextCstBidPrice();
+		uint256 price = getNextCstBidPrice();
 
 		// Comment-202412045 applies.
 		require(
@@ -243,23 +243,13 @@ abstract contract BiddingOpenBid is
 			Math.max(price * CosmicSignatureConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
 		startingBidPriceCST = newStartingBidPriceCst_;
 
-		lastCstBidTimeStamp = block.timestamp;
+		cstDutchAuctionBeginTimeStamp = block.timestamp;
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
 
-	function getNextCstBidPrice() external view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 nextCstBidPrice_ = (lastBidderAddress == address(0)) ? type(uint256).max : _getNextCstBidPrice();
-			return nextCstBidPrice_;
-		}
-	}
-
-	function _getNextCstBidPrice() internal view returns(uint256) {
+	function getNextCstBidPrice() public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -279,8 +269,7 @@ abstract contract BiddingOpenBid is
 		// #enable_smtchecker */
 		{
 			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-			int256 cstDutchAuctionElapsedDuration_ =
-				(lastBidderAddress == address(0)) ? type(int256).min : _getCstDutchAuctionElapsedDuration();
+			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
 			return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
 		}
 	}
@@ -300,7 +289,7 @@ abstract contract BiddingOpenBid is
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(lastCstBidTimeStamp);
+			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginTimeStamp);
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}
@@ -331,9 +320,11 @@ abstract contract BiddingOpenBid is
 		if (lastBidderAddress == address(0)) {
 
 			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
+			cstDutchAuctionBeginTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
+			_extendMainPrizeTime();
 		}
 
 		lastBidderAddress = msg.sender;
@@ -372,15 +363,14 @@ abstract contract BiddingOpenBid is
 		// // 		);
 		// // }
 
-		_extendMainPrizeTime();
+		// _extendMainPrizeTime();
 	}
 
-	/// @notice Extend the time until the prize can be claimed
-	/// @dev This function increases the prize time and adjusts the time increase factor
+	/// @notice Extends `mainPrizeTime`.
 	function _extendMainPrizeTime() internal {
 		uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
-		mainPrizeTimeIncrementInMicroSeconds = mainPrizeTimeIncrementInMicroSeconds * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		// mainPrizeTimeIncrementInMicroSeconds += ...
 	}
 
 	function getDurationUntilActivation() external view override returns(int256) {

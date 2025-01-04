@@ -86,7 +86,7 @@ contract CosmicSignatureGame is
 		// charityAddress =
 		// // numDonatedNfts =
 		mainPrizeTimeIncrementInMicroSeconds = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT * CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
-		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
+		mainPrizeTimeIncrementIncreaseDivisor = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// mainPrizeTime =
 		// roundNum = 0;
@@ -96,16 +96,14 @@ contract CosmicSignatureGame is
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 
-		// [Comment-202411211]
-		// todo-0 This logic is no longer needed.
-		// todo-0 Init `lastCstBidTimeStamp` on the 1st bid in a round.
-		// If this condition is `true` it's likely that `setActivationTime` will not be called,
-		// which implies that this is likely our last chance to initialize `lastCstBidTimeStamp`.
-		// [/Comment-202411211]
-		if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-			// Comment-202411168 applies.
-			lastCstBidTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		}
+		// // [Comment-202411211]
+		// // If this condition is `true` it's likely that `setActivationTime` will not be called,
+		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginTimeStamp`.
+		// // [/Comment-202411211]
+		// if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
+		// 	// Comment-202411168 applies.
+		// 	cstDutchAuctionBeginTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		// }
 
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;

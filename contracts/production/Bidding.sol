@@ -171,7 +171,7 @@ abstract contract Bidding is
 		//
 		// todo-1 >>> Confirmed: zero bids are OK.
 		// [/Comment-202409179]
-		uint256 price = _getNextCstBidPrice();
+		uint256 price = getNextCstBidPrice();
 
 		// Comment-202412045 applies.
 		require(
@@ -226,26 +226,16 @@ abstract contract Bidding is
 			Math.max(price * CosmicSignatureConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
 		startingBidPriceCST = newStartingBidPriceCst_;
 
-		lastCstBidTimeStamp = block.timestamp;
+		cstDutchAuctionBeginTimeStamp = block.timestamp;
 		// todo-1 Should we not save this if `price` is zero?
 		// todo-1 But better don't allow zero price bids.
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
-		// todo-1 When raising this event, in some cases pass zero instead of -1.
+		// todo-1 When raising this event, maybe in some cases pass zero instead of -1.
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
 
-	function getNextCstBidPrice() external view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 nextCstBidPrice_ = (lastBidderAddress == address(0)) ? type(uint256).max : _getNextCstBidPrice();
-			return nextCstBidPrice_;
-		}
-	}
-
-	function _getNextCstBidPrice() internal view returns(uint256) {
+	function getNextCstBidPrice() public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -265,8 +255,7 @@ abstract contract Bidding is
 		// #enable_smtchecker */
 		{
 			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-			int256 cstDutchAuctionElapsedDuration_ =
-				(lastBidderAddress == address(0)) ? type(int256).min : _getCstDutchAuctionElapsedDuration();
+			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
 			return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
 		}
 	}
@@ -286,7 +275,7 @@ abstract contract Bidding is
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(lastCstBidTimeStamp);
+			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginTimeStamp);
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}
@@ -318,9 +307,11 @@ abstract contract Bidding is
 
 			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp);
+			cstDutchAuctionBeginTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();
+			_extendMainPrizeTime();
 		}
 
 		lastBidderAddress = msg.sender;
@@ -362,24 +353,19 @@ abstract contract Bidding is
 		// // 		);
 		// // }
 
-		// todo-1 On the first bid in a round, don't increase `mainPrizeTime` here. Only increase `mainPrizeTimeIncrementInMicroSeconds`.
-		// todo-1 So split this function into 2 functions
-		// todo-1 and call the one that increases `mainPrizeTime` where we check `lastBidderAddress == address(0)`.
-		// todo-1 Remember to refactor `BiddingOpenBid` too.
-		_extendMainPrizeTime();
+		// _extendMainPrizeTime();
 	}
 
-	/// @notice Extend the time until the prize can be claimed
-	/// @dev This function increases the prize time and adjusts the time increase factor
+	/// @notice Extends `mainPrizeTime`.
 	function _extendMainPrizeTime() internal {
-		// todo-1 Consider adding a method to calculate and return this.
-		// todo-1 Remember to add it to `BiddingOpenBid` too.
-		// todo-1 Or it belongs to `SystemManagement`?
+		// todo-1 ??? Consider adding a method to calculate and return this.
+		// todo-1 ??? Remember to add it to `BiddingOpenBid` too.
+		// todo-1 ??? Or it belongs to `SystemManagement`? (Maybe not.)
+		// todo-1 But we already have the `mainPrizeTimeIncrementInMicroSeconds` method, so maybe we don't need another similar one.
 		uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
 		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, mainPrizeTimeIncrementInMicroSeconds);
-		// todo-0 Don't do this on each bid.
-		mainPrizeTimeIncrementInMicroSeconds = mainPrizeTimeIncrementInMicroSeconds * timeIncrease / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		// mainPrizeTimeIncrementInMicroSeconds += ...
 	}
 
 	function getDurationUntilActivation() external view override returns(int256) {

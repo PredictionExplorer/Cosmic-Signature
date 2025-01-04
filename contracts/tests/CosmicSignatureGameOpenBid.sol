@@ -82,7 +82,7 @@ contract CosmicSignatureGameOpenBid is
 		// charityAddress =
 		// // numDonatedNfts =
 		mainPrizeTimeIncrementInMicroSeconds = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT * CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
-		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
+		mainPrizeTimeIncrementIncreaseDivisor = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR;
 		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// mainPrizeTime =
 		// roundNum = 0;
@@ -92,11 +92,11 @@ contract CosmicSignatureGameOpenBid is
 		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 
-		// Comment-202411211 applies.
-		if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-			// Comment-202411168 applies.
-			lastCstBidTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		}
+		// // Comment-202411211 applies.
+		// if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
+		// 	// Comment-202411168 applies.
+		// 	cstDutchAuctionBeginTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		// }
 
 		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
 		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;

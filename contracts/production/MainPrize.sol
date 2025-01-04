@@ -51,7 +51,7 @@ abstract contract MainPrize is
 			);
 		} else {
 			// Comment-202411169 relates.
-			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsInRound("There have been no bids in the current bidding round."));
+			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsInRound("There have been no bids in the current bidding round yet."));
 			
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			require(
@@ -375,6 +375,7 @@ abstract contract MainPrize is
 		// todo-1 Consider to not reset some variables.
 		// todo-1 Not changing `startingBidPriceCST`. Is it OK?
 
+		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
 		++ roundNum;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);

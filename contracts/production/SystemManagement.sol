@@ -89,13 +89,12 @@ abstract contract SystemManagement is
 	function _setActivationTime(uint256 newValue_) internal {
 		activationTime = newValue_;
 
-		// [Comment-202411168]
-		// todo-0 We no longer need this. Instead, assign this on the 1st bid, which is required to be ETH.
-		// One might want to ensure that this is not in the past.
-		// But `activationTime` is really not supposed to be in the past.
-		// So keeping it simple and effiicient.
-		// [/Comment-202411168]
-		lastCstBidTimeStamp = newValue_;
+		// // [Comment-202411168]
+		// // One might want to ensure that this is not in the past.
+		// // But `activationTime` is really not supposed to be in the past.
+		// // So keeping it simple and effiicient.
+		// // [/Comment-202411168]
+		// cstDutchAuctionBeginTimeStamp = newValue_;
 
 		emit ActivationTimeChanged(newValue_);
 	}
@@ -184,9 +183,9 @@ abstract contract SystemManagement is
 		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
 	}
 
-	function setTimeIncrease(uint256 newValue_) external override onlyOwner onlyInactive {
-		timeIncrease = newValue_;
-		emit TimeIncreaseChanged(newValue_);
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		mainPrizeTimeIncrementIncreaseDivisor = newValue_;
+		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
 	}
 
 	function setInitialSecondsUntilPrize(uint256 newValue_) external override onlyOwner onlyInactive {

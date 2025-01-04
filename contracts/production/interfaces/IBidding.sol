@@ -80,12 +80,12 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// The price decreases linearly over the Dutch auction duration, and can become zero.
 	/// todo-1 Confirmed: zero price is OK.
 	/// @return The next CST bid price, in Wei.
-	/// If nobody placed a bid in the current bidding round yet, returns the maximum possible value.
+	/// Comment-202501022 applies to the return value.
 	/// @dev Comment-202409179 relates.
 	function getNextCstBidPrice() external view returns(uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
-	/// If nobody placed a bid in the current bidding round yet, returns the minimum possible value for the elapsed duration.
+	/// Comment-202501022 applies to the returned elapsed duration.
 	function getCstDutchAuctionDurations() external view returns(uint256, int256);
 
 	/// @return The number of seconds until the current bidding round activates,

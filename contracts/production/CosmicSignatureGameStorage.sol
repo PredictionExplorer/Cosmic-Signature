@@ -133,24 +133,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411173 relates.
 	/// [/Comment-202411174]
 	/// [Comment-202411067]
-	/// We slightly exponentially increase this on every bid, based on `timeIncrease`.
-	/// todo-0 Not on every bid any more?
+	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
 	/// [/Comment-202411067]
 	/// todo-1 Reference Comment-202501025.
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
 	/// @notice Comment-202411064 applies.
-	/// Equals the number of microseconds per second plus a small fraction of it.
-	/// todo-0 But this will now be a divisor.
+	/// Comment-202501025 applies.
 	/// Comment-202411067 relates.
-	/// todo-1 Since we now increase `mainPrizeTimeIncrementInMicroSeconds` once per round,
-	/// todo-1 Taras needs to simulate a better value for this.
-	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
-	uint256 public timeIncrease;
+	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-1 Rename to `roundInitialDuration`.
-	/// todo-1 It's really not round duration, but rather duration until the main prize.
+	/// todo-0 ??? Rename to `roundInitialDuration`.
+	/// todo-0 It's really not round duration, but rather duration until the main prize.
 	uint256 public initialSecondsUntilPrize;
 
 	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
@@ -197,13 +192,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202501025]
 	uint256 public cstDutchAuctionDurationDivisor;
 
-	/// @notice Last CST bid timestamp.
-	/// A.k.a. CST Dutch auction start timestamp.
+	/// @notice When CST Dutch auction began.
 	/// Comment-202501022 applies.
 	/// @dev Comment-202411168 relates.
-	/// todo-0 This is really not last CST bid timestamp, but rather CST Dutch auction start timestamp.
-	/// todo-0 So rename this.
-	uint256 public lastCstBidTimeStamp;
+	uint256 public cstDutchAuctionBeginTimeStamp;
 
 	/// @notice
 	/// [Comment-202411066]

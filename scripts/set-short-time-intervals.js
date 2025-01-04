@@ -13,18 +13,17 @@ const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function set_parameters(testingAcct, cosmicSignatureGame) {
-	// todo-0 Rename this like the respectiva variable in the contract.
-	let microSeconds = hre.ethers.BigNumber.from("180000000");
-	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(microSeconds);
+	const mainPrizeTimeIncrementInMicroSeconds_ = 180_000_000n;
+	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_);
 	// todo-0 Rename this like the respectiva variable in the contract.
 	// todo-0 But this is no longer needed.
-	let initialSeconds = hre.ethers.BigNumber.from("60");
+	const initialSeconds = 60n;
 	await cosmicSignatureGame.connect(testingAcct).setInitialSecondsUntilPrize(initialSeconds);
 	// todo-0 Rename this like the respectiva variable in the contract.
-	let timeoutDuration = hre.ethers.BigNumber.from("90");
+	const timeoutDuration = 90n;
 	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDuration);
 	// todo-0 Fhrase these better.
-	console.log("Main prize time increment in microseconds =", microSeconds);
+	console.log("Main prize time increment in microseconds =", mainPrizeTimeIncrementInMicroSeconds_);
 	console.log("Initial duration until main prize =", initialSeconds);
 	console.log("Timeout duration to claim main prize =", timeoutDuration);
 }

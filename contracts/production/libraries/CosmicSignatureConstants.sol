@@ -73,8 +73,13 @@ library CosmicSignatureConstants {
 	uint256 internal constant MAX_MESSAGE_LENGTH = 280;
 
 	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
-	/// todo-1 Rename `INITIAL...` to `DEFAULT...`.
-	uint256 internal constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
+
+	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
+	/// @dev todo-1 Since we now increase `mainPrizeTimeIncrementInMicroSeconds` once per round,
+	/// todo-1 Taras needs to simulate a better value for this.
+	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
+	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
+
 	/// todo-0 Rename to `INITIAL_INITIAL_...`?
 	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.
 	uint256 internal constant INITIAL_SECONDS_UNTIL_PRIZE = 1 days;
