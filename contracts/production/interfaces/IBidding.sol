@@ -92,6 +92,10 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// or a non-positive value if it's already active.
 	function getDurationUntilActivation() external view returns(int256);
 
+	/// @return The number of seconds since the current bidding round activated,
+	/// or a negative value if it's not yet active.
+	function getDurationElapsedSinceActivation() external view returns(int256);
+
 	/// @dev todo-1 Does this belong to `IMainPrize`? But `IBidding` doesn't derive from it. At least comment.
 	function getInitialDurationUntilMainPrize() external view returns(uint256);
 

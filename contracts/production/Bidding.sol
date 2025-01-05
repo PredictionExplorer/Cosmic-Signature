@@ -376,13 +376,23 @@ abstract contract Bidding is
 		// mainPrizeTimeIncrementInMicroSeconds += ...
 	}
 
-	function getDurationUntilActivation() external view override returns(int256) {
+	function getDurationUntilActivation() public view override returns(int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 durationUntilActivation_ = int256(activationTime) - int256(block.timestamp);
+			int256 durationUntilActivation_ = ( - getDurationElapsedSinceActivation() );
 			return durationUntilActivation_;
+		}
+	}
+
+	function getDurationElapsedSinceActivation() public view override returns(int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			int256 durationElapsedSinceActivation_ = int256(block.timestamp) - int256(activationTime);
+			return durationElapsedSinceActivation_;
 		}
 	}
 

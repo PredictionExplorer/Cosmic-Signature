@@ -168,17 +168,16 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `priceIncrease`.
 	/// [/Comment-202411065]
-	/// todo-1 Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
+	/// todo-1 ??? Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
 	/// todo-1 Comment and document that after the owner executes the setter, they must set activation time to a point in the past
 	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
+	/// todo-1 The above now applies to `roundInitialEthBidPriceDivisor`.
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 Add a setter for this.
 	uint256 public roundInitialEthBidPriceMultiplier;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 Add a setter for this.
 	uint256 public roundInitialEthBidPriceDivisor;
 
 	/// @notice Comment-202411064 applies.
