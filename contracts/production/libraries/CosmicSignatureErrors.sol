@@ -53,11 +53,6 @@ library CosmicSignatureErrors {
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	/// @notice Thrown when an action is attempted that is not allowed after someone has already placed a bid
-	/// in the current bidding round.
-	/// @param errStr Description of the error.
-	error BidHasBeenPlacedInCurrentRound(string errStr);
-
 	// /// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
 	// /// @param errStr Description of the error.
 	// /// @param providedValue The actual provided value
@@ -74,6 +69,20 @@ library CosmicSignatureErrors {
 
 	// #endregion
 	// #region Bidding Errors
+
+	/// @notice Thrown when an action is attempted that is not allowed before someone places a bid
+	/// in the current bidding round.
+	/// @param errStr Description of the error.
+	error NoBidsPlacedInCurrentRound(string errStr);
+
+	/// @notice Thrown when an action is attempted that is not allowed after someone has already placed a bid
+	/// in the current bidding round.
+	/// @param errStr Description of the error.
+	error BidHasBeenPlacedInCurrentRound(string errStr);
+
+	/// @notice Thrown when someone attempts to place a bid of a type that is not currently allowed.
+	/// @param errStr Description of the error.
+	error WrongBidType(string errStr);
 
 	/// @notice Thrown when the amount received for a bid is less than the required minimum.
 	/// @param errStr Description of the error.
@@ -141,10 +150,6 @@ library CosmicSignatureErrors {
 
 	// #endregion
 	// #region Claim Prize Errors
-
-	/// @notice Thrown when there have been no bids in the current bidding round.
-	/// @param errStr Description of the error.
-	error NoBidsInRound(string errStr);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error.

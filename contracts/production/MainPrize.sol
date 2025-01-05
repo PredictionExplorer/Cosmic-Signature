@@ -51,7 +51,7 @@ abstract contract MainPrize is
 			);
 		} else {
 			// Comment-202411169 relates.
-			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsInRound("There have been no bids in the current bidding round yet."));
+			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet."));
 			
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			require(
@@ -374,10 +374,9 @@ abstract contract MainPrize is
 	function _prepareNextRound() internal {
 		// todo-1 Consider to not reset some variables.
 
-		// todo-0 Not changing `cstDutchAuctionBeginningBidPrice`. Is it OK?
-
 		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
 		++ roundNum;
+		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
 		// lastBidType = CosmicSignatureConstants.BidType.ETH;

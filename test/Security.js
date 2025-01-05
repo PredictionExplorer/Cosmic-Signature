@@ -72,7 +72,7 @@ describe("Security", function () {
 		await expect(mainEthPrizeAmount_).greaterThan(0);
 		// let balance_before = await hre.ethers.provider.getBalance(addr1);
 		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize())
-			.revertedWithCustomError(cosmicSignatureGameProxy, "NoBidsInRound");
+			.revertedWithCustomError(cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound");
 	});
 
 	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.

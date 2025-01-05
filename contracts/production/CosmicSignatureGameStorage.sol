@@ -204,6 +204,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
+	uint256 public nextRoundCstDutchAuctionBeginningBidPrice;
+
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;

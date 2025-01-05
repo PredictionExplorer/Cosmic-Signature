@@ -121,7 +121,7 @@ describe("Bidding", function () {
 		let w = await prizesWallet.mainPrizeWinnerAddresses(0);
 		expect(w).to.equal(addr3.address);
 
-		await expect(cosmicSignatureGameProxy.connect(addr2).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsInRound");
+		await expect(cosmicSignatureGameProxy.connect(addr2).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsPlacedInCurrentRound");
 
 		// after the prize has been claimed, let's bid again!
 		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();

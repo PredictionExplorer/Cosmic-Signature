@@ -154,7 +154,9 @@ abstract contract Bidding is
 	}
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
-		// todo-0 The 1st bid shall be ETH.
+		// [Comment-202501045]
+		// We are going to `require` that the first bid in a bidding round is ETH near Comment-202501044.
+		// [/Comment-202501045]
 
 		// [Comment-202409179]
 		// This can be zero.
@@ -223,10 +225,11 @@ abstract contract Bidding is
 			Math.max(price * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
-		cstDutchAuctionBeginningTimeStamp = block.timestamp;
-		// todo-1 Should we not save this if `price` is zero?
-		// todo-1 But better don't allow zero price bids.
+		if (lastCstBidderAddress == address(0)) {
+			nextRoundCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+		}
 		lastCstBidderAddress = msg.sender;
+		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		// todo-1 When raising this event, maybe in some cases pass zero instead of -1.
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
@@ -301,6 +304,14 @@ abstract contract Bidding is
 
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
+
+			// [Comment-202501044]
+			// It's probably more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
+			// todo-1 Cross-ref with where we ensure that ETH bid price cannot be zero, even with a RandomWalk NFT.
+			// todo-1 Mke sure it's correct to make this validation at this point, rather than sooner.
+			// todo-1 Write a comment explaining things.
+			// [/Comment-202501044]
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp);

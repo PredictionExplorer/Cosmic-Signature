@@ -204,6 +204,8 @@ abstract contract BiddingOpenBid is
 	}
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
+		// Comment-202501045 applies.
+
 		// Comment-202409179 applies.
 		uint256 price = getNextCstBidPrice();
 
@@ -243,8 +245,11 @@ abstract contract BiddingOpenBid is
 			Math.max(price * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
-		cstDutchAuctionBeginningTimeStamp = block.timestamp;
+		if (lastCstBidderAddress == address(0)) {
+			nextRoundCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+		}
 		lastCstBidderAddress = msg.sender;
+		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
@@ -318,6 +323,9 @@ abstract contract BiddingOpenBid is
 
 		// First bid of the round?
 		if (lastBidderAddress == address(0)) {
+
+			// Comment-202501044 applies.
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
