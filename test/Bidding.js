@@ -804,4 +804,25 @@ describe("Bidding", function () {
 			}
 		}
 	});
+	it("The getDurationUntilActivation method behaves correctly", async function () {
+		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+
+		// Issue. `loadFixture` doesn't remove blocks generated afterwards and/or has some other similar issues.
+		// So this should help to make latest block timestamp more deterministic.
+		// await hre.ethers.provider.send('evm_increaseTime', [1]);
+		// todo-1 I might need to make this comment numbered and reference it from some other places.
+		await hre.ethers.provider.send("evm_mine");
+
+		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
+		const newActivationTime_ = latestBlock_.timestamp + 2;
+		await cosmicSignatureGameProxy.setActivationTime(newActivationTime_);
+
+		for ( let counter_ = -1; counter_ <= 1; ++ counter_ ) {
+			latestBlock_ = await hre.ethers.provider.getBlock("latest");
+			expect(latestBlock_.timestamp).equal(newActivationTime_ + counter_);
+			const durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
+			expect(durationUntilActivation_).equal( - counter_ );
+			await hre.ethers.provider.send("evm_mine");
+		}
+	});
 });
