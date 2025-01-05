@@ -89,9 +89,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `startingBidPriceCSTMinLimit` is changed.
+	/// @notice Emitted when `cstDutchAuctionBeginningBidPriceMinLimit` is changed.
 	/// @param newValue The new value.
-	event StartingBidPriceCSTMinLimitChanged(uint256 newValue);
+	event CstDutchAuctionBeginningBidPriceMinLimitChanged(uint256 newValue);
 
 	/// @notice Emitted when `tokenReward` is changed.
 	/// @param newValue The new value.

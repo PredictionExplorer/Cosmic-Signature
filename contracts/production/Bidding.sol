@@ -160,16 +160,13 @@ abstract contract Bidding is
 		// This can be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
 		// We are OK with that.
-		// todo-1 Confirm with them again that this is OK.
-		// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729031458458109
-		// todo-1 Maybe require at least 1 Wei bid.
-		// todo-1 An alternative would be to enforce `startingBidPriceCSTMinLimit`.
-		// todo-1 Or better add another smaller min limit.
+		// todo-1 +++ Confirm with them again that this is OK.
+		// todo-1 ---Maybe require at least 1 Wei bid.
+		// todo-1 ---An alternative would be to enforce `cstDutchAuctionBeginningBidPriceMinLimit`.
+		// todo-1 ---Or better add another smaller min limit.
 		// todo-1 That said, given that we mint 100 CSTs for each bid, it's almost impossible that the bid price will fall below that.
 		// todo-1 So maybe leave this logic and comment that it minimizes transaction fees.
 		// todo-1 Cros-ref with where we mint 100 CSTs for each bidder.
-		//
-		// todo-1 >>> Confirmed: zero bids are OK.
 		// [/Comment-202409179]
 		uint256 price = getNextCstBidPrice();
 
@@ -222,11 +219,11 @@ abstract contract Bidding is
 		// [Comment-202409163]
 		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.
 		// [/Comment-202409163]
-		uint256 newStartingBidPriceCst_ =
-			Math.max(price * CosmicSignatureConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
-		startingBidPriceCST = newStartingBidPriceCst_;
+		uint256 newCstDutchAuctionBeginningBidPrice_ =
+			Math.max(price * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
-		cstDutchAuctionBeginTimeStamp = block.timestamp;
+		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		// todo-1 Should we not save this if `price` is zero?
 		// todo-1 But better don't allow zero price bids.
 		lastCstBidderAddress = msg.sender;
@@ -244,7 +241,7 @@ abstract contract Bidding is
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
 			}
-			uint256 nextCstBidPrice_ = startingBidPriceCST * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
+			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
 			return nextCstBidPrice_;
 		}
 	}
@@ -275,7 +272,7 @@ abstract contract Bidding is
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginTimeStamp);
+			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginningTimeStamp);
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}
@@ -307,7 +304,7 @@ abstract contract Bidding is
 
 			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp);
-			cstDutchAuctionBeginTimeStamp = block.timestamp;
+			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();

@@ -162,7 +162,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	activationTime = newValue_;
 	//
 	// 	// // Comment-202411168 applies.
-	// 	// cstDutchAuctionBeginTimeStamp = newValue_;
+	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
 	// }
 
 	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {

@@ -95,11 +95,11 @@ contract CosmicSignatureGameOpenBid is
 		// // Comment-202411211 applies.
 		// if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
 		// 	// Comment-202411168 applies.
-		// 	cstDutchAuctionBeginTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		// }
 
-		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
-		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
+		cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
+		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.DEFAULT_TOKEN_REWARD;
 		// lastBidderAddress = address(0);
 		// lastCstBidderAddress =

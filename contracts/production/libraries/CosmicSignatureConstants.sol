@@ -103,13 +103,13 @@ library CosmicSignatureConstants {
 	/// @dev todo-1 Rename any "Auction" to "Dutch Auction".
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
-	uint256 internal constant STARTING_BID_PRICE_CST_MULTIPLIER = 2;
+	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
-	/// @notice Initial `startingBidPriceCST`.
-	/// Default `startingBidPriceCSTMinLimit`.
-	uint256 internal constant STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT = 200 ether;
+	/// @notice Default `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// Initial `cstDutchAuctionBeginningBidPrice`.
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
-	// /// @notice `startingBidPriceCSTMinLimit` "hard" min limit.
+	// /// @notice `cstDutchAuctionBeginningBidPriceMinLimit` "hard" min limit.
 	// /// This is used as a min limit on another min limit.
 	// /// @dev This should not be smaller because we calculate CST bid price in the `1 / MILLION` resolution
 	// /// and we want to support a sufficient number of significant digits.

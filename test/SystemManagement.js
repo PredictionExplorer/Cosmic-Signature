@@ -99,9 +99,9 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setCstDutchAuctionDurationDivisor(11n);
 		expect(await cosmicSignatureGameProxy.cstDutchAuctionDurationDivisor()).to.equal(11n);
 
-		await cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(hre.ethers.parseEther("111"));
-		expect(await cosmicSignatureGameProxy.startingBidPriceCSTMinLimit()).to.equal(hre.ethers.parseEther("111"));
-		// await expect(cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(111n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ProvidedStartingBidPriceCSTMinLimitIsTooSmall");
+		await cosmicSignatureGameProxy.setCstDutchAuctionBeginningBidPriceMinLimit(hre.ethers.parseEther("111"));
+		expect(await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).to.equal(hre.ethers.parseEther("111"));
+		// await expect(cosmicSignatureGameProxy.setCstDutchAuctionBeginningBidPriceMinLimit(111n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ProvidedCstDutchAuctionBeginningBidPriceMinLimitIsTooSmall");
 
 		await cosmicSignatureGameProxy.setTokenReward(1234567890n);
 		expect(await cosmicSignatureGameProxy.tokenReward()).to.equal(1234567890n);
@@ -194,7 +194,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setRoundInitialEthBidPriceDivisor(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setPriceIncrease(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setCstDutchAuctionDurationDivisor(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		await expect(cosmicSignatureGameProxy.setStartingBidPriceCSTMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
+		await expect(cosmicSignatureGameProxy.setCstDutchAuctionBeginningBidPriceMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setTokenReward(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setMainEthPrizeAmountPercentage(26n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setChronoWarriorEthPrizeAmountPercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -347,7 +347,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setCstDutchAuctionDurationDivisor(11n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(addr1).setStartingBidPriceCSTMinLimit(1n))
+		await expect(cosmicSignatureGameProxy.connect(addr1).setCstDutchAuctionBeginningBidPriceMinLimit(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setTokenReward(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");

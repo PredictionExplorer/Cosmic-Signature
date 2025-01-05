@@ -239,11 +239,11 @@ abstract contract BiddingOpenBid is
 		// }
 
 		// Comment-202409163 applies.
-		uint256 newStartingBidPriceCst_ =
-			Math.max(price * CosmicSignatureConstants.STARTING_BID_PRICE_CST_MULTIPLIER, startingBidPriceCSTMinLimit);
-		startingBidPriceCST = newStartingBidPriceCst_;
+		uint256 newCstDutchAuctionBeginningBidPrice_ =
+			Math.max(price * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
-		cstDutchAuctionBeginTimeStamp = block.timestamp;
+		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		lastCstBidderAddress = msg.sender;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
@@ -258,7 +258,7 @@ abstract contract BiddingOpenBid is
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
 			}
-			uint256 nextCstBidPrice_ = startingBidPriceCST * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
+			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
 			return nextCstBidPrice_;
 		}
 	}
@@ -289,7 +289,7 @@ abstract contract BiddingOpenBid is
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginTimeStamp);
+			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginningTimeStamp);
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}
@@ -320,7 +320,7 @@ abstract contract BiddingOpenBid is
 		if (lastBidderAddress == address(0)) {
 
 			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
-			cstDutchAuctionBeginTimeStamp = block.timestamp;
+			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
 			_updateChampionsIfNeeded();

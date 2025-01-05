@@ -362,7 +362,7 @@ describe("Events", function () {
 
 		// todo-1 setCstDutchAuctionDurationDivisor
 
-		// todo-1 setStartingBidPriceCSTMinLimit
+		// todo-1 setCstDutchAuctionBeginningBidPriceMinLimit
 
 		// todo-1 setTokenReward
 

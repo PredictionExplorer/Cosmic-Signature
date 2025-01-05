@@ -94,7 +94,7 @@ abstract contract SystemManagement is
 		// // But `activationTime` is really not supposed to be in the past.
 		// // So keeping it simple and effiicient.
 		// // [/Comment-202411168]
-		// cstDutchAuctionBeginTimeStamp = newValue_;
+		// cstDutchAuctionBeginningTimeStamp = newValue_;
 
 		emit ActivationTimeChanged(newValue_);
 	}
@@ -213,18 +213,18 @@ abstract contract SystemManagement is
 		emit CstDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
-	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {
 		// require(
 		// 	newValue_ >= CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+		// 	CosmicSignatureErrors.ProvidedCstDutchAuctionBeginningBidPriceMinLimitIsTooSmall(
 		// 		// todo-9 Can I phrase this better? Maybe "starting CST bid price".
 		// 		"The provided starting bid price in CST min limit is too small.",
 		// 		newValue_,
 		// 		CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
 		// 	)
 		// );
-		startingBidPriceCSTMinLimit = newValue_;
-		emit StartingBidPriceCSTMinLimitChanged(newValue_);
+		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
+		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 
 	function setTokenReward(uint256 newValue_) external override onlyOwner onlyInactive {

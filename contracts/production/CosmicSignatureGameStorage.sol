@@ -195,20 +195,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice When CST Dutch auction began.
 	/// Comment-202501022 applies.
 	/// @dev Comment-202411168 relates.
-	uint256 public cstDutchAuctionBeginTimeStamp;
+	uint256 public cstDutchAuctionBeginningTimeStamp;
 
 	/// @notice
 	/// [Comment-202411066]
-	/// We don't let this fall below `startingBidPriceCSTMinLimit`.
+	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// [/Comment-202411066]
 	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
-	/// todo-1 Rename to `cstDutchAuctionStartingBidPrice`.
-	uint256 public startingBidPriceCST;
+	uint256 public cstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.
-	/// todo-1 Rename to `cstDutchAuctionStartingBidPriceMinLimit`.
-	uint256 public startingBidPriceCSTMinLimit;
+	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
 	/// @notice Comment-202411064 applies.
 	/// This number of CSTs is minted as a reward for each bid.

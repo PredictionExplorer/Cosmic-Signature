@@ -373,7 +373,8 @@ abstract contract MainPrize is
 	/// This method is called after the main prize has been claimed.
 	function _prepareNextRound() internal {
 		// todo-1 Consider to not reset some variables.
-		// todo-1 Not changing `startingBidPriceCST`. Is it OK?
+
+		// todo-0 Not changing `cstDutchAuctionBeginningBidPrice`. Is it OK?
 
 		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
 		++ roundNum;

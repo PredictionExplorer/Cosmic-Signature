@@ -108,7 +108,7 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external;
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
 	/// @notice Sets `tokenReward`.
 	/// Only the contract owner is permitted to call this method.
