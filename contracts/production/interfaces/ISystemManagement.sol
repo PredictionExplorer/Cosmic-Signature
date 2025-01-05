@@ -89,10 +89,10 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `initialSecondsUntilPrize`.
+	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setInitialSecondsUntilPrize(uint256 newValue_) external;
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
 
 	function setRoundInitialEthBidPriceMultiplier(uint256 newValue_) external;
 

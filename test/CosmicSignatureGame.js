@@ -34,8 +34,8 @@ describe("CosmicSignatureGame", function () {
 		expect(bidPriceAfter).greaterThan(ethBidPrice_);
 	});
 
-	// I have eliminated the `fallback` method.
-	// Now the call reverts "without a reason".
+	// Issue. I have eliminated the `fallback` method.
+	// So now the call reverts "without a reason".
 	it("The fallback method works", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		

@@ -327,7 +327,7 @@ abstract contract BiddingOpenBid is
 			// Comment-202501044 applies.
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
-			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
+			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
@@ -388,6 +388,16 @@ abstract contract BiddingOpenBid is
 		{
 			int256 durationUntilActivation_ = int256(activationTime) - int256(block.timestamp);
 			return durationUntilActivation_;
+		}
+	}
+
+	function getInitialDurationUntilMainPrize() public view override returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 initialDurationUntilMainPrize_ = mainPrizeTimeIncrementInMicroSeconds / initialDurationUntilMainPrizeDivisor;
+			return initialDurationUntilMainPrize_;
 		}
 	}
 

@@ -188,9 +188,9 @@ abstract contract SystemManagement is
 		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
 	}
 
-	function setInitialSecondsUntilPrize(uint256 newValue_) external override onlyOwner onlyInactive {
-		initialSecondsUntilPrize = newValue_;
-		emit InitialSecondsUntilPrizeChanged(newValue_);
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		initialDurationUntilMainPrizeDivisor = newValue_;
+		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
 	}
 
 	function setRoundInitialEthBidPriceMultiplier(uint256 newValue_) external override onlyOwner onlyInactive {
@@ -216,7 +216,7 @@ abstract contract SystemManagement is
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {
 		// require(
 		// 	newValue_ >= CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-		// 	CosmicSignatureErrors.ProvidedCstDutchAuctionBeginningBidPriceMinLimitIsTooSmall(
+		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCstMinLimitIsTooSmall(
 		// 		// todo-9 Can I phrase this better? Maybe "starting CST bid price".
 		// 		"The provided starting bid price in CST min limit is too small.",
 		// 		newValue_,

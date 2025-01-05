@@ -80,9 +80,8 @@ library CosmicSignatureConstants {
 	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
 
-	/// todo-0 Rename to `INITIAL_INITIAL_...`?
-	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.
-	uint256 internal constant INITIAL_SECONDS_UNTIL_PRIZE = 1 days;
+	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
+	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
 
 	/// @notice Initial `nextEthBidPrice` for the first bidding round.
 	uint256 internal constant FIRST_ROUND_INITIAL_ETH_BID_PRICE = 0.0001 ether;
@@ -109,7 +108,7 @@ library CosmicSignatureConstants {
 	/// Initial `cstDutchAuctionBeginningBidPrice`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
-	// /// @notice `cstDutchAuctionBeginningBidPriceMinLimit` "hard" min limit.
+	// /// @notice `startingBidPriceCstMinLimit` "hard" min limit.
 	// /// This is used as a min limit on another min limit.
 	// /// @dev This should not be smaller because we calculate CST bid price in the `1 / MILLION` resolution
 	// /// and we want to support a sufficient number of significant digits.

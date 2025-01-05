@@ -336,11 +336,11 @@ describe("Events", function () {
 			.withArgs(mainPrizeTimeIncrementIncreaseDivisor_);
 		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementIncreaseDivisor()).to.equal(mainPrizeTimeIncrementIncreaseDivisor_);
 
-		const initialSecondsUntilPrize_ = 1004n;
-		await expect(cosmicSignatureGameProxy.connect(owner).setInitialSecondsUntilPrize(initialSecondsUntilPrize_))
-			.to.emit(cosmicSignatureGameProxy, "InitialSecondsUntilPrizeChanged")
-			.withArgs(initialSecondsUntilPrize_);
-		expect((await cosmicSignatureGameProxy.initialSecondsUntilPrize()).toString()).to.equal(initialSecondsUntilPrize_.toString());
+		const initialDurationUntilMainPrizeDivisor_ = 1004n;
+		await expect(cosmicSignatureGameProxy.connect(owner).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor_))
+			.to.emit(cosmicSignatureGameProxy, "InitialDurationUntilMainPrizeDivisorChanged")
+			.withArgs(initialDurationUntilMainPrizeDivisor_);
+		expect((await cosmicSignatureGameProxy.initialDurationUntilMainPrizeDivisor()).toString()).to.equal(initialDurationUntilMainPrizeDivisor_.toString());
 
 		const roundInitialEthBidPriceMultiplier_ = 1005n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setRoundInitialEthBidPriceMultiplier(roundInitialEthBidPriceMultiplier_))

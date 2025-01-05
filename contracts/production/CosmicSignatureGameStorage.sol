@@ -144,9 +144,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-0 ??? Rename to `roundInitialDuration`.
-	/// todo-0 It's really not round duration, but rather duration until the main prize.
-	uint256 public initialSecondsUntilPrize;
+	/// Comment-202501025 applies.
+	uint256 public initialDurationUntilMainPrizeDivisor;
 
 	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
 	/// [Comment-202412152]
@@ -175,9 +174,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.
+	/// todo-0 Add a setter for this.
 	uint256 public roundInitialEthBidPriceMultiplier;
 
 	/// @notice Comment-202411064 applies.
+	/// todo-0 Add a setter for this.
 	uint256 public roundInitialEthBidPriceDivisor;
 
 	/// @notice Comment-202411064 applies.
@@ -205,6 +206,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
 	uint256 public nextRoundCstDutchAuctionBeginningBidPrice;
+
+	// uint256 public startingBidPriceCstMinLimit;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.

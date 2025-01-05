@@ -53,11 +53,11 @@ library CosmicSignatureErrors {
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	// /// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
+	// /// @notice Thrown when an attempt is made to set `startingBidPriceCstMinLimit` to a too small value.
 	// /// @param errStr Description of the error.
-	// /// @param providedValue The actual provided value
-	// /// @param valueHardMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
-	// error ProvidedCstDutchAuctionBeginningBidPriceMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueHardMinLimit);
+	// /// @param providedValue The actual provided value.
+	// /// @param valueHardMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit).
+	// error ProvidedStartingBidPriceCstMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueHardMinLimit);
 
 	/// @notice Thrown when percentage validation fails
 	/// @param errStr Description of the error.

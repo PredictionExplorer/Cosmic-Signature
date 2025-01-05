@@ -69,9 +69,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `initialSecondsUntilPrize` is changed.
+	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
 	/// @param newValue The new value.
-	event InitialSecondsUntilPrizeChanged(uint256 newValue);
+	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `roundInitialEthBidPriceMultiplier` is changed.
 	/// @param newValue The new value.

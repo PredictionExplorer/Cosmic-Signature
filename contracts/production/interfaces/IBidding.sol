@@ -92,6 +92,9 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// or a non-positive value if it's already active.
 	function getDurationUntilActivation() external view returns(int256);
 
+	/// @dev todo-1 Does this belong to `IMainPrize`? But `IBidding` doesn't derive from it. At least comment.
+	function getInitialDurationUntilMainPrize() external view returns(uint256);
+
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round
 	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.

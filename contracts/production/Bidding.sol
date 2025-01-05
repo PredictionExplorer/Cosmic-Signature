@@ -313,7 +313,7 @@ abstract contract Bidding is
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
-			mainPrizeTime = block.timestamp + initialSecondsUntilPrize;
+			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
 			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp);
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
@@ -383,6 +383,16 @@ abstract contract Bidding is
 		{
 			int256 durationUntilActivation_ = int256(activationTime) - int256(block.timestamp);
 			return durationUntilActivation_;
+		}
+	}
+
+	function getInitialDurationUntilMainPrize() public view override returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 initialDurationUntilMainPrize_ = mainPrizeTimeIncrementInMicroSeconds / initialDurationUntilMainPrizeDivisor;
+			return initialDurationUntilMainPrize_;
 		}
 	}
 

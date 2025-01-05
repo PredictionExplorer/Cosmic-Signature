@@ -1,9 +1,5 @@
 // todo-1 Rename this file to "set-short-durations.js".
 
-// todo-0 Revisit this. See todos.
-// todo-0 Set the durations that aren't proportional.
-// todo-0 Those are duration until activation and timeout to claim.
-
 // Sets short time intervals to avoid waiting for running tests
 
 "use strict";
@@ -13,19 +9,17 @@ const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 
 async function set_parameters(testingAcct, cosmicSignatureGame) {
-	const mainPrizeTimeIncrementInMicroSeconds_ = 180_000_000n;
+	// todo-0 Do we need to also set duration until activation here.
+
+	const mainPrizeTimeIncrementInMicroSeconds_ = 3n * 60n * 1_000_000n;
 	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_);
-	// todo-0 Rename this like the respectiva variable in the contract.
-	// todo-0 But this is no longer needed.
-	const initialSeconds = 60n;
-	await cosmicSignatureGame.connect(testingAcct).setInitialSecondsUntilPrize(initialSeconds);
-	// todo-0 Rename this like the respectiva variable in the contract.
-	const timeoutDuration = 90n;
-	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDuration);
-	// todo-0 Fhrase these better.
+	const initialDurationUntilMainPrizeDivisor_ = 60n * 1_000_000n;
+	await cosmicSignatureGame.connect(testingAcct).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor_);
+	const timeoutDurationToClaimMainPrize_ = 60n * 3n / 2n;
+	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize_);
 	console.log("Main prize time increment in microseconds =", mainPrizeTimeIncrementInMicroSeconds_);
-	console.log("Initial duration until main prize =", initialSeconds);
-	console.log("Timeout duration to claim main prize =", timeoutDuration);
+	console.log("Initial duration until main prize divisor =", initialDurationUntilMainPrizeDivisor_);
+	console.log("Timeout duration to claim main prize =", timeoutDurationToClaimMainPrize_);
 }
 
 async function main() {
