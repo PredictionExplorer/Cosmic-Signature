@@ -80,7 +80,7 @@ def main():
     # ---------------------------
     program_path = './target/release/three_body_problem'
     max_concurrent_executions = 1  # run how many tasks in parallel
-    N = 2  # how many times to run each parameter combo
+    N = 50  # how many times to run each parameter combo
 
     # ---------------------------
     # 2. Parameter Ranges
@@ -89,17 +89,17 @@ def main():
     possible_num_steps = [1_000_000]
     possible_num_sims = [100]
     possible_location = [250.0]
-    possible_velocity = [0.5, 2.0, 5.0]
+    possible_velocity = [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
     possible_min_mass = [100.0]
     possible_max_mass = [300.0]
 
     # Flags
     possible_avoid_effects = [False]
-    possible_no_video = [False]
+    possible_no_video = [True]
     possible_dynamic_bounds = [False]
 
     # Special color
-    possible_special_color = [None, "gold"]
+    possible_special_color = [None]
 
     # Analysis
     possible_max_points = [100_000]
@@ -140,7 +140,7 @@ def main():
 
     # We'll define our base seed in hex (without "0x").
     # Ensure it's an even length in hex digits, e.g. "775580" => 6 digits.
-    base_seed_hex_part = "775580"
+    base_seed_hex_part = "775581"
 
     # ---------------------------
     # 3. Construct all parameter combos
@@ -173,7 +173,7 @@ def main():
 
         for i in range(N):
             # We'll use 4-hex-digit suffix to keep total length even
-            seed_suffix_hex = f"{i:04X}"  
+            seed_suffix_hex = f"{i:04X}"
             # e.g., i=1 => '0001'; i=255 => '00FF'
             full_seed = f"0x{base_seed_hex_part}{seed_suffix_hex}"
 

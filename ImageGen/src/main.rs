@@ -20,6 +20,8 @@ use statrs::statistics::Statistics;
 use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
 
+use chrono::Utc; // for timestamp
+
 const APEN_M: usize = 2;
 const APEN_M1: usize = 3;
 const LLE_M: usize = 3;
@@ -746,7 +748,6 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
 
     for i in 0..emb_len {
         let query = &embedded[i];
-        // nearest_n=2 => we get 2 items, one is query itself, the other is the nearest distinct
         let nn_buffer = kdtree.nearest_n::<SquaredEuclidean>(query, 2);
 
         let nn1 = nn_buffer[0];
@@ -923,14 +924,31 @@ struct TrajectoryResult {
     total_score: usize, // higher is better
 }
 
-/// Returns (positions of best trajectory, info about best trajectory, masses of that best sim)
+/// A struct capturing the points each metric awarded to the best trajectory
+#[derive(Debug, Clone)]
+struct BestPoints {
+    chaos_pts: usize,
+    area_pts: usize,
+    dist_pts: usize,
+    apen_pts: usize,
+    lyap_pts: usize,
+}
+
+/// Returns (positions of best trajectory, info about best trajectory, masses of that best sim,
+/// plus some meta-info about how many sims are valid, and the points for each metric).
 fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_iters: usize,
     num_steps_sim: usize,
     num_steps_video: usize,
     max_points: usize,
-) -> (Vec<Vec<Vector3<f64>>>, TrajectoryResult, [f64; 3]) {
+) -> (
+    Vec<Vec<Vector3<f64>>>,
+    TrajectoryResult,
+    [f64; 3],
+    usize, // valid_count
+    BestPoints,
+) {
     println!("Running {} simulations to find the best orbit...", num_iters);
 
     // Create many random sets of bodies
@@ -1106,32 +1124,100 @@ fn select_best_trajectory(
     let chosen_bodies = &many_bodies[best_bodies_index];
     let positions_best = get_positions(chosen_bodies.clone(), num_steps_video);
 
-    // Print a short breakdown of how the best item got its total_score
-    println!("\nScore breakdown for best trajectory (valid index = {best_i}):");
-    println!(
-        "  - Chaos measure (lower better) = {:.4e}, awarded {} points",
-        best_tr.chaos, chaos_points[best_i]
-    );
-    println!(
-        "  - Avg triangle area (higher better) = {:.6}, awarded {} points",
-        best_tr.avg_area, area_points[best_i]
-    );
-    println!(
-        "  - Total distance (higher better) = {:.6}, awarded {} points",
-        best_tr.total_dist, dist_points[best_i]
-    );
-    println!(
-        "  - Approx. Entropy (ApEn) (higher better) = {:.6}, awarded {} points",
-        best_tr.ap_en, apen_points[best_i]
-    );
-    println!(
-        "  - Lyapunov exponent (higher better) = {:.6}, awarded {} points",
-        best_tr.lyap_exp, lyap_points[best_i]
-    );
-    println!("  ----------------------------------------------------");
-    println!("  => Final total score = {}", best_tr.total_score);
+    // We'll store the points for the best trajectory for CSV logging
+    let best_pts = BestPoints {
+        chaos_pts: chaos_points[best_i],
+        area_pts: area_points[best_i],
+        dist_pts: dist_points[best_i],
+        apen_pts: apen_points[best_i],
+        lyap_pts: lyap_points[best_i],
+    };
 
-    (positions_best, best_tr, best_masses)
+    (positions_best, best_tr, best_masses, valid_count, best_pts)
+}
+
+/// Append one line to a CSV file, creating it if needed.
+/// Includes all command-line args, final results, etc.
+fn append_to_csv(
+    args: &Args,
+    valid_sims: usize,
+    best_pts: &BestPoints,
+    best_tr: &TrajectoryResult,
+    best_masses: &[f64; 3],
+    num_iters: usize,
+) {
+    use std::fs::OpenOptions;
+    let path = "results.csv";
+
+    let file_exists = std::path::Path::new(path).exists();
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .expect("Cannot open or create results.csv");
+
+    // If file is newly created, write header:
+    if !file_exists {
+        let header = "timestamp,seed,file_name,num_steps,num_sims,location,velocity,\
+min_mass,max_mass,avoid_effects,no_video,dynamic_bounds,special_color,\
+max_points,video_tail_min,video_tail_max,image_tail_min,image_tail_max,\
+special_color_video_tail_min,special_color_video_tail_max,\
+special_color_image_tail_min,special_color_image_tail_max,\
+valid_sims,total_sims,\
+best_chaos_value,best_chaos_points,best_avg_area_value,best_avg_area_points,\
+best_dist_value,best_dist_points,best_apen_value,best_apen_points,\
+best_lyap_value,best_lyap_points,best_score,best_m1,best_m2,best_m3\n";
+        file.write_all(header.as_bytes()).unwrap();
+    }
+
+    let now_unix = Utc::now().timestamp();
+    let color_str = match &args.special_color {
+        Some(c) => c.to_string(),
+        None => "".to_string(),
+    };
+
+    let row_cleaned = format!("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+        now_unix,
+        args.seed,
+        args.file_name,
+        args.num_steps,
+        args.num_sims,
+        args.location,
+        args.velocity,
+        args.min_mass,
+        args.max_mass,
+        args.avoid_effects,
+        args.no_video,
+        args.dynamic_bounds,
+        color_str,
+        args.max_points,
+        args.video_tail_min,
+        args.video_tail_max,
+        args.image_tail_min,
+        args.image_tail_max,
+        args.special_color_video_tail_min,
+        args.special_color_video_tail_max,
+        args.special_color_image_tail_min,
+        args.special_color_image_tail_max,
+        valid_sims,
+        num_iters,
+        best_tr.chaos,
+        best_pts.chaos_pts,
+        best_tr.avg_area,
+        best_pts.area_pts,
+        best_tr.total_dist,
+        best_pts.dist_pts,
+        best_tr.ap_en,
+        best_pts.apen_pts,
+        best_tr.lyap_exp,
+        best_pts.lyap_pts,
+        best_tr.total_score,
+        best_masses[0],
+        best_masses[1],
+        best_masses[2]
+    );
+
+    file.write_all(row_cleaned.as_bytes()).unwrap();
 }
 
 fn main() {
@@ -1162,7 +1248,7 @@ fn main() {
     };
 
     // 1) Select best trajectory
-    let (mut positions, best_result, best_masses) = select_best_trajectory(
+    let (mut positions, best_result, best_masses, valid_sims, best_points) = select_best_trajectory(
         &mut rng,
         args.num_sims,
         args.num_steps,
@@ -1219,6 +1305,30 @@ fn main() {
     };
 
     // Print best trajectory info (final user-friendly output)
+    println!("\nScore breakdown for best trajectory:");
+    println!(
+        "  - Chaos measure (lower better) = {:.4e}, awarded {} points",
+        best_result.chaos, best_points.chaos_pts
+    );
+    println!(
+        "  - Avg triangle area (higher better) = {:.6}, awarded {} points",
+        best_result.avg_area, best_points.area_pts
+    );
+    println!(
+        "  - Total distance (higher better) = {:.6}, awarded {} points",
+        best_result.total_dist, best_points.dist_pts
+    );
+    println!(
+        "  - Approx. Entropy (ApEn) (higher better) = {:.6}, awarded {} points",
+        best_result.ap_en, best_points.apen_pts
+    );
+    println!(
+        "  - Lyapunov exponent (higher better) = {:.6}, awarded {} points",
+        best_result.lyap_exp, best_points.lyap_pts
+    );
+    println!("  ----------------------------------------------------");
+    println!("  => Final total score = {}", best_result.total_score);
+
     println!("\n================ BEST TRAJECTORY INFO ================");
     println!(" - Score (Higher is better): {}", best_result.total_score);
     println!(" - Masses: [{:.2}, {:.2}, {:.2}]", best_masses[0], best_masses[1], best_masses[2]);
@@ -1227,7 +1337,10 @@ fn main() {
     println!(" - Total distance (Higher is better): {:.6}", best_result.total_dist);
     println!(" - Approx. Entropy (ApEn) (Higher is better): {:.6}", best_result.ap_en);
     println!(" - Lyapunov exponent (Higher is better): {:.6}", best_result.lyap_exp);
-    println!("======================================================\n");
+    println!("======================================================");
+
+    // Write all this to CSV
+    append_to_csv(&args, valid_sims, &best_points, &best_result, &best_masses, args.num_sims);
 
     // Make a single image (one_frame = true)
     let pic_frames = plot_positions(
@@ -1270,5 +1383,5 @@ fn main() {
         println!("No video requested.");
     }
 
-    println!("Done with simulation and rendering.");
+    println!("\nDone with simulation and rendering.");
 }
