@@ -158,6 +158,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// For the first round, this equals zero.
 	uint256 public roundNum;
 
+	/// @notice Comment-202411064 applies.
+	uint256 public roundInitialEthBidPriceMultiplier;
+
+	/// @notice Comment-202411064 applies.
+	uint256 public roundInitialEthBidPriceDivisor;
+
 	/// @notice Next ETH bid price.
 	/// [Comment-202501022]
 	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
@@ -166,7 +172,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Think where to eference this comment.
 	/// [/Comment-202501022]
 	/// [Comment-202411065]
-	/// We increase this based on `priceIncrease`.
+	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
 	/// [/Comment-202411065]
 	/// todo-1 ??? Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
 	/// todo-1 Comment and document that after the owner executes the setter, they must set activation time to a point in the past
@@ -175,16 +181,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public roundInitialEthBidPriceMultiplier;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public roundInitialEthBidPriceDivisor;
-
-	/// @notice Comment-202411064 applies.
 	/// Comment-202411065 relates.
-	/// Equals a million plus a small fraction of it.
-	/// todo-1 Rename to `ethBidPriceIncreaseParam`.
-	uint256 public priceIncrease;
+	uint256 public nextEthBidPriceIncreaseDivisor;
 
 	/// @notice Comment-202411064 applies.
 	/// [Comment-202501025]

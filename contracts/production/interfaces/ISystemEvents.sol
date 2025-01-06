@@ -81,9 +81,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event RoundInitialEthBidPriceDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `priceIncrease` is changed.
+	/// @notice Emitted when `nextEthBidPriceIncreaseDivisor` is changed.
 	/// @param newValue The new value.
-	event PriceIncreaseChanged(uint256 newValue);
+	event NextEthBidPriceIncreaseDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.

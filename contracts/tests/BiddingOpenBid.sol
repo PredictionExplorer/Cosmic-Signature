@@ -184,8 +184,10 @@ abstract contract BiddingOpenBid is
 	}
 
 	function getBidPrice() public view override returns(uint256) {
-		// todo-1 Add 1 to ensure that the result increases?
-		return nextEthBidPrice * priceIncrease / CosmicSignatureConstants.MILLION;
+		// [Comment-202501061]
+		// Addding 1 to ensure that the result increases.
+		// [/Comment-202501061]
+		return nextEthBidPrice + nextEthBidPrice / nextEthBidPriceIncreaseDivisor + 1;
 	}
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {

@@ -98,10 +98,10 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 
 	function setRoundInitialEthBidPriceDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `priceIncrease`.
+	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setPriceIncrease(uint256 newValue_) external;
+	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `cstDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.

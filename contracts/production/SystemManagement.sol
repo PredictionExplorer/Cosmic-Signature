@@ -203,9 +203,9 @@ abstract contract SystemManagement is
 		emit RoundInitialEthBidPriceDivisorChanged(newValue_);
 	}
 
-	function setPriceIncrease(uint256 newValue_) external override onlyOwner onlyInactive {
-		priceIncrease = newValue_;
-		emit PriceIncreaseChanged(newValue_);
+	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		nextEthBidPriceIncreaseDivisor = newValue_;
+		emit NextEthBidPriceIncreaseDivisorChanged(newValue_);
 	}
 
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {

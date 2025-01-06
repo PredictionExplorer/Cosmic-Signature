@@ -354,11 +354,11 @@ describe("Events", function () {
 			.withArgs(roundInitialEthBidPriceDivisor_);
 		expect((await cosmicSignatureGameProxy.roundInitialEthBidPriceDivisor()).toString()).to.equal(roundInitialEthBidPriceDivisor_.toString());
 
-		const priceIncrease_ = 1002n;
-		await expect(cosmicSignatureGameProxy.connect(owner).setPriceIncrease(priceIncrease_))
-			.to.emit(cosmicSignatureGameProxy, "PriceIncreaseChanged")
-			.withArgs(priceIncrease_);
-		expect((await cosmicSignatureGameProxy.priceIncrease()).toString()).to.equal(priceIncrease_.toString());
+		const nextEthBidPriceIncreaseDivisor_ = 1002n;
+		await expect(cosmicSignatureGameProxy.connect(owner).setNextEthBidPriceIncreaseDivisor(nextEthBidPriceIncreaseDivisor_))
+			.to.emit(cosmicSignatureGameProxy, "NextEthBidPriceIncreaseDivisorChanged")
+			.withArgs(nextEthBidPriceIncreaseDivisor_);
+		expect((await cosmicSignatureGameProxy.nextEthBidPriceIncreaseDivisor()).toString()).to.equal(nextEthBidPriceIncreaseDivisor_.toString());
 
 		// todo-1 setCstDutchAuctionDurationDivisor
 
