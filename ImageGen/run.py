@@ -80,7 +80,7 @@ def main():
     # ---------------------------
     program_path = './target/release/three_body_problem'
     max_concurrent_executions = 1  # run how many tasks in parallel
-    N = 50  # how many times to run each parameter combo
+    N = 100  # how many times to run each parameter combo
 
     # ---------------------------
     # 2. Parameter Ranges
@@ -89,13 +89,13 @@ def main():
     possible_num_steps = [1_000_000]
     possible_num_sims = [100]
     possible_location = [250.0]
-    possible_velocity = [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+    possible_velocity = [2.0]
     possible_min_mass = [100.0]
     possible_max_mass = [300.0]
 
     # Flags
     possible_avoid_effects = [False]
-    possible_no_video = [True]
+    possible_no_video = [False]
     possible_dynamic_bounds = [False]
 
     # Special color

@@ -690,7 +690,7 @@ fn approximate_entropy_kdtree(data: &[f64], r: f64) -> f64 {
         let countable = subs.len() as f64;
         let mut sum_log = 0.0;
         for arr in subs {
-            let result = kdtree.within::<SquaredEuclidean>(arr, rr);
+            let result = kdtree.within::<SquaredEuclidean>(arr, rr * rr);
             let c = result.len() as f64 / countable;
             sum_log += c.ln();
         }
@@ -1108,8 +1108,11 @@ fn select_best_trajectory(
 
     // Sum up
     for (i, (tr, _, _)) in info_vec.iter_mut().enumerate() {
-        tr.total_score =
-            chaos_points[i] + area_points[i] + dist_points[i] + apen_points[i] + lyap_points[i];
+        tr.total_score = chaos_points[i]
+            + area_points[i]
+            + dist_points[i]
+            + (apen_points[i] * 10)
+            + lyap_points[i];
     }
 
     // Pick best by total_score
