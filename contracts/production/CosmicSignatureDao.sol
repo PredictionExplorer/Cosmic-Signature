@@ -9,8 +9,6 @@ import { GovernorVotesQuorumFraction } from "@openzeppelin/contracts/governance/
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { ICosmicSignatureDao } from "./interfaces/ICosmicSignatureDao.sol";
 
-/// todo-0 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1733769207177129
-/// todo-0 Taras mostly approved the changes. So clean up todos and write better comments.
 contract CosmicSignatureDao is
 	Governor,
 	GovernorSettings,
@@ -25,26 +23,23 @@ contract CosmicSignatureDao is
 		IVotes tokenAddress_
 	)
 		Governor("CosmicSignatureDao")
-		// todo-0 By default, Governor` `votingDelay` and `votingPeriod` are expessed in the number of blocks.
-		// todo-0 I changed those to be expressed in seconds.
-		// todo-0 OpenZellepin docs says:
-		// todo-0    The internal clock used by the token to store voting balances will dictate the operating mode
-		// todo-0    of the Governor contract attached to it. By default, block numbers are used. Since v4.9,
-		// todo-0    developers can override the IERC6372 clock to use timestamps instead of block numbers.
-		// todo-0 Tell the guys.
-		//
-		// todo-0 OpenZellepin recommends to set voting period to 1 week. In our code, it was set to 30 days,
-		// todo-0 which seems to be unnecessarily long. So I have reduced it to 2 weeks. Tell the guys.
-		// todo-1 There are setters for these settings. Develop tests that change them. Unnecesary?
-		// todo-1 Write comments near these constants in `CosmicSignatureConstants`.
+		// [Comment-202501123]
+		// By default, `Governor`'s `votingDelay` and `votingPeriod` are expessed in the number of blocks.
+		// I changed those to be expressed in seconds.
+		// OpenZellepin docs says:
+		//    The internal clock used by the token to store voting balances will dictate the operating mode
+		//    of the Governor contract attached to it. By default, block numbers are used. Since v4.9,
+		//    developers can override the IERC6372 clock to use timestamps instead of block numbers.
+		// [/Comment-202501123]
+		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		GovernorSettings(
 			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_DELAY,
 			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_PERIOD,
 			CosmicSignatureConstants.DEFAULT_TOKEN_REWARD
 		)
+
 		GovernorVotes(tokenAddress_)
-		// todo-1 There are setters for this and the other settings. Do I need to develop tests that change them?
-		// todo-1 Write comments near these constants in `CosmicSignatureConstants`.
+		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		GovernorVotesQuorumFraction(CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
 	}
 

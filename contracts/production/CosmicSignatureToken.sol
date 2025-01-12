@@ -166,6 +166,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `CLOCK_MODE`
 
+	/// @notice Comment-202501123 relates and/or applies.
 	/// solhint-disable-next-line func-name-mixedcase
 	function CLOCK_MODE() public pure override returns(string memory) {
 		return "mode=timestamp";
@@ -174,6 +175,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `clock`
 
+	/// @notice Comment-202501123 relates and/or applies.
 	function clock() public view override returns(uint48) {
 		return uint48(block.timestamp);
 	}

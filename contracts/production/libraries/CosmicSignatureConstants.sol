@@ -159,6 +159,9 @@ library CosmicSignatureConstants {
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;
 
 	uint48 internal constant GOVERNOR_DEFAULT_VOTING_DELAY = 1 days;
+
+	/// @dev OpenZeppelin recommends to set voting period to 1 week. In our code, it used to be set to 30 days,
+	/// which seems to be unnecessarily long. So I have reduced it to 2 weeks. Taras is OK with that.
 	uint32 internal constant GOVERNOR_DEFAULT_VOTING_PERIOD = 2 weeks;
 
 	/// @dev I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
