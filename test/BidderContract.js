@@ -7,7 +7,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 // const { basicDeployment } = require("../src/Deploy.js");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
-describe("Contract", function () {
+describe("BidderContract", function () {
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",

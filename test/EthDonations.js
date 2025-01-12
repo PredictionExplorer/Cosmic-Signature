@@ -9,7 +9,7 @@ const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js"
 
 const SKIP_LONG_TESTS = false;
 
-describe("Donating", function () {
+describe("EthDonations", function () {
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
