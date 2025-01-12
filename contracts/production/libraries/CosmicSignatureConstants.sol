@@ -72,6 +72,9 @@ library CosmicSignatureConstants {
 	/// Comment-202409143 applies.
 	uint256 internal constant MAX_MESSAGE_LENGTH = 280;
 
+	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
+	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
+
 	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
 
 	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
@@ -80,14 +83,18 @@ library CosmicSignatureConstants {
 	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
 
-	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
-	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
+	/// @notice Default `ethDutchAuctionDurationDivisor`.
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (HOURS_PER_DAY * 2) - 0;
 
-	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER = 2;
-	uint256 internal constant DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR = 10;
-
-	/// @notice Initial `nextEthBidPrice` for the first bidding round.
+	/// @notice First bidding round initial ETH bid price.
+	/// It's impossible to change it after the contract has been deployed.
 	uint256 internal constant FIRST_ROUND_INITIAL_ETH_BID_PRICE = 0.0001 ether;
+
+	uint256 internal constant ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
+
+	/// @notice Default `ethDutchAuctionEndingBidPriceDivisor`.
+	/// Comment-202501063 applies.
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 10 * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 
 	uint256 internal constant DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 

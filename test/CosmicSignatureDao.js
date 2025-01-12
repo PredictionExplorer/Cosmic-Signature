@@ -23,6 +23,7 @@ describe("CosmicSignatureDao", function () {
 			// }
 
 			await hre.ethers.provider.send("evm_increaseTime", [n]);
+			// await hre.ethers.provider.send("evm_mine");
 		};
 
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, cosmicSignatureDao,} =
@@ -32,8 +33,8 @@ describe("CosmicSignatureDao", function () {
 		// const bidParams = { message: "", randomWalkNftId: -1 };
 		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
-			let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
-			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+			let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
 		}
 
 		const votingDelay_ = await cosmicSignatureDao.votingDelay();

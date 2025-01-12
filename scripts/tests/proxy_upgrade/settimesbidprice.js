@@ -14,7 +14,7 @@ async function main() {
 	// }
 	// let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-	await cosmicSignatureGame.setTimesBidPrice(20n);
+	await cosmicSignatureGame.setTimesEthBidPrice(20n);
 }
 
 main()

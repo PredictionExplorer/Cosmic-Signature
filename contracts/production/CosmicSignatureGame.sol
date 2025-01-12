@@ -85,16 +85,16 @@ contract CosmicSignatureGame is
 		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
+		// mainPrizeTime =
+		initialDurationUntilMainPrizeDivisor = CosmicSignatureConstants.DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR;
 		mainPrizeTimeIncrementInMicroSeconds = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT * CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
 		mainPrizeTimeIncrementIncreaseDivisor = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR;
-		initialDurationUntilMainPrizeDivisor = CosmicSignatureConstants.DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR;
-		// mainPrizeTime =
-		// roundNum = 0;
-		roundInitialEthBidPriceMultiplier = CosmicSignatureConstants.DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_MULTIPLIER;
-		roundInitialEthBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ROUND_INITIAL_ETH_BID_PRICE_DIVISOR;
-		nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		// roundNum =
+		ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
+		// ethDutchAuctionBeginningBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
+		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		nextEthBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR;
-		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 
 		// // [Comment-202411211]
 		// // If this condition is `true` it's likely that `setActivationTime` will not be called,
@@ -105,11 +105,12 @@ contract CosmicSignatureGame is
 		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		// }
 
+		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 		cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		nextRoundCstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.DEFAULT_TOKEN_REWARD;
-		// lastBidderAddress = address(0);
+		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// // lastBidType =
 		mainEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE;

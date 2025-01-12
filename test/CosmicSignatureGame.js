@@ -61,9 +61,9 @@ describe("CosmicSignatureGame", function () {
 				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 			);
 		expect(implementation2AddressAsString_).not.equal(implementation1AddressAsString_);
-		expect(await cosmicSignatureGameProxy2.timesBidPrice()).to.equal(3n);
-		await cosmicSignatureGameProxy2.setTimesBidPrice(10n);
-		expect(await cosmicSignatureGameProxy2.timesBidPrice()).to.equal(10n);
+		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(3n);
+		await cosmicSignatureGameProxy2.setTimesEthBidPrice(10n);
+		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(10n);
 		await expect(cosmicSignatureGameProxy2.initialize(owner.address)).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
 		await expect(cosmicSignatureGameProxy2.initialize2()).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
 	});
@@ -96,11 +96,11 @@ describe("CosmicSignatureGame", function () {
 			);
 		const implementation2Address_ = hre.ethers.getAddress(BigInt(implementation2AddressAsString_).toString(16).padStart(40, "0"));
 		expect(implementation2Address_).equal(await cosmicSignatureGameOpenBid.getAddress());
-		expect(await cosmicSignatureGameProxy2.timesBidPrice()).to.equal(0n);
+		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(0n);
 		await cosmicSignatureGameProxy2.initialize2();
-		expect(await cosmicSignatureGameProxy2.timesBidPrice()).to.equal(3n);
-		await cosmicSignatureGameProxy2.setTimesBidPrice(10n);
-		expect(await cosmicSignatureGameProxy2.timesBidPrice()).to.equal(10n);
+		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(3n);
+		await cosmicSignatureGameProxy2.setTimesEthBidPrice(10n);
+		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(10n);
 		await expect(cosmicSignatureGameProxy2.initialize(owner.address)).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
 		await expect(cosmicSignatureGameProxy2.initialize2()).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
 	});
@@ -175,13 +175,13 @@ describe("CosmicSignatureGame", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 
-		const ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await owner.sendTransaction({
 			to: await cosmicSignatureGameProxy.getAddress(),
-			value: ethBidPrice_,
+			value: nextEthBidPrice_,
 		});
-		const bidPriceAfter = await cosmicSignatureGameProxy.getBidPrice();
-		expect(bidPriceAfter).greaterThan(ethBidPrice_);
+		const nextEthBidPriceAfter_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		expect(nextEthBidPriceAfter_).greaterThan(nextEthBidPrice_);
 	});
 
 	// Issue. I have eliminated the `fallback` method.

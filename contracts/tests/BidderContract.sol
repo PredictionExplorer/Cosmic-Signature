@@ -28,7 +28,7 @@ contract BidderContract {
 	}
 
 	function doBid() external payable {
-		uint256 price = cosmicSignatureGame.getBidPrice();
+		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
 		// CosmicSignatureGame.BidParams memory defaultParams;
 		// defaultParams.message = "contract bid";
 		// defaultParams.randomWalkNftId = -1;
@@ -47,7 +47,7 @@ contract BidderContract {
 	}
 
 	function doBidRWalk(int256 nftId) external payable {
-		uint256 price = cosmicSignatureGame.getBidPrice();
+		uint256 price = cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(cosmicSignatureGame.getNextEthBidPrice(int256(0)));
 		// CosmicSignatureGame.BidParams memory params;
 		// params.message = "contract bid rwalk";
 		// params.randomWalkNftId = nftId;
@@ -74,7 +74,7 @@ contract BidderContract {
 	// 	uint256 donatedTokenNum = cosmicSignatureGame.numDonatedNfts();
 	// 	myDonatedNfts.push(donatedTokenNum);
 	// 	numMyDonatedNfts++;
-	// 	uint256 price = cosmicSignatureGame.getBidPrice();
+	// 	uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
 	// 	// CosmicSignatureGame.BidParams memory params;
 	// 	// params.message = "contract bid with donation";
 	// 	// params.randomWalkNftId = -1;
@@ -112,7 +112,7 @@ contract BidderContract {
 	// 	// todo-1 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
 	// 	// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
 	// 	// todo-1 In any case, write comments.
-	// 	(bool isSuccess_, ) = creator.call{ value: address(this).balance }("");
+	// 	(bool isSuccess_, ) = creator.call{value: address(this).balance}("");
 	// 	isSuccess_ = false;
 	// 	uint256 totalSupply = nft_.totalSupply();
 	// 	for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
@@ -174,7 +174,7 @@ contract BidCNonRecv {
 	receive() external payable {}
 
 	function doBid() external payable {
-		uint256 price = cosmicSignatureGame.getBidPrice();
+		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
 		// CosmicSignatureGame.BidParams memory params;
 		// params.message = "non-IERC721Receiver bid";
 		// params.randomWalkNftId = -1;

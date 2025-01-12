@@ -178,6 +178,11 @@ abstract contract SystemManagement is
 		emit CharityAddressChanged(newValue_);
 	}
 
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		initialDurationUntilMainPrizeDivisor = newValue_;
+		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
+	}
+
 	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyInactive {
 		mainPrizeTimeIncrementInMicroSeconds = newValue_;
 		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
@@ -188,19 +193,14 @@ abstract contract SystemManagement is
 		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
 	}
 
-	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
-		initialDurationUntilMainPrizeDivisor = newValue_;
-		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
+	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		ethDutchAuctionDurationDivisor = newValue_;
+		emit EthDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
-	function setRoundInitialEthBidPriceMultiplier(uint256 newValue_) external override onlyOwner onlyInactive {
-		roundInitialEthBidPriceMultiplier = newValue_;
-		emit RoundInitialEthBidPriceMultiplierChanged(newValue_);
-	}
-
-	function setRoundInitialEthBidPriceDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
-		roundInitialEthBidPriceDivisor = newValue_;
-		emit RoundInitialEthBidPriceDivisorChanged(newValue_);
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		ethDutchAuctionEndingBidPriceDivisor = newValue_;
+		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
 	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {

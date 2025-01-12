@@ -147,6 +147,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	expect(isStaked).to.equal(true);
 	//
 	// 	await hre.ethers.provider.send("evm_increaseTime", [600 + 1]);
+	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	await newStakingWalletRandomWalkNft.unstakeMany([r1, r2, r3]);
 	// 	numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
 	// 	expect(numStakedNfts_).to.equal(0);
@@ -167,8 +168,8 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: ethBidPrice_ });
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

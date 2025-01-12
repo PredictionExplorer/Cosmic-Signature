@@ -190,7 +190,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
-	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{ value: msg.value }(
+	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
 	// 		abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
 	// 	);
 	// 	if ( ! isSuccess_ ) {
@@ -284,7 +284,7 @@ contract MaliciousNft2 is ERC721 {
 	// /// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
 	// /// @dev todo-1 This method is now broken. See todos in its body.
 	// function transferFrom(address from, address to, uint256 nftId) public override {
-	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
+	// 	// uint256 price = Bidding(/*payable*/(game)).getNextEthBidPrice(int256(0));
 	// 	// todo-1 This structure no longer exists.
 	// 	CosmicSignatureGame.BidParams memory defaultParams;
 	// 	// defaultParams.message = "";
@@ -294,6 +294,7 @@ contract MaliciousNft2 is ERC721 {
 	// 	// todo-1 Should we make a high level call here?
 	// 	(bool isSuccess_, /*bytes memory retval*/) =
 	// 		// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+	// 		// todo-1 Besides, this sends zero `value`.
 	// 		msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
 	// 	if ( ! isSuccess_ ) {
 	// 		assembly {

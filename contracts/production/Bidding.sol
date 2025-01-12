@@ -1,5 +1,10 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
+
+// #endregion
+// #region
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -15,13 +20,16 @@ import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
+// #endregion
+// #region
+
 abstract contract Bidding is
 	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
 	SystemManagement,
 	BidStatistics,
 	IBidding {
-	// #region Data Types
+	// #region // Data Types
 
 	// /// @title Parameters needed to place a bid.
 	// /// @dev
@@ -41,11 +49,15 @@ abstract contract Bidding is
 	// }
 
 	// #endregion
+	// #region `bidAndDonateToken`
 
 	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyActive*/ {
 		_bid(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
+
+	// #endregion
+	// #region `bidAndDonateNft`
 
 	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyActive*/ {
 		_bid(randomWalkNftId_, message_);
@@ -53,28 +65,42 @@ abstract contract Bidding is
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
+	// #endregion
+	// #region `bid`
+
 	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyActive*/ {
 		_bid(/*data_*/ randomWalkNftId_, message_);
 	}
 
+	// #endregion
+	// #region `_bid`
+
+	/// todo-1 Do we really need `nonReentrant` here?
+	/// todo-1 Keep in mind that this method can be called together with a donation method.
 	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyActive*/ {
+		// #region
+
 		// BidParams memory params = abi.decode(data_, (BidParams));
 		// CosmicSignatureConstants.BidType bidType;
-		uint256 newBidPrice = getBidPrice();
-		uint256 paidBidPrice =
-			(/*params.randomWalkNftId*/ randomWalkNftId_ == -1) ?
-			newBidPrice :
-			(newBidPrice / CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR);
+		uint256 ethBidPrice_ = getNextEthBidPrice(int256(0));
+		uint256 paidEthBidPrice_ =
+			(/*params.randomWalkNftId*/ randomWalkNftId_ < int256(0)) ?
+			ethBidPrice_ :
+			getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
+		int256 overpaidEthBidPrice_ = int256(msg.value) - int256(paidEthBidPrice_);
 
 		// [Comment-202412045]
 		// Performing this validatin as early as possible to minimize gas fee in case the validation fails.
 		// [/Comment-202412045]
 		require(
-			msg.value >= paidBidPrice,
-			CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidBidPrice, msg.value)
+			overpaidEthBidPrice_ >= int256(0),
+			CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidEthBidPrice_, msg.value)
 		);
 
-		if (/*params.randomWalkNftId*/ randomWalkNftId_ == -1) {
+		// #endregion
+		// #region
+
+		if (/*params.randomWalkNftId*/ randomWalkNftId_ < int256(0)) {
 			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
 		} else {
 			require(
@@ -93,7 +119,7 @@ abstract contract Bidding is
 				// todo-1 But in OpenZeppelin 4.x the method doesn't exist. A similar method existed, named `_isApprovedOrOwner`.
 				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
 				CosmicSignatureErrors.IncorrectERC721TokenOwner(
-					"You must be the owner of the RandomWalk NFT.",
+					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
 					uint256(/*params.randomWalkNftId*/ randomWalkNftId_),
 					msg.sender
@@ -102,46 +128,156 @@ abstract contract Bidding is
 			usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] = 1;
 			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
 		}
-		nextEthBidPrice = newBidPrice;
+
+		// #endregion
+		// #region
+
+		if (lastBidderAddress == address(0)) {
+			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+		}
+
+		// [Comment-202501061]
+		// This formula ensures that the result increases.
+		// [/Comment-202501061]
+		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
 
 		// Updating bidding statistics.
-		bidderInfo[roundNum][msg.sender].totalSpentEth += paidBidPrice;
+		bidderInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
+
+		// #endregion
+		// #region
 
 		_bidCommon(/*params.message*/ message_ /* , bidType */);
+
+		// #endregion
+		// #region
+
 		emit BidEvent(
 			/*lastBidderAddress*/ msg.sender,
 			roundNum,
-			int256(paidBidPrice),
+			int256(paidEthBidPrice_),
 			/*params.randomWalkNftId*/ randomWalkNftId_,
 			-1,
 			mainPrizeTime,
 			/*params.message*/ message_
 		);
-		if (msg.value > paidBidPrice) {
+
+		// #endregion
+		// #region
+
+		if (overpaidEthBidPrice_ > int256(0)) {
 			// Refunding excess ETH if the bidder sent more than required.
-			// todo-1 Issue. Dutring the initial Dutch auction, we will likely refund a very small amount that would not justify the gas fees.
+			// todo-1 Issue. During the initial Dutch auction, we will likely refund a very small amount that would not justify the gas fees.
 			// todo-1 At least comment.
 			// todo-1 Maybe if the bid price a half a minute or a minute (make it a constant in `CosmicSignatureConstants`) ago
 			// todo-1 was >= `msg.value`, don't refund.
-			uint256 amountToSend = msg.value - paidBidPrice;
+			// uint256 amountToSend = msg.value - paidEthBidPrice_;
 			// todo-1 No reentrancy vulnerability?
-			(bool isSuccess_, ) = msg.sender.call{ value: amountToSend }("");
+			(bool isSuccess_, ) = msg.sender.call{value: /*amountToSend*/ uint256(overpaidEthBidPrice_)}("");
 			require(
 				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("Refund transfer failed.", msg.sender, amountToSend) 
+				CosmicSignatureErrors.FundTransferFailed("Refund transfer failed.", msg.sender, /*amountToSend*/ uint256(overpaidEthBidPrice_))
 			);
+		}
+
+		// #endregion
+	}
+
+	// #endregion
+	// #region `getNextEthBidPrice`
+
+	function getNextEthBidPrice(int256 currentTimeOffset_) public view override returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 nextEthBidPrice_;
+			if (lastBidderAddress == address(0)) {
+				nextEthBidPrice_ = ethDutchAuctionBeginningBidPrice;
+				// #enable_asserts assert((nextEthBidPrice_ == 0) == (roundNum == 0));
+				if (nextEthBidPrice_ == 0) {
+					nextEthBidPrice_ = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+				} else {
+					int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceActivation() + currentTimeOffset_;
+					if (ethDutchAuctionElapsedDuration_ > int256(0)) {
+						// If this assertion fails, further assertions will not necessarily succeed and the behavior will not necessarily be correct.
+						// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor > 1);
+
+						// Adding 1 to ensure that the result is a nonzero.
+						uint256 ethDutchAuctionEndingBidPrice_ = nextEthBidPrice_ / ethDutchAuctionEndingBidPriceDivisor + 1;
+
+						// #enable_asserts assert(ethDutchAuctionEndingBidPrice_ > 0 && ethDutchAuctionEndingBidPrice_ <= nextEthBidPrice_);
+						uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
+						if (uint256(ethDutchAuctionElapsedDuration_) < ethDutchAuctionDuration_) {
+							uint256 ethDutchAuctionBidPriceDifference_ = nextEthBidPrice_ - ethDutchAuctionEndingBidPrice_;
+							nextEthBidPrice_ -= ethDutchAuctionBidPriceDifference_ * uint256(ethDutchAuctionElapsedDuration_) / ethDutchAuctionDuration_;
+						} else {
+							nextEthBidPrice_ = ethDutchAuctionEndingBidPrice_;
+						}
+					}
+				}
+			} else {
+				nextEthBidPrice_ = nextEthBidPrice;
+			}
+			// #enable_asserts assert(nextEthBidPrice_ > 0);
+			return nextEthBidPrice_;
 		}
 	}
 
-	function getBidPrice() public view override returns(uint256) {
-		// Comment-202501061 applies.
-		return nextEthBidPrice + nextEthBidPrice / nextEthBidPriceIncreaseDivisor + 1;
+	// #endregion
+	// #region `getEthPlusRandomWalkNftBidPrice`
+
+	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) public pure override returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// #enable_asserts assert(ethBidPrice_ > 0 && ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1));
+			uint256 ethPlusRandomWalkNftBidPrice_ =
+				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
+				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+			// #enable_asserts assert(ethPlusRandomWalkNftBidPrice_ > 0 && ethPlusRandomWalkNftBidPrice_ <= ethBidPrice_);
+			return ethPlusRandomWalkNftBidPrice_;
+		}
 	}
+
+	// #endregion
+	// #region `getEthDutchAuctionDurations`
+
+	function getEthDutchAuctionDurations() external view override returns(uint256, int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
+			int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceActivation();
+			return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
+		}
+	}
+
+	// #endregion
+	// #region `_getEthDutchAuctionDuration`
+
+	function _getEthDutchAuctionDuration() internal view returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 ethDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / ethDutchAuctionDurationDivisor;
+			return ethDutchAuctionDuration_;
+		}
+	}
+
+	// #endregion
+	// #region `bidWithCstAndDonateToken`
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
+
+	// #endregion
+	// #region `bidWithCstAndDonateNft`
 
 	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
@@ -149,9 +285,15 @@ abstract contract Bidding is
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
+	// #endregion
+	// #region `bidWithCst`
+
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*onlyActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
+
+	// #endregion
+	// #region `_bidWithCst`
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// [Comment-202501045]
@@ -170,7 +312,7 @@ abstract contract Bidding is
 		// todo-1 So maybe leave this logic and comment that it minimizes transaction fees.
 		// todo-1 Cros-ref with where we mint 100 CSTs for each bidder.
 		// [/Comment-202409179]
-		uint256 price = getNextCstBidPrice();
+		uint256 price = getNextCstBidPrice(int256(0));
 
 		// Comment-202412045 applies.
 		require(
@@ -235,12 +377,16 @@ abstract contract Bidding is
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
 	}
 
-	function getNextCstBidPrice() public view override returns(uint256) {
+	// #endregion
+	// #region `getNextCstBidPrice`
+
+	function getNextCstBidPrice(int256 currentTimeOffset_) public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
 			(uint256 cstDutchAuctionDuration_, int256 cstDutchAuctionRemainingDuration_) = _getCstDutchAuctionTotalAndRemainingDurations();
+			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
 			}
@@ -248,6 +394,9 @@ abstract contract Bidding is
 			return nextCstBidPrice_;
 		}
 	}
+
+	// #endregion
+	// #region `getCstDutchAuctionDurations`
 
 	function getCstDutchAuctionDurations() external view override returns(uint256, int256) {
 		// #enable_smtchecker /*
@@ -260,6 +409,9 @@ abstract contract Bidding is
 		}
 	}
 
+	// #endregion
+	// #region `_getCstDutchAuctionDuration`
+
 	function _getCstDutchAuctionDuration() internal view returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -270,6 +422,9 @@ abstract contract Bidding is
 		}
 	}
 
+	// #endregion
+	// #region `_getCstDutchAuctionElapsedDuration`
+
 	function _getCstDutchAuctionElapsedDuration() internal view returns(int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -279,6 +434,9 @@ abstract contract Bidding is
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionTotalAndRemainingDurations`
 
 	function _getCstDutchAuctionTotalAndRemainingDurations() internal view returns(uint256, int256) {
 		// #enable_smtchecker /*
@@ -291,6 +449,9 @@ abstract contract Bidding is
 			return (cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_);
 		}
 	}
+
+	// #endregion
+	// #region `_bidCommon`
 
 	/// @notice Internal function to handle common bid logic
 	/// @dev This function updates game state and distributes rewards
@@ -332,10 +493,10 @@ abstract contract Bidding is
 
 		// Distribute token rewards
 		// try
-		// [ToDo-202409245-0]
+		// [ToDo-202409245-1]
 		// Can this, realistically, fail?
 		// This can't, realistically, overflow, right?
-		// [/ToDo-202409245-0]
+		// [/ToDo-202409245-1]
 		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
 		// {
 		// } catch {
@@ -348,7 +509,7 @@ abstract contract Bidding is
 		// }
 
 		// // try
-		// // ToDo-202409245-0 applies.
+		// // ToDo-202409245-1 applies.
 		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
 		// // token.mintToMarketingWallet(marketingWalletCstContributionAmount);
 		// // {
@@ -364,17 +525,38 @@ abstract contract Bidding is
 		// _extendMainPrizeTime();
 	}
 
+	// #endregion
+	// #region `_extendMainPrizeTime`
+
 	/// @notice Extends `mainPrizeTime`.
+	/// This method is called on each bid.
 	function _extendMainPrizeTime() internal {
-		// todo-1 ??? Consider adding a method to calculate and return this.
-		// todo-1 ??? Remember to add it to `BiddingOpenBid` too.
-		// todo-1 ??? Or it belongs to `SystemManagement`? (Maybe not.)
-		// todo-1 But we already have the `mainPrizeTimeIncrementInMicroSeconds` method, so maybe we don't need another similar one.
-		uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
-		mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
-		// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, mainPrizeTimeIncrementInMicroSeconds);
-		// mainPrizeTimeIncrementInMicroSeconds += ...
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
+			mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
+			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, mainPrizeTimeIncrementInMicroSeconds);
+		}
 	}
+
+	// #endregion
+	// #region `getMainPrizeTimeIncrement`
+
+	function getMainPrizeTimeIncrement() public view returns(uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+			// #enable_asserts assert(mainPrizeTimeIncrement_ > 0);
+			return mainPrizeTimeIncrement_;
+		}
+	}
+
+	// #endregion
+	// #region `getDurationUntilActivation`
 
 	function getDurationUntilActivation() public view override returns(int256) {
 		// #enable_smtchecker /*
@@ -386,6 +568,9 @@ abstract contract Bidding is
 		}
 	}
 
+	// #endregion
+	// #region `getDurationElapsedSinceActivation`
+
 	function getDurationElapsedSinceActivation() public view override returns(int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -395,6 +580,9 @@ abstract contract Bidding is
 			return durationElapsedSinceActivation_;
 		}
 	}
+
+	// #endregion
+	// #region `getInitialDurationUntilMainPrize`
 
 	function getInitialDurationUntilMainPrize() public view override returns(uint256) {
 		// #enable_smtchecker /*
@@ -406,14 +594,23 @@ abstract contract Bidding is
 		}
 	}
 
+	// #endregion
+	// #region `getTotalBids`
+
 	function getTotalBids() external view override returns(uint256) {
 		return numRaffleParticipants[roundNum];
 	}
+
+	// #endregion
+	// #region `getBidderAddressAtPosition`
 
 	function getBidderAddressAtPosition(uint256 position) external view override returns(address) {
 		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
 		return raffleParticipants[roundNum][position];
 	}
+
+	// #endregion
+	// #region `bidderAddress`
 
 	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view override returns(address) {
 		require(
@@ -448,12 +645,22 @@ abstract contract Bidding is
 		return bidderAddress_;
 	}
 
+	// #endregion
+	// #region `getTotalSpentByBidder`
+
 	function getTotalSpentByBidder(address bidderAddress_) external view override returns(uint256, uint256) {
 		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
+
+	// #endregion
+	// #region // `wasRandomWalkNftUsed`
 
 	// function wasRandomWalkNftUsed(uint256 nftId_) external view override returns(bool) {
 	// 	// todo-9 This is now a `uint256`.
 	// 	return usedRandomWalkNfts[nftId_];
 	// }
+
+	// #endregion
 }
+
+// #endregion

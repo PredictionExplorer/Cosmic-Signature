@@ -33,7 +33,7 @@ async function main() {
 			"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 		);
 	console.log("Implementation address:", implementationAddressAsString_);
-	console.log("timesBidPrice =", await cosmicSignatureGameProxy.timesBidPrice());
+	console.log("timesEthBidPrice =", await cosmicSignatureGameProxy.timesEthBidPrice());
 	// await cosmicSignatureGameProxy.setRuntimeMode();
 }
 

@@ -24,6 +24,13 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Otherwise a collision can create a vulnerability.
 /// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
+///
+/// todo-1 Restructure regions and reorder variables. They should mimic the contracts, such as bidding, main prize.
+/// todo-1 The same applies to some other contracts/libs, such as `CosmicSignatureErrors`.
+///
+/// todo-1 Document which variables are valid under what conditions,
+/// todo-1 which variables should be accessed directly and which through an accessor,
+/// todo-1 which variables emit events (some are changed programmatically without emitting an event).
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Parameters and Variables
 
@@ -39,12 +46,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
 	/// [/Comment-202411172]
-	/// [Comment-202411173]
-	/// And in that case the logic emits an event.
-	/// Comment-202411174 relates
-	/// [/Comment-202411173]
 	/// @dev Comment-202411236 relates.
 	/// Comment-202411168 relates.
+	/// todo-1 Maybe reorder this closer to other bidding related variables?
+	/// todo-1 Maybe rename this to `roundActivationTime`.
+	/// todo-1 Also consider renaming `onlyInactive` and `onlyActive`.
 	uint256 public activationTime;
 
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
@@ -53,6 +59,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
 	/// [/Comment-202412312]
+	/// todo-1 Maybe reorder this closer to other bidding related variables and/or before `activationTime`?
+	/// todo-1 Maybe rename this to `delayDurationBeforeRoundActivation`.
 	uint256 public delayDurationBeforeNextRound;
 
 	/// @notice At the end of each bidding round, we mint this CST amount to `marketingWallet`.
@@ -63,6 +71,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 If so, before making the mint call check that this is a nonzero.
 	/// todo-1 But maybe this should not be zero because the DAO will keep doing something.
 	/// todo-1 Besides, rounds will keep getting longer.
+	/// todo-1 Maybe move this to a separate region devoted to marketing.
 	uint256 public marketingWalletCstContributionAmount;
 
 	/// @notice The maximum allowed length of a bid message.
@@ -73,6 +82,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
 	/// todo-1 Reorder this to near other bid related variables?
 	/// todo-1 Also reorder the constant from which this is initialized.
+	/// todo-1 Is it really necessary for this to be configurable?
 	uint256 public maxMessageLength;
 
 	// #endregion
@@ -123,15 +133,22 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Game Parameters and Variables
 
+	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
+	/// [Comment-202412152]
+	/// On each bid, we calculate the new value of this variable
+	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
+	/// [/Comment-202412152]
+	uint256 public mainPrizeTime;
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202501025 applies.
+	uint256 public initialDurationUntilMainPrizeDivisor;
+
 	/// @notice Comment-202412152 relates.
 	/// We use this on a number of other occasions as well.
-	/// todo-0 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
+	/// todo-1 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
-	/// [Comment-202411174]
-	/// But in that case the logic does not emit an event.
-	/// Comment-202411173 relates.
-	/// [/Comment-202411174]
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
 	/// [/Comment-202411067]
@@ -143,33 +160,34 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411067 relates.
 	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
-	uint256 public initialDurationUntilMainPrizeDivisor;
-
-	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
-	/// [Comment-202412152]
-	/// On each bid, we calculate the new value of this variable
-	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
-	/// [/Comment-202412152]
-	uint256 public mainPrizeTime;
-
 	/// @notice Bidding round counter.
 	/// For the first round, this equals zero.
+	/// todo-1 Reorder this upwards?
 	uint256 public roundNum;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public roundInitialEthBidPriceMultiplier;
+	/// Comment-202501025 applies
+	uint256 public ethDutchAuctionDurationDivisor;
+
+	/// @notice Comment-202501063 relates.
+	uint256 public ethDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411064 applies.
-	uint256 public roundInitialEthBidPriceDivisor;
+	/// [Comment-202501063]
+	/// This divides `ethDutchAuctionBeginningBidPrice`, which has already been multiplied by
+	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// [/Comment-202501063]
+	/// @dev todo-1 Develop a test that after activation sets activation time to a point in the future,
+	/// todo-1 doubles this divisor, sets activation time to a point in the past.
+	/// todo-1 The past point needs to be such that ETH bid price continues to gradually decline.
+	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice Next ETH bid price.
 	/// [Comment-202501022]
 	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
-	/// todo-1 Therefore declare this `internal` and rename to `_...` and add a smarter getter if needed.
+	/// todo-1 ??? Therefore would it make sense to declare this `internal` and rename to `_...` and add a smarter getter?
 	/// todo-1 The same applies to other variables that are not always valid.
-	/// todo-1 Think where to eference this comment.
+	/// todo-1 Think where to reference this comment. It appluies to some method return values too.
 	/// [/Comment-202501022]
 	/// [Comment-202411065]
 	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
@@ -177,23 +195,23 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 ??? Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
 	/// todo-1 Comment and document that after the owner executes the setter, they must set activation time to a point in the past
 	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
-	/// todo-1 The above now applies to `roundInitialEthBidPriceDivisor`.
+	/// todo-1 The above now applies to `ethDutchAuctionEndingBidPriceDivisor`.
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411065 relates.
 	uint256 public nextEthBidPriceIncreaseDivisor;
 
+	/// @notice When the current CST Dutch auction began.
+	/// Comment-202501022 applies.
+	/// @dev Comment-202411168 relates.
+	uint256 public cstDutchAuctionBeginningTimeStamp;
+
 	/// @notice Comment-202411064 applies.
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
 	uint256 public cstDutchAuctionDurationDivisor;
-
-	/// @notice When CST Dutch auction began.
-	/// Comment-202501022 applies.
-	/// @dev Comment-202411168 relates.
-	uint256 public cstDutchAuctionBeginningTimeStamp;
 
 	/// @notice
 	/// [Comment-202411066]

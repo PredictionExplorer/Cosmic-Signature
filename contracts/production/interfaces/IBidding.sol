@@ -59,10 +59,20 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// todo-1 Then also rename methods like `bidAndDonate...`.
 	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable;
 
-	/// @notice Obtains the current price that a bidder is required to pay to place an ETH bid
-	/// @return The ETH price, in Wei
-	/// todo-1 Rename this to `getNextEthBidPrice`.
-	function getBidPrice() external view returns(uint256);
+	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
+	/// @param currentTimeOffset_ Comment-202501107 applies.
+	/// @return The next ETH bid price, in Wei.
+	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns(uint256);
+
+	/// @notice Calculates and returns an ETH + RandomWalk NFT bid price, given an ETH only bid price.
+	/// The result is guaranteed to be a nonzero, provided `ethBidPrice_` is a nonzero.
+	/// This method doesn't check for overflow, which implies that `ethBidPrice_` must not be close to overflow.
+	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns(uint256);
+
+	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
+	/// The elapsed duration counts since bidding round activation. It can be negative. It makes no sense to use it
+	/// after the end of the auction.
+	function getEthDutchAuctionDurations() external view returns(uint256, int256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
 
@@ -79,14 +89,28 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration, and can become zero.
 	/// todo-1 Confirmed: zero price is OK.
+	/// @param currentTimeOffset_ .
+	/// [Comment-202501107]
+	/// An offset to add to `block.timestamp`.
+	/// Currently, consequitive blocks can have equal timestamps, which will likely no longer be the case
+	/// after Arbitrum One decentralizes their blockchain.
+	/// Sensible values:
+	///    0 when the result is to be used within the same transaction.
+	///    0 when bidding programmatically from an external script. But change it to 1 after the decentalization.
+	///       Although an external script can have a smarter time aware logic that can conditionally pass different values.
+	///    1 when bidding manually, assuming that human hands aren't too fast. But change it to 2 after the decentalization.
+	///    1 for testing on the Hardhat Network.
+	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.
 	/// Comment-202501022 applies to the return value.
 	/// @dev Comment-202409179 relates.
-	function getNextCstBidPrice() external view returns(uint256);
+	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns(uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// Comment-202501022 applies to the returned elapsed duration.
 	function getCstDutchAuctionDurations() external view returns(uint256, int256);
+
+	function getMainPrizeTimeIncrement() external view returns(uint256);
 
 	/// @return The number of seconds until the current bidding round activates,
 	/// or a non-positive value if it's already active.

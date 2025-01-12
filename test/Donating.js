@@ -82,10 +82,10 @@ describe("Donating", function () {
 		await randomWalkNft.connect(addr1).setApprovalForAll(await prizesWallet.getAddress(), true);
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let tx = await cosmicSignatureGameProxy
 			.connect(addr1)
-			.bidAndDonateNft(/*params*/ (-1), "", await randomWalkNft.getAddress(), 0, { value: ethBidPrice_ });
+			.bidAndDonateNft(/*params*/ (-1), "", await randomWalkNft.getAddress(), 0, { value: nextEthBidPrice_ });
 		let receipt = await tx.wait();
 		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("NftDonationEvent").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -95,8 +95,8 @@ describe("Donating", function () {
 
 		mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
-		ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bidAndDonateNft(/*params*/ (-1), "", await randomWalkNft.getAddress(), 1, { value: ethBidPrice_ });
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(addr1).bidAndDonateNft(/*params*/ (-1), "", await randomWalkNft.getAddress(), 1, { value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

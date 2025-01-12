@@ -79,6 +79,11 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setCharityAddress(address newValue_) external;
 
+	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
+
 	/// @notice Sets `mainPrizeTimeIncrementInMicroSeconds`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
@@ -89,14 +94,12 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
+	/// @notice Sets `ethDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
+	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	function setRoundInitialEthBidPriceMultiplier(uint256 newValue_) external;
-
-	function setRoundInitialEthBidPriceDivisor(uint256 newValue_) external;
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
 	/// Only the contract owner is permitted to call this method.

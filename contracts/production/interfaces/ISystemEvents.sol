@@ -61,6 +61,10 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CharityAddressChanged(address indexed newValue);
 
+	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
+	/// @param newValue The new value.
+	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
+
 	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
 	/// @param newValue The new value.
 	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
@@ -69,17 +73,13 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
+	/// @notice Emitted when `ethDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.
-	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
+	event EthDutchAuctionDurationDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `roundInitialEthBidPriceMultiplier` is changed.
+	/// @notice Emitted when `ethDutchAuctionEndingBidPriceDivisor` is changed.
 	/// @param newValue The new value.
-	event RoundInitialEthBidPriceMultiplierChanged(uint256 newValue);
-
-	/// @notice Emitted when `roundInitialEthBidPriceDivisor` is changed.
-	/// @param newValue The new value.
-	event RoundInitialEthBidPriceDivisorChanged(uint256 newValue);
+	event EthDutchAuctionEndingBidPriceDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `nextEthBidPriceIncreaseDivisor` is changed.
 	/// @param newValue The new value.

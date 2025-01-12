@@ -85,7 +85,7 @@ abstract contract MainPrize is
 		prizesWallet.registerRoundEnd(roundNum, msg.sender);
 
 		_distributePrizes();
-		// ToDo-202409245-0 applies.
+		// ToDo-202409245-1 applies.
 		token.mint(marketingWallet, marketingWalletCstContributionAmount);
 		_prepareNextRound();
 
@@ -170,7 +170,7 @@ abstract contract MainPrize is
 			// todo-1 Remember about the above. Cross-ref that rechecking with this comment.
 			// #enable_asserts assert(charityAddress != address(0));
 
-			(bool isSuccess_, ) = charityAddress.call{ value: charityEthDonationAmount_ }("");
+			(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
 			if (isSuccess_) {
 				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
 			} else {
@@ -199,7 +199,7 @@ abstract contract MainPrize is
 			// todo-1 If this fails, maybe send the funds to `prizesWallet`.
 			// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
 			// todo-1 Write and cross-ref comments.
-			(bool isSuccess_, ) = msg.sender.call{ value: mainEthPrizeAmount_ }("");
+			(bool isSuccess_, ) = msg.sender.call{value: mainEthPrizeAmount_}("");
 			require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_));
 		}
 
@@ -229,7 +229,7 @@ abstract contract MainPrize is
 		//		// todo-9 Update and/or use `randomNumberSeed_` here.
 		// 	uint256 nftId_ = nft.mint(roundNum, stellarSpender);
 		// 	// try
-		// 	// ToDo-202409245-0 applies.
+		// 	// ToDo-202409245-1 applies.
 		// 	// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
 		// 	token.mint(stellarSpender, cstRewardAmount_);
 		// 	// {
@@ -243,7 +243,7 @@ abstract contract MainPrize is
 
 		// The last CST bidder CST and CS NFT prizes.
 		if (lastCstBidderAddress != address(0)) {
-		 	// ToDo-202409245-0 applies.
+		 	// ToDo-202409245-1 applies.
 			token.mint(lastCstBidderAddress, cstRewardAmount_);
 			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 			uint256 nftId_ = nft.mint(roundNum, lastCstBidderAddress, randomNumber_);
@@ -257,7 +257,7 @@ abstract contract MainPrize is
 		{
 			// #enable_asserts assert(enduranceChampionAddress != address(0));
 			// try
-			// ToDo-202409245-0 applies.
+			// ToDo-202409245-1 applies.
 			// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
 			token.mint(enduranceChampionAddress, cstRewardAmount_);
 			// {
@@ -374,39 +374,53 @@ abstract contract MainPrize is
 	function _prepareNextRound() internal {
 		// todo-1 Consider to not reset some variables.
 
+		// It's probably unnecessary to emit an event about this change.
 		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
+
+		// todo-1 Remove this garbage.
+		// if (roundNum == 0) {
+		// 	// // #enable_asserts assert(ethDutchAuctionDurationDivisor == 1);
+		// 	// ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
+		//
+		// 	// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor == 1);
+		// 	ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
+		// }
+
 		++ roundNum;
+		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST auction.
 		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
 		// lastBidType = CosmicSignatureConstants.BidType.ETH;
 
 		// // Assuming this will neither overflow nor underflow.
-		// // todo-0 Take a closer look at this and other similar formulas.
-		// // todo-0 Should we use this formula before the 1st round too?
-		// // todo-0 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
+		// // todo-1 Take a closer look at this and other similar formulas.
+		// // todo-1 Should we use this formula before the 1st round too?
+		// // todo-1 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
 		// cstAuctionLength =
 		// 	roundStartCstAuctionLength +
-		// 	// todo-0 This formula is now incorrect.
+		// 	// todo-1 This formula is now incorrect.
 		// 	((mainPrizeTimeIncrementInMicroSeconds - CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
 
-		// todo-1 Maybe add 1 to ensure that the result is a nonzero.
-		nextEthBidPrice = address(this).balance / roundInitialEthBidPriceDivisor;
+		// // todo-9 Maybe add 1 to ensure that the result is a nonzero.
+		// nextEthBidPrice = address(this).balance / ethDutchAuctionEndingBidPriceDivisor;
 		// stellarSpender = address(0);
 		// stellarSpenderTotalSpentCst = 0;
 		enduranceChampionAddress = address(0);
+		// todo-1 Is it really necessary to reset this?
 		enduranceChampionStartTimeStamp = 0;
+		// todo-1 We do need to reset this, right?
 		enduranceChampionDuration = 0;
+		// todo-1 We do need to reset this, right?
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
+		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
 
 		// if (systemMode == CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE) {
 		// 	systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		// 	emit SystemModeChanged(systemMode);
 		// }
-
-		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
 	}
 
 	// #endregion

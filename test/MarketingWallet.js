@@ -31,8 +31,8 @@ describe("MarketingWallet", function () {
 		const cBidder = await BidderContract.deploy(await cosmicSignatureGameProxy.getAddress());
 		await cBidder.waitForDeployment();
 
-		let ethBidPrice_ = await cosmicSignatureGameProxy.getBidPrice();
-		await cBidder.doBid({ value: ethBidPrice_ });
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cBidder.doBid({ value: nextEthBidPrice_ });
 
 		const marketingReward = hre.ethers.parseEther("15");
 		// await expect(marketingWallet.payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");

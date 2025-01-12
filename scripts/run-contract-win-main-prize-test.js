@@ -10,12 +10,12 @@ async function main() {
 	let cosmicSignatureGameAddr = await bidderContract.cosmicSignatureGame();
 	let cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
 
-	let ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
-	await cosmicSignatureGame.connect(owner).bid((-1), "owner bids", { value: ethBidPrice_ });
-	ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
-	await cosmicSignatureGame.connect(addr1).bid((-1), "addr1 bids", { value: ethBidPrice_ });
-	ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
-	await cosmicSignatureGame.connect(addr2).bid((-1), "addr2 bids", { value: ethBidPrice_ });
+	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	await cosmicSignatureGame.connect(owner).bid((-1), "owner bids", { value: nextEthBidPrice_ });
+	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	await cosmicSignatureGame.connect(addr1).bid((-1), "addr1 bids", { value: nextEthBidPrice_ });
+	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	await cosmicSignatureGame.connect(addr2).bid((-1), "addr2 bids", { value: nextEthBidPrice_ });
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 	await randomWalkNft_.connect(owner).setApprovalForAll(cosmicSignatureGame.address, true);
@@ -29,12 +29,12 @@ async function main() {
 	let nftId_ = parsed_log.args.tokenId;
 	console.log("tokenid = " + nftId_);
 	await randomWalkNft_.connect(owner).transferFrom(owner.address, bidderContract.address, nftId_);
-	ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
+	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	// todo-1 I have commented this method out.
-	await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, nftId_, { value: ethBidPrice_ });
+	await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, nftId_, { value: nextEthBidPrice_ });
 
-	ethBidPrice_ = await cosmicSignatureGame.getBidPrice();
-	await bidderContract.connect(owner).doBid({ value: ethBidPrice_ });
+	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	await bidderContract.connect(owner).doBid({ value: nextEthBidPrice_ });
 
 	rwalkPrice = await randomWalkNft_.getMintPrice();
 	tx = await randomWalkNft_.connect(owner).mint({ value: rwalkPrice });
@@ -48,6 +48,7 @@ async function main() {
 
 	let durationUntilMainPrize_ = await cosmicSignatureGame.getDurationUntilMainPrize();
 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize_.toNumber()]);
+	// await hre.ethers.provider.send("evm_mine");
 	await bidderContract.connect(owner).doClaim();
 }
 

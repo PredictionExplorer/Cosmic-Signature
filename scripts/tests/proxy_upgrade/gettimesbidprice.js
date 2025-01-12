@@ -13,8 +13,8 @@ async function main() {
 	// 	process.exit(1);
 	// }
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-	let value = await cosmicSignatureGame.timesBidPrice();
-	console.log("timesBidPrice =", value);
+	let value = await cosmicSignatureGame.timesEthBidPrice();
+	console.log("timesEthBidPrice =", value);
 }
 
 main()
