@@ -65,7 +65,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice At the end of each bidding round, we mint this CST amount to `marketingWallet`.
 	/// Comment-202411064 applies.
-	/// @dev ToDo-202411182-1 relates.
 	/// todo-1 Ask Taras if he is eventually going to set this to zero.
 	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	/// todo-1 If so, before making the mint call check that this is a nonzero.

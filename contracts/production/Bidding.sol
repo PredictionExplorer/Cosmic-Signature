@@ -345,11 +345,8 @@ abstract contract Bidding is
 		// );
 
 		// [Comment-202409177]
-		// Transferring to marketing wallet or burning the CST amount used for bidding.
-		// todo-1 We just burn here now. Revisit this comment.
-		// ToDo-202411182-1 relates and/or applies.
-		// todo-1 ??? What about calling `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` here?
-		// todo-1 ??? It would be a safer option.
+		// Burning the CST amount used for bidding.
+		// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
 		// [/Comment-202409177]
 		token.burn(msg.sender, price);
 		// token.transferToMarketingWalletOrBurn(msg.sender, price);

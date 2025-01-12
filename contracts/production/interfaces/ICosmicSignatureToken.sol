@@ -65,5 +65,6 @@ interface ICosmicSignatureToken is IAddressValidator {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param account_ The address from which to burn funds.
 	/// @param value_ The token amount to burn.
+	/// @dev Comment-202409177 relates.
 	function burn(address account_, uint256 value_) external;
 }

@@ -34,6 +34,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 		// require(amount_ > 0, CosmicSignatureErrors.NonZeroValueRequired("Amount is zero."));
 
 		// try
+		// ToDo-202409245-1 applies.
 		token.transfer(marketerAddress_, amount_);
 		// {
 		// } catch {

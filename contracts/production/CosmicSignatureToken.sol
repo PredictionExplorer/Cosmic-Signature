@@ -23,7 +23,10 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 contract CosmicSignatureToken is
 	// Ownable,
 	ERC20,
+
+	// Comment-202409177 relates.
 	ERC20Burnable, // todo-1 This is needed -- confirmed.
+
 	ERC20Permit,
 	ERC20Votes,
 	AddressValidator,
@@ -44,6 +47,7 @@ contract CosmicSignatureToken is
 	// /// [ToDo-202412202-1]
 	// /// So develop a test in which the DAO rewards a marketer.
 	// /// But the DAO is too slow to vote. I've set voting period to 2 weeks, right? Discuss this issue with the guys.
+	// /// Actually the DAO will only appoint a treasurer to manage the marketing wallet.
 	// /// ToDo-202412203-1 relates.
 	// /// [/ToDo-202412202-1]
 	// address public marketingWalletAddress;
