@@ -93,7 +93,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// [Comment-202501107]
 	/// An offset to add to `block.timestamp`.
 	/// Currently, consequitive blocks can have equal timestamps, which will likely no longer be the case
-	/// after Arbitrum One decentralizes their blockchain.
+	/// after Arbitrum decentralizes their blockchain.
 	/// Sensible values:
 	///    0 when the result is to be used within the same transaction.
 	///    0 when bidding programmatically from an external script. But change it to 1 after the decentalization.

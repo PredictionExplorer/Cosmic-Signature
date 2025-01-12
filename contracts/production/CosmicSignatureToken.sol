@@ -124,18 +124,18 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `mint`
 
-	function mint(address account, uint256 value) external override onlyGame {
-		_mint(account, value);
+	function mint(address account_, uint256 value_) external override onlyGame {
+		_mint(account_, value_);
 	}
 
 	// #endregion
 	// #region `burn`
 
-	function burn(address account, uint256 value) external override onlyGame {
+	function burn(address account_, uint256 value_) external override onlyGame {
 		// // This assert now lives in `Bidding`, near Comment-202412251.
-		// // #enable_asserts assert(account != marketingWalletAddress);
+		// // #enable_asserts assert(account_ != marketingWalletAddress);
 
-		_burn(account, value);
+		_burn(account_, value_);
 	}
 
 	// #endregion
@@ -181,12 +181,12 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region Overrides Required By Solidity
 
-	function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
-		super._update(from, to, value);
+	function _update(address from_, address to_, uint256 value_) internal override(ERC20, ERC20Votes) {
+		super._update(from_, to_, value_);
 	}
 
-	function nonces(address owner) public view override(ERC20Permit, Nonces) returns(uint256) {
-		return super.nonces(owner);
+	function nonces(address owner_) public view override(ERC20Permit, Nonces) returns(uint256) {
+		return super.nonces(owner_);
 	}
 
 	// #endregion

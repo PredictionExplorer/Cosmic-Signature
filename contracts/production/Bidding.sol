@@ -491,7 +491,8 @@ abstract contract Bidding is
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
-		// Distribute token rewards
+		// Minting a CST reward to the bidder.
+		// We do it even for CST bids.
 		// try
 		// [ToDo-202409245-1]
 		// Can this, realistically, fail?

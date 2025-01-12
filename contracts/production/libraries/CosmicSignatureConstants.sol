@@ -160,6 +160,9 @@ library CosmicSignatureConstants {
 
 	uint48 internal constant GOVERNOR_DEFAULT_VOTING_DELAY = 1 days;
 	uint32 internal constant GOVERNOR_DEFAULT_VOTING_PERIOD = 2 weeks;
+
+	/// @dev I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
+	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.
 	uint256 internal constant GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE = 2;
 
 	// todo-1 Move some structs to interfaces?

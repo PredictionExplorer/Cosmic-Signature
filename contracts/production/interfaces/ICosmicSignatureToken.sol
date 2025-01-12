@@ -31,6 +31,9 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// todo-1 Document in a user manual that bidders don't need to approve any allowance, meaning to call `CosmicToken.approve`,
 /// todo-1 to bid with CST.
 /// todo-1 Will this apply to trading on our exchange as well?
+///
+/// todo-1 Make sure this contract is Uniswap and other similar exchanges compliant.
+/// todo-1 Maybe research a bit what other cutting edge projects are doing and do the same.
 interface ICosmicSignatureToken is IAddressValidator {
 	// /// @notice Emitted when `marketingWalletAddress` is changed.
 	// /// @param newValue The new value.
@@ -54,13 +57,13 @@ interface ICosmicSignatureToken is IAddressValidator {
 
 	/// @notice Mints a new token amount and assigns it to the given account.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
-	/// @param account The address that will receive the newly minted token amount.
-	/// @param value The token amount to mint.
-	function mint(address account, uint256 value) external;
+	/// @param account_ The address that will receive the newly minted token amount.
+	/// @param value_ The token amount to mint.
+	function mint(address account_, uint256 value_) external;
 
 	/// @notice Burns the given token amount from the given account.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
-	/// @param account The address from which to burn funds.
-	/// @param value The token amount to burn.
-	function burn(address account, uint256 value) external;
+	/// @param account_ The address from which to burn funds.
+	/// @param value_ The token amount to burn.
+	function burn(address account_, uint256 value_) external;
 }
