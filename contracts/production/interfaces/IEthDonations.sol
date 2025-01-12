@@ -2,17 +2,14 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-// todo-1 No need to derive from this?
-import { ISystemManagement } from "./ISystemManagement.sol";
+// import { ISystemManagement } from "./ISystemManagement.sol";
 
 /// @notice ETH donations serve 2 purposes:
 /// 1. Allow the project founders to seed the game with some money.
 /// 2. Allow people to advertise things.
 /// As Comment-202409215 says, we do not enforce a minimum donation in the logic running on the blockchain,
 /// but we do so at higher levels in the stack.
-/// @dev Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1733896883821769 .
-/// todo-1 Should we allow donations even while the system is inactive? Asked.
-interface IEthDonations is ICosmicSignatureGameStorage, ISystemManagement {
+interface IEthDonations is ICosmicSignatureGameStorage /* , ISystemManagement */ {
 	/// @notice Emitted when someone donates ETH.
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.
