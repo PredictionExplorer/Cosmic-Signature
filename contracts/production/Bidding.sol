@@ -491,8 +491,10 @@ abstract contract Bidding is
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
+		// [Comment-202501125]
 		// Minting a CST reward to the bidder.
 		// We do it even for CST bids.
+		// [/Comment-202501125]
 		// try
 		// [ToDo-202409245-1]
 		// Can this, realistically, fail?

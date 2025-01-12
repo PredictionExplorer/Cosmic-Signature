@@ -531,7 +531,7 @@ abstract contract BiddingOpenBid is
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
-		// Distribute token rewards
+		// Comment-202501125 applies.
 		// try
 		// ToDo-202409245-1 applies.
 		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
