@@ -13,7 +13,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-// import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
@@ -143,6 +143,13 @@ abstract contract Bidding is
 
 		// Updating bidding statistics.
 		bidderInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
+
+		// Comment-202501125 applies.
+		// [ToDo-202409245-1]
+		// Can this, realistically, fail?
+		// Comment-202412033 says that this can't overflow.
+		// [/ToDo-202409245-1]
+		token.mint(msg.sender, tokenReward);
 
 		// #endregion
 		// #region
@@ -348,8 +355,21 @@ abstract contract Bidding is
 		// Burning the CST amount used for bidding.
 		// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
 		// [/Comment-202409177]
-		token.burn(msg.sender, price);
+		// [Comment-202501125]
+		// Minting a CST reward to the bidder.
+		// We do it even for a CST bid.
+		// [/Comment-202501125]
+		// token.burn(msg.sender, price);
 		// token.transferToMarketingWalletOrBurn(msg.sender, price);
+		{
+			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
+			mintAndBurnSpecs_[0].account = msg.sender;
+			mintAndBurnSpecs_[0].value = ( - int256(price) );
+			mintAndBurnSpecs_[1].account = msg.sender;
+			mintAndBurnSpecs_[1].value = int256(tokenReward);
+			// ToDo-202409245-1 applies.
+			token.mintAndBurnMany(mintAndBurnSpecs_);
+		}
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
@@ -488,25 +508,19 @@ abstract contract Bidding is
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
-		// [Comment-202501125]
-		// Minting a CST reward to the bidder.
-		// We do it even for CST bids.
-		// [/Comment-202501125]
-		// try
-		// [ToDo-202409245-1]
-		// Can this, realistically, fail?
-		// This can't, realistically, overflow, right?
-		// [/ToDo-202409245-1]
-		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicSignatureErrors.ERC20Mint(
-		// 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
-		// 			/*lastBidderAddress*/ msg.sender,
-		// 			tokenReward
-		// 		);
-		// }
+		// // Comment-202501125 applies.
+		// // try
+		// // ToDo-202409245-1 applies.
+		// token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
+		// // {
+		// // } catch {
+		// // 	revert
+		// // 		CosmicSignatureErrors.ERC20Mint(
+		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
+		// // 			/*lastBidderAddress*/ msg.sender,
+		// // 			tokenReward
+		// // 		);
+		// // }
 
 		// // try
 		// // ToDo-202409245-1 applies.

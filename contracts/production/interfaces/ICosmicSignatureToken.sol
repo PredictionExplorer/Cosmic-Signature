@@ -19,11 +19,8 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 ///
 /// ToDo-202412106-1 relates and/or applies.
 ///
-/// todo-1 Do we need a method to make multiple mints and/or burns?
-/// todo-1 A positive value means to mint; a negative value means to burn.
-/// todo-1 I can name it `mintBurnMany`.
-///
 /// todo-1 Do we need a method to send the same and/or different amounts to multiple recipients?
+/// todo-1 It can be used by `MarketingWallet`.
 /// todo-1 I can name it `transferMany`.
 ///
 /// todo-1 Do we need to make this or any other contract upgradeable or replaceable?

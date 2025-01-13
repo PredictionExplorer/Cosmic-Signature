@@ -13,7 +13,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
-// import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
+import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 // import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
@@ -226,6 +226,10 @@ abstract contract BiddingOpenBid is
 		// Updating bidding statistics.
 		bidderInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
 
+		// Comment-202501125 applies.
+		// ToDo-202409245-1 applies.
+		token.mint(msg.sender, tokenReward);
+
 		// #endregion
 		// #region
 
@@ -400,8 +404,18 @@ abstract contract BiddingOpenBid is
 		// );
 
 		// Comment-202409177 applies.
-		token.burn(msg.sender, price);
+		// Comment-202501125 applies.
+		// token.burn(msg.sender, price);
 		// token.transferToMarketingWalletOrBurn(msg.sender, price);
+		{
+			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
+			mintAndBurnSpecs_[0].account = msg.sender;
+			mintAndBurnSpecs_[0].value = ( - int256(price) );
+			mintAndBurnSpecs_[1].account = msg.sender;
+			mintAndBurnSpecs_[1].value = int256(tokenReward);
+			// ToDo-202409245-1 applies.
+			token.mintAndBurnMany(mintAndBurnSpecs_);
+		}
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
 		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
@@ -531,19 +545,19 @@ abstract contract BiddingOpenBid is
 		++ numRaffleParticipants_;
 		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
-		// Comment-202501125 applies.
-		// try
-		// ToDo-202409245-1 applies.
-		token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
-		// {
-		// } catch {
-		// 	revert
-		// 		CosmicSignatureErrors.ERC20Mint(
-		// 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
-		// 			/*lastBidderAddress*/ msg.sender,
-		// 			tokenReward
-		// 		);
-		// }
+		// // Comment-202501125 applies.
+		// // try
+		// // ToDo-202409245-1 applies.
+		// token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
+		// // {
+		// // } catch {
+		// // 	revert
+		// // 		CosmicSignatureErrors.ERC20Mint(
+		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
+		// // 			/*lastBidderAddress*/ msg.sender,
+		// // 			tokenReward
+		// // 		);
+		// // }
 
 		// // try
 		// // ToDo-202409245-1 applies.
