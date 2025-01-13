@@ -1,10 +1,10 @@
 // todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
 
-// Helps building transaction to get back donated Random Walk tokens used in bid+donate calls
+// Helps building transaction to get back donated Random Walk NFTs used in bid+donate calls
 // Two run modes:
-// 	- without PRIVKEY environment variable set -> only lists donated tokens per round
+// 	- without PRIVKEY environment variable set -> only lists donated NFTs per round
 // 	- with PRIVKEY environment variable set -> generates claimManyDonatedNfts() calls per prize
-// (note: only for unclaimed tokens)
+// (note: only for unclaimed NFTs)
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
@@ -32,6 +32,7 @@ async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 	}
 	return prizeData;
 }
+
 async function list_donated_nfts(nfts) {
 	//console.log(nfts);
 	const numNfts_ = nfts.length;
@@ -39,7 +40,7 @@ async function list_donated_nfts(nfts) {
 		const roundNfts_ = nfts[i];
 		console.log("Round " + i);
 		if (typeof roundNfts_ === "undefined" || roundNfts_.length == 0) {
-			console.log("\t(no claimable tokens)");
+			console.log("\t(no claimable NFTs)");
 			continue;
 		}
 		for (let j = 0; j < roundNfts_.length; j++) {
@@ -55,6 +56,7 @@ async function list_donated_nfts(nfts) {
 		}
 	}
 }
+
 function build_parameter_list(token_list) {
 	let output = [];
 	for (let i = 0; i < token_list.length; i++) {
@@ -65,6 +67,7 @@ function build_parameter_list(token_list) {
 	}
 	return output;
 }
+
 async function main() {
 	let privKey = process.env.PRIVKEY;
 
@@ -72,11 +75,11 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 	let nfts = await get_unclaimed_donated_nfts(cosmicSignatureGame);
 	if (nfts.length == 0) {
-		console.log("Map of donated unclaimed tokens is empty, no claiming is possible");
+		console.log("Map of donated unclaimed NFTs is empty, no claiming is possible");
 		return;
 	}
 	if (typeof privKey === "undefined" || privKey.length == 0) {
-		console.log("Fetching tokens, please wait ...");
+		console.log("Fetching NFTs, please wait ...");
 		await list_donated_nfts(nfts);
 		return;
 	} else {
@@ -84,7 +87,7 @@ async function main() {
 	}
 	let roundNumStr = process.env.ROUND_NUM;
 	if (typeof roundNumStr === "undefined" || roundNumStr.length == 0) {
-		console.log("Please provide ROUND_NUM environment variable to claim tokens");
+		console.log("Please provide ROUND_NUM environment variable to claim NFTs");
 		process.exit(1);
 	}
 	let roundToClaim = parseInt(roundNumStr, 10);
@@ -102,6 +105,7 @@ async function main() {
 		}
 	}
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

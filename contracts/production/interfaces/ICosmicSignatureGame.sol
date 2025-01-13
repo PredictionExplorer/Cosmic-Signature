@@ -54,6 +54,8 @@ interface ICosmicSignatureGame is
 	/// @notice Handles incoming ETH transfers.
 	/// See also: `IEthDonations.donateEth`.
 	/// todo-1 +++ Do we have a test for this?
+	/// todo-1 Consider moving this to `IBidding`.
+	/// todo-1 Cross-ref with `fallback`. Leave it commented.
 	receive() external payable;
 
 	// /// @dev It appears that we don't need this.

@@ -42,22 +42,25 @@ abstract contract MainPrize is
 		// #region
 
 		if (msg.sender == lastBidderAddress) {
+			// Comment-202411169 relates.
 			// #enable_asserts assert(lastBidderAddress != address(0));
+			
 			require(
 				block.timestamp >= mainPrizeTime,
 				CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp)
 			);
 		} else {
-			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsInRound("There have been no bids in the current bidding round."));
-			uint256 durationUntilOperationIsPermitted_ =
-				uint256(int256(mainPrizeTime) + int256(timeoutDurationToClaimMainPrize) - int256(block.timestamp));
+			// Comment-202411169 relates.
+			require(lastBidderAddress != address(0), CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet."));
+			
+			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			require(
-				int256(durationUntilOperationIsPermitted_) <= int256(0),
+				durationUntilOperationIsPermitted_ <= int256(0),
 				CosmicSignatureErrors.LastBidderOnly(
 					"Only the last bidder is permitted to claim the bidding round main prize until a timeout expires.",
 					lastBidderAddress,
 					msg.sender,
-					durationUntilOperationIsPermitted_
+					uint256(durationUntilOperationIsPermitted_)
 				)
 			);
 		}
@@ -78,12 +81,12 @@ abstract contract MainPrize is
 		// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
 		// which would allow them to claim donated NFTs and ERC-20 tokens.
 		// But we feel that it's better to simply treat the guy who clicked "Claim" as the winner.
-		// todo-0 I still want to remove `winners`.
-		// todo-0 Being discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729697863762659
-		winners[roundNum] = msg.sender;
+		// winners[roundNum] = msg.sender;
 		prizesWallet.registerRoundEnd(roundNum, msg.sender);
 
 		_distributePrizes();
+		// ToDo-202409245-1 applies.
+		token.mint(marketingWallet, marketingWalletCstContributionAmount);
 		_prepareNextRound();
 
 		// #endregion
@@ -167,7 +170,7 @@ abstract contract MainPrize is
 			// todo-1 Remember about the above. Cross-ref that rechecking with this comment.
 			// #enable_asserts assert(charityAddress != address(0));
 
-			(bool isSuccess_, ) = charityAddress.call{ value: charityEthDonationAmount_ }("");
+			(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
 			if (isSuccess_) {
 				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
 			} else {
@@ -196,7 +199,7 @@ abstract contract MainPrize is
 			// todo-1 If this fails, maybe send the funds to `prizesWallet`.
 			// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
 			// todo-1 Write and cross-ref comments.
-			(bool isSuccess_, ) = msg.sender.call{ value: mainEthPrizeAmount_ }("");
+			(bool isSuccess_, ) = msg.sender.call{value: mainEthPrizeAmount_}("");
 			require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_));
 		}
 
@@ -226,7 +229,7 @@ abstract contract MainPrize is
 		//		// todo-9 Update and/or use `randomNumberSeed_` here.
 		// 	uint256 nftId_ = nft.mint(roundNum, stellarSpender);
 		// 	// try
-		// 	// ToDo-202409245-0 applies.
+		// 	// ToDo-202409245-1 applies.
 		// 	// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
 		// 	token.mint(stellarSpender, cstRewardAmount_);
 		// 	// {
@@ -240,7 +243,7 @@ abstract contract MainPrize is
 
 		// The last CST bidder CST and CS NFT prizes.
 		if (lastCstBidderAddress != address(0)) {
-		 	// ToDo-202409245-0 applies.
+		 	// ToDo-202409245-1 applies.
 			token.mint(lastCstBidderAddress, cstRewardAmount_);
 			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 			uint256 nftId_ = nft.mint(roundNum, lastCstBidderAddress, randomNumber_);
@@ -254,7 +257,7 @@ abstract contract MainPrize is
 		{
 			// #enable_asserts assert(enduranceChampionAddress != address(0));
 			// try
-			// ToDo-202409245-0 applies.
+			// ToDo-202409245-1 applies.
 			// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
 			token.mint(enduranceChampionAddress, cstRewardAmount_);
 			// {
@@ -370,38 +373,54 @@ abstract contract MainPrize is
 	/// This method is called after the main prize has been claimed.
 	function _prepareNextRound() internal {
 		// todo-1 Consider to not reset some variables.
-		// todo-1 Not changing `startingBidPriceCST`. Is it OK?
+
+		// It's probably unnecessary to emit an event about this change.
+		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
+
+		// todo-1 Remove this garbage.
+		// if (roundNum == 0) {
+		// 	// // #enable_asserts assert(ethDutchAuctionDurationDivisor == 1);
+		// 	// ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
+		//
+		// 	// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor == 1);
+		// 	ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
+		// }
 
 		++ roundNum;
+		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST auction.
+		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
 		// lastBidType = CosmicSignatureConstants.BidType.ETH;
 
-		// Assuming this will neither overflow nor underflow.
-		// todo-1 Take a closer look at this and other similar formulas.
-		// todo-1 Should we use this formula before the 1st round too?
-		// todo-1 Should `setRoundStartCstAuctionLength` and `setNanoSecondsExtra` use it too?
-		cstAuctionLength =
-			roundStartCstAuctionLength +
-			((nanoSecondsExtra - CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
+		// // Assuming this will neither overflow nor underflow.
+		// // todo-1 Take a closer look at this and other similar formulas.
+		// // todo-1 Should we use this formula before the 1st round too?
+		// // todo-1 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
+		// cstAuctionLength =
+		// 	roundStartCstAuctionLength +
+		// 	// todo-1 This formula is now incorrect.
+		// 	((mainPrizeTimeIncrementInMicroSeconds - CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
 
-		// todo-1 Maybe add 1 to ensure that the result is a nonzero.
-		bidPrice = address(this).balance / initialBidAmountFraction;
+		// // todo-9 Maybe add 1 to ensure that the result is a nonzero.
+		// nextEthBidPrice = address(this).balance / ethDutchAuctionEndingBidPriceDivisor;
 		// stellarSpender = address(0);
 		// stellarSpenderTotalSpentCst = 0;
 		enduranceChampionAddress = address(0);
+		// todo-1 Is it really necessary to reset this?
 		enduranceChampionStartTimeStamp = 0;
+		// todo-1 We do need to reset this, right?
 		enduranceChampionDuration = 0;
+		// todo-1 We do need to reset this, right?
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
+		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
 
 		// if (systemMode == CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE) {
 		// 	systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		// 	emit SystemModeChanged(systemMode);
 		// }
-
-		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
 	}
 
 	// #endregion
@@ -467,22 +486,13 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getDurationUntilMainPrize`
 
-	/// todo-1 Slither dislikes some time comparisons.
-	/// todo-1 Would it make sense to subtract the times as signed `int256` in most cases?
-	/// todo-1 It could also make sense to do it from within an `unchecked` block.
-	/// todo-1 All our times are supposed to be reasonable values that are close to `block.timestamp`.
-	/// todo-1 `activationTime`, even though it's set externally, will also be reasonable, right?
-	/// todo-1 But if it's not guaranteed the contract can require that it was within 1 year around `block.timestamp`.
-	function getDurationUntilMainPrize() external view override returns(uint256) {
+	function getDurationUntilMainPrize() public view override returns(int256) {
 		// todo-1 Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 durationUntilMainPrize_ = uint256(int256(mainPrizeTime) - int256(block.timestamp));
-			if(int256(durationUntilMainPrize_) < int256(0)) {
-				durationUntilMainPrize_ = 0;
-			}
+			int256 durationUntilMainPrize_ = int256(mainPrizeTime) - int256(block.timestamp);
 			return durationUntilMainPrize_;
 		}
 	}

@@ -20,12 +20,11 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @param lastBidderAddress The address of the bidder who placed this bid.
 	/// @param roundNum The current bidding round number.
 	/// todo-1 Reorder the above to the beginning.
-	/// @param bidPrice The price of the bid
-	/// todo-1 Rename the above param to `ethBidPrice`.
+	/// @param ethBidPrice The price of the bid
 	/// @param randomWalkNftId The ID of the RandomWalk NFT used (if any)
 	/// @param numCSTTokens The number of CST tokens used (if any)
 	/// todo-1 Rename the above param to `cstBidPrice`.
-	/// todo-1 Maybe reorder the above param to after `bidPrice`.
+	/// todo-1 Maybe reorder the above param to after `ethBidPrice`.
 	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
 	/// todo-1 Rename the above param to how I am going to name the respective state variable.
 	/// @param message An optional message from the bidder
@@ -33,7 +32,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	event BidEvent(
 		address indexed lastBidderAddress,
 		uint256 indexed roundNum,
-		int256 bidPrice,
+		int256 ethBidPrice,
 		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
 		int256 numCSTTokens,
 		uint256 mainPrizeTime,
@@ -60,10 +59,20 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// todo-1 Then also rename methods like `bidAndDonate...`.
 	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable;
 
-	/// @notice Obtains the current price that a bidder is required to pay to place an ETH bid
-	/// @return The ETH price, in Wei
-	/// todo-1 Rename this to `getEthBidPrice`.
-	function getBidPrice() external view returns(uint256);
+	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
+	/// @param currentTimeOffset_ Comment-202501107 applies.
+	/// @return The next ETH bid price, in Wei.
+	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns(uint256);
+
+	/// @notice Calculates and returns an ETH + RandomWalk NFT bid price, given an ETH only bid price.
+	/// The result is guaranteed to be a nonzero, provided `ethBidPrice_` is a nonzero.
+	/// This method doesn't check for overflow, which implies that `ethBidPrice_` must not be close to overflow.
+	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns(uint256);
+
+	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
+	/// The elapsed duration counts since bidding round activation. It can be negative. It makes no sense to use it
+	/// after the end of the auction.
+	function getEthDutchAuctionDurations() external view returns(uint256, int256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
 
@@ -78,18 +87,41 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
-	/// In our game, the price decreases linearly over the Dutch auction duration, and can become zero.
-	/// todo-1 Maybe don't let it to become zero. Require at least 1 Wei.
-	/// @return The CST price, in Wei.
+	/// The price decreases linearly over the Dutch auction duration, and can become zero.
+	/// todo-1 Confirmed: zero price is OK.
+	/// @param currentTimeOffset_ .
+	/// [Comment-202501107]
+	/// An offset to add to `block.timestamp`.
+	/// Currently, consequitive blocks can have equal timestamps, which will likely no longer be the case
+	/// after Arbitrum decentralizes their blockchain.
+	/// Sensible values:
+	///    0 when the result is to be used within the same transaction.
+	///    0 when bidding programmatically from an external script. But change it to 1 after the decentalization.
+	///       Although an external script can have a smarter time aware logic that can conditionally pass different values.
+	///    1 when bidding manually, assuming that human hands aren't too fast. But change it to 2 after the decentalization.
+	///    1 for testing on the Hardhat Network.
+	/// [/Comment-202501107]
+	/// @return The next CST bid price, in Wei.
+	/// Comment-202501022 applies to the return value.
 	/// @dev Comment-202409179 relates.
-	/// todo-1 Rename this to `getCstBidPrice`.
-	function getCurrentBidPriceCST() external view returns(uint256);
+	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns(uint256);
 
-	/// @return A tuple containing the elapsed and total durations of the current auction.
-	/// @dev This function is used by `getCurrentBidPriceCST`
-	/// todo-1 I dislike it that this returns 2 numbers. This should return only seconds elapsed.
-	/// todo-1 Rename to `getDurationSinceCstDutchAuctionStart` or `getCstDutchAuctionElapsedDuration`.
-	function getCstAuctionDuration() external view returns(uint256, uint256);
+	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
+	/// Comment-202501022 applies to the returned elapsed duration.
+	function getCstDutchAuctionDurations() external view returns(uint256, int256);
+
+	function getMainPrizeTimeIncrement() external view returns(uint256);
+
+	/// @return The number of seconds until the current bidding round activates,
+	/// or a non-positive value if it's already active.
+	function getDurationUntilActivation() external view returns(int256);
+
+	/// @return The number of seconds since the current bidding round activated,
+	/// or a negative value if it's not yet active.
+	function getDurationElapsedSinceActivation() external view returns(int256);
+
+	/// @dev todo-1 Does this belong to `IMainPrize`? But `IBidding` doesn't derive from it. At least comment.
+	function getInitialDurationUntilMainPrize() external view returns(uint256);
 
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round

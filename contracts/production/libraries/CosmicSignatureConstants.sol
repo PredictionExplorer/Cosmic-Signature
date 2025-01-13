@@ -9,18 +9,29 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @notice Default values and types used across the Cosmic Signature ecosystem.
 /// @dev These constants are used for initial state variables but may be updated later.
 library CosmicSignatureConstants {
-	/// @notice Represents one million. Useful for calculations involving millions
-	uint256 internal constant MILLION = 1e6;
+	/// @notice Represents one thousand. Useful for calculations involving thousands.
+	uint256 internal constant THOUSAND = 1e3;
 
-	/// @notice Represents one billion. Useful for calculations involving billions
-	uint256 internal constant BILLION = 1e3 * MILLION;
+	/// @notice Represents one million. Useful for calculations involving millions.
+	uint256 internal constant MILLION = THOUSAND * THOUSAND;
+
+	/// @notice Represents one billion. Useful for calculations involving billions.
+	uint256 internal constant BILLION = THOUSAND * MILLION;
 
 	uint256 internal constant NANOSECONDS_PER_SECOND = BILLION;
 	uint256 internal constant MICROSECONDS_PER_SECOND = MILLION;
-	uint256 internal constant MINUTES_PER_HOUR = 60;
-	uint256 internal constant HOURS_PER_DAY = 24;
+	uint256 internal constant MILLISECONDS_PER_SECOND = THOUSAND;
+	uint256 internal constant MINUTES_PER_HOUR = (1 hours) / (1 minutes);
+	uint256 internal constant HOURS_PER_DAY = (1 days) / (1 hours);
+	uint256 internal constant NANOSECONDS_PER_MINUTE = NANOSECONDS_PER_SECOND * (1 minutes);
 	uint256 internal constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
 	uint256 internal constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MICROSECONDS_PER_MINUTE = MICROSECONDS_PER_SECOND * (1 minutes);
+	uint256 internal constant MICROSECONDS_PER_HOUR = MICROSECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant MICROSECONDS_PER_DAY = MICROSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MILLISECONDS_PER_MINUTE = MILLISECONDS_PER_SECOND * (1 minutes);
+	uint256 internal constant MILLISECONDS_PER_HOUR = MILLISECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
 
 	/// @notice This is equivalent to the midnight of 9000-01-01.
 	/// @dev JavaScript  code to calculate this.
@@ -46,32 +57,46 @@ library CosmicSignatureConstants {
 	/// @notice Initial `activationTime`.
 	/// @dev This must be in the future -- to configure our contract after the deployment
 	/// without calling `setActivationTime` and to ensure that hackers won't attempt to bid
-	/// before we are done with configuring the contract.
+	/// before the deployment script is done configuring the contract.
 	/// Comment-202411168 relates.
 	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `delayDurationBeforeNextRound`.
-	uint256 internal constant INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND = 1 days;
+	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND = (1 hours) / 2;
 
-	/// @notice Default `marketingReward`.
-	uint256 internal constant MARKETING_REWARD = 15 ether;
+	/// @notice Default `marketingWalletCstContributionAmount`.
+	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
 
 	/// @notice Default `maxMessageLength`.
 	/// Comment-202409143 applies.
 	uint256 internal constant MAX_MESSAGE_LENGTH = 280;
 
-	uint256 internal constant INITIAL_NANOSECONDS_EXTRA = NANOSECONDS_PER_HOUR;
-	/// todo-1 Rename `INITIAL...` to `DEFAULT...`.
-	uint256 internal constant INITIAL_TIME_INCREASE = MICROSECONDS_PER_SECOND + 30;
-	/// todo-0 Rename to `INITIAL_INITIAL_...`?
-	/// todo-0 Actually see a rename todo near `initialSecondsUntilPrize`.
-	uint256 internal constant INITIAL_SECONDS_UNTIL_PRIZE = 1 days;
+	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
+	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
 
-	/// @notice Initial `bidPrice` for the first bidding round.
-	uint256 internal constant FIRST_ROUND_BID_PRICE = 0.0001 ether;
+	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
 
-	uint256 internal constant INITIAL_BID_AMOUNT_FRACTION = 4_000;
-	uint256 internal constant INITIAL_PRICE_INCREASE = MILLION + 10_000;
+	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
+	/// @dev todo-1 Since we now increase `mainPrizeTimeIncrementInMicroSeconds` once per round,
+	/// todo-1 Taras needs to simulate a better value for this.
+	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
+	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
+
+	/// @notice Default `ethDutchAuctionDurationDivisor`.
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (HOURS_PER_DAY * 2) - 0;
+
+	/// @notice First bidding round initial ETH bid price.
+	/// It's impossible to change it after the contract has been deployed.
+	uint256 internal constant FIRST_ROUND_INITIAL_ETH_BID_PRICE = 0.0001 ether;
+
+	uint256 internal constant ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
+
+	/// @notice Default `ethDutchAuctionEndingBidPriceDivisor`.
+	/// Comment-202501063 applies.
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 10 * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+
+	uint256 internal constant DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 
 	/// @notice
 	/// [Comment-202412036]
@@ -81,18 +106,17 @@ library CosmicSignatureConstants {
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
-	/// @notice Initial `cstAuctionLength`.
-	/// Default `roundStartCstAuctionLength`.
-	/// @dev todo-1 I wrote a todo to rename `cstAuctionLength` and `roundStartCstAuctionLength`. So rename this too.
-	uint256 internal constant DEFAULT_AUCTION_LENGTH = 12 hours;
+	/// @notice Default `cstDutchAuctionDurationDivisor`.
+	/// @dev todo-1 Rename any "Auction" to "Dutch Auction".
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
-	uint256 internal constant STARTING_BID_PRICE_CST_MULTIPLIER = 2;
+	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
-	/// @notice Initial `startingBidPriceCST`.
-	/// Default `startingBidPriceCSTMinLimit`.
-	uint256 internal constant STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT = 200 ether;
+	/// @notice Default `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// Initial `cstDutchAuctionBeginningBidPrice`.
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
-	// /// @notice `startingBidPriceCSTMinLimit` "hard" min limit.
+	// /// @notice `startingBidPriceCstMinLimit` "hard" min limit.
 	// /// This is used as a min limit on another min limit.
 	// /// @dev This should not be smaller because we calculate CST bid price in the `1 / MILLION` resolution
 	// /// and we want to support a sufficient number of significant digits.
@@ -127,11 +151,21 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS = 5;
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
 
+	// /// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
+	// /// @dev todo-9 Is this amount OK?
+	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 2_000 ether;
+
 	/// @notice Comment-202409143 applies.
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;
 
 	uint48 internal constant GOVERNOR_DEFAULT_VOTING_DELAY = 1 days;
+
+	/// @dev OpenZeppelin recommends to set voting period to 1 week. In our code, it used to be set to 30 days,
+	/// which seems to be unnecessarily long. So I have reduced it to 2 weeks. Taras is OK with that.
 	uint32 internal constant GOVERNOR_DEFAULT_VOTING_PERIOD = 2 weeks;
+
+	/// @dev I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
+	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.
 	uint256 internal constant GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE = 2;
 
 	// todo-1 Move some structs to interfaces?

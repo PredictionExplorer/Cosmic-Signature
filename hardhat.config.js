@@ -463,7 +463,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 		extCalls: "trusted",
 
 		// By default, these won't be reported.
-		// todo-0 Do we really need these?
+		// todo-1 Do we really need these?
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
 		invariants: ["contract", "reentrancy",],
 
@@ -483,7 +483,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 
 		// By default, SMTChecker won't discover integer overflow and underflow.
 		// To enable discovering those, list them explicitly, together with whatever others.
-		// todo-0 Do we really need to discover them?
+		// todo-1 Do we really need to discover them?
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verification-targets
 		targets: [
 			"assert",

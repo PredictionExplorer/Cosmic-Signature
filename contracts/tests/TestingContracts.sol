@@ -16,41 +16,43 @@ import { IBidding, Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-/// @notice used to test revert() statements in token transfers in claimMainPrize() function
-contract BrokenToken {
-	uint256 private _counter;
-
-	function mint(address, uint256 roundNum_) public {
-		_counter = roundNum_;
-		require(false, "Test mint() failed.");
-	}
-	
-	function totalSupply() public pure returns (uint256) {
-		return 1;
-	}
-}
+// /// @notice used to test revert() statements in token transfers in claimMainPrize() function
+// contract BrokenToken1 {
+// 	uint256 private _counter;
+// 
+// 	function mint(address, uint256 roundNum_) public {
+// 		_counter = roundNum_;
+// 		require(false, "Test mint() failed.");
+// 	}
+// 
+// 	function totalSupply() public pure returns (uint256) {
+// 		return 1;
+// 	}
+// }
 
 /// @notice used to test revert() statements in CosmicSignatureGame contract
-/// todo-1 Rename to `BrokenErc20`.
-contract BrokenERC20 {
-	uint256 counter;
+contract BrokenToken2 {
+	uint256 private _counter;
 
-	constructor(uint256 _counter) {
-		counter = _counter;
+	constructor(uint256 counter_) {
+		_counter = counter_;
 	}
 
+	// function mintToMarketingWallet(uint256) external {
+	// }
+
 	function mint(address, uint256) external {
-		if (counter == 0 ) {
-			require(false, "Test mint() (ERC20) failed");
-		} else {
-			counter = counter - 1;
-		}
+		require(_counter > 0, "Test mint() failed.");
+		-- _counter;
+	}
+
+	function burn(address, uint256) external {
 	}
 }
 
 /// @notice Used to test `revert` statements for charity deposits.
 contract BrokenCharity {
-	// uint256 private counter;
+	// uint256 private _counter;
 	
 	receive() external payable {
 		require(false, "Test deposit failed.");
@@ -91,7 +93,6 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_stakingWalletCosmicSignatureNft.stake(nftId);
 	}
 
-	// todo-0 Nick, I added the 2nd param. Tests that call this function are broken now.
 	function doUnstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external {
 		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}
@@ -160,8 +161,8 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// function setActivationTimeRaw(uint256 newValue_) external {
 	// 	activationTime = newValue_;
 	//
-	// 	// Comment-202411168 applies.
-	// 	lastCstBidTimeStamp = newValue_;
+	// 	// // Comment-202411168 applies.
+	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
 	// }
 
 	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
@@ -189,7 +190,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
-	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{ value: msg.value }(
+	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
 	// 		abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
 	// 	);
 	// 	if ( ! isSuccess_ ) {
@@ -255,7 +256,7 @@ contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
 	}
 
-	/// @notice sends donateNft() inside a call to transfer a token, generating reentrant function call
+	/// @notice sends donateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// the following call should revert
 		// todo-1 This will probably now revert due to `onlyGame`.
@@ -280,10 +281,10 @@ contract MaliciousNft2 is ERC721 {
 		// game = game_;
 	}
 
-	// /// @notice sends bidAndDonateNft() inside a call to transfer a token, generating reentrant function call
+	// /// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
 	// /// @dev todo-1 This method is now broken. See todos in its body.
 	// function transferFrom(address from, address to, uint256 nftId) public override {
-	// 	// uint256 price = Bidding(/*payable*/(game)).getBidPrice();
+	// 	// uint256 price = Bidding(/*payable*/(game)).getNextEthBidPrice(int256(0));
 	// 	// todo-1 This structure no longer exists.
 	// 	CosmicSignatureGame.BidParams memory defaultParams;
 	// 	// defaultParams.message = "";
@@ -293,6 +294,7 @@ contract MaliciousNft2 is ERC721 {
 	// 	// todo-1 Should we make a high level call here?
 	// 	(bool isSuccess_, /*bytes memory retval*/) =
 	// 		// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+	// 		// todo-1 Besides, this sends zero `value`.
 	// 		msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
 	// 	if ( ! isSuccess_ ) {
 	// 		assembly {

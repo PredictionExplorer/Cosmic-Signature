@@ -3,37 +3,11 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { basicDeployment } = require("../src/Deploy.js");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+// const { basicDeployment } = require("../src/Deploy.js");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
-describe("Contract", function () {
-	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			cosmicSignatureDao,
-			prizesWallet,
-			randomWalkNft,
-			stakingWallet,
-			marketingWallet,
-			// bidLogic,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		return {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			cosmicSignatureDao,
-			prizesWallet,
-			randomWalkNft,
-			stakingWallet,
-			marketingWallet,
-			// bidLogic,
-		};
-	}
+describe("BidderContract", function () {
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -43,30 +17,29 @@ describe("Contract", function () {
 	// 	],
 	// };
 	it("A contract can win main prize", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
-			deployCosmicSignature,
-		);
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, randomWalkNft,} =
+			await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2,] = signers;
 
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		let bidderContract = await BidderContract.connect(owner).deploy(await cosmicSignatureGameProxy.getAddress());
 		await bidderContract.waitForDeployment();
 
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0);
+		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
 
 		// let bidParams = { message: "owner bids", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: bidPrice });
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: nextEthBidPrice_ });
 		// bidParams = { message: "addr1 bids", randomWalkNftId: -1 };
 		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "addr1 bids", { value: bidPrice });
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "addr1 bids", { value: nextEthBidPrice_ });
 		// bidParams = { message: "addr2 bids", randomWalkNftId: -1 };
 		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "addr2 bids", { value: bidPrice });
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "addr2 bids", { value: nextEthBidPrice_ });
 
 		// const randomWalkNftAddr_ = await cosmicSignatureGameProxy.randomWalkNft();
 		const randomWalkNftAddr_ = await randomWalkNft.getAddress();
@@ -81,12 +54,12 @@ describe("Contract", function () {
 		let parsed_log = randomWalkNft.interface.parseLog(log);
 		let donatedNftId_ = parsed_log.args.tokenId;
 		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donatedNftId_);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		// todo-1 I have commented this method out.
-		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, { value: bidPrice });
+		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, { value: nextEthBidPrice_ });
 
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await bidderContract.connect(owner).doBid({ value: bidPrice });
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await bidderContract.connect(owner).doBid({ value: nextEthBidPrice_ });
 
 		rwalkPrice = await randomWalkNft.getMintPrice();
 		tx = await randomWalkNft.connect(owner).mint({ value: rwalkPrice });
@@ -96,10 +69,12 @@ describe("Contract", function () {
 		parsed_log = randomWalkNft.interface.parseLog(log);
 		let rwalk_token_id = parsed_log.args.tokenId;
 		await randomWalkNft.connect(owner).transferFrom(owner.address,await bidderContract.getAddress(), rwalk_token_id);
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await bidderContract.connect(owner).doBidRWalk(rwalk_token_id, { value: bidPrice });
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
+		await bidderContract.connect(owner).doBidRWalk(rwalk_token_id, { value: nextEthPlusRandomWalkNftBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 		tx = await bidderContract.connect(owner).doClaim();
 		receipt = await tx.wait();
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
@@ -125,24 +100,23 @@ describe("Contract", function () {
 	// So both `BidCNonRecv` and this test should be removed.
 	// [/ToDo-202412176-1]
 	it("Non-IERC721Receiver contract can bid", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } = await loadFixture(
-			deployCosmicSignature,
-		);
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
+		const [owner,] = signers;
 
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
 		const BNonRec = await hre.ethers.getContractFactory("BidCNonRecv");
 		let bnonrec = await BNonRec.connect(owner).deploy(await cosmicSignatureGameProxy.getAddress());
 		await bnonrec.waitForDeployment();
 
 		// let bidParams = { message: "owner bids", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: bidPrice });
-		bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await bnonrec.connect(owner).doBid({ value: bidPrice });
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: nextEthBidPrice_ });
+		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await bnonrec.connect(owner).doBid({ value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 		let tx = await bnonrec.connect(owner).doClaim();
 		let receipt = await tx.wait();
 		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;

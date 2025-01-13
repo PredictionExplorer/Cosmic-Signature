@@ -1,8 +1,11 @@
-// todo-1 I added this file. Was it a good idea?
-// todo-1 Maybe this code belongs to "../scripts/helper.js"?
+// #region Comment
 
+// See also: "../scripts/helper.js".
+
+// #endregion
 // #region
 
+// todo-1 Add this directive to all ".js" files".
 "use strict";
 
 // #endregion

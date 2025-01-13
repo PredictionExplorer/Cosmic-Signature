@@ -23,19 +23,15 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// Comment-202411168 relates and/or applies.
 	function setActivationTime(uint256 newValue_) external;
 
-	/// @notice Calculates the duration until the Game activates.
-	/// @return The number of seconds until the activation or 0 if already activated.
-	function getDurationUntilActivation() external view returns (uint256);
-
 	/// @notice Sets `delayDurationBeforeNextRound`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
 
-	/// @notice Sets `marketingReward`.
+	/// @notice Sets `marketingWalletCstContributionAmount`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setMarketingReward(uint256 newValue_) external;
+	function setMarketingWalletCstContributionAmount(uint256 newValue_) external;
 
 	/// @notice Sets `maxMessageLength`.
 	/// Only the contract owner is permitted to call this method.
@@ -46,13 +42,7 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
-	function setTokenContract(ICosmicSignatureToken newValue_) external;
-
-	/// @notice Sets `marketingWallet`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMarketingWallet(address newValue_) external;
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Sets `nft`.
 	/// Only the contract owner is permitted to call this method.
@@ -79,36 +69,49 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setPrizesWallet(IPrizesWallet newValue_) external;
 
+	/// @notice Sets `marketingWallet`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMarketingWallet(address newValue_) external;
+
 	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setCharityAddress(address newValue_) external;
 
-	function setNanoSecondsExtra(uint256 newValue_) external;
-
-	/// @notice Sets `timeIncrease`.
+	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setTimeIncrease(uint256 newValue_) external;
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `initialSecondsUntilPrize`.
+	/// @notice Sets `mainPrizeTimeIncrementInMicroSeconds`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setInitialSecondsUntilPrize(uint256 newValue_) external;
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external;
 
-	function setInitialBidAmountFraction(uint256 newValue_) external;
-
-	/// @notice Sets `priceIncrease`.
+	/// @notice Sets `mainPrizeTimeIncrementIncreaseDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setPriceIncrease(uint256 newValue_) external;
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `roundStartCstAuctionLength`.
+	/// @notice Sets `ethDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setRoundStartCstAuctionLength(uint256 newValue_) external;
+	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external;
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `cstDutchAuctionDurationDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
+
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
 	/// @notice Sets `tokenReward`.
 	/// Only the contract owner is permitted to call this method.

@@ -21,9 +21,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
 
-	/// @notice Emitted when `marketingReward` is changed.
+	/// @notice Emitted when `marketingWalletCstContributionAmount` is changed.
 	/// @param newValue The new value.
-	event MarketingRewardChanged(uint256 newValue);
+	event MarketingWalletCstContributionAmountChanged(uint256 newValue);
 
 	/// @notice Emitted when `maxMessageLength` is changed.
 	/// @param newValue The new value.
@@ -31,11 +31,7 @@ interface ISystemEvents {
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
-
-	/// @notice Emitted when `marketingWallet` is changed.
-	/// @param newValue The new value.
-	event MarketingWalletAddressChanged(address newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
 
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.
@@ -57,37 +53,45 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event PrizesWalletAddressChanged(IPrizesWallet newValue);
 
+	/// @notice Emitted when `marketingWallet` is changed.
+	/// @param newValue The new value.
+	event MarketingWalletAddressChanged(address newValue);
+
 	/// @notice Emitted when `charityAddress` is changed.
 	/// @param newValue The new value.
 	event CharityAddressChanged(address indexed newValue);
 
-	/// @notice Emitted when `nanoSecondsExtra` is changed.
+	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
 	/// @param newValue The new value.
-	event NanoSecondsExtraChanged(uint256 newValue);
+	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `timeIncrease` is changed.
+	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
 	/// @param newValue The new value.
-	event TimeIncreaseChanged(uint256 newValue);
+	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
 
-	/// @notice Emitted when `initialSecondsUntilPrize` is changed.
+	/// @notice Emitted when `mainPrizeTimeIncrementIncreaseDivisor` is changed.
 	/// @param newValue The new value.
-	event InitialSecondsUntilPrizeChanged(uint256 newValue);
+	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `initialBidAmountFraction` is changed.
+	/// @notice Emitted when `ethDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.
-	event InitialBidAmountFractionChanged(uint256 newValue);
+	event EthDutchAuctionDurationDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `priceIncrease` is changed.
+	/// @notice Emitted when `ethDutchAuctionEndingBidPriceDivisor` is changed.
 	/// @param newValue The new value.
-	event PriceIncreaseChanged(uint256 newValue);
+	event EthDutchAuctionEndingBidPriceDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `roundStartCstAuctionLength` is changed.
+	/// @notice Emitted when `nextEthBidPriceIncreaseDivisor` is changed.
 	/// @param newValue The new value.
-	event RoundStartCstAuctionLengthChanged(uint256 newValue);
+	event NextEthBidPriceIncreaseDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `startingBidPriceCSTMinLimit` is changed.
+	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.
-	event StartingBidPriceCSTMinLimitChanged(uint256 newValue);
+	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `cstDutchAuctionBeginningBidPriceMinLimit` is changed.
+	/// @param newValue The new value.
+	event CstDutchAuctionBeginningBidPriceMinLimitChanged(uint256 newValue);
 
 	/// @notice Emitted when `tokenReward` is changed.
 	/// @param newValue The new value.

@@ -1,8 +1,8 @@
 {
 	"privKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
 	"randomWalkNftAddr": "",
-	"activationTime": 1,
 	"charityAddr": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
-	"transferOwnership": false,
-	"donateToContract": false
+	"transferOwnershipToCosmicSignatureDao": false,
+	"activationTime": 1,
+	"donateEthToGameContract": false
 }

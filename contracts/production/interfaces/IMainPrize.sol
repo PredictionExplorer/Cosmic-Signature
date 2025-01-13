@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
+// todo-1 No need to derive from this?
 import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
@@ -134,8 +135,8 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	function getCharityEthDonationAmount() external view returns(uint256);
 
 	/// @return The number of seconds until the last bidder will be permitted to claim the main prize,
-	/// or 0 if that time has already come.
-	function getDurationUntilMainPrize() external view returns(uint256);
+	/// or a non-positive value if that time has already come.
+	function getDurationUntilMainPrize() external view returns(int256);
 
 	// /// @return The given bidding round main prize winner address,
 	// /// or zero if `roundNum_` is invalid or the round has not ended yet.

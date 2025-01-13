@@ -6,31 +6,21 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
 /// @title Marketer reward wallet.
 /// @author The Cosmic Signature Development Team.
-/// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media.
-/// Eventually, the founders of the project will transfer this wallet ownership to the DAO.
-/// @dev
-/// [ToDo-202411182-1]
-/// We mint CST for this wallet on each bid, which I dislike.
-/// One problem is that a lot of gas is wasted.
-/// This needs a redesign.
+/// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media
+/// and to fund whatever other marketing activities. The Game contract mints a configurable CST amount to this wallet
+/// on main prize claim.
+/// Eventually, the project founders will transfer this wallet ownership to a treasurer appointed by the DAO.
 ///
-/// ---Parameters:
-/// ---   Amount to pay for marketing effort, such as 50 CST.
-/// ---   Max allowed rewards that are available to be paid immediately, such as 5.
-/// ---   Frequency to create 1 reward, such as 1 a day. Do not create a reward if the max is already available.
-/// ---   A collection of addresses to be paid to. Some might need to wait until a reward becomes available.
-/// ---      The owner can add any number of addresses to it.
-/// ---Then a person will withdraw their reward when it becomes available. The withdrawal involves minting for `msg.sender`.
-/// ---Then the game won't need to store an address of this in its storage.
-/// 
-/// No, the above is not necessarily a good idea.
-/// Better simply send all CST bids to marketing wallet and on main prize claim
-/// burn any excessive marketing wallet balance above a configurable value.
-/// [/ToDo-202411182-1]
+/// @dev todo-1 Taras dislikes the idea to eliminate this contract.
+///
+/// todo-1 Develop a test in which the DAO changes the owner of the marketing wallet.
+/// todo-1 Ask Nick if he was able to do it with the Tally app.
+/// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434912738329?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434239454529?thread_ts=1733769207.177129&cid=C02EDDE5UF8
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event TokenContractAddressChanged(ICosmicSignatureToken newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
 
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
@@ -40,9 +30,8 @@ interface IMarketingWallet is IAddressValidator {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// todo-1 Maybe eliminate this method and declare `token` `immutable`.
-	/// todo-1 Rename to `setCosmicSignatureToken`. Rename events, etc. Compare the code to `setCosmicSignatureNft`.
-	function setTokenContract(ICosmicSignatureToken newValue_) external;
+	/// @dev todo-1 Maybe eliminate this method and declare `token` `immutable`.
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.
 	/// Only the contract owner is permitted to call this method.

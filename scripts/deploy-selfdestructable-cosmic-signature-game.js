@@ -9,6 +9,7 @@ async function main() {
 	const privKey = process.env.PRIVKEY;
 	if (typeof privKey === "undefined" || privKey.length == 0) {
 		console.log(
+			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
 		process.exit(1);
@@ -19,9 +20,10 @@ async function main() {
 			"SelfDestructibleCosmicSignatureGame",
 			deployerAcct,
 			"", //"0x1111111111111111111111111111111111111111",
-			1,
-			"0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
-			true
+			// "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
+			"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+			true,
+			1
 		);
 	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());
 	console.log("CosmicSignatureNft address:", await contracts.cosmicSignatureNft.getAddress());

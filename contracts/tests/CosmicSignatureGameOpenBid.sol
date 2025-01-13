@@ -58,6 +58,8 @@ contract CosmicSignatureGameOpenBid is
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
+
+		// Comment-202501012 applies.
 		// #enable_asserts assert(activationTime == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
@@ -67,39 +69,41 @@ contract CosmicSignatureGameOpenBid is
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
-		marketingReward = CosmicSignatureConstants.MARKETING_REWARD;
+		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
+		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
-		// marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =
 		// stakingWalletRandomWalkNft =
 		// prizesWallet =
+		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
-		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
-		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
-		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// mainPrizeTime =
-		// roundNum = 0;
-		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
-		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
-		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
-		cstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
-		roundStartCstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
+		initialDurationUntilMainPrizeDivisor = CosmicSignatureConstants.DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR;
+		mainPrizeTimeIncrementInMicroSeconds = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT * CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		mainPrizeTimeIncrementIncreaseDivisor = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR;
+		// roundNum =
+		ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
+		// ethDutchAuctionBeginningBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
+		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		nextEthBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR;
 
-		// Comment-202411211 applies.
-		if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-			// Comment-202411168 applies.
-			lastCstBidTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		}
+		// // Comment-202411211 applies.
+		// if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
+		// 	// Comment-202411168 applies.
+		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		// }
 
-		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
-		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
+		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
+		cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
+		nextRoundCstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
+		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.DEFAULT_TOKEN_REWARD;
-		// lastBidderAddress = address(0);
+		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// // lastBidType =
 		mainEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE;
@@ -130,8 +134,11 @@ contract CosmicSignatureGameOpenBid is
 	/// [/ToDo-202412164-2]
 	function initialize2() reinitializer(2) public {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
-		// #enable_asserts assert(timesBidPrice == 0);
-		timesBidPrice = 3;
+
+		// Comment-202501012 applies.
+		// #enable_asserts assert(timesEthBidPrice == 0);
+
+		timesEthBidPrice = 3;
 	}
 
 	// #endregion
@@ -148,7 +155,7 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner /*onlyInactive*/ {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
 	}
 

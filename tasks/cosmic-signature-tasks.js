@@ -26,24 +26,30 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	console.log("Using file:");
 	console.log(param_copy);
 	const deployerAcct = new hre.ethers.Wallet(config_params.privKey, hre.ethers.provider);
-	if (config_params.charityAddr.length === 0) {
+	if (config_params.charityAddr.length === 0 /* || config_params.marketingWalletAddr.length === 0 */) {
 		const signers = await hre.ethers.getSigners();
-		config_params.charityAddr = signers[1].address;
+		// if (config_params.charityAddr.length === 0) {
+			config_params.charityAddr = signers[1].address;
+		// }
+		// if (config_params.marketingWalletAddr.length === 0) {
+		// 	config_params.marketingWalletAddr = signers[7].address;
+		// }
 	}
 	const contracts =
 		await basicDeployment(
 			deployerAcct,
 			config_params.randomWalkNftAddr,
-			config_params.activationTime,
+			// config_params.marketingWalletAddr,
 			config_params.charityAddr,
-			config_params.transferOwnership
+			config_params.transferOwnershipToCosmicSignatureDao,
+			config_params.activationTime
 
 			// // todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
 			// // todo-1 So I have commented this out.
 			// config_params.switchToRuntimeMode
 		);
 	console.log("contracts deployed");
-	if (config_params.donateToContract) {
+	if (config_params.donateEthToGameContract) {
 		const ethValue = "2";
 		const donationAmount = hre.ethers.parseEther(ethValue);
 		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount});
@@ -82,7 +88,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 		"','" +
 		await contracts.marketingWallet.getAddress() +
 		"','" +
-
+		
 		// Issue. According to Comment-202412059, this is the same as `cosmicSignatureGameProxy`.
 		await contracts.cosmicSignatureGame.getAddress() +
 

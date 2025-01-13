@@ -3,43 +3,12 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
-const { basicDeployment, basicDeploymentAdvanced } = require("../src/Deploy.js");
+// const { basicDeployment } = require("../src/Deploy.js");
+const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureNft", function () {
-	// We define a fixture to reuse the same setup in every test.
-	// We use loadFixture to run this setup once, snapshot that state,
-	// and reset Hardhat Network to that snapshot in every test.
-	async function deployCosmicSignature(deployerAcct) {
-		const [contractDeployerAcct] = await hre.ethers.getSigners();
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureNft,
-			cosmicSignatureToken,
-			cosmicSignatureDao,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			marketingWallet,
-			// cosmicSignatureGame,
-		} = await basicDeployment(contractDeployerAcct, "", 1, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", true);
-		return {
-			cosmicSignatureGameProxy,
-			cosmicSignatureNft,
-			cosmicSignatureToken,
-			cosmicSignatureDao,
-			charityWallet,
-			prizesWallet,
-			randomWalkNft,
-			stakingWalletCosmicSignatureNft,
-			stakingWalletRandomWalkNft,
-			marketingWallet,
-			// cosmicSignatureGame,
-		};
-	}
 	// const bidParamsEncoding = {
 	// 	type: "tuple(string,int256)",
 	// 	name: "BidParams",
@@ -49,16 +18,8 @@ describe("CosmicSignatureNft", function () {
 	// 	],
 	// };
 	it("mint() function works properly", async function () {
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const transferOwnership = false;
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			randomWalkNft,
-			marketingWallet,
-		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
+		const {signers, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2,] = signers;
 
 		const NewCosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		const newCosmicSignatureNft = await NewCosmicSignatureNft.deploy(owner.address);
@@ -76,31 +37,24 @@ describe("CosmicSignatureNft", function () {
 		newCosmicSignatureNft.mint(0n, await addr2.getAddress(), generateRandomUInt256())
 	});
 	it("setNftGenerationScriptUri() works as expected", async function () {
-		const [owner, addr1, addr2, addr3, ...addrs] = await hre.ethers.getSigners();
-		const transferOwnership = false;
-		const {
-			cosmicSignatureGameProxy,
-			cosmicSignatureToken,
-			cosmicSignatureNft,
-			charityWallet,
-			randomWalkNft,
-			marketingWallet,
-		} = await basicDeployment(owner, "", 1, addr1.address, transferOwnership);
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1,] = signers;
 
 		await cosmicSignatureNft.connect(owner).setNftGenerationScriptUri("url://");
 		expect(await cosmicSignatureNft.nftGenerationScriptUri()).to.equal("url://");
-		await expect(cosmicSignatureNft.connect(addr1).setNftGenerationScriptUri("none")).to.be.revertedWithCustomError(cosmicSignatureGameProxy,"OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureNft.connect(addr1).setNftGenerationScriptUri("none")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 	});
-	it("Should be possible to setNftName()", async function () {
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
+	it("setNftName behaves correctly", async function () {
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1, addr2,] = signers;
+
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 		let tx = await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 		let receipt = await tx.wait();
 		let topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
@@ -130,15 +84,16 @@ describe("CosmicSignatureNft", function () {
 		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenNameLength");
 	});
 	it("BaseURI/TokenURI works", async function () {
-		const { cosmicSignatureGameProxy, cosmicSignatureToken, cosmicSignatureNft, charityWallet, randomWalkNft } =
-			await loadFixture(deployCosmicSignature);
-		const [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
+		const [owner, addr1,] = signers;
+		
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-		let bidPrice = await cosmicSignatureGameProxy.getBidPrice();
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: bidPrice });
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		// await hre.ethers.provider.send("evm_mine");
 		let tx = await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 		let receipt = await tx.wait();
 		await cosmicSignatureNft.connect(owner).setNftBaseUri("somebase/");

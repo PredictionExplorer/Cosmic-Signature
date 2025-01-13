@@ -1,3 +1,5 @@
+// todo-1 Rename this file to "deploy-new-logic.js".
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("../../helper.js");
 
@@ -6,6 +8,7 @@ async function main() {
 	// let privKey = process.env.PRIVKEY;
 	// if (typeof privKey === "undefined" || privKey.length == 0) {
 	// 	console.log(
+	// 		// todo-1 "scripts/deploy.js" no longer exists.
 	// 		"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 	// 	);
 	// 	process.exit(1);
@@ -30,7 +33,7 @@ async function main() {
 			"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 		);
 	console.log("Implementation address:", implementationAddressAsString_);
-	console.log("timesBidPrice =", await cosmicSignatureGameProxy.timesBidPrice());
+	console.log("timesEthBidPrice =", await cosmicSignatureGameProxy.timesEthBidPrice());
 	// await cosmicSignatureGameProxy.setRuntimeMode();
 }
 

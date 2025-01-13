@@ -8,54 +8,59 @@
 const { HardhatContext } = require("hardhat/internal/context");
 
 /**
- * @param {import("@nomicfoundation/hardhat-ethers/signers").HardhatEthersSigner} deployerAcct 
+ * @param {import("ethers").Signer} deployerAcct 
  * @param {string} randomWalkNftAddr 
- * @param {number} activationTime 
+ * ---param {string} marketingWalletAddr 
  * @param {string} charityAddr 
- * @param {boolean} transferOwnership 
+ * @param {boolean} transferOwnershipToCosmicSignatureDao 
+ * @param {number} activationTime 
  * @returns 
  */
 const basicDeployment = async function (
 	deployerAcct,
 	randomWalkNftAddr,
-	activationTime,
+	// marketingWalletAddr,
 	charityAddr,
-	transferOwnership
+	transferOwnershipToCosmicSignatureDao,
+	activationTime
 	// switchToRuntimeMode = true
 ) {
 	return await basicDeploymentAdvanced(
 		"CosmicSignatureGame",
 		deployerAcct,
 		randomWalkNftAddr,
-		activationTime,
+		// marketingWalletAddr,
 		charityAddr,
-		transferOwnership
+		transferOwnershipToCosmicSignatureDao,
+		activationTime
 		// switchToRuntimeMode
 	);
 };
 
 /**
  * @param {string} cosmicSignatureGameContractName 
- * @param {import("@nomicfoundation/hardhat-ethers/signers").HardhatEthersSigner} deployerAcct 
+ * @param {import("ethers").Signer} deployerAcct 
  * todo-1 +++ Test a non-default `deployerAcct`.
  * todo-1 After deployment all restricted functions should revert for the default signer and work for the given signer.
  * @param {string} randomWalkNftAddr May be empty.
+ * ---param {string} marketingWalletAddr 
+ * @param {string} charityAddr 
+ * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @param {number} activationTime 
  * Possible values:
  *    0: leave the default value hardcoded in the contract.
  *    1: use the latest block timestamp.
  *    Any other value: use the given value as is.
- * @param {string} charityAddr 
- * @param {boolean} transferOwnership 
  * @returns 
  */
 const basicDeploymentAdvanced = async function (
 	cosmicSignatureGameContractName,
 	deployerAcct,
 	randomWalkNftAddr,
-	activationTime,
+	// marketingWalletAddr,
 	charityAddr,
-	transferOwnership
+	transferOwnershipToCosmicSignatureDao,
+	activationTime
 	// switchToRuntimeMode
 ) {
 	// if (switchToRuntimeMode === undefined) {
@@ -115,10 +120,13 @@ const basicDeploymentAdvanced = async function (
 	const cosmicSignatureNftAddr = await cosmicSignatureNft.getAddress();
 
 	const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
-	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy();
+	// const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy();
+	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr /* , marketingWalletAddr */);
 	await cosmicSignatureToken.waitForDeployment();
 	const cosmicSignatureTokenAddr = await cosmicSignatureToken.getAddress();
-	await cosmicSignatureToken.connect(deployerAcct).transferOwnership(cosmicSignatureGameProxyAddr);
+	// await cosmicSignatureToken.connect(deployerAcct).transferOwnership(cosmicSignatureGameProxyAddr);
+	// ToDo-202412203-1 relates and/or applies.
+	// todo-1 But the above todo is no longer relevant here.
 
 	const CosmicSignatureDao = await hre.ethers.getContractFactory("CosmicSignatureDao");
 	const cosmicSignatureDao = await CosmicSignatureDao.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
@@ -133,7 +141,14 @@ const basicDeploymentAdvanced = async function (
 	// 	charityAddr = signers[1].address;
 	// }
 	await charityWallet.connect(deployerAcct).setCharityAddress(charityAddr);
-	if (transferOwnership) {
+	// [ToDo-202412203-1]
+	// Make sense to do this kind of ownership transfer for `cosmicSignatureToken` as well?
+	// What about any other contracts? Maybe the game contract? But it could be a bad idea to give control over it to strangers.
+	// We would need to set `cosmicSignatureToken.marketingWalletAddress` to the DAO address too, right?
+	// >>> But now `marketingWallet` (possibly to be renamed to `marketingWalletAddress`) lives in the game contract.
+	// ToDo-202412202-1 relates.
+	// [/ToDo-202412203-1]
+	if (transferOwnershipToCosmicSignatureDao) {
 		await charityWallet.connect(deployerAcct).transferOwnership(cosmicSignatureDaoAddr);
 	}
 
@@ -177,18 +192,21 @@ const basicDeploymentAdvanced = async function (
 	await marketingWallet.waitForDeployment();
 	const marketingWalletAddr = await marketingWallet.getAddress();
 
-	await cosmicSignatureGameProxy.connect(deployerAcct).setTokenContract(cosmicSignatureTokenAddr);
-	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureToken(cosmicSignatureTokenAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
+	// todo-1 If `transferOwnershipToCosmicSignatureDao`, are we supposed to pass the DAO contract address here?
+	// todo-1 If I implement that, comment under what conditions `marketingWalletAddr` is ignored.
+	// ToDo-202412203-1 relates and/or applies.
+	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
-	if (activationTime !== 0) {
-		if (activationTime === 1) {
+	if (activationTime != 0) {
+		if (activationTime == 1) {
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			activationTime = latestBlock.timestamp;
+			activationTime = latestBlock.timestamp + 1;
 		}
 		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}

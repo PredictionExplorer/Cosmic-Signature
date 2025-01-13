@@ -1,3 +1,5 @@
+// todo-1 Rename this file to "get-contract-owners.js".
+
 // const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
@@ -8,10 +10,13 @@ async function main() {
 	let o = await cosmicSignatureGame.owner();
 	console.log("Owner of CosmicSignatureGame: " + o);
 
-	let addr = cosmicSignatureGame.token();
-	let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", addr);
-	o = await cosmicSignatureToken.owner();
-	console.log("Owner of CosmicSignatureToken: " + o);
+	let addr;
+
+	// // This contract is no longer `Ownable`.
+	// addr = cosmicSignatureGame.token();
+	// let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", addr);
+	// o = await cosmicSignatureToken.owner();
+	// console.log("Owner of CosmicSignatureToken: " + o);
 
 	addr = cosmicSignatureGame.nft();
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", addr);

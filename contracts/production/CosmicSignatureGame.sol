@@ -29,6 +29,8 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 // #endregion
 // #region
 
+/// todo-1 Everywhere, make some `public` functions `external`.
+/// todo-1 Everywhere, make some `public`/`external` functions `private`.
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
@@ -58,6 +60,10 @@ contract CosmicSignatureGame is
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
+
+		// [Comment-202501012]
+		// We are supposed to not be initialized yet.
+		// [/Comment-202501012]
 		// #enable_asserts assert(activationTime == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
@@ -67,42 +73,44 @@ contract CosmicSignatureGame is
 
 		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		delayDurationBeforeNextRound = CosmicSignatureConstants.INITIAL_DELAY_DURATION_BEFORE_NEXT_ROUND;
-		marketingReward = CosmicSignatureConstants.MARKETING_REWARD;
+		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
+		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
 		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
 		// token =
-		// marketingWallet =
 		// nft =
 		// randomWalkNft =
 		// stakingWalletCosmicSignatureNft =
 		// stakingWalletRandomWalkNft =
 		// prizesWallet =
+		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
-		nanoSecondsExtra = CosmicSignatureConstants.INITIAL_NANOSECONDS_EXTRA;
-		timeIncrease = CosmicSignatureConstants.INITIAL_TIME_INCREASE;
-		initialSecondsUntilPrize = CosmicSignatureConstants.INITIAL_SECONDS_UNTIL_PRIZE;
 		// mainPrizeTime =
-		// roundNum = 0;
-		bidPrice = CosmicSignatureConstants.FIRST_ROUND_BID_PRICE;
-		initialBidAmountFraction = CosmicSignatureConstants.INITIAL_BID_AMOUNT_FRACTION;
-		priceIncrease = CosmicSignatureConstants.INITIAL_PRICE_INCREASE;
-		cstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
-		roundStartCstAuctionLength = CosmicSignatureConstants.DEFAULT_AUCTION_LENGTH;
+		initialDurationUntilMainPrizeDivisor = CosmicSignatureConstants.DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR;
+		mainPrizeTimeIncrementInMicroSeconds = CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT * CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		mainPrizeTimeIncrementIncreaseDivisor = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR;
+		// roundNum =
+		ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
+		// ethDutchAuctionBeginningBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
+		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+		nextEthBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR;
 
-		// [Comment-202411211]
-		// If this condition is `true` it's likely that `setActivationTime` will not be called,
-		// which implies that this is likely our last chance to initialize `lastCstBidTimeStamp`.
-		// [/Comment-202411211]
-		if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-			// Comment-202411168 applies.
-			lastCstBidTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
-		}
+		// // [Comment-202411211]
+		// // If this condition is `true` it's likely that `setActivationTime` will not be called,
+		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginningTimeStamp`.
+		// // [/Comment-202411211]
+		// if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
+		// 	// Comment-202411168 applies.
+		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		// }
 
-		startingBidPriceCST = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
-		startingBidPriceCSTMinLimit = CosmicSignatureConstants.STARTING_BID_PRICE_CST_DEFAULT_MIN_LIMIT;
+		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
+		cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
+		nextRoundCstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
+		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		tokenReward = CosmicSignatureConstants.DEFAULT_TOKEN_REWARD;
-		// lastBidderAddress = address(0);
+		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// // lastBidType =
 		mainEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE;
@@ -142,10 +150,11 @@ contract CosmicSignatureGame is
 
 	/// @dev
 	/// [Comment-202412188]
-	/// Let's not impose the `onlyInactive` requirement on this -- to leave the door open for the contract owner
+	/// One might want to not impose the `onlyInactive` requirement on this -- to leave the door open for the contract owner
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` failing.
+	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner /*onlyInactive*/ {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 

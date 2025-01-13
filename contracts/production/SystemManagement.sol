@@ -42,7 +42,7 @@ abstract contract SystemManagement is
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp < activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsActive("A bidding round is already active.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsActive("The current bidding round is already active.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
@@ -51,7 +51,7 @@ abstract contract SystemManagement is
 		uint256 activationTimeCopy_ = activationTime;
 		require(
 			block.timestamp >= activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsInactive("The next bidding round is not active yet.", activationTimeCopy_, block.timestamp)
+			CosmicSignatureErrors.SystemIsInactive("The current bidding round is not active yet.", activationTimeCopy_, block.timestamp)
 		);
 		_;
 	}
@@ -75,7 +75,8 @@ abstract contract SystemManagement is
 		// Imposing this requirement instead of `onlyInactive`.
 		// This design leaves the door open for the admin to change `activationTime` to a point in the future
 		// and then change some parameters.
-		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `bidPrice`.
+		// todo-1 The backend and frontend must expect that activation time changes.
+		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `nextEthBidPrice`.
 		// [/Comment-202411236]
 		require(
 			lastBidderAddress == address(0),
@@ -88,28 +89,14 @@ abstract contract SystemManagement is
 	function _setActivationTime(uint256 newValue_) internal {
 		activationTime = newValue_;
 
-		// [Comment-202411168]
-		// One might want to ensure that this is not in the past.
-		// But `activationTime` is really not supposed to be in the past.
-		// So keeping it simple and effiicient.
-		// [/Comment-202411168]
-		lastCstBidTimeStamp = newValue_;
+		// // [Comment-202411168]
+		// // One might want to ensure that this is not in the past.
+		// // But `activationTime` is really not supposed to be in the past.
+		// // So keeping it simple and effiicient.
+		// // [/Comment-202411168]
+		// cstDutchAuctionBeginningTimeStamp = newValue_;
 
 		emit ActivationTimeChanged(newValue_);
-	}
-
-	function getDurationUntilActivation() external view override returns (uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// return (block.timestamp >= activationTime) ? 0 : (activationTime - block.timestamp);
-			uint256 durationUntilActivation_ = uint256(int256(activationTime) - int256(block.timestamp));
-			if(int256(durationUntilActivation_) < int256(0)) {
-				durationUntilActivation_ = 0;
-			}
-			return durationUntilActivation_;
-		}
 	}
 
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
@@ -117,9 +104,9 @@ abstract contract SystemManagement is
 		emit DelayDurationBeforeNextRoundChanged(newValue_);
 	}
 
-	function setMarketingReward(uint256 newValue_) external override onlyOwner onlyInactive {
-		marketingReward = newValue_;
-		emit MarketingRewardChanged(newValue_);
+	function setMarketingWalletCstContributionAmount(uint256 newValue_) external override onlyOwner onlyInactive {
+		marketingWalletCstContributionAmount = newValue_;
+		emit MarketingWalletCstContributionAmountChanged(newValue_);
 	}
 
 	function setMaxMessageLength(uint256 newValue_) external override onlyOwner onlyInactive {
@@ -127,20 +114,12 @@ abstract contract SystemManagement is
 		emit MaxMessageLengthChanged(newValue_);
 	}
 
-	function setTokenContract(ICosmicSignatureToken newValue_) external override
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
 		onlyOwner
 		onlyInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		token = CosmicSignatureToken(address(newValue_));
-		emit TokenContractAddressChanged(newValue_);
-	}
-
-	function setMarketingWallet(address newValue_) external override
-		onlyOwner
-		onlyInactive
-		providedAddressIsNonZero(newValue_) {
-		marketingWallet = newValue_;
-		emit MarketingWalletAddressChanged(newValue_);
+		emit CosmicSignatureTokenAddressChanged(newValue_);
 	}
 
 	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override
@@ -183,6 +162,14 @@ abstract contract SystemManagement is
 		emit PrizesWalletAddressChanged(newValue_);
 	}
 
+	function setMarketingWallet(address newValue_) external override
+		onlyOwner
+		onlyInactive
+		providedAddressIsNonZero(newValue_) {
+		marketingWallet = newValue_;
+		emit MarketingWalletAddressChanged(newValue_);
+	}
+
 	function setCharityAddress(address newValue_) external override
 		onlyOwner
 		onlyInactive
@@ -191,48 +178,53 @@ abstract contract SystemManagement is
 		emit CharityAddressChanged(newValue_);
 	}
 
-	function setNanoSecondsExtra(uint256 newValue_) external override onlyOwner onlyInactive {
-		nanoSecondsExtra = newValue_;
-		emit NanoSecondsExtraChanged(newValue_);
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		initialDurationUntilMainPrizeDivisor = newValue_;
+		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
 	}
 
-	function setTimeIncrease(uint256 newValue_) external override onlyOwner onlyInactive {
-		timeIncrease = newValue_;
-		emit TimeIncreaseChanged(newValue_);
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyInactive {
+		mainPrizeTimeIncrementInMicroSeconds = newValue_;
+		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
 	}
 
-	function setInitialSecondsUntilPrize(uint256 newValue_) external override onlyOwner onlyInactive {
-		initialSecondsUntilPrize = newValue_;
-		emit InitialSecondsUntilPrizeChanged(newValue_);
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		mainPrizeTimeIncrementIncreaseDivisor = newValue_;
+		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
 	}
 
-	function setInitialBidAmountFraction(uint256 newValue_) external override onlyOwner onlyInactive {
-		initialBidAmountFraction = newValue_;
-		emit InitialBidAmountFractionChanged(newValue_);
+	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		ethDutchAuctionDurationDivisor = newValue_;
+		emit EthDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
-	function setPriceIncrease(uint256 newValue_) external override onlyOwner onlyInactive {
-		priceIncrease = newValue_;
-		emit PriceIncreaseChanged(newValue_);
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		ethDutchAuctionEndingBidPriceDivisor = newValue_;
+		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
-	function setRoundStartCstAuctionLength(uint256 newValue_) external override onlyOwner onlyInactive {
-		roundStartCstAuctionLength = newValue_;
-		emit RoundStartCstAuctionLengthChanged(newValue_);
+	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		nextEthBidPriceIncreaseDivisor = newValue_;
+		emit NextEthBidPriceIncreaseDivisorChanged(newValue_);
 	}
 
-	function setStartingBidPriceCSTMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+		cstDutchAuctionDurationDivisor = newValue_;
+		emit CstDutchAuctionDurationDivisorChanged(newValue_);
+	}
+
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {
 		// require(
 		// 	newValue_ >= CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCSTMinLimitIsTooSmall(
+		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCstMinLimitIsTooSmall(
 		// 		// todo-9 Can I phrase this better? Maybe "starting CST bid price".
 		// 		"The provided starting bid price in CST min limit is too small.",
 		// 		newValue_,
 		// 		CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
 		// 	)
 		// );
-		startingBidPriceCSTMinLimit = newValue_;
-		emit StartingBidPriceCSTMinLimitChanged(newValue_);
+		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
+		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 
 	function setTokenReward(uint256 newValue_) external override onlyOwner onlyInactive {

@@ -41,28 +41,23 @@ library CosmicSignatureErrors {
 	// /// @param systemMode The current system mode.
 	// error SystemMode(string errStr, uint256 systemMode);
 
-	/// @notice Thrown when an action is attempted before the bidding round activation time.
+	/// @notice Thrown when an action is attempted before the current bidding round activation time.
 	/// @param errStr Description of the error.
 	/// @param activationTime The activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	/// @notice Thrown when an action is attempted at or after the bidding round activation time.
+	/// @notice Thrown when an action is attempted at or after the current bidding round activation time.
 	/// @param errStr Description of the error.
 	/// @param activationTime The activation time.
 	/// @param blockTimeStamp The current block timestamp.
 	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
 
-	/// @notice Thrown when an action is attempted that is not allowed after someone has already placed a bid
-	/// in the current bidding round.
-	/// @param errStr Description of the error.
-	error BidHasBeenPlacedInCurrentRound(string errStr);
-
-	// /// @notice Thrown when an attempt is made to set Starting Bid Price in CST Minimum Limit to a too small value.
+	// /// @notice Thrown when an attempt is made to set `startingBidPriceCstMinLimit` to a too small value.
 	// /// @param errStr Description of the error.
-	// /// @param providedValue The actual provided value
-	// /// @param valueHardMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit)
-	// error ProvidedStartingBidPriceCSTMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueHardMinLimit);
+	// /// @param providedValue The actual provided value.
+	// /// @param valueHardMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit).
+	// error ProvidedStartingBidPriceCstMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueHardMinLimit);
 
 	/// @notice Thrown when percentage validation fails
 	/// @param errStr Description of the error.
@@ -74,6 +69,20 @@ library CosmicSignatureErrors {
 
 	// #endregion
 	// #region Bidding Errors
+
+	/// @notice Thrown when an action is attempted that is not allowed before someone places a bid
+	/// in the current bidding round.
+	/// @param errStr Description of the error.
+	error NoBidsPlacedInCurrentRound(string errStr);
+
+	/// @notice Thrown when an action is attempted that is not allowed after someone has already placed a bid
+	/// in the current bidding round.
+	/// @param errStr Description of the error.
+	error BidHasBeenPlacedInCurrentRound(string errStr);
+
+	/// @notice Thrown when someone attempts to place a bid of a type that is not currently allowed.
+	/// @param errStr Description of the error.
+	error WrongBidType(string errStr);
 
 	/// @notice Thrown when the amount received for a bid is less than the required minimum.
 	/// @param errStr Description of the error.
@@ -141,10 +150,6 @@ library CosmicSignatureErrors {
 
 	// #endregion
 	// #region Claim Prize Errors
-
-	/// @notice Thrown when there have been no bids in the current bidding round.
-	/// @param errStr Description of the error.
-	error NoBidsInRound(string errStr);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
 	/// @param errStr Description of the error.
