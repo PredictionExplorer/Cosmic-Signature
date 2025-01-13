@@ -35,6 +35,18 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// todo-1 Make sure this contract is Uniswap and other similar exchanges compliant.
 /// todo-1 Maybe research a bit what other cutting edge projects are doing and do the same.
 interface ICosmicSignatureToken is IAddressValidator {
+	struct MintSpec {
+		address account;
+		uint256 value;
+	}
+
+	struct MintOrBurnSpec {
+		address account;
+
+		/// @notice A positive value is to mint; a negative value is to burn.
+		int256 value;
+	}
+
 	// /// @notice Emitted when `marketingWalletAddress` is changed.
 	// /// @param newValue The new value.
 	// event MarketingWalletAddressChanged(address newValue);
@@ -67,4 +79,10 @@ interface ICosmicSignatureToken is IAddressValidator {
 	/// @param value_ The token amount to burn.
 	/// @dev Comment-202409177 relates.
 	function burn(address account_, uint256 value_) external;
+
+	function mintMany(MintSpec[] calldata specs_) external;
+
+	function burnMany(MintSpec[] calldata specs_) external;
+
+	function mintAndBurnMany(MintOrBurnSpec[] calldata specs_) external;
 }

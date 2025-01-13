@@ -108,9 +108,6 @@ contract CosmicSignatureToken is
 	// #region // `transferToMarketingWalletOrBurn`
 
 	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override onlyGame {
-	// 	// Comment-202412251 applies.
-	// 	// #enable_asserts assert(fromAddress_ != marketingWalletAddress);
-	//
 	// 	if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {
 	// 		_transfer(fromAddress_, marketingWalletAddress, amount_);
 	// 	} else {
@@ -136,10 +133,56 @@ contract CosmicSignatureToken is
 	// #region `burn`
 
 	function burn(address account_, uint256 value_) external override onlyGame {
-		// // This assert now lives in `Bidding`, near Comment-202412251.
-		// // #enable_asserts assert(account_ != marketingWalletAddress);
-
 		_burn(account_, value_);
+	}
+
+	// #endregion
+	// #region `mintMany`
+
+	function mintMany(MintSpec[] calldata specs_) external override onlyGame {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
+				MintSpec calldata spec_ = specs_[index_];
+				_mint(spec_.account, spec_.value);
+			}
+		}
+	}
+
+	// #endregion
+	// #region `burnMany`
+
+	function burnMany(MintSpec[] calldata specs_) external override onlyGame {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
+				MintSpec calldata spec_ = specs_[index_];
+				_burn(spec_.account, spec_.value);
+			}
+		}
+	}
+
+	// #endregion
+	// #region `mintAndBurnMany`
+
+	function mintAndBurnMany(MintOrBurnSpec[] calldata specs_) external override onlyGame {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
+				MintOrBurnSpec calldata spec_ = specs_[index_];
+				if (spec_.value >= int256(0)) {
+					_mint(spec_.account, uint256(spec_.value));
+				} else {
+					_burn(spec_.account, uint256( - spec_.value ));
+				}
+			}
+		}
 	}
 
 	// #endregion
