@@ -14,7 +14,7 @@ import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
-// import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 // import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
@@ -84,9 +84,26 @@ abstract contract MainPrize is
 		// winners[roundNum] = msg.sender;
 		prizesWallet.registerRoundEnd(roundNum, msg.sender);
 
-		_distributePrizes();
+		// #endregion
+		// #region
+
+		// Items:
+		//    [0] for `marketingWallet`.
+		//    [1] for `enduranceChampionAddress`.
+		//    [2] for `lastCstBidderAddress`.
+		ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_ =
+			new ICosmicSignatureToken.MintSpec[]((lastCstBidderAddress != address(0)) ? 3 : 2);
+
+		_distributePrizes(cosmicSignatureTokenMintSpecs_);
+		cosmicSignatureTokenMintSpecs_[0].account = marketingWallet;
+		cosmicSignatureTokenMintSpecs_[0].value = marketingWalletCstContributionAmount;
 		// ToDo-202409245-1 applies.
-		token.mint(marketingWallet, marketingWalletCstContributionAmount);
+		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
+		token.mintMany(cosmicSignatureTokenMintSpecs_);
+
+		// #endregion
+		// #region
+
 		_prepareNextRound();
 
 		// #endregion
@@ -96,7 +113,7 @@ abstract contract MainPrize is
 	// #region `_distributePrizes`
 
 	/// @notice Distributes ETH, CST, and CS NFT prizes to main and secondary prize winners.
-	function _distributePrizes() internal {
+	function _distributePrizes(ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_) internal {
 		// #region
 
 		// It's important to calculate all these before ETH transfers change our ETH balance.
@@ -110,7 +127,7 @@ abstract contract MainPrize is
 		// #region
 
 		// Distributing the last CST bidder, Endurance Champion, Chrono-Warrior prizes.
-		CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_ = _distributeSpecialPrizes(chronoWarriorEthPrizeAmount_);
+		CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_ = _distributeSpecialPrizes(chronoWarriorEthPrizeAmount_, cosmicSignatureTokenMintSpecs_);
 
 		// todo-1 Test that `randomNumberSeed_` changes after this call.
 		_distributeRafflePrizes(raffleTotalEthPrizeAmount_, randomNumberSeed_);
@@ -211,7 +228,7 @@ abstract contract MainPrize is
 
 	/// @notice Distributes so called "special" prizes to the last CST bidder, Endurance Champion, and Chrono-Warrior.
 	/// This method pays ETH, mints CSTs and CS NFTs to the winners.
-	function _distributeSpecialPrizes(uint256 chronoWarriorEthPrizeAmount_) internal returns(CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_) {
+	function _distributeSpecialPrizes(uint256 chronoWarriorEthPrizeAmount_, ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_) internal returns(CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_) {
 		// #region
 
 		// todo-1 Optimize: use the initial value as is; then calculate and use its hash and assign the result to itself;
@@ -230,7 +247,8 @@ abstract contract MainPrize is
 		// 	uint256 nftId_ = nft.mint(roundNum, stellarSpender);
 		// 	// try
 		// 	// ToDo-202409245-1 applies.
-		// 	// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+		// 	// todo-9 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+		// 	// todo-9 We now call `token.mintMany` once.
 		// 	token.mint(stellarSpender, cstRewardAmount_);
 		// 	// {
 		// 	// } catch {
@@ -243,8 +261,10 @@ abstract contract MainPrize is
 
 		// The last CST bidder CST and CS NFT prizes.
 		if (lastCstBidderAddress != address(0)) {
-		 	// ToDo-202409245-1 applies.
-			token.mint(lastCstBidderAddress, cstRewardAmount_);
+		 	// // ToDo-202409245-1 applies.
+			// token.mint(lastCstBidderAddress, cstRewardAmount_);
+			cosmicSignatureTokenMintSpecs_[2].account = lastCstBidderAddress;
+			cosmicSignatureTokenMintSpecs_[2].value = cstRewardAmount_;
 			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 			uint256 nftId_ = nft.mint(roundNum, lastCstBidderAddress, randomNumber_);
 			emit LastCstBidderPrizePaid(roundNum, lastCstBidderAddress, cstRewardAmount_, nftId_);
@@ -256,13 +276,15 @@ abstract contract MainPrize is
 		// Endurance Champion CST and CS NFT prizes.
 		{
 			// #enable_asserts assert(enduranceChampionAddress != address(0));
-			// try
-			// ToDo-202409245-1 applies.
-			// todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			token.mint(enduranceChampionAddress, cstRewardAmount_);
-			// {
-			// } catch {
-			// }
+			// // try
+			// // ToDo-202409245-1 applies.
+			// // todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
+			// token.mint(enduranceChampionAddress, cstRewardAmount_);
+			// // {
+			// // } catch {
+			// // }
+			cosmicSignatureTokenMintSpecs_[1].account = enduranceChampionAddress;
+			cosmicSignatureTokenMintSpecs_[1].value = cstRewardAmount_;
 			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
 			// todo-1 Remember that transfer to charity near Comment-202411077 is allowed to fail;

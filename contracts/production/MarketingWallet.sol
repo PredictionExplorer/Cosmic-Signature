@@ -28,18 +28,51 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	}
 
 	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
-		// Not validating that `marketerAddress_` is a nonzero. `token.transfer` will do it.
-
-		// // Comment-202409215 applies.
-		// require(amount_ > 0, CosmicSignatureErrors.NonZeroValueRequired("Amount is zero."));
-
 		// try
+		// [Comment-202501137]
+		// This will validate that the address to transfer funds to is a nonzero.
+		// [/Comment-202501137]
 		// ToDo-202409245-1 applies.
 		token.transfer(marketerAddress_, amount_);
 		// {
 		// } catch {
 		// 	revert CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", marketerAddress_, amount_);
 		// }
+
 		emit RewardPaid(marketerAddress_, amount_);
+	}
+
+	function payRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202501137 applies.
+			token.transferMany(marketerAddresses_, amount_);
+
+			for (uint256 index_ = marketerAddresses_.length; index_ > 0; ) {
+				-- index_;
+				address marketerAddress_ = marketerAddresses_[index_];
+				emit RewardPaid(marketerAddress_, amount_);
+			}
+		}
+	}
+
+	function payRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override onlyOwner {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202501137 applies.
+			token.transferMany(specs_);
+
+			for (uint256 index_ = specs_.length; index_ > 0; ) {
+				-- index_;
+				ICosmicSignatureToken.MintSpec calldata spec_ = specs_[index_];
+				address marketerAddress_ = spec_.account;
+				uint256 amount_ = spec_.value;
+				emit RewardPaid(marketerAddress_, amount_);
+			}
+		}
 	}
 }

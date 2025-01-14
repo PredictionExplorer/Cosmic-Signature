@@ -125,6 +125,7 @@ contract BidderContract {
 	// 		lastTokenIdChecked = totalSupply - 1;
 	// 	}
 	// 	CosmicSignatureToken token_ = cosmicSignatureGame.token();
+	// 	// Issue. Making multiple external calls to `token_`.
 	// 	uint256 ctokenBalance = token_.balanceOf(address(this));
 	// 	if (ctokenBalance > 0) {
 	// 		token_.transfer(creator, ctokenBalance);
