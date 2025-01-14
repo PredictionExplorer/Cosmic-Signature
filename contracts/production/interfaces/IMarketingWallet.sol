@@ -37,6 +37,18 @@ interface IMarketingWallet is IAddressValidator {
 	/// Only the contract owner is permitted to call this method.
 	/// @param marketerAddress_ Recipient address.
 	/// @param amount_ Amount to pay.
-	/// @dev todo-1 Do we need a method to transfer to multiple addresses?
+	/// It's OK if it's zero.
 	function payReward(address marketerAddress_, uint256 amount_) external;
+
+	/// @notice Pays CST rewards to zero or more marketers.
+	/// Only the contract owner is permitted to call this method.
+	/// @param marketerAddresses_ Recipient addresses.
+	/// @param amount_ Amount to pay.
+	/// It's OK if it's zero.
+	function payRewards(address[] calldata marketerAddresses_, uint256 amount_) external;
+
+	/// @notice Pays CST rewards to zero or more marketers.
+	/// Only the contract owner is permitted to call this method.
+	/// @param specs_ Payment specs.
+	function payRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external;
 }

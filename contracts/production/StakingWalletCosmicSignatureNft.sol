@@ -802,6 +802,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 		// // [Comment-202409215]
 		// // It appears to be unnecessary to spend gas on this validation.
+		// // todo-1 In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
 		// // [/Comment-202409215]
 		// // [Comment-202411294]
 		// // This will be zero in the following cases:

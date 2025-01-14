@@ -142,6 +142,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 			nft.transferFrom(address(this), owner(), i);
 	// 		}
 	// 	}
+	// 	// Issue. Making multiple external calls to `token`.
 	// 	cosmicSupply = token.balanceOf(address(this));
 	// 	token.transfer(owner(), cosmicSupply);
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {

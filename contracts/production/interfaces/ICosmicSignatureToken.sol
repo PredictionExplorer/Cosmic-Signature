@@ -19,10 +19,6 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 ///
 /// ToDo-202412106-1 relates and/or applies.
 ///
-/// todo-1 Do we need a method to send the same and/or different amounts to multiple recipients?
-/// todo-1 It can be used by `MarketingWallet`.
-/// todo-1 I can name it `transferMany`.
-///
 /// todo-1 Do we need to make this or any other contract upgradeable or replaceable?
 ///
 /// todo-1 Document in a user manual that bidders don't need to approve any allowance, meaning to call `CosmicToken.approve`,
@@ -34,6 +30,8 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 interface ICosmicSignatureToken is IAddressValidator {
 	struct MintSpec {
 		address account;
+
+		/// @notice It's OK if this is zero.
 		uint256 value;
 	}
 
@@ -41,6 +39,7 @@ interface ICosmicSignatureToken is IAddressValidator {
 		address account;
 
 		/// @notice A positive value is to mint; a negative value is to burn.
+		/// It's OK if this is zero.
 		int256 value;
 	}
 
@@ -68,18 +67,32 @@ interface ICosmicSignatureToken is IAddressValidator {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param account_ The address that will receive the newly minted token amount.
 	/// @param value_ The token amount to mint.
+	/// It's OK if it's zero.
 	function mint(address account_, uint256 value_) external;
 
 	/// @notice Burns the given token amount from the given account.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param account_ The address from which to burn funds.
 	/// @param value_ The token amount to burn.
+	/// It's OK if it's zero.
 	/// @dev Comment-202409177 relates.
 	function burn(address account_, uint256 value_) external;
 
+	/// @notice
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	function mintMany(MintSpec[] calldata specs_) external;
 
+	/// @notice
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	function burnMany(MintSpec[] calldata specs_) external;
 
+	/// @notice
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	function mintAndBurnMany(MintOrBurnSpec[] calldata specs_) external;
+
+	/// @param value_ The token amount to transfer to each recipient.
+	/// It's OK if it's zero.
+	function transferMany(address[] calldata tos_, uint256 value_) external;
+
+	function transferMany(MintSpec[] calldata specs_) external;
 }
