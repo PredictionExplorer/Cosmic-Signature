@@ -140,15 +140,10 @@ contract CosmicSignatureToken is
 	// #region `mintMany`
 
 	function mintMany(MintSpec[] calldata specs_) external override onlyGame {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			for (uint256 index_ = specs_.length; index_ > 0; ) {
-				-- index_;
-				MintSpec calldata spec_ = specs_[index_];
-				_mint(spec_.account, spec_.value);
-			}
+		for (uint256 index_ = specs_.length; index_ > 0; ) {
+			-- index_;
+			MintSpec calldata specReference_ = specs_[index_];
+			_mint(specReference_.account, specReference_.value);
 		}
 	}
 
@@ -156,15 +151,10 @@ contract CosmicSignatureToken is
 	// #region `burnMany`
 
 	function burnMany(MintSpec[] calldata specs_) external override onlyGame {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			for (uint256 index_ = specs_.length; index_ > 0; ) {
-				-- index_;
-				MintSpec calldata spec_ = specs_[index_];
-				_burn(spec_.account, spec_.value);
-			}
+		for (uint256 index_ = specs_.length; index_ > 0; ) {
+			-- index_;
+			MintSpec calldata specReference_ = specs_[index_];
+			_burn(specReference_.account, specReference_.value);
 		}
 	}
 
@@ -177,12 +167,12 @@ contract CosmicSignatureToken is
 		// #enable_smtchecker */
 		{
 			for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
-				MintOrBurnSpec calldata spec_ = specs_[index_];
-				int256 value_ = spec_.value;
+				MintOrBurnSpec calldata specReference_ = specs_[index_];
+				int256 value_ = specReference_.value;
 				if (value_ >= int256(0)) {
-					_mint(spec_.account, uint256(value_));
+					_mint(specReference_.account, uint256(value_));
 				} else {
-					_burn(spec_.account, uint256( - value_ ));
+					_burn(specReference_.account, uint256( - value_ ));
 				}
 			}
 		}
@@ -192,16 +182,11 @@ contract CosmicSignatureToken is
 	// #region `transferMany`
 
 	function transferMany(address[] calldata tos_, uint256 value_) external override {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			address from_ = msg.sender;
-			for (uint256 index_ = tos_.length; index_ > 0; ) {
-				-- index_;
-				address to_ = tos_[index_];
-				_transfer(from_, to_, value_);
-			}
+		address from_ = msg.sender;
+		for (uint256 index_ = tos_.length; index_ > 0; ) {
+			-- index_;
+			address to_ = tos_[index_];
+			_transfer(from_, to_, value_);
 		}
 	}
 
@@ -209,18 +194,13 @@ contract CosmicSignatureToken is
 	// #region `transferMany`
 
 	function transferMany(MintSpec[] calldata specs_) external override {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			address from_ = msg.sender;
-			for (uint256 index_ = specs_.length; index_ > 0; ) {
-				-- index_;
-				MintSpec calldata spec_ = specs_[index_];
-				address to_ = spec_.account;
-				uint256 value_ = spec_.value;
-				_transfer(from_, to_, value_);
-			}
+		address from_ = msg.sender;
+		for (uint256 index_ = specs_.length; index_ > 0; ) {
+			-- index_;
+			MintSpec calldata specReference_ = specs_[index_];
+			address to_ = specReference_.account;
+			uint256 value_ = specReference_.value;
+			_transfer(from_, to_, value_);
 		}
 	}
 

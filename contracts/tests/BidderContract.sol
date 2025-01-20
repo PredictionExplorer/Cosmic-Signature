@@ -118,6 +118,7 @@ contract BidderContract {
 	// 	for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 	// 		address tokenOwner = nft_.ownerOf(i);
 	// 		if (tokenOwner == address(this)) {
+	// 			// Comment-202501145 applies.
 	// 			nft_.transferFrom(address(this), creator, i);
 	// 		}
 	// 	}
@@ -125,11 +126,13 @@ contract BidderContract {
 	// 		lastTokenIdChecked = totalSupply - 1;
 	// 	}
 	// 	CosmicSignatureToken token_ = cosmicSignatureGame.token();
+	//
 	// 	// Issue. Making multiple external calls to `token_`.
 	// 	uint256 ctokenBalance = token_.balanceOf(address(this));
 	// 	if (ctokenBalance > 0) {
 	// 		token_.transfer(creator, ctokenBalance);
 	// 	}
+	//
 	// 	for (uint256 i = 0; i < numMyDonatedNfts; i++) {
 	// 		uint256 num = myDonatedNfts[i];
 	// 		cosmicSignatureGame.claimDonatedNft(num);

@@ -32,7 +32,7 @@ describe("PrizesWallet", function () {
 
 		// Comment-202409215 relates.
 		// await expect(newPrizesWallet.depositEth(0, addr1.address)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
-		await expect(newPrizesWallet.depositEth(0, addr1.address)).not.to.be.reverted;
+		await newPrizesWallet.depositEth(0, addr1.address);
 	});
 	it("withdrawEth works correctly", async function () {
 		const signers = await hre.ethers.getSigners();

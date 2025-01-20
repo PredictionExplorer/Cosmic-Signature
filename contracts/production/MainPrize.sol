@@ -18,7 +18,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 // import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 // import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
-// import { PrizesWallet } from "./PrizesWallet.sol";
+import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { BidStatistics } from "./BidStatistics.sol";
@@ -38,6 +38,11 @@ abstract contract MainPrize is
 	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.
 	/// todo-1 For all contracts and all methods, think what modifiers it might need,
 	/// todo-1 who and under what conditions is permitted to call it.
+	/// todo-1 It could be possible to not require `nonReentrant` if we transferred main prize ETH
+	/// todo-1 to `msg.sender` after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us,
+	/// todo-1 although we could execute that transfer at the very end as well.
+	/// todo-1 But let's leave it alone.
+	/// todo-1 Comment and reference Comment-202411078.
 	function claimMainPrize() external override nonReentrant /*onlyActive*/ {
 		// #region
 
@@ -76,34 +81,7 @@ abstract contract MainPrize is
 
 		_updateChampionsIfNeeded();
 		_updateChronoWarriorIfNeeded(block.timestamp);
-
-		// One might want to pass `lastBidderAddress` to `prizesWallet.registerRoundEnd` here.
-		// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
-		// which would allow them to claim donated NFTs and ERC-20 tokens.
-		// But we feel that it's better to simply treat the guy who clicked "Claim" as the winner.
-		// winners[roundNum] = msg.sender;
-		prizesWallet.registerRoundEnd(roundNum, msg.sender);
-
-		// #endregion
-		// #region
-
-		// Items:
-		//    [0] for `marketingWallet`.
-		//    [1] for `enduranceChampionAddress`.
-		//    [2] for `lastCstBidderAddress`.
-		ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_ =
-			new ICosmicSignatureToken.MintSpec[]((lastCstBidderAddress != address(0)) ? 3 : 2);
-
-		_distributePrizes(cosmicSignatureTokenMintSpecs_);
-		cosmicSignatureTokenMintSpecs_[0].account = marketingWallet;
-		cosmicSignatureTokenMintSpecs_[0].value = marketingWalletCstContributionAmount;
-		// ToDo-202409245-1 applies.
-		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		token.mintMany(cosmicSignatureTokenMintSpecs_);
-
-		// #endregion
-		// #region
-
+		_distributePrizes();
 		_prepareNextRound();
 
 		// #endregion
@@ -112,100 +90,421 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `_distributePrizes`
 
-	/// @notice Distributes ETH, CST, and CS NFT prizes to main and secondary prize winners.
-	function _distributePrizes(ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_) internal {
+	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
+	function _distributePrizes() private {
 		// #region
 
-		// It's important to calculate all these before ETH transfers change our ETH balance.
+		// [Comment-202501161]
+		// It's important to calculate this before ETH transfers change our ETH balance.
+		// [/Comment-202501161]
 		uint256 mainEthPrizeAmount_ = getMainEthPrizeAmount();
-		uint256 chronoWarriorEthPrizeAmount_ = getChronoWarriorEthPrizeAmount();
-		uint256 raffleTotalEthPrizeAmount_ = getRaffleTotalEthPrizeAmount();
-		uint256 stakingTotalEthRewardAmount_ = getStakingTotalEthRewardAmount();
-		uint256 charityEthDonationAmount_ = getCharityEthDonationAmount();
 
 		// #endregion
 		// #region
 
-		// Distributing the last CST bidder, Endurance Champion, Chrono-Warrior prizes.
-		CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_ = _distributeSpecialPrizes(chronoWarriorEthPrizeAmount_, cosmicSignatureTokenMintSpecs_);
-
-		// todo-1 Test that `randomNumberSeed_` changes after this call.
-		_distributeRafflePrizes(raffleTotalEthPrizeAmount_, randomNumberSeed_);
-
-		// #endregion
-		// #region
-
-		// Depositing CosmicSignature NFT staking rewards to `stakingWalletCosmicSignatureNft`.
-		try stakingWalletCosmicSignatureNft.depositIfPossible{ value: stakingTotalEthRewardAmount_ }(roundNum) {
-		} catch (bytes memory errorDetails_) {
-			// [ToDo-202409226-1]
-			// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred_` to `true` or `false`.
-			// Then remove this ToDo and all mentionings of it elsewhere in the codebase.
-			// [/ToDo-202409226-1]
-			bool unexpectedErrorOccurred_;
-			
-			// [Comment-202410149/]
-			if (errorDetails_.length == 100) {
-
-				bytes4 errorSelector_;
-				assembly { errorSelector_ := mload(add(errorDetails_, 0x20)) }
-				unexpectedErrorOccurred_ = errorSelector_ != CosmicSignatureErrors.NoStakedNfts.selector;
-			} else {
-				// [Comment-202410299/]
-				// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails_.length);
-
-				unexpectedErrorOccurred_ = true;
-			}
-			if (unexpectedErrorOccurred_) {
-				// todo-1 Investigate under what conditions we can possibly reach this point.
-				// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
-				// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
-				revert
-					CosmicSignatureErrors.FundTransferFailed(
-						"Transfer to StakingWalletCosmicSignatureNft failed.",
-						address(stakingWalletCosmicSignatureNft),
-						stakingTotalEthRewardAmount_
-					);
-			}
-			charityEthDonationAmount_ += stakingTotalEthRewardAmount_;
-
-			// One might want to reset `stakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
-		}
-
-		// #endregion
-		// #region
-
-		// [Comment-202411077]
-		// Transferring ETH to charity.
-		// If this fails we won't revert the transaction. The funds would simply stay in the game.
-		// Comment-202411078 relates.
-		// [/Comment-202411077]
 		{
-			// I don't want to spend gas to `require` this.
-			// But if I did, this would be a wrong place for that `require`.
-			// The deployment script must recheck that `charityAddress` is a nonzero.
-			// todo-1 Remember about the above. Cross-ref that rechecking with this comment.
-			// #enable_asserts assert(charityAddress != address(0));
+			// #region
 
-			(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
-			if (isSuccess_) {
-				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
-			} else {
-				emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress, charityEthDonationAmount_);
+			// todo-1 Optimize: use the initial value as is; then calculate and use its hash and assign the result to itself;
+			// todo-1 only then start incrementing it and calculating its hash.
+			// todo-1 Write a comment to explain things.
+			CosmicSignatureHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_ =
+				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
+
+			// #endregion
+			// #region
+
+			{
+				// #region
+
+				// CST minting specs.
+				// Items:
+				//    [0] for `marketingWallet`.
+				//    [1] for `enduranceChampionAddress`.
+				//    [2] for `lastCstBidderAddress`. This item is not guaranteed to exist.
+				ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
+
+				// #endregion
+				// #region
+
+				{
+					// #region
+
+					uint256 cstRewardAmount_ = numRaffleParticipants[roundNum] * cstRewardAmountMultiplier;
+
+					// Addresses for which to mint CS NFTs.
+					// Items:
+					//    0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` items. RandomWalk NFT stakers.
+					//    0 or 1 items. `lastCstBidderAddress`.
+					//    1 item. `msg.sender`, that's the main prize beneficiary.
+					//    1 item. `enduranceChampionAddress`.
+					//    `numRaffleCosmicSignatureNftsForBidders` items. Bidders.
+					address[] memory cosmicSignatureNftOwnerAddresses_;
+
+					// This will remain zero.
+					// In some cases, we assume that this is zero, without using this explicitly.
+					uint256 cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ = 0;
+
+					uint256 cosmicSignatureNftOwnerLastCstBidderAddressIndex_;
+					uint256 cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_;
+					uint256 cosmicSignatureNftOwnerEnduranceChampionAddressIndex_;
+					uint256 cosmicSignatureNftOwnerBidderAddressIndex_;
+
+					// #endregion
+					// #region CS NFTs for random RandomWalk NFT stakers.
+
+					{
+						// #enable_asserts assert(numRaffleCosmicSignatureNftsForRandomWalkNftStakers > 0);
+						uint256 randomNumberSeed_;
+						unchecked { randomNumberSeed_ = randomNumberSeedWrapper_.value + 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4; }
+						address[] memory luckyStakerAddresses_ =
+							stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible
+								(numRaffleCosmicSignatureNftsForRandomWalkNftStakers, randomNumberSeed_);
+						cosmicSignatureNftOwnerLastCstBidderAddressIndex_ = cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ + luckyStakerAddresses_.length;
+						cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_ = cosmicSignatureNftOwnerLastCstBidderAddressIndex_;
+						if (lastCstBidderAddress != address(0)) {
+							++ cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_;
+						}
+						cosmicSignatureNftOwnerEnduranceChampionAddressIndex_ = cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_ + 1;
+						cosmicSignatureNftOwnerBidderAddressIndex_ = cosmicSignatureNftOwnerEnduranceChampionAddressIndex_ + 1;
+						uint256 numCosmicSignatureNfts_ = cosmicSignatureNftOwnerBidderAddressIndex_ + numRaffleCosmicSignatureNftsForBidders;
+						cosmicSignatureNftOwnerAddresses_ = new address[](numCosmicSignatureNfts_);
+						for (uint256 luckyStakerIndex_ = luckyStakerAddresses_.length; luckyStakerIndex_ > 0; ) {
+							-- luckyStakerIndex_;
+							address luckyStakerAddress_ = luckyStakerAddresses_[luckyStakerIndex_];
+							// #enable_asserts assert(luckyStakerAddress_ != address(0));
+
+							// One might want to optimize this code by making destination item index a single variable.
+							// But `cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_` is known at compile time to be zero.
+							// So there is no inefficiency here.
+							cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ + luckyStakerIndex_] = luckyStakerAddress_;
+						}
+					}
+
+					// #endregion
+					// #region CST and CS NFT for the last CST bidder.
+
+					if (lastCstBidderAddress != address(0)) {
+						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerLastCstBidderAddressIndex_] = lastCstBidderAddress;
+						cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](3);
+						cosmicSignatureTokenMintSpecs_[2].account = lastCstBidderAddress;
+						cosmicSignatureTokenMintSpecs_[2].value = cstRewardAmount_;
+					} else {
+						cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](2);
+					}
+
+					// #endregion
+					// #region CS NFT for the Main Prize Beneficiary.
+
+					cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_] = msg.sender;
+
+					// #endregion
+					// #region CST and CS NFT for Endurance Champion.
+
+					// #enable_asserts assert(enduranceChampionAddress != address(0));
+					cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerEnduranceChampionAddressIndex_] = enduranceChampionAddress;
+					cosmicSignatureTokenMintSpecs_[1].account = enduranceChampionAddress;
+					cosmicSignatureTokenMintSpecs_[1].value = cstRewardAmount_;
+
+					// #endregion
+					// #region CS NFTs for random bidders.
+
+					// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
+					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length == cosmicSignatureNftOwnerBidderAddressIndex_ + numRaffleCosmicSignatureNftsForBidders);
+					for (uint256 cosmicSignatureNftOwnerIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
+						uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeedWrapper_);
+						address raffleWinnerAddress_ = raffleParticipants[roundNum][randomNumber_ % numRaffleParticipants[roundNum]];
+						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+						-- cosmicSignatureNftOwnerIndex_;
+						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerIndex_] = raffleWinnerAddress_;
+						if (cosmicSignatureNftOwnerIndex_ <= cosmicSignatureNftOwnerBidderAddressIndex_) {
+							break;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					uint256 firstCosmicSignatureNftId_;
+
+					// #endregion
+					// #region Minting CS NFTs.
+
+					{
+						uint256 randomNumberSeed_;
+						unchecked { randomNumberSeed_ = randomNumberSeedWrapper_.value + 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aeda; }
+						firstCosmicSignatureNftId_ = nft.mintMany(roundNum, cosmicSignatureNftOwnerAddresses_, randomNumberSeed_);
+					}
+
+					// #endregion
+					// #region Processing CS NFTs.
+
+					{		
+						// #region
+
+						uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length;
+						uint256 cosmicSignatureNftId_ = firstCosmicSignatureNftId_ + cosmicSignatureNftIndex_;
+
+						// #endregion
+						// #region CS NFTs for random bidders.
+
+						// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
+						// #enable_asserts assert(cosmicSignatureNftIndex_ - cosmicSignatureNftOwnerBidderAddressIndex_ == numRaffleCosmicSignatureNftsForBidders);
+						for (uint256 winnerIndex_ = cosmicSignatureNftIndex_ - cosmicSignatureNftOwnerBidderAddressIndex_; ; ) {
+							-- cosmicSignatureNftIndex_;
+							address raffleWinnerAddress_ = cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_];
+							// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+							-- winnerIndex_;
+							-- cosmicSignatureNftId_;
+							emit RaffleWinnerCosmicSignatureNftAwarded(roundNum, false, winnerIndex_, raffleWinnerAddress_, cosmicSignatureNftId_);
+							if (winnerIndex_ <= 0) {
+								break;
+							}
+						}
+
+						// #endregion
+						// #region CST and CS NFT for Endurance Champion.
+
+						// #enable_asserts assert(enduranceChampionAddress != address(0));
+						-- cosmicSignatureNftIndex_;
+						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == enduranceChampionAddress);
+						// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[1].account == enduranceChampionAddress);
+						// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[1].value == cstRewardAmount_);
+						-- cosmicSignatureNftId_;
+						emit EnduranceChampionPrizePaid(roundNum, cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_], cstRewardAmount_, cosmicSignatureNftId_);
+
+						// #endregion
+						// #region ETH and CS NFT for the Main Prize Beneficiary.
+
+						-- cosmicSignatureNftIndex_;
+						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == msg.sender);
+						-- cosmicSignatureNftId_;
+						emit MainPrizeClaimed(roundNum, msg.sender, mainEthPrizeAmount_, cosmicSignatureNftId_);
+
+						// #endregion
+						// #region CST and CS NFT for the last CST bidder.
+
+						if (cosmicSignatureTokenMintSpecs_.length > 2) {
+							// #enable_asserts assert(lastCstBidderAddress != address(0));
+							-- cosmicSignatureNftIndex_;
+							// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == lastCstBidderAddress);
+							// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[2].account == lastCstBidderAddress);
+							// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[2].value == cstRewardAmount_);
+							-- cosmicSignatureNftId_;
+							emit LastCstBidderPrizePaid(roundNum, cosmicSignatureTokenMintSpecs_[2].account, cstRewardAmount_, cosmicSignatureNftId_);
+						} else {
+							// #enable_asserts assert(lastCstBidderAddress == address(0));
+						}
+
+						// #endregion
+						// #region CS NFTs for random RandomWalk NFT stakers.
+
+						// #enable_asserts assert(numRaffleCosmicSignatureNftsForRandomWalkNftStakers > 0);
+						// #enable_asserts assert(cosmicSignatureNftOwnerLastCstBidderAddressIndex_ == 0 || cosmicSignatureNftOwnerLastCstBidderAddressIndex_ == numRaffleCosmicSignatureNftsForRandomWalkNftStakers);
+						// #enable_asserts assert(cosmicSignatureNftIndex_ == cosmicSignatureNftOwnerLastCstBidderAddressIndex_);
+						while (cosmicSignatureNftIndex_ > 0) {
+							-- cosmicSignatureNftIndex_;
+							address luckyStakerAddress_ = cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_];
+							// #enable_asserts assert(luckyStakerAddress_ != address(0));
+							-- cosmicSignatureNftId_;
+							emit RaffleWinnerCosmicSignatureNftAwarded(roundNum, true, cosmicSignatureNftIndex_, luckyStakerAddress_, cosmicSignatureNftId_);
+						}
+
+						// #endregion
+						// #region
+
+						// #enable_asserts assert(cosmicSignatureNftIndex_ == 0);
+						// #enable_asserts assert(cosmicSignatureNftId_ == firstCosmicSignatureNftId_);
+
+						// #endregion
+					}
+					
+					// #endregion
+				}
+
+				// #endregion				
+				// #region CST for Marketing Wallet.
+
+				cosmicSignatureTokenMintSpecs_[0].account = marketingWallet;
+				cosmicSignatureTokenMintSpecs_[0].value = marketingWalletCstContributionAmount;
+
+				// #endregion
+				// #region Minting CSTs.
+
+				token.mintMany(cosmicSignatureTokenMintSpecs_);
+
+				// #endregion
 			}
+
+			// #endregion
+			// #region
+
+			{
+				// #region
+
+				// Comment-202501161 applies.
+				uint256 charityEthDonationAmount_ = getCharityEthDonationAmount();
+
+				// #endregion
+				// #region
+
+				{
+					// #region
+
+					// Comment-202501161 applies.
+					uint256 stakingTotalEthRewardAmount_ = getStakingTotalEthRewardAmount();
+
+					// #endregion
+					// #region
+
+					{
+						// #region
+
+						// ETH deposits to make to `prizesWallet`.
+						// Some of these can be equal `msg.sender`, in which case one might want
+						// instead of sending the funds to `prizesWallet` to send them directly to `msg.sender` near Comment-202501183.
+						// But keeping it simple.
+						// Items:
+						//    `numRaffleEthPrizesForBidders` items. Bidders.
+						//    1 item. `chronoWarriorAddress`.
+						IPrizesWallet.EthDeposit[] memory ethDeposits_ = new IPrizesWallet.EthDeposit[](numRaffleEthPrizesForBidders + 1);
+
+						uint256 ethDepositsTotalAmount_ = 0;
+
+						// #endregion
+						// #region ETH for Chrono-Warrior.
+
+						{
+							// #enable_asserts assert(chronoWarriorAddress != address(0));
+							IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[numRaffleEthPrizesForBidders];
+							ethDepositReference_.prizeWinnerAddress = chronoWarriorAddress;
+
+							// Comment-202501161 applies.
+							uint256 chronoWarriorEthPrizeAmount_ = getChronoWarriorEthPrizeAmount();
+
+							ethDepositReference_.amount = chronoWarriorEthPrizeAmount_;
+							ethDepositsTotalAmount_ += chronoWarriorEthPrizeAmount_;
+							emit ChronoWarriorPrizeAllocated(roundNum, chronoWarriorAddress, chronoWarriorEthPrizeAmount_);
+						}
+
+						// #endregion
+						// #region ETH for random bidders.
+
+						{
+							// #enable_asserts assert(numRaffleEthPrizesForBidders > 0);
+
+							// Comment-202501161 applies.
+							uint256 raffleTotalEthPrizeAmount_ = getRaffleTotalEthPrizeAmount();
+
+							uint256 winnerIndex_ = numRaffleEthPrizesForBidders;
+							uint256 raffleEthPrizeAmount_ = raffleTotalEthPrizeAmount_ / winnerIndex_;
+							ethDepositsTotalAmount_ += raffleEthPrizeAmount_ * winnerIndex_;
+							do {
+								-- winnerIndex_;
+								IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[winnerIndex_];
+								uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeedWrapper_);
+								address raffleWinnerAddress_ = raffleParticipants[roundNum][randomNumber_ % numRaffleParticipants[roundNum]];
+								// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+								ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
+								ethDepositReference_.amount = raffleEthPrizeAmount_;
+								emit RaffleWinnerEthPrizeAllocated(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmount_);
+							} while (winnerIndex_ > 0);
+						}
+
+						// #endregion
+						// #region
+
+						// All calculations marked with Comment-202501161 must be made before this.
+						// One might want to pass `lastBidderAddress` instead of `msg.sender` here.
+						// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
+						// which would allow them to claim donated ERC-20 tokens and ERC-721 NFTs.
+						// But we feel that it's better to simply treat the person who clicked "Claim" as the winner.
+						prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, msg.sender, ethDeposits_);
+
+						// #endregion
+					}
+
+					// #endregion
+					// #region ETH for CosmicSignature NFT stakers.
+
+					try stakingWalletCosmicSignatureNft.depositIfPossible{value: stakingTotalEthRewardAmount_}(roundNum) {
+					} catch (bytes memory errorDetails_) {
+						// [ToDo-202409226-1]
+						// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred_` to `true` or `false`.
+						// Then remove this ToDo and all mentionings of it elsewhere in the codebase.
+						// [/ToDo-202409226-1]
+						bool unexpectedErrorOccurred_;
+						
+						// [Comment-202410149/]
+						if (errorDetails_.length == 100) {
+
+							bytes4 errorSelector_;
+							assembly { errorSelector_ := mload(add(errorDetails_, 0x20)) }
+							unexpectedErrorOccurred_ = errorSelector_ != CosmicSignatureErrors.NoStakedNfts.selector;
+						} else {
+							// [Comment-202410299/]
+							// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails_.length);
+
+							unexpectedErrorOccurred_ = true;
+						}
+						if (unexpectedErrorOccurred_) {
+							// todo-1 Investigate under what conditions we can possibly reach this point.
+							// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
+							// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
+							revert
+								CosmicSignatureErrors.FundTransferFailed(
+									"ETH deposit to StakingWalletCosmicSignatureNft failed.",
+									address(stakingWalletCosmicSignatureNft),
+									stakingTotalEthRewardAmount_
+								);
+						}
+						charityEthDonationAmount_ += stakingTotalEthRewardAmount_;
+
+						// One might want to reset `stakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
+					}
+
+					// #endregion
+				}
+
+				// #endregion
+				// #region
+
+				// [Comment-202411077]
+				// ETH for charity.
+				// If this fails we won't revert the transaction. The funds would simply stay in the game.
+				// Comment-202411078 relates.
+				// [/Comment-202411077]
+				{
+					// I don't want to spend gas to `require` this.
+					// But if I did, this would be a wrong place for that `require`.
+					// The deployment script must recheck that `charityAddress` is a nonzero.
+					// todo-1 Remember about the above. Cross-ref that rechecking with this comment.
+					// #enable_asserts assert(charityAddress != address(0));
+
+					(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
+					if (isSuccess_) {
+						emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
+					} else {
+						emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress, charityEthDonationAmount_);
+					}
+				}
+
+				// #endregion
+			}
+
+			// #endregion
 		}
 
 		// #endregion
 		// #region
 
-		// Awarding the main prize.
-		// Doing it at the end. Otherwise a malitios winner could attempt to exploit the 63/64 rule
+		// [Comment-202501183]
+		// Main ETH prize for main prize beneficiary.
+		// Making this transfer at the end. Otherwise a hacker could attempt to exploit the 63/64 rule
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
 		// which would result in incorrect behavior if we ignore that error.
+		// [/Comment-202501183]
 		{
-			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			uint256 nftId_ = nft.mint(roundNum, msg.sender, randomNumber_);
-			emit MainPrizeClaimed(roundNum, msg.sender, mainEthPrizeAmount_, nftId_);
 			// todo-1 Can/should we specify how much gas an untrusted external call is allowed to use?
 			// todo-1 `transfer` allows only 3500 gas, right?
 			// todo-1 At the same time, can/should we forward all gas to trusted external calls?
@@ -217,156 +516,7 @@ abstract contract MainPrize is
 			// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
 			// todo-1 Write and cross-ref comments.
 			(bool isSuccess_, ) = msg.sender.call{value: mainEthPrizeAmount_}("");
-			require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_));
-		}
-
-		// #endregion
-	}
-
-	// #endregion
-	// #region `_distributeSpecialPrizes`
-
-	/// @notice Distributes so called "special" prizes to the last CST bidder, Endurance Champion, and Chrono-Warrior.
-	/// This method pays ETH, mints CSTs and CS NFTs to the winners.
-	function _distributeSpecialPrizes(uint256 chronoWarriorEthPrizeAmount_, ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_) internal returns(CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_) {
-		// #region
-
-		// todo-1 Optimize: use the initial value as is; then calculate and use its hash and assign the result to itself;
-		// todo-1 only then start incrementing it and calculating its hash.
-		// todo-1 Preserve the above comment to explain things.
-		randomNumberSeed_ = CosmicSignatureHelpers.generateInitialRandomNumberSeed();
-
-		uint256 cstRewardAmount_ = numRaffleParticipants[roundNum] * cstRewardAmountMultiplier;
-
-		// #endregion
-		// #region //
-
-		// // Stellar Spender prize.
-		// if (stellarSpender != address(0)) {
-		//		// todo-9 Update and/or use `randomNumberSeed_` here.
-		// 	uint256 nftId_ = nft.mint(roundNum, stellarSpender);
-		// 	// try
-		// 	// ToDo-202409245-1 applies.
-		// 	// todo-9 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-		// 	// todo-9 We now call `token.mintMany` once.
-		// 	token.mint(stellarSpender, cstRewardAmount_);
-		// 	// {
-		// 	// } catch {
-		// 	// }
-		// 	emit StellarSpenderPrizePaid(stellarSpender, roundNum, nftId_, cstRewardAmount_, stellarSpenderTotalSpentCst /* , 1 */);
-		// }
-
-		// #endregion
-		// #region
-
-		// The last CST bidder CST and CS NFT prizes.
-		if (lastCstBidderAddress != address(0)) {
-		 	// // ToDo-202409245-1 applies.
-			// token.mint(lastCstBidderAddress, cstRewardAmount_);
-			cosmicSignatureTokenMintSpecs_[2].account = lastCstBidderAddress;
-			cosmicSignatureTokenMintSpecs_[2].value = cstRewardAmount_;
-			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			uint256 nftId_ = nft.mint(roundNum, lastCstBidderAddress, randomNumber_);
-			emit LastCstBidderPrizePaid(roundNum, lastCstBidderAddress, cstRewardAmount_, nftId_);
-		}
-
-		// #endregion
-		// #region
-
-		// Endurance Champion CST and CS NFT prizes.
-		{
-			// #enable_asserts assert(enduranceChampionAddress != address(0));
-			// // try
-			// // ToDo-202409245-1 applies.
-			// // todo-1 But if we have to handle errors here, on error, we should emit an error event instead of the success event.
-			// token.mint(enduranceChampionAddress, cstRewardAmount_);
-			// // {
-			// // } catch {
-			// // }
-			cosmicSignatureTokenMintSpecs_[1].account = enduranceChampionAddress;
-			cosmicSignatureTokenMintSpecs_[1].value = cstRewardAmount_;
-			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			// todo-1 Here and elsewhere, we should call each external contract and send funds to each external address only once.
-			// todo-1 Remember that transfer to charity near Comment-202411077 is allowed to fail;
-			// todo-1 other calls are not (to be discussed with Nick and Taras again).
-			uint256 nftId_ = nft.mint(roundNum, enduranceChampionAddress, randomNumber_);
-			emit EnduranceChampionPrizePaid(roundNum, enduranceChampionAddress, cstRewardAmount_, nftId_);
-		}
-
-		// #endregion
-		// #region
-
-		// Chrono-Warrior prize.
-		// #enable_asserts assert(chronoWarriorAddress != address(0));
-		emit ChronoWarriorPrizeAllocated(roundNum, chronoWarriorAddress, chronoWarriorEthPrizeAmount_);
-		// todo-1 Here and elsewhere, if this address happends to be the same as the main prize winner, don't deposit here,
-		// todo-1 but later send this to the main prize winner directly.
-		prizesWallet.depositEth{value: chronoWarriorEthPrizeAmount_}(roundNum, chronoWarriorAddress);
-
-		// #endregion
-	}
-
-	// #endregion
-	// #region `_distributeRafflePrizes`
-
-	/// @notice Distribute raffle ETH and CosmicSignature NFT prizes.
-	/// @param raffleTotalEthPrizeAmount_ The total amount of ETH to distribute in the raffle.
-	/// @param randomNumberSeed_ Random number seed reference.
-	function _distributeRafflePrizes(
-		uint256 raffleTotalEthPrizeAmount_,
-		CosmicSignatureHelpers.RandomNumberSeed memory randomNumberSeed_
-	) internal {
-		// #region
-
-		// Distributing ETH prizes to random bidders.
-		{
-			// #enable_asserts assert(numRaffleEthPrizesForBidders > 0);
-			uint256 winnerIndex_ = numRaffleEthPrizesForBidders;
-			uint256 raffleEthPrizeAmount_ = raffleTotalEthPrizeAmount_ / winnerIndex_;
-			do {
-				uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-				address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
-				prizesWallet.depositEth{value: raffleEthPrizeAmount_}(roundNum, raffleWinnerAddress_);
-				-- winnerIndex_;
-				emit RaffleWinnerEthPrizeAllocated(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmount_);
-			} while (winnerIndex_ > 0);
-		}
-
-		// #endregion
-		// #region
-
-		// Minting and distributing CosmicSignature NFTs to random bidders.
-		// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
-		for (uint256 winnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
-			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			address raffleWinnerAddress_ = raffleParticipants[roundNum][/*uint256(raffleEntropy)*/ randomNumber_ % numRaffleParticipants[roundNum]];
-			randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			uint256 nftId_ = nft.mint(roundNum, raffleWinnerAddress_, randomNumber_);
-			-- winnerIndex_;
-			emit RaffleWinnerCosmicSignatureNftAwarded(roundNum, false, winnerIndex_, raffleWinnerAddress_, nftId_);
-			if (winnerIndex_ == 0) {
-				break;
-			}
-		}
-
-		// #endregion
-		// #region
-
-		// Minting and distributing CosmicSignature NFTs to random RandomWalk NFT stakers.
-		// #enable_asserts assert(numRaffleCosmicSignatureNftsForRandomWalkNftStakers > 0);
-		for (uint256 winnerIndex_ = numRaffleCosmicSignatureNftsForRandomWalkNftStakers; ; ) {
-			uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			address luckyStakerAddress_ = stakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*uint256(raffleEntropy)*/ randomNumber_);
-			if (luckyStakerAddress_ == address(0)) {
-				break;
-			}
-			randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
-			uint256 nftId_ = nft.mint(roundNum, luckyStakerAddress_, randomNumber_);
-			-- winnerIndex_;
-			emit RaffleWinnerCosmicSignatureNftAwarded(roundNum, true, winnerIndex_, luckyStakerAddress_, nftId_);
-			if (winnerIndex_ == 0) {
-				break;
-			}
+			require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_));
 		}
 
 		// #endregion
@@ -377,13 +527,11 @@ abstract contract MainPrize is
 
 	// /// @notice Update the entropy used for random selection
 	// /// @dev This function updates the entropy using the current block information
-	// function _updateRaffleEntropy() internal {
+	// function _updateRaffleEntropy() private {
 	// 	// #enable_smtchecker /*
 	// 	unchecked
 	// 	// #enable_smtchecker */
 	// 	{
-	// 		// todo-1 A better conversion to `bytes`: https://stackoverflow.com/questions/49231267/how-to-convert-uint256-to-bytes-and-bytes-convert-to-uint256
-	// 		// todo-1 But ChatGPT is saying that it's a bit less gas efficient than `abi.encodePacked`.
 	// 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
 	// 	}
 	// }
@@ -393,7 +541,7 @@ abstract contract MainPrize is
 
 	/// @notice Updates state for the next bidding round.
 	/// This method is called after the main prize has been claimed.
-	function _prepareNextRound() internal {
+	function _prepareNextRound() private {
 		// todo-1 Consider to not reset some variables.
 
 		// It's probably unnecessary to emit an event about this change.
@@ -426,8 +574,6 @@ abstract contract MainPrize is
 
 		// // todo-9 Maybe add 1 to ensure that the result is a nonzero.
 		// nextEthBidPrice = address(this).balance / ethDutchAuctionEndingBidPriceDivisor;
-		// stellarSpender = address(0);
-		// stellarSpenderTotalSpentCst = 0;
 		enduranceChampionAddress = address(0);
 		// todo-1 Is it really necessary to reset this?
 		enduranceChampionStartTimeStamp = 0;

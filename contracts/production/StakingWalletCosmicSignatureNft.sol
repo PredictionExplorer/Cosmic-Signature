@@ -317,8 +317,13 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			++ remainingNumEthDepositsToEvaluateMaxLimit_;
 
 			uint256 rewardAmount_;
+
+			// [Comment-202501145]
+			// Somewhere around here, it would probably make sense to use the feature Comment-202501144 is talking about.
+			// [/Comment-202501145]
 			(rewardAmount_, remainingNumEthDepositsToEvaluateMaxLimit_) =
 				_unstake(stakeActionIds_[stakeActionIdIndex_], remainingNumEthDepositsToEvaluateMaxLimit_);
+
 			rewardAmountsSum_ += rewardAmount_;
 		}
 		_payReward(rewardAmountsSum_);
@@ -532,7 +537,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 				// [/Comment-202409214]
 				(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
 
-				// require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to charity failed.", charityAddress_, amount_));
+				// require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_));
 				if (isSuccess_) {
 					// [Comment-202410159]
 					// Issue. Because we can be reentered near Comment-202409214,
@@ -543,7 +548,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 					emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
 				} else {
 					// #enable_asserts assert(address(this).balance == amount_);
-					emit CosmicSignatureEvents.FundTransferFailed("Transfer to charity failed.", charityAddress_, amount_);
+					emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_);
 					returnValue_ = false;
 				}
 			}
@@ -628,6 +633,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+
+		// Comment-202501145 relates.
 		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
 
 		// #endregion
@@ -824,7 +831,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 			require(
 				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("NFT staking reward payment failed.", msg.sender, rewardAmount_)
+				CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", msg.sender, rewardAmount_)
 			);
 		}
 

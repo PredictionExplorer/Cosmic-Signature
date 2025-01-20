@@ -51,7 +51,7 @@ abstract contract NftDonations is
 
 	// /// todo-1 `nonReentrant` not needed here?
 	// function claimManyDonatedNfts(uint256[] calldata indices) external override nonReentrant /*onlyActive*/ {
-	// 	for ( uint256 counter_ = 0; counter_ < indices.length; ++ counter_) {
+	// 	for ( uint256 counter_ = 0; counter_ < indices.length; ++ counter_ ) {
 	// 		claimDonatedNft(indices[counter_]);
 	// 	}
 	// }

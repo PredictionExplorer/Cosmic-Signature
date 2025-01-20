@@ -85,9 +85,31 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	}
 
 	// #endregion
+	// #region `registerRoundEndAndDepositEthMany`
+
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeWinnerAddress_, EthDeposit[] calldata ethDeposits_) external payable override onlyGame {
+		_registerRoundEnd(roundNum_, mainPrizeWinnerAddress_);
+		// #enable_asserts uint256 amountSum_ = 0;
+		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
+			-- ethDepositIndex_;
+			EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
+			// #enable_asserts amountSum_ += ethDepositReference_.amount;
+			_depositEth(roundNum_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
+		}
+		// #enable_asserts assert(amountSum_ == msg.value);
+	}
+
+	// #endregion
 	// #region `registerRoundEnd`
 
 	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external override onlyGame {
+		_registerRoundEnd(roundNum_, roundMainPrizeWinnerAddress_);
+	}
+
+	// #endregion
+	// #region `_registerRoundEnd`
+
+	function _registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) private {
 		// #enable_asserts assert(mainPrizeWinnerAddresses[roundNum_] == address(0));
 		// #enable_asserts assert(roundNum_ == 0 || mainPrizeWinnerAddresses[roundNum_ - 1] != address(0));
 		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
@@ -116,11 +138,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `depositEth`
 
 	function depositEth(uint256 roundNum_, address roundPrizeWinnerAddress_) external payable override onlyGame {
+		_depositEth(roundNum_, roundPrizeWinnerAddress_, msg.value);
+	}
+
+	// #endregion
+	// #region `_depositEth`
+
+	function _depositEth(uint256 roundNum_, address roundPrizeWinnerAddress_, uint256 amount_) private {
 		// #enable_asserts assert(roundPrizeWinnerAddress_ != address(0));
-
-		// // Comment-202409215 applies.
-		// require(msg.value > 0, CosmicSignatureErrors.NonZeroValueRequired("No ETH has been sent."));
-
 		CosmicSignatureConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 
 		// [Comment-202411252]
@@ -129,8 +154,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// [/Comment-202411252]
 		ethBalanceInfoReference_.roundNum = roundNum_;
 
-		ethBalanceInfoReference_.amount += msg.value;
-		emit EthReceived(roundNum_, roundPrizeWinnerAddress_, msg.value);
+		ethBalanceInfoReference_.amount += amount_;
+		emit EthReceived(roundNum_, roundPrizeWinnerAddress_, amount_);
 	}
 
 	// #endregion
@@ -248,8 +273,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `claimManyDonatedTokens`
 
 	function claimManyDonatedTokens(CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) public override /*nonReentrant*/ {
-		for ( uint256 donatedTokenToClaimIndex_ = 0; donatedTokenToClaimIndex_ < donatedTokensToClaim_.length; ++ donatedTokenToClaimIndex_ ) {
-			claimDonatedToken(donatedTokensToClaim_[donatedTokenToClaimIndex_].roundNum, donatedTokensToClaim_[donatedTokenToClaimIndex_].tokenAddress);
+		for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
+			-- donatedTokenToClaimIndex_;
+			CosmicSignatureConstants.DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
+			claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress);
 		}
 	}
 
@@ -335,7 +362,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `claimManyDonatedNfts`
 
 	function claimManyDonatedNfts(uint256[] calldata indices_) public override /*nonReentrant*/ {
-		for ( uint256 indexIndex_ = 0; indexIndex_ < indices_.length; ++ indexIndex_ ) {
+		for (uint256 indexIndex_ = indices_.length; indexIndex_ > 0; ) {
+			-- indexIndex_;
 			claimDonatedNft(indices_[indexIndex_]);
 		}
 	}

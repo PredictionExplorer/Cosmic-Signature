@@ -203,13 +203,13 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		// await expect(newStakingWalletRandomWalkNft.pickRandomStakerAddress(hre.ethers.hashMessage("0xffff"))).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NoStakedNfts");
 		{
-			const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*hre.ethers.hashMessage("0xffff")*/ 101n);
-			expect(luckyAddr).to.equal(hre.ethers.ZeroAddress);
+			const luckyStakerAddresses_ = await newStakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(12n, /*hre.ethers.hashMessage("0xffff")*/ 0xe1027c1afb832e7bd4ac3301523cf66aed14912422b036d444e0c2d4adc0afa2n);
+			expect(luckyStakerAddresses_.length).equal(0);
 		}
 
 		const numSigners = 20;
 		const numLoops = 50;
-		// const randomSeed = 11235813; // fib
+
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
 			await randomWalkNft.connect(signer).setApprovalForAll(await newStakingWalletRandomWalkNft.getAddress(), true);
@@ -217,40 +217,40 @@ describe("StakingWalletRandomWalkNft", function () {
 		for (let i = 0; i < numSigners; i++) {
 			const signer = signers[i];
 			for (let j = 0; j < numLoops; j++) {
-				let mintPrice = await randomWalkNft.getMintPrice();
+				const mintPrice = await randomWalkNft.getMintPrice();
 				await randomWalkNft.connect(signer).mint({ value: mintPrice });
 				const nftId_ = i * numLoops + j;
 				await newStakingWalletRandomWalkNft.connect(signer).stake(nftId_);
 			}
 		}
+
 		// verification algorithm is simple: if from 1000 staked NFTs at least
 		// 1 staker is chosen (i.e. all stakers win at least 1 NFT)
-		// then we consider randomness works. Sample size is 300 (30% of the population)
-		// Now the same process for RandomWalk verification
+		// then we consider randomness works.
+		// Sample size is 300 (30% of the population)
 		{
 			const luckyStakers = {};
 			const numSamples = 300;
-			for (let i = 0; i < numSamples; i++) {
-				// const r = Math.floor(Math.random() * 0xffffffff).toString(16).padEnd(8, "0")
-				const luckyAddr = await newStakingWalletRandomWalkNft.pickRandomStakerAddressIfPossible(/*hre.ethers.hashMessage("0x" + r)*/ generateRandomUInt256());
-				expect(luckyAddr).to.not.equal(hre.ethers.ZeroAddress);
-				let numToks = luckyStakers[luckyAddr];
+			const luckyStakerAddresses_ = await newStakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numSamples, generateRandomUInt256());
+			expect(luckyStakerAddresses_.length).equal(numSamples);
+			for (const luckyStakerAddress_ of luckyStakerAddresses_) {
+				expect(luckyStakerAddress_).not.equal(hre.ethers.ZeroAddress);
+				let numToks = luckyStakers[luckyStakerAddress_];
 				if (numToks === undefined) {
-					numToks = 0;
+					numToks = 1;
+				} else {
+					++ numToks;
 				}
-				numToks = numToks + 1;
-				luckyStakers[luckyAddr] = numToks;
+				luckyStakers[luckyStakerAddress_] = numToks;
 			}
 			for (let i = 0; i < numSigners; i++) {
 				const signer = signers[i];
 				const numToks = luckyStakers[signer.address];
-				const msg = "The raffle algorithm for holders is not random, staker " + signer.address;
 				if (numToks === undefined) {
+					const msg = "The raffle algorithm for stakers is not random. Staker " + signer.address;
 					throw msg;
 				}
-				if (numToks == 0) {
-					throw msg;
-				}
+				expect(numToks).not.equal(0);
 			}
 		}
 	});

@@ -14,5 +14,6 @@ library CosmicSignatureEvents {
 	/// @param charityAddress Charity address.
 	/// @param amount Amount transferred to charity.
 	/// @dev ToDo-202409212-1 relates.
+	/// todo-1 This is used only for ETH, right? At least comment.
 	event FundsTransferredToCharity(address indexed charityAddress, uint256 amount);
 }

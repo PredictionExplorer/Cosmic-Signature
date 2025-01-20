@@ -14,7 +14,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title Custom errors.
 /// @author The Cosmic Signature Development Team.
 /// @notice This library contains custom errors used throughout the Cosmic Signature contracts.
-/// @dev Use these errors to provide more detailed and gas-efficient error handling.
+/// @dev Use these errors to implement more detailed and gas-efficient error reporting.
 library CosmicSignatureErrors {
 	// #region Common Errors
 
@@ -245,12 +245,13 @@ library CosmicSignatureErrors {
 	/// todo-1 Rename this to `TooLongNftName` or better `NftNameIsTooLong`.
 	error TokenNameLength(string errStr, uint256 len);
 
-	/// @notice Thrown when an address without minting privileges attempts to mint
+	/// @notice Thrown when an address without minting privileges attempts to mint.
 	/// @param errStr Description of the error.
-	/// @param requesterAddress The address attempting to mint
+	/// @param requesterAddress The address attempting to mint.
 	/// todo-1 Rename to `NoMintPermission`.
-	/// todo-1 Use this for CST too?
+	/// todo-1 Use this for CST too? But we also have burn methods there.
 	/// todo-1 Maybe we don't need this? Use `CallDenied` instead?
+	/// todo-1 ??? Maybe leave this alone, but comment.
 	error NoMintPrivileges(string errStr, address requesterAddress);
 
 	/// @notice Thrown when the token owner is incorrect
@@ -270,14 +271,14 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region Zero Checking Errors
 
-	/// @notice Thrown when a non-zero value is required but zero is provided
-	/// @param errStr Description of the error.
-	/// todo-1 Rename this to `ZeroValue`.
-	error NonZeroValueRequired(string errStr);
-
-	/// @notice Thrown when an address is zero, while it's required to not be.
+	/// @notice Thrown when a non-zero address is required, but zero is observed.
 	/// @param errStr Description of the error.
 	error ZeroAddress(string errStr);
+
+	/// @notice Thrown when a non-zero value is required, but zero is observed.
+	/// @param errStr Description of the error.
+	/// todo-1 Rename this to `ValueIsZero`, or better `ZeroValue`.
+	error NonZeroValueRequired(string errStr);
 
 	// /// @notice Thrown when a non-zero balance amount is required, but zero is observed.
 	// /// @param errStr Description of the error.
@@ -288,7 +289,8 @@ library CosmicSignatureErrors {
 	// #region Monetary Transfer Errors
 
 	/// @notice Thrown when a fund transfer fails.
-	/// See also: `CosmicSignatureEvents.FundTransferFailed`
+	/// This is used only for ETH.
+	/// See also: `CosmicSignatureEvents.FundTransferFailed`.
 	/// @param errStr Description of the error.
 	/// @param destinationAddress The intended destination of the funds.
 	/// @param amount The amount to transfer.

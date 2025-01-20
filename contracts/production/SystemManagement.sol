@@ -38,6 +38,7 @@ abstract contract SystemManagement is
 	// 	_;
 	// }
 
+	/// @dev todo-1 Rename to use the word "round".
 	modifier onlyInactive() {
 		uint256 activationTimeCopy_ = activationTime;
 		require(
@@ -47,6 +48,7 @@ abstract contract SystemManagement is
 		_;
 	}
 
+	/// @dev todo-1 Rename to use the word "round".
 	modifier onlyActive() {
 		uint256 activationTimeCopy_ = activationTime;
 		require(

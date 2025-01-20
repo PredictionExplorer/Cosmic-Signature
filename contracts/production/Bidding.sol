@@ -183,7 +183,7 @@ abstract contract Bidding is
 			(bool isSuccess_, ) = msg.sender.call{value: /*amountToSend*/ uint256(overpaidEthBidPrice_)}("");
 			require(
 				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("Refund transfer failed.", msg.sender, /*amountToSend*/ uint256(overpaidEthBidPrice_))
+				CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, /*amountToSend*/ uint256(overpaidEthBidPrice_))
 			);
 		}
 
@@ -312,12 +312,7 @@ abstract contract Bidding is
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
 		// We are OK with that.
 		// todo-1 +++ Confirm with them again that this is OK.
-		// todo-1 ---Maybe require at least 1 Wei bid.
-		// todo-1 ---An alternative would be to enforce `cstDutchAuctionBeginningBidPriceMinLimit`.
-		// todo-1 ---Or better add another smaller min limit.
-		// todo-1 That said, given that we mint 100 CSTs for each bid, it's almost impossible that the bid price will fall below that.
-		// todo-1 So maybe leave this logic and comment that it minimizes transaction fees.
-		// todo-1 Cros-ref with where we mint 100 CSTs for each bidder.
+		// That said, given that we mint `tokenReward` CSTs for each bid, it's unlikely that the bid price will fall below that.
 		// [/Comment-202409179]
 		uint256 price = getNextCstBidPrice(int256(0));
 
@@ -372,10 +367,6 @@ abstract contract Bidding is
 		}
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
-		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
-		// 	stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
-		// 	stellarSpender = msg.sender;
-		// }
 
 		// [Comment-202409163]
 		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.

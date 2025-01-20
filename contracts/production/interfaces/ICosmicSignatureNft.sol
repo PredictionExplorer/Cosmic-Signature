@@ -29,6 +29,22 @@ interface ICosmicSignatureNft is /*IERC721Enumerable,*/ IAddressValidator {
 		uint256 seed;
 	}
 
+	/// @dev
+	/// [Comment-202501144]
+	/// This is similar to `ICosmicSignatureToken.MintSpec` and `ICosmicSignatureToken.MintOrBurnSpec`.
+	/// Issue. This is not used.
+	/// Something like this can be used to implement the transfer of multiple NFTs in a single transaction.
+	/// A method offering such a functionality could be named `transferFromMany`.
+	/// `StakingWalletCosmicSignatureNft` would benefit from it.
+	/// But, I feel, such a feature is not a high priority, so I have no plans to implement it.
+	/// Comment-202501145 relates.
+	/// [/Comment-202501144]
+	struct TransferFromSpec {
+		address from;
+		address to;
+		uint256 nftId;
+	}
+
 	/// @notice Emitted when `_nftBaseUri` is changed.
 	/// @param newValue The new value.
 	event NftBaseUriChanged(string newValue);
@@ -61,9 +77,24 @@ interface ICosmicSignatureNft is /*IERC721Enumerable,*/ IAddressValidator {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param nftOwnerAddress_ The address that will receive the NFT.
-	/// @param nftSeed_ A unique seed generated for the NFT.
+	/// @param randomNumberSeed_ A value to be used to generate a unique seed for the NFT.
+	/// [Comment-202501148]
+	/// Random number seed and NFT seed are different things. The former is used to generate the latter.
+	/// [/Comment-202501148]
+	/// Assuming that the caller hasn't used this particular value.
 	/// @return The newly minted NFT ID.
-	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 nftSeed_) external returns(uint256);
+	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external returns(uint256);
+
+	/// @notice Mints zero or more new CosmicSignature NFTs.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
+	/// @param roundNum_ The current bidding round number.
+	/// @param nftOwnerAddresses_ The addresses that will receive the NFTs.
+	/// @param randomNumberSeed_ A value to be used to generate unique seeds for the NFTs.
+	/// Comment-202501148 applies.
+	/// Assuming that the caller hasn't used this particular value or subsequent values.
+	/// @return The first newly minted NFT ID. Further minted NFT IDs are sequential.
+	/// If `nftOwnerAddresses_` is empty the return value is indeterminate.
+	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns(uint256);
 
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.

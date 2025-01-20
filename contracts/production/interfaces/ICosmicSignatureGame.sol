@@ -51,7 +51,7 @@ interface ICosmicSignatureGame is
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
 
-	/// @notice Handles incoming ETH transfers.
+	/// @notice Handles an incoming ETH transfer.
 	/// See also: `IEthDonations.donateEth`.
 	/// todo-1 +++ Do we have a test for this?
 	/// todo-1 Consider moving this to `IBidding`.

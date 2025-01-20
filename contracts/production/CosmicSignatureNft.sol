@@ -10,6 +10,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC721Enumerable, ERC721 } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 
@@ -59,6 +60,18 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// bytes32 public entropy;
 
 	// #endregion
+	// #region `onlyGameMint`
+
+	/// @dev Comment-202411253 applies.
+	modifier onlyGameMint() {
+		require(
+			_msgSender() == game,
+			CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender())
+		);
+		_;
+	}
+
+	// #endregion
 	// #region `constructor`
 
 	/// @notice Constructor.
@@ -99,23 +112,41 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `mint`
 
-	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 nftSeed_) external override returns(uint256) {
-		// Not validating that `nftOwnerAddress_` is a nonzero. `_mint` will do it.
-		// Besides, given that only the Game can call us, it's not going to provide a zero address.
+	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external override onlyGameMint returns(uint256) {
+		uint256 nftId_ = _mint(roundNum_, nftOwnerAddress_, randomNumberSeed_);
+		return nftId_;
+	}
 
-		// It could make sense to move this validation to the `onlyGame` modifier. But it uses a specific custom error.
-		// todo-1 But maybe we don't need that custom error, after all. Simplify things!
-		require(
-			_msgSender() == game,
-			CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender())
-		);
+	// #endregion
+	// #region `mintMany`
 
+	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external override onlyGameMint returns(uint256) {
+		uint256 nftId_;
+		if (nftOwnerAddresses_.length > 0) {
+			nftId_ = _mint(roundNum_, nftOwnerAddresses_[0], randomNumberSeed_);
+			for ( uint256 index_ = 1; index_ < nftOwnerAddresses_.length; ++ index_ ) {
+				unchecked { ++ randomNumberSeed_; }
+				_mint(roundNum_, nftOwnerAddresses_[index_], randomNumberSeed_);
+			}
+		}
+		return nftId_;
+	}
+
+	// #endregion
+	// #region `_mint`
+
+	function _mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) private returns(uint256) {
 		// uint256 nftId_ = numTokens;
 		uint256 nftId_ = totalSupply();
+
+		// This will validate that `nftOwnerAddress_` is a nonzero.
+		// Although, given that only the Game is permitted to call us, it's not going to provide a zero address.
 		_mint(nftOwnerAddress_, nftId_);
+
 		// ++ numTokens;
 		// entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), nftId_, nftOwnerAddress_));
 		// seeds[nftId_] = entropy;
+		uint256 nftSeed_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 		_nftsInfo[nftId_].seed = nftSeed_;
 		emit NftMinted(roundNum_, nftOwnerAddress_, /*uint256(entropy)*/ nftSeed_, nftId_);
 		return nftId_;
