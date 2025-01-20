@@ -350,9 +350,16 @@ const hardhatUserConfig = {
 	networks: {
 		hardhat: {
 			allowUnlimitedContractSize: true,
+
+			// [Comment-202501193]
+			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` function.
+			// Block timestamp increment is 1 second, despite of the `interval` parameter being zero.
+			// [/Comment-202501193]
 			mining: {
+				// auto: false,
 				auto: true,
-				interval: 1000,
+				// interval: 1000,
+				interval: 0,
 				mempool: {
 					order: "fifo"
 				},
@@ -404,6 +411,7 @@ const hardhatUserConfig = {
 	// #region
 	
 	mocha: {
+		parallel: true,
 		timeout: 10 * 60 * 1000,
 	},
 
