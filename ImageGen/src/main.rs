@@ -22,8 +22,6 @@ use kiddo::SquaredEuclidean;
 
 use chrono::Utc; // for timestamp
 
-const APEN_M: usize = 2;
-const APEN_M1: usize = 3;
 const LLE_M: usize = 3;
 const B: usize = 32;
 type IDX = u32;
@@ -70,6 +68,12 @@ struct Args {
     /// If set, recompute the bounding box for every frame in the video.
     #[arg(long, default_value_t = false)]
     dynamic_bounds: bool,
+    /// If set, skip final PNG image generation.
+    #[arg(long, default_value_t = false)]
+    no_image: bool,
+    /// If set, do not hide any of the three bodies.
+    #[arg(long, default_value_t = false)]
+    force_visible: bool,
 
     // ---------------------------
     // Colors
@@ -113,6 +117,18 @@ struct Args {
     special_color_image_tail_min: f64,
     #[arg(long, default_value_t = 5.0)]
     special_color_image_tail_max: f64,
+
+    // ---------------------------
+    // Weights for metrics
+    // ---------------------------
+    #[arg(long, default_value_t = 1.0)]
+    chaos_weight: f64,
+    #[arg(long, default_value_t = 1.0)]
+    area_weight: f64,
+    #[arg(long, default_value_t = 1.0)]
+    dist_weight: f64,
+    #[arg(long, default_value_t = 1.0)]
+    lyap_weight: f64,
 }
 
 /// Custom RNG
@@ -247,18 +263,16 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-/// Simulate positions over time with minimal printing
+/// Simulate positions over time
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
 
-    // We'll do a 2-phase approach:
     // Phase 1: run the simulation to get final state (no progress prints).
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
 
-    // Phase 2: to actually record each step, we must replay from the start
-    // for the same dt. (Yes, it's slightly redundant, but simpler code.)
+    // Phase 2: replay from the final state, this time recording positions.
     let mut bodies2 = bodies.clone();
     let mut all_positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
     for step in 0..num_steps {
@@ -370,12 +384,12 @@ fn normalize_positions_inplace(positions: &mut [Vec<Vector3<f64>>]) {
         for pos in body_pos.iter_mut() {
             pos.x = (pos.x - (x_center - half_range)) / range;
             pos.y = (pos.y - (y_center - half_range)) / range;
-            // z is untouched for this 2D rendering
+            // z is untouched for 2D rendering
         }
     }
 }
 
-/// Plot positions to frames (minimal printing)
+/// Plot positions to frames
 fn plot_positions(
     positions: &[Vec<Vector3<f64>>],
     frame_size: u32,
@@ -424,6 +438,7 @@ fn plot_positions(
                 continue;
             }
 
+            // backtrack steps until we accumulate desired "trajectory_lengths[body_i]" in 2D
             let mut total_dist = 0.0;
             let mut idx = clamp_end - 1;
             while idx > 0 && total_dist < trajectory_lengths[body_i] {
@@ -431,6 +446,9 @@ fn plot_positions(
                 let (x2, y2) = (body_positions[idx - 1][0], body_positions[idx - 1][1]);
                 let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
                 total_dist += dist;
+                if total_dist >= trajectory_lengths[body_i] {
+                    break;
+                }
                 idx -= 1;
             }
             trajectory_starts[body_i] = idx;
@@ -584,7 +602,7 @@ fn compute_bounding_box_for_frame(
     (min_x, min_y, max_x, max_y)
 }
 
-/// Create video using ffmpeg (minimal printing)
+/// Create video using ffmpeg
 fn create_video_from_frames_in_memory(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
@@ -673,57 +691,7 @@ fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
     total_l
 }
 
-/// Approximate Entropy with kd-tree (fixed m=2)
-fn approximate_entropy_kdtree(data: &[f64], r: f64) -> f64 {
-    let n = data.len();
-    if n < 3 {
-        return 0.0;
-    }
-
-    let subsequences_m: Vec<[f64; APEN_M]> = (0..(n - 1)).map(|i| [data[i], data[i + 1]]).collect();
-    let mut kdtree_m: KdTree<f64, u64, APEN_M, B, IDX> = KdTree::new();
-    for (i, arr) in subsequences_m.iter().enumerate() {
-        kdtree_m.add(arr, i as u64);
-    }
-
-    let phi_m = |kdtree: &KdTree<f64, u64, APEN_M, B, IDX>, subs: &[[f64; APEN_M]], rr: f64| {
-        let countable = subs.len() as f64;
-        let mut sum_log = 0.0;
-        for arr in subs {
-            let result = kdtree.within::<SquaredEuclidean>(arr, rr * rr);
-            let c = result.len() as f64 / countable;
-            sum_log += c.ln();
-        }
-        sum_log / countable
-    };
-
-    let phi_m_val = phi_m(&kdtree_m, &subsequences_m, r);
-
-    let subsequences_m1: Vec<[f64; APEN_M1]> =
-        (0..(n - 2)).map(|i| [data[i], data[i + 1], data[i + 2]]).collect();
-
-    let mut kdtree_m1: KdTree<f64, u64, APEN_M1, B, IDX> = KdTree::new();
-    for (i, arr) in subsequences_m1.iter().enumerate() {
-        kdtree_m1.add(arr, i as u64);
-    }
-
-    let phi_m1 = |kdtree: &KdTree<f64, u64, APEN_M1, B, IDX>, subs: &[[f64; APEN_M1]], rr: f64| {
-        let countable = subs.len() as f64;
-        let mut sum_log = 0.0;
-        for arr in subs {
-            let result = kdtree.within::<SquaredEuclidean>(arr, rr);
-            let c = result.len() as f64 / countable;
-            sum_log += c.ln();
-        }
-        sum_log / countable
-    };
-
-    let phi_m1_val = phi_m1(&kdtree_m1, &subsequences_m1, r);
-
-    phi_m_val - phi_m1_val
-}
-
-/// Lyapunov exponent with kd-tree (m=3 fixed)
+/// Lyapunov exponent using KD-tree
 fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     let n = data.len();
     if n < (LLE_M - 1) * tau + 1 {
@@ -753,6 +721,7 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
         let nn1 = nn_buffer[0];
         let nn2 = nn_buffer[1];
 
+        // If the first nearest neighbor is itself, pick the second
         let (nn_id, _) =
             if nn1.item == i as u64 { (nn2.item, nn2.distance) } else { (nn1.item, nn1.distance) };
 
@@ -819,7 +788,7 @@ fn average_triangle_area(positions: &[Vec<Vector3<f64>>]) -> f64 {
     result / total_num
 }
 
-// For analysis only; not used for final rendering. Ignores z dimension.
+/// Helper: normalize for area/distance calculations
 fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
     let mut min_x = INFINITY;
     let mut min_y = INFINITY;
@@ -864,7 +833,6 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
 
 /// Calculate total distance traveled by all bodies in 2D, after normalization.
 fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
-    // Copy so we can normalize
     let mut new_positions = positions.to_vec();
     normalize_positions_for_analysis(&mut new_positions);
 
@@ -881,7 +849,7 @@ fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
     total_dist
 }
 
-/// Non-chaoticness measure
+/// "Chaos measure" used in code (lower => more stable)
 fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     let mut r1 = vec![0.0; len];
@@ -914,40 +882,37 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -
     (sd1 + sd2 + sd3) / 3.0
 }
 
+/// Contains the metrics we use (excluding ApEn now).
 #[derive(Debug, Clone)]
 struct TrajectoryResult {
-    chaos: f64,         // lower is better
-    avg_area: f64,      // higher is better
-    total_dist: f64,    // higher is better
-    ap_en: f64,         // higher is better
-    lyap_exp: f64,      // higher is better
-    total_score: usize, // higher is better
+    chaos: f64,                // lower is better
+    avg_area: f64,             // higher is better
+    total_dist: f64,           // higher is better
+    lyap_exp: f64,             // higher => more chaotic
+    chaos_pts: usize,          // Borda points from chaos
+    area_pts: usize,           // Borda points from area
+    dist_pts: usize,           // Borda points from distance
+    lyap_pts: usize,           // Borda points from Lyapunov
+    total_score: usize,        // plain sum of Borda points
+    total_score_weighted: f64, // weighted sum
 }
 
-/// A struct capturing the points each metric awarded to the best trajectory
-#[derive(Debug, Clone)]
-struct BestPoints {
-    chaos_pts: usize,
-    area_pts: usize,
-    dist_pts: usize,
-    apen_pts: usize,
-    lyap_pts: usize,
-}
-
-/// Returns (positions of best trajectory, info about best trajectory, masses of that best sim,
-/// plus some meta-info about how many sims are valid, and the points for each metric).
+/// Returns the final best simulation's data plus some meta-info.
 fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_iters: usize,
     num_steps_sim: usize,
     num_steps_video: usize,
     max_points: usize,
+    chaos_weight: f64,
+    area_weight: f64,
+    dist_weight: f64,
+    lyap_weight: f64,
 ) -> (
     Vec<Vec<Vector3<f64>>>,
     TrajectoryResult,
     [f64; 3],
     usize, // valid_count
-    BestPoints,
 ) {
     println!("Running {} simulations to find the best orbit...", num_iters);
 
@@ -1014,7 +979,7 @@ fn select_best_trajectory(
                 // Simulate for num_steps_sim
                 let positions_full = get_positions(bodies.clone(), num_steps_sim);
 
-                // Sub-sampling for ApEn / Lyap
+                // Sub-sampling for Lyap (and anything else) if needed
                 let len = positions_full[0].len();
                 let factor = (len / max_points).max(1);
                 let body1_norms: Vec<f64> =
@@ -1027,19 +992,21 @@ fn select_best_trajectory(
                 let c = non_chaoticness(m1, m2, m3, &positions_full);
                 let a = average_triangle_area(&positions_full);
                 let d = total_distance(&positions_full); // 2D distance after normalization
-                let std_dev = body1_norms.iter().copied().std_dev();
-                let r_apen = 0.2 * std_dev;
-                let ap = approximate_entropy_kdtree(&body1_norms, r_apen);
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
 
+                // We'll fill Borda points later
                 Some((
                     TrajectoryResult {
                         chaos: c,
                         avg_area: a,
                         total_dist: d,
-                        ap_en: ap,
                         lyap_exp: ly,
+                        chaos_pts: 0,
+                        area_pts: 0,
+                        dist_pts: 0,
+                        lyap_pts: 0,
                         total_score: 0,
+                        total_score_weighted: 0.0,
                     },
                     index,
                     [m1, m2, m3],
@@ -1063,7 +1030,6 @@ fn select_best_trajectory(
     let mut chaos_vals: Vec<(f64, usize)> = vec![];
     let mut avg_area_vals: Vec<(f64, usize)> = vec![];
     let mut dist_vals: Vec<(f64, usize)> = vec![];
-    let mut ap_en_vals: Vec<(f64, usize)> = vec![];
     let mut lyap_vals: Vec<(f64, usize)> = vec![];
 
     let mut info_vec = valid_results;
@@ -1072,14 +1038,10 @@ fn select_best_trajectory(
         chaos_vals.push((tr.chaos, i));
         avg_area_vals.push((tr.avg_area, i));
         dist_vals.push((tr.total_dist, i));
-        ap_en_vals.push((tr.ap_en, i));
         lyap_vals.push((tr.lyap_exp, i));
     }
 
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
-        // Returns a vector of "points" for each index
-        //   index i => how many points it gets for this metric
-        // First, sort by ascending or descending depending on higher_better
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
         } else {
@@ -1101,23 +1063,31 @@ fn select_best_trajectory(
     let area_points = assign_borda_scores(avg_area_vals, true);
     // total_dist: higher better
     let dist_points = assign_borda_scores(dist_vals, true);
-    // ap_en: higher better
-    let apen_points = assign_borda_scores(ap_en_vals, true);
-    // lyap: higher better
+    // lyap: higher => more chaotic
     let lyap_points = assign_borda_scores(lyap_vals, true);
 
     // Sum up
     for (i, (tr, _, _)) in info_vec.iter_mut().enumerate() {
-        tr.total_score = chaos_points[i]
-            + area_points[i]
-            + dist_points[i]
-            + (apen_points[i] * 10)
-            + lyap_points[i];
+        tr.chaos_pts = chaos_points[i];
+        tr.area_pts = area_points[i];
+        tr.dist_pts = dist_points[i];
+        tr.lyap_pts = lyap_points[i];
+        tr.total_score = chaos_points[i] + area_points[i] + dist_points[i] + lyap_points[i];
+        // Weighted sum:
+        tr.total_score_weighted = chaos_points[i] as f64 * chaos_weight
+            + area_points[i] as f64 * area_weight
+            + dist_points[i] as f64 * dist_weight
+            + lyap_points[i] as f64 * lyap_weight;
     }
 
-    // Pick best by total_score
-    let (best_i, best_item) =
-        info_vec.iter().enumerate().max_by_key(|(_, (tr, _, _))| tr.total_score).unwrap();
+    // Pick best by weighted sum
+    let (_, best_item) = info_vec
+        .iter()
+        .enumerate()
+        .max_by(|(_, a), (_, b)| {
+            a.0.total_score_weighted.partial_cmp(&b.0.total_score_weighted).unwrap()
+        })
+        .unwrap();
 
     let best_tr = best_item.0.clone();
     let best_bodies_index = best_item.1;
@@ -1127,24 +1097,13 @@ fn select_best_trajectory(
     let chosen_bodies = &many_bodies[best_bodies_index];
     let positions_best = get_positions(chosen_bodies.clone(), num_steps_video);
 
-    // We'll store the points for the best trajectory for CSV logging
-    let best_pts = BestPoints {
-        chaos_pts: chaos_points[best_i],
-        area_pts: area_points[best_i],
-        dist_pts: dist_points[best_i],
-        apen_pts: apen_points[best_i],
-        lyap_pts: lyap_points[best_i],
-    };
-
-    (positions_best, best_tr, best_masses, valid_count, best_pts)
+    (positions_best, best_tr, best_masses, valid_count)
 }
 
 /// Append one line to a CSV file, creating it if needed.
-/// Includes all command-line args, final results, etc.
 fn append_to_csv(
     args: &Args,
     valid_sims: usize,
-    best_pts: &BestPoints,
     best_tr: &TrajectoryResult,
     best_masses: &[f64; 3],
     num_iters: usize,
@@ -1162,14 +1121,14 @@ fn append_to_csv(
     // If file is newly created, write header:
     if !file_exists {
         let header = "timestamp,seed,file_name,num_steps,num_sims,location,velocity,\
-min_mass,max_mass,avoid_effects,no_video,dynamic_bounds,special_color,\
-max_points,video_tail_min,video_tail_max,image_tail_min,image_tail_max,\
-special_color_video_tail_min,special_color_video_tail_max,\
-special_color_image_tail_min,special_color_image_tail_max,\
+min_mass,max_mass,avoid_effects,no_video,dynamic_bounds,no_image,force_visible,\
+special_color,max_points,video_tail_min,video_tail_max,image_tail_min,image_tail_max,\
+special_color_video_tail_min,special_color_video_tail_max,special_color_image_tail_min,\
+special_color_image_tail_max,chaos_weight,area_weight,dist_weight,lyap_weight,\
 valid_sims,total_sims,\
-best_chaos_value,best_chaos_points,best_avg_area_value,best_avg_area_points,\
-best_dist_value,best_dist_points,best_apen_value,best_apen_points,\
-best_lyap_value,best_lyap_points,best_score,best_m1,best_m2,best_m3\n";
+best_chaos_value,best_chaos_pts,best_avg_area_value,best_area_pts,\
+best_dist_value,best_dist_pts,best_lyap_value,best_lyap_pts,\
+best_score_unweighted,best_score_weighted,best_m1,best_m2,best_m3\n";
         file.write_all(header.as_bytes()).unwrap();
     }
 
@@ -1179,7 +1138,8 @@ best_lyap_value,best_lyap_points,best_score,best_m1,best_m2,best_m3\n";
         None => "".to_string(),
     };
 
-    let row_cleaned = format!("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+    let row_cleaned = format!(
+        "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
         now_unix,
         args.seed,
         args.file_name,
@@ -1192,6 +1152,8 @@ best_lyap_value,best_lyap_points,best_score,best_m1,best_m2,best_m3\n";
         args.avoid_effects,
         args.no_video,
         args.dynamic_bounds,
+        args.no_image,
+        args.force_visible,
         color_str,
         args.max_points,
         args.video_tail_min,
@@ -1202,19 +1164,22 @@ best_lyap_value,best_lyap_points,best_score,best_m1,best_m2,best_m3\n";
         args.special_color_video_tail_max,
         args.special_color_image_tail_min,
         args.special_color_image_tail_max,
+        args.chaos_weight,
+        args.area_weight,
+        args.dist_weight,
+        args.lyap_weight,
         valid_sims,
         num_iters,
         best_tr.chaos,
-        best_pts.chaos_pts,
+        best_tr.chaos_pts,
         best_tr.avg_area,
-        best_pts.area_pts,
+        best_tr.area_pts,
         best_tr.total_dist,
-        best_pts.dist_pts,
-        best_tr.ap_en,
-        best_pts.apen_pts,
+        best_tr.dist_pts,
         best_tr.lyap_exp,
-        best_pts.lyap_pts,
+        best_tr.lyap_pts,
         best_tr.total_score,
+        best_tr.total_score_weighted,
         best_masses[0],
         best_masses[1],
         best_masses[2]
@@ -1238,8 +1203,10 @@ fn main() {
         args.velocity,
     );
 
-    // Decide which bodies to hide (for final rendering)
-    let hide_bodies = {
+    // Decide which bodies to hide (for final rendering), unless forced
+    let hide_bodies = if args.force_visible {
+        vec![false, false, false]
+    } else {
         let val = rng.gen_range(0.0, 1.0);
         if val < 1.0 / 3.0 {
             vec![false, false, false]
@@ -1250,13 +1217,17 @@ fn main() {
         }
     };
 
-    // 1) Select best trajectory
-    let (mut positions, best_result, best_masses, valid_sims, best_points) = select_best_trajectory(
+    // 1) Select best trajectory (weights from CLI)
+    let (mut positions, best_result, best_masses, valid_sims) = select_best_trajectory(
         &mut rng,
         args.num_sims,
         args.num_steps,
         args.num_steps,
         args.max_points,
+        args.chaos_weight,
+        args.area_weight,
+        args.dist_weight,
+        args.lyap_weight,
     );
 
     // 2) Normalize positions (for final visualization)
@@ -1307,61 +1278,69 @@ fn main() {
         )
     };
 
-    // Print best trajectory info (final user-friendly output)
+    // Print best trajectory info
     println!("\nScore breakdown for best trajectory:");
     println!(
-        "  - Chaos measure (lower better) = {:.4e}, awarded {} points",
-        best_result.chaos, best_points.chaos_pts
+        "  - Chaos measure (lower better) = {:.4e}, Borda pts = {}",
+        best_result.chaos, best_result.chaos_pts
     );
     println!(
-        "  - Avg triangle area (higher better) = {:.6}, awarded {} points",
-        best_result.avg_area, best_points.area_pts
+        "  - Avg triangle area (higher better) = {:.6}, Borda pts = {}",
+        best_result.avg_area, best_result.area_pts
     );
     println!(
-        "  - Total distance (higher better) = {:.6}, awarded {} points",
-        best_result.total_dist, best_points.dist_pts
+        "  - Total distance (higher better) = {:.6}, Borda pts = {}",
+        best_result.total_dist, best_result.dist_pts
     );
     println!(
-        "  - Approx. Entropy (ApEn) (higher better) = {:.6}, awarded {} points",
-        best_result.ap_en, best_points.apen_pts
-    );
-    println!(
-        "  - Lyapunov exponent (higher better) = {:.6}, awarded {} points",
-        best_result.lyap_exp, best_points.lyap_pts
+        "  - Lyapunov exponent (higher => more chaotic) = {:.6}, Borda pts = {}",
+        best_result.lyap_exp, best_result.lyap_pts
     );
     println!("  ----------------------------------------------------");
-    println!("  => Final total score = {}", best_result.total_score);
+    println!("  => Unweighted Borda total = {}", best_result.total_score);
+    println!("  => Weighted total = {:.3}", best_result.total_score_weighted);
 
     println!("\n================ BEST TRAJECTORY INFO ================");
-    println!(" - Score (Higher is better): {}", best_result.total_score);
+    println!(" - Unweighted Borda Score: {}", best_result.total_score);
+    println!(
+        " - Weighted Score: {:.3} (chaos_w={:.2}, area_w={:.2}, dist_w={:.2}, lyap_w={:.2})",
+        best_result.total_score_weighted,
+        args.chaos_weight,
+        args.area_weight,
+        args.dist_weight,
+        args.lyap_weight
+    );
     println!(" - Masses: [{:.2}, {:.2}, {:.2}]", best_masses[0], best_masses[1], best_masses[2]);
     println!(" - Chaos measure (Lower is better): {:.4e}", best_result.chaos);
     println!(" - Average triangle area (Higher is better): {:.6}", best_result.avg_area);
     println!(" - Total distance (Higher is better): {:.6}", best_result.total_dist);
-    println!(" - Approx. Entropy (ApEn) (Higher is better): {:.6}", best_result.ap_en);
-    println!(" - Lyapunov exponent (Higher is better): {:.6}", best_result.lyap_exp);
+    println!(" - Lyapunov exponent: {:.6}", best_result.lyap_exp);
     println!("======================================================");
 
-    // Write all this to CSV
-    append_to_csv(&args, valid_sims, &best_points, &best_result, &best_masses, args.num_sims);
+    // Write to CSV
+    append_to_csv(&args, valid_sims, &best_result, &best_masses, args.num_sims);
 
-    // Make a single image (one_frame = true)
-    let pic_frames = plot_positions(
-        &positions,
-        1600,
-        image_trajectory_lengths,
-        &hide_bodies,
-        &colors,
-        999_999_999, // effectively produce 1 frame
-        args.avoid_effects,
-        true,
-        args.dynamic_bounds,
-    );
-    let last_frame = pic_frames.last().unwrap().clone();
-    if let Err(e) = last_frame.save(format!("pics/{}.png", base_name)) {
-        eprintln!("Error saving image: {:?}", e);
+    // Make a single image (one_frame = true), unless disabled
+    if !args.no_image {
+        let pic_frames = plot_positions(
+            &positions,
+            1600,
+            image_trajectory_lengths,
+            &hide_bodies,
+            &colors,
+            999_999_999, // effectively produce 1 frame
+            args.avoid_effects,
+            true,
+            args.dynamic_bounds,
+        );
+        let last_frame = pic_frames.last().unwrap().clone();
+        if let Err(e) = last_frame.save(format!("pics/{}.png", base_name)) {
+            eprintln!("Error saving image: {:?}", e);
+        } else {
+            println!("Final snapshot (image) saved as pics/{}.png", base_name);
+        }
     } else {
-        println!("Final snapshot (image) saved as pics/{}.png", base_name);
+        println!("No image requested.");
     }
 
     // Optionally generate a video

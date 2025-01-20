@@ -29,7 +29,6 @@ def generate_file_name(
     min_mass, max_mass,
     avoid_effects, no_video,
     dynamic_bounds, special_color,
-    max_points,
     video_tail_min, video_tail_max,
     image_tail_min, image_tail_max,
     special_color_video_tail_min, special_color_video_tail_max,
@@ -62,7 +61,6 @@ def generate_file_name(
         f"_maxMass={int(max_mass)}"
         f"_AE={ae_flag}_NV={nv_flag}_DB={db_flag}"
         f"_color={sc_str}"
-        f"_maxPoints={max_points}"
         f"_vTail={video_tail_min}-{video_tail_max}"
         f"_iTail={image_tail_min}-{image_tail_max}"
         f"_svTail={special_color_video_tail_min}-{special_color_video_tail_max}"
@@ -80,29 +78,26 @@ def main():
     # ---------------------------
     program_path = './target/release/three_body_problem'
     max_concurrent_executions = 1  # run how many tasks in parallel
-    N = 100  # how many times to run each parameter combo
+    N = 50  # how many times to run each parameter combo
 
     # ---------------------------
     # 2. Parameter Ranges
     # ---------------------------
     # Basic
-    possible_num_steps = [1_000_000]
-    possible_num_sims = [100]
-    possible_location = [250.0]
-    possible_velocity = [2.0]
-    possible_min_mass = [100.0]
-    possible_max_mass = [300.0]
+    possible_num_steps = [100_000, 300_000, 1_000_000]
+    possible_num_sims = [300]
+    possible_location = [75.0, 250.0, 750.0]
+    possible_velocity = [1.0, 3.0, 9.0]
+    possible_min_mass = [10.0, 30.0, 100.0]
+    possible_max_mass = [100.0, 300.0, 1000.0]
 
     # Flags
     possible_avoid_effects = [False]
-    possible_no_video = [False]
+    possible_no_video = [True]
     possible_dynamic_bounds = [False]
 
     # Special color
     possible_special_color = [None]
-
-    # Analysis
-    possible_max_points = [100_000]
 
     # Tail length params (normal)
     possible_video_tail_min = [0.2]
@@ -127,7 +122,6 @@ def main():
         possible_no_video,
         possible_dynamic_bounds,
         possible_special_color,
-        possible_max_points,
         possible_video_tail_min,
         possible_video_tail_max,
         possible_image_tail_min,
@@ -140,7 +134,7 @@ def main():
 
     # We'll define our base seed in hex (without "0x").
     # Ensure it's an even length in hex digits, e.g. "775580" => 6 digits.
-    base_seed_hex_part = "775581"
+    base_seed_hex_part = "775584"
 
     # ---------------------------
     # 3. Construct all parameter combos
@@ -160,7 +154,6 @@ def main():
             no_video,
             dynamic_bounds,
             special_color,
-            max_points,
             video_tail_min,
             video_tail_max,
             image_tail_min,
@@ -183,7 +176,6 @@ def main():
                 min_mass, max_mass,
                 avoid_effects, no_video,
                 dynamic_bounds, special_color,
-                max_points,
                 video_tail_min, video_tail_max,
                 image_tail_min, image_tail_max,
                 special_color_video_tail_min, special_color_video_tail_max,
@@ -231,12 +223,14 @@ def main():
             if dynamic_bounds:
                 cmd_list.append("--dynamic-bounds")
 
+            cmd_list.append("--no-image")
+
+            cmd_list.append("--dist-weight")
+            cmd_list.append("1000.0")
+
             if special_color is not None:
                 cmd_list.append("--special-color")
                 cmd_list.append(special_color)
-
-            cmd_list.append("--max-points")
-            cmd_list.append(str(max_points))
 
             cmd_list.append("--video-tail-min")
             cmd_list.append(str(video_tail_min))
