@@ -91,6 +91,7 @@ abstract contract MainPrize is
 	// #region `_distributePrizes`
 
 	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
+	/// todo-1 Develop a test that checks that there are no NFTs with duplicate seeds.
 	function _distributePrizes() private {
 		// #region
 
