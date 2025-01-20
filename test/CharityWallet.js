@@ -38,8 +38,7 @@ describe("CharityWallet", function () {
 
 		await owner.sendTransaction({ to: await charityWallet.getAddress(), value: hre.ethers.parseEther("3")});
 		await charityWallet.setCharityAddress(await brokenCharity.getAddress());
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(charityWallet.send()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
+		await expect(charityWallet.send()).to.be.revertedWithCustomError(charityWallet, "FundTransferFailed");
 
 		const BrokenCharityWallet = await hre.ethers.getContractFactory("BrokenCharityWallet");
 		const brokenCharityWallet = await BrokenCharityWallet.deploy();

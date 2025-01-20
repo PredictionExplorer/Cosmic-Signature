@@ -11,6 +11,7 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 			# 'npx' 'hardhat' 'compile'
+			# 'npx' 'hardhat' 'test' '--grep' 'Bidding with CST works'
 			'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then

@@ -191,18 +191,19 @@ describe("Events", function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		const mintPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [2000000000]);
-		// await hre.ethers.provider.send("evm_mine");
 		// let bidParams = { message: "random walk", randomWalkNftId: 0 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		const mintPrice = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
+		let initialDurationUntilMainPrize_ = await cosmicSignatureGameProxy.getInitialDurationUntilMainPrize();
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		expect(nextEthPlusRandomWalkNftBidPrice_).to.equal((nextEthBidPrice_ + 1n) / 2n);
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ 0, "random walk", { value: nextEthPlusRandomWalkNftBidPrice_ }))
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000]);
+		// await hre.ethers.provider.send("evm_mine");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ 0, "random walk", {value: nextEthPlusRandomWalkNftBidPrice_}))
 			.to.emit(cosmicSignatureGameProxy, "BidEvent")
-			.withArgs(addr1.address, 0, nextEthPlusRandomWalkNftBidPrice_, 0, -1, 2000090000, "random walk");
+			.withArgs(addr1.address, 0, nextEthPlusRandomWalkNftBidPrice_, 0, -1, 100_000_000_000n + initialDurationUntilMainPrize_, "random walk");
 	});
 
 	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
@@ -238,6 +239,9 @@ describe("Events", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+
+		// Comment-202501192 applies.
+		await hre.ethers.provider.send("evm_mine");
 
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		const timestampBefore = latestBlock_.timestamp;

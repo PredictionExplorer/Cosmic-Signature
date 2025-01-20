@@ -2,12 +2,14 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-// todo-1 No need to derive from this?
 import { ISystemManagement } from "./ISystemManagement.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice Functionality that handles claiming and paying bidding round main prize,
 /// as well as distributing other (secondary) prizes.
+/// todo-1 We need to inherit `SystemManagement` for `_setActivationTime`.
+/// todo-1 Try to move the method togetehr with some modifiers to something like `BiddingBase`.
+/// todo-1 Add the new contract and its interface to my list in the doc.
 interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
 	/// @notice Emitted when a bidding round main prize is claimed.
 	/// This event indicates that the round has ended.
@@ -15,7 +17,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param beneficiaryAddress The address receiving the prize.
 	/// [Comment-202411254]
 	/// It will be different from the bidding round main prize actual winner if the winner has failed to claim the prize
-	/// within a timeout and someone else claimed it instead.
+	/// within a timeout and someone else has claimed it instead.
 	/// It's possible to find out from other events who is the actual winner.
 	/// Comment-202411285 relates.
 	/// [/Comment-202411254]
@@ -27,24 +29,6 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 		uint256 ethPrizeAmount,
 		uint256 indexed prizeCosmicSignatureNftId
 	);
-
-	// /// @notice Emitted when the Stellar Spender receives their prize.
-	// /// @param stellarSpender Stellar Spender address.
-	// /// @param roundNum The bidding round number.
-	// /// todo-1 Make sense to reorder `roundNum` to the beginning?
-	// /// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
-	// /// @param cstPrizeAmount The amount of CosmicSignature Tokens minted and awarded.
-	// /// @param totalSpentCst The total CST amount spent by the winner.
-	// /// ---param winnerIndex Winner index.
-	// /// todo-1 What is this `winnerIndex` thing? We do need it for raffle winners, but not here. Commented out.
-	// event StellarSpenderPrizePaid(
-	// 	address indexed stellarSpender,
-	// 	uint256 indexed roundNum,
-	// 	uint256 indexed prizeCosmicSignatureNftId,
-	// 	uint256 cstPrizeAmount,
-	// 	uint256 totalSpentCst
-	// 	// uint256 winnerIndex
-	// );
 
 	/// @notice Emitted when the last CST bidder receives their prize.
 	/// @param roundNum The current bidding round number.
@@ -77,7 +61,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param ethPrizeAmount The ETH amount awarded.
 	/// @dev
 	/// [Comment-202412189]
-	/// Using the word "Prepared" instead of something like "Paid" because we transfer the ETH to `prizesWallet`,
+	/// Using the word "Allocated" instead of something like "Paid" because we transfer the ETH to `prizesWallet`,
 	/// rather than to the winner directly.
 	/// [/Comment-202412189]
 	event ChronoWarriorPrizeAllocated(

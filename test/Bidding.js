@@ -559,6 +559,9 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2, addr3,] = signers;
 
+		// // Comment-202501192 applies.
+		// await hre.ethers.provider.send("evm_mine");
+
 		const delayDurationBeforeNextRound_ = await cosmicSignatureGameProxy.delayDurationBeforeNextRound();
 
 		// let bidParams = { message: "", randomWalkNftId: -1 };
@@ -574,13 +577,15 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-		// await hre.ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
+		await hre.ethers.provider.send("evm_mine");
+		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+		expect(durationUntilMainPrize_).to.equal(1n);
 		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
-		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeNextRound_)]);
-		// await hre.ethers.provider.send("evm_mine");
+		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeNextRound_) - 1]);
+		await hre.ethers.provider.send("evm_mine");
 		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
 
 		// Making CST bid price cheaper.
@@ -730,6 +735,8 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
+		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await cosmicSignatureGameProxy.connect(addr1).bid(-1n, "eth bid", {value: nextEthBidPrice_,});
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InsufficientBalance");
 	});
@@ -742,9 +749,9 @@ describe("Bidding", function () {
 		// let bidParams = { message: "", randomWalkNftId: -1 };
 		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", {value: nextEthBidPrice_,});
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", {value: nextEthBidPrice_,});
 
 		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(0)).to.equal(addr1.address);
 		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(1)).to.equal(addr2.address);
@@ -757,11 +764,11 @@ describe("Bidding", function () {
 
 		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
-		const BrokenToken = await hre.ethers.getContractFactory("BrokenToken2");
-		const brokenToken= await BrokenToken.deploy(0);
-		await brokenToken.waitForDeployment();
-		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
-		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenToken.getAddress());
+		const BrokenCosmicSignatureToken = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken2");
+		const brokenCosmicSignatureToken = await BrokenCosmicSignatureToken.deploy(0);
+		await brokenCosmicSignatureToken.waitForDeployment();
+		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenCosmicSignatureToken.getAddress());
+		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenCosmicSignatureToken.getAddress());
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
@@ -779,12 +786,12 @@ describe("Bidding", function () {
 
 		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
-		const BrokenToken = await hre.ethers.getContractFactory("BrokenToken2");
+		const BrokenCosmicSignatureToken = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken2");
 		const numTokenMintsPerBid_ = 1;
-		const brokenToken= await BrokenToken.deploy(numTokenMintsPerBid_);
-		await brokenToken.waitForDeployment();
-		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenToken.getAddress());
-		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenToken.getAddress());
+		const brokenCosmicSignatureToken = await BrokenCosmicSignatureToken.deploy(numTokenMintsPerBid_);
+		await brokenCosmicSignatureToken.waitForDeployment();
+		// await cosmicSignatureGameProxy.setCosmicSignatureTokenRaw(await brokenCosmicSignatureToken.getAddress());
+		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenCosmicSignatureToken.getAddress());
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
@@ -827,10 +834,18 @@ describe("Bidding", function () {
 	it("The getDurationUntilActivation and getDurationElapsedSinceActivation methods behave correctly", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 
-		// Issue. `loadFixture` doesn't remove blocks generated afterwards and/or has some other similar issues.
-		// So this should help to make latest block timestamp more deterministic.
-		// await hre.ethers.provider.send("evm_increaseTime", [1]);
-		// todo-1 I might need to make this comment numbered and reference it from some other places.
+		// [Comment-202501192]
+		// todo-1 Improve this comment. See todos.
+		// Issue. `loadFixture` doesn't remove blocks generated after it was called for the first time
+		// and/or has some other similar issues.
+		// Additionally, near Comment-202501193, HardHat is configured for deterministic mined block timing,
+		// but that behavior appears to not work stably.
+		// todo-1 Or `interval: 0` has fixed it? (No, it got better, but some tests still fail sometimes.)
+		// todo-1 But getting latest block timestamp before executing a non-`view` function still doesn't work correct.
+		// todo-1 It can return a block like a minute ago.
+		// todo-1 Maybe that's the timestamp after the initil call to `loadFixture`.
+		// So this hack appears to make block timestamps more deterministic.
+		// [/Comment-202501192]
 		await hre.ethers.provider.send("evm_mine");
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");

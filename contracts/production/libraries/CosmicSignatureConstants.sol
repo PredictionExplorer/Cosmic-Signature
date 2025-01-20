@@ -191,18 +191,18 @@ library CosmicSignatureConstants {
 	}
 
 	// /// @notice Types of bids that can be made in the Game.
-	// /// todo-1 Rename to `BidTypeCode`.
+	// /// todo-9 Rename to `BidTypeCode`.
 	// enum BidType {
 	// 	/// @notice Bid using Ether.
-	// 	/// todo-1 Rename to `Eth`.
+	// 	/// todo-9 Rename to `Eth`.
 	// 	ETH,
 	//
 	// 	/// @notice Bid using Ether + a RandomWalk NFT.
-	// 	/// todo-1 Rename to `EthPlusRandomWalkNft`.
+	// 	/// todo-9 Rename to `EthPlusRandomWalkNft`.
 	// 	RandomWalk,
 	//
 	// 	/// @notice Bid using Cosmic Signature Tokens.
-	// 	/// todo-1 Rename to `Cst`.
+	// 	/// todo-9 Rename to `Cst`.
 	// 	CST
 	// }
 

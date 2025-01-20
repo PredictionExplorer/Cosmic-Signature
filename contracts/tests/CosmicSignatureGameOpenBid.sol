@@ -112,8 +112,6 @@ contract CosmicSignatureGameOpenBid is
 		stakingTotalEthRewardAmountPercentage = CosmicSignatureConstants.DEFAULT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE;
 		charityEthDonationAmountPercentage = CosmicSignatureConstants.DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE;
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
-		// // stellarSpender =
-		// // stellarSpenderTotalSpentCst =
 		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =
 		// enduranceChampionDuration =

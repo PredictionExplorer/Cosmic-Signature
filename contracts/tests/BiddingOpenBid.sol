@@ -257,7 +257,7 @@ abstract contract BiddingOpenBid is
 			(bool isSuccess_, ) = msg.sender.call{value: uint256(overpaidEthBidPrice_)}("");
 			require(
 				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("Refund transfer failed.", msg.sender, uint256(overpaidEthBidPrice_))
+				CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, uint256(overpaidEthBidPrice_))
 			);
 		}
 
@@ -418,10 +418,6 @@ abstract contract BiddingOpenBid is
 		}
 
 		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
-		// if (bidderInfo[roundNum][msg.sender].totalSpentCst > stellarSpenderTotalSpentCst) {
-		// 	stellarSpenderTotalSpentCst = bidderInfo[roundNum][msg.sender].totalSpentCst;
-		// 	stellarSpender = msg.sender;
-		// }
 
 		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =

@@ -43,12 +43,14 @@ interface IMarketingWallet is IAddressValidator {
 	/// @notice Pays CST rewards to zero or more marketers.
 	/// Only the contract owner is permitted to call this method.
 	/// @param marketerAddresses_ Recipient addresses.
-	/// @param amount_ Amount to pay.
+	/// @param amount_ Amount to pay to each recipient.
 	/// It's OK if it's zero.
+	/// @dev todo-1 Maybe rename this to `payManyRewards`. Methods named that way already exist elsewhere.
 	function payRewards(address[] calldata marketerAddresses_, uint256 amount_) external;
 
 	/// @notice Pays CST rewards to zero or more marketers.
 	/// Only the contract owner is permitted to call this method.
 	/// @param specs_ Payment specs.
+	/// @dev todo-1 Maybe rename this to `payManyRewards`. Methods named that way already exist elsewhere.
 	function payRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external;
 }

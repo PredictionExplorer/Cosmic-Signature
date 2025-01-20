@@ -37,6 +37,6 @@ contract CharityWallet is Ownable, ICharityWallet {
 
 		emit DonationSent(charityAddressCopy_, amount_);
 		(bool isSuccess_, ) = charityAddressCopy_.call{value: amount_}("");
-		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("Transfer to charity failed.", charityAddressCopy_, amount_));
+		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddressCopy_, amount_));
 	}
 }

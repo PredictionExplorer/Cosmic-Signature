@@ -8,6 +8,7 @@ pragma solidity 0.8.28;
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
@@ -216,32 +217,59 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	}
 
 	// #endregion
-	// #region `pickRandomStakerAddressIfPossible`
+	// #region // `pickRandomStakerAddressIfPossible`
+
+	// /// @dev
+	// /// Observable universe entities accessed here:
+	// ///    `_numStakedNfts`.
+	// ///    `StakeAction`.
+	// ///    `stakeActions`.
+	// ///    `stakeActionIds`.
+	// function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns(address) {
+	// 	uint256 numStakedNftsCopy_ = _numStakedNfts;
+	//
+	// 	if (numStakedNftsCopy_ == 0) {
+	// 		return address(0);
+	// 	}
+	//
+	// 	uint256 luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_;
+	// 	uint256 luckyStakeActionId_ = stakeActionIds[luckyStakeActionIndex_];
+	// 	// #enable_asserts assert(stakeActions[luckyStakeActionId_].index == luckyStakeActionIndex_);
+	// 	address luckyStakerAddress_ = stakeActions[luckyStakeActionId_].nftOwnerAddress;
+	// 	// #enable_asserts assert(luckyStakerAddress_ != address(0));
+	// 	return luckyStakerAddress_;
+	// }
+
+	// #endregion
+	// #region `pickRandomStakerAddressesIfPossible`
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    // `CosmicSignatureErrors.NoStakedNfts`.
+	///    `CosmicSignatureHelpers.generateRandomNumber`.
 	///    `_numStakedNfts`.
 	///    `StakeAction`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	///
-	/// todo-1 Do we need a method to pick multiple random stakers at once?
 	/// todo-1 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
-	function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns(address) {
+	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns(address[] memory) {
+		address[] memory luckyStakerAddresses_;
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
-
-		// require(numStakedNftsCopy_ > 0, CosmicSignatureErrors.NoStakedNfts("There are no staked NFTs."));
-		if (numStakedNftsCopy_ == 0) {
-			return address(0);
+		if (numStakedNftsCopy_ > 0) {
+			luckyStakerAddresses_ = new address[](numStakerAddresses_);
+			for (uint256 luckyStakerIndex_ = numStakerAddresses_; luckyStakerIndex_ > 0; ) {
+				unchecked { ++ randomNumberSeed_; }
+				uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
+				uint256 luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_;
+				uint256 luckyStakeActionId_ = stakeActionIds[luckyStakeActionIndex_];
+				// #enable_asserts assert(stakeActions[luckyStakeActionId_].index == luckyStakeActionIndex_);
+				address luckyStakerAddress_ = stakeActions[luckyStakeActionId_].nftOwnerAddress;
+				// #enable_asserts assert(luckyStakerAddress_ != address(0));
+				-- luckyStakerIndex_;
+				luckyStakerAddresses_[luckyStakerIndex_] = luckyStakerAddress_;
+			}
 		}
-
-		uint256 luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_;
-		uint256 luckyStakeActionId_ = stakeActionIds[luckyStakeActionIndex_];
-		// #enable_asserts assert(stakeActions[luckyStakeActionId_].index == luckyStakeActionIndex_);
-		address luckyStakerAddress_ = stakeActions[luckyStakeActionId_].nftOwnerAddress;
-		// #enable_asserts assert(luckyStakerAddress_ != address(0));
-		return luckyStakerAddress_;
+		return luckyStakerAddresses_;
 	}
 
 	// #endregion

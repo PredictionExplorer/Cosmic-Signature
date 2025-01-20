@@ -8,6 +8,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @notice A contract implementing this interface implements the CosmicSignatureToken (CST) --
 /// an ERC20 token with additional features.
 /// This token includes ownership, burning, permit, and voting capabilities.
+/// todo-1 Why the above didn't mention minting? The CS NFT contract comment does mention it.
 /// todo-1 No ownership any more.
 /// @dev
 /// [Comment-202412033]
@@ -28,6 +29,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// todo-1 Make sure this contract is Uniswap and other similar exchanges compliant.
 /// todo-1 Maybe research a bit what other cutting edge projects are doing and do the same.
 interface ICosmicSignatureToken is IAddressValidator {
+	/// @dev Comment-202501144 relates.
 	struct MintSpec {
 		address account;
 
@@ -35,6 +37,7 @@ interface ICosmicSignatureToken is IAddressValidator {
 		uint256 value;
 	}
 
+	/// @dev Comment-202501144 relates.
 	struct MintOrBurnSpec {
 		address account;
 

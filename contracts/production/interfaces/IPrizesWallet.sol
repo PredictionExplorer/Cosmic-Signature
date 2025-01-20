@@ -19,6 +19,14 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// by making a direct call to an NFT contract, there would be no way to change that NFT owner again.
 /// ToDo-202412176-1 relates.
 interface IPrizesWallet is IAddressValidator {
+	/// todo-1 I wrote todos to rename some params in some methods. I have already renamed members here, but take another look.
+	struct EthDeposit {
+		address prizeWinnerAddress;
+
+		/// @notice It's OK if this is zero.
+		uint256 amount;
+	}
+
 	/// @notice Emitted when `timeoutDurationToWithdrawPrizes` is changed.
 	/// @param newValue The new value.
 	event TimeoutDurationToWithdrawPrizesChanged(uint256 newValue);
@@ -104,11 +112,18 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
 
+	/// @notice Calling this method is equivalent to calling `registerRoundEnd` once and then `depositEth` zero or more times.
+	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
+	/// todo-1 I wrote todos to rename some params in other methods. I have already renamed them here, but take another look.
+	/// todo-1 `mainPrizeWinnerAddress_` is really main prize beneficiary. Rename in many places, also in comments. Review all "winner".
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeWinnerAddress_, EthDeposit[] calldata ethDeposits_) external payable;
+
 	/// @notice `CosmicSignatureGame` calls this method on bidding round main prize claim.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param roundMainPrizeWinnerAddress_ Bidding round main prize winner address.
 	/// todo-1 Rename the above to `mainPrizeWinnerAddress_`.
+	/// todo-1 This method is not used. At least comment.
 	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external;
 
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
@@ -121,12 +136,12 @@ interface IPrizesWallet is IAddressValidator {
 	/// @notice Receives an ETH prize for a bidding round prize winner.
 	/// This is used only for secondary (non-main) prizes.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
+	/// It's OK if `msg.value` is zero.
 	/// @param roundNum_ The current bidding round number.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
 	/// todo-1 Rename the above to `prizeWinnerAddress_`.
 	/// @dev
-	/// todo-1 Do we need a method to deposit for multiple winnes? That method can even be combined with `registerRoundEnd`.
-	/// todo-1 Ideally, it should accept an array of structs, each being 32 bytes long (or maybe don't bother with that kind of optimization).
+	/// todo-1 This method is not used. At least comment.
 	function depositEth(uint256 roundNum_, address roundPrizeWinnerAddress_) external payable;
 
 	/// @notice A biddig round prize winner calls this method to withdraw their ETH balance.

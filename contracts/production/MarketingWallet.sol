@@ -30,7 +30,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
 		// try
 		// [Comment-202501137]
-		// This will validate that the address to transfer funds to is a nonzero.
+		// This will validate that the given address is a nonzero.
 		// [/Comment-202501137]
 		// ToDo-202409245-1 applies.
 		token.transfer(marketerAddress_, amount_);
@@ -43,36 +43,26 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	}
 
 	function payRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// Comment-202501137 applies.
-			token.transferMany(marketerAddresses_, amount_);
+		// Comment-202501137 applies.
+		token.transferMany(marketerAddresses_, amount_);
 
-			for (uint256 index_ = marketerAddresses_.length; index_ > 0; ) {
-				-- index_;
-				address marketerAddress_ = marketerAddresses_[index_];
-				emit RewardPaid(marketerAddress_, amount_);
-			}
+		for (uint256 index_ = marketerAddresses_.length; index_ > 0; ) {
+			-- index_;
+			address marketerAddress_ = marketerAddresses_[index_];
+			emit RewardPaid(marketerAddress_, amount_);
 		}
 	}
 
 	function payRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override onlyOwner {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// Comment-202501137 applies.
-			token.transferMany(specs_);
+		// Comment-202501137 applies.
+		token.transferMany(specs_);
 
-			for (uint256 index_ = specs_.length; index_ > 0; ) {
-				-- index_;
-				ICosmicSignatureToken.MintSpec calldata spec_ = specs_[index_];
-				address marketerAddress_ = spec_.account;
-				uint256 amount_ = spec_.value;
-				emit RewardPaid(marketerAddress_, amount_);
-			}
+		for (uint256 index_ = specs_.length; index_ > 0; ) {
+			-- index_;
+			ICosmicSignatureToken.MintSpec calldata specReference_ = specs_[index_];
+			address marketerAddress_ = specReference_.account;
+			uint256 amount_ = specReference_.value;
+			emit RewardPaid(marketerAddress_, amount_);
 		}
 	}
 }

@@ -30,7 +30,7 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 // #region
 
 /// todo-1 Everywhere, make some `public` functions `external`.
-/// todo-1 Everywhere, make some `public`/`external` functions `private`.
+/// todo-1 Everywhere, make some `public`/`external` functions `private` (and name them `_...`).
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
@@ -119,8 +119,6 @@ contract CosmicSignatureGame is
 		stakingTotalEthRewardAmountPercentage = CosmicSignatureConstants.DEFAULT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE;
 		charityEthDonationAmountPercentage = CosmicSignatureConstants.DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE;
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE;
-		// // stellarSpender =
-		// // stellarSpenderTotalSpentCst =
 		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =
 		// enduranceChampionDuration =

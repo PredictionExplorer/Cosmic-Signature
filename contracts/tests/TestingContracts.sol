@@ -5,7 +5,7 @@ import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
-import { /*ICosmicSignatureToken,*/ CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
+import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
@@ -17,9 +17,10 @@ import { IBidding, Bidding } from "../production/Bidding.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 // /// @notice used to test revert() statements in token transfers in claimMainPrize() function
-// contract BrokenToken1 {
+// contract BrokenCosmicSignatureToken1 {
 // 	uint256 private _counter;
 // 
+// 	/// todo-9 Do we need `mintMany` and other similar methods here as well?
 // 	function mint(address, uint256 roundNum_) public {
 // 		_counter = roundNum_;
 // 		require(false, "Test mint() failed.");
@@ -31,17 +32,33 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 // }
 
 /// @notice used to test revert() statements in CosmicSignatureGame contract
-contract BrokenToken2 {
+contract BrokenCosmicSignatureToken2 {
 	uint256 private _counter;
 
 	constructor(uint256 counter_) {
 		_counter = counter_;
 	}
 
-	// function mintToMarketingWallet(uint256) external {
-	// }
-
 	function mint(address, uint256) external {
+		_brokenMint();
+	}
+
+	function mintMany(ICosmicSignatureToken.MintSpec[] calldata) external {
+		_brokenMint();
+	}
+
+	function mintAndBurnMany(ICosmicSignatureToken.MintOrBurnSpec[] calldata specs_) external {
+		for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
+			ICosmicSignatureToken.MintOrBurnSpec calldata specReference_ = specs_[index_];
+			int256 value_ = specReference_.value;
+			if (value_ >= int256(0)) {
+				_brokenMint();
+				break;
+			}
+		}
+	}
+
+	function _brokenMint() private {
 		require(_counter > 0, "Test mint() failed.");
 		-- _counter;
 	}
@@ -139,12 +156,15 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
 	// 		address nftOwnerAddress_ = nft.ownerOf(i);
 	// 		if (nftOwnerAddress_ == address(this)) {
+	// 			// Comment-202501145 applies.
 	// 			nft.transferFrom(address(this), owner(), i);
 	// 		}
 	// 	}
+	//
 	// 	// Issue. Making multiple external calls to `token`.
 	// 	cosmicSupply = token.balanceOf(address(this));
 	// 	token.transfer(owner(), cosmicSupply);
+	//
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
 	// 		CosmicSignatureConstants.DonatedNft memory dnft = donatedNfts[i];
 	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);
@@ -155,9 +175,9 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 
 /// @notice special CosmicSignatureGame contract to be used in unit tests to create special test setups
 contract SpecialCosmicSignatureGame is CosmicSignatureGame {
-	/// @dev Issue. Random number generation logic in this test contract smells bad, but keeping it simple.
+	/// @dev Issue. Entropy related logic in this test contract is lousy, but keeping it simple.
 	/// Comment-202412104 relates.
-	uint256 private _entropy;
+	CosmicSignatureHelpers.RandomNumberSeedWrapper private _entropy;
 
 	// function setActivationTimeRaw(uint256 newValue_) external {
 	// 	activationTime = newValue_;
@@ -209,9 +229,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	}
 	
 	function mintCosmicSignatureNft(address to_) external {
-		_updateEntropy();
+		_initializeEntropyOnce();
+		unchecked { ++ _entropy.value; }
 		// todo-1 Should we make a high level call here?
-		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, to_, _entropy));
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, to_, _entropy.value));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr_ := mload(0x40)
@@ -222,8 +243,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		}
 	}
 
-	function _updateEntropy() private {
-		_entropy = CosmicSignatureHelpers.calculateHashSumOf((_entropy == 0) ? block.prevrandao : _entropy);
+	function _initializeEntropyOnce() private {
+		if (_entropy.value == 0) {
+			_entropy.value = CosmicSignatureHelpers.generateRandomNumberSeed();
+		}
 	}
 }
 

@@ -63,7 +63,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Maybe rename this to `delayDurationBeforeRoundActivation`.
 	uint256 public delayDurationBeforeNextRound;
 
-	/// @notice At the end of each bidding round, we mint this CST amount to `marketingWallet`.
+	/// @notice At the end of each bidding round, we mint this CST amount for `marketingWallet`.
 	/// Comment-202411064 applies.
 	/// todo-1 Ask Taras if he is eventually going to set this to zero.
 	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
@@ -228,7 +228,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
 	/// @notice Comment-202411064 applies.
-	/// This number of CSTs is minted as a reward for each bid.
+	/// We mint this CST amount as a bidder reward for each bid.
 	/// todo-1 Rename to `cstRewardAmountForBidding` or `cstRewardAmountForBid`.
 	/// todo-1 Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
 	uint256 public tokenReward;
@@ -237,11 +237,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNfts;
 	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
 
-	// @notice The address of the account that placed the last bid.
+	/// @notice The address of the account that placed the last bid.
 	address public lastBidderAddress;
 
-	// @notice The address of the account that placed the last CST bid.
-	/// todo-1 Move some comments to here from near `stellarSpender`.
+	/// @notice The address of the account that placed the last CST bid.
+	/// This will remain zero if nobody bids with CST.
 	address public lastCstBidderAddress;
 
 	// /// todo-1 Rename to `lastBidTypeCode`.
@@ -260,6 +260,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
 	/// [/ToDo-202411098-0]
+	/// todo-1 Combine this with `numRaffleParticipants`.
+	/// todo-1 Each item should be a struct containing the number of bidders in that round and the bidders themselves.
 	/// todo-1 Rename to `roundBids` or  better `bids`.
 	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
@@ -270,9 +272,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
 
 	// #endregion
-	// #region Game Prize Percentage Parameters
+	// #region Game ETH Prize Percentage Parameters
 
-	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize winner.
+	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize beneficiary.
 	/// Comment-202411064 applies.
 	uint256 public mainEthPrizeAmountPercentage;
 
@@ -301,14 +303,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// @dev ToDo-202411098-0 applies.
 	// /// I have replaced this with `PrizesWallet.mainPrizeWinnerAddresses`.
 	// mapping(uint256 roundNum => address winnerAddress) public winners;
-
-	// /// @notice Stellar Spender address.
-	// /// This will remain zero if nobody bids with CST or everybody bids with a zero CST price.
-	// /// Comment-202409179 relates.
-	// /// todo-1 Move some of these comments to near `lastCstBidderAddress`.
-	// address public stellarSpender;
-	//
-	// uint256 public stellarSpenderTotalSpentCst;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
 	/// [Comment-202411075]
