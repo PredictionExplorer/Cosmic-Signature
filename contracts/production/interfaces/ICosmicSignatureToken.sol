@@ -7,8 +7,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the CosmicSignatureToken (CST) --
 /// an ERC20 token with additional features.
-/// This token includes ownership, burning, permit, and voting capabilities.
-/// todo-1 Why the above didn't mention minting? The CS NFT contract comment does mention it.
+/// This token includes ownership, minting, burning, permit, and voting capabilities.
 /// todo-1 No ownership any more.
 /// @dev
 /// [Comment-202412033]
@@ -22,8 +21,8 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 ///
 /// todo-1 Do we need to make this or any other contract upgradeable or replaceable?
 ///
-/// todo-1 Document in a user manual that bidders don't need to approve any allowance, meaning to call `CosmicToken.approve`,
-/// todo-1 to bid with CST.
+/// todo-1 Document in a user manual that to bid with CST, bidders don't need to approve any allowance,
+/// todo-1 meaning to call `CosmicToken.approve`.
 /// todo-1 Will this apply to trading on our exchange as well?
 ///
 /// todo-1 Make sure this contract is Uniswap and other similar exchanges compliant.
