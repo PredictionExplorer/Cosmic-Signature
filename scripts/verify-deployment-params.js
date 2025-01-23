@@ -2,6 +2,8 @@
 
 // todo-1 Add the testing/logging of `marketingWalletAddr` to this?
 
+"use strict";
+
 // const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");

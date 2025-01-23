@@ -6,14 +6,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("MarketingWallet", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("MarketingWallet.setCosmicSignatureToken behaves correctly", async function () {
 		const {signers, marketingWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;

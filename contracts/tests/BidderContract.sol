@@ -29,30 +29,15 @@ contract BidderContract {
 
 	function doBid() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		// CosmicSignatureGame.BidParams memory defaultParams;
-		// defaultParams.message = "contract bid";
-		// defaultParams.randomWalkNftId = -1;
-		// bytes memory param_data = abi.encode(defaultParams);
-		// cosmicSignatureGame.bid{ value: price }(param_data);
 		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
 	}
 
 	function doBid2() external payable {
-		// CosmicSignatureGame.BidParams memory defaultParams;
-		// defaultParams.message = "contract bid";
-		// defaultParams.randomWalkNftId = -1;
-		// bytes memory param_data = abi.encode(defaultParams);
-		// cosmicSignatureGame.bid{ value: msg.value }(param_data);
 		cosmicSignatureGame.bid{ value: msg.value }((-1), "contract bid");
 	}
 
 	function doBidRWalk(int256 nftId) external payable {
 		uint256 price = cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(cosmicSignatureGame.getNextEthBidPrice(int256(0)));
-		// CosmicSignatureGame.BidParams memory params;
-		// params.message = "contract bid rwalk";
-		// params.randomWalkNftId = nftId;
-		// bytes memory param_data = abi.encode(params);
-		// cosmicSignatureGame.bid{ value: price }(param_data);
 		cosmicSignatureGame.bid{ value: price }(nftId, "contract bid rwalk");
 	}
 
@@ -60,11 +45,6 @@ contract BidderContract {
 		RandomWalkNFT rwalk = cosmicSignatureGame.randomWalkNft();
 		rwalk.setApprovalForAll(address(cosmicSignatureGame), true);
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
-		// CosmicSignatureGame.BidParams memory params;
-		// params.message = "contract bid rwalk";
-		// params.randomWalkNftId = nftId;
-		// bytes memory param_data = abi.encode(params);
-		// cosmicSignatureGame.bid{ value: msg.value }(param_data);
 		cosmicSignatureGame.bid{ value: msg.value }(nftId, "contract bid rwalk");
 	}
 
@@ -75,11 +55,6 @@ contract BidderContract {
 	// 	myDonatedNfts.push(donatedTokenNum);
 	// 	numMyDonatedNfts++;
 	// 	uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-	// 	// CosmicSignatureGame.BidParams memory params;
-	// 	// params.message = "contract bid with donation";
-	// 	// params.randomWalkNftId = -1;
-	// 	// bytes memory param_data = abi.encode(params);
-	// 	// cosmicSignatureGame.bidAndDonateNft{ value: price }(param_data, nftAddress_, nftId_);
 	// 	cosmicSignatureGame.bidAndDonateNft{ value: price }((-1), "contract bid with donation", nftAddress_, nftId_);
 	// }
 
@@ -146,11 +121,6 @@ contract BidderContract {
 	function doFailedBid() external payable {
 		uint256 price = msg.value;
 		blockDeposits = true;
-		// CosmicSignatureGame.BidParams memory defaultParams;
-		// defaultParams.message = "contract bid";
-		// defaultParams.randomWalkNftId = -1;
-		// bytes memory param_data = abi.encode(defaultParams);
-		// cosmicSignatureGame.bid{ value: price }(param_data);
 		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
 		blockDeposits = false;
 	}
@@ -179,11 +149,6 @@ contract BidCNonRecv {
 
 	function doBid() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		// CosmicSignatureGame.BidParams memory params;
-		// params.message = "non-IERC721Receiver bid";
-		// params.randomWalkNftId = -1;
-		// bytes memory param_data = abi.encode(params);
-		// cosmicSignatureGame.bid{ value: price }(param_data);
 		cosmicSignatureGame.bid{ value: price }((-1), "non-IERC721Receiver bid");
 	}
 	

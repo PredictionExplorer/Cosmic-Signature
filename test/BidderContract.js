@@ -8,14 +8,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("BidderContract", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("A contract can win main prize", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, randomWalkNft,} =
 			await loadFixture(deployContractsForTesting);
@@ -28,18 +20,12 @@ describe("BidderContract", function () {
 		// ToDo-202411202-1 applies.
 		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
 
-		// let bidParams = { message: "owner bids", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: nextEthBidPrice_ });
-		// bidParams = { message: "addr1 bids", randomWalkNftId: -1 };
-		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		await cosmicSignatureGameProxy.connect(owner).bid((-1), "owner bids", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "addr1 bids", { value: nextEthBidPrice_ });
-		// bidParams = { message: "addr2 bids", randomWalkNftId: -1 };
-		// params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "addr1 bids", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "addr2 bids", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "addr2 bids", { value: nextEthBidPrice_ });
 
 		// const randomWalkNftAddr_ = await cosmicSignatureGameProxy.randomWalkNft();
 		const randomWalkNftAddr_ = await randomWalkNft.getAddress();
@@ -107,10 +93,8 @@ describe("BidderContract", function () {
 		let bnonrec = await BNonRec.connect(owner).deploy(await cosmicSignatureGameProxy.getAddress());
 		await bnonrec.waitForDeployment();
 
-		// let bidParams = { message: "owner bids", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "owner bids", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(owner).bid((-1), "owner bids", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await bnonrec.connect(owner).doBid({ value: nextEthBidPrice_ });
 

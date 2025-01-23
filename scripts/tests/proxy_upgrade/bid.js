@@ -1,5 +1,7 @@
 // todo-1 Rename this file to "bid-with-eth.js".
 
+"use strict";
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("../../helper.js");
 
@@ -25,9 +27,9 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
 	// let bidParams = { message: "bid test", randomWalkNftId: -1, isOpenBid: false };
-	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
+	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), false, "bid test", { value: nextEthBidPrice_, gasLimit: 30000000 });
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), false, "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
 }
 
 main()

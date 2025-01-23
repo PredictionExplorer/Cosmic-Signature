@@ -1,5 +1,7 @@
 // todo-1 Rename this file to "bid-with-cst.js".
 
+"use strict";
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 

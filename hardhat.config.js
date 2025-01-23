@@ -263,16 +263,16 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
+				runs: 20000,
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
 				// 		// this setting makes Hardhat work as well as possible.
-				// 		// Issue. But it appears to increase contract binary size.
-				// 		// todo-1 To be revisited.
+				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
+				// 		// So we probably don't need this.
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
-				runs: 20000,
 			},
 
 			outputSelection: {
@@ -328,11 +328,11 @@ const hardhatUserConfig = {
 		// [/Comment-202408024]
 		path: "./abi",
 
+		// runOnCompile: true,
 		clear: true,
 		flat: true,
 
-		// Issue. This list is incomplete. Is it a problem? Do we need this at all?
-		// todo-1 Take a closer look at the above issue.
+		// Issue. This list is incomplete.
 		only: [
 			"CharityWallet",
 			"CosmicSignatureDao",

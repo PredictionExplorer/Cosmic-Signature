@@ -5,7 +5,6 @@
 // #endregion
 // #region
 
-// todo-1 Add this directive to all ".js" files".
 "use strict";
 
 // #endregion

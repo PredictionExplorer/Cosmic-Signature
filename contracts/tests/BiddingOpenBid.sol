@@ -35,22 +35,9 @@ abstract contract BiddingOpenBid is
 	// #region // Data Types
 
 	// /// @title Parameters needed to place a bid.
-	// /// @dev Comment-202411111 applies.
 	// struct BidParams {
-	// 	/// @notice The bidder's message associated with the bid.
-	// 	/// May be empty.
-	// 	/// Can be used to store additional information or comments from the bidder.
 	// 	string message;
-	//
-	// 	/// @notice The ID of the RandomWalk NFT to be used for bidding.
-	// 	/// Set to -1 if no RandomWalk NFT is to be used.
-	// 	/// Comment-202412036 applies.
 	// 	int256 randomWalkNftId;
-	//
-	// 	/// @notice Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
-	// 	/// `nextEthBidPrice` will be updated to `msg.value` and stay at that level.
-	// 	/// todo-2 The above description of this parameter doesn't appear to be perfectly accurate. To be revisited.
-	// 	/// todo-2 Or is it now accurate?
 	// 	bool isOpenBid;
 	// }
 
@@ -141,6 +128,8 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_bid`
 
+	/// @param isOpenBid_ Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
+	/// `nextEthBidPrice` will be calculated based on `msg.value`.
 	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// #region
 		

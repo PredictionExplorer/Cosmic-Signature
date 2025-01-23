@@ -8,14 +8,6 @@ const { basicDeployment } = require("../src/Deploy.js");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("SystemManagement", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("In the inactive mode, setters behave correctly", async function () {
 		const isRuntimeMode_ = false;
 		const signers = await hre.ethers.getSigners();
@@ -214,11 +206,9 @@ describe("SystemManagement", function () {
 
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).greaterThan(+1e9);
 
-		// const bidParams = { message: "", randomWalkNftId: -1 };
-		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
-		await expect(cosmicSignatureGameProxy.bidAndDonateNft(/*params*/ (-1), "", owner.address, 0, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.bidAndDonateNft((-1), "", owner.address, 0, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		await expect(cosmicSignatureGameProxy.bidWithCst(10n ** 30n, "")).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
 		// todo-1 This reverts with a different error. It's probably correct, but take another look. Comment.
 		await expect(cosmicSignatureGameProxy.claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsPlacedInCurrentRound");
@@ -246,9 +236,6 @@ describe("SystemManagement", function () {
 		// // Comment-202501192 applies.
 		// await hre.ethers.provider.send("evm_mine");
 
-		// const bidParams = { message: "", randomWalkNftId: -1 };
-		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-
 		// let systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
 		// expect(systemModeCode_).to.equal(0n);
 
@@ -263,7 +250,7 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.connect(addr2).donateEth({ value: donationAmount });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 
 		// await cosmicSignatureGameProxy.prepareMaintenance();
 		// await expect(cosmicSignatureGameProxy.connect(addr1).prepareMaintenance()).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
@@ -301,7 +288,7 @@ describe("SystemManagement", function () {
 
 		// The next bidding round has started. So we are allowed to bid.
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 	});
 	it("Unauthorized access to restricted methods is denied", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =

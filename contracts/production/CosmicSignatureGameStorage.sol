@@ -244,7 +244,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This will remain zero if nobody bids with CST.
 	address public lastCstBidderAddress;
 
-	// /// todo-1 Rename to `lastBidTypeCode`.
+	// /// todo-1 Tell them that I eliminated this.
+	// /// todo-9 Rename to `lastBidTypeCode`.
 	// CosmicSignatureConstants.BidType public lastBidType;
 
 	/// @dev ToDo-202411098-1 applies.

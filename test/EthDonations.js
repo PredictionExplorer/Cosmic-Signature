@@ -10,14 +10,6 @@ const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js"
 const SKIP_LONG_TESTS = false;
 
 describe("EthDonations", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("donateEthWithInfo() works as expected", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;

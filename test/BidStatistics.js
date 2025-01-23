@@ -9,14 +9,6 @@ const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js"
 const SKIP_LONG_TESTS = false;
 
 describe("BidStatistics", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	// const InvalidBidderQueryRoundNumDef = {
 	// 	type: "tuple(string,uint256,uint256)",
 	// 	name: "InvalidBidderQueryRoundNum",
@@ -38,30 +30,28 @@ describe("BidStatistics", function () {
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000]);
 		await hre.ethers.provider.send("evm_mine");
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid1 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid1 (addr1)
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_001_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid2	(addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid2	(addr2)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_006_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid3 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid3 (addr1)
 				
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_007_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid4 (addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid4 (addr2)
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_008_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid5 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid5 (addr1)
 		
 		// todo-1 We now also have chrono-warrior.
 		maxbtime = await cosmicSignatureGameProxy.enduranceChampionDuration();
@@ -86,70 +76,68 @@ describe("BidStatistics", function () {
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000]);
 		await hre.ethers.provider.send("evm_mine");
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid1 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid1 (addr1)
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_001_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid2	(addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid2	(addr2)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_002_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid3 (addr3)
+		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });	// bid3 (addr3)
 				
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_003_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid4 (addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid4 (addr2)
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_004_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid5 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid5 (addr1)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_005_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid6 (addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid6 (addr2)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_006_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid7 (addr3)
+		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });	// bid7 (addr3)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_007_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid8 (addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid8 (addr2)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_008_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid9 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid9 (addr1)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_009_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid10 (addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid10 (addr2)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_010_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid11 (addr3)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid11 (addr3)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_011_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid12(addr2)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid12(addr2)
 		
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_012_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid13 (addr1)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid13 (addr1)
 		
 		// todo-1 We now also have chrono-warrior.
 		maxbtime = await cosmicSignatureGameProxy.enduranceChampionDuration();
@@ -174,25 +162,23 @@ describe("BidStatistics", function () {
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_080_000]);
 		await hre.ethers.provider.send("evm_mine");
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(owner).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid1 (owner, for 1,000 seconds
+		await cosmicSignatureGameProxy.connect(owner).bid((-1), "", { value: nextEthBidPrice_ });	// bid1 (owner, for 1,000 seconds
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_081_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid2	(addr1, for 2,000 seconds)
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });	// bid2	(addr1, for 2,000 seconds)
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_083_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid3 (addr2, for 5,000 seconds)
+		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });	// bid3 (addr2, for 5,000 seconds)
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_088_000]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });	// bid4 (close everything)
+		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });	// bid4 (close everything)
 
 		// todo-1 We now also have chrono-warrior.
 		// const result = await cosmicSignatureGameProxy.tryGetCurrentEnduranceChampion();

@@ -7,14 +7,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureDao", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("Changing CharityWallet.charityAddress via CosmicSignatureDao", async function () {
 		const forward_blocks = async n => {
 			// // todo-9 Use "hardhat_mine".
@@ -30,11 +22,9 @@ describe("CosmicSignatureDao", function () {
 			await loadFixture(deployContractsForTesting);
          const [owner, addr1, addr2, addr3, addr4, addr5,] = signers;
 
-		// const bidParams = { message: "", randomWalkNftId: -1 };
-		// const params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
 			let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(signers[counter_]).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(signers[counter_]).bid((-1), "", { value: nextEthBidPrice_ });
 		}
 
 		const votingDelay_ = await cosmicSignatureDao.votingDelay();

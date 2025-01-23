@@ -10,15 +10,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("ZeroAddressChecking", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
-
 	// todo-1 We now allow a zero address in this case.
 	it("Shouldn't be possible to set a zero-address for CharityWallet", async function () {
 		const {charityWallet,} = await loadFixture(deployContractsForTesting);

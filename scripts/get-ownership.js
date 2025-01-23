@@ -1,5 +1,7 @@
 // todo-1 Rename this file to "get-contract-owners.js".
 
+"use strict";
+
 // const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");

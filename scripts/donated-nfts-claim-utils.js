@@ -6,6 +6,8 @@
 // 	- with PRIVKEY environment variable set -> generates claimManyDonatedNfts() calls per prize
 // (note: only for unclaimed NFTs)
 
+"use strict";
+
 // const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");

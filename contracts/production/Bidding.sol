@@ -30,35 +30,10 @@ abstract contract Bidding is
 	MainPrizeBase,
 	BidStatistics,
 	IBidding {
-	// #region // Data Types
-
-	// /// @title Parameters needed to place a bid.
-	// /// @dev
-	// /// [Comment-202411111]
-	// /// Similar structures exist in multiple places.
-	// /// [/Comment-202411111]
-	// struct BidParams {
-	// 	/// @notice The bidder's message associated with the bid.
-	// 	/// May be empty.
-	// 	/// Can be used to store additional information or comments from the bidder.
-	// 	string message;
-	//
-	// 	/// @notice The ID of the RandomWalk NFT to be used for bidding.
-	// 	/// Set to -1 if no RandomWalk NFT is to be used.
-	// 	/// Comment-202412036 applies.
-	// 	int256 randomWalkNftId;
-	// }
-
-	// #endregion
 	// #region `receive`
 
 	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
 		// Bidding with default parameters.
-		// BidParams memory defaultParams;
-		// // defaultParams.message = "";
-		// defaultParams.randomWalkNftId = -1;
-		// bytes memory param_data = abi.encode(defaultParams);
-		// bid(param_data);
 		_bid((-1), "");
 	}
 
@@ -82,8 +57,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bid`
 
-	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyActive*/ {
-		_bid(/*data_*/ randomWalkNftId_, message_);
+	function bid(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+		_bid(randomWalkNftId_, message_);
 	}
 
 	// #endregion
@@ -91,14 +66,13 @@ abstract contract Bidding is
 
 	/// todo-1 Do we really need `nonReentrant` here?
 	/// todo-1 Keep in mind that this method can be called together with a donation method.
-	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyActive*/ {
+	function _bid(int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// #region
 
-		// BidParams memory params = abi.decode(data_, (BidParams));
 		// CosmicSignatureConstants.BidType bidType;
 		uint256 ethBidPrice_ = getNextEthBidPrice(int256(0));
 		uint256 paidEthBidPrice_ =
-			(/*params.randomWalkNftId*/ randomWalkNftId_ < int256(0)) ?
+			(randomWalkNftId_ < int256(0)) ?
 			ethBidPrice_ :
 			getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
 		int256 overpaidEthBidPrice_ = int256(msg.value) - int256(paidEthBidPrice_);
@@ -114,32 +88,32 @@ abstract contract Bidding is
 		// #endregion
 		// #region
 
-		if (/*params.randomWalkNftId*/ randomWalkNftId_ < int256(0)) {
+		if (randomWalkNftId_ < int256(0)) {
 			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
 		} else {
 			require(
-				usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] == 0,
+				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
 					// todo-1 Nick wrote about reducing contract bytecode size:
 					// todo-1 also, there is another space - reserve , require() strings. We can remove the strings and leave only error codes.
 					// todo-1 It is not going to be very friendly with the user, but if removing strings it fits just under 24K
 					// todo-1 I think we should go for it
 					"This RandomWalk NFT has already been used for bidding.",
-					uint256(/*params.randomWalkNftId*/ randomWalkNftId_)
+					uint256(randomWalkNftId_)
 				)
 			);
 			require(
 				// todo-1 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
 				// todo-1 But in OpenZeppelin 4.x the method doesn't exist. A similar method existed, named `_isApprovedOrOwner`.
-				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
+				msg.sender == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 				CosmicSignatureErrors.IncorrectERC721TokenOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
-					uint256(/*params.randomWalkNftId*/ randomWalkNftId_),
+					uint256(randomWalkNftId_),
 					msg.sender
 				)
 			);
-			usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] = 1;
+			usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
 			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
 		}
 
@@ -168,7 +142,7 @@ abstract contract Bidding is
 		// #endregion
 		// #region
 
-		_bidCommon(/*params.message*/ message_ /* , bidType */);
+		_bidCommon(message_ /* , bidType */);
 
 		// #endregion
 		// #region
@@ -177,10 +151,10 @@ abstract contract Bidding is
 			/*lastBidderAddress*/ msg.sender,
 			roundNum,
 			int256(paidEthBidPrice_),
-			/*params.randomWalkNftId*/ randomWalkNftId_,
+			randomWalkNftId_,
 			-1,
 			mainPrizeTime,
-			/*params.message*/ message_
+			message_
 		);
 
 		// #endregion

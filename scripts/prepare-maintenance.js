@@ -1,5 +1,7 @@
 // todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
 
+"use strict";
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 

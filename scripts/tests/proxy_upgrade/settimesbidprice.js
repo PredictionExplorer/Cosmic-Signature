@@ -1,5 +1,7 @@
 // todo-1 Rename this file to "set-times-eth-bid-price.js".
 
+"use strict";
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("../../helper.js");
 

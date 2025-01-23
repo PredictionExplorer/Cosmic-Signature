@@ -7,6 +7,7 @@ This new business logic contract allows bidding with no upper limit. After bid i
 `BidParams` struct is modified by adding boolean flag to indicate the bid is going to be unrestricted in price (isOpenBid=true):
 
     // todo-1 This structure no longer exists.
+    // todo-1 These variables are now the `bid()` function parameters.
     struct BidParams {
         string message;
         int256 randomWalkNftId;
@@ -20,7 +21,7 @@ The call to `bid()` function must now be done in a new way:
     let bidParams = {message: "bid test", randomWalkNftId: -1, isOpenBid: true};
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
     let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
-    await cosmicSignatureGameProxy.connect(testingAcct).bid(params, { value: nextEthBidPrice_.mul(multiplier), gasLimit: 30000000 }); 
+    await cosmicSignatureGameProxy.connect(testingAcct).bid(params, {value: nextEthBidPrice_.mul(multiplier), gasLimit: 30000000}); 
 
 In this example the `multiplier` variable is the `timesEthBidPrice` state variable (discussed above) which was read from the contract prior to execution of this code.
 

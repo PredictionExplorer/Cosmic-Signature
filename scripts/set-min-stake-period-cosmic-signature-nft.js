@@ -1,5 +1,7 @@
 // todo-1 Rename to "set-cosmic-signature-nft-stake-duration-min-limit.js".
 
+"use strict";
+
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
 

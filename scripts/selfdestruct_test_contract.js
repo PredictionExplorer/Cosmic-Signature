@@ -2,6 +2,8 @@
 
 // Confirms that deployed contracts are fully operational
 
+"use strict";
+
 // const { expect } = require("chai");
 // const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helper.js");
