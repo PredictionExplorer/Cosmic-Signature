@@ -1,4 +1,3 @@
-// todo-1 Rename to "test-deployment-part-1.js".
 // todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
 
 // Confirms that deployed contracts are fully operational
@@ -7,7 +6,7 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function bid_simple(testingAcct, cosmicSignatureGame) {
 	let nextEthBidPrice1_ = await cosmicSignatureGame.getNextEthBidPrice(1n);

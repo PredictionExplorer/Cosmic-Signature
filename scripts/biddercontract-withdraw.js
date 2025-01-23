@@ -1,10 +1,8 @@
-// todo-1 Rename this file to "bidder-contract-withdraw.js".
-
 "use strict";
 
 // const { expect } = require("chai");
 // const hre = require("hardhat");
-const { getBidderContract } = require("./helper.js");
+const { getBidderContract } = require("./helpers.js");
 
 async function main() {
 	let bidderContract = await getBidderContract();

@@ -3,7 +3,7 @@
 "use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	let privKey = process.env.PRIVKEY;

@@ -27,7 +27,7 @@ In this example the `multiplier` variable is the `timesEthBidPrice` state variab
 
 ### Configuration of `timesEthBidPrice` state variable
 
-Here the business logic upgrade occurs after the deployment of CosmicSignatureGameProxy contract, therefore CosmicSignatureGameProxy has no knowledge of new state variables declared in OpenBidLogic.sol contract. But because we have methods to update state variables via delegate call, this is possible to do. For more info check script files `gettimesbidprice.js` and `settimesbidprice.js` which are used to get/set this variable through CosmicSignatureGameProxy contract.
+Here the business logic upgrade occurs after the deployment of CosmicSignatureGameProxy contract, therefore CosmicSignatureGameProxy has no knowledge of new state variables declared in OpenBidLogic.sol contract. But because we have methods to update state variables via delegate call, this is possible to do. For more info check script files `get-times-eth-bid-price.js` and `set-times-eth-bid-price.js` which are used to get/set this variable through CosmicSignatureGameProxy contract.
 
 
 ### Sample test case

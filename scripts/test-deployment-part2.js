@@ -1,12 +1,10 @@
-// todo-1 Rename to "test-deployment-part-2.js".
-
 // Confirms that deployed contracts are fully operational
 
 "use strict";
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 	const unique_winners = [];

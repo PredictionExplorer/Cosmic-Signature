@@ -10,7 +10,7 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 	let numDonatedNfts = await cosmicSignatureGame.numDonatedNfts();

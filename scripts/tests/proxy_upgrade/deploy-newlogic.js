@@ -1,9 +1,7 @@
-// todo-1 Rename this file to "deploy-new-logic.js".
-
 "use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("../../helper.js");
+const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 /// Comment-202412129 relates.
 async function main() {

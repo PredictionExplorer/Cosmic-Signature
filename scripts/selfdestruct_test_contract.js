@@ -1,12 +1,10 @@
-// todo-1 Rename to "selfdestruct-test-contract.js".
-
 // Confirms that deployed contracts are fully operational
 
 "use strict";
 
 // const { expect } = require("chai");
 // const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	// let privKey = process.env.PRIVKEY;

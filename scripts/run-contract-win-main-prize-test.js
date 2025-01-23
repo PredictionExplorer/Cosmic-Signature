@@ -2,7 +2,7 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { /*getCosmicSignatureGameContract,*/ getBidderContract } = require("./helper.js");
+const { /*getCosmicSignatureGameContract,*/ getBidderContract } = require("./helpers.js");
 
 async function main() {
 	const [owner, addr1, addr2,] = await hre.ethers.getSigners();

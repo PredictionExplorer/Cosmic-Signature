@@ -1,6 +1,6 @@
 // #region Comment
 
-// See also: "../scripts/helper.js".
+// See also: "../scripts/helpers.js".
 
 // #endregion
 // #region

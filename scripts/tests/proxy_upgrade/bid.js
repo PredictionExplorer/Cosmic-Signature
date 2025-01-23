@@ -1,9 +1,7 @@
-// todo-1 Rename this file to "bid-with-eth.js".
-
 "use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("../../helper.js");
+const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 // const bidParamsEncoding = {
 // 	type: "tuple(string,int256,bool)",

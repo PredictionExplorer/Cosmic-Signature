@@ -270,6 +270,7 @@ const hardhatUserConfig = {
 				// 		// this setting makes Hardhat work as well as possible.
 				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
 				// 		// So we probably don't need this.
+				// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
