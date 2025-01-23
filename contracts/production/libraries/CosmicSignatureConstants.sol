@@ -138,7 +138,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	/// @dev todo-1 Increase to 31 days, just in case our front end crashes and remains down for too long?
+	/// @dev todo-1 Increase to 31 days or at least 2 weeks, just in case our front end crashes and remains down for too long?
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1731974036727899
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732036126494949
 	/// todo-1 Create another thread to discuss.

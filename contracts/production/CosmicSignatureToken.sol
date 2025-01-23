@@ -24,8 +24,9 @@ contract CosmicSignatureToken is
 	// Ownable,
 	ERC20,
 
+	// todo-1 This is needed -- confirmed.
 	// Comment-202409177 relates.
-	ERC20Burnable, // todo-1 This is needed -- confirmed.
+	ERC20Burnable,
 
 	ERC20Permit,
 	ERC20Votes,
@@ -38,18 +39,8 @@ contract CosmicSignatureToken is
 
 	// /// @notice This address holds some CST amount.
 	// /// The held amount is replenished when someone bids with CST.
-	// /// todo-1 The above comment is incorrect. We now mint at the end of a round.
+	// /// todo-9 The above comment is incorrect. We now mint at the end of a round.
 	// /// Comment-202412201 relates and/or applies.
-	// /// The funds are to be used to reward people for marketing the project on social media.
-	// /// This can be the address of an externally owned account controlled by the project founders.
-	// /// The project founders plan to eventually transfer this wallet control to the DAO.
-	// /// @dev
-	// /// [ToDo-202412202-1]
-	// /// So develop a test in which the DAO rewards a marketer.
-	// /// But the DAO is too slow to vote. I've set voting period to 2 weeks, right? Discuss this issue with the guys.
-	// /// Actually the DAO will only appoint a treasurer to manage the marketing wallet.
-	// /// ToDo-202412203-1 relates.
-	// /// [/ToDo-202412202-1]
 	// address public marketingWalletAddress;
 
 	// /// @notice
@@ -76,7 +67,6 @@ contract CosmicSignatureToken is
 
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
-	/// ---param marketingWalletAddress_ To be assigned to `marketingWalletAddress`.
 	constructor(address game_ /* , address marketingWalletAddress_ */)
 		// Ownable(msg.sender)
 		ERC20("CosmicSignatureToken", "CST")
@@ -207,12 +197,12 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region // `safeApprove`
 
-	// /// @dev todo-1 Idea.
+	// /// @dev todo-9 Idea. But maybe we don't need this.
 	// /// `oldAllowance_` is the allowance the caller has seen before they sent a transaction request to call this method.
 	// /// Event if the allowance decreases before the transaction gets executed this method will do the right thing.
 	// /// This method offers no benefit if either `oldAllowance_` or `newAllowance_` is zero.
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
-	// /// todo-1 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
+	// /// todo-9 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
 	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) external /*override*/ {
 	// 	// Comment-202409215 applies.
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);

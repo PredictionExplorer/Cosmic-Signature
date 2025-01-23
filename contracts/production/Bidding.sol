@@ -6,7 +6,6 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -16,7 +15,8 @@ import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { SystemManagement } from "./SystemManagement.sol";
+import { BiddingBase } from "./BiddingBase.sol";
+import { MainPrizeBase } from "./MainPrizeBase.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
@@ -26,7 +26,8 @@ import { IBidding } from "./interfaces/IBidding.sol";
 abstract contract Bidding is
 	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
-	SystemManagement,
+	BiddingBase,
+	MainPrizeBase,
 	BidStatistics,
 	IBidding {
 	// #region // Data Types
@@ -47,6 +48,19 @@ abstract contract Bidding is
 	// 	/// Comment-202412036 applies.
 	// 	int256 randomWalkNftId;
 	// }
+
+	// #endregion
+	// #region `receive`
+
+	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
+		// Bidding with default parameters.
+		// BidParams memory defaultParams;
+		// // defaultParams.message = "";
+		// defaultParams.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(defaultParams);
+		// bid(param_data);
+		_bid((-1), "");
+	}
 
 	// #endregion
 	// #region `bidAndDonateToken`
@@ -348,6 +362,7 @@ abstract contract Bidding is
 
 		// [Comment-202409177]
 		// Burning the CST amount used for bidding.
+		// Doing it before subsequent minting, which requires the bidder to have the given amount.
 		// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
 		// [/Comment-202409177]
 		// [Comment-202501125]
@@ -483,7 +498,6 @@ abstract contract Bidding is
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
-			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp);
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			emit FirstBidPlacedInRound(roundNum, block.timestamp);
 		} else {
@@ -528,75 +542,6 @@ abstract contract Bidding is
 		// // }
 
 		// _extendMainPrizeTime();
-	}
-
-	// #endregion
-	// #region `_extendMainPrizeTime`
-
-	/// @notice Extends `mainPrizeTime`.
-	/// This method is called on each bid.
-	function _extendMainPrizeTime() internal {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
-			mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
-			// // #enable_asserts // #disable_smtchecker console.log(block.timestamp, mainPrizeTime, mainPrizeTime - block.timestamp, mainPrizeTimeIncrementInMicroSeconds);
-		}
-	}
-
-	// #endregion
-	// #region `getMainPrizeTimeIncrement`
-
-	function getMainPrizeTimeIncrement() public view returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
-			// #enable_asserts assert(mainPrizeTimeIncrement_ > 0);
-			return mainPrizeTimeIncrement_;
-		}
-	}
-
-	// #endregion
-	// #region `getDurationUntilActivation`
-
-	function getDurationUntilActivation() public view override returns(int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			int256 durationUntilActivation_ = ( - getDurationElapsedSinceActivation() );
-			return durationUntilActivation_;
-		}
-	}
-
-	// #endregion
-	// #region `getDurationElapsedSinceActivation`
-
-	function getDurationElapsedSinceActivation() public view override returns(int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			int256 durationElapsedSinceActivation_ = int256(block.timestamp) - int256(activationTime);
-			return durationElapsedSinceActivation_;
-		}
-	}
-
-	// #endregion
-	// #region `getInitialDurationUntilMainPrize`
-
-	function getInitialDurationUntilMainPrize() public view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 initialDurationUntilMainPrize_ = mainPrizeTimeIncrementInMicroSeconds / initialDurationUntilMainPrizeDivisor;
-			return initialDurationUntilMainPrize_;
-		}
 	}
 
 	// #endregion

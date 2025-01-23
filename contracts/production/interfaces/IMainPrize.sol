@@ -2,15 +2,13 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { ISystemManagement } from "./ISystemManagement.sol";
+import { IBiddingBase } from "./IBiddingBase.sol";
+import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice Functionality that handles claiming and paying bidding round main prize,
 /// as well as distributing other (secondary) prizes.
-/// todo-1 We need to inherit `SystemManagement` for `_setActivationTime`.
-/// todo-1 Try to move the method togetehr with some modifiers to something like `BiddingBase`.
-/// todo-1 Add the new contract and its interface to my list in the doc.
-interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
+interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
 	/// @notice Emitted when a bidding round main prize is claimed.
 	/// This event indicates that the round has ended.
 	/// @param roundNum The current bidding round number.
@@ -117,10 +115,6 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @return The current charity ETH donation amount, in Wei.
 	function getCharityEthDonationAmount() external view returns(uint256);
-
-	/// @return The number of seconds until the last bidder will be permitted to claim the main prize,
-	/// or a non-positive value if that time has already come.
-	function getDurationUntilMainPrize() external view returns(int256);
 
 	// /// @return The given bidding round main prize winner address,
 	// /// or zero if `roundNum_` is invalid or the round has not ended yet.

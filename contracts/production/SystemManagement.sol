@@ -2,23 +2,25 @@
 pragma solidity 0.8.28;
 
 // import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
-import { ICosmicSignatureNft, CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { IRandomWalkNFT, RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { ICosmicSignatureNft, CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { IPrizesWallet, PrizesWallet } from "./PrizesWallet.sol";
+import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
+import { BiddingBase } from "./BiddingBase.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
 abstract contract SystemManagement is
 	OwnableUpgradeableWithReservedStorageGaps,
 	AddressValidator,
 	CosmicSignatureGameStorage,
+	BiddingBase,
 	ISystemManagement {
 	// /// @dev Replaced with `onlyInactive`.
 	// modifier onlyMaintenance() {
@@ -37,26 +39,6 @@ abstract contract SystemManagement is
 	// 	);
 	// 	_;
 	// }
-
-	/// @dev todo-1 Rename to use the word "round".
-	modifier onlyInactive() {
-		uint256 activationTimeCopy_ = activationTime;
-		require(
-			block.timestamp < activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsActive("The current bidding round is already active.", activationTimeCopy_, block.timestamp)
-		);
-		_;
-	}
-
-	/// @dev todo-1 Rename to use the word "round".
-	modifier onlyActive() {
-		uint256 activationTimeCopy_ = activationTime;
-		require(
-			block.timestamp >= activationTimeCopy_,
-			CosmicSignatureErrors.SystemIsInactive("The current bidding round is not active yet.", activationTimeCopy_, block.timestamp)
-		);
-		_;
-	}
 
 	// function prepareMaintenance() external override onlyOwner /*onlyRuntime*/ {
 	// 	require(
@@ -88,19 +70,6 @@ abstract contract SystemManagement is
 		_setActivationTime(newValue_);
 	}
 
-	function _setActivationTime(uint256 newValue_) internal {
-		activationTime = newValue_;
-
-		// // [Comment-202411168]
-		// // One might want to ensure that this is not in the past.
-		// // But `activationTime` is really not supposed to be in the past.
-		// // So keeping it simple and effiicient.
-		// // [/Comment-202411168]
-		// cstDutchAuctionBeginningTimeStamp = newValue_;
-
-		emit ActivationTimeChanged(newValue_);
-	}
-
 	function setDelayDurationBeforeNextRound(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
 		delayDurationBeforeNextRound = newValue_;
 		emit DelayDurationBeforeNextRoundChanged(newValue_);
@@ -124,14 +93,6 @@ abstract contract SystemManagement is
 		emit CosmicSignatureTokenAddressChanged(newValue_);
 	}
 
-	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override
-		onlyOwner
-		onlyInactive
-		providedAddressIsNonZero(address(newValue_)) {
-		nft = CosmicSignatureNft(address(newValue_));
-		emit CosmicSignatureNftAddressChanged(newValue_);
-	}
-
 	function setRandomWalkNft(IRandomWalkNFT newValue_) external override
 		onlyOwner
 		onlyInactive
@@ -140,12 +101,20 @@ abstract contract SystemManagement is
 		emit RandomWalkNftAddressChanged(newValue_);
 	}
 
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external override
+	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override
 		onlyOwner
 		onlyInactive
 		providedAddressIsNonZero(address(newValue_)) {
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
-		emit StakingWalletCosmicSignatureNftAddressChanged(newValue_);
+		nft = CosmicSignatureNft(address(newValue_));
+		emit CosmicSignatureNftAddressChanged(newValue_);
+	}
+
+	function setPrizesWallet(IPrizesWallet newValue_) external override
+		onlyOwner
+		onlyInactive
+		providedAddressIsNonZero(address(newValue_)) {
+		prizesWallet = PrizesWallet(address(newValue_));
+		emit PrizesWalletAddressChanged(newValue_);
 	}
 
 	function setStakingWalletRandomWalkNft(IStakingWalletRandomWalkNft newValue_) external override
@@ -156,12 +125,12 @@ abstract contract SystemManagement is
 		emit StakingWalletRandomWalkNftAddressChanged(newValue_);
 	}
 
-	function setPrizesWallet(IPrizesWallet newValue_) external override
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external override
 		onlyOwner
 		onlyInactive
 		providedAddressIsNonZero(address(newValue_)) {
-		prizesWallet = PrizesWallet(address(newValue_));
-		emit PrizesWalletAddressChanged(newValue_);
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
+		emit StakingWalletCosmicSignatureNftAddressChanged(newValue_);
 	}
 
 	function setMarketingWallet(address newValue_) external override

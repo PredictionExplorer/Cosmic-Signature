@@ -6,9 +6,9 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
@@ -16,7 +16,8 @@ import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureEr
 import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 // import { RandomWalkNFT } from "../production//RandomWalkNFT.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
-import { SystemManagement } from "../production/SystemManagement.sol";
+import { BiddingBase } from "../production/BiddingBase.sol";
+import { MainPrizeBase } from "../production/MainPrizeBase.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 
@@ -25,8 +26,10 @@ import { IBidding } from "../production/interfaces/IBidding.sol";
 
 abstract contract BiddingOpenBid is
 	ReentrancyGuardTransientUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
-	SystemManagement,
+	BiddingBase,
+	MainPrizeBase,
 	BidStatistics,
 	IBidding {
 	// #region // Data Types
@@ -71,6 +74,20 @@ abstract contract BiddingOpenBid is
 	function setTimesEthBidPrice(uint256 newValue_) external onlyOwner {
 		timesEthBidPrice = newValue_;
 		emit TimesEthBidPriceChangedEvent(newValue_);
+	}
+
+	// #endregion
+	// #region `receive`
+
+	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
+		// Bidding with default parameters.
+		// BidParams memory defaultParams;
+		// // defaultParams.message = "";
+		// defaultParams.randomWalkNftId = -1;
+		// // defaultParams.isOpenBid =
+		// bytes memory param_data = abi.encode(defaultParams);
+		// bid(param_data);
+		_bid((-1), false, "");
 	}
 
 	// #endregion
@@ -570,74 +587,6 @@ abstract contract BiddingOpenBid is
 		// // }
 
 		// _extendMainPrizeTime();
-	}
-
-	// #endregion
-	// #region `_extendMainPrizeTime`
-
-	/// @notice Extends `mainPrizeTime`.
-	/// This method is called on each bid.
-	function _extendMainPrizeTime() internal {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
-			mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
-		}
-	}
-
-	// #endregion
-	// #region `getMainPrizeTimeIncrement`
-
-	function getMainPrizeTimeIncrement() public view returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
-			// #enable_asserts assert(mainPrizeTimeIncrement_ > 0);
-			return mainPrizeTimeIncrement_;
-		}
-	}
-
-	// #endregion
-	// #region `getDurationUntilActivation`
-
-	function getDurationUntilActivation() public view override returns(int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			int256 durationUntilActivation_ = ( - getDurationElapsedSinceActivation() );
-			return durationUntilActivation_;
-		}
-	}
-
-	// #endregion
-	// #region `getDurationElapsedSinceActivation`
-
-	function getDurationElapsedSinceActivation() public view override returns(int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			int256 durationElapsedSinceActivation_ = int256(block.timestamp) - int256(activationTime);
-			return durationElapsedSinceActivation_;
-		}
-	}
-
-	// #endregion
-	// #region `getInitialDurationUntilMainPrize`
-
-	function getInitialDurationUntilMainPrize() public view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 initialDurationUntilMainPrize_ = mainPrizeTimeIncrementInMicroSeconds / initialDurationUntilMainPrizeDivisor;
-			return initialDurationUntilMainPrize_;
-		}
 	}
 
 	// #endregion

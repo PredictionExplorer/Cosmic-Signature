@@ -6,11 +6,11 @@ import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatur
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
-import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
-import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
+import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
 import { IBidding, Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
@@ -186,10 +186,6 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
 	// }
 
-	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
-	// 	prizesWallet = PrizesWallet(address(newValue_));
-	// }
-
 	// function setCosmicSignatureTokenRaw(ICosmicSignatureToken newValue_) external {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// }
@@ -199,6 +195,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function setNftContractRaw(ICosmicSignatureNft newValue_) external {
 		nft = CosmicSignatureNft(address(newValue_));
 	}
+
+	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
+	// 	prizesWallet = PrizesWallet(address(newValue_));
+	// }
 
 	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {

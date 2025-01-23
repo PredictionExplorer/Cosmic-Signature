@@ -12,6 +12,7 @@ contract CharityWallet is Ownable, ICharityWallet {
 
 	/// todo-1 Review where we use `_msgSender` and other `Context` methods.
 	/// todo-1 Is it really a good idea to use them?
+	/// todo-1 >>> It probably is.
 	constructor() Ownable(_msgSender()) {
 	}
 

@@ -24,8 +24,8 @@ describe("Security", function () {
 		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
 		// await cosmicSignatureGameProxy.setCosmicSignatureToken(await cosmicSignatureToken.getAddress());
-		// await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
 		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
+		// await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
 		// await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());
 		// await cosmicSignatureGameProxy.setCharityAddress(await charityWallet.getAddress());
 		await cosmicSignatureGameProxy.setMainEthPrizeAmountPercentage(10n);

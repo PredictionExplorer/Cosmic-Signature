@@ -19,8 +19,8 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	/// @notice The current staked NFT count.
 	/// @dev
 	/// [Comment-202412025]
-	/// In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
 	/// In `StakingWalletRandomWalkNft`, this is the total number of `stakeActions` and `stakeActionIds` items.
+	/// In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items containing a zero `maxUnpaidEthDepositIndex`.
 	/// [/Comment-202412025]
 	/// [Comment-202410274]
 	/// It could make sense to declare this `public`, but this is not because there is an accessor method for this.
@@ -28,7 +28,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	uint256 internal _numStakedNfts;
 
 	/// @notice If an item of this array at a particular index is a nonzero it means
-	/// a CosmicSignature or RandomWalk NFT with that ID has already been used for staking.
+	/// a RandomWalk or CosmicSignature NFT with that ID has already been used for staking.
 	/// @dev Idea. Item value should be an enum NftStakingStatusCode: NeverStaked, Staked, Unstaked.
 	/// But it should be 256 bits long.
 	/// Comment-202410274 applies.

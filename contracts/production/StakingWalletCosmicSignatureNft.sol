@@ -11,8 +11,7 @@ import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
-import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
-import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
+import { IStakingWalletNftBase, StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 
 // #endregion

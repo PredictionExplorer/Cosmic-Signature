@@ -308,26 +308,26 @@ describe("Events", function () {
 		expect(await cosmicSignatureGameProxy.token()).to.equal(testAcct_.address);
 
 		testAcct_ = hre.ethers.Wallet.createRandom();
+		await expect(cosmicSignatureGameProxy.connect(owner).setRandomWalkNft(testAcct_.address))
+			.to.emit(cosmicSignatureGameProxy, "RandomWalkNftAddressChanged")
+			.withArgs(testAcct_.address);
+		expect(await cosmicSignatureGameProxy.randomWalkNft()).to.equal(testAcct_.address);
+
+		testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicSignatureGameProxy.connect(owner).setCosmicSignatureNft(testAcct_.address))
 			.to.emit(cosmicSignatureGameProxy, "CosmicSignatureNftAddressChanged")
 			.withArgs(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.nft()).to.equal(testAcct_.address);
 
 		testAcct_ = hre.ethers.Wallet.createRandom();
-		await expect(cosmicSignatureGameProxy.connect(owner).setRandomWalkNft(testAcct_.address))
-			.to.emit(cosmicSignatureGameProxy, "RandomWalkNftAddressChanged")
-			.withArgs(testAcct_.address);
-		expect(await cosmicSignatureGameProxy.randomWalkNft()).to.equal(testAcct_.address);
-
-		// todo-1 setStakingWalletCosmicSignatureNft
-
-		// todo-1 setStakingWalletRandomWalkNft
-
-		testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicSignatureGameProxy.connect(owner).setPrizesWallet(testAcct_.address))
 			.to.emit(cosmicSignatureGameProxy, "PrizesWalletAddressChanged")
 			.withArgs(testAcct_.address);
 		expect(await cosmicSignatureGameProxy.prizesWallet()).to.equal(testAcct_.address);
+
+		// todo-1 setStakingWalletRandomWalkNft
+
+		// todo-1 setStakingWalletCosmicSignatureNft
 
 		// todo-1 setMarketingWallet
 

@@ -2,12 +2,14 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
-import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
-import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
-import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
+import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IPrizesWallet } from "./IPrizesWallet.sol";
+import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
+import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
+/// @title Cosmic Signature Game Configuration Events.
+/// @author The Cosmic Signature Development Team.
 interface ISystemEvents {
 	// /// @notice Emitted when `systemMode` is changed.
 	// /// @param newValue The new value.
@@ -33,25 +35,25 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
 
-	/// @notice Emitted when `nft` is changed.
-	/// @param newValue The new value.
-	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
-
 	/// @notice Emitted when `randomWalkNft` is changed.
 	/// @param newValue The new value.
 	event RandomWalkNftAddressChanged(IRandomWalkNFT newValue);
 
-	/// @notice Emitted when `stakingWalletCosmicSignatureNft` is changed.
+	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.
-	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft newValue);
+	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
+
+	/// @notice Emitted when `prizesWallet` is changed.
+	/// @param newValue The new value.
+	event PrizesWalletAddressChanged(IPrizesWallet newValue);
 
 	/// @notice Emitted when `stakingWalletRandomWalkNft` is changed.
 	/// @param newValue The new value.
 	event StakingWalletRandomWalkNftAddressChanged(IStakingWalletRandomWalkNft newValue);
 
-	/// @notice Emitted when `prizesWallet` is changed.
+	/// @notice Emitted when `stakingWalletCosmicSignatureNft` is changed.
 	/// @param newValue The new value.
-	event PrizesWalletAddressChanged(IPrizesWallet newValue);
+	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft newValue);
 
 	/// @notice Emitted when `marketingWallet` is changed.
 	/// @param newValue The new value.

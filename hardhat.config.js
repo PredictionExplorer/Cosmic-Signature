@@ -330,6 +330,9 @@ const hardhatUserConfig = {
 
 		clear: true,
 		flat: true,
+
+		// Issue. This list is incomplete. Is it a problem? Do we need this at all?
+		// todo-1 Take a closer look at the above issue.
 		only: [
 			"CharityWallet",
 			"CosmicSignatureDao",
@@ -339,6 +342,7 @@ const hardhatUserConfig = {
 			"PrizesWallet",
 			"RandomWalkNFT",
 		],
+
 		spacing: 2,
 		pretty: true,
 	},
@@ -438,12 +442,14 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verified-contracts
 		// [/Comment-202409013]
 		contracts: {
+			// "contracts/production/AddressValidator.sol": ["AddressValidator"],
 			// "contracts/production/CharityWallet.sol": ["CharityWallet"],
 			// "contracts/production/CosmicSignatureDao.sol": ["CosmicSignatureDao"],
 			// "contracts/production/CosmicSignatureGame.sol": ["CosmicSignatureGame"],
 			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
 			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
 			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
+			// "contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol": ["OwnableUpgradeableWithReservedStorageGaps"],
 			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
 			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],

@@ -17,18 +17,18 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 // #endregion
 // #region
 
-/// todo-1 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
-/// todo-1 At least write a comment here and near `RandomWalkNFT` and/or near respective interfaces.
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
 	/// todo-1 Declare some other variables `immutable`.
 	/// todo-1 But first think which variables should be changeable and which should not be.
+	/// todo-1 Do we need to make any contracts upgradeable or replaceable?
 	/// todo-1 If we use the `CREATE2` opcode to deploy contracrs we will know their addresses in advance,
 	/// todo-1 so we will be able to declare all addresses `immutable`.
 	/// todo-1 But the use of `CREATE2` won't be helpful because the Game anyway can't contain `immutable` variables.
 	/// todo-1 In addition, do we want to have an option to deploy new versions of staking wallets?
+	/// todo-1 There was a discussion about that on Slack.
 	address public immutable game;
 
 	/// @notice The base URI for NFT metadata.
@@ -39,25 +39,8 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	/// todo-1 Do we need to hardcode a valid value here?
 	string public nftGenerationScriptUri = "ipfs://TBD";
 
-	// /// @notice The total number of NFTs minted.
-	// /// @dev todo-9 We don't need this because we can use `totalSupply` instead.
-	// /// todo-9 Rename this to `numNfts`.
-	// uint256 public numTokens = 0;
-
-	// /// @notice Mapping of NFT IDs to their unique seeds.
-	// /// todo-9 Rename this to `nftSeeds`.
-	// mapping(uint256 nftId => bytes32 nftSeed) public seeds;
-
-	// /// @notice Mapping of NFT IDs to their custom names.
-	// /// todo-9 Rename this to `nftNames`.
-	// mapping(uint256 nftId => string nftName) public tokenNames;
-
 	/// @notice For each NFT index (which equals NFT ID), contains NFT details.
 	NftInfo[1 << 64] private _nftsInfo;
-
-	// /// @notice Entropy used to generate random seeds.
-	// /// @dev todo-9 The type of this and other similar variables should be `uint256`.
-	// bytes32 public entropy;
 
 	// #endregion
 	// #region `onlyGameMint`
@@ -82,8 +65,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 		ERC721("CosmicSignatureNft", "CSS")
 		providedAddressIsNonZero(game_) {
 		game = game_;
-		// entropy = keccak256(abi.encode("newNFT", block.timestamp, blockhash(block.number - 1)));
-		// entropy = bytes32(0x9b4631c9a4f4800392c74f3d2ee9e04fa8742b7f86e87b7d4b67fd7400d26f1e);
 	}
 
 	// #endregion
@@ -121,34 +102,30 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #region `mintMany`
 
 	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external override onlyGameMint returns(uint256) {
-		uint256 nftId_;
+		uint256 firstNftId_;
 		if (nftOwnerAddresses_.length > 0) {
-			nftId_ = _mint(roundNum_, nftOwnerAddresses_[0], randomNumberSeed_);
+			firstNftId_ = _mint(roundNum_, nftOwnerAddresses_[0], randomNumberSeed_);
 			for ( uint256 index_ = 1; index_ < nftOwnerAddresses_.length; ++ index_ ) {
 				unchecked { ++ randomNumberSeed_; }
 				_mint(roundNum_, nftOwnerAddresses_[index_], randomNumberSeed_);
 			}
 		}
-		return nftId_;
+		return firstNftId_;
 	}
 
 	// #endregion
 	// #region `_mint`
 
 	function _mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) private returns(uint256) {
-		// uint256 nftId_ = numTokens;
 		uint256 nftId_ = totalSupply();
 
 		// This will validate that `nftOwnerAddress_` is a nonzero.
 		// Although, given that only the Game is permitted to call us, it's not going to provide a zero address.
 		_mint(nftOwnerAddress_, nftId_);
 
-		// ++ numTokens;
-		// entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number - 1), nftId_, nftOwnerAddress_));
-		// seeds[nftId_] = entropy;
 		uint256 nftSeed_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
 		_nftsInfo[nftId_].seed = nftSeed_;
-		emit NftMinted(roundNum_, nftOwnerAddress_, /*uint256(entropy)*/ nftSeed_, nftId_);
+		emit NftMinted(roundNum_, nftOwnerAddress_, nftSeed_, nftId_);
 		return nftId_;
 	}
 
@@ -171,7 +148,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 			bytes(nftName_).length <= CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT,
 			CosmicSignatureErrors.TokenNameLength("NFT name is too long.", bytes(nftName_).length)
 		);
-		// tokenNames[nftId_] = nftName_;
 		_nftsInfo[nftId_].name = nftName_;
 		emit NftNameChanged(nftId_, nftName_);
 	}

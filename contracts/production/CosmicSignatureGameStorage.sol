@@ -8,11 +8,11 @@ pragma solidity 0.8.28;
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
-import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
+import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameStorage.sol";
 
 // #endregion
@@ -92,19 +92,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	CosmicSignatureToken public token;
 
 	/// @notice Comment-202411064 applies.
-	CosmicSignatureNft public nft;
-
-	/// @notice Comment-202411064 applies.
 	RandomWalkNFT public randomWalkNft;
 
 	/// @notice Comment-202411064 applies.
-	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
+	CosmicSignatureNft public nft;
+
+	/// @notice Comment-202411064 applies.
+	PrizesWallet public prizesWallet;
 
 	/// @notice Comment-202411064 applies.
 	StakingWalletRandomWalkNft public stakingWalletRandomWalkNft;
 
 	/// @notice Comment-202411064 applies.
-	PrizesWallet public prizesWallet;
+	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 
 	/// @notice Comment-202411064 applies.
 	/// @dev It's currently unnecessary to make this variable strongly typed.
@@ -247,26 +247,26 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// todo-1 Rename to `lastBidTypeCode`.
 	// CosmicSignatureConstants.BidType public lastBidType;
 
-	/// @dev ToDo-202411098-0 applies.
+	/// @dev ToDo-202411098-1 applies.
 	/// todo-1 Rename to `roundNumBids` or better `numBids`.
 	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
 
 	/// @notice We add an item on each bid.
 	/// @dev
-	/// [ToDo-202411098-0]
+	/// [ToDo-202411098-1]
 	/// Is it really necessary to save info about past rounds?
 	/// But Nick wrote at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729540799827169?thread_ts=1729208829.862549&cid=C02EDDE5UF8 :
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
-	/// [/ToDo-202411098-0]
+	/// [/ToDo-202411098-1]
 	/// todo-1 Combine this with `numRaffleParticipants`.
 	/// todo-1 Each item should be a struct containing the number of bidders in that round and the bidders themselves.
 	/// todo-1 Rename to `roundBids` or  better `bids`.
 	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
-	/// @dev ToDo-202411098-0 applies.
+	/// @dev ToDo-202411098-1 applies.
 	/// todo-1 Do we really need this?
 	/// todo-1 Rename to `biddersInfo`.
 	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
@@ -300,7 +300,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public timeoutDurationToClaimMainPrize;
 
 	// /// @notice Bidding round main prize winners.
-	// /// @dev ToDo-202411098-0 applies.
+	// /// @dev ToDo-202411098-1 applies.
 	// /// I have replaced this with `PrizesWallet.mainPrizeWinnerAddresses`.
 	// mapping(uint256 roundNum => address winnerAddress) public winners;
 

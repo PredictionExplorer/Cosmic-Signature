@@ -4,13 +4,9 @@ pragma solidity 0.8.28;
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 // import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-// import { SystemManagement } from "./SystemManagement.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
 
-abstract contract EthDonations is
-	CosmicSignatureGameStorage,
-	// SystemManagement,
-	IEthDonations {
+abstract contract EthDonations is CosmicSignatureGameStorage, IEthDonations {
 	function donateEth() external payable override /*onlyActive*/ {
 		// // Comment-202409215 applies.
 		// require(msg.value > 0, CosmicSignatureErrors.NonZeroValueRequired("Donation amount must be greater than 0."));

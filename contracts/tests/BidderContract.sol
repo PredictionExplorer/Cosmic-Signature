@@ -4,8 +4,8 @@ pragma abicoder v2;
 
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 // import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
-// import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+// import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 

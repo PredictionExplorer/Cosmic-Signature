@@ -7,20 +7,20 @@ pragma solidity 0.8.28;
 // #region
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-// import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-// import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+// import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
-// import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-// import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
+// import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+// import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { SystemManagement } from "./SystemManagement.sol";
+import { BiddingBase } from "./BiddingBase.sol";
+import { MainPrizeBase } from "./MainPrizeBase.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
@@ -30,7 +30,8 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 abstract contract MainPrize is
 	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
-	SystemManagement,
+	BiddingBase,
+	MainPrizeBase,
 	BidStatistics,
 	IMainPrize {
 	// #region `claimMainPrize`
@@ -649,20 +650,6 @@ abstract contract MainPrize is
 		// #enable_smtchecker */
 		{
 			return address(this).balance * charityEthDonationAmountPercentage / 100;
-		}
-	}
-
-	// #endregion
-	// #region `getDurationUntilMainPrize`
-
-	function getDurationUntilMainPrize() public view override returns(int256) {
-		// todo-1 Review all `unchecked`.
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			int256 durationUntilMainPrize_ = int256(mainPrizeTime) - int256(block.timestamp);
-			return durationUntilMainPrize_;
 		}
 	}
 

@@ -5,13 +5,9 @@ pragma solidity 0.8.28;
 // import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 // import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-// import { SystemManagement } from "./SystemManagement.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
-abstract contract NftDonations is
-	CosmicSignatureGameStorage,
-	// SystemManagement,
-	INftDonations {
+abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive {
 	// 	nftAddress.transferFrom(msg.sender, address(this), nftId);
 	// 	donatedNfts[numDonatedNfts] = CosmicSignatureConstants.DonatedNft({

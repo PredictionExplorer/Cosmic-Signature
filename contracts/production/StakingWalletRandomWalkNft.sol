@@ -10,8 +10,7 @@ import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
-import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
+import { IStakingWalletNftBase, StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWalkNft.sol";
 
 // #endregion

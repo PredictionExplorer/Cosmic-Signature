@@ -3,15 +3,20 @@ pragma solidity 0.8.28;
 
 import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
-import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
-import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
-import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
+import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IPrizesWallet } from "./IPrizesWallet.sol";
+import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
+import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { ISystemEvents } from "./ISystemEvents.sol";
+import { IBiddingBase } from "./IBiddingBase.sol";
 
-interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, ISystemEvents {
+/// @title Cosmic Signature Game Configuration Management.
+/// @author The Cosmic Signature Development Team.
+interface ISystemManagement is
+	IAddressValidator,
+	ICosmicSignatureGameStorage,
+	IBiddingBase {
 	// function prepareMaintenance() external;
 	//
 	// function setRuntimeMode() external;
@@ -44,30 +49,30 @@ interface ISystemManagement is IAddressValidator, ICosmicSignatureGameStorage, I
 	/// @param newValue_ The new value.
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
-	/// @notice Sets `nft`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external;
-
 	/// @notice Sets `randomWalkNft`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setRandomWalkNft(IRandomWalkNFT newValue_) external;
 
-	/// @notice Sets `stakingWalletCosmicSignatureNft`.
+	/// @notice Sets `nft`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external;
+	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external;
+
+	/// @notice Sets `prizesWallet`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setPrizesWallet(IPrizesWallet newValue_) external;
 
 	/// @notice Sets `stakingWalletRandomWalkNft`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setStakingWalletRandomWalkNft(IStakingWalletRandomWalkNft newValue_) external;
 
-	/// @notice Sets `prizesWallet`.
+	/// @notice Sets `stakingWalletCosmicSignatureNft`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setPrizesWallet(IPrizesWallet newValue_) external;
+	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external;
 
 	/// @notice Sets `marketingWallet`.
 	/// Only the contract owner is permitted to call this method.
