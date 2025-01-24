@@ -7,9 +7,10 @@ use sha3::{Digest, Sha3_256};
 use std::f64::{INFINITY, NEG_INFINITY};
 
 use hex;
-use image::{DynamicImage, ImageBuffer, ImageFormat, Rgb};
+use image::{DynamicImage, ImageBuffer, ImageFormat, Rgb, Rgba, RgbaImage};
 use imageproc::drawing::draw_filled_circle_mut;
 use imageproc::filter;
+use line_drawing::Bresenham; // We'll use this for additive lines
 use palette::{FromColor, Hsl, Srgb};
 use std::io::{Cursor, Write};
 use std::process::{Command, Stdio};
@@ -18,7 +19,7 @@ use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
 use statrs::statistics::Statistics;
 
-// Needed for your LLE function:
+// KdTree for the Lyapunov exponent
 use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
 
@@ -34,7 +35,7 @@ const G: f64 = 9.8;
 #[command(
     author,
     version,
-    about = "Simulate & visualize the three-body problem (trajectories + LIC flow + long-exposure) using Sha3 RNG."
+    about = "Simulate & visualize the three-body problem (trajectories + retarded-time wave), plus a colorful lines-only additive rendering."
 )]
 struct Args {
     // Basic simulation parameters
@@ -112,6 +113,22 @@ struct Args {
     dist_weight: f64,
     #[arg(long, default_value_t = 1.0)]
     lyap_weight: f64,
+
+    // "Wave" image params
+    #[arg(long, default_value_t = 0.005)]
+    wave_freq: f64, // base wave frequency
+    #[arg(long, default_value_t = 1.0)]
+    wave_speed: f64, // wave speed in "units" per time
+    #[arg(long, default_value_t = 800)]
+    wave_image_size: u32, // final image dimension
+    #[arg(long, default_value_t = 2000)]
+    wave_subsamples: usize, // how many time steps to consider in the wave image
+
+    // Additional fade factors for retarded-time wave image
+    #[arg(long, default_value_t = 1.0)]
+    time_decay: f64, // exponential fade with how old the wave is
+    #[arg(long, default_value_t = 1.0)]
+    dist_decay: f64, // distance fade factor
 }
 
 /// A custom RNG based on repeated Sha3-256 hashing.
@@ -253,7 +270,7 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
 
-    // Phase 1: get final state
+    // Phase 1: get final state (advance without storing)
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
@@ -509,6 +526,9 @@ fn plot_positions(
                 let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
                 total_dist += dist;
                 if total_dist >= trajectory_lengths[body_i] {
+                    break;
+                }
+                if idx == 0 {
                     break;
                 }
                 idx -= 1;
@@ -787,7 +807,7 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -
     (sd1 + sd2 + sd3) / 3.0
 }
 
-// ================== Actual LLE code using KdTree (your snippet) ==================
+// ================== Actual LLE code using KdTree ==================
 fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     if data.len() < (LLE_M - 1) * tau + 1 {
         return 0.0;
@@ -889,6 +909,7 @@ fn select_best_trajectory(
 ) -> (Vec<Vec<Vector3<f64>>>, TrajectoryResult, [f64; 3], usize) {
     println!("Running {} simulations to find the best orbit...", num_iters);
 
+    // Generate random bodies for each simulation
     let many_bodies: Vec<Vec<Body>> = (0..num_iters)
         .map(|_| {
             vec![
@@ -935,7 +956,7 @@ fn select_best_trajectory(
         })
         .collect();
 
-    use rayon::prelude::*;
+    // Evaluate them in parallel
     let results_par: Vec<Option<(TrajectoryResult, usize, [f64; 3])>> = many_bodies
         .par_iter()
         .enumerate()
@@ -962,7 +983,7 @@ fn select_best_trajectory(
                 let a = average_triangle_area(&positions_full);
                 let d = total_distance(&positions_full);
 
-                // Now your function:
+                // Lyapunov exponent
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
 
                 Some((
@@ -988,28 +1009,30 @@ fn select_best_trajectory(
     let valid_results: Vec<_> = results_par.into_iter().filter_map(|x| x).collect();
     let valid_count = valid_results.len();
     println!(
-        "Number of valid simulations considered: {}/{} (others unbound or small angular momentum).",
+        "Number of valid simulations considered: {}/{} (others unbound or too small angular momentum).",
         valid_count, num_iters
     );
     if valid_results.is_empty() {
         panic!("No valid simulations found. Possibly all orbits unbound or zero angular momentum.");
     }
 
-    let mut chaos_vals = vec![];
-    let mut avg_area_vals = vec![];
-    let mut dist_vals = vec![];
-    let mut lyap_vals = vec![];
-
     let mut info_vec = valid_results;
+
+    // We'll separate out each metric so we can do Borda scoring
+    let mut chaos_vals = Vec::with_capacity(info_vec.len());
+    let mut area_vals = Vec::with_capacity(info_vec.len());
+    let mut dist_vals = Vec::with_capacity(info_vec.len());
+    let mut lyap_vals = Vec::with_capacity(info_vec.len());
+
     for (i, (tr, _, _)) in info_vec.iter().enumerate() {
         chaos_vals.push((tr.chaos, i));
-        avg_area_vals.push((tr.avg_area, i));
+        area_vals.push((tr.avg_area, i));
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
     }
 
-    // Borda scoring
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
+        // Sort by metric
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
         } else {
@@ -1018,17 +1041,20 @@ fn select_best_trajectory(
         let n = vals.len();
         let mut points_for_index = vec![0; n];
         for (rank, (_, idx)) in vals.into_iter().enumerate() {
+            // Borda: best rank gets n points, next gets n-1, ...
             let score = n - rank;
             points_for_index[idx] = score;
         }
         points_for_index
     }
 
+    // chaos: lower is better => higher_better = false
     let chaos_points = assign_borda_scores(chaos_vals, false);
-    let area_points = assign_borda_scores(avg_area_vals, true);
+    let area_points = assign_borda_scores(area_vals, true);
     let dist_points = assign_borda_scores(dist_vals, true);
     let lyap_points = assign_borda_scores(lyap_vals, true);
 
+    // Tally up
     for (i, (tr, _, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_points[i];
         tr.area_pts = area_points[i];
@@ -1041,6 +1067,7 @@ fn select_best_trajectory(
             + lyap_points[i] as f64 * lyap_weight;
     }
 
+    // Pick best
     let (_, best_item) = info_vec
         .iter()
         .enumerate()
@@ -1059,208 +1086,12 @@ fn select_best_trajectory(
     (positions_best, best_tr, best_masses, valid_count)
 }
 
-// ============ For the LIC flow
-#[derive(Clone)]
-struct FieldCell {
-    vx: f64,
-    vy: f64,
-}
+// ------------------- Retarded-Time Wave Summation (Single Image) ------------------
 
-/// Compute the field on Nx×Ny
-fn compute_gravity_field(
-    bodies: &[Body],
-    nx: usize,
-    ny: usize,
-    min_x: f64,
-    max_x: f64,
-    min_y: f64,
-    max_y: f64,
-) -> Vec<FieldCell> {
-    let mut field = vec![FieldCell { vx: 0.0, vy: 0.0 }; nx * ny];
-    let dx = (max_x - min_x) / (nx as f64);
-    let dy = (max_y - min_y) / (ny as f64);
-
-    for j in 0..ny {
-        let y = min_y + (j as f64 + 0.5) * dy;
-        for i in 0..nx {
-            let x = min_x + (i as f64 + 0.5) * dx;
-            let mut fx = 0.0;
-            let mut fy = 0.0;
-            for b in bodies {
-                let rx = x - b.position[0];
-                let ry = y - b.position[1];
-                let dist2 = rx * rx + ry * ry;
-                let dist = dist2.sqrt();
-                if dist > 1e-12 {
-                    let scale = -G * b.mass / dist.powi(3);
-                    fx += scale * rx;
-                    fy += scale * ry;
-                }
-            }
-            let idx = j * nx + i;
-            field[idx].vx = fx;
-            field[idx].vy = fy;
-        }
-    }
-    field
-}
-
-fn sample_field_bilinear(field: &[FieldCell], nx: usize, ny: usize, x: f64, y: f64) -> (f64, f64) {
-    if x < 0.0 || x >= (nx - 1) as f64 || y < 0.0 || y >= (ny - 1) as f64 {
-        return (0.0, 0.0);
-    }
-
-    let ix = x.floor() as usize;
-    let iy = y.floor() as usize;
-    let fx = x - ix as f64;
-    let fy = y - iy as f64;
-
-    let idx00 = iy * nx + ix;
-    let idx01 = (iy + 1) * nx + ix;
-    let idx10 = iy * nx + (ix + 1);
-    let idx11 = (iy + 1) * nx + (ix + 1);
-
-    let vx00 = field[idx00].vx;
-    let vy00 = field[idx00].vy;
-    let vx01 = field[idx01].vx;
-    let vy01 = field[idx01].vy;
-    let vx10 = field[idx10].vx;
-    let vy10 = field[idx10].vy;
-    let vx11 = field[idx11].vx;
-    let vy11 = field[idx11].vy;
-
-    let vx0 = vx00 * (1.0 - fy) + vx01 * fy;
-    let vx1 = vx10 * (1.0 - fy) + vx11 * fy;
-    let vy0 = vy00 * (1.0 - fy) + vy01 * fy;
-    let vy1 = vy10 * (1.0 - fy) + vy11 * fy;
-
-    let vx = vx0 * (1.0 - fx) + vx1 * fx;
-    let vy = vy0 * (1.0 - fx) + vy1 * fx;
-    (vx, vy)
-}
-
-fn trace_streamline(
-    mut x: f64,
-    mut y: f64,
-    sign: f64,
-    field: &[FieldCell],
-    noise: &[f64],
-    nx: usize,
-    ny: usize,
-    kernel_steps: usize,
-    step_size: f64,
-) -> (f64, f64) {
-    let mut sum = 0.0;
-    let mut count = 0.0;
-    for _ in 0..kernel_steps {
-        let (vx, vy) = sample_field_bilinear(field, nx, ny, x, y);
-        let mag = (vx * vx + vy * vy).sqrt() + 1e-12;
-        let step_vx = vx / mag * sign * step_size;
-        let step_vy = vy / mag * sign * step_size;
-
-        let xi = x.round() as i32;
-        let yi = y.round() as i32;
-        if xi < 0 || xi >= nx as i32 || yi < 0 || yi >= ny as i32 {
-            break;
-        }
-        let idx = yi as usize * nx + xi as usize;
-        sum += noise[idx];
-        count += 1.0;
-
-        x += step_vx;
-        y += step_vy;
-        if x < 0.0 || x >= nx as f64 || y < 0.0 || y >= ny as f64 {
-            break;
-        }
-    }
-    (sum, count)
-}
-
-fn perform_lic(field: &[FieldCell], noise: &[f64], nx: usize, ny: usize) -> Vec<f64> {
-    let kernel_steps = 20;
-    let step_size = 1.0;
-    let mut output = vec![0.0; nx * ny];
-
-    for j in 0..ny {
-        for i in 0..nx {
-            let idx = j * nx + i;
-            let center_noise = noise[idx];
-            let mut sum = center_noise;
-            let mut count = 1.0;
-
-            let (fsum, fcount) = trace_streamline(
-                i as f64,
-                j as f64,
-                1.0,
-                field,
-                noise,
-                nx,
-                ny,
-                kernel_steps,
-                step_size,
-            );
-            sum += fsum;
-            count += fcount;
-
-            let (bsum, bcount) = trace_streamline(
-                i as f64,
-                j as f64,
-                -1.0,
-                field,
-                noise,
-                nx,
-                ny,
-                kernel_steps,
-                step_size,
-            );
-            sum += bsum;
-            count += bcount;
-
-            output[idx] = sum / count;
-        }
-    }
-    output
-}
-
-fn colorize_lic(
-    lic: &[f64],
-    field: &[FieldCell],
-    nx: usize,
-    ny: usize,
-) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-    let mut img = ImageBuffer::new(nx as u32, ny as u32);
-
-    let mut max_mag = 0.0;
-    for c in field {
-        let mag = (c.vx * c.vx + c.vy * c.vy).sqrt();
-        if mag > max_mag {
-            max_mag = mag;
-        }
-    }
-    if max_mag < 1e-12 {
-        max_mag = 1.0;
-    }
-
-    for j in 0..ny {
-        for i in 0..nx {
-            let idx = j * nx + i;
-            let gray = lic[idx];
-            let vx = field[idx].vx;
-            let vy = field[idx].vy;
-            let mag = (vx * vx + vy * vy).sqrt();
-            let hue = 240.0 * (mag / max_mag).min(1.0);
-            let sat = 1.0;
-            let light = gray;
-            let (r, g, b) = hsl_to_rgb(hue, sat, light);
-            img.put_pixel(i as u32, j as u32, Rgb([r, g, b]));
-        }
-    }
-    img
-}
-
-fn hsl_to_rgb(h_deg: f64, s: f64, l: f64) -> (u8, u8, u8) {
+/// Convert HSL to RGB in [0..1].
+fn hsl_to_rgb(h_deg: f64, s: f64, l: f64) -> (f64, f64, f64) {
     let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
-    let hh = h_deg / 60.0;
+    let hh = (h_deg / 60.0) % 6.0;
     let x = c * (1.0 - (hh % 2.0 - 1.0).abs());
     let (r1, g1, b1) = if hh < 1.0 {
         (c, x, 0.0)
@@ -1276,201 +1107,406 @@ fn hsl_to_rgb(h_deg: f64, s: f64, l: f64) -> (u8, u8, u8) {
         (c, 0.0, x)
     };
     let m = l - c / 2.0;
-    let rr = ((r1 + m) * 255.0).clamp(0.0, 255.0) as u8;
-    let gg = ((g1 + m) * 255.0).clamp(0.0, 255.0) as u8;
-    let bb = ((b1 + m) * 255.0).clamp(0.0, 255.0) as u8;
-    (rr, gg, bb)
+    (r1 + m, g1 + m, b1 + m)
 }
 
-// --------------- Long-Exposure
-#[derive(Clone)]
-struct ExposureCell {
-    sum_fx: f64,
-    sum_fy: f64,
-    sum_mag: f64,
-    count: usize,
-}
-
-fn accumulate_time_exposure(
+/// Generate a single "retarded-time wave" image using **all** steps.
+fn generate_retarded_wave_image(
     positions: &[Vec<Vector3<f64>>],
-    masses: &[f64; 3],
-    nx: usize,
-    ny: usize,
-) -> (Vec<ExposureCell>, f64, f64, f64, f64) {
+    wave_freq: f64,
+    wave_speed: f64,
+    wave_subsamples: usize,
+    out_size: u32,
+    time_decay: f64,
+    dist_decay: f64,
+    base_name: &str,
+) {
+    println!("\nGenerating retarded-time wave image from all steps...");
+
+    // 1) bounding box around all times
+    let mut min_x = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_y = NEG_INFINITY;
+
+    for body_pos in positions {
+        for &p in body_pos {
+            if p[0] < min_x {
+                min_x = p[0];
+            }
+            if p[0] > max_x {
+                max_x = p[0];
+            }
+            if p[1] < min_y {
+                min_y = p[1];
+            }
+            if p[1] > max_y {
+                max_y = p[1];
+            }
+        }
+    }
+    if max_x - min_x < 1e-12 || max_y - min_y < 1e-12 {
+        // degenerate fallback
+        min_x -= 1.0;
+        max_x += 1.0;
+        min_y -= 1.0;
+        max_y += 1.0;
+    } else {
+        // pad by 10%
+        let w = max_x - min_x;
+        let h = max_y - min_y;
+        min_x -= 0.1 * w;
+        max_x += 0.1 * w;
+        min_y -= 0.1 * h;
+        max_y += 0.1 * h;
+    }
+
+    let nx = out_size as usize;
+    let ny = out_size as usize;
+
+    let total_steps = positions[0].len();
+    if total_steps < 2 {
+        println!("Not enough steps for wave image. Skipping.");
+        return;
+    }
+    // We'll define dt=0.001 (the simulation step)
+    let dt = 0.001;
+    let final_step = total_steps - 1;
+    let final_time = final_step as f64 * dt;
+
+    // We'll sub-sample the timeline
+    let stride = (total_steps / wave_subsamples.max(1)).max(1);
+    println!(
+        " Wave bounding box: x=[{:.2},{:.2}], y=[{:.2},{:.2}], out_size={}, wave_subsamples={}, stride={}",
+        min_x, max_x, min_y, max_y, out_size, wave_subsamples, stride
+    );
+
+    #[derive(Clone, Copy)]
+    struct ComplexSum {
+        re: f64,
+        im: f64,
+    }
+    let mut accum = vec![ComplexSum { re: 0.0, im: 0.0 }; nx * ny];
+
+    // 2) Summation approach
+    accum.par_iter_mut().enumerate().for_each(|(pix_idx, cacc)| {
+        let ix = pix_idx % nx;
+        let iy = pix_idx / nx;
+        // pixel coords
+        let x = min_x + (ix as f64 + 0.5) / (nx as f64) * (max_x - min_x);
+        let y = min_y + (iy as f64 + 0.5) / (ny as f64) * (max_y - min_y);
+
+        let mut local_re = 0.0;
+        let mut local_im = 0.0;
+
+        let mut t_i = final_step as i64; // start from the end, go backwards
+        while t_i >= 0 {
+            let t_usize = t_i as usize;
+            // positions of the 3 bodies
+            let p1 = positions[0][t_usize];
+            let p2 = positions[1][t_usize];
+            let p3 = positions[2][t_usize];
+
+            let tsec = t_i as f64 * dt;
+            let age = final_time - tsec; // how long ago
+
+            // For each body
+            for &pb in &[p1, p2, p3] {
+                let dx = x - pb[0];
+                let dy = y - pb[1];
+                let dist = (dx * dx + dy * dy).sqrt();
+                if dist < 1e-12 {
+                    continue;
+                }
+                // retarded-time phase
+                let phase = wave_freq * (age - dist / wave_speed);
+
+                // amplitude fade
+                let time_factor = (-time_decay * age).exp().max(0.0);
+                let dist_factor = 1.0 / (1.0 + dist_decay * dist);
+                let amp = time_factor * dist_factor;
+
+                local_re += amp * phase.cos();
+                local_im += amp * phase.sin();
+            }
+
+            t_i -= stride as i64;
+        }
+
+        cacc.re = local_re;
+        cacc.im = local_im;
+    });
+
+    // 3) Convert final sums to color
+    let mut max_amp = 0.0;
+    for c in &accum {
+        let amp = (c.re * c.re + c.im * c.im).sqrt();
+        if amp > max_amp {
+            max_amp = amp;
+        }
+    }
+    if max_amp < 1e-12 {
+        max_amp = 1.0;
+    }
+
+    let mut img = ImageBuffer::new(nx as u32, ny as u32);
+    for (x, y, pixel) in img.enumerate_pixels_mut() {
+        let idx = (y as usize) * nx + (x as usize);
+        let re = accum[idx].re;
+        let im = accum[idx].im;
+        let amp = (re * re + im * im).sqrt();
+        let phase = im.atan2(re).to_degrees(); // in [-180..180]
+
+        // Map amplitude => saturate with a slight gamma tweak
+        let amp_norm = amp / max_amp;
+        let sat = amp_norm.powf(0.6);
+        let hue = (phase + 360.0) % 360.0;
+        let light = 0.5;
+
+        let (r, g, b) = hsl_to_rgb(hue, sat, light);
+        let rr = (r.clamp(0.0, 1.0) * 255.0) as u8;
+        let gg = (g.clamp(0.0, 1.0) * 255.0) as u8;
+        let bb = (b.clamp(0.0, 1.0) * 255.0) as u8;
+
+        *pixel = Rgb([rr, gg, bb]);
+    }
+
+    let out_path = format!("pics/{}_retarded_wave.png", base_name);
+    if let Err(e) = img.save(&out_path) {
+        eprintln!("Error saving retarded wave image: {:?}", e);
+    } else {
+        println!("Retarded-time wave image saved as {}", out_path);
+    }
+}
+
+// ---------------- NEW: COLORFUL, ADDITIVE LINES-ONLY IMAGE ----------------
+
+// Small helper: convert step index to a color in [0..1], using triadic offsets
+fn color_for_line(step: usize, total_steps: usize, line_index: usize) -> (f64, f64, f64) {
+    // base hue cycles from 0..360 across all steps
+    let base_hue = 360.0 * (step as f64 / total_steps as f64);
+    // offset hue for each of the 3 lines: +0, +120, +240
+    let hue = (base_hue + line_index as f64 * 120.0) % 360.0;
+    let saturation = 1.0;
+    let lightness = 0.5;
+
+    let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
+    (r, g, b)
+}
+
+/// Draw a line from (x0,y0) to (x1,y1) into our float accumulators using Bresenham.
+fn draw_line_segment_additive(
+    accum_r: &mut [f64],
+    accum_g: &mut [f64],
+    accum_b: &mut [f64],
+    width: u32,
+    height: u32,
+    x0f: f32,
+    y0f: f32,
+    x1f: f32,
+    y1f: f32,
+    (cr, cg, cb): (f64, f64, f64),
+    weight: f64, // how much to add per pixel
+) {
+    let x0 = x0f.round() as i32;
+    let y0 = y0f.round() as i32;
+    let x1 = x1f.round() as i32;
+    let y1 = y1f.round() as i32;
+
+    for (x, y) in Bresenham::new((x0, y0), (x1, y1)) {
+        if x < 0 || y < 0 || x >= width as i32 || y >= height as i32 {
+            continue;
+        }
+        let idx = (y as usize) * (width as usize) + (x as usize);
+        accum_r[idx] += cr * weight;
+        accum_g[idx] += cg * weight;
+        accum_b[idx] += cb * weight;
+    }
+}
+
+/// Generate a lines‐only image using **floating‐point additive** blending.
+/// - Each time step has its own hue, offset for each line body0→body1, body1→body2, body2→body0.
+/// - Overlapping lines accumulate more brightness in the accumulators.
+/// - Finally we normalize to the 0..255 range.
+fn generate_connection_lines_image_cool(
+    positions: &[Vec<Vector3<f64>>],
+    out_size: u32,
+    base_name: &str,
+) {
+    println!("\nGenerating *colorful* additive lines-only image...");
+
+    // 1) Determine bounding box from all steps (all 3 bodies).
     let mut min_x = INFINITY;
     let mut min_y = INFINITY;
     let mut max_x = NEG_INFINITY;
     let mut max_y = NEG_INFINITY;
-
-    for i in 0..3 {
-        for &p in positions[i].iter() {
-            let px = p[0];
-            let py = p[1];
-            if px < min_x {
-                min_x = px;
+    for body_idx in 0..positions.len() {
+        for &p in &positions[body_idx] {
+            if p[0] < min_x {
+                min_x = p[0];
             }
-            if px > max_x {
-                max_x = px;
+            if p[0] > max_x {
+                max_x = p[0];
             }
-            if py < min_y {
-                min_y = py;
+            if p[1] < min_y {
+                min_y = p[1];
             }
-            if py > max_y {
-                max_y = py;
+            if p[1] > max_y {
+                max_y = p[1];
             }
         }
     }
-    let pad_factor = 0.1;
-    let w = max_x - min_x;
-    let h = max_y - min_y;
-    // Expand bounding box a bit
-    min_x -= w * pad_factor;
-    max_x += w * pad_factor;
-    min_y -= h * pad_factor;
-    max_y += h * pad_factor;
+    let eps = 1e-12;
+    if (max_x - min_x).abs() < eps {
+        min_x -= 0.5;
+        max_x += 0.5;
+    }
+    if (max_y - min_y).abs() < eps {
+        min_y -= 0.5;
+        max_y += 0.5;
+    }
+    // Optionally pad by ~5%
+    {
+        let wx = max_x - min_x;
+        let wy = max_y - min_y;
+        min_x -= 0.05 * wx;
+        max_x += 0.05 * wx;
+        min_y -= 0.05 * wy;
+        max_y += 0.05 * wy;
+    }
 
-    let dx = (max_x - min_x) / (nx as f64);
-    let dy = (max_y - min_y) / (ny as f64);
+    let width = out_size;
+    let height = out_size;
 
+    // We'll store floating accumulators for R, G, B in [0..∞) range
+    let npix = (width * height) as usize;
+    let mut accum_r = vec![0.0; npix];
+    let mut accum_g = vec![0.0; npix];
+    let mut accum_b = vec![0.0; npix];
+
+    // A helper to transform (world x,y) -> pixel (f32,f32)
+    fn to_pixel_coords(
+        x: f64,
+        y: f64,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+        w: u32,
+        h: u32,
+    ) -> (f32, f32) {
+        let ww = max_x - min_x;
+        let hh = max_y - min_y;
+        let px = ((x - min_x) / ww) * (w as f64);
+        let py = ((y - min_y) / hh) * (h as f64);
+        (px as f32, py as f32)
+    }
+
+    // 2) For each time step, draw lines body0->body1, body1->body2, body2->body0 with additive color
     let total_steps = positions[0].len();
-    let sample_count = 2000.min(total_steps);
-    let step_stride = (total_steps / sample_count).max(1);
-
-    println!(
-        "Long-exposure bounding box= [{:.3},{:.3}]..[{:.3},{:.3}]",
-        min_x, min_y, max_x, max_y
-    );
-    println!("Sub-sampling steps= {}, stride= {}", sample_count, step_stride);
-
-    let mut accum =
-        vec![ExposureCell { sum_fx: 0.0, sum_fy: 0.0, sum_mag: 0.0, count: 0 }; nx * ny];
-
-    // chunked approach
-    for t in (0..total_steps).step_by(step_stride) {
-        let p1 = positions[0][t];
-        let p2 = positions[1][t];
-        let p3 = positions[2][t];
-
-        accum.par_iter_mut().enumerate().for_each(|(idx, cell)| {
-            let i = idx % nx;
-            let j = idx / nx;
-            let x = min_x + (i as f64 + 0.5) * dx;
-            let y = min_y + (j as f64 + 0.5) * dy;
-
-            let mut fx = 0.0;
-            let mut fy = 0.0;
-
-            // from body1
-            let rx1 = x - p1[0];
-            let ry1 = y - p1[1];
-            let dist1 = (rx1 * rx1 + ry1 * ry1).sqrt();
-            if dist1 > 1e-12 {
-                let scale = -G * masses[0] / dist1.powi(3);
-                fx += scale * rx1;
-                fy += scale * ry1;
-            }
-
-            // from body2
-            let rx2 = x - p2[0];
-            let ry2 = y - p2[1];
-            let dist2 = (rx2 * rx2 + ry2 * ry2).sqrt();
-            if dist2 > 1e-12 {
-                let scale = -G * masses[1] / dist2.powi(3);
-                fx += scale * rx2;
-                fy += scale * ry2;
-            }
-
-            // from body3
-            let rx3 = x - p3[0];
-            let ry3 = y - p3[1];
-            let dist3 = (rx3 * rx3 + ry3 * ry3).sqrt();
-            if dist3 > 1e-12 {
-                let scale = -G * masses[2] / dist3.powi(3);
-                fx += scale * rx3;
-                fy += scale * ry3;
-            }
-
-            let mag = (fx * fx + fy * fy).sqrt();
-            cell.sum_fx += fx;
-            cell.sum_fy += fy;
-            cell.sum_mag += mag;
-            cell.count += 1;
-        });
+    if total_steps == 0 {
+        println!("No steps to draw lines for. Skipping lines-only image.");
+        return;
     }
 
-    (accum, min_x, max_x, min_y, max_y)
-}
+    let small_weight = 0.4; // how much color to add per pixel per line
+    for step in 0..total_steps {
+        let p0 = positions[0][step];
+        let p1 = positions[1][step];
+        let p2 = positions[2][step];
 
-fn generate_exposure_images(
-    accum: &[ExposureCell],
-    nx: usize,
-    ny: usize,
-    _min_x: f64,
-    _max_x: f64,
-    _min_y: f64,
-    _max_y: f64,
-    base_name: &str,
-) {
-    let mut global_max_mag = 0.0;
-    for cell in accum {
-        if cell.count > 0 {
-            let avg_mag = cell.sum_mag / (cell.count as f64);
-            if avg_mag > global_max_mag {
-                global_max_mag = avg_mag;
-            }
+        // For each of the 3 edges in the triangle, pick a color offset
+        // to_pixel_coords => (x0,y0, x1,y1)
+        let (x0, y0) = to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
+        let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
+        let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
+
+        // line 0: p0->p1
+        let c0 = color_for_line(step, total_steps, 0);
+        draw_line_segment_additive(
+            &mut accum_r,
+            &mut accum_g,
+            &mut accum_b,
+            width,
+            height,
+            x0,
+            y0,
+            x1,
+            y1,
+            c0,
+            small_weight,
+        );
+
+        // line 1: p1->p2
+        let c1 = color_for_line(step, total_steps, 1);
+        draw_line_segment_additive(
+            &mut accum_r,
+            &mut accum_g,
+            &mut accum_b,
+            width,
+            height,
+            x1,
+            y1,
+            x2,
+            y2,
+            c1,
+            small_weight,
+        );
+
+        // line 2: p2->p0
+        let c2 = color_for_line(step, total_steps, 2);
+        draw_line_segment_additive(
+            &mut accum_r,
+            &mut accum_g,
+            &mut accum_b,
+            width,
+            height,
+            x2,
+            y2,
+            x0,
+            y0,
+            c2,
+            small_weight,
+        );
+    }
+
+    // 3) Normalize accumulators to 0..255
+    let mut maxval = 0.0;
+    for i in 0..npix {
+        let val_r = accum_r[i];
+        let val_g = accum_g[i];
+        let val_b = accum_b[i];
+        let m = val_r.max(val_g).max(val_b);
+        if m > maxval {
+            maxval = m;
         }
     }
-    if global_max_mag < 1e-12 {
-        global_max_mag = 1.0;
+    if maxval < 1e-14 {
+        maxval = 1.0;
     }
 
-    let mut img_linear = ImageBuffer::new(nx as u32, ny as u32);
-    let mut img_log = ImageBuffer::new(nx as u32, ny as u32);
-
-    for j in 0..ny {
-        for i in 0..nx {
-            let idx = j * nx + i;
-            let cell = &accum[idx];
-            if cell.count == 0 {
-                // black
-                img_linear.put_pixel(i as u32, j as u32, Rgb([0, 0, 0]));
-                img_log.put_pixel(i as u32, j as u32, Rgb([0, 0, 0]));
-                continue;
-            }
-            let avg_fx = cell.sum_fx / (cell.count as f64);
-            let avg_fy = cell.sum_fy / (cell.count as f64);
-            let angle_deg = avg_fy.atan2(avg_fx).to_degrees();
-            let hue = (angle_deg + 360.0) % 360.0;
-
-            let avg_mag = cell.sum_mag / (cell.count as f64);
-            let lin_brightness = (avg_mag / global_max_mag).min(1.0);
-            let log_brightness = ((1.0 + avg_mag).ln() / (1.0 + global_max_mag).ln()).min(1.0);
-
-            let (r_lin, g_lin, b_lin) = hsl_to_rgb(hue, 1.0, lin_brightness);
-            let (r_log, g_log, b_log) = hsl_to_rgb(hue, 1.0, log_brightness);
-
-            img_linear.put_pixel(i as u32, j as u32, Rgb([r_lin, g_lin, b_lin]));
-            img_log.put_pixel(i as u32, j as u32, Rgb([r_log, g_log, b_log]));
+    // 4) Write to an RGBA image
+    let mut img = RgbaImage::new(width, height);
+    for y in 0..height {
+        for x in 0..width {
+            let idx = (y as usize) * (width as usize) + (x as usize);
+            // scale
+            let rr = (accum_r[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            let gg = (accum_g[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            let bb = (accum_b[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            img.put_pixel(x, y, Rgba([rr as u8, gg as u8, bb as u8, 255]));
         }
     }
 
-    let out_lin = format!("pics/{}_exposure_linear.png", base_name);
-    let out_log = format!("pics/{}_exposure_log.png", base_name);
-
-    if let Err(e) = img_linear.save(&out_lin) {
-        eprintln!("Error saving linear exposure image: {}", e);
+    // 5) Save to disk
+    let out_path = format!("pics/{}_lines_only.png", base_name);
+    if let Err(e) = img.save(&out_path) {
+        eprintln!("Error saving lines-only image: {:?}", e);
     } else {
-        println!("Long-exposure (linear) image saved as {}", out_lin);
-    }
-
-    if let Err(e) = img_log.save(&out_log) {
-        eprintln!("Error saving log exposure image: {}", e);
-    } else {
-        println!("Long-exposure (log) image saved as {}", out_log);
+        println!("Colorful additive lines-only image saved as {}", out_path);
     }
 }
 
-// main
 fn main() {
     let args = Args::parse();
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
@@ -1555,10 +1591,10 @@ fn main() {
     let base_name = args.file_name.as_str();
     let video_filename = format!("vids/{}.mp4", base_name);
 
-    // store unscaled for the long-exposure
+    // store unscaled for wave + lines
     let positions_unscaled = positions.clone();
 
-    // 2) normalize for trajectory
+    // 2) normalize for normal trajectory image
     normalize_positions_inplace(&mut positions);
 
     // 3) color sequences
@@ -1650,60 +1686,20 @@ fn main() {
         println!("No video requested.");
     }
 
-    // 6) LIC flow from final snapshot
-    {
-        let nstep = positions[0].len() - 1;
-        let final_bodies = [
-            Body::new(best_masses[0], positions[0][nstep], Vector3::zeros()),
-            Body::new(best_masses[1], positions[1][nstep], Vector3::zeros()),
-            Body::new(best_masses[2], positions[2][nstep], Vector3::zeros()),
-        ];
-        let nx = 800;
-        let ny = 800;
-        let min_x = 0.0;
-        let max_x = 1.0;
-        let min_y = 0.0;
-        let max_y = 1.0;
+    // 6) Retarded-time wave image
+    generate_retarded_wave_image(
+        &positions_unscaled,
+        args.wave_freq,
+        args.wave_speed,
+        args.wave_subsamples,
+        args.wave_image_size,
+        args.time_decay,
+        args.dist_decay,
+        base_name,
+    );
 
-        println!("Computing gravitational field for LIC on {}x{} grid...", nx, ny);
-        let field = compute_gravity_field(&final_bodies, nx, ny, min_x, max_x, min_y, max_y);
+    // 7) Colorful additive lines-only image
+    generate_connection_lines_image_cool(&positions_unscaled, 800, base_name);
 
-        let mut noise = vec![0.0; nx * ny];
-        for v in noise.iter_mut() {
-            *v = rng.random_unit();
-        }
-
-        println!("Performing line integral convolution ({}x{})...", nx, ny);
-        let lic_gray = perform_lic(&field, &noise, nx, ny);
-        let lic_img = colorize_lic(&lic_gray, &field, nx, ny);
-
-        let lic_path = format!("pics/{}_lic.png", base_name);
-        if let Err(e) = lic_img.save(&lic_path) {
-            eprintln!("Error saving LIC image: {:?}", e);
-        } else {
-            println!("Flow-field LIC image saved as {}", lic_path);
-        }
-    }
-
-    // 7) Long-exposure images
-    {
-        let nx = 800;
-        let ny = 800;
-        println!("\nGenerating long-exposure field images with sub-sampling...");
-        let (exposure_accum, _min_x, _max_x, _min_y, _max_y) =
-            accumulate_time_exposure(&positions_unscaled, &best_masses, nx, ny);
-
-        generate_exposure_images(
-            &exposure_accum,
-            nx,
-            ny,
-            _min_x,
-            _max_x,
-            _min_y,
-            _max_y,
-            base_name,
-        );
-    }
-
-    println!("\nDone with simulation + image generation.");
+    println!("\nDone with simulation + wave image + COOL lines-only image!");
 }
