@@ -141,8 +141,8 @@ describe("MainPrize", function () {
 				1
 			);
 
-		let donationAmount = hre.ethers.parseEther("1");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("1");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 		let charityAddr = await cosmicSignatureGameProxy.charityAddress();
 
 		await cosmicSignatureGameProxy.mintCosmicSignatureNft(addr1.address); // mint an NFT so we can stake
@@ -222,8 +222,8 @@ describe("MainPrize", function () {
 		const BidderContract = await hre.ethers.getContractFactory("BidderContract");
 		const bContract = await BidderContract.deploy(await cosmicSignatureGameProxy.getAddress());
 
-		let donationAmount = hre.ethers.parseEther('10');
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther('10');
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });

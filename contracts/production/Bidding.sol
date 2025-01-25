@@ -82,7 +82,7 @@ abstract contract Bidding is
 		// [/Comment-202412045]
 		require(
 			overpaidEthBidPrice_ >= int256(0),
-			CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidEthBidPrice_, msg.value)
+			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the value you transferred.", paidEthBidPrice_, msg.value)
 		);
 
 		// #endregion
@@ -106,7 +106,7 @@ abstract contract Bidding is
 				// todo-1 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
 				// todo-1 But in OpenZeppelin 4.x the method doesn't exist. A similar method existed, named `_isApprovedOrOwner`.
 				msg.sender == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
-				CosmicSignatureErrors.IncorrectERC721TokenOwner(
+				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
 					uint256(randomWalkNftId_),
@@ -130,7 +130,7 @@ abstract contract Bidding is
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
 
 		// Updating bidding statistics.
-		bidderInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
+		biddersInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
 		// [ToDo-202409245-1]
@@ -302,12 +302,12 @@ abstract contract Bidding is
 		// todo-1 +++ Confirm with them again that this is OK.
 		// That said, given that we mint `tokenReward` CSTs for each bid, it's unlikely that the bid price will fall below that.
 		// [/Comment-202409179]
-		uint256 price = getNextCstBidPrice(int256(0));
+		uint256 paidPrice_ = getNextCstBidPrice(int256(0));
 
 		// Comment-202412045 applies.
 		require(
-			price <= priceMaxLimit_,
-			CosmicSignatureErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
+			paidPrice_ <= priceMaxLimit_,
+			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_)
 		);
 
 		// [Comment-202412251]
@@ -326,10 +326,10 @@ abstract contract Bidding is
 		// // This validation is unnecessary, given that the burning near Comment-202409177 is going to perform it too.
 		// // [/Comment-202409181]
 		// require(
-		// 	userBalance >= price,
+		// 	userBalance >= paidPrice_,
 		// 	CosmicSignatureErrors.InsufficientCSTBalance(
 		// 		"Insufficient CST token balance to make a bid with CST.",
-		// 		price,
+		// 		paidPrice_,
 		// 		userBalance
 		// 	)
 		// );
@@ -343,25 +343,25 @@ abstract contract Bidding is
 		// Minting a CST reward to the bidder.
 		// We do it even for a CST bid.
 		// [/Comment-202501125]
-		// token.burn(msg.sender, price);
-		// token.transferToMarketingWalletOrBurn(msg.sender, price);
+		// token.burn(msg.sender, paidPrice_);
+		// token.transferToMarketingWalletOrBurn(msg.sender, paidPrice_);
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = msg.sender;
-			mintAndBurnSpecs_[0].value = ( - int256(price) );
+			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 			mintAndBurnSpecs_[1].account = msg.sender;
 			mintAndBurnSpecs_[1].value = int256(tokenReward);
 			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
-		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
+		biddersInfo[roundNum][msg.sender].totalSpentCst += paidPrice_;
 
 		// [Comment-202409163]
 		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.
 		// [/Comment-202409163]
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(price * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
 		if (lastCstBidderAddress == address(0)) {
@@ -371,7 +371,7 @@ abstract contract Bidding is
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
 		// todo-1 When raising this event, maybe in some cases pass zero instead of -1.
-		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
+		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(paidPrice_), mainPrizeTime, message_);
 	}
 
 	// #endregion
@@ -457,7 +457,7 @@ abstract contract Bidding is
 	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal /*nonReentrant*/ onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
-			CosmicSignatureErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
+			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)
 		);
 
 		// First bid of the round?
@@ -481,7 +481,7 @@ abstract contract Bidding is
 
 		lastBidderAddress = msg.sender;
 		// lastBidType = bidType;
-		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
+		biddersInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
 		++ numRaffleParticipants_;
@@ -573,7 +573,7 @@ abstract contract Bidding is
 	// #region `getTotalSpentByBidder`
 
 	function getTotalSpentByBidder(address bidderAddress_) external view override returns(uint256, uint256) {
-		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
+		return (biddersInfo[roundNum][bidderAddress_].totalSpentEth, biddersInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
 	// #endregion

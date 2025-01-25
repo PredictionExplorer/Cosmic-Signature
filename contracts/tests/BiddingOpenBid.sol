@@ -151,7 +151,7 @@ abstract contract BiddingOpenBid is
 				// Comment-202412045 applies.
 				require(
 					msg.value >= ethOpenBidPriceMinLimit_,
-					CosmicSignatureErrors.BidPrice("The value submitted for open bid is too low.", ethOpenBidPriceMinLimit_, msg.value)
+					CosmicSignatureErrors.InsufficientReceivedBidAmount("The ETH value you transferred for open bid is insufficient.", ethOpenBidPriceMinLimit_, msg.value)
 				);
 
 				paidEthBidPrice_ = msg.value;
@@ -163,7 +163,7 @@ abstract contract BiddingOpenBid is
 				// Comment-202412045 applies.
 				require(
 					overpaidEthBidPrice_ >= int256(0),
-					CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidEthBidPrice_, msg.value)
+					CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the value you transferred.", paidEthBidPrice_, msg.value)
 				);
 			}
 
@@ -191,7 +191,7 @@ abstract contract BiddingOpenBid is
 			// Comment-202412045 applies.
 			require(
 				overpaidEthBidPrice_ >= int256(0),
-				CosmicSignatureErrors.BidPrice("The value submitted for this transaction is too low.", paidEthBidPrice_, msg.value)
+				CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the value you transferred.", paidEthBidPrice_, msg.value)
 			);
 
 			if (lastBidderAddress == address(0)) {
@@ -213,7 +213,7 @@ abstract contract BiddingOpenBid is
 			);
 			require(
 				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
-				CosmicSignatureErrors.IncorrectERC721TokenOwner(
+				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
 					uint256(/*params.randomWalkNftId*/ randomWalkNftId_),
@@ -230,7 +230,7 @@ abstract contract BiddingOpenBid is
 		// #region
 
 		// Updating bidding statistics.
-		bidderInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
+		biddersInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
 		// ToDo-202409245-1 applies.
@@ -386,12 +386,12 @@ abstract contract BiddingOpenBid is
 		// Comment-202501045 applies.
 
 		// Comment-202409179 applies.
-		uint256 price = getNextCstBidPrice(int256(0));
+		uint256 paidPrice_ = getNextCstBidPrice(int256(0));
 
 		// Comment-202412045 applies.
 		require(
-			price <= priceMaxLimit_,
-			CosmicSignatureErrors.BidPrice("The current CST bid price is greater than the maximum you allowed.", price, priceMaxLimit_)
+			paidPrice_ <= priceMaxLimit_,
+			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_)
 		);
 
 		// Comment-202412251 applies.
@@ -401,33 +401,33 @@ abstract contract BiddingOpenBid is
 
 		// // Comment-202409181 applies.
 		// require(
-		// 	userBalance >= price,
+		// 	userBalance >= paidPrice_,
 		// 	CosmicSignatureErrors.InsufficientCSTBalance(
 		// 		"Insufficient CST token balance to make a bid with CST.",
-		// 		price,
+		// 		paidPrice_,
 		// 		userBalance
 		// 	)
 		// );
 
 		// Comment-202409177 applies.
 		// Comment-202501125 applies.
-		// token.burn(msg.sender, price);
-		// token.transferToMarketingWalletOrBurn(msg.sender, price);
+		// token.burn(msg.sender, paidPrice_);
+		// token.transferToMarketingWalletOrBurn(msg.sender, paidPrice_);
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = msg.sender;
-			mintAndBurnSpecs_[0].value = ( - int256(price) );
+			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 			mintAndBurnSpecs_[1].account = msg.sender;
 			mintAndBurnSpecs_[1].value = int256(tokenReward);
 			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
-		bidderInfo[roundNum][msg.sender].totalSpentCst += price;
+		biddersInfo[roundNum][msg.sender].totalSpentCst += paidPrice_;
 
 		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(price * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
 		if (lastCstBidderAddress == address(0)) {
@@ -436,7 +436,7 @@ abstract contract BiddingOpenBid is
 		lastCstBidderAddress = msg.sender;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
-		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(price), mainPrizeTime, message_);
+		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(paidPrice_), mainPrizeTime, message_);
 	}
 
 	// #endregion
@@ -522,7 +522,7 @@ abstract contract BiddingOpenBid is
 	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal /*nonReentrant*/ onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
-			CosmicSignatureErrors.BidMessageLengthOverflow("Message is too long.", bytes(message).length)
+			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)
 		);
 
 		// First bid of the round?
@@ -541,7 +541,7 @@ abstract contract BiddingOpenBid is
 
 		lastBidderAddress = msg.sender;
 		// lastBidType = bidType;
-		bidderInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
+		biddersInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
 		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
 		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
 		++ numRaffleParticipants_;
@@ -628,7 +628,7 @@ abstract contract BiddingOpenBid is
 	// #region `getTotalSpentByBidder`
 
 	function getTotalSpentByBidder(address bidderAddress_) external view override returns(uint256, uint256) {
-		return (bidderInfo[roundNum][bidderAddress_].totalSpentEth, bidderInfo[roundNum][bidderAddress_].totalSpentCst);
+		return (biddersInfo[roundNum][bidderAddress_].totalSpentEth, biddersInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
 	// #endregion

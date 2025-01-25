@@ -14,24 +14,24 @@ describe("EthDonations", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 		
-		let donationAmount = hre.ethers.parseEther("10");
+		let donationAmount_ = hre.ethers.parseEther("10");
 		let dataStr ="{'version':1,'url':'http://one.two/three'}";
-		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, { value: donationAmount });
+		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, { value: donationAmount_ });
 		let numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy.numEthDonationWithInfoRecords();
 		expect(numEthDonationWithInfoRecords_).to.equal(1);
 		// todo-1 Test that this emits the correct event. But I believe I've seen a relevant test elsewhere.
 		let ethDonationWithInfoRecord_ = await cosmicSignatureGameProxy.ethDonationWithInfoRecords(0);
 		expect(ethDonationWithInfoRecord_.roundNum).to.equal(0);
 		expect(ethDonationWithInfoRecord_.donorAddress).to.equal(addr1.address);
-		expect(ethDonationWithInfoRecord_.amount).to.equal(donationAmount);
+		expect(ethDonationWithInfoRecord_.amount).to.equal(donationAmount_);
 		expect(ethDonationWithInfoRecord_.data).to.equal(dataStr);
 
 		// check number of records is incrementing
-		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, { value: donationAmount });
+		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, { value: donationAmount_ });
 		numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy.numEthDonationWithInfoRecords();
 		expect(numEthDonationWithInfoRecords_).to.equal(2);
 
-		// await expect(cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, {value: 0n})).revertedWithCustomError(cosmicSignatureGameProxy, "NonZeroValueRequired");
+		// await expect(cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, {value: 0n})).revertedWithCustomError(cosmicSignatureGameProxy, "ZeroValue");
 		await cosmicSignatureGameProxy.connect(addr1).donateEthWithInfo(dataStr, {value: 0n});
 	});
 	// it("Should not be possible to donate 0 value", async function () {
@@ -39,6 +39,6 @@ describe("EthDonations", function () {
 	// 	const [owner, addr1,] = signers;
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 	//
-	// 	await expect(cosmicSignatureGameProxy.connect(addr1).donateEth()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NonZeroValueRequired");
+	// 	await expect(cosmicSignatureGameProxy.connect(addr1).donateEth()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ZeroValue");
 	// });
 });

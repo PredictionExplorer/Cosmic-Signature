@@ -79,7 +79,7 @@ contract CosmicSignatureGame is
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
-		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
+		maxMessageLength = CosmicSignatureConstants.DEFAULT_MAX_MESSAGE_LENGTH;
 		// token =
 		// randomWalkNft =
 		// nft =

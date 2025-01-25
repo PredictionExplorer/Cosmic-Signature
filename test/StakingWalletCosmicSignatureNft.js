@@ -17,7 +17,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 		await expect(stakingWalletCosmicSignatureNft.depositIfPossible(0, { value: hre.ethers.parseEther("2") })).to.be.revertedWithCustomError(
 			cosmicSignatureGameErrorsFactory_,
-			"CallDenied"
+			"UnauthorizedCaller"
 		);
 	});
 
@@ -922,7 +922,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(newStakingWalletCosmicSignatureNft.unstake(1, 1000)).not.to.be.reverted;
-		await expect(newStakingWalletCosmicSignatureNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftOneTimeStaking");
+		await expect(newStakingWalletCosmicSignatureNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftHasAlreadyBeenStaked");
 
 		// await newStakingWalletCosmicSignatureNft.doInsertToken(1n, 1n);
 		// await expect(newStakingWalletCosmicSignatureNft.doInsertToken(1n, 1n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenAlreadyInserted");

@@ -30,7 +30,6 @@ async function main() {
 	console.log("tokenid = " + nftId_);
 	await randomWalkNft_.connect(owner).transferFrom(owner.address, bidderContract.address, nftId_);
 	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	// todo-1 I have commented this method out.
 	await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, nftId_, { value: nextEthBidPrice_ });
 
 	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);

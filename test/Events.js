@@ -43,9 +43,14 @@ describe("Events", function () {
 			.to.emit(charityWallet, "CharityAddressChanged")
 			.withArgs(bidder3.address);
 
-		// DonationSent
+		// // DonationSent
+		// await expect(charityWallet.connect(bidder2).send())
+		// 	.to.emit(charityWallet, "DonationSent")
+		// 	.withArgs(bidder3.address, balance);
+
+		// FundsTransferredToCharity
 		await expect(charityWallet.connect(bidder2).send())
-			.to.emit(charityWallet, "DonationSent")
+			.to.emit(charityWallet, "FundsTransferredToCharity")
 			.withArgs(bidder3.address, balance);
 	});
 	it("should emit EthDonated on successful donation", async function () {
@@ -55,17 +60,15 @@ describe("Events", function () {
 		const INITIAL_AMOUNT = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.connect(owner).donateEth({ value: INITIAL_AMOUNT });
 
-		const donationAmount = hre.ethers.parseEther("1");
+		const donationAmount_ = hre.ethers.parseEther("1");
 		let roundNum = 0;
-		await expect(cosmicSignatureGameProxy.connect(donor).donateEth({ value: donationAmount }))
+		await expect(cosmicSignatureGameProxy.connect(donor).donateEth({ value: donationAmount_ }))
 			.to.emit(cosmicSignatureGameProxy, "EthDonated")
-			.withArgs(roundNum, donor.address, donationAmount);
+			.withArgs(roundNum, donor.address, donationAmount_);
 
 		const contractBalance = await hre.ethers.provider.getBalance(await cosmicSignatureGameProxy.getAddress());
-		expect(contractBalance).to.equal(donationAmount + INITIAL_AMOUNT);
+		expect(contractBalance).to.equal(donationAmount_ + INITIAL_AMOUNT);
 	});
-
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("should emit MainPrizeClaimed and update winner on successful prize claim", async function () {
 		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =
 			await loadFixture(deployContractsForTesting);
@@ -87,8 +90,8 @@ describe("Events", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(bidder1).bid((-1), "", { value: nextEthBidPrice_ });
 
-		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "DonatedNftClaimDenied");
+		// await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "DonatedNftClaimDenied");
+		await expect(prizesWallet.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "DonatedNftClaimDenied");
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -97,8 +100,7 @@ describe("Events", function () {
 
 		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize())
 			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed")
-			// todo-1 Assert 1 more param passed to the event.
-			.withArgs(0, bidder1.address, mainEthPrizeAmountBeforeClaim_);
+			.withArgs(0, bidder1.address, mainEthPrizeAmountBeforeClaim_, 0);
 
 		// const roundMainPrizeWinnerAddress_ = await cosmicSignatureGameProxy.winners(0);
 		const roundMainPrizeWinnerAddress_ = await prizesWallet.mainPrizeWinnerAddresses(0);
@@ -109,12 +111,13 @@ describe("Events", function () {
 		const mainEthPrizeExpectedAmount_ = balance * 25n / 100n;
 		expect(mainEthPrizeAmountAfterClaim_).to.equal(mainEthPrizeExpectedAmount_);
 
-		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InvalidDonatedNftIndex");
+		// await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InvalidDonatedNftIndex");
+		await expect(prizesWallet.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(prizesWallet, "InvalidDonatedNftIndex");
 
-		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0);
-		await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "DonatedNftAlreadyClaimed");
+		// await cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0);
+		await prizesWallet.connect(bidder1).claimDonatedNft(0);
+		// await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "DonatedNftAlreadyClaimed");
+		await expect(prizesWallet.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(prizesWallet, "DonatedNftAlreadyClaimed");
 
 		mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(donor).mint({ value: mintPrice });
@@ -134,17 +137,15 @@ describe("Events", function () {
 		mainEthPrizeAmountBeforeClaim_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		await expect(cosmicSignatureGameProxy.connect(donor).claimMainPrize())
 			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed")
-			// todo-1 Assert 1 more param passed to the event.
-			.withArgs(1, donor.address, mainEthPrizeAmountBeforeClaim_);
+			.withArgs(1, donor.address, mainEthPrizeAmountBeforeClaim_, 7);
 
 		expect(await randomWalkNft.balanceOf(donor.address)).to.equal(1);
-		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await cosmicSignatureGameProxy.connect(donor).claimDonatedNft(1);
+		// await cosmicSignatureGameProxy.connect(donor).claimDonatedNft(1);
+		await prizesWallet.connect(donor).claimDonatedNft(1);
 		expect(await randomWalkNft.balanceOf(donor.address)).to.equal(2);
 
 		expect(await cosmicSignatureGameProxy.roundNum()).to.equal(2);
 	});
-
 	it("BidEvent is correctly emitted", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
@@ -165,6 +166,7 @@ describe("Events", function () {
 			.to.emit(cosmicSignatureGameProxy, "BidEvent")
 			.withArgs(addr1.address, 0, 1020100000000000, 0, -1, 2100003601, "random walk");
 	});
+	// todo-1 Consifder moving this to Bidding tests.
 	it("ETH + RandomWalk NFT bid price is 50% lower", async function () {
 		// todo-1 For the complete code coverage, this test needs to make multiple bids, claim main prize, more bids.
 
@@ -183,8 +185,6 @@ describe("Events", function () {
 			.to.emit(cosmicSignatureGameProxy, "BidEvent")
 			.withArgs(addr1.address, 0, nextEthPlusRandomWalkNftBidPrice_, 0, -1, 100_000_000_000n + initialDurationUntilMainPrize_, "random walk");
 	});
-
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("DonatedNftClaimedEvent is correctly emitted", async function () {
 		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =
 			await loadFixture(deployContractsForTesting);
@@ -205,12 +205,13 @@ describe("Events", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize());
 
-		// todo-1 I have moved NFT donations to `PrizesWallet`.
-		await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0))
-			.to.emit(cosmicSignatureGameProxy, "DonatedNftClaimedEvent")
-			.withArgs(0, 0, bidder1.address, await randomWalkNft.getAddress(), 0);
+		// await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0))
+		// 	.to.emit(cosmicSignatureGameProxy, "DonatedNftClaimedEvent")
+		// 	.withArgs(0, 0, bidder1.address, await randomWalkNft.getAddress(), 0);
+		await expect(prizesWallet.connect(bidder1).claimDonatedNft(0))
+			.to.emit(prizesWallet, "DonatedNftClaimed")
+			.withArgs(0, bidder1.address, await randomWalkNft.getAddress(), 0, 0);
 	});
-
 	it("It's not permitted to bid before activation", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;

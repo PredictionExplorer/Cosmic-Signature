@@ -14,7 +14,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title Custom errors.
 /// @author The Cosmic Signature Development Team.
 /// @notice This library contains custom errors used throughout the Cosmic Signature contracts.
-/// @dev Use these errors to implement more detailed and gas-efficient error reporting.
+/// See also: `CosmicSignatureEvents`.
+/// @dev Using these custom errors to implement more detailed and gas-efficient error reporting.
 library CosmicSignatureErrors {
 	// #region Common Errors
 
@@ -28,10 +29,8 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
 	/// @param errStr Description of the error.
 	/// @param callerAddress Caller address.
-	/// @dev todo-1 Rename to `FunctionAccessDenied` or `OperationAccessDenied` or `UnauthorizedCaller`?
-	/// todo-1 Note that `Ownable` error is named `OwnableUnauthorizedAccount`.
-	/// todo-1 Try to eliminate other errors of this kind.
-	error CallDenied(string errStr, address callerAddress);
+	/// @dev todo-1 Do we have any other errors of this kind? Try to eliminate them.
+	error UnauthorizedCaller(string errStr, address callerAddress);
 
 	// #endregion
 	// #region System Errors
@@ -59,13 +58,11 @@ library CosmicSignatureErrors {
 	// /// @param valueHardMinLimit The required minimum limit imposed on the value (that's a min limit on another min limit).
 	// error ProvidedStartingBidPriceCstMinLimitIsTooSmall(string errStr, uint256 providedValue, uint256 valueHardMinLimit);
 
-	/// @notice Thrown when percentage validation fails
-	/// @param errStr Description of the error.
-	/// @param percentageSum The sum of percentages (should be 100)
-	/// todo-1 100 or less than 100? Misleading comment?
-	/// todo-1 Maybe eliminate this validation?
-	/// todo-1 Rename this to `InvalidPrizePercentage`.
-	error PercentageValidation(string errStr, uint256 percentageSum);
+	// /// @notice Thrown when the sum of prize percentages is too big.
+	// /// @param errStr Description of the error.
+	// /// @param prizePercentageSum The sum of prize percentages.
+	// /// todo-9 Rename this error to `InvalidPrizePercentageSum`.
+	// error PercentageValidation(string errStr, uint256 prizePercentageSum);
 
 	// #endregion
 	// #region Bidding Errors
@@ -84,29 +81,25 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	error WrongBidType(string errStr);
 
-	/// @notice Thrown when the amount received for a bid is less than the required minimum.
+	/// @notice Thrown when the amount received for a bid is less than the current bid price.
+	/// This is used for both ETH and CST bids.
 	/// @param errStr Description of the error.
-	/// @param amountRequired The required bid amount
-	/// todo-1 Rename the above param to `amountMinLimit`.
-	/// @param amountSent The amount actually sent
-	/// todo-1 Rename the above param to `receivedAmount`.
-	/// todo-1 Rename this to `InsufficientBidAmount`.
-	error BidPrice(string errStr, uint256 amountRequired, uint256 amountSent);
+	/// @param bidPrice The current bid price.
+	/// @param receivedAmount The amount the bidder transferred to us.
+	error InsufficientReceivedBidAmount(string errStr, uint256 bidPrice, uint256 receivedAmount);
 
-	/// @notice Thrown when a bid message length exceeds the maximum allowed.
-	/// See also: `TokenNameLength`.
+	/// @notice Thrown when the provided bid message length exceeds the maximum allowed.
+	/// See also: `TooLongNftName`.
 	/// @param errStr Description of the error.
-	/// @param msgLength The provided message length.
-	/// todo-1 Rename the above param to `messageLength`.
+	/// @param messageLength The provided message length.
 	/// Comment-202409143 relates.
-	/// todo-1 Rename this to `TooLongBidMessage` or better `BidMessageIsTooLong`.
-	error BidMessageLengthOverflow(string errStr, uint256 msgLength);
+	error TooLongBidMessage(string errStr, uint256 messageLength);
 
-	/// @notice Thrown when attempting to use an already used RandomWalk NFT
+	/// @notice Thrown when attempting to use an already used RandomWalk NFT.
+	/// See also: `NftHasAlreadyBeenStaked`.
 	/// @param errStr Description of the error.
-	/// @param randomWalkTokenId The ID of the RandomWalk NFT
-	/// todo-1 Rename the above param to `randomWalkNftId`.
-	error UsedRandomWalkNft(string errStr, uint256 randomWalkTokenId);
+	/// @param randomWalkNftId RandomWalk NFT ID.
+	error UsedRandomWalkNft(string errStr, uint256 randomWalkNftId);
 
 	// /// @notice Thrown when the bidder has insufficient CST balance
 	// /// @param errStr Description of the error.
@@ -151,14 +144,13 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region Claim Prize Errors
 
-	/// @notice Thrown when someone other than the last bidder attempts to claim the prize
+	/// @notice Thrown when someone other than the last bidder attempts to claim the main prize.
+	/// See also: `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
-	/// @param lastBidderAddress Last bidder address.
+	/// @param lastBidderAddress The last bidder address.
 	/// @param beneficiaryAddress The address that attempted to claim the prize.
-	/// @param timeToWait The duration until this operation will be permitted.
-	/// todo-1 Rename the param to `durationUntilOperationIsPermitted`.
-	/// todo-1 Rename this to `LastBidderOnlyPermission`. Or maybe `LastBidderOnlyPrivilege`.
-	error LastBidderOnly(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 timeToWait);
+	/// @param durationUntilOperationIsPermitted The duration until this operation will be permitted.
+	error MainPrizeClaimDenied(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 durationUntilOperationIsPermitted);
 
 	/// @notice Thrown when attempting to claim a bidding round main prize too early.
 	/// See also: `EarlyWithdrawal`.
@@ -180,6 +172,7 @@ library CosmicSignatureErrors {
 	error EarlyWithdrawal(string errStr, uint256 operationPermittedTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone attempts to claim an ERC-20 token donation, but is not permitted to do so.
+	/// See also: `MainPrizeClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
 	/// @param roundNum Bidding round number.
 	/// @param beneficiaryAddress The address that attempted to claim the donation.
@@ -192,6 +185,7 @@ library CosmicSignatureErrors {
 	error InvalidDonatedNftIndex(string errStr, uint256 index);
 
 	/// @notice Thrown when someone attempts to claim a donated NFT, but is not permitted to do so.
+	/// See also: `MainPrizeClaimDenied`, `DonatedTokenClaimDenied`.
 	/// @param errStr Description of the error.
 	/// @param beneficiaryAddress The address that attempted to claim the donation.
 	/// @param index Donated NFT index in an array.
@@ -232,55 +226,53 @@ library CosmicSignatureErrors {
 	// /// @param errStr Description of the error.
 	// /// @param receiverAddress The intended receiver of the token
 	// /// @param roundNum The bidding round number for the token.
-	// /// todo-1 Reorder `roundNum` to after `errStr`?
-	// /// todo-1 Rename this to `NftMintFailed`.
+	// /// todo-9 Reorder `roundNum` to after `errStr`?
+	// /// todo-9 Rename this to `NftMintFailed`.
 	// error ERC721Mint(string errStr, address receiverAddress, uint256 roundNum);
 
-	/// @notice Thrown when the given NFT name is too long.
-	/// See also: `BidMessageLengthOverflow`.
-	/// todo-1 Reference comments that are referenced near `BidMessageLengthOverflow`.
+	/// @notice Thrown when the provided NFT name length exceeds the maximum allowed.
+	/// See also: `TooLongBidMessage`.
 	/// @param errStr Description of the error.
-	/// @param len The NFT name length.
-	/// todo-1 Rename the above param to `length`.
-	/// todo-1 Rename this to `TooLongNftName` or better `NftNameIsTooLong`.
-	error TokenNameLength(string errStr, uint256 len);
+	/// @param nftNameLength The NFT name length.
+	/// Comment-202409143 relates.
+	error TooLongNftName(string errStr, uint256 nftNameLength);
 
-	/// @notice Thrown when an address without minting privileges attempts to mint.
-	/// @param errStr Description of the error.
-	/// @param requesterAddress The address attempting to mint.
-	/// todo-1 Rename to `NoMintPermission`.
-	/// todo-1 Use this for CST too? But we also have burn methods there.
-	/// todo-1 Maybe we don't need this? Use `CallDenied` instead?
-	/// todo-1 ??? Maybe leave this alone, but comment.
-	error NoMintPrivileges(string errStr, address requesterAddress);
+	// /// @notice Thrown when an account that is not authorized to mint a token attempts to mint one.
+	// /// @param errStr Description of the error.
+	// /// @param callerAddress The address attempting to mint.
+	// /// @dev I have eliminated this. Now using `UnauthorizedCaller` instead.
+	// /// todo-9 Rename to `NoTokenMintPermission`.
+	// /// todo-9 Use this for CST too? But we also have burn methods there, so we would need another error for those.
+	// error NoMintPrivileges(string errStr, address callerAddress);
 
-	/// @notice Thrown when the token owner is incorrect
+	/// @notice Thrown when the caller is not the given NFT owner.
+	/// See also: `CallerIsNotAuthorizedToManageNft`.
 	/// @param errStr Description of the error.
 	/// @param nftAddress NFT contract address.
-	/// @param nftId The ID of the token
-	/// @param senderAddress The address of the sender
-	/// todo-1 Rename this to `NftOwnerOnlyPermission` or `NftAccessDenied`.
-	error IncorrectERC721TokenOwner(string errStr, address nftAddress, uint256 nftId, address senderAddress);
+	/// @param nftId NFT ID.
+	/// @param callerAddress Caller address.
+	error CallerIsNotNftOwner(string errStr, address nftAddress, uint256 nftId, address callerAddress);
 
-	/// @notice Thrown when there's an ownership error for an NFT.
-	/// @param errStr Description of the error.
-	/// @param nftId The ID of the token
-	/// todo-1 Eliminate this and use `IncorrectERC721TokenOwner` instead.
-	error OwnershipError(string errStr, uint256 nftId);
+	// /// @notice Thrown when the caller is not authorized to manage or spend an NFT.
+	// /// See also: `CallerIsNotNftOwner`.
+	// /// @param errStr Description of the error.
+	// /// @param nftId NFT ID.
+	// /// @dev I have eliminated this and instead calling the `ERC721._checkAuthorized` method,
+	// /// which can throw the `IERC721Errors.ERC721InsufficientApproval` error.
+	// error CallerIsNotAuthorizedToManageNft(string errStr, uint256 nftId);
 
 	// #endregion
 	// #region Zero Checking Errors
 
-	/// @notice Thrown when a non-zero address is required, but zero is observed.
+	/// @notice Thrown when a nonzero address is required, but zero is observed.
 	/// @param errStr Description of the error.
 	error ZeroAddress(string errStr);
 
-	/// @notice Thrown when a non-zero value is required, but zero is observed.
-	/// @param errStr Description of the error.
-	/// todo-1 Rename this to `ValueIsZero`, or better `ZeroValue`.
-	error NonZeroValueRequired(string errStr);
+	// /// @notice Thrown when a nonzero value is required, but zero is observed.
+	// /// @param errStr Description of the error.
+	// error ZeroValue(string errStr);
 
-	// /// @notice Thrown when a non-zero balance amount is required, but zero is observed.
+	// /// @notice Thrown when a nonzero balance amount is required, but zero is observed.
 	// /// @param errStr Description of the error.
 	// /// todo-9 Rename this to `ZeroBalanceAmount`.
 	// error ZeroBalance(string errStr);
@@ -333,12 +325,11 @@ library CosmicSignatureErrors {
 	// 	uint256 depositDate
 	// );
 
-	/// @notice Thrown when an unauthorized address attempts to access a function
-	/// todo-1 Explain better what it attempts to access.
+	/// @notice Thrown when an unauthorized caller attempts to access an NFT stake action.
 	/// @param errStr Description of the error.
-	/// @param stakeActionId The ID of the action
-	/// @param requesterAddress The address of the requester
-	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address requesterAddress);
+	/// @param stakeActionId NFT stake action ID.
+	/// @param callerAddress Caller address.
+	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address callerAddress);
 
 	/// @notice Thrown when an invalid NFT stake action ID is provided
 	/// @param errStr Description of the error.
@@ -371,11 +362,11 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	error NoStakedNfts(string errStr);
 
-	/// @notice Thrown when attempting to stake an NFT more than once
+	/// @notice Thrown when attempting to stake an NFT that has already been staked in the past.
+	/// See also: `UsedRandomWalkNft`.
 	/// @param errStr Description of the error.
-	/// @param nftId The ID of the token
-	/// todo-1 Rename this to `NftOneTimeOnlyStaking`.
-	error NftOneTimeStaking(string errStr, uint256 nftId);
+	/// @param nftId NFT ID.
+	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
 	// /// @notice Thrown when attempting to set address that have already been set
 	// /// @param errStr Description of the error.

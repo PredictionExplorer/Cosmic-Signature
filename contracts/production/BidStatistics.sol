@@ -20,7 +20,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 		// if (lastBidderAddress == address(0)) return;
 		// #enable_asserts assert(lastBidderAddress != address(0));
 
-		uint256 lastBidTimeStampCopy_ = bidderInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 		uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
 		if (enduranceChampionAddress == address(0)) {
 			enduranceChampionAddress = lastBidderAddress;
@@ -69,7 +69,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// 		return (address(0), 0);
 	// 	}
 	// 	{
-	// 		uint256 lastBidTimeStampCopy_ = bidderInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+	// 		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 	// 		uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
 	// 		if (lastBidDuration_ > enduranceChampionDuration || enduranceChampionAddress == address(0)) {
 	// 			return (lastBidderAddress, lastBidDuration_);
@@ -105,7 +105,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 			// #endregion
 			// #region
 
-			uint256 lastBidTimeStampCopy_ = bidderInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 			uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
 
 			// #endregion

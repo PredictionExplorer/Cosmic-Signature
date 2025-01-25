@@ -57,7 +57,7 @@ contract CosmicSignatureToken is
 	modifier onlyGame() {
 		require(
 			msg.sender == game,
-			CosmicSignatureErrors.CallDenied("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
 		);
 		_;
 	}

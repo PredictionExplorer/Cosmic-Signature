@@ -62,7 +62,7 @@ abstract contract MainPrize is
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			require(
 				durationUntilOperationIsPermitted_ <= int256(0),
-				CosmicSignatureErrors.LastBidderOnly(
+				CosmicSignatureErrors.MainPrizeClaimDenied(
 					"Only the last bidder is permitted to claim the bidding round main prize until a timeout expires.",
 					lastBidderAddress,
 					msg.sender,
@@ -559,7 +559,7 @@ abstract contract MainPrize is
 		// }
 
 		++ roundNum;
-		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST auction.
+		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST Dutch auction.
 		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);

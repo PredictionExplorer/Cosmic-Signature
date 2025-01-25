@@ -31,6 +31,9 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Document which variables are valid under what conditions,
 /// todo-1 which variables should be accessed directly and which through an accessor,
 /// todo-1 which variables emit events (some are changed programmatically without emitting an event).
+///
+/// todo-1 Consider making some params non-configurable.
+/// todo-1 The same applies to other contracts.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Parameters and Variables
 
@@ -125,8 +128,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Donation Variables
 
-	CosmicSignatureConstants.DonationWithInfoRecord[] public ethDonationWithInfoRecords;
+	EthDonationWithInfoRecord[] public ethDonationWithInfoRecords;
 	// uint256 public numDonatedNfts;
+	// // todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// mapping(uint256 index => CosmicSignatureConstants.DonatedNft) public donatedNfts;
 
 	// #endregion
@@ -269,8 +273,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev ToDo-202411098-1 applies.
 	/// todo-1 Do we really need this?
-	/// todo-1 Rename to `biddersInfo`.
-	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
+	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	// #endregion
 	// #region Game ETH Prize Percentage Parameters

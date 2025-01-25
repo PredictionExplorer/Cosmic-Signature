@@ -51,8 +51,8 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	console.log("contracts deployed");
 	if (config_params.donateEthToGameContract) {
 		const ethValue = "2";
-		const donationAmount = hre.ethers.parseEther(ethValue);
-		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount});
+		const donationAmount_ = hre.ethers.parseEther(ethValue);
+		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount_});
 		console.log("Donated " + ethValue + " ETH to contract.");
 	}
 	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());

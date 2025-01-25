@@ -17,9 +17,6 @@ describe("BidderContract", function () {
 		let bidderContract = await BidderContract.connect(owner).deploy(await cosmicSignatureGameProxy.getAddress());
 		await bidderContract.waitForDeployment();
 
-		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
-
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(owner).bid((-1), "owner bids", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -41,8 +38,7 @@ describe("BidderContract", function () {
 		let donatedNftId_ = parsed_log.args.tokenId;
 		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), donatedNftId_);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		// todo-1 I have commented this method out.
-		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, { value: nextEthBidPrice_ });
+		await bidderContract.connect(owner).doBidAndDonateNft(randomWalkNftAddr_, donatedNftId_, {value: nextEthBidPrice_});
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await bidderContract.connect(owner).doBid({ value: nextEthBidPrice_ });

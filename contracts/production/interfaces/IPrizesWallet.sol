@@ -27,6 +27,39 @@ interface IPrizesWallet is IAddressValidator {
 		uint256 amount;
 	}
 
+	struct EthBalanceInfo {
+		uint256 roundNum;
+		uint256 amount;
+	}
+
+	/// @notice Details about an ERC-20 token donation made to the game.
+	struct DonatedToken {
+		// uint256 roundNum;
+		// IERC20 tokenAddress;
+
+		/// @notice
+		/// [Comment-202501243]
+		/// Token amount.
+		/// It's OK if this is zero.
+		/// But the front-end should prohibit zero donations and ignore or hide any zero donations.
+		/// todo-1 +++ Done. Tell Nick about the above.
+		/// [/Comment-202501243]
+		uint256 amount;
+	}
+
+	/// @notice Details about an ERC-20 token donation that one is required to provide to claim the donation.
+	struct DonatedTokenToClaim {
+		uint256 roundNum;
+		IERC20 tokenAddress;
+	}
+
+	/// @notice Details about an NFT donated to the game.
+	struct DonatedNft {
+		uint256 roundNum;
+		IERC721 nftAddress;
+		uint256 nftId;
+	}
+
 	/// @notice Emitted when `timeoutDurationToWithdrawPrizes` is changed.
 	/// @param newValue The new value.
 	event TimeoutDurationToWithdrawPrizesChanged(uint256 newValue);
@@ -129,7 +162,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
 	function withdrawEverything(
 		bool withdrawEth_,
-		CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
+		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndices_
 	) external;
 
@@ -156,20 +189,20 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @return Details on ETH balance belonging to `msg.sender`.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo() external view returns(CosmicSignatureConstants.BalanceInfo memory);
+	function getEthBalanceInfo() external view returns(EthBalanceInfo memory);
 
 	/// @return Details on ETH balance belonging to the given address.
 	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
 	/// todo-1 Rename the above to `prizeWinnerAddress_`.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view returns(CosmicSignatureConstants.BalanceInfo memory);
+	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view returns(EthBalanceInfo memory);
 
 	/// @notice This method allows anybody to make an ERC-20 token donation.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param tokenAddress_ The ERC-20 contract address.
-	/// @param amount_ Token amount.
+	/// @param amount_ Comment-202501243 applies.
 	/// @dev
 	/// [Comment-202411288]
 	/// We do not need a method to make multiple ERC-20 token and/or ETC-721 NFT donations
@@ -187,7 +220,7 @@ interface IPrizesWallet is IAddressValidator {
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external;
 
 	/// @notice Similarly to `claimDonatedToken`, claims zero or more ERC-20 token donations in a single transaction.
-	function claimManyDonatedTokens(CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
+	function claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
 
 	/// @return The ERC-20 token amount donated during the given bidding round that has not been claimed yet.
 	/// @param roundNum_ Bidding round number.

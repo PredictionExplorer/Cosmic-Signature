@@ -25,7 +25,8 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	event EthDonatedWithInfo(uint256 roundNum, address indexed donorAddress, uint256 amount, uint256 ethDonationWithInfoRecordIndex);
 
 	/// @notice This method allows anybody to donate ETH without placing a bid.
-	/// See also: `ICosmicSignatureGame.receive`.
+	/// It's OK if `msg.value` is zero.
+	/// See also: `donateEthWithInfo`, `ICosmicSignatureGame.receive`.
 	function donateEth() external payable;
 
 	/// @notice In addition to what `donateEth` does, this method allows the caller to provide additional information.

@@ -142,7 +142,6 @@ describe("CosmicSignatureGame", function () {
 			await expect(cosmicSignatureGameProxy.connect(addr2).upgradeTo(addr1.address)).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		}
 	});
-
 	it("The transferOwnership method behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;

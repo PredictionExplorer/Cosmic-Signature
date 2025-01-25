@@ -273,6 +273,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftOneTimeStaking");
+		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftHasAlreadyBeenStaked");
 	});
 });

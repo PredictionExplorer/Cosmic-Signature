@@ -39,19 +39,19 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// todo-1 Rename to `timeoutTimesToWithdrawPrizes`.
 	uint256[1 << 64] public roundTimeoutTimesToWithdrawPrizes;
 
-	/// @notice For each prize winner address, contains a `CosmicSignatureConstants.BalanceInfo`.
+	/// @notice For each prize winner address, contains an `EthBalanceInfo`.
 	/// @dev Comment-202411252 relates.
 	/// Comment-202410274 applies.
-	CosmicSignatureConstants.BalanceInfo[1 << 160] private _ethBalancesInfo;
+	EthBalanceInfo[1 << 160] private _ethBalancesInfo;
 
 	/// @notice Contains info about ERC-20 token donations.
-	CosmicSignatureConstants.DonatedToken[(1 << 64) * (1 << 160)] public donatedTokens;
+	DonatedToken[(1 << 64) * (1 << 160)] public donatedTokens;
 
 	/// @notice This includes deleted items.
 	uint256 public numDonatedNfts = 0;
 
 	/// @notice Contains info about NFT donations.
-	CosmicSignatureConstants.DonatedNft[1 << 64] public donatedNfts;
+	DonatedNft[1 << 64] public donatedNfts;
 
 	// #endregion
 	// #region `onlyGame`
@@ -60,7 +60,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	modifier onlyGame() {
 		require(
 			msg.sender == game,
-			CosmicSignatureErrors.CallDenied("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
 		);
 		_;
 	}
@@ -124,7 +124,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function withdrawEverything(
 		bool withdrawEth_,
-		CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
+		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndices_
 	) external override /*nonReentrant*/ {
 		if (withdrawEth_) {
@@ -146,7 +146,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function _depositEth(uint256 roundNum_, address roundPrizeWinnerAddress_, uint256 amount_) private {
 		// #enable_asserts assert(roundPrizeWinnerAddress_ != address(0));
-		CosmicSignatureConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
+		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 
 		// [Comment-202411252]
 		// Even if this winner already has a nonzero balance from a past bidding round,
@@ -162,7 +162,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `withdrawEth`
 
 	function withdrawEth() public override /*nonReentrant*/ {
-		CosmicSignatureConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(msg.sender)];
+		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(msg.sender)];
 		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
 		// // Comment-202409215 applies.
@@ -179,7 +179,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `withdrawEth`
 
 	function withdrawEth(address roundPrizeWinnerAddress_) external override /*nonReentrant*/ {
-		CosmicSignatureConstants.BalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
+		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[ethBalanceInfoReference_.roundNum];
 		require(
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
@@ -200,14 +200,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo() external view override returns(CosmicSignatureConstants.BalanceInfo memory) {
+	function getEthBalanceInfo() external view override returns(EthBalanceInfo memory) {
 		return _ethBalancesInfo[uint160(msg.sender)];
 	}
 
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view override returns(CosmicSignatureConstants.BalanceInfo memory) {
+	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view override returns(EthBalanceInfo memory) {
 		return _ethBalancesInfo[uint160(roundPrizeWinnerAddress_)];
 	}
 
@@ -220,12 +220,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		providedAddressIsNonZero(address(tokenAddress_)) {
 		// #enable_asserts assert(donorAddress_ != address(0));
 
-		// Comment-202409215 applies to validating that `amount_` is a nonzero.
-		// But the front end should prohibit zero donations and ignore or hide any zero donations.
-		// todo-1 +++ Done. Tell Nick about the above.
-
 		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
-		CosmicSignatureConstants.DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
+		DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
 		newDonatedTokenReference_.amount += amount_;
 		emit TokenDonated(roundNum_, /*msg.sender*/ donorAddress_, tokenAddress_, amount_);
 		SafeERC20.safeTransferFrom(tokenAddress_, /*msg.sender*/ donorAddress_, address(this), amount_);
@@ -259,8 +255,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		}
 
 		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
-		CosmicSignatureConstants.DonatedToken storage donatedTokenReference_ = donatedTokens[donatedTokenIndex_];
-		CosmicSignatureConstants.DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
+		DonatedToken storage donatedTokenReference_ = donatedTokens[donatedTokenIndex_];
+		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
 
 		// Comment-202409215 applies to validating that `donatedTokenCopy_.amount` is a nonzero.
 
@@ -272,10 +268,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `claimManyDonatedTokens`
 
-	function claimManyDonatedTokens(CosmicSignatureConstants.DonatedTokenToClaim[] calldata donatedTokensToClaim_) public override /*nonReentrant*/ {
+	function claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) public override /*nonReentrant*/ {
 		for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
 			-- donatedTokenToClaimIndex_;
-			CosmicSignatureConstants.DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
+			DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
 			claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress);
 		}
 	}
@@ -310,7 +306,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		providedAddressIsNonZero(address(nftAddress_)) {
 		// #enable_asserts assert(donorAddress_ != address(0));
 		uint256 numDonatedNftsCopy_ = numDonatedNfts;
-		CosmicSignatureConstants.DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
+		DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
 		newDonatedNftReference_.roundNum = roundNum_;
 		newDonatedNftReference_.nftAddress = nftAddress_;
 		newDonatedNftReference_.nftId = nftId_;
@@ -324,8 +320,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `claimDonatedNft`
 
 	function claimDonatedNft(uint256 index_) public override /*nonReentrant*/ {
-		CosmicSignatureConstants.DonatedNft storage donatedNftReference_ = donatedNfts[index_];
-		CosmicSignatureConstants.DonatedNft memory donatedNftCopy_ = donatedNftReference_;
+		DonatedNft storage donatedNftReference_ = donatedNfts[index_];
+		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
 
 		if (address(donatedNftCopy_.nftAddress) == address(0)) {
 			if (index_ >= numDonatedNfts) {

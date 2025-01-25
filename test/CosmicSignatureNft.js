@@ -19,10 +19,10 @@ describe("CosmicSignatureNft", function () {
 
 		await expect(
 			cosmicSignatureNft.mint(0n, addr1.address, 0x167c41a5ddd8b94379899bacc638fe9a87929d7738bc7e1d080925709c34330en),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "NoMintPrivileges");
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
 		await expect(
 			cosmicSignatureNft.connect(addr1).mint(0n, addr1.address, 0xf5df7ce30f2a4e696109a2a3d544e48dd0cda03367cfd816d53083edd06e5638n),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "NoMintPrivileges");
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
 		await expect(
 			newCosmicSignatureNft.mint(0n, hre.ethers.ZeroAddress, 0x3a61b868abd2e4597e6ed0bc53ec665f068523ad614e1affd22434e3edb8e523n),
 		).to.be.revertedWithCustomError(newCosmicSignatureNft, /*"ZeroAddress"*/ "ERC721InvalidReceiver");
@@ -64,14 +64,13 @@ describe("CosmicSignatureNft", function () {
 		let remote_token_name = await cosmicSignatureNft.connect(addr1).getNftName(token_id);
 		expect(remote_token_name).to.equal("name 0");
 
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		await expect(cosmicSignatureNft.connect(addr2).setNftName(token_id, "name 000")).to.be.revertedWithCustomError(
-			cosmicSignatureGameErrorsFactory_,
-			"OwnershipError"
+			cosmicSignatureNft,
+			"ERC721InsufficientApproval"
 		);
 		await expect(
-			cosmicSignatureNft.connect(addr1).setNftName(token_id, "012345678901234567890123456789012"),
-		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenNameLength");
+			cosmicSignatureNft.connect(addr1).setNftName(token_id, "123456789012345678901234567890123"),
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "TooLongNftName");
 	});
 	it("BaseURI/TokenURI works", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);

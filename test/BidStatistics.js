@@ -26,8 +26,8 @@ describe("BidStatistics", function () {
 		// 		addr1 will make a maximum duration of 1000 seconds in his bids
 		// 		addr2 will make a maximum duration of 5000 seconds in his bids
 		let maxbtime, maxbaddr;
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000]);
 		await hre.ethers.provider.send("evm_mine");
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -72,8 +72,8 @@ describe("BidStatistics", function () {
 		// 		addr3 makes 3 bids
 		// 		bid amount is 1000 for every bid
 		let maxbtime, maxbaddr;
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000]);
 		await hre.ethers.provider.send("evm_mine");
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -157,8 +157,8 @@ describe("BidStatistics", function () {
 		// 5000 seconds is longer than 1000 seconds of the owner, and 2000 seconds of addr1, 
 		// therefore addr2 is the Endurance Champion
 		
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_080_000]);
 		await hre.ethers.provider.send("evm_mine");

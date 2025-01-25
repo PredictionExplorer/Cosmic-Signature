@@ -76,7 +76,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 
 	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
 	/// The elapsed duration counts since bidding round activation. It can be negative. It makes no sense to use it
-	/// after the end of the auction.
+	/// after the end of the Dutch auction.
 	function getEthDutchAuctionDurations() external view returns(uint256, int256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;

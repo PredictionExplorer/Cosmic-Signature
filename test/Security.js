@@ -33,8 +33,8 @@ describe("Security", function () {
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(await cosmicSignatureGameProxy.getAddress());
 
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ }); // this works
@@ -51,8 +51,8 @@ describe("Security", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 		// await hre.ethers.provider.send("evm_mine"); // begin
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await expect(durationUntilMainPrize_).lessThan(-1e9);
@@ -72,8 +72,8 @@ describe("Security", function () {
 	// 	const [owner,] = signers;
 	//
 	// 	// todo-1 Why do we need this donation here? Comment it out?
-	// 	const donationAmount = hre.ethers.parseEther("10");
-	// 	await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+	// 	const donationAmount_ = hre.ethers.parseEther("10");
+	// 	await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 	//
 	// 	const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft1");
 	// 	const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
@@ -83,21 +83,20 @@ describe("Security", function () {
 	// 	await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const {signers, cosmicSignatureGameProxy, prizesWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 	
-		// todo-1 Why do we need this donation here? Comment it out?
-		const donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		const bidAmount_ = hre.ethers.parseEther("1");
+		const donationAmount_ = bidAmount_ * 10n;
+		// await cosmicSignatureGameProxy.donateEth({value: donationAmount_});
 	
 		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft2");
-		const maliciousNft = await MaliciousNft.deploy(/*await cosmicSignatureGameProxy.getAddress(),*/ "Bad NFT", "BAD");
+		const maliciousNft = await MaliciousNft.deploy(await cosmicSignatureGameProxy.getAddress(), "Bad NFT", "BAD");
 		await maliciousNft.waitForDeployment();
-	
-		// todo-1 Given the test title, isn't this supposed to call `bidAndDonateNft`?
-		// todo-1 This will probably now revert due to `onlyGame`.
-		await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+		await owner.sendTransaction({to: await maliciousNft.getAddress(), value: donationAmount_});
+
+		// await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+		await expect(cosmicSignatureGameProxy.connect(owner).bidAndDonateNft(-1n, "", await maliciousNft.getAddress(), 0, {value: bidAmount_})).revertedWithCustomError(prizesWallet, "UnauthorizedCaller");
 	});
 });
