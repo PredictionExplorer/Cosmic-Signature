@@ -108,7 +108,7 @@ struct Args {
     #[arg(long, default_value_t = 1.0)]
     chaos_weight: f64,
     #[arg(long, default_value_t = 1.0)]
-    area_weight: f64,
+    perimeter_weight: f64, // <-- renamed from area_weight
     #[arg(long, default_value_t = 1.0)]
     dist_weight: f64,
     #[arg(long, default_value_t = 1.0)]
@@ -694,24 +694,45 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     complex_input
 }
 
-fn average_triangle_area(positions: &[Vec<Vector3<f64>>]) -> f64 {
+/// We'll replace "average_triangle_area" with "average_triangle_perimeter".
+/// The function computes the *average* of the perimeter across all time steps.
+fn average_triangle_perimeter(positions: &[Vec<Vector3<f64>>]) -> f64 {
+    let len = positions[0].len();
+    if len < 1 {
+        return 0.0;
+    }
+    let mut sum_perim = 0.0;
+
+    for step in 0..len {
+        let p1 = positions[0][step];
+        let p2 = positions[1][step];
+        let p3 = positions[2][step];
+        let d12 = (p1 - p2).norm();
+        let d23 = (p2 - p3).norm();
+        let d31 = (p3 - p1).norm();
+        let perimeter = d12 + d23 + d31;
+        sum_perim += perimeter;
+    }
+
+    sum_perim / (len as f64)
+}
+
+/// For distance analysis we still do the same approach
+fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let mut new_positions = positions.to_vec();
     normalize_positions_for_analysis(&mut new_positions);
-    let mut result = 0.0;
-    let mut total_num = 0.0;
-    for step in 0..new_positions[0].len() {
-        let x1 = new_positions[0][step][0];
-        let y1 = new_positions[0][step][1];
-        let x2 = new_positions[1][step][0];
-        let y2 = new_positions[1][step][1];
-        let x3 = new_positions[2][step][0];
-        let y3 = new_positions[2][step][1];
 
-        let area = 0.5 * ((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)).abs());
-        result += area;
-        total_num += 1.0;
+    let mut total_dist = 0.0;
+    for body_idx in 0..new_positions.len() {
+        for step_idx in 1..new_positions[body_idx].len() {
+            let p1 = new_positions[body_idx][step_idx];
+            let p0 = new_positions[body_idx][step_idx - 1];
+            let dx = p1[0] - p0[0];
+            let dy = p1[1] - p0[1];
+            total_dist += (dx * dx + dy * dy).sqrt();
+        }
     }
-    result / total_num
+    total_dist
 }
 
 fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
@@ -755,23 +776,6 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
             pos[1] = (pos[1] - adj_min_y) / range;
         }
     }
-}
-
-fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
-    let mut new_positions = positions.to_vec();
-    normalize_positions_for_analysis(&mut new_positions);
-
-    let mut total_dist = 0.0;
-    for body_idx in 0..new_positions.len() {
-        for step_idx in 1..new_positions[body_idx].len() {
-            let p1 = new_positions[body_idx][step_idx];
-            let p0 = new_positions[body_idx][step_idx - 1];
-            let dx = p1[0] - p0[0];
-            let dy = p1[1] - p0[1];
-            total_dist += (dx * dx + dy * dy).sqrt();
-        }
-    }
-    total_dist
 }
 
 /// "Chaos measure" used in code
@@ -884,11 +888,11 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
 #[derive(Debug, Clone)]
 struct TrajectoryResult {
     chaos: f64,
-    avg_area: f64,
+    avg_perimeter: f64, // <-- replaced avg_area
     total_dist: f64,
     lyap_exp: f64,
     chaos_pts: usize,
-    area_pts: usize,
+    perimeter_pts: usize, // replaced area_pts
     dist_pts: usize,
     lyap_pts: usize,
     total_score: usize,
@@ -903,7 +907,7 @@ fn select_best_trajectory(
     num_steps_video: usize,
     max_points: usize,
     chaos_weight: f64,
-    area_weight: f64,
+    perimeter_weight: f64,
     dist_weight: f64,
     lyap_weight: f64,
 ) -> (Vec<Vec<Vector3<f64>>>, TrajectoryResult, [f64; 3], usize) {
@@ -980,7 +984,7 @@ fn select_best_trajectory(
                 let m3 = bodies[2].mass;
 
                 let c = non_chaoticness(m1, m2, m3, &positions_full);
-                let a = average_triangle_area(&positions_full);
+                let p = average_triangle_perimeter(&positions_full);
                 let d = total_distance(&positions_full);
 
                 // Lyapunov exponent
@@ -989,11 +993,11 @@ fn select_best_trajectory(
                 Some((
                     TrajectoryResult {
                         chaos: c,
-                        avg_area: a,
+                        avg_perimeter: p,
                         total_dist: d,
                         lyap_exp: ly,
                         chaos_pts: 0,
-                        area_pts: 0,
+                        perimeter_pts: 0,
                         dist_pts: 0,
                         lyap_pts: 0,
                         total_score: 0,
@@ -1020,13 +1024,13 @@ fn select_best_trajectory(
 
     // We'll separate out each metric so we can do Borda scoring
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
-    let mut area_vals = Vec::with_capacity(info_vec.len());
+    let mut perimeter_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
     let mut lyap_vals = Vec::with_capacity(info_vec.len());
 
     for (i, (tr, _, _)) in info_vec.iter().enumerate() {
         chaos_vals.push((tr.chaos, i));
-        area_vals.push((tr.avg_area, i));
+        perimeter_vals.push((tr.avg_perimeter, i));
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
     }
@@ -1050,19 +1054,22 @@ fn select_best_trajectory(
 
     // chaos: lower is better => higher_better = false
     let chaos_points = assign_borda_scores(chaos_vals, false);
-    let area_points = assign_borda_scores(area_vals, true);
+    // perimeter: higher better
+    let perimeter_points = assign_borda_scores(perimeter_vals, true);
+    // dist: higher better
     let dist_points = assign_borda_scores(dist_vals, true);
+    // lyap: higher better
     let lyap_points = assign_borda_scores(lyap_vals, true);
 
     // Tally up
     for (i, (tr, _, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_points[i];
-        tr.area_pts = area_points[i];
+        tr.perimeter_pts = perimeter_points[i];
         tr.dist_pts = dist_points[i];
         tr.lyap_pts = lyap_points[i];
-        tr.total_score = chaos_points[i] + area_points[i] + dist_points[i] + lyap_points[i];
+        tr.total_score = chaos_points[i] + perimeter_points[i] + dist_points[i] + lyap_points[i];
         tr.total_score_weighted = chaos_points[i] as f64 * chaos_weight
-            + area_points[i] as f64 * area_weight
+            + perimeter_points[i] as f64 * perimeter_weight
             + dist_points[i] as f64 * dist_weight
             + lyap_points[i] as f64 * lyap_weight;
     }
@@ -1188,7 +1195,6 @@ fn generate_retarded_wave_image(
     }
     let mut accum = vec![ComplexSum { re: 0.0, im: 0.0 }; nx * ny];
 
-    // 2) Summation approach
     accum.par_iter_mut().enumerate().for_each(|(pix_idx, cacc)| {
         let ix = pix_idx % nx;
         let iy = pix_idx / nx;
@@ -1240,9 +1246,9 @@ fn generate_retarded_wave_image(
     // 3) Convert final sums to color
     let mut max_amp = 0.0;
     for c in &accum {
-        let amp = (c.re * c.re + c.im * c.im).sqrt();
-        if amp > max_amp {
-            max_amp = amp;
+        let real_amp = (c.re * c.re + c.im * c.im).sqrt();
+        if real_amp > max_amp {
+            max_amp = real_amp;
         }
     }
     if max_amp < 1e-12 {
@@ -1279,23 +1285,28 @@ fn generate_retarded_wave_image(
     }
 }
 
-// ---------------- NEW: COLORFUL, ADDITIVE LINES-ONLY IMAGE ----------------
+// ---------------- NEW: COLORFUL, ADDITIVE LINES-ONLY IMAGE with GRADIENTS ----------------
 
-// Small helper: convert step index to a color in [0..1], using triadic offsets
-fn color_for_line(step: usize, total_steps: usize, line_index: usize) -> (f64, f64, f64) {
-    // base hue cycles from 0..360 across all steps
-    let base_hue = 360.0 * (step as f64 / total_steps as f64);
-    // offset hue for each of the 3 lines: +0, +120, +240
-    let hue = (base_hue + line_index as f64 * 120.0) % 360.0;
-    let saturation = 1.0;
-    let lightness = 0.5;
+// We'll use the body color arrays at each step: for line body_i -> body_j, we do
+// a pixel-by-pixel gradient from the color of body_i to the color of body_j in that step.
 
-    let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
+/// Interpolate 2 colors in RGB space
+fn interpolate_color(c0: Rgb<u8>, c1: Rgb<u8>, alpha: f64) -> (f64, f64, f64) {
+    let r0 = c0[0] as f64;
+    let g0 = c0[1] as f64;
+    let b0 = c0[2] as f64;
+    let r1 = c1[0] as f64;
+    let g1 = c1[1] as f64;
+    let b1 = c1[2] as f64;
+    let r = (1.0 - alpha) * r0 + alpha * r1;
+    let g = (1.0 - alpha) * g0 + alpha * g1;
+    let b = (1.0 - alpha) * b0 + alpha * b1;
     (r, g, b)
 }
 
-/// Draw a line from (x0,y0) to (x1,y1) into our float accumulators using Bresenham.
-fn draw_line_segment_additive(
+/// Draw a line from (x0,y0) to (x1,y1) into our float accumulators using Bresenham,
+/// but we do a color gradient from color0 -> color1 across the segment.
+fn draw_line_segment_additive_gradient(
     accum_r: &mut [f64],
     accum_g: &mut [f64],
     accum_b: &mut [f64],
@@ -1305,35 +1316,44 @@ fn draw_line_segment_additive(
     y0f: f32,
     x1f: f32,
     y1f: f32,
-    (cr, cg, cb): (f64, f64, f64),
-    weight: f64, // how much to add per pixel
+    color0: Rgb<u8>,
+    color1: Rgb<u8>,
+    weight: f64,
 ) {
     let x0 = x0f.round() as i32;
     let y0 = y0f.round() as i32;
     let x1 = x1f.round() as i32;
     let y1 = y1f.round() as i32;
 
-    for (x, y) in Bresenham::new((x0, y0), (x1, y1)) {
-        if x < 0 || y < 0 || x >= width as i32 || y >= height as i32 {
+    // We'll gather all points in a Vec first, so we know the total length (num_points).
+    let line_points: Vec<(i32, i32)> = Bresenham::new((x0, y0), (x1, y1)).collect();
+    let num_points = line_points.len();
+    if num_points < 2 {
+        return;
+    }
+
+    for (i, (x, y)) in line_points.iter().enumerate() {
+        if *x < 0 || *y < 0 || *x >= width as i32 || *y >= height as i32 {
             continue;
         }
-        let idx = (y as usize) * (width as usize) + (x as usize);
-        accum_r[idx] += cr * weight;
-        accum_g[idx] += cg * weight;
-        accum_b[idx] += cb * weight;
+        let idx = (*y as usize) * (width as usize) + (*x as usize);
+        let alpha = i as f64 / (num_points.saturating_sub(1) as f64);
+        let (rr, gg, bb) = interpolate_color(color0, color1, alpha);
+        accum_r[idx] += rr * weight;
+        accum_g[idx] += gg * weight;
+        accum_b[idx] += bb * weight;
     }
 }
 
-/// Generate a lines‐only image using **floating‐point additive** blending.
-/// - Each time step has its own hue, offset for each line body0→body1, body1→body2, body2→body0.
-/// - Overlapping lines accumulate more brightness in the accumulators.
-/// - Finally we normalize to the 0..255 range.
+/// We adapt the "generate_connection_lines_image_cool" to use body-colors for each step,
+/// then do a gradient line between them.
 fn generate_connection_lines_image_cool(
     positions: &[Vec<Vector3<f64>>],
+    body_colors: &[Vec<Rgb<u8>>],
     out_size: u32,
     base_name: &str,
 ) {
-    println!("\nGenerating *colorful* additive lines-only image...");
+    println!("\nGenerating *colorful* additive lines-only image with per-body color gradients...");
 
     // 1) Determine bounding box from all steps (all 3 bodies).
     let mut min_x = INFINITY;
@@ -1402,28 +1422,33 @@ fn generate_connection_lines_image_cool(
         (px as f32, py as f32)
     }
 
-    // 2) For each time step, draw lines body0->body1, body1->body2, body2->body0 with additive color
+    // 2) For each time step, draw lines body0->body1, body1->body2, body2->body0
+    //    using color interpolation from the respective body-colors at that step.
     let total_steps = positions[0].len();
     if total_steps == 0 {
         println!("No steps to draw lines for. Skipping lines-only image.");
         return;
     }
 
-    let small_weight = 0.4; // how much color to add per pixel per line
+    let small_weight = 0.3; // how much color to add per pixel per line
     for step in 0..total_steps {
+        // Positions of the 3 bodies
         let p0 = positions[0][step];
         let p1 = positions[1][step];
         let p2 = positions[2][step];
 
-        // For each of the 3 edges in the triangle, pick a color offset
-        // to_pixel_coords => (x0,y0, x1,y1)
+        // Colors of the 3 bodies at this time step
+        let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+        let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+        let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+
+        // to_pixel_coords => (x0,y0, x1,y1, x2,y2)
         let (x0, y0) = to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
         let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
         let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
 
-        // line 0: p0->p1
-        let c0 = color_for_line(step, total_steps, 0);
-        draw_line_segment_additive(
+        // line 0: p0->p1 with gradient from c0->c1
+        draw_line_segment_additive_gradient(
             &mut accum_r,
             &mut accum_g,
             &mut accum_b,
@@ -1434,12 +1459,12 @@ fn generate_connection_lines_image_cool(
             x1,
             y1,
             c0,
+            c1,
             small_weight,
         );
 
-        // line 1: p1->p2
-        let c1 = color_for_line(step, total_steps, 1);
-        draw_line_segment_additive(
+        // line 1: p1->p2 with gradient from c1->c2
+        draw_line_segment_additive_gradient(
             &mut accum_r,
             &mut accum_g,
             &mut accum_b,
@@ -1450,12 +1475,12 @@ fn generate_connection_lines_image_cool(
             x2,
             y2,
             c1,
+            c2,
             small_weight,
         );
 
-        // line 2: p2->p0
-        let c2 = color_for_line(step, total_steps, 2);
-        draw_line_segment_additive(
+        // line 2: p2->p0 with gradient from c2->c0
+        draw_line_segment_additive_gradient(
             &mut accum_r,
             &mut accum_g,
             &mut accum_b,
@@ -1466,6 +1491,7 @@ fn generate_connection_lines_image_cool(
             x0,
             y0,
             c2,
+            c0,
             small_weight,
         );
     }
@@ -1507,6 +1533,7 @@ fn generate_connection_lines_image_cool(
     }
 }
 
+// ------------------ Main ------------------
 fn main() {
     let args = Args::parse();
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
@@ -1544,7 +1571,7 @@ fn main() {
         args.num_steps,
         args.max_points,
         args.chaos_weight,
-        args.area_weight,
+        args.perimeter_weight,
         args.dist_weight,
         args.lyap_weight,
     );
@@ -1556,8 +1583,8 @@ fn main() {
         best_result.chaos, best_result.chaos_pts
     );
     println!(
-        "  - Avg triangle area (higher better) = {:.6}, Borda pts = {}",
-        best_result.avg_area, best_result.area_pts
+        "  - Avg triangle perimeter (higher better) = {:.6}, Borda pts = {}",
+        best_result.avg_perimeter, best_result.perimeter_pts
     );
     println!(
         "  - Total distance (higher better) = {:.6}, Borda pts = {}",
@@ -1574,16 +1601,16 @@ fn main() {
     println!("\n================ BEST TRAJECTORY INFO ================");
     println!(" - Borda Score: {}", best_result.total_score);
     println!(
-        " - Weighted Score: {:.3} (chaos_w={:.2}, area_w={:.2}, dist_w={:.2}, lyap_w={:.2})",
+        " - Weighted Score: {:.3} (chaos_w={:.2}, perimeter_w={:.2}, dist_w={:.2}, lyap_w={:.2})",
         best_result.total_score_weighted,
         args.chaos_weight,
-        args.area_weight,
+        args.perimeter_weight,
         args.dist_weight,
         args.lyap_weight
     );
     println!(" - Masses: [{:.2}, {:.2}, {:.2}]", best_masses[0], best_masses[1], best_masses[2]);
     println!(" - Chaos measure = {:.4e} (lower better)", best_result.chaos);
-    println!(" - Avg triangle area = {:.6} (higher better)", best_result.avg_area);
+    println!(" - Avg triangle perimeter = {:.6} (higher better)", best_result.avg_perimeter);
     println!(" - Total distance = {:.6} (higher better)", best_result.total_dist);
     println!(" - Lyapunov exponent = {:.6}", best_result.lyap_exp);
     println!("======================================================");
@@ -1698,8 +1725,8 @@ fn main() {
         base_name,
     );
 
-    // 7) Colorful additive lines-only image
-    generate_connection_lines_image_cool(&positions_unscaled, 800, base_name);
+    // 7) Our new color‐gradient lines‐only image
+    generate_connection_lines_image_cool(&positions_unscaled, &colors, 800, base_name);
 
     println!("\nDone with simulation + wave image + COOL lines-only image!");
 }
