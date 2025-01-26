@@ -10,7 +10,7 @@ use hex;
 use image::{DynamicImage, ImageBuffer, ImageFormat, Rgb, Rgba, RgbaImage};
 use imageproc::drawing::draw_filled_circle_mut;
 use imageproc::filter;
-use line_drawing::Bresenham; // We'll use this for additive lines
+use line_drawing::Bresenham;
 use palette::{FromColor, Hsl, Srgb};
 use std::io::{Cursor, Write};
 use std::process::{Command, Stdio};
@@ -35,7 +35,7 @@ const G: f64 = 9.8;
 #[command(
     author,
     version,
-    about = "Simulate & visualize the three-body problem (trajectories + retarded-time wave), plus a colorful lines-only additive rendering."
+    about = "Simulate & visualize the three-body problem with parallelization, optional auto-levels for single images, and adjustable percentile cutoffs & gamma."
 )]
 struct Args {
     // Basic simulation parameters
@@ -108,27 +108,19 @@ struct Args {
     #[arg(long, default_value_t = 1.0)]
     chaos_weight: f64,
     #[arg(long, default_value_t = 1.0)]
-    perimeter_weight: f64, // <-- renamed from area_weight
+    perimeter_weight: f64,
     #[arg(long, default_value_t = 1.0)]
     dist_weight: f64,
     #[arg(long, default_value_t = 1.0)]
     lyap_weight: f64,
 
-    // "Wave" image params
-    #[arg(long, default_value_t = 0.005)]
-    wave_freq: f64, // base wave frequency
-    #[arg(long, default_value_t = 1.0)]
-    wave_speed: f64, // wave speed in "units" per time
-    #[arg(long, default_value_t = 800)]
-    wave_image_size: u32, // final image dimension
-    #[arg(long, default_value_t = 2000)]
-    wave_subsamples: usize, // how many time steps to consider in the wave image
-
-    // Additional fade factors for retarded-time wave image
-    #[arg(long, default_value_t = 1.0)]
-    time_decay: f64, // exponential fade with how old the wave is
-    #[arg(long, default_value_t = 1.0)]
-    dist_decay: f64, // distance fade factor
+    // Auto-levels for single images
+    #[arg(long, default_value_t = 0.01)]
+    auto_levels_black_percent: f64,
+    #[arg(long, default_value_t = 0.99)]
+    auto_levels_white_percent: f64,
+    #[arg(long, default_value_t = 0.9)]
+    auto_levels_gamma: f64,
 }
 
 /// A custom RNG based on repeated Sha3-256 hashing.
@@ -348,7 +340,6 @@ fn generate_body_color_sequences(
     }
 }
 
-// Helper functions for indexing nalgebra's Vector3
 fn x(v: &Vector3<f64>) -> f64 {
     v[0]
 }
@@ -470,8 +461,8 @@ fn compute_bounding_box_for_frame(
     (min_x, min_y, max_x, max_y)
 }
 
-// Plot single or multi
-fn plot_positions(
+// -------------- Parallel version of normal trajectory frames --------------
+fn plot_positions_parallel(
     positions: &[Vec<Vector3<f64>>],
     frame_size: u32,
     trajectory_lengths: [f64; 3],
@@ -492,93 +483,78 @@ fn plot_positions(
         total_steps / frame_interval
     };
 
+    // Precompute bounding box for all steps if NOT using dynamic bounds
     let (static_min_x, static_min_y, static_max_x, static_max_y) = if !dynamic_bounds {
         compute_bounding_box_for_all_steps(positions, hide)
     } else {
         (0.0, 0.0, 1.0, 1.0)
     };
 
-    let mut frames = Vec::new();
-    for frame_index in 0..total_frames {
-        let current_end_step = if one_frame {
-            total_steps.saturating_sub(1)
-        } else {
-            (frame_index + 1) * frame_interval
-        };
+    let frame_indices: Vec<usize> = (0..total_frames).collect();
+    // Build frames in parallel
+    let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
+        .par_iter()
+        .map(|&frame_index| {
+            let current_end_step = if one_frame {
+                total_steps.saturating_sub(1)
+            } else {
+                (frame_index + 1) * frame_interval
+            };
 
-        let mut trajectory_starts = [0usize; 3];
-        for (body_i, body_positions) in positions.iter().enumerate() {
-            if hide[body_i] {
-                continue;
-            }
-            let clamp_end = current_end_step.min(body_positions.len());
-            if clamp_end == 0 {
-                trajectory_starts[body_i] = 0;
-                continue;
-            }
-            let mut total_dist = 0.0;
-            let mut idx = clamp_end - 1;
-            while idx > 0 && total_dist < trajectory_lengths[body_i] {
-                let x1 = body_positions[idx][0];
-                let y1 = body_positions[idx][1];
-                let x2 = body_positions[idx - 1][0];
-                let y2 = body_positions[idx - 1][1];
-                let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
-                total_dist += dist;
-                if total_dist >= trajectory_lengths[body_i] {
-                    break;
+            let mut trajectory_starts = [0usize; 3];
+            for (body_i, body_positions) in positions.iter().enumerate() {
+                if hide[body_i] {
+                    continue;
                 }
-                if idx == 0 {
-                    break;
+                let clamp_end = current_end_step.min(body_positions.len());
+                if clamp_end == 0 {
+                    trajectory_starts[body_i] = 0;
+                    continue;
                 }
-                idx -= 1;
-            }
-            trajectory_starts[body_i] = idx;
-        }
-
-        let (min_x, min_y, max_x, max_y) = if dynamic_bounds {
-            compute_bounding_box_for_frame(positions, hide, &trajectory_starts, current_end_step)
-        } else {
-            (static_min_x, static_min_y, static_max_x, static_max_y)
-        };
-
-        let x_center = (max_x + min_x) / 2.0;
-        let y_center = (max_y + min_y) / 2.0;
-        let mut range = (max_x - min_x).max(max_y - min_y) * 1.1;
-        if range < 1e-14 {
-            range = 1.0;
-        }
-        let adj_min_x = x_center - (range / 2.0);
-        let adj_min_y = y_center - (range / 2.0);
-
-        let mut img = ImageBuffer::from_pixel(frame_size, frame_size, Rgb([0, 0, 0]));
-
-        // draw trajectories
-        for (body_i, body_positions) in positions.iter().enumerate() {
-            if hide[body_i] {
-                continue;
-            }
-            let clamp_end = current_end_step.min(body_positions.len());
-            let start_idx = trajectory_starts[body_i];
-            if start_idx >= clamp_end {
-                continue;
+                let mut total_dist = 0.0;
+                let mut idx = clamp_end - 1;
+                while idx > 0 && total_dist < trajectory_lengths[body_i] {
+                    let x1 = body_positions[idx][0];
+                    let y1 = body_positions[idx][1];
+                    let x2 = body_positions[idx - 1][0];
+                    let y2 = body_positions[idx - 1][1];
+                    let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+                    total_dist += dist;
+                    if total_dist >= trajectory_lengths[body_i] {
+                        break;
+                    }
+                    if idx == 0 {
+                        break;
+                    }
+                    idx -= 1;
+                }
+                trajectory_starts[body_i] = idx;
             }
 
-            for step in start_idx..clamp_end {
-                let px = body_positions[step][0];
-                let py = body_positions[step][1];
-                let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
-                let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
-                let color = colors[body_i][step.min(colors[body_i].len() - 1)];
-                draw_filled_circle_mut(&mut img, (xp, yp), 6, color);
-            }
-        }
+            // If dynamic bounds, compute bounding box for just this frame
+            let (min_x, min_y, max_x, max_y) = if dynamic_bounds {
+                compute_bounding_box_for_frame(
+                    positions,
+                    hide,
+                    &trajectory_starts,
+                    current_end_step,
+                )
+            } else {
+                (static_min_x, static_min_y, static_max_x, static_max_y)
+            };
 
-        if !avoid_effects {
-            // optional blur
-            let blurred = filter::gaussian_blur_f32(&img, 6.0);
-            let mut img2 = blurred.clone();
-            // highlight the path with small white dots
+            let x_center = (max_x + min_x) / 2.0;
+            let y_center = (max_y + min_y) / 2.0;
+            let mut range = (max_x - min_x).max(max_y - min_y) * 1.1;
+            if range < 1e-14 {
+                range = 1.0;
+            }
+            let adj_min_x = x_center - (range / 2.0);
+            let adj_min_y = y_center - (range / 2.0);
+
+            // Draw
+            let mut img = ImageBuffer::from_pixel(frame_size, frame_size, Rgb([0, 0, 0]));
+
             for (body_i, body_positions) in positions.iter().enumerate() {
                 if hide[body_i] {
                     continue;
@@ -594,18 +570,40 @@ fn plot_positions(
                     let py = body_positions[step][1];
                     let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
                     let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
-                    draw_filled_circle_mut(&mut img2, (xp, yp), 1, Rgb([255, 255, 255]));
+                    let color = colors[body_i][step.min(colors[body_i].len() - 1)];
+                    draw_filled_circle_mut(&mut img, (xp, yp), 6, color);
                 }
             }
-            img = img2;
-        }
 
-        frames.push(img);
+            if !avoid_effects {
+                // optional blur + highlight
+                let blurred = filter::gaussian_blur_f32(&img, 6.0);
+                let mut img2 = blurred.clone();
 
-        if one_frame {
-            break;
-        }
-    }
+                for (body_i, body_positions) in positions.iter().enumerate() {
+                    if hide[body_i] {
+                        continue;
+                    }
+                    let clamp_end = current_end_step.min(body_positions.len());
+                    let start_idx = trajectory_starts[body_i];
+                    if start_idx >= clamp_end {
+                        continue;
+                    }
+                    for step in start_idx..clamp_end {
+                        let px = body_positions[step][0];
+                        let py = body_positions[step][1];
+                        let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
+                        let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
+                        draw_filled_circle_mut(&mut img2, (xp, yp), 1, Rgb([255, 255, 255]));
+                    }
+                }
+                img = img2;
+            }
+
+            img
+        })
+        .collect();
+
     frames
 }
 
@@ -615,7 +613,7 @@ fn create_video_from_frames_in_memory(
     output_file: &str,
     frame_rate: u32,
 ) {
-    println!("Generating video...");
+    println!("Generating video... {}", output_file);
     let mut command = Command::new("ffmpeg");
     command
         .arg("-y")
@@ -636,8 +634,8 @@ fn create_video_from_frames_in_memory(
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
 
-    let mut ffmpeg = command.spawn().expect("Failed ffmpeg");
-    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed ffmpeg stdin");
+    let mut ffmpeg = command.spawn().expect("Failed to start ffmpeg");
+    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed to open ffmpeg stdin");
 
     for frame in frames {
         let dyn_img = DynamicImage::ImageRgb8(frame.clone());
@@ -650,11 +648,11 @@ fn create_video_from_frames_in_memory(
     }
 
     drop(ffmpeg.stdin.take());
-    let output = ffmpeg.wait_with_output().expect("Wait ffmpeg");
+    let output = ffmpeg.wait_with_output().expect("Waiting for ffmpeg failed");
     if !output.status.success() {
         eprintln!("ffmpeg error: {}", String::from_utf8_lossy(&output.stderr));
     }
-    println!("Video creation complete.");
+    println!("Video creation complete: {}", output_file);
 }
 
 // ============= stats
@@ -694,8 +692,7 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     complex_input
 }
 
-/// We'll replace "average_triangle_area" with "average_triangle_perimeter".
-/// The function computes the *average* of the perimeter across all time steps.
+/// We'll compute the *average* perimeter across all time steps.
 fn average_triangle_perimeter(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     if len < 1 {
@@ -717,7 +714,7 @@ fn average_triangle_perimeter(positions: &[Vec<Vector3<f64>>]) -> f64 {
     sum_perim / (len as f64)
 }
 
-/// For distance analysis we still do the same approach
+/// Sum of traveled distances of all bodies, after normalizing the bounding box.
 fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let mut new_positions = positions.to_vec();
     normalize_positions_for_analysis(&mut new_positions);
@@ -888,11 +885,11 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
 #[derive(Debug, Clone)]
 struct TrajectoryResult {
     chaos: f64,
-    avg_perimeter: f64, // <-- replaced avg_area
+    avg_perimeter: f64,
     total_dist: f64,
     lyap_exp: f64,
     chaos_pts: usize,
-    perimeter_pts: usize, // replaced area_pts
+    perimeter_pts: usize,
     dist_pts: usize,
     lyap_pts: usize,
     total_score: usize,
@@ -1045,7 +1042,7 @@ fn select_best_trajectory(
         let n = vals.len();
         let mut points_for_index = vec![0; n];
         for (rank, (_, idx)) in vals.into_iter().enumerate() {
-            // Borda: best rank gets n points, next gets n-1, ...
+            // Borda: best rank gets n-rank points
             let score = n - rank;
             points_for_index[idx] = score;
         }
@@ -1093,204 +1090,7 @@ fn select_best_trajectory(
     (positions_best, best_tr, best_masses, valid_count)
 }
 
-// ------------------- Retarded-Time Wave Summation (Single Image) ------------------
-
-/// Convert HSL to RGB in [0..1].
-fn hsl_to_rgb(h_deg: f64, s: f64, l: f64) -> (f64, f64, f64) {
-    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
-    let hh = (h_deg / 60.0) % 6.0;
-    let x = c * (1.0 - (hh % 2.0 - 1.0).abs());
-    let (r1, g1, b1) = if hh < 1.0 {
-        (c, x, 0.0)
-    } else if hh < 2.0 {
-        (x, c, 0.0)
-    } else if hh < 3.0 {
-        (0.0, c, x)
-    } else if hh < 4.0 {
-        (0.0, x, c)
-    } else if hh < 5.0 {
-        (x, 0.0, c)
-    } else {
-        (c, 0.0, x)
-    };
-    let m = l - c / 2.0;
-    (r1 + m, g1 + m, b1 + m)
-}
-
-/// Generate a single "retarded-time wave" image using **all** steps.
-fn generate_retarded_wave_image(
-    positions: &[Vec<Vector3<f64>>],
-    wave_freq: f64,
-    wave_speed: f64,
-    wave_subsamples: usize,
-    out_size: u32,
-    time_decay: f64,
-    dist_decay: f64,
-    base_name: &str,
-) {
-    println!("\nGenerating retarded-time wave image from all steps...");
-
-    // 1) bounding box around all times
-    let mut min_x = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_y = NEG_INFINITY;
-
-    for body_pos in positions {
-        for &p in body_pos {
-            if p[0] < min_x {
-                min_x = p[0];
-            }
-            if p[0] > max_x {
-                max_x = p[0];
-            }
-            if p[1] < min_y {
-                min_y = p[1];
-            }
-            if p[1] > max_y {
-                max_y = p[1];
-            }
-        }
-    }
-    if max_x - min_x < 1e-12 || max_y - min_y < 1e-12 {
-        // degenerate fallback
-        min_x -= 1.0;
-        max_x += 1.0;
-        min_y -= 1.0;
-        max_y += 1.0;
-    } else {
-        // pad by 10%
-        let w = max_x - min_x;
-        let h = max_y - min_y;
-        min_x -= 0.1 * w;
-        max_x += 0.1 * w;
-        min_y -= 0.1 * h;
-        max_y += 0.1 * h;
-    }
-
-    let nx = out_size as usize;
-    let ny = out_size as usize;
-
-    let total_steps = positions[0].len();
-    if total_steps < 2 {
-        println!("Not enough steps for wave image. Skipping.");
-        return;
-    }
-    // We'll define dt=0.001 (the simulation step)
-    let dt = 0.001;
-    let final_step = total_steps - 1;
-    let final_time = final_step as f64 * dt;
-
-    // We'll sub-sample the timeline
-    let stride = (total_steps / wave_subsamples.max(1)).max(1);
-    println!(
-        " Wave bounding box: x=[{:.2},{:.2}], y=[{:.2},{:.2}], out_size={}, wave_subsamples={}, stride={}",
-        min_x, max_x, min_y, max_y, out_size, wave_subsamples, stride
-    );
-
-    #[derive(Clone, Copy)]
-    struct ComplexSum {
-        re: f64,
-        im: f64,
-    }
-    let mut accum = vec![ComplexSum { re: 0.0, im: 0.0 }; nx * ny];
-
-    accum.par_iter_mut().enumerate().for_each(|(pix_idx, cacc)| {
-        let ix = pix_idx % nx;
-        let iy = pix_idx / nx;
-        // pixel coords
-        let x = min_x + (ix as f64 + 0.5) / (nx as f64) * (max_x - min_x);
-        let y = min_y + (iy as f64 + 0.5) / (ny as f64) * (max_y - min_y);
-
-        let mut local_re = 0.0;
-        let mut local_im = 0.0;
-
-        let mut t_i = final_step as i64; // start from the end, go backwards
-        while t_i >= 0 {
-            let t_usize = t_i as usize;
-            // positions of the 3 bodies
-            let p1 = positions[0][t_usize];
-            let p2 = positions[1][t_usize];
-            let p3 = positions[2][t_usize];
-
-            let tsec = t_i as f64 * dt;
-            let age = final_time - tsec; // how long ago
-
-            // For each body
-            for &pb in &[p1, p2, p3] {
-                let dx = x - pb[0];
-                let dy = y - pb[1];
-                let dist = (dx * dx + dy * dy).sqrt();
-                if dist < 1e-12 {
-                    continue;
-                }
-                // retarded-time phase
-                let phase = wave_freq * (age - dist / wave_speed);
-
-                // amplitude fade
-                let time_factor = (-time_decay * age).exp().max(0.0);
-                let dist_factor = 1.0 / (1.0 + dist_decay * dist);
-                let amp = time_factor * dist_factor;
-
-                local_re += amp * phase.cos();
-                local_im += amp * phase.sin();
-            }
-
-            t_i -= stride as i64;
-        }
-
-        cacc.re = local_re;
-        cacc.im = local_im;
-    });
-
-    // 3) Convert final sums to color
-    let mut max_amp = 0.0;
-    for c in &accum {
-        let real_amp = (c.re * c.re + c.im * c.im).sqrt();
-        if real_amp > max_amp {
-            max_amp = real_amp;
-        }
-    }
-    if max_amp < 1e-12 {
-        max_amp = 1.0;
-    }
-
-    let mut img = ImageBuffer::new(nx as u32, ny as u32);
-    for (x, y, pixel) in img.enumerate_pixels_mut() {
-        let idx = (y as usize) * nx + (x as usize);
-        let re = accum[idx].re;
-        let im = accum[idx].im;
-        let amp = (re * re + im * im).sqrt();
-        let phase = im.atan2(re).to_degrees(); // in [-180..180]
-
-        // Map amplitude => saturate with a slight gamma tweak
-        let amp_norm = amp / max_amp;
-        let sat = amp_norm.powf(0.6);
-        let hue = (phase + 360.0) % 360.0;
-        let light = 0.5;
-
-        let (r, g, b) = hsl_to_rgb(hue, sat, light);
-        let rr = (r.clamp(0.0, 1.0) * 255.0) as u8;
-        let gg = (g.clamp(0.0, 1.0) * 255.0) as u8;
-        let bb = (b.clamp(0.0, 1.0) * 255.0) as u8;
-
-        *pixel = Rgb([rr, gg, bb]);
-    }
-
-    let out_path = format!("pics/{}_retarded_wave.png", base_name);
-    if let Err(e) = img.save(&out_path) {
-        eprintln!("Error saving retarded wave image: {:?}", e);
-    } else {
-        println!("Retarded-time wave image saved as {}", out_path);
-    }
-}
-
-// ---------------- NEW: COLORFUL, ADDITIVE LINES-ONLY IMAGE with GRADIENTS ----------------
-
-// We'll use the body color arrays at each step: for line body_i -> body_j, we do
-// a pixel-by-pixel gradient from the color of body_i to the color of body_j in that step.
-
-/// Interpolate 2 colors in RGB space
+// ------------------- Lines-only single image, parallel chunk approach
 fn interpolate_color(c0: Rgb<u8>, c1: Rgb<u8>, alpha: f64) -> (f64, f64, f64) {
     let r0 = c0[0] as f64;
     let g0 = c0[1] as f64;
@@ -1304,8 +1104,6 @@ fn interpolate_color(c0: Rgb<u8>, c1: Rgb<u8>, alpha: f64) -> (f64, f64, f64) {
     (r, g, b)
 }
 
-/// Draw a line from (x0,y0) to (x1,y1) into our float accumulators using Bresenham,
-/// but we do a color gradient from color0 -> color1 across the segment.
 fn draw_line_segment_additive_gradient(
     accum_r: &mut [f64],
     accum_g: &mut [f64],
@@ -1325,7 +1123,6 @@ fn draw_line_segment_additive_gradient(
     let x1 = x1f.round() as i32;
     let y1 = y1f.round() as i32;
 
-    // We'll gather all points in a Vec first, so we know the total length (num_points).
     let line_points: Vec<(i32, i32)> = Bresenham::new((x0, y0), (x1, y1)).collect();
     let num_points = line_points.len();
     if num_points < 2 {
@@ -1345,17 +1142,16 @@ fn draw_line_segment_additive_gradient(
     }
 }
 
-/// We adapt the "generate_connection_lines_image_cool" to use body-colors for each step,
-/// then do a gradient line between them.
+/// Single lines-only additive image for all steps, parallel chunking
 fn generate_connection_lines_image_cool(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
     out_size: u32,
     base_name: &str,
-) {
-    println!("\nGenerating *colorful* additive lines-only image with per-body color gradients...");
+) -> RgbaImage {
+    println!("\nGenerating *colorful* additive lines-only image for all steps (parallel chunked).");
 
-    // 1) Determine bounding box from all steps (all 3 bodies).
+    // 1) bounding box
     let mut min_x = INFINITY;
     let mut min_y = INFINITY;
     let mut max_x = NEG_INFINITY;
@@ -1385,7 +1181,6 @@ fn generate_connection_lines_image_cool(
         min_y -= 0.5;
         max_y += 0.5;
     }
-    // Optionally pad by ~5%
     {
         let wx = max_x - min_x;
         let wy = max_y - min_y;
@@ -1397,14 +1192,212 @@ fn generate_connection_lines_image_cool(
 
     let width = out_size;
     let height = out_size;
-
-    // We'll store floating accumulators for R, G, B in [0..∞) range
     let npix = (width * height) as usize;
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        println!("No steps to draw lines for. Returning empty image.");
+        return RgbaImage::new(width, height);
+    }
+
+    let small_weight = 0.3;
+
+    // We'll parallelize over "chunks" of steps
+    let n_threads = rayon::current_num_threads();
+    let chunk_size = (total_steps / n_threads).max(1);
+
+    // Each chunk accumulates partial buffers
+    let partials: Vec<(Vec<f64>, Vec<f64>, Vec<f64>)> = (0..n_threads)
+        .into_par_iter()
+        .map(|chunk_idx| {
+            let start = chunk_idx * chunk_size;
+            let end = (start + chunk_size).min(total_steps);
+            let mut local_r = vec![0.0; npix];
+            let mut local_g = vec![0.0; npix];
+            let mut local_b = vec![0.0; npix];
+
+            fn to_pixel_coords(
+                x: f64,
+                y: f64,
+                min_x: f64,
+                min_y: f64,
+                max_x: f64,
+                max_y: f64,
+                w: u32,
+                h: u32,
+            ) -> (f32, f32) {
+                let ww = max_x - min_x;
+                let hh = max_y - min_y;
+                let px = ((x - min_x) / ww) * (w as f64);
+                let py = ((y - min_y) / hh) * (h as f64);
+                (px as f32, py as f32)
+            }
+
+            for step in start..end {
+                let p0 = positions[0][step];
+                let p1 = positions[1][step];
+                let p2 = positions[2][step];
+
+                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+
+                let (x0, y0) =
+                    to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
+                let (x1, y1) =
+                    to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
+                let (x2, y2) =
+                    to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
+
+                draw_line_segment_additive_gradient(
+                    &mut local_r,
+                    &mut local_g,
+                    &mut local_b,
+                    width,
+                    height,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    c0,
+                    c1,
+                    small_weight,
+                );
+                draw_line_segment_additive_gradient(
+                    &mut local_r,
+                    &mut local_g,
+                    &mut local_b,
+                    width,
+                    height,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    c1,
+                    c2,
+                    small_weight,
+                );
+                draw_line_segment_additive_gradient(
+                    &mut local_r,
+                    &mut local_g,
+                    &mut local_b,
+                    width,
+                    height,
+                    x2,
+                    y2,
+                    x0,
+                    y0,
+                    c2,
+                    c0,
+                    small_weight,
+                );
+            }
+
+            (local_r, local_g, local_b)
+        })
+        .collect();
+
+    // reduce partial accumulators
     let mut accum_r = vec![0.0; npix];
     let mut accum_g = vec![0.0; npix];
     let mut accum_b = vec![0.0; npix];
+    for (rbuf, gbuf, bbuf) in partials {
+        for i in 0..npix {
+            accum_r[i] += rbuf[i];
+            accum_g[i] += gbuf[i];
+            accum_b[i] += bbuf[i];
+        }
+    }
 
-    // A helper to transform (world x,y) -> pixel (f32,f32)
+    // find global max
+    let mut maxval = 0.0;
+    for i in 0..npix {
+        let m = accum_r[i].max(accum_g[i]).max(accum_b[i]);
+        if m > maxval {
+            maxval = m;
+        }
+    }
+    if maxval < 1e-14 {
+        maxval = 1.0;
+    }
+
+    // Convert to RGBA
+    let mut img = RgbaImage::new(width, height);
+    for y in 0..height {
+        for x in 0..width {
+            let idx = (y as usize) * (width as usize) + (x as usize);
+            let rr = (accum_r[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            let gg = (accum_g[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            let bb = (accum_b[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            img.put_pixel(x, y, Rgba([rr as u8, gg as u8, bb as u8, 255]));
+        }
+    }
+
+    // Return the final RGBA so the caller can save it + do auto-levels if needed
+    img
+}
+
+// ---------------- Lines-only video frames in parallel
+fn generate_connection_lines_frames_parallel(
+    positions: &[Vec<Vector3<f64>>],
+    body_colors: &[Vec<Rgb<u8>>],
+    out_size: u32,
+    frame_interval: usize,
+) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        return vec![];
+    }
+
+    // bounding box
+    let mut min_x = INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut max_y = NEG_INFINITY;
+    for body_idx in 0..positions.len() {
+        for &p in &positions[body_idx] {
+            if p[0] < min_x {
+                min_x = p[0];
+            }
+            if p[0] > max_x {
+                max_x = p[0];
+            }
+            if p[1] < min_y {
+                min_y = p[1];
+            }
+            if p[1] > max_y {
+                max_y = p[1];
+            }
+        }
+    }
+    if (max_x - min_x).abs() < 1e-12 {
+        min_x -= 0.5;
+        max_x += 0.5;
+    }
+    if (max_y - min_y).abs() < 1e-12 {
+        min_y -= 0.5;
+        max_y += 0.5;
+    }
+    // pad ~5%
+    {
+        let wx = max_x - min_x;
+        let wy = max_y - min_y;
+        min_x -= 0.05 * wx;
+        max_x += 0.05 * wx;
+        min_y -= 0.05 * wy;
+        max_y += 0.05 * wy;
+    }
+
+    let width = out_size;
+    let height = out_size;
+    let total_frames = if frame_interval == 0 { 1 } else { total_steps / frame_interval };
+    let npix = (width * height) as usize;
+
+    // Single global max approach
+    let small_weight = 0.3;
+    let mut global_accum_r = vec![0.0; npix];
+    let mut global_accum_g = vec![0.0; npix];
+    let mut global_accum_b = vec![0.0; npix];
+
     fn to_pixel_coords(
         x: f64,
         y: f64,
@@ -1422,36 +1415,24 @@ fn generate_connection_lines_image_cool(
         (px as f32, py as f32)
     }
 
-    // 2) For each time step, draw lines body0->body1, body1->body2, body2->body0
-    //    using color interpolation from the respective body-colors at that step.
-    let total_steps = positions[0].len();
-    if total_steps == 0 {
-        println!("No steps to draw lines for. Skipping lines-only image.");
-        return;
-    }
-
-    let small_weight = 0.3; // how much color to add per pixel per line
+    // Accumulate all steps once for final_global_max
     for step in 0..total_steps {
-        // Positions of the 3 bodies
         let p0 = positions[0][step];
         let p1 = positions[1][step];
         let p2 = positions[2][step];
 
-        // Colors of the 3 bodies at this time step
         let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
         let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
         let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
 
-        // to_pixel_coords => (x0,y0, x1,y1, x2,y2)
         let (x0, y0) = to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
         let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
         let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
 
-        // line 0: p0->p1 with gradient from c0->c1
         draw_line_segment_additive_gradient(
-            &mut accum_r,
-            &mut accum_g,
-            &mut accum_b,
+            &mut global_accum_r,
+            &mut global_accum_g,
+            &mut global_accum_b,
             width,
             height,
             x0,
@@ -1462,12 +1443,10 @@ fn generate_connection_lines_image_cool(
             c1,
             small_weight,
         );
-
-        // line 1: p1->p2 with gradient from c1->c2
         draw_line_segment_additive_gradient(
-            &mut accum_r,
-            &mut accum_g,
-            &mut accum_b,
+            &mut global_accum_r,
+            &mut global_accum_g,
+            &mut global_accum_b,
             width,
             height,
             x1,
@@ -1478,12 +1457,10 @@ fn generate_connection_lines_image_cool(
             c2,
             small_weight,
         );
-
-        // line 2: p2->p0 with gradient from c2->c0
         draw_line_segment_additive_gradient(
-            &mut accum_r,
-            &mut accum_g,
-            &mut accum_b,
+            &mut global_accum_r,
+            &mut global_accum_g,
+            &mut global_accum_b,
             width,
             height,
             x2,
@@ -1496,41 +1473,182 @@ fn generate_connection_lines_image_cool(
         );
     }
 
-    // 3) Normalize accumulators to 0..255
-    let mut maxval = 0.0;
+    // find final_global_max
+    let mut final_global_max = 0.0;
     for i in 0..npix {
-        let val_r = accum_r[i];
-        let val_g = accum_g[i];
-        let val_b = accum_b[i];
-        let m = val_r.max(val_g).max(val_b);
-        if m > maxval {
-            maxval = m;
+        let m = global_accum_r[i].max(global_accum_g[i]).max(global_accum_b[i]);
+        if m > final_global_max {
+            final_global_max = m;
         }
     }
-    if maxval < 1e-14 {
-        maxval = 1.0;
+    if final_global_max < 1e-14 {
+        final_global_max = 1.0;
     }
 
-    // 4) Write to an RGBA image
-    let mut img = RgbaImage::new(width, height);
-    for y in 0..height {
-        for x in 0..width {
-            let idx = (y as usize) * (width as usize) + (x as usize);
-            // scale
-            let rr = (accum_r[idx] / maxval).clamp(0.0, 1.0) * 255.0;
-            let gg = (accum_g[idx] / maxval).clamp(0.0, 1.0) * 255.0;
-            let bb = (accum_b[idx] / maxval).clamp(0.0, 1.0) * 255.0;
-            img.put_pixel(x, y, Rgba([rr as u8, gg as u8, bb as u8, 255]));
+    let frame_indices: Vec<usize> = (0..total_frames).collect();
+    let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
+        .par_iter()
+        .map(|&frame_idx| {
+            let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
+
+            let mut accum_r = vec![0.0; npix];
+            let mut accum_g = vec![0.0; npix];
+            let mut accum_b = vec![0.0; npix];
+
+            for step in 0..clamp_end {
+                let p0 = positions[0][step];
+                let p1 = positions[1][step];
+                let p2 = positions[2][step];
+
+                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+
+                let (x0, y0) =
+                    to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
+                let (x1, y1) =
+                    to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
+                let (x2, y2) =
+                    to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
+
+                draw_line_segment_additive_gradient(
+                    &mut accum_r,
+                    &mut accum_g,
+                    &mut accum_b,
+                    width,
+                    height,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    c0,
+                    c1,
+                    small_weight,
+                );
+                draw_line_segment_additive_gradient(
+                    &mut accum_r,
+                    &mut accum_g,
+                    &mut accum_b,
+                    width,
+                    height,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    c1,
+                    c2,
+                    small_weight,
+                );
+                draw_line_segment_additive_gradient(
+                    &mut accum_r,
+                    &mut accum_g,
+                    &mut accum_b,
+                    width,
+                    height,
+                    x2,
+                    y2,
+                    x0,
+                    y0,
+                    c2,
+                    c0,
+                    small_weight,
+                );
+            }
+
+            // scale by final_global_max
+            let mut img = ImageBuffer::new(width, height);
+            for y in 0..height {
+                for x in 0..width {
+                    let idx = (y as usize) * (width as usize) + (x as usize);
+                    let rr = (accum_r[idx] / final_global_max).clamp(0.0, 1.0) * 255.0;
+                    let gg = (accum_g[idx] / final_global_max).clamp(0.0, 1.0) * 255.0;
+                    let bb = (accum_b[idx] / final_global_max).clamp(0.0, 1.0) * 255.0;
+                    img.put_pixel(x, y, Rgb([rr as u8, gg as u8, bb as u8]));
+                }
+            }
+            img
+        })
+        .collect();
+
+    frames
+}
+
+// ----------------------- AUTO LEVELS for single images ONLY -----------------------
+fn auto_levels_image(
+    input: &DynamicImage,
+    black_percent: f64,
+    white_percent: f64,
+    gamma: f64,
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    // Convert to Rgb8 if needed
+    let rgb_img = input.to_rgb8();
+    let (w, h) = rgb_img.dimensions();
+
+    // Build histograms for each channel
+    let mut hist_r = vec![0u32; 256];
+    let mut hist_g = vec![0u32; 256];
+    let mut hist_b = vec![0u32; 256];
+    for px in rgb_img.pixels() {
+        hist_r[px[0] as usize] += 1;
+        hist_g[px[1] as usize] += 1;
+        hist_b[px[2] as usize] += 1;
+    }
+    let total_px = w * h;
+
+    // Function to find cutoff in histogram for a given percentile
+    fn find_cutoff(hist: &[u32], percentile: f64, total_px: u32) -> u8 {
+        let target = (percentile * total_px as f64).round() as u32;
+        let mut cumsum = 0;
+        for (i, &count) in hist.iter().enumerate() {
+            cumsum += count;
+            if cumsum >= target {
+                return i as u8;
+            }
         }
+        255
     }
 
-    // 5) Save to disk
-    let out_path = format!("pics/{}_lines_only.png", base_name);
-    if let Err(e) = img.save(&out_path) {
-        eprintln!("Error saving lines-only image: {:?}", e);
-    } else {
-        println!("Colorful additive lines-only image saved as {}", out_path);
+    // find black/white for each channel
+    let black_r = find_cutoff(&hist_r, black_percent, total_px);
+    let black_g = find_cutoff(&hist_g, black_percent, total_px);
+    let black_b = find_cutoff(&hist_b, black_percent, total_px);
+
+    let white_r = find_cutoff(&hist_r, white_percent, total_px);
+    let white_g = find_cutoff(&hist_g, white_percent, total_px);
+    let white_b = find_cutoff(&hist_b, white_percent, total_px);
+
+    // Avoid degenerate
+    let mut out_img = ImageBuffer::new(w, h);
+
+    let map_channel = |c: u8, black: u8, white: u8| -> u8 {
+        if black >= white {
+            // fallback
+            return c;
+        }
+        let c_val = c as f64;
+        let black_val = black as f64;
+        let white_val = white as f64;
+        let mut norm = (c_val - black_val) / (white_val - black_val);
+        if norm < 0.0 {
+            norm = 0.0;
+        } else if norm > 1.0 {
+            norm = 1.0;
+        }
+        // apply gamma
+        norm = norm.powf(gamma);
+        (norm * 255.0).clamp(0.0, 255.0) as u8
+    };
+
+    // Apply transform
+    for (x, y, pixel) in out_img.enumerate_pixels_mut() {
+        let orig = rgb_img.get_pixel(x, y);
+        let r = map_channel(orig[0], black_r, white_r);
+        let g = map_channel(orig[1], black_g, white_g);
+        let b = map_channel(orig[2], black_b, white_b);
+        *pixel = Rgb([r, g, b]);
     }
+
+    out_img
 }
 
 // ------------------ Main ------------------
@@ -1539,7 +1657,7 @@ fn main() {
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed = hex::decode(hex_seed).expect("Invalid hex seed");
 
-    println!("Starting 3-body simulations with up to {} steps each...", args.num_steps);
+    println!("Starting 3-body simulations with up to {} steps each (parallel).", args.num_steps);
 
     let mut rng = Sha3RandomByteStream::new(
         &seed,
@@ -1549,7 +1667,7 @@ fn main() {
         args.velocity,
     );
 
-    // decide hide
+    // Decide which bodies to hide
     let hide_bodies = if args.force_visible {
         vec![false, false, false]
     } else {
@@ -1617,11 +1735,12 @@ fn main() {
 
     let base_name = args.file_name.as_str();
     let video_filename = format!("vids/{}.mp4", base_name);
+    let lines_video_filename = format!("vids/{}_lines_only.mp4", base_name);
 
-    // store unscaled for wave + lines
+    // Keep an unscaled copy for lines-only
     let positions_unscaled = positions.clone();
 
-    // 2) normalize for normal trajectory image
+    // 2) normalize for normal trajectory
     normalize_positions_inplace(&mut positions);
 
     // 3) color sequences
@@ -1665,39 +1784,58 @@ fn main() {
         )
     };
 
-    // 4) single-frame trajectory
+    // 4) Single-frame trajectory image
     if !args.no_image {
         let frame_size = 800;
-        let pic_frames = plot_positions(
+        // Generate single-frame in memory
+        let pic_frames = plot_positions_parallel(
             &positions,
             frame_size,
             image_trajectory_lengths,
             &hide_bodies,
             &colors,
-            999_999_999, // effectively just one frame
+            999_999_999, // effectively just 1 frame
             args.avoid_effects,
             true,
             args.dynamic_bounds,
         );
         let last_frame = pic_frames.last().unwrap().clone();
+
+        // Save the "before" image
         let traj_path = format!("pics/{}.png", base_name);
         if let Err(e) = last_frame.save(&traj_path) {
             eprintln!("Error saving trajectory image: {:?}", e);
         } else {
             println!("Trajectory image saved as {}", traj_path);
         }
+
+        // Also produce the auto-levels version (only for the single image, not for video)
+        let dyn_img = DynamicImage::ImageRgb8(last_frame.clone());
+        let auto_leveled = auto_levels_image(
+            &dyn_img,
+            args.auto_levels_black_percent,
+            args.auto_levels_white_percent,
+            args.auto_levels_gamma,
+        );
+        let traj_path_al = format!("pics/{}_AL.png", base_name);
+        if let Err(e) = auto_leveled.save(&traj_path_al) {
+            eprintln!("Error saving trajectory AL image: {:?}", e);
+        } else {
+            println!("Trajectory auto-level image saved as {}", traj_path_al);
+        }
     } else {
-        println!("No trajectory image requested.");
+        println!("No single-frame trajectory image requested.");
     }
 
-    // 5) optionally create video
+    // 5) Normal trajectory video
     if !args.no_video {
         let num_seconds = 30;
         let target_length = 60 * num_seconds;
         let frame_interval =
             if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 };
+        let frame_interval = frame_interval.max(1);
         let frame_size = 800;
-        let frames = plot_positions(
+        let frames = plot_positions_parallel(
             &positions,
             frame_size,
             video_trajectory_lengths,
@@ -1710,23 +1848,53 @@ fn main() {
         );
         create_video_from_frames_in_memory(&frames, &video_filename, 60);
     } else {
-        println!("No video requested.");
+        println!("No main trajectory video requested.");
     }
 
-    // 6) Retarded-time wave image
-    generate_retarded_wave_image(
-        &positions_unscaled,
-        args.wave_freq,
-        args.wave_speed,
-        args.wave_subsamples,
-        args.wave_image_size,
-        args.time_decay,
-        args.dist_decay,
-        base_name,
-    );
+    // 6) Single-frame lines-only image (unscaled positions, parallel)
+    let lines_only_img =
+        generate_connection_lines_image_cool(&positions_unscaled, &colors, 800, base_name);
+    // Save the "before" lines-only
+    let lines_path = format!("pics/{}_lines_only.png", base_name);
+    if let Err(e) = lines_only_img.save(&lines_path) {
+        eprintln!("Error saving lines-only image: {:?}", e);
+    } else {
+        println!("Lines-only image saved as {}", lines_path);
+    }
+    // Also produce auto-leveled version of lines-only
+    {
+        let dyn_img = DynamicImage::ImageRgba8(lines_only_img);
+        let auto_leveled_lines = auto_levels_image(
+            &dyn_img,
+            args.auto_levels_black_percent,
+            args.auto_levels_white_percent,
+            args.auto_levels_gamma,
+        );
+        let lines_path_al = format!("pics/{}_lines_only_AL.png", base_name);
+        if let Err(e) = auto_leveled_lines.save(&lines_path_al) {
+            eprintln!("Error saving lines-only AL image: {:?}", e);
+        } else {
+            println!("Lines-only auto-level image saved as {}", lines_path_al);
+        }
+    }
 
-    // 7) Our new color‐gradient lines‐only image
-    generate_connection_lines_image_cool(&positions_unscaled, &colors, 800, base_name);
+    // 7) Lines-only video (parallel frames, single global max) - no auto-level here
+    if !args.no_video {
+        let num_seconds = 30;
+        let target_length = 60 * num_seconds;
+        let frame_interval =
+            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 };
+        let frame_interval = frame_interval.max(1);
+        let lines_frames = generate_connection_lines_frames_parallel(
+            &positions_unscaled,
+            &colors,
+            800,
+            frame_interval,
+        );
+        create_video_from_frames_in_memory(&lines_frames, &lines_video_filename, 60);
+    } else {
+        println!("No lines-only video requested.");
+    }
 
-    println!("\nDone with simulation + wave image + COOL lines-only image!");
+    println!("\nDone: simulation + normal video + lines-only image + lines-only video, with auto-level single images (adjustable percentiles & gamma)!");
 }
