@@ -25,7 +25,7 @@ use kiddo::SquaredEuclidean;
 
 // ===================== Constants =====================
 const LLE_M: usize = 3;
-const B: usize = 32;
+const B: usize = 32; // used by KdTree
 type IDX = u32;
 
 const G: f64 = 9.8;
@@ -35,7 +35,7 @@ const G: f64 = 9.8;
 #[command(
     author,
     version,
-    about = "Simulate & visualize the three-body problem with parallelization, optional auto-levels for single images, and adjustable percentile cutoffs & gamma."
+    about = "Simulate & visualize the three-body problem, with parallel Borda-scoring, lines-only video, auto-level single images, adjustable percentile/gamma, and frame_size."
 )]
 struct Args {
     // Basic simulation parameters
@@ -121,9 +121,13 @@ struct Args {
     auto_levels_white_percent: f64,
     #[arg(long, default_value_t = 0.9)]
     auto_levels_gamma: f64,
+
+    // Frame (image) size for single images & videos
+    #[arg(long, default_value_t = 800)]
+    frame_size: u32,
 }
 
-/// A custom RNG based on repeated Sha3-256 hashing.
+// Our RNG
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
     seed: Vec<u8>,
@@ -198,7 +202,7 @@ impl Sha3RandomByteStream {
     }
 }
 
-/// A celestial body
+/// A single body
 #[derive(Clone)]
 struct Body {
     mass: f64,
@@ -225,7 +229,7 @@ impl Body {
     }
 }
 
-/// Verlet step
+// Simple velocity-Verlet integrator
 fn verlet_step(bodies: &mut [Body], dt: f64) {
     let positions: Vec<_> = bodies.iter().map(|b| b.position).collect();
     let masses: Vec<_> = bodies.iter().map(|b| b.mass).collect();
@@ -258,16 +262,16 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-/// Simulate & record final positions
+// record final positions
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
 
-    // Phase 1: get final state (advance without storing)
+    // Phase 1: warm-up
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
 
-    // Phase 2: record positions
+    // Phase 2: record
     let mut bodies2 = bodies.clone();
     let mut all_positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
     for step in 0..num_steps {
@@ -279,11 +283,12 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
     all_positions
 }
 
-// Colors
+// We'll use Hsl and Srgb from the palette crate
 fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
     let mut hue = rng.gen_range(0.0, 360.0);
     for _ in 0..length {
+        // We do a tiny random walk in hue
         if rng.next_byte() & 1 == 0 {
             hue += 0.1;
         } else {
@@ -323,6 +328,7 @@ fn generate_special_color_gradient(color_name: &str, length: usize) -> Vec<Rgb<u
     vec![rgb_color; length]
 }
 
+/// The function to generate per-body color sequences
 fn generate_body_color_sequences(
     rng: &mut Sha3RandomByteStream,
     length: usize,
@@ -347,7 +353,6 @@ fn y(v: &Vector3<f64>) -> f64 {
     v[1]
 }
 
-// Normalize entire positions in-place
 fn normalize_positions_inplace(positions: &mut [Vec<Vector3<f64>>]) {
     let mut min_x = INFINITY;
     let mut min_y = INFINITY;
@@ -461,7 +466,52 @@ fn compute_bounding_box_for_frame(
     (min_x, min_y, max_x, max_y)
 }
 
-// -------------- Parallel version of normal trajectory frames --------------
+/// This function **draws** a line between (x0, y0) and (x1, y1) into accum_r/g/b.
+/// It uses Bresenham to walk all integer coordinates on that line, and linearly
+/// interpolates between `col0` and `col1`, adding small_weight * color to each pixel.
+fn draw_line_segment_additive_gradient(
+    accum_r: &mut [f64],
+    accum_g: &mut [f64],
+    accum_b: &mut [f64],
+    width: u32,
+    height: u32,
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32,
+    col0: Rgb<u8>,
+    col1: Rgb<u8>,
+    small_weight: f64,
+) {
+    let start = (x0.round() as i32, y0.round() as i32);
+    let end = (x1.round() as i32, y1.round() as i32);
+
+    let points: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
+    let n = points.len();
+    if n == 0 {
+        return;
+    }
+
+    for (i, (xx, yy)) in points.into_iter().enumerate() {
+        if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
+            continue;
+        }
+        let idx = (yy as usize) * (width as usize) + (xx as usize);
+
+        // Fraction of the way along this line
+        let t = if n == 1 { 0.0 } else { i as f64 / (n.saturating_sub(1)) as f64 };
+
+        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
+        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
+        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
+
+        accum_r[idx] += r * small_weight;
+        accum_g[idx] += g * small_weight;
+        accum_b[idx] += b * small_weight;
+    }
+}
+
+// Plot normal trajectory frames (parallel)
 fn plot_positions_parallel(
     positions: &[Vec<Vector3<f64>>],
     frame_size: u32,
@@ -483,7 +533,7 @@ fn plot_positions_parallel(
         total_steps / frame_interval
     };
 
-    // Precompute bounding box for all steps if NOT using dynamic bounds
+    // bounding box if not dynamic
     let (static_min_x, static_min_y, static_max_x, static_max_y) = if !dynamic_bounds {
         compute_bounding_box_for_all_steps(positions, hide)
     } else {
@@ -491,7 +541,6 @@ fn plot_positions_parallel(
     };
 
     let frame_indices: Vec<usize> = (0..total_frames).collect();
-    // Build frames in parallel
     let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
         .par_iter()
         .map(|&frame_index| {
@@ -501,6 +550,7 @@ fn plot_positions_parallel(
                 (frame_index + 1) * frame_interval
             };
 
+            // figure out tail
             let mut trajectory_starts = [0usize; 3];
             for (body_i, body_positions) in positions.iter().enumerate() {
                 if hide[body_i] {
@@ -531,7 +581,6 @@ fn plot_positions_parallel(
                 trajectory_starts[body_i] = idx;
             }
 
-            // If dynamic bounds, compute bounding box for just this frame
             let (min_x, min_y, max_x, max_y) = if dynamic_bounds {
                 compute_bounding_box_for_frame(
                     positions,
@@ -552,9 +601,9 @@ fn plot_positions_parallel(
             let adj_min_x = x_center - (range / 2.0);
             let adj_min_y = y_center - (range / 2.0);
 
-            // Draw
             let mut img = ImageBuffer::from_pixel(frame_size, frame_size, Rgb([0, 0, 0]));
 
+            // draw circles
             for (body_i, body_positions) in positions.iter().enumerate() {
                 if hide[body_i] {
                     continue;
@@ -564,7 +613,6 @@ fn plot_positions_parallel(
                 if start_idx >= clamp_end {
                     continue;
                 }
-
                 for step in start_idx..clamp_end {
                     let px = body_positions[step][0];
                     let py = body_positions[step][1];
@@ -575,11 +623,10 @@ fn plot_positions_parallel(
                 }
             }
 
+            // optional blur + highlight
             if !avoid_effects {
-                // optional blur + highlight
                 let blurred = filter::gaussian_blur_f32(&img, 6.0);
                 let mut img2 = blurred.clone();
-
                 for (body_i, body_positions) in positions.iter().enumerate() {
                     if hide[body_i] {
                         continue;
@@ -607,13 +654,14 @@ fn plot_positions_parallel(
     frames
 }
 
-// Create video
+// create video from frames
 fn create_video_from_frames_in_memory(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
     frame_rate: u32,
 ) {
     println!("Generating video... {}", output_file);
+
     let mut command = Command::new("ffmpeg");
     command
         .arg("-y")
@@ -625,6 +673,8 @@ fn create_video_from_frames_in_memory(
         .arg(frame_rate.to_string())
         .arg("-i")
         .arg("-")
+        .arg("-threads")
+        .arg("0")
         .arg("-c:v")
         .arg("libx264")
         .arg("-pix_fmt")
@@ -635,7 +685,7 @@ fn create_video_from_frames_in_memory(
         .stderr(Stdio::piped());
 
     let mut ffmpeg = command.spawn().expect("Failed to start ffmpeg");
-    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed to open ffmpeg stdin");
+    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed ffmpeg stdin");
 
     for frame in frames {
         let dyn_img = DynamicImage::ImageRgb8(frame.clone());
@@ -648,14 +698,14 @@ fn create_video_from_frames_in_memory(
     }
 
     drop(ffmpeg.stdin.take());
-    let output = ffmpeg.wait_with_output().expect("Waiting for ffmpeg failed");
+    let output = ffmpeg.wait_with_output().expect("Wait ffmpeg");
     if !output.status.success() {
         eprintln!("ffmpeg error: {}", String::from_utf8_lossy(&output.stderr));
     }
     println!("Video creation complete: {}", output_file);
 }
 
-// ============= stats
+// ================== Stats
 fn calculate_total_energy(bodies: &[Body]) -> f64 {
     let mut kinetic = 0.0;
     let mut potential = 0.0;
@@ -682,6 +732,7 @@ fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
     total_l
 }
 
+// Chaos measure
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     let n = input.len();
     let mut planner = FftPlanner::new();
@@ -692,14 +743,12 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     complex_input
 }
 
-/// We'll compute the *average* perimeter across all time steps.
 fn average_triangle_perimeter(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     if len < 1 {
         return 0.0;
     }
     let mut sum_perim = 0.0;
-
     for step in 0..len {
         let p1 = positions[0][step];
         let p2 = positions[1][step];
@@ -710,11 +759,9 @@ fn average_triangle_perimeter(positions: &[Vec<Vector3<f64>>]) -> f64 {
         let perimeter = d12 + d23 + d31;
         sum_perim += perimeter;
     }
-
     sum_perim / (len as f64)
 }
 
-/// Sum of traveled distances of all bodies, after normalizing the bounding box.
 fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let mut new_positions = positions.to_vec();
     normalize_positions_for_analysis(&mut new_positions);
@@ -775,7 +822,6 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
     }
 }
 
-/// "Chaos measure" used in code
 fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     let mut r1 = vec![0.0; len];
@@ -808,7 +854,6 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -
     (sd1 + sd2 + sd3) / 3.0
 }
 
-// ================== Actual LLE code using KdTree ==================
 fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     if data.len() < (LLE_M - 1) * tau + 1 {
         return 0.0;
@@ -838,7 +883,6 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
         let nn1 = nn_buffer[0];
         let nn2 = nn_buffer[1];
 
-        // If the first nearest neighbor is itself, pick the second
         let (nn_id, _) =
             if nn1.item == i as u64 { (nn2.item, nn2.distance) } else { (nn1.item, nn1.distance) };
         let j = nn_id as usize;
@@ -881,7 +925,7 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     }
 }
 
-// Borda result
+// TrajectoryResult + Borda
 #[derive(Debug, Clone)]
 struct TrajectoryResult {
     chaos: f64,
@@ -896,7 +940,6 @@ struct TrajectoryResult {
     total_score_weighted: f64,
 }
 
-/// Select best orbit
 fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_iters: usize,
@@ -910,7 +953,6 @@ fn select_best_trajectory(
 ) -> (Vec<Vec<Vector3<f64>>>, TrajectoryResult, [f64; 3], usize) {
     println!("Running {} simulations to find the best orbit...", num_iters);
 
-    // Generate random bodies for each simulation
     let many_bodies: Vec<Vec<Body>> = (0..num_iters)
         .map(|_| {
             vec![
@@ -957,7 +999,6 @@ fn select_best_trajectory(
         })
         .collect();
 
-    // Evaluate them in parallel
     let results_par: Vec<Option<(TrajectoryResult, usize, [f64; 3])>> = many_bodies
         .par_iter()
         .enumerate()
@@ -965,14 +1006,12 @@ fn select_best_trajectory(
             let total_energy = calculate_total_energy(bodies);
             let ang_mom = calculate_total_angular_momentum(bodies).norm();
 
-            // Filter out unbound or degenerate
             if total_energy >= 0.0 || ang_mom < 1e-3 {
                 None
             } else {
                 let positions_full = get_positions(bodies.clone(), num_steps_sim);
                 let len = positions_full[0].len();
                 let factor = (len / max_points).max(1);
-                // We'll just check body #1 for LLE
                 let body1_norms: Vec<f64> =
                     positions_full[0].iter().step_by(factor).map(|p| p.norm()).collect();
 
@@ -983,8 +1022,6 @@ fn select_best_trajectory(
                 let c = non_chaoticness(m1, m2, m3, &positions_full);
                 let p = average_triangle_perimeter(&positions_full);
                 let d = total_distance(&positions_full);
-
-                // Lyapunov exponent
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
 
                 Some((
@@ -1019,7 +1056,7 @@ fn select_best_trajectory(
 
     let mut info_vec = valid_results;
 
-    // We'll separate out each metric so we can do Borda scoring
+    // separate out each metric for Borda
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
     let mut perimeter_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
@@ -1033,7 +1070,6 @@ fn select_best_trajectory(
     }
 
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
-        // Sort by metric
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
         } else {
@@ -1042,14 +1078,13 @@ fn select_best_trajectory(
         let n = vals.len();
         let mut points_for_index = vec![0; n];
         for (rank, (_, idx)) in vals.into_iter().enumerate() {
-            // Borda: best rank gets n-rank points
             let score = n - rank;
             points_for_index[idx] = score;
         }
         points_for_index
     }
 
-    // chaos: lower is better => higher_better = false
+    // chaos: lower better
     let chaos_points = assign_borda_scores(chaos_vals, false);
     // perimeter: higher better
     let perimeter_points = assign_borda_scores(perimeter_vals, true);
@@ -1058,7 +1093,6 @@ fn select_best_trajectory(
     // lyap: higher better
     let lyap_points = assign_borda_scores(lyap_vals, true);
 
-    // Tally up
     for (i, (tr, _, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_points[i];
         tr.perimeter_pts = perimeter_points[i];
@@ -1071,7 +1105,6 @@ fn select_best_trajectory(
             + lyap_points[i] as f64 * lyap_weight;
     }
 
-    // Pick best
     let (_, best_item) = info_vec
         .iter()
         .enumerate()
@@ -1090,68 +1123,23 @@ fn select_best_trajectory(
     (positions_best, best_tr, best_masses, valid_count)
 }
 
-// ------------------- Lines-only single image, parallel chunk approach
-fn interpolate_color(c0: Rgb<u8>, c1: Rgb<u8>, alpha: f64) -> (f64, f64, f64) {
-    let r0 = c0[0] as f64;
-    let g0 = c0[1] as f64;
-    let b0 = c0[2] as f64;
-    let r1 = c1[0] as f64;
-    let g1 = c1[1] as f64;
-    let b1 = c1[2] as f64;
-    let r = (1.0 - alpha) * r0 + alpha * r1;
-    let g = (1.0 - alpha) * g0 + alpha * g1;
-    let b = (1.0 - alpha) * b0 + alpha * b1;
-    (r, g, b)
-}
-
-fn draw_line_segment_additive_gradient(
-    accum_r: &mut [f64],
-    accum_g: &mut [f64],
-    accum_b: &mut [f64],
-    width: u32,
-    height: u32,
-    x0f: f32,
-    y0f: f32,
-    x1f: f32,
-    y1f: f32,
-    color0: Rgb<u8>,
-    color1: Rgb<u8>,
-    weight: f64,
-) {
-    let x0 = x0f.round() as i32;
-    let y0 = y0f.round() as i32;
-    let x1 = x1f.round() as i32;
-    let y1 = y1f.round() as i32;
-
-    let line_points: Vec<(i32, i32)> = Bresenham::new((x0, y0), (x1, y1)).collect();
-    let num_points = line_points.len();
-    if num_points < 2 {
-        return;
-    }
-
-    for (i, (x, y)) in line_points.iter().enumerate() {
-        if *x < 0 || *y < 0 || *x >= width as i32 || *y >= height as i32 {
-            continue;
-        }
-        let idx = (*y as usize) * (width as usize) + (*x as usize);
-        let alpha = i as f64 / (num_points.saturating_sub(1) as f64);
-        let (rr, gg, bb) = interpolate_color(color0, color1, alpha);
-        accum_r[idx] += rr * weight;
-        accum_g[idx] += gg * weight;
-        accum_b[idx] += bb * weight;
-    }
-}
-
-/// Single lines-only additive image for all steps, parallel chunking
-fn generate_connection_lines_image_cool(
+/// Single lines-only additive image for all steps (parallel chunk).
+fn generate_connection_lines_single_image_cool(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
     out_size: u32,
-    base_name: &str,
 ) -> RgbaImage {
-    println!("\nGenerating *colorful* additive lines-only image for all steps (parallel chunked).");
+    println!("\nGenerating *colorful* additive lines-only single image (parallel chunked).");
 
-    // 1) bounding box
+    let width = out_size;
+    let height = out_size;
+    let npix = (width * height) as usize;
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        return RgbaImage::new(width, height);
+    }
+
+    // bounding box
     let mut min_x = INFINITY;
     let mut min_y = INFINITY;
     let mut max_x = NEG_INFINITY;
@@ -1172,49 +1160,41 @@ fn generate_connection_lines_image_cool(
             }
         }
     }
-    let eps = 1e-12;
-    if (max_x - min_x).abs() < eps {
+    if (max_x - min_x).abs() < 1e-12 {
+        // avoid degenerate bounding box
         min_x -= 0.5;
         max_x += 0.5;
     }
-    if (max_y - min_y).abs() < eps {
+    if (max_y - min_y).abs() < 1e-12 {
         min_y -= 0.5;
         max_y += 0.5;
     }
     {
         let wx = max_x - min_x;
         let wy = max_y - min_y;
+        // give a small margin
         min_x -= 0.05 * wx;
         max_x += 0.05 * wx;
         min_y -= 0.05 * wy;
         max_y += 0.05 * wy;
     }
 
-    let width = out_size;
-    let height = out_size;
-    let npix = (width * height) as usize;
-    let total_steps = positions[0].len();
-    if total_steps == 0 {
-        println!("No steps to draw lines for. Returning empty image.");
-        return RgbaImage::new(width, height);
-    }
-
-    let small_weight = 0.3;
-
-    // We'll parallelize over "chunks" of steps
+    let small_weight = 0.3_f64;
     let n_threads = rayon::current_num_threads();
     let chunk_size = (total_steps / n_threads).max(1);
 
-    // Each chunk accumulates partial buffers
+    // We'll accumulate partial results in parallel and then combine
     let partials: Vec<(Vec<f64>, Vec<f64>, Vec<f64>)> = (0..n_threads)
         .into_par_iter()
         .map(|chunk_idx| {
             let start = chunk_idx * chunk_size;
             let end = (start + chunk_size).min(total_steps);
-            let mut local_r = vec![0.0; npix];
-            let mut local_g = vec![0.0; npix];
-            let mut local_b = vec![0.0; npix];
 
+            let mut local_r: Vec<f64> = vec![0.0; npix];
+            let mut local_g: Vec<f64> = vec![0.0; npix];
+            let mut local_b: Vec<f64> = vec![0.0; npix];
+
+            // helper to map from (x,y) to pixel coords
             fn to_pixel_coords(
                 x: f64,
                 y: f64,
@@ -1222,13 +1202,13 @@ fn generate_connection_lines_image_cool(
                 min_y: f64,
                 max_x: f64,
                 max_y: f64,
-                w: u32,
-                h: u32,
+                width: u32,
+                height: u32,
             ) -> (f32, f32) {
                 let ww = max_x - min_x;
                 let hh = max_y - min_y;
-                let px = ((x - min_x) / ww) * (w as f64);
-                let py = ((y - min_y) / hh) * (h as f64);
+                let px = ((x - min_x) / ww) * (width as f64);
+                let py = ((y - min_y) / hh) * (height as f64);
                 (px as f32, py as f32)
             }
 
@@ -1248,6 +1228,7 @@ fn generate_connection_lines_image_cool(
                 let (x2, y2) =
                     to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
 
+                // lines p0->p1, p1->p2, p2->p0
                 draw_line_segment_additive_gradient(
                     &mut local_r,
                     &mut local_g,
@@ -1296,10 +1277,11 @@ fn generate_connection_lines_image_cool(
         })
         .collect();
 
-    // reduce partial accumulators
-    let mut accum_r = vec![0.0; npix];
-    let mut accum_g = vec![0.0; npix];
-    let mut accum_b = vec![0.0; npix];
+    // reduce partials
+    let mut accum_r: Vec<f64> = vec![0.0; npix];
+    let mut accum_g: Vec<f64> = vec![0.0; npix];
+    let mut accum_b: Vec<f64> = vec![0.0; npix];
+
     for (rbuf, gbuf, bbuf) in partials {
         for i in 0..npix {
             accum_r[i] += rbuf[i];
@@ -1308,8 +1290,8 @@ fn generate_connection_lines_image_cool(
         }
     }
 
-    // find global max
-    let mut maxval = 0.0;
+    // find max
+    let mut maxval: f64 = 0.0;
     for i in 0..npix {
         let m = accum_r[i].max(accum_g[i]).max(accum_b[i]);
         if m > maxval {
@@ -1320,7 +1302,6 @@ fn generate_connection_lines_image_cool(
         maxval = 1.0;
     }
 
-    // Convert to RGBA
     let mut img = RgbaImage::new(width, height);
     for y in 0..height {
         for x in 0..width {
@@ -1332,11 +1313,10 @@ fn generate_connection_lines_image_cool(
         }
     }
 
-    // Return the final RGBA so the caller can save it + do auto-levels if needed
     img
 }
 
-// ---------------- Lines-only video frames in parallel
+/// Lines-only frames for a video, parallel
 fn generate_connection_lines_frames_parallel(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -1377,7 +1357,6 @@ fn generate_connection_lines_frames_parallel(
         min_y -= 0.5;
         max_y += 0.5;
     }
-    // pad ~5%
     {
         let wx = max_x - min_x;
         let wy = max_y - min_y;
@@ -1392,11 +1371,14 @@ fn generate_connection_lines_frames_parallel(
     let total_frames = if frame_interval == 0 { 1 } else { total_steps / frame_interval };
     let npix = (width * height) as usize;
 
-    // Single global max approach
-    let small_weight = 0.3;
-    let mut global_accum_r = vec![0.0; npix];
-    let mut global_accum_g = vec![0.0; npix];
-    let mut global_accum_b = vec![0.0; npix];
+    // We'll do a "global max" approach for the line additions.
+    // First accumulate *all* steps, figure out the max, then for each frame we
+    // only sum up to clamp_end steps and scale by that same global max, so
+    // the brightness doesn't flicker from frame to frame.
+    let small_weight = 0.3_f64;
+    let mut global_accum_r: Vec<f64> = vec![0.0; npix];
+    let mut global_accum_g: Vec<f64> = vec![0.0; npix];
+    let mut global_accum_b: Vec<f64> = vec![0.0; npix];
 
     fn to_pixel_coords(
         x: f64,
@@ -1405,17 +1387,17 @@ fn generate_connection_lines_frames_parallel(
         min_y: f64,
         max_x: f64,
         max_y: f64,
-        w: u32,
-        h: u32,
+        width: u32,
+        height: u32,
     ) -> (f32, f32) {
         let ww = max_x - min_x;
         let hh = max_y - min_y;
-        let px = ((x - min_x) / ww) * (w as f64);
-        let py = ((y - min_y) / hh) * (h as f64);
+        let px = ((x - min_x) / ww) * (width as f64);
+        let py = ((y - min_y) / hh) * (height as f64);
         (px as f32, py as f32)
     }
 
-    // Accumulate all steps once for final_global_max
+    // accumulate all steps once
     for step in 0..total_steps {
         let p0 = positions[0][step];
         let p1 = positions[1][step];
@@ -1429,6 +1411,7 @@ fn generate_connection_lines_frames_parallel(
         let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
         let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
 
+        // lines
         draw_line_segment_additive_gradient(
             &mut global_accum_r,
             &mut global_accum_g,
@@ -1473,8 +1456,8 @@ fn generate_connection_lines_frames_parallel(
         );
     }
 
-    // find final_global_max
-    let mut final_global_max = 0.0;
+    // find the final global max
+    let mut final_global_max = 0.0_f64;
     for i in 0..npix {
         let m = global_accum_r[i].max(global_accum_g[i]).max(global_accum_b[i]);
         if m > final_global_max {
@@ -1485,15 +1468,17 @@ fn generate_connection_lines_frames_parallel(
         final_global_max = 1.0;
     }
 
+    // Now build frames in parallel
     let frame_indices: Vec<usize> = (0..total_frames).collect();
     let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
         .par_iter()
         .map(|&frame_idx| {
             let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
 
-            let mut accum_r = vec![0.0; npix];
-            let mut accum_g = vec![0.0; npix];
-            let mut accum_b = vec![0.0; npix];
+            // accumulate up to clamp_end
+            let mut accum_r: Vec<f64> = vec![0.0; npix];
+            let mut accum_g: Vec<f64> = vec![0.0; npix];
+            let mut accum_b: Vec<f64> = vec![0.0; npix];
 
             for step in 0..clamp_end {
                 let p0 = positions[0][step];
@@ -1555,7 +1540,7 @@ fn generate_connection_lines_frames_parallel(
                 );
             }
 
-            // scale by final_global_max
+            // convert to image
             let mut img = ImageBuffer::new(width, height);
             for y in 0..height {
                 for x in 0..width {
@@ -1573,18 +1558,16 @@ fn generate_connection_lines_frames_parallel(
     frames
 }
 
-// ----------------------- AUTO LEVELS for single images ONLY -----------------------
+// Single-image auto-level
 fn auto_levels_image(
     input: &DynamicImage,
     black_percent: f64,
     white_percent: f64,
     gamma: f64,
 ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-    // Convert to Rgb8 if needed
     let rgb_img = input.to_rgb8();
     let (w, h) = rgb_img.dimensions();
 
-    // Build histograms for each channel
     let mut hist_r = vec![0u32; 256];
     let mut hist_g = vec![0u32; 256];
     let mut hist_b = vec![0u32; 256];
@@ -1595,7 +1578,6 @@ fn auto_levels_image(
     }
     let total_px = w * h;
 
-    // Function to find cutoff in histogram for a given percentile
     fn find_cutoff(hist: &[u32], percentile: f64, total_px: u32) -> u8 {
         let target = (percentile * total_px as f64).round() as u32;
         let mut cumsum = 0;
@@ -1608,7 +1590,6 @@ fn auto_levels_image(
         255
     }
 
-    // find black/white for each channel
     let black_r = find_cutoff(&hist_r, black_percent, total_px);
     let black_g = find_cutoff(&hist_g, black_percent, total_px);
     let black_b = find_cutoff(&hist_b, black_percent, total_px);
@@ -1617,12 +1598,10 @@ fn auto_levels_image(
     let white_g = find_cutoff(&hist_g, white_percent, total_px);
     let white_b = find_cutoff(&hist_b, white_percent, total_px);
 
-    // Avoid degenerate
     let mut out_img = ImageBuffer::new(w, h);
 
     let map_channel = |c: u8, black: u8, white: u8| -> u8 {
         if black >= white {
-            // fallback
             return c;
         }
         let c_val = c as f64;
@@ -1634,12 +1613,10 @@ fn auto_levels_image(
         } else if norm > 1.0 {
             norm = 1.0;
         }
-        // apply gamma
         norm = norm.powf(gamma);
         (norm * 255.0).clamp(0.0, 255.0) as u8
     };
 
-    // Apply transform
     for (x, y, pixel) in out_img.enumerate_pixels_mut() {
         let orig = rgb_img.get_pixel(x, y);
         let r = map_channel(orig[0], black_r, white_r);
@@ -1651,7 +1628,6 @@ fn auto_levels_image(
     out_img
 }
 
-// ------------------ Main ------------------
 fn main() {
     let args = Args::parse();
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
@@ -1667,7 +1643,7 @@ fn main() {
         args.velocity,
     );
 
-    // Decide which bodies to hide
+    // Decide hide
     let hide_bodies = if args.force_visible {
         vec![false, false, false]
     } else {
@@ -1681,8 +1657,8 @@ fn main() {
         }
     };
 
-    // 1) pick best
-    let (mut positions, best_result, best_masses, _valid_sims) = select_best_trajectory(
+    // 1) pick best orbit
+    let (mut positions, best_result, best_masses, valid_sims) = select_best_trajectory(
         &mut rng,
         args.num_sims,
         args.num_steps,
@@ -1694,8 +1670,7 @@ fn main() {
         args.lyap_weight,
     );
 
-    // print
-    println!("\nScore breakdown for best trajectory:");
+    println!("\nScore breakdown for best trajectory (out of {} valid orbits):", valid_sims);
     println!(
         "  - Chaos measure (lower better) = {:.4e}, Borda pts = {}",
         best_result.chaos, best_result.chaos_pts
@@ -1737,7 +1712,7 @@ fn main() {
     let video_filename = format!("vids/{}.mp4", base_name);
     let lines_video_filename = format!("vids/{}_lines_only.mp4", base_name);
 
-    // Keep an unscaled copy for lines-only
+    // For lines-only, keep unscaled
     let positions_unscaled = positions.clone();
 
     // 2) normalize for normal trajectory
@@ -1747,7 +1722,7 @@ fn main() {
     let colors =
         generate_body_color_sequences(&mut rng, args.num_steps, args.special_color.as_deref());
 
-    // tail
+    // 4) figure out tail lengths
     let (video_trajectory_lengths, image_trajectory_lengths) = if args.special_color.is_some() {
         let vt_min = args.special_color_video_tail_min;
         let vt_max = args.special_color_video_tail_max;
@@ -1784,24 +1759,22 @@ fn main() {
         )
     };
 
-    // 4) Single-frame trajectory image
+    let frame_size = args.frame_size;
+
+    // 5) Single-frame normal image
     if !args.no_image {
-        let frame_size = 800;
-        // Generate single-frame in memory
         let pic_frames = plot_positions_parallel(
             &positions,
             frame_size,
             image_trajectory_lengths,
             &hide_bodies,
             &colors,
-            999_999_999, // effectively just 1 frame
+            999_999_999,
             args.avoid_effects,
             true,
             args.dynamic_bounds,
         );
         let last_frame = pic_frames.last().unwrap().clone();
-
-        // Save the "before" image
         let traj_path = format!("pics/{}.png", base_name);
         if let Err(e) = last_frame.save(&traj_path) {
             eprintln!("Error saving trajectory image: {:?}", e);
@@ -1809,8 +1782,8 @@ fn main() {
             println!("Trajectory image saved as {}", traj_path);
         }
 
-        // Also produce the auto-levels version (only for the single image, not for video)
-        let dyn_img = DynamicImage::ImageRgb8(last_frame.clone());
+        // auto-level single normal image
+        let dyn_img = DynamicImage::ImageRgb8(last_frame);
         let auto_leveled = auto_levels_image(
             &dyn_img,
             args.auto_levels_black_percent,
@@ -1827,14 +1800,13 @@ fn main() {
         println!("No single-frame trajectory image requested.");
     }
 
-    // 5) Normal trajectory video
+    // 6) normal trajectory video
     if !args.no_video {
         let num_seconds = 30;
         let target_length = 60 * num_seconds;
         let frame_interval =
-            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 };
-        let frame_interval = frame_interval.max(1);
-        let frame_size = 800;
+            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 }.max(1);
+
         let frames = plot_positions_parallel(
             &positions,
             frame_size,
@@ -1851,17 +1823,17 @@ fn main() {
         println!("No main trajectory video requested.");
     }
 
-    // 6) Single-frame lines-only image (unscaled positions, parallel)
+    // 7) Single-frame lines-only image (unscaled)
     let lines_only_img =
-        generate_connection_lines_image_cool(&positions_unscaled, &colors, 800, base_name);
-    // Save the "before" lines-only
+        generate_connection_lines_single_image_cool(&positions_unscaled, &colors, frame_size);
     let lines_path = format!("pics/{}_lines_only.png", base_name);
     if let Err(e) = lines_only_img.save(&lines_path) {
         eprintln!("Error saving lines-only image: {:?}", e);
     } else {
         println!("Lines-only image saved as {}", lines_path);
     }
-    // Also produce auto-leveled version of lines-only
+
+    // auto-level lines-only single image
     {
         let dyn_img = DynamicImage::ImageRgba8(lines_only_img);
         let auto_leveled_lines = auto_levels_image(
@@ -1878,17 +1850,17 @@ fn main() {
         }
     }
 
-    // 7) Lines-only video (parallel frames, single global max) - no auto-level here
+    // 8) lines-only video
     if !args.no_video {
         let num_seconds = 30;
         let target_length = 60 * num_seconds;
         let frame_interval =
-            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 };
-        let frame_interval = frame_interval.max(1);
+            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 }.max(1);
+
         let lines_frames = generate_connection_lines_frames_parallel(
             &positions_unscaled,
             &colors,
-            800,
+            frame_size,
             frame_interval,
         );
         create_video_from_frames_in_memory(&lines_frames, &lines_video_filename, 60);
@@ -1896,5 +1868,5 @@ fn main() {
         println!("No lines-only video requested.");
     }
 
-    println!("\nDone: simulation + normal video + lines-only image + lines-only video, with auto-level single images (adjustable percentiles & gamma)!");
+    println!("\nDone: normal + lines-only videos + single images (with auto-level).");
 }
