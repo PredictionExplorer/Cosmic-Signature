@@ -110,7 +110,7 @@ describe("Bidding", function () {
 		let mainEthPrizeExpectedAmount_ = (balance * 25n) / 100n;
 		expect(mainEthPrizeAmount2_).to.equal(mainEthPrizeExpectedAmount_);
 		// let w = await cosmicSignatureGameProxy.tryGetMainPrizeWinnerAddress(0);
-		let w = await prizesWallet.mainPrizeWinnerAddresses(0);
+		let w = await prizesWallet.mainPrizeBeneficiaryAddresses(0);
 		expect(w).to.equal(addr3.address);
 
 		await expect(cosmicSignatureGameProxy.connect(addr2).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsPlacedInCurrentRound");

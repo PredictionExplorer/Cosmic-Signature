@@ -101,8 +101,8 @@ describe("BidderContract", function () {
 		let receipt = await tx.wait();
 		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		let prizeWinnerTokenIndex = 0;
-		let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[prizeWinnerTokenIndex]);
+		let prizeWinnerNftIndex_ = 0;
+		let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[prizeWinnerNftIndex_]);
 		let args = parsed_log.args.toObject();
 		let o = await cosmicSignatureNft.ownerOf(args.nftId);
 		expect(await bnonrec.getAddress()).to.equal(o);

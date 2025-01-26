@@ -69,7 +69,7 @@ describe("Events", function () {
 		const contractBalance = await hre.ethers.provider.getBalance(await cosmicSignatureGameProxy.getAddress());
 		expect(contractBalance).to.equal(donationAmount_ + INITIAL_AMOUNT);
 	});
-	it("should emit MainPrizeClaimed and update winner on successful prize claim", async function () {
+	it("Shall emit MainPrizeClaimed and update main prize beneficiary on successful main prize claim", async function () {
 		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =
 			await loadFixture(deployContractsForTesting);
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
@@ -102,9 +102,9 @@ describe("Events", function () {
 			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed")
 			.withArgs(0, bidder1.address, mainEthPrizeAmountBeforeClaim_, 0);
 
-		// const roundMainPrizeWinnerAddress_ = await cosmicSignatureGameProxy.winners(0);
-		const roundMainPrizeWinnerAddress_ = await prizesWallet.mainPrizeWinnerAddresses(0);
-		expect(roundMainPrizeWinnerAddress_).to.equal(bidder1.address);
+		// const mainPrizeBeneficiaryAddress_ = await cosmicSignatureGameProxy.winners(0);
+		const mainPrizeBeneficiaryAddress_ = await prizesWallet.mainPrizeBeneficiaryAddresses(0);
+		expect(mainPrizeBeneficiaryAddress_).to.equal(bidder1.address);
 
 		const mainEthPrizeAmountAfterClaim_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		const balance = await hre.ethers.provider.getBalance(await cosmicSignatureGameProxy.getAddress());

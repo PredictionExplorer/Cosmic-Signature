@@ -278,7 +278,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Game ETH Prize Percentage Parameters
 
-	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize beneficiary.
+	/// @notice The percentage of ETH in the Game account to be paid to the main prize beneficiary.
 	/// Comment-202411064 applies.
 	uint256 public mainEthPrizeAmountPercentage;
 
@@ -297,15 +297,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Game Prize Other Parameters and Variables
 
-	/// @notice If bidding round main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
+	/// @notice If the main prize winner doesn't claim the prize within this timeout,
+	/// anybody will be welcomed to claim it.
 	/// Comment-202411064 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
 	/// @dev Comment-202412312 applies.
 	uint256 public timeoutDurationToClaimMainPrize;
 
+	// todo-1 These are really to be referred to as "beneficiaries". But just delete this garbage.
 	// /// @notice Bidding round main prize winners.
 	// /// @dev ToDo-202411098-1 applies.
-	// /// I have replaced this with `PrizesWallet.mainPrizeWinnerAddresses`.
+	// /// I have replaced this with `PrizesWallet.mainPrizeBeneficiaryAddresses`.
 	// mapping(uint256 roundNum => address winnerAddress) public winners;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.

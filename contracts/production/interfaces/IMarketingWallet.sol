@@ -11,7 +11,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// on main prize claim.
 /// Eventually, the project founders will transfer this wallet ownership to a treasurer appointed by the DAO.
 ///
-/// @dev todo-1 Taras dislikes the idea to eliminate this contract.
+/// @dev todo-1 +++ Taras dislikes the idea to eliminate this contract.
 ///
 /// todo-1 Develop a test in which the DAO changes the owner of the marketing wallet.
 /// todo-1 Ask Nick if he was able to do it with the Tally app.
@@ -45,12 +45,10 @@ interface IMarketingWallet is IAddressValidator {
 	/// @param marketerAddresses_ Recipient addresses.
 	/// @param amount_ Amount to pay to each recipient.
 	/// It's OK if it's zero.
-	/// @dev todo-1 Maybe rename this to `payManyRewards`. Methods named that way already exist elsewhere.
-	function payRewards(address[] calldata marketerAddresses_, uint256 amount_) external;
+	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external;
 
 	/// @notice Pays CST rewards to zero or more marketers.
 	/// Only the contract owner is permitted to call this method.
 	/// @param specs_ Payment specs.
-	/// @dev todo-1 Maybe rename this to `payManyRewards`. Methods named that way already exist elsewhere.
-	function payRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external;
+	function payManyRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external;
 }

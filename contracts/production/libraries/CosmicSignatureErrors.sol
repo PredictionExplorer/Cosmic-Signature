@@ -152,7 +152,7 @@ library CosmicSignatureErrors {
 	/// @param durationUntilOperationIsPermitted The duration until this operation will be permitted.
 	error MainPrizeClaimDenied(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 durationUntilOperationIsPermitted);
 
-	/// @notice Thrown when attempting to claim a bidding round main prize too early.
+	/// @notice Thrown when attempting to claim main prize too early.
 	/// See also: `EarlyWithdrawal`.
 	/// @param errStr Description of the error.
 	/// @param mainPrizeTime The time when this operation will be permitted.

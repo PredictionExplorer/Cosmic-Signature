@@ -9,15 +9,16 @@ import { IBidStatistics } from "./IBidStatistics.sol";
 /// @notice Functionality that handles claiming and paying bidding round main prize,
 /// as well as distributing other (secondary) prizes.
 interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
-	/// @notice Emitted when a bidding round main prize is claimed.
+	/// @notice Emitted when a main prize is claimed.
 	/// This event indicates that the round has ended.
 	/// @param roundNum The current bidding round number.
 	/// @param beneficiaryAddress The address receiving the prize.
 	/// [Comment-202411254]
-	/// It will be different from the bidding round main prize actual winner if the winner has failed to claim the prize
+	/// It will be different from the main prize actual winner if the latter forgot to claim the prize
 	/// within a timeout and someone else has claimed it instead.
 	/// It's possible to find out from other events who is the actual winner.
 	/// Comment-202411285 relates.
+	/// Comment-202501249 relates.
 	/// [/Comment-202411254]
 	/// @param ethPrizeAmount ETH prize amount.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
@@ -72,6 +73,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBas
 	/// The prize ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIndex Winner index.
+	/// todo-1 Should it be `indexed`?
 	/// @param winnerAddress Winner address.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	/// @dev Comment-202412189 applies.
@@ -86,6 +88,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBas
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIsRandomWalkNftStaker Whether the winner is a RandomWalk NFT staker or a bidder.
 	/// @param winnerIndex Winner index.
+	/// todo-1 Should it be `indexed`?
 	/// @param winnerAddress Winner address.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	event RaffleWinnerCosmicSignatureNftAwarded(
@@ -116,9 +119,10 @@ interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBas
 	/// @return The current charity ETH donation amount, in Wei.
 	function getCharityEthDonationAmount() external view returns(uint256);
 
+	// todo-1 This is really to be referred to as "beneficiary". But just delete this garbage.
 	// /// @return The given bidding round main prize winner address,
 	// /// or zero if `roundNum_` is invalid or the round has not ended yet.
 	// /// @param roundNum_ The bidding round number.
-	// /// @dev Don't use this. Instead, use `prizesWallet.mainPrizeWinnerAddresses`.
+	// /// @dev Don't use this. Instead, use `prizesWallet.mainPrizeBeneficiaryAddresses`.
 	// function tryGetMainPrizeWinnerAddress(uint256 roundNum_) external view returns(address);
 }

@@ -19,7 +19,6 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// by making a direct call to an NFT contract, there would be no way to change that NFT owner again.
 /// ToDo-202412176-1 relates.
 interface IPrizesWallet is IAddressValidator {
-	/// todo-1 I wrote todos to rename some params in some methods. I have already renamed members here, but take another look.
 	struct EthDeposit {
 		address prizeWinnerAddress;
 
@@ -64,27 +63,27 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param newValue The new value.
 	event TimeoutDurationToWithdrawPrizesChanged(uint256 newValue);
 
-	/// @notice Emitted when an ETH prize is received for a bidding round prize winner.
+	/// @notice Emitted when an ETH prize is received for a prize winner.
 	/// This is used only for secondary (non-main) prizes.
 	/// @param roundNum The current bidding round number.
-	/// @param roundPrizeWinnerAddress Bidding round prize winner address.
-	/// todo-1 Rename to `prizeWinnerAddress`.
+	/// @param prizeWinnerAddress Prize winner address.
 	/// @param amount ETH amount.
 	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
 	/// todo-1 Maybe talk to Nick again about that later.
-	event EthReceived(uint256 indexed roundNum, address indexed roundPrizeWinnerAddress, uint256 amount);
+	event EthReceived(uint256 indexed roundNum, address indexed prizeWinnerAddress, uint256 amount);
 
 	/// @notice Emitted when someone withdraws ETH.
-	/// @param roundPrizeWinnerAddress Bidding round prize winner address.
-	/// todo-1 Rename to `prizeWinnerAddress`.
-	/// @param beneficiaryAddress Withdrawer address.
+	/// @param prizeWinnerAddress Prize winner address.
+	/// @param beneficiaryAddress The address that withdrew the funds.
 	/// [Comment-202411285]
-	/// It's typically different from `roundPrizeWinnerAddress` when withdrawing an unclaimed prize.
+	/// It will be different from `prizeWinnerAddress` if the latter forgot to claim the prize
+	/// within a timeout and someone else has claimed it instead.
 	/// Comment-202411254 relates.
+	/// Comment-202501249 relates.
 	/// [/Comment-202411285]
 	/// @param amount ETH amount.
-	event EthWithdrawn(address indexed roundPrizeWinnerAddress, address indexed beneficiaryAddress, uint256 amount);
+	event EthWithdrawn(address indexed prizeWinnerAddress, address indexed beneficiaryAddress, uint256 amount);
 
 	/// @notice Emitted when someone makes an ERC-20 token donation.
 	/// @param roundNum The current bidding round number.
@@ -101,7 +100,12 @@ interface IPrizesWallet is IAddressValidator {
 	/// @notice Emitted when someone claims an ERC-20 token donation.
 	/// @param roundNum Bidding round number.
 	/// @param beneficiaryAddress The address that claimed the donation.
-	/// Comment-202411254 applies.
+	/// [Comment-202501249]
+	/// It will be different from the main prize beneficiary if the latter forgot to claim the donation
+	/// within a timeout and someone else has claimed it instead.
+	/// Comment-202411254 relates.
+	/// Comment-202411285 relates.
+	/// [/Comment-202501249]
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
 	event DonatedTokenClaimed(
@@ -128,7 +132,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @notice Emitted when someone claims a donated NFT.
 	/// @param roundNum Bidding round number.
 	/// @param beneficiaryAddress The address that claimed the donation.
-	/// Comment-202411254 applies.
+	/// Comment-202501249 applies.
 	/// @param nftAddress NFT contract address.
 	/// @param nftId NFT ID.
 	/// @param index `donatedNfts` item index.
@@ -147,17 +151,20 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice Calling this method is equivalent to calling `registerRoundEnd` once and then `depositEth` zero or more times.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
-	/// todo-1 I wrote todos to rename some params in other methods. I have already renamed them here, but take another look.
-	/// todo-1 `mainPrizeWinnerAddress_` is really main prize beneficiary. Rename in many places, also in comments. Review all "winner".
-	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeWinnerAddress_, EthDeposit[] calldata ethDeposits_) external payable;
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable;
 
-	/// @notice `CosmicSignatureGame` calls this method on bidding round main prize claim.
+	/// @notice `CosmicSignatureGame` calls this method on main prize claim.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
-	/// @param roundMainPrizeWinnerAddress_ Bidding round main prize winner address.
-	/// todo-1 Rename the above to `mainPrizeWinnerAddress_`.
-	/// todo-1 This method is not used. At least comment.
-	function registerRoundEnd(uint256 roundNum_, address roundMainPrizeWinnerAddress_) external;
+	/// @param mainPrizeBeneficiaryAddress_ Main prize beneficiary address.
+	/// Comment-202411254 applies.
+	/// The Game contract passes `msg.sender` for this parameter.
+	/// An alternative would be to pass `lastBidderAddress` instead.
+	/// As a result, even if the last bidder forgets to claim the main prize, we would still record them as the winner,
+	/// which would make them entitled to claim donated ERC-20 tokens and ERC-721 NFTs.
+	/// But the team feels that it's better to simply treat the person who clicked "Claim" as the winner.
+	/// @dev todo-1 This method is not used. At least comment.
+	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external;
 
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
 	function withdrawEverything(
@@ -166,36 +173,32 @@ interface IPrizesWallet is IAddressValidator {
 		uint256[] calldata donatedNftIndices_
 	) external;
 
-	/// @notice Receives an ETH prize for a bidding round prize winner.
+	/// @notice Receives an ETH prize for a prize winner.
 	/// This is used only for secondary (non-main) prizes.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// It's OK if `msg.value` is zero.
 	/// @param roundNum_ The current bidding round number.
-	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
-	/// todo-1 Rename the above to `prizeWinnerAddress_`.
-	/// @dev
-	/// todo-1 This method is not used. At least comment.
-	function depositEth(uint256 roundNum_, address roundPrizeWinnerAddress_) external payable;
+	/// @param prizeWinnerAddress_ Prize winner address.
+	/// @dev todo-1 This method is not used. At least comment.
+	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable;
 
-	/// @notice A biddig round prize winner calls this method to withdraw their ETH balance.
+	/// @notice A prize winner calls this method to withdraw their ETH balance.
 	/// Only the winner is permitted to call this method.
 	function withdrawEth() external;
 
 	/// @notice Anybody is welcomed to call this method after a timeout expires
-	/// to withdraw a biddig round prize winner's unclaimed ETH.
-	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
-	/// todo-1 Rename the above to `prizeWinnerAddress_`.
-	function withdrawEth(address roundPrizeWinnerAddress_) external;
+	/// to withdraw a prize winner's unclaimed ETH.
+	/// @param prizeWinnerAddress_ Prize winner address.
+	function withdrawEth(address prizeWinnerAddress_) external;
 
 	/// @return Details on ETH balance belonging to `msg.sender`.
 	/// @dev Comment-202410274 relates.
 	function getEthBalanceInfo() external view returns(EthBalanceInfo memory);
 
 	/// @return Details on ETH balance belonging to the given address.
-	/// @param roundPrizeWinnerAddress_ Bidding round prize winner address.
-	/// todo-1 Rename the above to `prizeWinnerAddress_`.
+	/// @param prizeWinnerAddress_ Prize winner address.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo(address roundPrizeWinnerAddress_) external view returns(EthBalanceInfo memory);
+	function getEthBalanceInfo(address prizeWinnerAddress_) external view returns(EthBalanceInfo memory);
 
 	/// @notice This method allows anybody to make an ERC-20 token donation.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
@@ -212,7 +215,7 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice Claims an ERC-20 token donateion.
 	/// [Comment-202411289]
-	/// Only the bidding round main prize winner is permitted to claim donated ERC-20 tokens and ERC-721 NFTs
+	/// Only the given bidding round main prize beneficiary is permitted to claim donated ERC-20 tokens and ERC-721 NFTs
 	/// before a timeout expires. Afterwards, anybody is welcomed to.
 	/// [/Comment-202411289]
 	/// @param roundNum_ Bidding round number.

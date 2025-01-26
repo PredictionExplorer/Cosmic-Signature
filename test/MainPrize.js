@@ -66,14 +66,14 @@ describe("MainPrize", function () {
 		let roundNumAfter = await cosmicSignatureGameProxy.roundNum();
 		expect(roundNumAfter).to.equal(roundNumBefore + 1n);
 
-		// check winners[] map contains correct winner value
-		// let curWinnerAddress_ = await cosmicSignatureGameProxy.winners(roundNumBefore);
-		let curWinnerAddress_ = await prizesWallet.mainPrizeWinnerAddresses(roundNumBefore);
-		expect(curWinnerAddress_).to.equal(addr3.address);
+		// Validating that we have recorded the correct main prize beneficiary.
+		// let mainPrizeBeneficiaryAddress_ = await cosmicSignatureGameProxy.winners(roundNumBefore);
+		let mainPrizeBeneficiaryAddress_ = await prizesWallet.mainPrizeBeneficiaryAddresses(roundNumBefore);
+		expect(mainPrizeBeneficiaryAddress_).to.equal(addr3.address);
 
-		// make sure the number of deposits matches numRaffleWinnersPerRound variable
+		// Validating the number of ETH deposits.
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		const numMainPrizeWinners_ = 1n;
+		const numMainPrizeBeneficiaries_ = 1n;
 		const numLastCstBidders_ = 1n;
 		const numEnduranceChampions_ = 1n;
 		const numChronoWarriors_ = 1n;
@@ -82,7 +82,7 @@ describe("MainPrize", function () {
 		let numRaffleCosmicSignatureNftsForRandomWalkNftStakers_ = await cosmicSignatureGameProxy.numRaffleCosmicSignatureNftsForRandomWalkNftStakers();
 		expect(numChronoWarriors_ + numRaffleEthPrizesForBidders_).to.equal(deposit_logs.length);
 		let sum_winners =
-			numMainPrizeWinners_ +
+			numMainPrizeBeneficiaries_ +
 			numLastCstBidders_ +
 			numEnduranceChampions_ +
 			numRaffleCosmicSignatureNftsForBidders_ +
@@ -92,7 +92,7 @@ describe("MainPrize", function () {
 			sum_winners;
 		let curTotalSupply = await cosmicSignatureNft.totalSupply();
 		expect(curTotalSupply).to.equal(expected_total_supply);
-		// let last_cosmic_signature_supply = sum_winners + numMainPrizeWinners_;
+		// let last_cosmic_signature_supply = sum_winners + numMainPrizeBeneficiaries_;
 
 		// let's begin a new round
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -120,11 +120,11 @@ describe("MainPrize", function () {
 		for (let i = 0; i < deposit_logs.length; i++) {
 			let wlog = prizesWallet.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
-			let roundPrizeWinnerAddress_ = args.roundPrizeWinnerAddress;
-			if (typeof unique_winners[roundPrizeWinnerAddress_] === "undefined") {
-				let winner_signer = await hre.ethers.getSigner(roundPrizeWinnerAddress_);
+			let prizeWinnerAddress_ = args.prizeWinnerAddress;
+			if (typeof unique_winners[prizeWinnerAddress_] === "undefined") {
+				let winner_signer = await hre.ethers.getSigner(prizeWinnerAddress_);
 				await prizesWallet.connect(winner_signer).withdrawEth();
-				unique_winners[roundPrizeWinnerAddress_] = 1;
+				unique_winners[prizeWinnerAddress_] = 1;
 			}
 		}
 	});

@@ -42,7 +42,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 		emit RewardPaid(marketerAddress_, amount_);
 	}
 
-	function payRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {
+	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {
 		// Comment-202501137 applies.
 		token.transferMany(marketerAddresses_, amount_);
 
@@ -53,7 +53,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 		}
 	}
 
-	function payRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override onlyOwner {
+	function payManyRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override onlyOwner {
 		// Comment-202501137 applies.
 		token.transferMany(specs_);
 

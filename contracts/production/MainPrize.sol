@@ -92,7 +92,7 @@ abstract contract MainPrize is
 	// #region `_distributePrizes`
 
 	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
-	/// todo-1 Develop a test that checks that there are no NFTs with duplicate seeds.
+	/// @dev todo-1 Develop a test that checks that after a few rounds there are no NFTs with duplicate seeds.
 	function _distributePrizes() private {
 		// #region
 
@@ -417,10 +417,6 @@ abstract contract MainPrize is
 						// #region
 
 						// All calculations marked with Comment-202501161 must be made before this.
-						// One might want to pass `lastBidderAddress` instead of `msg.sender` here.
-						// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
-						// which would allow them to claim donated ERC-20 tokens and ERC-721 NFTs.
-						// But we feel that it's better to simply treat the person who clicked "Claim" as the winner.
 						prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, msg.sender, ethDeposits_);
 
 						// #endregion

@@ -94,9 +94,10 @@ async function main() {
 	}
 	let roundToClaim = parseInt(roundNumStr, 10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
-	let roundMainPrizeWinnerAddress_ = await cosmicSignatureGame.winners(roundToClaim);
-	if (roundMainPrizeWinnerAddress_.toString() != testingAcct.address.toString()) {
-		console.log("You aren't the winner of prize " + roundToClaim + ", winner is " + roundMainPrizeWinnerAddress_.toString());
+	// todo-1 This variable no longer exists. A similar variable exists in `PrizesWallet`.
+	let mainPrizeBeneficiaryAddress_ = await cosmicSignatureGame.winners(roundToClaim);
+	if (mainPrizeBeneficiaryAddress_.toString() != testingAcct.address.toString()) {
+		console.log("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress_.toString());
 		process.exit(1);
 	}
 
