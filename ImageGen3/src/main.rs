@@ -33,7 +33,7 @@ const G: f64 = 9.8;
 #[command(
     author,
     version,
-    about = "Simulate & visualize the three-body problem (lines-only, new auto-level by histogram fraction)."
+    about = "Simulate & visualize the three-body problem (lines-only, with percentile-based auto-level)."
 )]
 struct Args {
     // Basic simulation parameters
@@ -112,20 +112,20 @@ struct Args {
     #[arg(long, default_value_t = 1.0)]
     lyap_weight: f64,
 
-    // ==================== NEW AUTO-LEVELS approach #2 ====================
-    /// Fraction of histogram peak used for black. Example: 0.01 means
-    /// "black slider is the first bin from the left that has at least 1% of the histogram's max bin height."
-    #[arg(long, default_value_t = 0.01)]
-    hist_thresh_black_fraction: f64,
+    // ========== NEW PERCENTILE-BASED AUTO-LEVEL PARAMETERS ==========
+    /// Fraction of pixels to clip to black.
+    /// E.g. 0.03 => bottom 3% of pixel intensities will become black.
+    #[arg(long, default_value_t = 0.03)]
+    clip_black: f64,
 
-    /// Fraction of histogram peak used for white. Example: 0.01 means
-    /// "white slider is the first bin from the right that has at least 1% of the histogram's max bin height."
-    #[arg(long, default_value_t = 0.01)]
-    hist_thresh_white_fraction: f64,
+    /// Fraction of pixels to clip to white.
+    /// E.g. 0.97 => top 3% of pixel intensities will become white (1.0).
+    #[arg(long, default_value_t = 0.97)]
+    clip_white: f64,
 
-    /// Gamma correction for the final remap. Typically 1.0 = no correction.
+    /// Gamma correction factor after clipping and remapping. 1.0 = no correction.
     #[arg(long, default_value_t = 1.0)]
-    hist_levels_gamma: f64,
+    levels_gamma: f64,
 
     // Frame (image) size for single images & videos
     #[arg(long, default_value_t = 800)]
@@ -470,8 +470,7 @@ fn compute_bounding_box_for_frame(
     (min_x, min_y, max_x, max_y)
 }
 
-/// This function draws a line from (x0, y0) to (x1, y1) into accum_r/g/b by using Bresenham.
-/// It linearly interpolates color between col0 and col1, and uses additive blending.
+/// Draw a line from (x0, y0) to (x1, y1) via Bresenham, linearly interpolating color & additive.
 fn draw_line_segment_additive_gradient(
     accum_r: &mut [f64],
     accum_g: &mut [f64],
@@ -1124,74 +1123,56 @@ fn select_best_trajectory(
     (positions_best, best_tr, best_masses, valid_count)
 }
 
-// ========================= NEW AUTO-LEVEL FUNCTION =========================
-// Approach #2: "Threshold by fraction of the maximum histogram height."
-//
-// - We have two user parameters: hist_thresh_black_fraction, hist_thresh_white_fraction
-// - We do a gamma as well (hist_levels_gamma).
-//
-// Steps:
-// 1) Build histograms for R/G/B (256 bins).
-// 2) Find max_bin_count across all bins in any channel. Call that max_count.
-// 3) For black, define black_threshold = max_count * hist_thresh_black_fraction.
-//    - Scan from left bin=0 up to 255, find the first bin with bin_count >= black_threshold.
-//      That is black_cut for that channel. (We do it per channel separately.)
-// 4) For white, define white_threshold = max_count * hist_thresh_white_fraction.
-//    - Scan from bin=255 down to 0, find the first bin >= white_threshold for that channel.
-//      That is white_cut for that channel.
-// 5) Remap each pixel's channel c:
-//       out = (c - black_cut) / (white_cut - black_cut), clamp [0..1], then powf(gamma), then *255
-fn auto_levels_image(
+// ============= PERCENTILE-BASED AUTO-LEVEL FUNCTION =============
+// We clip the bottom `clip_black` fraction of pixels to black,
+// and the top `(1 - clip_white)` fraction to white. Then apply gamma.
+fn auto_levels_percentile_image(
     input: &DynamicImage,
-    black_frac: f64,
-    white_frac: f64,
+    clip_black: f64,
+    clip_white: f64,
     gamma: f64,
 ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     let rgb_img = input.to_rgb8();
-    let (w, h) = rgb_img.dimensions();
+    let (width, height) = rgb_img.dimensions();
+    let total_pixels = (width * height) as usize;
 
-    // Histograms for each channel
+    // 1) Build histogram for each channel
     let mut hist_r = [0u32; 256];
     let mut hist_g = [0u32; 256];
     let mut hist_b = [0u32; 256];
 
-    // Build hist
     for px in rgb_img.pixels() {
         hist_r[px[0] as usize] += 1;
         hist_g[px[1] as usize] += 1;
         hist_b[px[2] as usize] += 1;
     }
 
-    // Find the maximum bin count among all channels
-    let max_bin_count_r = *hist_r.iter().max().unwrap_or(&0);
-    let max_bin_count_g = *hist_g.iter().max().unwrap_or(&0);
-    let max_bin_count_b = *hist_b.iter().max().unwrap_or(&0);
-    let max_bin_count = max_bin_count_r.max(max_bin_count_g).max(max_bin_count_b);
+    // 2) Build cumulative distribution
+    let cdf_r = build_cdf(&hist_r);
+    let cdf_g = build_cdf(&hist_g);
+    let cdf_b = build_cdf(&hist_b);
 
-    // define threshold counts
-    let black_threshold = (max_bin_count as f64 * black_frac).ceil() as u32;
-    let white_threshold = (max_bin_count as f64 * white_frac).ceil() as u32;
+    // 3) Convert clip fractions -> absolute counts
+    let black_count = (clip_black * total_pixels as f64).round() as u32;
+    let white_count = (clip_white * total_pixels as f64).round() as u32;
 
-    // find black cut for each channel
-    let black_cut_r = find_black_cut(&hist_r, black_threshold);
-    let black_cut_g = find_black_cut(&hist_g, black_threshold);
-    let black_cut_b = find_black_cut(&hist_b, black_threshold);
+    // 4) find black_cut, white_cut for each channel
+    let black_cut_r = find_percentile_cut(&cdf_r, black_count, true);
+    let black_cut_g = find_percentile_cut(&cdf_g, black_count, true);
+    let black_cut_b = find_percentile_cut(&cdf_b, black_count, true);
 
-    // find white cut for each channel
-    let white_cut_r = find_white_cut(&hist_r, white_threshold);
-    let white_cut_g = find_white_cut(&hist_g, white_threshold);
-    let white_cut_b = find_white_cut(&hist_b, white_threshold);
+    let white_cut_r = find_percentile_cut(&cdf_r, white_count, false);
+    let white_cut_g = find_percentile_cut(&cdf_g, white_count, false);
+    let white_cut_b = find_percentile_cut(&cdf_b, white_count, false);
 
-    // Create output
-    let mut out_img = ImageBuffer::new(w, h);
-
-    // do the actual remap
+    // 5) Remap each pixel
+    let mut out_img = ImageBuffer::new(width, height);
     for (x, y, pixel) in out_img.enumerate_pixels_mut() {
         let orig = rgb_img.get_pixel(x, y);
 
-        let nr = remap_channel(orig[0], black_cut_r, white_cut_r, gamma);
-        let ng = remap_channel(orig[1], black_cut_g, white_cut_g, gamma);
-        let nb = remap_channel(orig[2], black_cut_b, white_cut_b, gamma);
+        let nr = remap_and_gamma(orig[0], black_cut_r, white_cut_r, gamma);
+        let ng = remap_and_gamma(orig[1], black_cut_g, white_cut_g, gamma);
+        let nb = remap_and_gamma(orig[2], black_cut_b, white_cut_b, gamma);
 
         *pixel = Rgb([nr, ng, nb]);
     }
@@ -1199,30 +1180,45 @@ fn auto_levels_image(
     out_img
 }
 
-// Helper to find black cut from the left
-fn find_black_cut(hist: &[u32; 256], threshold: u32) -> u8 {
-    for i in 0..256 {
-        if hist[i] >= threshold {
-            return i as u8;
-        }
+// Build cumulative distribution from histogram
+fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
+    let mut cdf = vec![0u32; 256];
+    let mut running = 0u32;
+    for (i, &count) in hist.iter().enumerate() {
+        running += count;
+        cdf[i] = running;
     }
-    // if none found, return 0
-    0
+    cdf
 }
 
-// Helper to find white cut from the right
-fn find_white_cut(hist: &[u32; 256], threshold: u32) -> u8 {
-    for i in (0..256).rev() {
-        if hist[i] >= threshold {
-            return i as u8;
+/// Find intensity bin for a given absolute count in the CDF.
+/// If `from_left == true`, we search from the left for the black cut.
+/// If `from_left == false`, we search from the right for the white cut.
+fn find_percentile_cut(cdf: &Vec<u32>, cutoff_count: u32, from_left: bool) -> u8 {
+    if from_left {
+        // find first bin i where cdf[i] >= cutoff_count
+        for i in 0..256 {
+            if cdf[i] >= cutoff_count {
+                return i as u8;
+            }
         }
+        255
+    } else {
+        // find from the right for white
+        // we interpret cutoff_count as the # of pixels that should be <= that bin
+        // so we want the largest i with cdf[i] <= cutoff_count
+        // we can also invert logic if we want top fraction -> we do that in main math
+        for i in (0..256).rev() {
+            if cdf[i] <= cutoff_count {
+                return i as u8;
+            }
+        }
+        0
     }
-    // if none found, return 255
-    255
 }
 
-// Remap channel [0..255] => [0..255], given black_cut, white_cut, gamma
-fn remap_channel(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
+/// Remap [black_cut..white_cut] -> [0..255], apply gamma
+fn remap_and_gamma(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
     let c_val = c as f64;
     let b_val = black_cut as f64;
     let w_val = white_cut as f64;
@@ -1233,23 +1229,11 @@ fn remap_channel(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
     }
 
     let mut t = (c_val - b_val) / (w_val - b_val);
-    if t < 0.0 {
-        t = 0.0;
-    } else if t > 1.0 {
-        t = 1.0;
-    }
+    t = t.clamp(0.0, 1.0);
     // apply gamma
     t = t.powf(gamma);
 
-    // scale to [0..255]
-    let out = (t * 255.0).round();
-    if out < 0.0 {
-        0
-    } else if out > 255.0 {
-        255
-    } else {
-        out as u8
-    }
+    (t * 255.0).round().clamp(0.0, 255.0) as u8
 }
 
 // ================== Single-lines-only code
@@ -1498,7 +1482,7 @@ fn generate_connection_lines_frames_parallel(
     let npix = (width * height) as usize;
     let small_weight = 0.3_f64;
 
-    // pre-compute final_global_max by accumulating all steps
+    // precompute final_global_max across all steps
     let mut global_accum_r: Vec<f64> = vec![0.0; npix];
     let mut global_accum_g: Vec<f64> = vec![0.0; npix];
     let mut global_accum_b: Vec<f64> = vec![0.0; npix];
@@ -1831,13 +1815,13 @@ fn main() {
             println!("Trajectory image saved as {}", traj_path);
         }
 
-        // =========== NEW AUTO-LEVEL with approach #2 ===========
+        // =========== NEW PERCENTILE-BASED AUTO-LEVEL ===========
         let dyn_img = DynamicImage::ImageRgb8(last_frame);
-        let auto_leveled = auto_levels_image(
+        let auto_leveled = auto_levels_percentile_image(
             &dyn_img,
-            args.hist_thresh_black_fraction,
-            args.hist_thresh_white_fraction,
-            args.hist_levels_gamma,
+            args.clip_black,
+            args.clip_white,
+            args.levels_gamma,
         );
         let traj_path_al = format!("pics/{}_AL.png", base_name);
         if let Err(e) = auto_leveled.save(&traj_path_al) {
@@ -1882,18 +1866,17 @@ fn main() {
         println!("Lines-only image saved as {}", lines_path);
     }
 
-    // =========== NEW AUTO-LEVEL lines-only single image ===========
+    // ======== Auto-level lines-only single image ========
     {
         let dyn_img = DynamicImage::ImageRgba8(lines_only_img);
-        // Convert to RGB8 if you prefer
         let dyn_img_rgb = dyn_img.to_rgb8();
         let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
 
-        let auto_leveled_lines = auto_levels_image(
+        let auto_leveled_lines = auto_levels_percentile_image(
             &dyn_img2,
-            args.hist_thresh_black_fraction,
-            args.hist_thresh_white_fraction,
-            args.hist_levels_gamma,
+            args.clip_black,
+            args.clip_white,
+            args.levels_gamma,
         );
         let lines_path_al = format!("pics/{}_lines_only_AL.png", base_name);
         if let Err(e) = auto_leveled_lines.save(&lines_path_al) {
@@ -1921,5 +1904,7 @@ fn main() {
         println!("No lines-only video requested.");
     }
 
-    println!("\nDone: normal + lines-only videos + single images (with new auto-level).");
+    println!(
+        "\nDone: normal + lines-only videos + single images (with percentile-based auto-level)."
+    );
 }

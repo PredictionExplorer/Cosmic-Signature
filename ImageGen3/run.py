@@ -10,8 +10,8 @@ import random
 SIMULATION_CONFIG = {
     # Core simulation parameters
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 1,            # how many runs in parallel
-    'base_seed_hex': "890130",      # base hex for seeds
+    'max_concurrent': 1,             # how many runs in parallel
+    'base_seed_hex': "890130",       # base hex for seeds
     'num_runs': 2000,                # how many seeds to append
 
     # Simulation parameters and their possible values
@@ -36,22 +36,23 @@ SIMULATION_CONFIG = {
         'special_color_video_tail_min': [1.0],
         'special_color_video_tail_max': [1.0],
         'special_color_image_tail_min': [2.0],
-        'special_color_image_tail_max': [2.0]
+        'special_color_image_tail_max': [2.0],
+
+        # New auto-level parameters
+        'clip_black': [0.03],
+        'clip_white': [0.80],
+        'levels_gamma': [1.0]
     },
 
     # Render parameters
     'render_config': {
-        'force_visible': True,
-        # Replaced old auto-level keys with new histogram fraction approach:
-        'hist_thresh_black_fraction': "0.00",  # or "0.01" if desired
-        'hist_thresh_white_fraction': "0.2",
-        'hist_levels_gamma': "0.8"
+        'force_visible': True
     }
 }
 
 @dataclass
 class SimulationParams:
-    """Holds all parameters for a single simulation run"""
+    """Holds all parameters for a single simulation run."""
     num_steps: int
     num_sims: int
     location: float
@@ -70,6 +71,11 @@ class SimulationParams:
     special_color_video_tail_max: float
     special_color_image_tail_min: float
     special_color_image_tail_max: float
+
+    clip_black: float
+    clip_white: float
+    levels_gamma: float
+
     seed: str   # constructed from base_seed_hex + index
 
 def generate_file_name(params: SimulationParams) -> str:
@@ -80,7 +86,7 @@ def generate_file_name(params: SimulationParams) -> str:
     return f"seed_{params.seed[2:]}"  # skip '0x' prefix, e.g. 0xABCD -> seed_ABCD
 
 def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
-    """Run the Rust program via subprocess"""
+    """Run the Rust program via subprocess."""
     shell_command = " ".join(command_list)
     try:
         result = subprocess.run(
@@ -95,7 +101,7 @@ def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
         return (shell_command, None)
 
 def build_command_list(program_path: str, params: SimulationParams, file_name: str) -> List[str]:
-    """Construct the command list for the simulation"""
+    """Construct the command list for the simulation."""
     cmd = [
         program_path,
         "--seed", params.seed,
@@ -113,21 +119,18 @@ def build_command_list(program_path: str, params: SimulationParams, file_name: s
         "--special-color-video-tail-min", str(params.special_color_video_tail_min),
         "--special-color-video-tail-max", str(params.special_color_video_tail_max),
         "--special-color-image-tail-min", str(params.special_color_image_tail_min),
-        "--special-color-image-tail-max", str(params.special_color_image_tail_max)
+        "--special-color-image-tail-max", str(params.special_color_image_tail_max),
+
+        # New auto-level parameters
+        "--clip-black", str(params.clip_black),
+        "--clip-white", str(params.clip_white),
+        "--levels-gamma", str(params.levels_gamma),
     ]
 
-    # Render toggles from SIMULATION_CONFIG['render_config']
+    # Add optional flags
     if SIMULATION_CONFIG['render_config']['force_visible']:
         cmd.append("--force-visible")
 
-    # New auto-level approach #2 (histogram fraction)
-    cmd.extend([
-        "--hist-thresh-black-fraction", SIMULATION_CONFIG['render_config']['hist_thresh_black_fraction'],
-        "--hist-thresh-white-fraction", SIMULATION_CONFIG['render_config']['hist_thresh_white_fraction'],
-        "--hist-levels-gamma", SIMULATION_CONFIG['render_config']['hist_levels_gamma']
-    ])
-
-    # Add optional flags
     if params.avoid_effects:
         cmd.append("--avoid-effects")
     if params.no_video:
@@ -155,13 +158,16 @@ class SimulationRunner:
                 seed_suffix = f"{i:04X}"  # 4-hex digits
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
+                # Each combo is a tuple matching the order we declared in param_ranges:
+                # (num_steps, num_sims, location, velocity, min_mass, max_mass, avoid_effects, ...)
+                # so we unpack + add 'seed' at the end:
                 params = SimulationParams(*combo, seed=full_seed)
                 param_sets.append(params)
 
         return param_sets
 
     def run_simulations(self, param_sets: List[SimulationParams]):
-        """Run simulations in parallel using ThreadPoolExecutor"""
+        """Run simulations in parallel using ThreadPoolExecutor."""
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
             for params in param_sets:
