@@ -176,6 +176,7 @@ function populateNetworkIsMainNetOnce(hre) {
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
 	async (args, hre, runSuper) => {
+		// todo-1 Review all `===` and `!==`. Maybe in some cases delete one `=`.
 		// @ts-ignore 'args' is of type 'unknown'.
 		if (args.solcVersion === solidityVersion) {
 
@@ -263,16 +264,17 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
+				runs: 20000,
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
 				// 		// this setting makes Hardhat work as well as possible.
-				// 		// Issue. But it appears to increase contract binary size.
-				// 		// todo-1 To be revisited.
+				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
+				// 		// So we probably don't need this.
+				// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
-				runs: 20000,
 			},
 
 			outputSelection: {
@@ -328,8 +330,11 @@ const hardhatUserConfig = {
 		// [/Comment-202408024]
 		path: "./abi",
 
+		// runOnCompile: true,
 		clear: true,
 		flat: true,
+
+		// Issue. This list is incomplete.
 		only: [
 			"CharityWallet",
 			"CosmicSignatureDao",
@@ -339,6 +344,7 @@ const hardhatUserConfig = {
 			"PrizesWallet",
 			"RandomWalkNFT",
 		],
+
 		spacing: 2,
 		pretty: true,
 	},
@@ -438,12 +444,14 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verified-contracts
 		// [/Comment-202409013]
 		contracts: {
+			// "contracts/production/AddressValidator.sol": ["AddressValidator"],
 			// "contracts/production/CharityWallet.sol": ["CharityWallet"],
 			// "contracts/production/CosmicSignatureDao.sol": ["CosmicSignatureDao"],
 			// "contracts/production/CosmicSignatureGame.sol": ["CosmicSignatureGame"],
 			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
 			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
 			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
+			// "contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol": ["OwnableUpgradeableWithReservedStorageGaps"],
 			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
 			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
 			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],

@@ -6,13 +6,13 @@ import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatur
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
-import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
-import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
+import { StakingWalletRandomWalkNft } from "../production/StakingWalletRandomWalkNft.sol";
+import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
-import { IBidding, Bidding } from "../production/Bidding.sol";
+// import { IBidding, Bidding } from "../production/Bidding.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
@@ -147,10 +147,9 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	constructor() CosmicSignatureGame() {
 	}
 
-	// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
+	// /// @notice returns all the assets to the creator of the contract and self-destroys
+	// /// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function finalizeTesting() external onlyOwner {
-	// 	// returns all the assets to the creator of the contract and self-destroys
-	//
 	// 	// CosmicSignature NFTs.
 	// 	uint256 cosmicSupply = nft.totalSupply();
 	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
@@ -166,6 +165,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 	token.transfer(owner(), cosmicSupply);
 	//
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
+	// 		// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// 		CosmicSignatureConstants.DonatedNft memory dnft = donatedNfts[i];
 	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);
 	// 	}
@@ -186,10 +186,6 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
 	// }
 
-	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
-	// 	prizesWallet = PrizesWallet(address(newValue_));
-	// }
-
 	// function setCosmicSignatureTokenRaw(ICosmicSignatureToken newValue_) external {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// }
@@ -199,6 +195,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function setNftContractRaw(ICosmicSignatureNft newValue_) external {
 		nft = CosmicSignatureNft(address(newValue_));
 	}
+
+	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
+	// 	prizesWallet = PrizesWallet(address(newValue_));
+	// }
 
 	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
@@ -299,34 +299,47 @@ contract MaliciousNft1 is ERC721 {
 }
 
 contract MaliciousNft2 is ERC721 {
-	// address private game;
+	CosmicSignatureGame private _game;
+	uint256 private transient _counter;
 
-	constructor(/*address game_,*/ string memory name_, string memory symbol_) ERC721(name_, symbol_) {
-		// game = game_;
+	constructor(CosmicSignatureGame game_, string memory name_, string memory symbol_) ERC721(name_, symbol_) {
+		_game = game_;
 	}
 
-	// /// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
-	// /// @dev todo-1 This method is now broken. See todos in its body.
-	// function transferFrom(address from, address to, uint256 nftId) public override {
-	// 	// uint256 price = Bidding(/*payable*/(game)).getNextEthBidPrice(int256(0));
-	// 	// todo-1 This structure no longer exists.
-	// 	CosmicSignatureGame.BidParams memory defaultParams;
-	// 	// defaultParams.message = "";
-	// 	defaultParams.randomWalkNftId = -1;
-	// 	bytes memory param_data = abi.encode(defaultParams);
-	// 	// the following call should revert
-	// 	// todo-1 Should we make a high level call here?
-	// 	(bool isSuccess_, /*bytes memory retval*/) =
-	// 		// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
-	// 		// todo-1 Besides, this sends zero `value`.
-	// 		msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), uint256(0)));
-	// 	if ( ! isSuccess_ ) {
-	// 		assembly {
-	// 			let ptr := mload(0x40)
-	// 			let size := returndatasize()
-	// 			returndatacopy(ptr, 0, size)
-	// 			revert(ptr, size)
-	// 		}
-	// 	}
-	// }
+	receive() external payable {
+	}
+
+	/// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
+	function transferFrom(address from_, address to_, uint256 nftId_) public override {
+		// // uint256 price = _game.getNextEthBidPrice(int256(0));
+		// // todo-1 This structure no longer exists.
+		// CosmicSignatureGame.BidParams memory defaultParams;
+		// // defaultParams.message = "";
+		// defaultParams.randomWalkNftId = -1;
+		// bytes memory param_data = abi.encode(defaultParams);
+		// // This call should revert.
+		// // todo-1 Should we make a high level call here?
+		// (bool isSuccess_, /*bytes memory retval*/) =
+		// 	// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+		// 	// todo-1 Besides, this sends zero `value`.
+		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), nftId_));
+		// if ( ! isSuccess_ ) {
+		// 	assembly {
+		// 		let ptr := mload(0x40)
+		// 		let size := returndatasize()
+		// 		returndatacopy(ptr, 0, size)
+		// 		revert(ptr, size)
+		// 	}
+		// }
+
+		if (_counter < 3) {
+			++ _counter;
+
+			// This call should revert.
+			// todo-1 But it doesn't, which is probably OK. To be revisited.
+			_game.bidAndDonateNft{value: 1 ether}(-1, "", this, nftId_ + 1);
+
+			-- _counter;
+		}
+	}
 }

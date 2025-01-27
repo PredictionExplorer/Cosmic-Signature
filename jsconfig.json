@@ -40,10 +40,10 @@
 		// [/Comment-202409225]
 		"strictNullChecks": false,
 
-		// // Issue. I see too many unused locals and parameters, so let's disable these lints for now.
-		// // ToDo-1 But consider re-enabling them.
-		// "noUnusedLocals": true,
-		// "noUnusedParameters": true,
+		// --- Issue. I see too many unused locals and parameters, so let's disable these lints for now.
+		// ToDo-1 +++ But consider re-enabling them.
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
 
 		// // Comment-202409225 relates and/or applies.
 		// "exactOptionalPropertyTypes": true,

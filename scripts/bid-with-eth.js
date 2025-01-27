@@ -1,7 +1,7 @@
-// todo-1 Rename this file to "bid-with-cst.js".
+"use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
@@ -14,8 +14,10 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
-	await cosmicSignatureGame.connect(testingAcct).bidWithCst(10n ** 30n, "cst bid", { gasLimit: 30000000 });
+	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	await cosmicSignatureGame.connect(testingAcct).bid((-1), "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

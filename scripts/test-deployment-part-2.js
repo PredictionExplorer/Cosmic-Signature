@@ -1,20 +1,20 @@
-// todo-1 Rename to "test-deployment-part-2.js".
-
 // Confirms that deployed contracts are fully operational
+
+"use strict";
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 	const unique_winners = [];
 	for (let i = 0; i < event_logs.length; i++) {
 		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
-		let roundPrizeWinnerAddress_ = wlog.args.roundPrizeWinnerAddress;
-		if (roundPrizeWinnerAddress_.address == testingAcct.address) {
-			if (typeof unique_winners[roundPrizeWinnerAddress_] === "undefined") {
+		let prizeWinnerAddress_ = wlog.args.prizeWinnerAddress;
+		if (prizeWinnerAddress_.address == testingAcct.address) {
+			if (typeof unique_winners[prizeWinnerAddress_] === "undefined") {
 				await prizesWallet.connect(testingAcct).withdrawEth();
-				unique_winners[roundPrizeWinnerAddress_] = 1;
+				unique_winners[prizeWinnerAddress_] = 1;
 			}
 		}
 	}

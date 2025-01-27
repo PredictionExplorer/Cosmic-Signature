@@ -7,20 +7,20 @@ pragma solidity 0.8.28;
 // #region
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-// import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-// import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+// import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
-// import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-// import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
+// import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+// import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { SystemManagement } from "./SystemManagement.sol";
+import { BiddingBase } from "./BiddingBase.sol";
+import { MainPrizeBase } from "./MainPrizeBase.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
@@ -30,7 +30,8 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 abstract contract MainPrize is
 	ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
-	SystemManagement,
+	BiddingBase,
+	MainPrizeBase,
 	BidStatistics,
 	IMainPrize {
 	// #region `claimMainPrize`
@@ -61,7 +62,7 @@ abstract contract MainPrize is
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			require(
 				durationUntilOperationIsPermitted_ <= int256(0),
-				CosmicSignatureErrors.LastBidderOnly(
+				CosmicSignatureErrors.MainPrizeClaimDenied(
 					"Only the last bidder is permitted to claim the bidding round main prize until a timeout expires.",
 					lastBidderAddress,
 					msg.sender,
@@ -91,6 +92,7 @@ abstract contract MainPrize is
 	// #region `_distributePrizes`
 
 	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
+	/// @dev todo-1 Develop a test that checks that after a few rounds there are no NFTs with duplicate seeds.
 	function _distributePrizes() private {
 		// #region
 
@@ -415,10 +417,6 @@ abstract contract MainPrize is
 						// #region
 
 						// All calculations marked with Comment-202501161 must be made before this.
-						// One might want to pass `lastBidderAddress` instead of `msg.sender` here.
-						// As a result, even if the last bidder fails to claim the main prize, we would still record them as the winner,
-						// which would allow them to claim donated ERC-20 tokens and ERC-721 NFTs.
-						// But we feel that it's better to simply treat the person who clicked "Claim" as the winner.
 						prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, msg.sender, ethDeposits_);
 
 						// #endregion
@@ -557,7 +555,7 @@ abstract contract MainPrize is
 		// }
 
 		++ roundNum;
-		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST auction.
+		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST Dutch auction.
 		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
@@ -584,11 +582,6 @@ abstract contract MainPrize is
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
 		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
-
-		// if (systemMode == CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE) {
-		// 	systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
-		// 	emit SystemModeChanged(systemMode);
-		// }
 	}
 
 	// #endregion
@@ -648,20 +641,6 @@ abstract contract MainPrize is
 		// #enable_smtchecker */
 		{
 			return address(this).balance * charityEthDonationAmountPercentage / 100;
-		}
-	}
-
-	// #endregion
-	// #region `getDurationUntilMainPrize`
-
-	function getDurationUntilMainPrize() public view override returns(int256) {
-		// todo-1 Review all `unchecked`.
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			int256 durationUntilMainPrize_ = int256(mainPrizeTime) - int256(block.timestamp);
-			return durationUntilMainPrize_;
 		}
 	}
 

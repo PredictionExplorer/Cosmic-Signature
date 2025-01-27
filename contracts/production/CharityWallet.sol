@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { ICharityWallet } from "./interfaces/ICharityWallet.sol";
 
 contract CharityWallet is Ownable, ICharityWallet {
@@ -12,6 +13,7 @@ contract CharityWallet is Ownable, ICharityWallet {
 
 	/// todo-1 Review where we use `_msgSender` and other `Context` methods.
 	/// todo-1 Is it really a good idea to use them?
+	/// todo-1 >>> It probably is.
 	constructor() Ownable(_msgSender()) {
 	}
 
@@ -20,9 +22,6 @@ contract CharityWallet is Ownable, ICharityWallet {
 	}
 
 	function setCharityAddress(address newValue_) external override onlyOwner {
-		// Not validating that the provided address is a nonzero --
-		// to give the contract owner an option to temporarily suspend charity donations.
-
 		charityAddress = newValue_;
 		emit CharityAddressChanged(newValue_);
 	}
@@ -35,7 +34,8 @@ contract CharityWallet is Ownable, ICharityWallet {
 		// // Comment-202409215 applies.
 		// require(amount_ > 0, CosmicSignatureErrors.ZeroBalance("No funds to send."));
 
-		emit DonationSent(charityAddressCopy_, amount_);
+		// emit DonationSent(charityAddressCopy_, amount_);
+		emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddressCopy_, amount_);
 		(bool isSuccess_, ) = charityAddressCopy_.call{value: amount_}("");
 		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddressCopy_, amount_));
 	}

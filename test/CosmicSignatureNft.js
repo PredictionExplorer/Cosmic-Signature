@@ -9,14 +9,6 @@ const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureNft", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("mint() function works properly", async function () {
 		const {signers, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
@@ -27,10 +19,10 @@ describe("CosmicSignatureNft", function () {
 
 		await expect(
 			cosmicSignatureNft.mint(0n, addr1.address, 0x167c41a5ddd8b94379899bacc638fe9a87929d7738bc7e1d080925709c34330en),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "NoMintPrivileges");
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
 		await expect(
 			cosmicSignatureNft.connect(addr1).mint(0n, addr1.address, 0xf5df7ce30f2a4e696109a2a3d544e48dd0cda03367cfd816d53083edd06e5638n),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "NoMintPrivileges");
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
 		await expect(
 			newCosmicSignatureNft.mint(0n, hre.ethers.ZeroAddress, 0x3a61b868abd2e4597e6ed0bc53ec665f068523ad614e1affd22434e3edb8e523n),
 		).to.be.revertedWithCustomError(newCosmicSignatureNft, /*"ZeroAddress"*/ "ERC721InvalidReceiver");
@@ -48,10 +40,8 @@ describe("CosmicSignatureNft", function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
 
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -74,23 +64,20 @@ describe("CosmicSignatureNft", function () {
 		let remote_token_name = await cosmicSignatureNft.connect(addr1).getNftName(token_id);
 		expect(remote_token_name).to.equal("name 0");
 
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		await expect(cosmicSignatureNft.connect(addr2).setNftName(token_id, "name 000")).to.be.revertedWithCustomError(
-			cosmicSignatureGameErrorsFactory_,
-			"OwnershipError"
+			cosmicSignatureNft,
+			"ERC721InsufficientApproval"
 		);
 		await expect(
-			cosmicSignatureNft.connect(addr1).setNftName(token_id, "012345678901234567890123456789012"),
-		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TokenNameLength");
+			cosmicSignatureNft.connect(addr1).setNftName(token_id, "123456789012345678901234567890123"),
+		).to.be.revertedWithCustomError(cosmicSignatureNft, "TooLongNftName");
 	});
 	it("BaseURI/TokenURI works", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 		
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");

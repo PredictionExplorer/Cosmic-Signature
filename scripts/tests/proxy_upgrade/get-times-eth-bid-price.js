@@ -1,7 +1,7 @@
-// todo-1 Rename this file to "set-times-eth-bid-price.js".
+"use strict";
 
-const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("../../helper.js");
+// const hre = require("hardhat");
+const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 async function main() {
 	// let privKey = process.env.PRIVKEY;
@@ -12,9 +12,9 @@ async function main() {
 	// 	);
 	// 	process.exit(1);
 	// }
-	// let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-	await cosmicSignatureGame.setTimesEthBidPrice(20n);
+	let value = await cosmicSignatureGame.timesEthBidPrice();
+	console.log("timesEthBidPrice =", value);
 }
 
 main()

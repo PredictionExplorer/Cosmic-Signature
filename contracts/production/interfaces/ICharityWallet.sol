@@ -15,14 +15,11 @@ interface ICharityWallet {
 	/// @param amount The amount of ETH donated.
 	event DonationReceived(address indexed donorAddress, uint256 amount);
 
-	/// @notice Emitted after accumulated donations were sent to the charity.
-	/// @param charityAddress Charity address.
-	/// @param amount The amount of ETH transferred to the charity.
-	/// @dev
-	/// [ToDo-202409212-1]
-	/// Consider eliminating this and using `CosmicSignatureEvents.FundsTransferredToCharity` instead.
-	/// [/ToDo-202409212-1]
-	event DonationSent(address indexed charityAddress, uint256 amount);
+	// /// @notice Emitted after accumulated donations were sent to the charity.
+	// /// @param charityAddress Charity address.
+	// /// @param amount The amount of ETH transferred to the charity.
+	// /// @dev I have eliminated this and instead using `CosmicSignatureEvents.FundsTransferredToCharity`.
+	// event DonationSent(address indexed charityAddress, uint256 amount);
 
 	/// @notice Allows the contract to receive ETH donations.
 	receive() external payable;
@@ -30,6 +27,7 @@ interface ICharityWallet {
 	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
+	/// It's OK if it's zero -- to give the contract owner an option to temporarily suspend charity donations.
 	function setCharityAddress(address newValue_) external;
 
 	/// @notice Sends all accumulated donations to the designated charity.

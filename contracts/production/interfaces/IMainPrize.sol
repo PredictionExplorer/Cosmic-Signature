@@ -2,24 +2,23 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { ISystemManagement } from "./ISystemManagement.sol";
+import { IBiddingBase } from "./IBiddingBase.sol";
+import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice Functionality that handles claiming and paying bidding round main prize,
 /// as well as distributing other (secondary) prizes.
-/// todo-1 We need to inherit `SystemManagement` for `_setActivationTime`.
-/// todo-1 Try to move the method togetehr with some modifiers to something like `BiddingBase`.
-/// todo-1 Add the new contract and its interface to my list in the doc.
-interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
-	/// @notice Emitted when a bidding round main prize is claimed.
+interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
+	/// @notice Emitted when a main prize is claimed.
 	/// This event indicates that the round has ended.
 	/// @param roundNum The current bidding round number.
 	/// @param beneficiaryAddress The address receiving the prize.
 	/// [Comment-202411254]
-	/// It will be different from the bidding round main prize actual winner if the winner has failed to claim the prize
+	/// It will be different from the main prize actual winner if the latter forgot to claim the prize
 	/// within a timeout and someone else has claimed it instead.
 	/// It's possible to find out from other events who is the actual winner.
 	/// Comment-202411285 relates.
+	/// Comment-202501249 relates.
 	/// [/Comment-202411254]
 	/// @param ethPrizeAmount ETH prize amount.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
@@ -74,6 +73,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// The prize ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIndex Winner index.
+	/// todo-1 Should it be `indexed`?
 	/// @param winnerAddress Winner address.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	/// @dev Comment-202412189 applies.
@@ -88,6 +88,7 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIsRandomWalkNftStaker Whether the winner is a RandomWalk NFT staker or a bidder.
 	/// @param winnerIndex Winner index.
+	/// todo-1 Should it be `indexed`?
 	/// @param winnerAddress Winner address.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	event RaffleWinnerCosmicSignatureNftAwarded(
@@ -117,14 +118,4 @@ interface IMainPrize is ICosmicSignatureGameStorage, ISystemManagement, IBidStat
 
 	/// @return The current charity ETH donation amount, in Wei.
 	function getCharityEthDonationAmount() external view returns(uint256);
-
-	/// @return The number of seconds until the last bidder will be permitted to claim the main prize,
-	/// or a non-positive value if that time has already come.
-	function getDurationUntilMainPrize() external view returns(int256);
-
-	// /// @return The given bidding round main prize winner address,
-	// /// or zero if `roundNum_` is invalid or the round has not ended yet.
-	// /// @param roundNum_ The bidding round number.
-	// /// @dev Don't use this. Instead, use `prizesWallet.mainPrizeWinnerAddresses`.
-	// function tryGetMainPrizeWinnerAddress(uint256 roundNum_) external view returns(address);
 }

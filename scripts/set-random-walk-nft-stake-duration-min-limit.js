@@ -1,7 +1,7 @@
-// todo-1 Rename to "set-cosmic-signature-nft-stake-duration-min-limit.js".
+"use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
@@ -21,18 +21,18 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
-	let stakingWalletCosmicSignatureNftAddr = await cosmicSignatureGame.stakingWalletCosmicSignatureNft();
-	let stakingWalletCosmicSignatureNft = await hre.ethers.getContractAt("StakingWalletCosmicSignatureNft", stakingWalletCosmicSignatureNftAddr);
-	console.log("staking wallet");console.log(stakingWalletCosmicSignatureNftAddr);
+	let stakingWalletRandomWalkNftAddr = await cosmicSignatureGame.stakingWalletRandomWalkNft();
+	let stakingWalletRandomWalkNft = await hre.ethers.getContractAt("StakingWalletRandomWalkNft", stakingWalletRandomWalkNftAddr);
+	console.log("staking wallet");console.log(stakingWalletRandomWalkNftAddr);
 	// todo-1 Why do we need this error handling?
 	try {
 		// todo-1 This function no longer exists.
-		await stakingWalletCosmicSignatureNft.connect(testingAcct).setMinStakePeriod(period);
+		await stakingWalletRandomWalkNft.connect(testingAcct).setMinStakePeriod(period);
 	} catch(e) {
 		console.log(e);
 	}
 	// todo-1 This function no longer exists.
-	period = await stakingWalletCosmicSignatureNft.minStakePeriod();
+	period = await stakingWalletRandomWalkNft.minStakePeriod();
 	console.log("Period value: " + period.toString() + " seconds");
 }
 main()

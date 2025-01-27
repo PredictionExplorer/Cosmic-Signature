@@ -1,12 +1,10 @@
-// todo-1 Rename this file to "set-short-durations.js".
-
 // Sets short time intervals to avoid waiting for running tests
 
 "use strict";
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function set_parameters(testingAcct, cosmicSignatureGame) {
 	// todo-1 Do we need to also set duration until activation here.

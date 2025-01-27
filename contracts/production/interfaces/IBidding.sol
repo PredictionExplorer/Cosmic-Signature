@@ -4,10 +4,11 @@ pragma solidity 0.8.28;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { ISystemManagement } from "./ISystemManagement.sol";
+import { IBiddingBase } from "./IBiddingBase.sol";
+import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
-interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatistics {
+interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
 	/// @notice Emitted when the first bid is placed in a bidding round.
 	/// @param roundNum The current bidding round number.
 	/// @param blockTimeStamp The current block timestamp.
@@ -21,7 +22,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @param roundNum The current bidding round number.
 	/// todo-1 Reorder the above to the beginning.
 	/// @param ethBidPrice The price of the bid
-	/// @param randomWalkNftId The ID of the RandomWalk NFT used (if any)
+	/// @param randomWalkNftId The ID of the RandomWalk NFT used (or -1)
 	/// @param numCSTTokens The number of CST tokens used (if any)
 	/// todo-1 Rename the above param to `cstBidPrice`.
 	/// todo-1 Maybe reorder the above param to after `ethBidPrice`.
@@ -39,6 +40,11 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 		string message
 	);
 	
+	/// @notice Handles an incoming ETH transfer.
+	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
+	/// todo-1 +++ Do we have a test for this?
+	receive() external payable;
+
 	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an ERC-20 token amount in a single transaction.
 	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
 
@@ -48,7 +54,6 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid.
-	/// ---param data_ Encoded `BidParams`.
 	/// @param randomWalkNftId_ The ID of the RandomWalk NFT to be used for bidding.
 	/// Set to -1 if no RandomWalk NFT is to be used.
 	/// Comment-202412036 applies.
@@ -57,7 +62,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// Can be used to store additional information or comments from the bidder.
 	/// todo-1 Rename this method to `bidWithEth`.
 	/// todo-1 Then also rename methods like `bidAndDonate...`.
-	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable;
+	function bid(int256 randomWalkNftId_, string memory message_) external payable;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
@@ -71,7 +76,7 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 
 	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
 	/// The elapsed duration counts since bidding round activation. It can be negative. It makes no sense to use it
-	/// after the end of the auction.
+	/// after the end of the Dutch auction.
 	function getEthDutchAuctionDurations() external view returns(uint256, int256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
@@ -109,19 +114,6 @@ interface IBidding is ICosmicSignatureGameStorage, ISystemManagement, IBidStatis
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// Comment-202501022 applies to the returned elapsed duration.
 	function getCstDutchAuctionDurations() external view returns(uint256, int256);
-
-	function getMainPrizeTimeIncrement() external view returns(uint256);
-
-	/// @return The number of seconds until the current bidding round activates,
-	/// or a non-positive value if it's already active.
-	function getDurationUntilActivation() external view returns(int256);
-
-	/// @return The number of seconds since the current bidding round activated,
-	/// or a negative value if it's not yet active.
-	function getDurationElapsedSinceActivation() external view returns(int256);
-
-	/// @dev todo-1 Does this belong to `IMainPrize`? But `IBidding` doesn't derive from it. At least comment.
-	function getInitialDurationUntilMainPrize() external view returns(uint256);
 
 	/// @notice Get the total number of bids in the current round
 	/// @return The total number of bids in the current round

@@ -8,11 +8,11 @@ pragma solidity 0.8.28;
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
-import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
+import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
+import { StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameStorage.sol";
 
 // #endregion
@@ -25,18 +25,43 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 ///
-/// todo-1 Restructure regions and reorder variables. They should mimic the contracts, such as bidding, main prize.
-/// todo-1 The same applies to some other contracts/libs, such as `CosmicSignatureErrors`.
+/// todo-0 Restructure regions and reorder variables. They should mimic the contracts, such as bidding, main prize.
+/// todo-0 The same applies to some other contracts/libs, such as
+/// todo-0 `CosmicSignatureConstants`, `CosmicSignatureErrors`, `CosmicSignatureEvents`.
 ///
 /// todo-1 Document which variables are valid under what conditions,
 /// todo-1 which variables should be accessed directly and which through an accessor,
-/// todo-1 which variables emit events (some are changed programmatically without emitting an event).
+/// todo-1 ??? which variables emit events (some are changed programmatically without emitting an event).
+///
+/// todo-1 Consider making some params non-configurable.
+/// todo-1 Some variables should be `immutable`
+/// todo-1 (although because the Game contract is upgradeable it can't have `immutable` variables).
+/// todo-1 The same applies to other contracts.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
-	// #region System Parameters and Variables
+	// #region System Management
 
-	// /// @notice Comment-202411064 applies.
-	// /// todo-9 Rename to `systemModeCode`.
-	// uint256 public systemMode;
+	// Empty.
+
+	// #endregion
+	// #region ETH Donations
+
+	EthDonationWithInfoRecord[] public ethDonationWithInfoRecords;
+
+	// #endregion
+	// #region Bidding
+
+	/// @notice Bidding round counter.
+	/// For the first round, this equals zero.
+	uint256 public roundNum;
+
+	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
+	/// Comment-202411064 applies.
+	/// @dev
+	/// [Comment-202412312]
+	/// We do not automatically increase this.
+	/// [/Comment-202412312]
+	/// todo-1 Maybe rename this to `delayDurationBeforeRoundActivation`.
+	uint256 public delayDurationBeforeNextRound;
 
 	/// @notice The current bidding round activation time.
 	/// Starting at this point, people will be allowed to place bids.
@@ -48,121 +73,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411172]
 	/// @dev Comment-202411236 relates.
 	/// Comment-202411168 relates.
-	/// todo-1 Maybe reorder this closer to other bidding related variables?
 	/// todo-1 Maybe rename this to `roundActivationTime`.
 	/// todo-1 Also consider renaming `onlyInactive` and `onlyActive`.
 	uint256 public activationTime;
-
-	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
-	/// Comment-202411064 applies.
-	/// @dev
-	/// [Comment-202412312]
-	/// We do not automatically increase this.
-	/// [/Comment-202412312]
-	/// todo-1 Maybe reorder this closer to other bidding related variables and/or before `activationTime`?
-	/// todo-1 Maybe rename this to `delayDurationBeforeRoundActivation`.
-	uint256 public delayDurationBeforeNextRound;
-
-	/// @notice At the end of each bidding round, we mint this CST amount for `marketingWallet`.
-	/// Comment-202411064 applies.
-	/// todo-1 Ask Taras if he is eventually going to set this to zero.
-	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
-	/// todo-1 If so, before making the mint call check that this is a nonzero.
-	/// todo-1 But maybe this should not be zero because the DAO will keep doing something.
-	/// todo-1 Besides, rounds will keep getting longer.
-	/// todo-1 Maybe move this to a separate region devoted to marketing.
-	uint256 public marketingWalletCstContributionAmount;
-
-	/// @notice The maximum allowed length of a bid message.
-	/// [Comment-202409143]
-	/// This limits the number of bytes, which can be fewer UTF-8 characters.
-	/// [/Comment-202409143]
-	/// Comment-202411064 applies.
-	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
-	/// todo-1 Reorder this to near other bid related variables?
-	/// todo-1 Also reorder the constant from which this is initialized.
-	/// todo-1 Is it really necessary for this to be configurable?
-	uint256 public maxMessageLength;
-
-	// #endregion
-	// #region External Contract and Other Addresses
-
-	/// @notice The `CosmicSignatureToken` contract address.
-	/// Comment-202411064 applies.
-	CosmicSignatureToken public token;
-
-	/// @notice Comment-202411064 applies.
-	CosmicSignatureNft public nft;
-
-	/// @notice Comment-202411064 applies.
-	RandomWalkNFT public randomWalkNft;
-
-	/// @notice Comment-202411064 applies.
-	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
-
-	/// @notice Comment-202411064 applies.
-	StakingWalletRandomWalkNft public stakingWalletRandomWalkNft;
-
-	/// @notice Comment-202411064 applies.
-	PrizesWallet public prizesWallet;
-
-	/// @notice Comment-202411064 applies.
-	/// @dev It's currently unnecessary to make this variable strongly typed.
-	address public marketingWallet;
-
-	/// @notice Comment-202411064 applies.
-	/// @dev
-	/// [Comment-202411078]
-	/// We transfer ETH directly to this address.
-	/// This is intended to be our own `CharityWallet`.
-	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
-	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
-	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
-	/// Comment-202411077 relates.
-	/// [/Comment-202411078]
-	address public charityAddress;
-
-	// #endregion
-	// #region Donation Variables
-
-	CosmicSignatureConstants.DonationWithInfoRecord[] public ethDonationWithInfoRecords;
-	// uint256 public numDonatedNfts;
-	// mapping(uint256 index => CosmicSignatureConstants.DonatedNft) public donatedNfts;
-
-	// #endregion
-	// #region Game Parameters and Variables
-
-	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
-	/// [Comment-202412152]
-	/// On each bid, we calculate the new value of this variable
-	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
-	/// [/Comment-202412152]
-	uint256 public mainPrizeTime;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
-	uint256 public initialDurationUntilMainPrizeDivisor;
-
-	/// @notice Comment-202412152 relates.
-	/// We use this on a number of other occasions as well.
-	/// todo-1 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
-	/// Comment-202411064 applies.
-	/// Comment-202411172 applies.
-	/// [Comment-202411067]
-	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
-	/// [/Comment-202411067]
-	/// todo-1 Reference Comment-202501025.
-	uint256 public mainPrizeTimeIncrementInMicroSeconds;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
-	/// Comment-202411067 relates.
-	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
-
-	/// @notice Bidding round counter.
-	/// For the first round, this equals zero.
-	/// todo-1 Reorder this upwards?
-	uint256 public roundNum;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202501025 applies
@@ -186,7 +99,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
 	/// todo-1 ??? Therefore would it make sense to declare this `internal` and rename to `_...` and add a smarter getter?
 	/// todo-1 The same applies to other variables that are not always valid.
-	/// todo-1 Think where to reference this comment. It appluies to some method return values too.
+	/// todo-1 Think where to reference this comment. It applies to some method return values too.
 	/// [/Comment-202501022]
 	/// [Comment-202411065]
 	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
@@ -221,11 +134,22 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public nextRoundCstDutchAuctionBeginningBidPrice;
 
-	// uint256 public startingBidPriceCstMinLimit;
-
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
+
+	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
+	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNfts;
+	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
+
+	/// @notice The maximum allowed length of a bid message.
+	/// [Comment-202409143]
+	/// This limits the number of bytes, which can be fewer UTF-8 characters.
+	/// [/Comment-202409143]
+	/// Comment-202411064 applies.
+	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
+	/// todo-1 Is it really necessary for this to be configurable?
+	uint256 public maxMessageLength;
 
 	/// @notice Comment-202411064 applies.
 	/// We mint this CST amount as a bidder reward for each bid.
@@ -233,76 +157,45 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// todo-1 Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
 	uint256 public tokenReward;
 
-	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
-	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNfts;
-	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
+	// #endregion
+	// #region Bid Statistics
+
+	// /// todo-1 Tell them that I eliminated this.
+	// /// todo-9 Rename to `lastBidTypeCode`.
+	// CosmicSignatureConstants.BidType public lastBidType;
 
 	/// @notice The address of the account that placed the last bid.
+	/// We reset this to zero at the beginning of each bidding round.
 	address public lastBidderAddress;
 
 	/// @notice The address of the account that placed the last CST bid.
+	/// We reset this to zero at the beginning of each bidding round.
 	/// This will remain zero if nobody bids with CST.
 	address public lastCstBidderAddress;
 
-	// /// todo-1 Rename to `lastBidTypeCode`.
-	// CosmicSignatureConstants.BidType public lastBidType;
-
-	/// @dev ToDo-202411098-0 applies.
+	/// @dev ToDo-202411098-1 applies.
 	/// todo-1 Rename to `roundNumBids` or better `numBids`.
 	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
 
 	/// @notice We add an item on each bid.
 	/// @dev
-	/// [ToDo-202411098-0]
+	/// [ToDo-202411098-1]
+	/// todo-1 +++ Taras wants to leave it alone.
 	/// Is it really necessary to save info about past rounds?
 	/// But Nick wrote at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729540799827169?thread_ts=1729208829.862549&cid=C02EDDE5UF8 :
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
-	/// [/ToDo-202411098-0]
-	/// todo-1 Combine this with `numRaffleParticipants`.
-	/// todo-1 Each item should be a struct containing the number of bidders in that round and the bidders themselves.
+	/// [/ToDo-202411098-1]
+	/// todo-0 Combine this with `numRaffleParticipants`.
+	/// todo-0 Each item should be a struct containing the number of bidders in that round and the bidders themselves.
 	/// todo-1 Rename to `roundBids` or  better `bids`.
 	/// todo-1 But better don't store this for past rounds.
 	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
 
-	/// @dev ToDo-202411098-0 applies.
+	/// @dev ToDo-202411098-1 applies.
 	/// todo-1 Do we really need this?
-	/// todo-1 Rename to `biddersInfo`.
-	mapping(uint256 roundNum => mapping(address bidderAddress => CosmicSignatureConstants.BidderInfo)) public bidderInfo;
-
-	// #endregion
-	// #region Game ETH Prize Percentage Parameters
-
-	/// @notice The percentage of ETH in the game account to be paid to the bidding round main prize beneficiary.
-	/// Comment-202411064 applies.
-	uint256 public mainEthPrizeAmountPercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public chronoWarriorEthPrizeAmountPercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public raffleTotalEthPrizeAmountPercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public stakingTotalEthRewardAmountPercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public charityEthDonationAmountPercentage;
-
-	// #endregion
-	// #region Game Prize Other Parameters and Variables
-
-	/// @notice If bidding round main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
-	/// Comment-202411064 applies.
-	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
-	/// @dev Comment-202412312 applies.
-	uint256 public timeoutDurationToClaimMainPrize;
-
-	// /// @notice Bidding round main prize winners.
-	// /// @dev ToDo-202411098-0 applies.
-	// /// I have replaced this with `PrizesWallet.mainPrizeWinnerAddresses`.
-	// mapping(uint256 roundNum => address winnerAddress) public winners;
+	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
 	/// [Comment-202411075]
@@ -326,9 +219,60 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public chronoWarriorDuration;
 
+	// #endregion
+	// #region Main Prize
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202501025 applies.
+	uint256 public initialDurationUntilMainPrizeDivisor;
+
+	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
+	/// [Comment-202412152]
+	/// On each bid, we calculate the new value of this variable
+	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
+	/// [/Comment-202412152]
+	uint256 public mainPrizeTime;
+
+	/// @notice Comment-202412152 relates.
+	/// We use this on a number of other occasions as well.
+	/// todo-1 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
+	/// Comment-202411064 applies.
+	/// Comment-202411172 applies.
+	/// [Comment-202411067]
+	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
+	/// [/Comment-202411067]
+	/// todo-1 Reference Comment-202501025.
+	uint256 public mainPrizeTimeIncrementInMicroSeconds;
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202501025 applies.
+	/// Comment-202411067 relates.
+	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
+
+	/// @notice If the main prize winner doesn't claim the prize within this timeout,
+	/// anybody will be welcomed to claim it.
+	/// Comment-202411064 applies.
+	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
+	/// @dev Comment-202412312 applies.
+	uint256 public timeoutDurationToClaimMainPrize;
+
+	/// @notice The percentage of ETH in the Game account to be paid to the main prize beneficiary.
+	/// Comment-202411064 applies.
+	uint256 public mainEthPrizeAmountPercentage;
+
+	// #endregion
+	// #region Secondary Prizes
+
 	/// @notice The last CST bidder and Endurance Champion CST reward amount multiplier.
 	/// Comment-202411064 applies.
 	uint256 public cstRewardAmountMultiplier;
+
+	/// @notice Comment-202411064 applies.
+	uint256 public chronoWarriorEthPrizeAmountPercentage;
+
+	/// @notice Comment-202411064 applies.
+	/// todo-1 This is for bidders, right? Rename to make it clear.
+	uint256 public raffleTotalEthPrizeAmountPercentage;
 
 	/// @notice The number of raffle ETH prizes to be distributed to bidders.
 	/// Comment-202411064 applies.
@@ -342,8 +286,82 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
-	// /// @dev todo-9 The type of this and other similar variables should be `uint256`.
-	// bytes32 public raffleEntropy;
+	/// @notice Comment-202411064 applies.
+	/// todo-1 This is for CS NFT stakers, right? Rename to make it clear.
+	uint256 public stakingTotalEthRewardAmountPercentage;
+
+	// #endregion
+	// #region Cosmic Signature Token
+
+	/// @notice The `CosmicSignatureToken` contract address.
+	/// Comment-202411064 applies.
+	CosmicSignatureToken public token;
+
+	// #endregion
+	// #region RandomWalk NFT
+
+	/// @notice Comment-202411064 applies.
+	RandomWalkNFT public randomWalkNft;
+
+	// #endregion
+	// #region Cosmic Signature NFT
+
+	/// @notice Comment-202411064 applies.
+	CosmicSignatureNft public nft;
+
+	// #endregion
+	// #region Prizes Wallet
+
+	/// @notice Comment-202411064 applies.
+	PrizesWallet public prizesWallet;
+
+	// #endregion
+	// #region NFT Staking
+
+	/// @notice Comment-202411064 applies.
+	StakingWalletRandomWalkNft public stakingWalletRandomWalkNft;
+
+	/// @notice Comment-202411064 applies.
+	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
+
+	// #endregion
+	// #region Marketing
+
+	/// @notice Comment-202411064 applies.
+	/// @dev It's currently unnecessary to make this variable strongly typed.
+	address public marketingWallet;
+
+	/// @notice At the end of each bidding round, we mint this CST amount for `marketingWallet`.
+	/// Comment-202411064 applies.
+	/// todo-1 Ask Taras if he is eventually going to set this to zero.
+	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+	/// todo-1 If so, before making the mint call check that this is a nonzero.
+	/// todo-1 But maybe this should not be zero because the DAO will keep doing something.
+	/// todo-1 Besides, rounds will keep getting longer.
+	uint256 public marketingWalletCstContributionAmount;
+
+	// #endregion
+	// #region Charity
+
+	/// @notice Comment-202411064 applies.
+	/// @dev
+	/// [Comment-202411078]
+	/// We transfer ETH directly to this address.
+	/// This is intended to be our own `CharityWallet`.
+	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
+	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
+	/// Therefore if this is a 3rd party address it's important that someone conducted due-diligence on it.
+	/// Comment-202411077 relates.
+	/// [/Comment-202411078]
+	address public charityAddress;
+
+	/// @notice Comment-202411064 applies.
+	uint256 public charityEthDonationAmountPercentage;
+
+	// #endregion
+	// #region DAO
+
+	// Empty.
 
 	// #endregion
 	// #region Gap

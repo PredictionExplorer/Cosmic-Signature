@@ -11,8 +11,7 @@ import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
-import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
-import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
+import { IStakingWalletNftBase, StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCosmicSignatureNft.sol";
 
 // #endregion
@@ -130,7 +129,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	modifier onlyGame() {
 		require(
 			msg.sender == game,
-			CosmicSignatureErrors.CallDenied("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
 		);
 		_;
 	}
@@ -191,7 +190,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// [/Comment-202411023]
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicSignatureErrors.NftOneTimeStaking`.
+	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    // `CosmicSignatureConstants.BooleanWithPadding`.
 	///    `CosmicSignatureConstants.NftTypeCode`.
 	///    `NftStaked`.
@@ -213,7 +212,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		require(
 			// ( ! _usedNfts[nftId_].value ),
 			_usedNfts[nftId_] == 0,
-			CosmicSignatureErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
+			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #endregion
@@ -404,6 +403,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `onlyGame`.
 	///
 	/// todo-1 Here and elsewhere, consider replacing methods like this with `receive`.
+	/// todo-1 Find all: payable
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
 	/// todo-1 But in this particular case `receive` won't be sufficient for our needs.

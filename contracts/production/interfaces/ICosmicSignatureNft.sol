@@ -1,21 +1,27 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-// import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title The Cosmic Signature ecosystem NFT.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interaface implements the CosmicSignature NFT with unique features
 /// for the Cosmic Signature ecosystem, in particular, custom minting and metadata management.
-/// [ToDo-202412106-1]
-/// I feel that it's unnecessary to derive this from `IERC721Enumerable`. So I have commented it out.
-/// On the other hand, maybe uncomment it and also derive `ICosmicSignatureToken` and `ICosmicSignatureDao`
-/// from their respective interfaces too.
-/// Take a look at `IRandomWalkNFT` as well. Possibly write comment there.
-/// [/ToDo-202412106-1]
+/// @dev Issue. It could make sense to derive this contract from `ERC721Permit`,
+/// but OpenZeppelin doesn't include such a contract.
+///
 /// todo-1 +++ Review https://wizard.openzeppelin.com/#erc721
-interface ICosmicSignatureNft is /*IERC721Enumerable,*/ IAddressValidator {
+///
+/// todo-1 +++ Research modern features that we might need to implement.
+///
+/// todo-1 +++ Ask ChatGPT:
+/// todo-1 +++ How to make an ERC-721 contract compatible with NFT marketplaces?
+/// todo-1 Test manually that we can trade this on OpenSea and the others.
+///
+/// todo-1 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
+/// todo-1 At least write a comment here and near `RandomWalkNFT` and/or near respective interfaces.
+interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Details about a CosmicSignature NFT.
 	struct NftInfo {
 		/// @notice The custom name set for the NFT.
@@ -66,10 +72,12 @@ interface ICosmicSignatureNft is /*IERC721Enumerable,*/ IAddressValidator {
 	event NftNameChanged(uint256 indexed nftId, string nftName);
 
 	/// @notice Sets `_nftBaseUri`.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setNftBaseUri(string memory newValue_) external;
 
 	/// @notice Sets `nftGenerationScriptUri`.
+	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setNftGenerationScriptUri(string memory newValue_) external;
 

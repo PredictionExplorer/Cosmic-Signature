@@ -10,7 +10,6 @@ const { HardhatContext } = require("hardhat/internal/context");
 /**
  * @param {import("ethers").Signer} deployerAcct 
  * @param {string} randomWalkNftAddr 
- * ---param {string} marketingWalletAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @param {number} activationTime 
@@ -19,21 +18,17 @@ const { HardhatContext } = require("hardhat/internal/context");
 const basicDeployment = async function (
 	deployerAcct,
 	randomWalkNftAddr,
-	// marketingWalletAddr,
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
 	activationTime
-	// switchToRuntimeMode = true
 ) {
 	return await basicDeploymentAdvanced(
 		"CosmicSignatureGame",
 		deployerAcct,
 		randomWalkNftAddr,
-		// marketingWalletAddr,
 		charityAddr,
 		transferOwnershipToCosmicSignatureDao,
 		activationTime
-		// switchToRuntimeMode
 	);
 };
 
@@ -41,9 +36,8 @@ const basicDeployment = async function (
  * @param {string} cosmicSignatureGameContractName 
  * @param {import("ethers").Signer} deployerAcct 
  * todo-1 +++ Test a non-default `deployerAcct`.
- * todo-1 After deployment all restricted functions should revert for the default signer and work for the given signer.
+ * todo-1 Test that after deployment all restricted functions revert for the default signer and work for the given signer.
  * @param {string} randomWalkNftAddr May be empty.
- * ---param {string} marketingWalletAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
  * @param {number} activationTime 
@@ -57,24 +51,12 @@ const basicDeploymentAdvanced = async function (
 	cosmicSignatureGameContractName,
 	deployerAcct,
 	randomWalkNftAddr,
-	// marketingWalletAddr,
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
 	activationTime
-	// switchToRuntimeMode
 ) {
-	// if (switchToRuntimeMode === undefined) {
-	// 	console.error("switchToRuntimeMode is not set.");
-	// 	process.exit(1);
-	// }
-
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
-
-	// const signers = await hre.ethers.getSigners();
-	// if (deployerAcct === null) {
-	// 	deployerAcct = signers[0];
-	// }
 
 	const CosmicSignatureGame = await hre.ethers.getContractFactory(cosmicSignatureGameContractName);
 
@@ -121,12 +103,10 @@ const basicDeploymentAdvanced = async function (
 
 	const CosmicSignatureToken = await hre.ethers.getContractFactory("CosmicSignatureToken");
 	// const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy();
-	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr /* , marketingWalletAddr */);
+	const cosmicSignatureToken = await CosmicSignatureToken.connect(deployerAcct).deploy(cosmicSignatureGameProxyAddr);
 	await cosmicSignatureToken.waitForDeployment();
 	const cosmicSignatureTokenAddr = await cosmicSignatureToken.getAddress();
 	// await cosmicSignatureToken.connect(deployerAcct).transferOwnership(cosmicSignatureGameProxyAddr);
-	// ToDo-202412203-1 relates and/or applies.
-	// todo-1 But the above todo is no longer relevant here.
 
 	const CosmicSignatureDao = await hre.ethers.getContractFactory("CosmicSignatureDao");
 	const cosmicSignatureDao = await CosmicSignatureDao.connect(deployerAcct).deploy(cosmicSignatureTokenAddr);
@@ -137,18 +117,9 @@ const basicDeploymentAdvanced = async function (
 	const charityWallet = await CharityWallet.connect(deployerAcct).deploy();
 	await charityWallet.waitForDeployment();
 	const charityWalletAddr = await charityWallet.getAddress();
-	// if (charityAddr.length === 0) {
-	// 	charityAddr = signers[1].address;
-	// }
 	await charityWallet.connect(deployerAcct).setCharityAddress(charityAddr);
-	// [ToDo-202412203-1]
-	// Make sense to do this kind of ownership transfer for `cosmicSignatureToken` as well?
-	// What about any other contracts? Maybe the game contract? But it could be a bad idea to give control over it to strangers.
-	// We would need to set `cosmicSignatureToken.marketingWalletAddress` to the DAO address too, right?
-	// >>> But now `marketingWallet` (possibly to be renamed to `marketingWalletAddress`) lives in the game contract.
-	// ToDo-202412202-1 relates.
-	// [/ToDo-202412203-1]
 	if (transferOwnershipToCosmicSignatureDao) {
+		// It appears that it makes no sense to perform this kind of ownership transfer for any other contracts.
 		await charityWallet.connect(deployerAcct).transferOwnership(cosmicSignatureDaoAddr);
 	}
 
@@ -193,14 +164,11 @@ const basicDeploymentAdvanced = async function (
 	const marketingWalletAddr = await marketingWallet.getAddress();
 
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureToken(cosmicSignatureTokenAddr);
-	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setRandomWalkNft(randomWalkNftAddr);
-	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
-	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setCosmicSignatureNft(cosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setPrizesWallet(prizesWalletAddr);
-	// todo-1 If `transferOwnershipToCosmicSignatureDao`, are we supposed to pass the DAO contract address here?
-	// todo-1 If I implement that, comment under what conditions `marketingWalletAddr` is ignored.
-	// ToDo-202412203-1 relates and/or applies.
+	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr);
+	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
 	if (activationTime != 0) {
@@ -210,12 +178,8 @@ const basicDeploymentAdvanced = async function (
 		}
 		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}
-	// if (switchToRuntimeMode) {
-	// 	await cosmicSignatureGameProxy.connect(deployerAcct).setRuntimeMode();
-	// }
 
 	return {
-		// signers,
 		cosmicSignatureGameProxy,
 		cosmicSignatureNft,
 		cosmicSignatureToken,

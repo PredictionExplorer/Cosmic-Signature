@@ -1,7 +1,7 @@
-// todo-1 Rename this file to "deploy-new-logic.js".
+"use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("../../helper.js");
+const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 /// Comment-202412129 relates.
 async function main() {
@@ -34,7 +34,6 @@ async function main() {
 		);
 	console.log("Implementation address:", implementationAddressAsString_);
 	console.log("timesEthBidPrice =", await cosmicSignatureGameProxy.timesEthBidPrice());
-	// await cosmicSignatureGameProxy.setRuntimeMode();
 }
 
 main()

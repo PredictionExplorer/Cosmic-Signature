@@ -2,14 +2,13 @@
 pragma solidity 0.8.28;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-// import { ISystemManagement } from "./ISystemManagement.sol";
 
 /// @notice ETH donations serve 2 purposes:
 /// 1. Allow the project founders to seed the game with some money.
 /// 2. Allow people to advertise things.
 /// As Comment-202409215 says, we do not enforce a minimum donation in the logic running on the blockchain,
 /// but we do so at higher levels in the stack.
-interface IEthDonations is ICosmicSignatureGameStorage /* , ISystemManagement */ {
+interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @notice Emitted when someone donates ETH.
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.
@@ -26,7 +25,8 @@ interface IEthDonations is ICosmicSignatureGameStorage /* , ISystemManagement */
 	event EthDonatedWithInfo(uint256 roundNum, address indexed donorAddress, uint256 amount, uint256 ethDonationWithInfoRecordIndex);
 
 	/// @notice This method allows anybody to donate ETH without placing a bid.
-	/// See also: `ICosmicSignatureGame.receive`.
+	/// It's OK if `msg.value` is zero.
+	/// See also: `donateEthWithInfo`, `ICosmicSignatureGame.receive`.
 	function donateEth() external payable;
 
 	/// @notice In addition to what `donateEth` does, this method allows the caller to provide additional information.

@@ -11,14 +11,6 @@ const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js"
 const SKIP_LONG_TESTS = false;
 
 describe("StakingWalletRandomWalkNft", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("Shouldn't be possible to unstake() twice", async function () {
 		const {signers, randomWalkNft, stakingWalletRandomWalkNft,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
@@ -100,7 +92,6 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNft.getAddress());
 	// 	await newStakingWalletRandomWalkNft.waitForDeployment();
 	// 	await cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(await newStakingWalletRandomWalkNft.getAddress());
-	// 	// await cosmicSignatureGameProxy.setRuntimeMode();
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
 	// 	let sampleTokenId = 33;
@@ -166,10 +157,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			let tx = await stakingWalletRandomWalkNft.stake(nftId_);
 		}
 
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.bid(/*params*/ (-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
@@ -283,6 +272,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftOneTimeStaking");
+		await expect(newStakingWalletRandomWalkNft.stake(0)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NftHasAlreadyBeenStaked");
 	});
 });

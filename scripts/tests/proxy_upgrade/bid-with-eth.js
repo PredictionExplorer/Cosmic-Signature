@@ -1,9 +1,7 @@
-// todo-1 Rename this file to "bid-with-eth-open-bid.js".
-
 "use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("../../helper.js");
+const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 // const bidParamsEncoding = {
 // 	type: "tuple(string,int256,bool)",
@@ -26,15 +24,10 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-
-	let multiplier = await cosmicSignatureGame.timesEthBidPrice()
-	// let bidParams = { message: "open bid", randomWalkNftId: -1, isOpenBid: true };
-	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
+	// let bidParams = { message: "bid test", randomWalkNftId: -1, isOpenBid: false };
+	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	console.log("nextEthBidPrice_ before:", nextEthBidPrice_);
-	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), true, "open bid", { value: nextEthBidPrice_ * multiplier, gasLimit: 30000000 });
-	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	console.log("nextEthBidPrice_ after:", nextEthBidPrice_);
+	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), false, "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
 }
 
 main()

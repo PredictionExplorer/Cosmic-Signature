@@ -8,14 +8,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureToken", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("ERC20 nonces() function exists", async function () {
 		const {signers, cosmicSignatureToken,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;

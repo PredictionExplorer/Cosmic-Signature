@@ -3,11 +3,14 @@ pragma solidity 0.8.28;
 
 import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
+import { ISystemEvents } from "./ISystemEvents.sol";
+import { IBiddingBase } from "./IBiddingBase.sol";
+import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { ISystemManagement } from "./ISystemManagement.sol";
-import { IBidStatistics } from "./IBidStatistics.sol";
-import { IBidding } from "./IBidding.sol";
 import { IEthDonations } from "./IEthDonations.sol";
 import { INftDonations } from "./INftDonations.sol";
+import { IBidStatistics } from "./IBidStatistics.sol";
+import { IBidding } from "./IBidding.sol";
 import { ISpecialPrizes } from "./ISpecialPrizes.sol";
 import { IMainPrize } from "./IMainPrize.sol";
 
@@ -18,11 +21,14 @@ import { IMainPrize } from "./IMainPrize.sol";
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
+	ISystemEvents,
+	IBiddingBase,
+	IMainPrizeBase,
 	ISystemManagement,
-	IBidStatistics,
-	IBidding,
 	IEthDonations,
 	INftDonations,
+	IBidStatistics,
+	IBidding,
 	ISpecialPrizes,
 	IMainPrize {
 	/// @notice Initializes this upgradeable contract.
@@ -51,13 +57,7 @@ interface ICosmicSignatureGame is
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
 
-	/// @notice Handles an incoming ETH transfer.
-	/// See also: `IEthDonations.donateEth`.
-	/// todo-1 +++ Do we have a test for this?
-	/// todo-1 Consider moving this to `IBidding`.
-	/// todo-1 Cross-ref with `fallback`. Leave it commented.
-	receive() external payable;
-
+	// /// @notice See also: `IBidding.receive`.
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;
 }

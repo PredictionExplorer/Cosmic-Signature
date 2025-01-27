@@ -7,14 +7,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("Smoke test", async function () {
 		const {cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForTesting);
 
@@ -150,14 +142,13 @@ describe("CosmicSignatureGame", function () {
 			await expect(cosmicSignatureGameProxy.connect(addr2).upgradeTo(addr1.address)).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		}
 	});
-
 	it("The transferOwnership method behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
 
 		expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
 		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
-			// It's allowed to transfer ownership even in the active mode.
+			// Ownership transfer will succeed regardless if the current bidding round is active or not.
 			await cosmicSignatureGameProxy.setActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
 
 			if (counter_ <= 0) {

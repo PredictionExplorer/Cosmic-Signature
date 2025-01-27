@@ -6,22 +6,24 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 // import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
+import { BiddingBase } from "./BiddingBase.sol";
+import { MainPrizeBase } from "./MainPrizeBase.sol";
 import { SystemManagement } from "./SystemManagement.sol";
-import { BidStatistics } from "./BidStatistics.sol";
-import { Bidding } from "./Bidding.sol";
 import { EthDonations } from "./EthDonations.sol";
 import { NftDonations } from "./NftDonations.sol";
+import { BidStatistics } from "./BidStatistics.sol";
+import { Bidding } from "./Bidding.sol";
 import { SpecialPrizes } from "./SpecialPrizes.sol";
 import { MainPrize } from "./MainPrize.sol";
 import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
@@ -29,19 +31,21 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 // #endregion
 // #region
 
-/// todo-1 Everywhere, make some `public` functions `external`.
-/// todo-1 Everywhere, make some `public`/`external` functions `private` (and name them `_...`).
+/// todo-1 Everywhere, declare some `public`/`external` functions `private`/`internal` (and name them `_...`).
+/// todo-1 Everywhere, declare some `public` functions `external`.
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
+	BiddingBase,
+	MainPrizeBase,
 	SystemManagement,
-	BidStatistics,
-	Bidding,
 	EthDonations,
 	NftDonations,
+	BidStatistics,
+	Bidding,
 	SpecialPrizes,
 	MainPrize,
 	ICosmicSignatureGame {
@@ -64,24 +68,23 @@ contract CosmicSignatureGame is
 		// [Comment-202501012]
 		// We are supposed to not be initialized yet.
 		// [/Comment-202501012]
-		// #enable_asserts assert(activationTime == 0);
+		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
 		__UUPSUpgradeable_init();
 
-		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
-		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
+		maxMessageLength = CosmicSignatureConstants.DEFAULT_MAX_MESSAGE_LENGTH;
 		// token =
-		// nft =
 		// randomWalkNft =
-		// stakingWalletCosmicSignatureNft =
-		// stakingWalletRandomWalkNft =
+		// nft =
 		// prizesWallet =
+		// stakingWalletRandomWalkNft =
+		// stakingWalletCosmicSignatureNft =
 		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
@@ -154,19 +157,6 @@ contract CosmicSignatureGame is
 	/// [/Comment-202412188]
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
-	}
-
-	// #endregion
-	// #region `receive`
-
-	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
-		// Bidding with default parameters.
-		// BidParams memory defaultParams;
-		// // defaultParams.message = "";
-		// defaultParams.randomWalkNftId = -1;
-		// bytes memory param_data = abi.encode(defaultParams);
-		// bid(param_data);
-		_bid((-1), "");
 	}
 
 	// #endregion

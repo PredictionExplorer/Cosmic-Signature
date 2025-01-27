@@ -41,18 +41,9 @@ library CosmicSignatureConstants {
 	///		console.log(d);
 	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
 
-	// /// @notice System mode constants.
-	// /// @dev These define the operational states of the `CosmicSignatureGame` contract.
-	// uint256 internal constant MODE_RUNTIME = 0; // Normal operation.
-	// uint256 internal constant MODE_PREPARE_MAINTENANCE = 1; // Preparing for maintenance.
-	// uint256 internal constant MODE_MAINTENANCE = 2; // System under maintenance.
-	//
-	// /// @notice Error messages for system mode checks.
-	// string internal constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE.";
-	// string internal constant ERR_STR_MODE_RUNTIME = "System in maintenance mode.";
-
-	// todo-1 Maybe remove `INITIAL_` from these constants names.
-	// todo-1 And maybe in rare cases replace it with `DEFAULT_`.
+	// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
+	// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
+	// todo-1 +++ Done on Jan 24 2025.
 
 	/// @notice Initial `activationTime`.
 	/// @dev This must be in the future -- to configure our contract after the deployment
@@ -70,7 +61,8 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `maxMessageLength`.
 	/// Comment-202409143 applies.
-	uint256 internal constant MAX_MESSAGE_LENGTH = 280;
+	/// @dev Does this really have to be configurable? Maybe make this non-configurable and remove `DEFAULT_`.
+	uint256 internal constant DEFAULT_MAX_MESSAGE_LENGTH = 280;
 
 	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
 	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
@@ -101,13 +93,14 @@ library CosmicSignatureConstants {
 	/// @notice
 	/// [Comment-202412036]
 	/// An ETH + RandomWalk NFT bid gets a 50% discount on the bid price.
-	/// todo-1 Should we support CST + RandomWalk NFT bids?
-	/// todo-1 Proposed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732303226011229?thread_ts=1729031458.458109&cid=C02EDDE5UF8
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
-	/// @dev todo-1 Rename any "Auction" to "Dutch Auction".
+	/// @dev
+	/// todo-1 +++ Rename any "Auction" to "Dutch Auction".
+	/// todo-1 +++ (?<!dutch)(?<!dutch[\-_ ])Auction
+	/// todo-1 Done, but re-check it again.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
@@ -138,7 +131,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	/// @dev todo-1 Increase to 31 days, just in case our front end crashes and remains down for too long?
+	/// @dev todo-1 Increase to 31 days or at least 2 weeks, just in case our front end crashes and remains down for too long?
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1731974036727899
 	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732036126494949
 	/// todo-1 Create another thread to discuss.
@@ -168,7 +161,7 @@ library CosmicSignatureConstants {
 	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.
 	uint256 internal constant GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE = 2;
 
-	// todo-1 Move some structs to interfaces?
+	// todo-1 +++ Move some structs to interfaces?
 
 	// /// @dev It appears that this was a bad idea.
 	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
@@ -176,11 +169,6 @@ library CosmicSignatureConstants {
 	// 	bool value;
 	// 	uint248 padding;
 	// }
-
-	struct BalanceInfo {
-		uint256 roundNum;
-		uint256 amount;
-	}
 
 	enum NftTypeCode {
 		/// @notice This denotes an uninitialized or invalid value.
@@ -191,6 +179,7 @@ library CosmicSignatureConstants {
 	}
 
 	// /// @notice Types of bids that can be made in the Game.
+	// /// todo-9 Move this to `IBiddingBase`?
 	// /// todo-9 Rename to `BidTypeCode`.
 	// enum BidType {
 	// 	/// @notice Bid using Ether.
@@ -205,45 +194,4 @@ library CosmicSignatureConstants {
 	// 	/// todo-9 Rename to `Cst`.
 	// 	CST
 	// }
-
-	/// @notice Information about a bidder.
-	struct BidderInfo {
-		// todo-1 Eliminate these total spens? It appears that they are not used in the logic.
-		uint256 totalSpentEth;
-		uint256 totalSpentCst;
-		uint256 lastBidTimeStamp;
-	}
-
-	/// @notice Details about a donation made to the Game.
-	/// Used for an ETH donation with additional info.
-	struct DonationWithInfoRecord {
-		uint256 roundNum;
-		address donorAddress;
-		uint256 amount;
-
-		/// @notice Additional info in JSON format.
-		string data;
-	}
-
-	/// @notice Details about an ERC-20 token donation made to the game.
-	struct DonatedToken {
-		// uint256 roundNum;
-		// IERC20 tokenAddress;
-		uint256 amount;
-	}
-
-	/// @notice Details about an ERC-20 token donation that one is required to provide to claim the donation.
-	struct DonatedTokenToClaim {
-		uint256 roundNum;
-		IERC20 tokenAddress;
-	}
-
-	/// @notice Details about an NFT donated to the game.
-	struct DonatedNft {
-		/// todo-1 I have reordered `roundNum`. It used to be before `claimed`. I wrote about this on Slack.
-		uint256 roundNum;
-		IERC721 nftAddress;
-		uint256 nftId;
-		// bool claimed;
-	}
 }

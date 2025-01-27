@@ -10,8 +10,7 @@ import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
-import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
+import { IStakingWalletNftBase, StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWalkNft.sol";
 
 // #endregion
@@ -68,7 +67,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @dev Comment-202411023 applies.
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicSignatureErrors.NftOneTimeStaking`.
+	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    // `CosmicSignatureConstants.BooleanWithPadding`.
 	///    `CosmicSignatureConstants.NftTypeCode`.
 	///    `NftStaked`.
@@ -90,7 +89,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		require(
 			// ( ! _usedNfts[nftId_].value ),
 			_usedNfts[nftId_] == 0,
-			CosmicSignatureErrors.NftOneTimeStaking("This NFT has already been staked. An NFT is allowed to be staked only once.", nftId_)
+			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #endregion
@@ -252,6 +251,9 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActionIds`.
 	///
 	/// todo-1 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
+	/// todo-1 function\b.+?IfPossible
+	/// todo-1 function\b.+?IfNeeded
+	/// todo-1 Jan 26: I am happy, but take another look.
 	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns(address[] memory) {
 		address[] memory luckyStakerAddresses_;
 		uint256 numStakedNftsCopy_ = _numStakedNfts;

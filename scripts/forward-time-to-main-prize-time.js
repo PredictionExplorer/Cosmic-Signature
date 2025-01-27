@@ -1,11 +1,8 @@
-// todo-1 Rename this file. Replace "past" with "to".
-// todo-1 Remember to rename all mentionings of this file.
-
 "use strict";
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	const cosmicSignatureGame = await getCosmicSignatureGameContract();

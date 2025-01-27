@@ -1,7 +1,7 @@
-// todo-1 Rename this file to "donate-eth.js".
+"use strict";
 
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
@@ -15,8 +15,8 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	let donationAmount = hre.ethers.parseEther("2");
-	await cosmicSignatureGame.connect(testingAcct).donateEth({ value: donationAmount });
+	let donationAmount_ = hre.ethers.parseEther("2");
+	await cosmicSignatureGame.connect(testingAcct).donateEth({ value: donationAmount_ });
 }
 
 main()

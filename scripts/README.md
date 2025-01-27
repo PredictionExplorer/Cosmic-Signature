@@ -37,7 +37,7 @@ Note: the main difference between localnet and Sepolia deployment is that for lo
 
 ##### Set contract timing values to shorter interval for testing purposes
 
-    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-short-time-intervals.js --network [network-name]
+    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-short-durations.js --network [network-name]
 
 ##### Enable game-mode
 
@@ -48,7 +48,7 @@ Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
 ##### To mint Random Walk NFTs
 
-	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run scripts/mint_rwalks.js --network [network-name])
+	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run scripts/mint-random-walk-nfts.js --network [network-name])
 
 	(note: this command will set RWALK_TOKENS shell variable to NFTs minted)
 
@@ -63,8 +63,8 @@ Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
 ##### Run the test set of bids
 
-    RWALK_TOKENS="[comma_separated_list_of_NFTs]" PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part1.js --network [network-name]
+    RWALK_TOKENS="[comma_separated_list_of_NFTs]" PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part-1.js --network [network-name]
 
 ##### Wait for time to advance to be able to claimMainPrize() and execute second set of tests
 
-    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part2.js --network [network-name]
+    PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/test-deployment-part-2.js --network [network-name]

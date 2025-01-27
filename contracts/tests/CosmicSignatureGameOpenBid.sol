@@ -6,22 +6,24 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 // import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
-import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { AddressValidator } from "../production/AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
+import { BiddingBase } from "../production/BiddingBase.sol";
+import { MainPrizeBase } from "../production/MainPrizeBase.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
-import { BidStatistics } from "../production/BidStatistics.sol";
-import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { EthDonations } from "../production/EthDonations.sol";
 import { NftDonations } from "../production/NftDonations.sol";
+import { BidStatistics } from "../production/BidStatistics.sol";
+import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { SpecialPrizes } from "../production/SpecialPrizes.sol";
 import { MainPrize } from "../production/MainPrize.sol";
 import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureGame.sol";
@@ -35,11 +37,13 @@ contract CosmicSignatureGameOpenBid is
 	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
+	BiddingBase,
+	MainPrizeBase,
 	SystemManagement,
-	BidStatistics,
-	BiddingOpenBid,
 	EthDonations,
 	NftDonations,
+	BidStatistics,
+	BiddingOpenBid,
 	SpecialPrizes,
 	MainPrize,
 	ICosmicSignatureGame {
@@ -60,24 +64,23 @@ contract CosmicSignatureGameOpenBid is
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
 
 		// Comment-202501012 applies.
-		// #enable_asserts assert(activationTime == 0);
+		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
 		__UUPSUpgradeable_init();
 
-		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
-		maxMessageLength = CosmicSignatureConstants.MAX_MESSAGE_LENGTH;
+		maxMessageLength = CosmicSignatureConstants.DEFAULT_MAX_MESSAGE_LENGTH;
 		// token =
-		// nft =
 		// randomWalkNft =
-		// stakingWalletCosmicSignatureNft =
-		// stakingWalletRandomWalkNft =
+		// nft =
 		// prizesWallet =
+		// stakingWalletRandomWalkNft =
+		// stakingWalletCosmicSignatureNft =
 		// marketingWallet =
 		// charityAddress =
 		// // numDonatedNfts =
@@ -133,7 +136,10 @@ contract CosmicSignatureGameOpenBid is
 	function initialize2() reinitializer(2) public {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
 
-		// Comment-202501012 applies.
+		// `initialize` is supposed to be already executed.
+		// `initialize2` is supposed to not be executed yet.
+		// Comment-202501012 relates.
+		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds > 0);
 		// #enable_asserts assert(timesEthBidPrice == 0);
 
 		timesEthBidPrice = 3;
@@ -155,20 +161,6 @@ contract CosmicSignatureGameOpenBid is
 	/// @dev Comment-202412188 applies.
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
-	}
-
-	// #endregion
-	// #region `receive`
-
-	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
-		// Bidding with default parameters.
-		// BidParams memory defaultParams;
-		// // defaultParams.message = "";
-		// defaultParams.randomWalkNftId = -1;
-		// // defaultParams.isOpenBid =
-		// bytes memory param_data = abi.encode(defaultParams);
-		// bid(param_data);
-		_bid((-1), false, "");
 	}
 
 	// #endregion

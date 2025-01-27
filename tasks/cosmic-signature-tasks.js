@@ -43,16 +43,12 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 			config_params.charityAddr,
 			config_params.transferOwnershipToCosmicSignatureDao,
 			config_params.activationTime
-
-			// // todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role.
-			// // todo-1 So I have commented this out.
-			// config_params.switchToRuntimeMode
 		);
 	console.log("contracts deployed");
 	if (config_params.donateEthToGameContract) {
 		const ethValue = "2";
-		const donationAmount = hre.ethers.parseEther(ethValue);
-		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount});
+		const donationAmount_ = hre.ethers.parseEther(ethValue);
+		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount_});
 		console.log("Donated " + ethValue + " ETH to contract.");
 	}
 	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());

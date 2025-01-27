@@ -1,10 +1,8 @@
-// todo-1 Rename this file to "deploy-bidder-contract.js".
-
 "use strict";
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	const cosmicSignatureGame = await getCosmicSignatureGameContract();

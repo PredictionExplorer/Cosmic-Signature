@@ -1,27 +1,17 @@
-// todo-1 Rename to "test-deployment-part-1.js".
 // todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
 
 // Confirms that deployed contracts are fully operational
 
+"use strict";
+
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { getCosmicSignatureGameContract } = require("./helper.js");
-
-// const bidParamsEncoding = {
-// 	type: "tuple(string,int256)",
-// 	name: "BidParams",
-// 	components: [
-// 		{ name: "message", type: "string" },
-// 		{ name: "randomWalkNftId", type: "int256" },
-// 	],
-// };
+const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function bid_simple(testingAcct, cosmicSignatureGame) {
-	// let bidParams = { message: "test bid", randomWalkNftId: -1 };
-	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice1_ = await cosmicSignatureGame.getNextEthBidPrice(1n);
 	let nextEthBidPrice0_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	let tx = await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), "test bid", { value: nextEthBidPrice0_ });
+	let tx = await cosmicSignatureGame.connect(testingAcct).bid((-1), "test bid", { value: nextEthBidPrice0_ });
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -34,11 +24,9 @@ async function bid_simple(testingAcct, cosmicSignatureGame) {
 async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 	// let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
 	// let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
-	// let bidParams = { message: "rwalk bid", randomWalkNftId: nftId };
-	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-	let tx = await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ nftId, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice_});
+	let tx = await cosmicSignatureGame.connect(testingAcct).bid(nftId, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice_});
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -54,12 +42,10 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 	await randomWalkNft_.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
-	// let bidParams = { message: "donate bid", randomWalkNftId: -1 };
-	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let tx = await cosmicSignatureGame
 		.connect(testingAcct)
-		.bidAndDonateNft(/*params*/ (-1), "donate bid", randomWalkNft_.address, donatedTokenId, {value: nextEthBidPrice_});
+		.bidAndDonateNft((-1), "donate bid", randomWalkNft_.address, donatedTokenId, {value: nextEthBidPrice_});
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -81,13 +67,11 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
 	await randomWalkNft_.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
-	// let bidParams = { message: "donate nft rwalk bid", randomWalkNftId: tokenIdBidding };
-	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 	let tx = await cosmicSignatureGame
 		.connect(testingAcct)
-		.bidAndDonateNft(/*params*/ tokenIdBidding, "donate nft rwalk bid", randomWalkNft_.address, donatedTokenId, {value: nextEthPlusRandomWalkNftBidPrice_});
+		.bidAndDonateNft(tokenIdBidding, "donate nft rwalk bid", randomWalkNft_.address, donatedTokenId, {value: nextEthPlusRandomWalkNftBidPrice_});
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidEvent");
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);

@@ -6,14 +6,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("MarketingWallet", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("MarketingWallet.setCosmicSignatureToken behaves correctly", async function () {
 		const {signers, marketingWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
@@ -41,7 +33,7 @@ describe("MarketingWallet", function () {
 		const marketingReward = hre.ethers.parseEther("15");
 		// await expect(marketingWallet.payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
 		await expect(marketingWallet.payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InvalidReceiver");
-		// await expect(marketingWallet.payReward(addr1.address, 0n)).to.be.revertedWithCustomError(marketingWallet, "NonZeroValueRequired");
+		// await expect(marketingWallet.payReward(addr1.address, 0n)).to.be.revertedWithCustomError(marketingWallet, "ZeroValue");
 		await marketingWallet.payReward(addr1, 0n);
 		await expect(marketingWallet.connect(addr1).payReward(await cBidder.getAddress(), 0n)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
 		await marketingWallet.payReward(addr1, marketingReward);

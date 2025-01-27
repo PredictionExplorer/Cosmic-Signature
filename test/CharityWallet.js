@@ -8,14 +8,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CharityWallet", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("CharityWallet is sending the right amount", async function () {
 		const {signers, charityWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
@@ -26,7 +18,7 @@ describe("CharityWallet", function () {
 		let balanceBefore = await hre.ethers.provider.getBalance(receiverAddress_);
 		await charityWallet.send();
 		let balanceAfter = await hre.ethers.provider.getBalance(receiverAddress_);
-		expect(balanceAfter).to.equal(balanceBefore+amountSent);
+		expect(balanceAfter).to.equal(balanceBefore + amountSent);
 	});
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
 		const {signers, charityWallet,} = await loadFixture(deployContractsForTesting);

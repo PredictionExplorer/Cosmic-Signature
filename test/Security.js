@@ -8,14 +8,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("Security", function () {
-	// const bidParamsEncoding = {
-	// 	type: "tuple(string,int256)",
-	// 	name: "BidParams",
-	// 	components: [
-	// 		{ name: "message", type: "string" },
-	// 		{ name: "randomWalkNftId", type: "int256" },
-	// 	],
-	// };
 	it("Vulnerability to claimMainPrize() multiple times", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2, addr3,] = signers;
@@ -24,8 +16,8 @@ describe("Security", function () {
 		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
 
 		// await cosmicSignatureGameProxy.setCosmicSignatureToken(await cosmicSignatureToken.getAddress());
-		// await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
 		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
+		// await cosmicSignatureGameProxy.setCosmicSignatureNft(await cosmicSignatureNft.getAddress());
 		// await cosmicSignatureGameProxy.setPrizesWallet(await prizesWallet.getAddress());
 		// await cosmicSignatureGameProxy.setCharityAddress(await charityWallet.getAddress());
 		await cosmicSignatureGameProxy.setMainEthPrizeAmountPercentage(10n);
@@ -34,20 +26,17 @@ describe("Security", function () {
 		// But, hopefully, it will work somehow.
 		await cosmicSignatureGameProxy.setActivationTime(0);
 
-		// await cosmicSignatureGameProxy.setRuntimeMode();
 		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		// await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
 
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(await cosmicSignatureGameProxy.getAddress());
 
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
-		// let bidParams = { message: "", randomWalkNftId: -1 };
-		// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid(/*params*/ (-1), "", { value: nextEthBidPrice_ }); // this works
+		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ }); // this works
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 24 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -61,8 +50,8 @@ describe("Security", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		let donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		let donationAmount_ = hre.ethers.parseEther("10");
+		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 		// await hre.ethers.provider.send("evm_mine"); // begin
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await expect(durationUntilMainPrize_).lessThan(-1e9);
@@ -82,8 +71,8 @@ describe("Security", function () {
 	// 	const [owner,] = signers;
 	//
 	// 	// todo-1 Why do we need this donation here? Comment it out?
-	// 	const donationAmount = hre.ethers.parseEther("10");
-	// 	await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+	// 	const donationAmount_ = hre.ethers.parseEther("10");
+	// 	await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 	//
 	// 	const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft1");
 	// 	const maliciousNft = await MaliciousNft.deploy("Bad NFT", "BAD");
@@ -93,21 +82,20 @@ describe("Security", function () {
 	// 	await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
-	// todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const {signers, cosmicSignatureGameProxy, prizesWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 	
-		// todo-1 Why do we need this donation here? Comment it out?
-		const donationAmount = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.donateEth({ value: donationAmount });
+		const bidAmount_ = hre.ethers.parseEther("1");
+		const donationAmount_ = bidAmount_ * 10n;
+		// await cosmicSignatureGameProxy.donateEth({value: donationAmount_});
 	
 		const MaliciousNft = await hre.ethers.getContractFactory("MaliciousNft2");
-		const maliciousNft = await MaliciousNft.deploy(/*await cosmicSignatureGameProxy.getAddress(),*/ "Bad NFT", "BAD");
+		const maliciousNft = await MaliciousNft.deploy(await cosmicSignatureGameProxy.getAddress(), "Bad NFT", "BAD");
 		await maliciousNft.waitForDeployment();
-	
-		// todo-1 Given the test title, isn't this supposed to call `bidAndDonateNft`?
-		// todo-1 This will probably now revert due to `onlyGame`.
-		await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+		await owner.sendTransaction({to: await maliciousNft.getAddress(), value: donationAmount_});
+
+		// await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+		await expect(cosmicSignatureGameProxy.connect(owner).bidAndDonateNft(-1n, "", await maliciousNft.getAddress(), 0, {value: bidAmount_})).revertedWithCustomError(prizesWallet, "UnauthorizedCaller");
 	});
 });
