@@ -19,23 +19,21 @@ use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
 use statrs::statistics::Statistics;
 
-// KdTree for the Lyapunov exponent
 use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
 
-// ===================== Constants =====================
 const LLE_M: usize = 3;
 const B: usize = 32; // used by KdTree
 type IDX = u32;
 
 const G: f64 = 9.8;
 
-/// Command-line arguments
+// ===================== Command-line arguments =====================
 #[derive(Parser, Debug)]
 #[command(
     author,
     version,
-    about = "Simulate & visualize the three-body problem, with parallel Borda-scoring, lines-only video, auto-level single images, adjustable percentile/gamma, and frame_size."
+    about = "Simulate & visualize the three-body problem (lines-only, new auto-level by histogram fraction)."
 )]
 struct Args {
     // Basic simulation parameters
@@ -49,9 +47,9 @@ struct Args {
     num_sims: usize,
 
     // Ranges for random generation
-    #[arg(long, default_value_t = 250.0)]
+    #[arg(long, default_value_t = 300.0)]
     location: f64,
-    #[arg(long, default_value_t = 2.0)]
+    #[arg(long, default_value_t = 1.0)]
     velocity: f64,
     #[arg(long, default_value_t = 100.0)]
     min_mass: f64,
@@ -114,13 +112,20 @@ struct Args {
     #[arg(long, default_value_t = 1.0)]
     lyap_weight: f64,
 
-    // Auto-levels for single images
+    // ==================== NEW AUTO-LEVELS approach #2 ====================
+    /// Fraction of histogram peak used for black. Example: 0.01 means
+    /// "black slider is the first bin from the left that has at least 1% of the histogram's max bin height."
     #[arg(long, default_value_t = 0.01)]
-    auto_levels_black_percent: f64,
-    #[arg(long, default_value_t = 0.99)]
-    auto_levels_white_percent: f64,
-    #[arg(long, default_value_t = 0.9)]
-    auto_levels_gamma: f64,
+    hist_thresh_black_fraction: f64,
+
+    /// Fraction of histogram peak used for white. Example: 0.01 means
+    /// "white slider is the first bin from the right that has at least 1% of the histogram's max bin height."
+    #[arg(long, default_value_t = 0.01)]
+    hist_thresh_white_fraction: f64,
+
+    /// Gamma correction for the final remap. Typically 1.0 = no correction.
+    #[arg(long, default_value_t = 1.0)]
+    hist_levels_gamma: f64,
 
     // Frame (image) size for single images & videos
     #[arg(long, default_value_t = 800)]
@@ -328,7 +333,6 @@ fn generate_special_color_gradient(color_name: &str, length: usize) -> Vec<Rgb<u
     vec![rgb_color; length]
 }
 
-/// The function to generate per-body color sequences
 fn generate_body_color_sequences(
     rng: &mut Sha3RandomByteStream,
     length: usize,
@@ -466,9 +470,8 @@ fn compute_bounding_box_for_frame(
     (min_x, min_y, max_x, max_y)
 }
 
-/// This function **draws** a line between (x0, y0) and (x1, y1) into accum_r/g/b.
-/// It uses Bresenham to walk all integer coordinates on that line, and linearly
-/// interpolates between `col0` and `col1`, adding small_weight * color to each pixel.
+/// This function draws a line from (x0, y0) to (x1, y1) into accum_r/g/b by using Bresenham.
+/// It linearly interpolates color between col0 and col1, and uses additive blending.
 fn draw_line_segment_additive_gradient(
     accum_r: &mut [f64],
     accum_g: &mut [f64],
@@ -511,7 +514,6 @@ fn draw_line_segment_additive_gradient(
     }
 }
 
-// Plot normal trajectory frames (parallel)
 fn plot_positions_parallel(
     positions: &[Vec<Vector3<f64>>],
     frame_size: u32,
@@ -833,7 +835,6 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -
         let p2 = positions[1][i];
         let p3 = positions[2][i];
 
-        // center of mass for the other two bodies:
         let cm1 = (m2 * p2 + m3 * p3) / (m2 + m3);
         let cm2 = (m1 * p1 + m3 * p3) / (m1 + m3);
         let cm3 = (m1 * p1 + m2 * p2) / (m1 + m2);
@@ -1056,7 +1057,7 @@ fn select_best_trajectory(
 
     let mut info_vec = valid_results;
 
-    // separate out each metric for Borda
+    // Borda
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
     let mut perimeter_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
@@ -1099,10 +1100,10 @@ fn select_best_trajectory(
         tr.dist_pts = dist_points[i];
         tr.lyap_pts = lyap_points[i];
         tr.total_score = chaos_points[i] + perimeter_points[i] + dist_points[i] + lyap_points[i];
-        tr.total_score_weighted = chaos_points[i] as f64 * chaos_weight
-            + perimeter_points[i] as f64 * perimeter_weight
-            + dist_points[i] as f64 * dist_weight
-            + lyap_points[i] as f64 * lyap_weight;
+        tr.total_score_weighted = (chaos_points[i] as f64 * chaos_weight)
+            + (perimeter_points[i] as f64 * perimeter_weight)
+            + (dist_points[i] as f64 * dist_weight)
+            + (lyap_points[i] as f64 * lyap_weight);
     }
 
     let (_, best_item) = info_vec
@@ -1123,7 +1124,135 @@ fn select_best_trajectory(
     (positions_best, best_tr, best_masses, valid_count)
 }
 
-/// Single lines-only additive image for all steps (parallel chunk).
+// ========================= NEW AUTO-LEVEL FUNCTION =========================
+// Approach #2: "Threshold by fraction of the maximum histogram height."
+//
+// - We have two user parameters: hist_thresh_black_fraction, hist_thresh_white_fraction
+// - We do a gamma as well (hist_levels_gamma).
+//
+// Steps:
+// 1) Build histograms for R/G/B (256 bins).
+// 2) Find max_bin_count across all bins in any channel. Call that max_count.
+// 3) For black, define black_threshold = max_count * hist_thresh_black_fraction.
+//    - Scan from left bin=0 up to 255, find the first bin with bin_count >= black_threshold.
+//      That is black_cut for that channel. (We do it per channel separately.)
+// 4) For white, define white_threshold = max_count * hist_thresh_white_fraction.
+//    - Scan from bin=255 down to 0, find the first bin >= white_threshold for that channel.
+//      That is white_cut for that channel.
+// 5) Remap each pixel's channel c:
+//       out = (c - black_cut) / (white_cut - black_cut), clamp [0..1], then powf(gamma), then *255
+fn auto_levels_image(
+    input: &DynamicImage,
+    black_frac: f64,
+    white_frac: f64,
+    gamma: f64,
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    let rgb_img = input.to_rgb8();
+    let (w, h) = rgb_img.dimensions();
+
+    // Histograms for each channel
+    let mut hist_r = [0u32; 256];
+    let mut hist_g = [0u32; 256];
+    let mut hist_b = [0u32; 256];
+
+    // Build hist
+    for px in rgb_img.pixels() {
+        hist_r[px[0] as usize] += 1;
+        hist_g[px[1] as usize] += 1;
+        hist_b[px[2] as usize] += 1;
+    }
+
+    // Find the maximum bin count among all channels
+    let max_bin_count_r = *hist_r.iter().max().unwrap_or(&0);
+    let max_bin_count_g = *hist_g.iter().max().unwrap_or(&0);
+    let max_bin_count_b = *hist_b.iter().max().unwrap_or(&0);
+    let max_bin_count = max_bin_count_r.max(max_bin_count_g).max(max_bin_count_b);
+
+    // define threshold counts
+    let black_threshold = (max_bin_count as f64 * black_frac).ceil() as u32;
+    let white_threshold = (max_bin_count as f64 * white_frac).ceil() as u32;
+
+    // find black cut for each channel
+    let black_cut_r = find_black_cut(&hist_r, black_threshold);
+    let black_cut_g = find_black_cut(&hist_g, black_threshold);
+    let black_cut_b = find_black_cut(&hist_b, black_threshold);
+
+    // find white cut for each channel
+    let white_cut_r = find_white_cut(&hist_r, white_threshold);
+    let white_cut_g = find_white_cut(&hist_g, white_threshold);
+    let white_cut_b = find_white_cut(&hist_b, white_threshold);
+
+    // Create output
+    let mut out_img = ImageBuffer::new(w, h);
+
+    // do the actual remap
+    for (x, y, pixel) in out_img.enumerate_pixels_mut() {
+        let orig = rgb_img.get_pixel(x, y);
+
+        let nr = remap_channel(orig[0], black_cut_r, white_cut_r, gamma);
+        let ng = remap_channel(orig[1], black_cut_g, white_cut_g, gamma);
+        let nb = remap_channel(orig[2], black_cut_b, white_cut_b, gamma);
+
+        *pixel = Rgb([nr, ng, nb]);
+    }
+
+    out_img
+}
+
+// Helper to find black cut from the left
+fn find_black_cut(hist: &[u32; 256], threshold: u32) -> u8 {
+    for i in 0..256 {
+        if hist[i] >= threshold {
+            return i as u8;
+        }
+    }
+    // if none found, return 0
+    0
+}
+
+// Helper to find white cut from the right
+fn find_white_cut(hist: &[u32; 256], threshold: u32) -> u8 {
+    for i in (0..256).rev() {
+        if hist[i] >= threshold {
+            return i as u8;
+        }
+    }
+    // if none found, return 255
+    255
+}
+
+// Remap channel [0..255] => [0..255], given black_cut, white_cut, gamma
+fn remap_channel(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
+    let c_val = c as f64;
+    let b_val = black_cut as f64;
+    let w_val = white_cut as f64;
+
+    if w_val <= b_val {
+        // degenerate case
+        return c;
+    }
+
+    let mut t = (c_val - b_val) / (w_val - b_val);
+    if t < 0.0 {
+        t = 0.0;
+    } else if t > 1.0 {
+        t = 1.0;
+    }
+    // apply gamma
+    t = t.powf(gamma);
+
+    // scale to [0..255]
+    let out = (t * 255.0).round();
+    if out < 0.0 {
+        0
+    } else if out > 255.0 {
+        255
+    } else {
+        out as u8
+    }
+}
+
+// ================== Single-lines-only code
 fn generate_connection_lines_single_image_cool(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -1172,7 +1301,6 @@ fn generate_connection_lines_single_image_cool(
     {
         let wx = max_x - min_x;
         let wy = max_y - min_y;
-        // give a small margin
         min_x -= 0.05 * wx;
         max_x += 0.05 * wx;
         min_y -= 0.05 * wy;
@@ -1194,7 +1322,6 @@ fn generate_connection_lines_single_image_cool(
             let mut local_g: Vec<f64> = vec![0.0; npix];
             let mut local_b: Vec<f64> = vec![0.0; npix];
 
-            // helper to map from (x,y) to pixel coords
             fn to_pixel_coords(
                 x: f64,
                 y: f64,
@@ -1228,7 +1355,6 @@ fn generate_connection_lines_single_image_cool(
                 let (x2, y2) =
                     to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
 
-                // lines p0->p1, p1->p2, p2->p0
                 draw_line_segment_additive_gradient(
                     &mut local_r,
                     &mut local_g,
@@ -1316,7 +1442,7 @@ fn generate_connection_lines_single_image_cool(
     img
 }
 
-/// Lines-only frames for a video, parallel
+// lines-only frames for a video
 fn generate_connection_lines_frames_parallel(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -1370,12 +1496,9 @@ fn generate_connection_lines_frames_parallel(
     let height = out_size;
     let total_frames = if frame_interval == 0 { 1 } else { total_steps / frame_interval };
     let npix = (width * height) as usize;
-
-    // We'll do a "global max" approach for the line additions.
-    // First accumulate *all* steps, figure out the max, then for each frame we
-    // only sum up to clamp_end steps and scale by that same global max, so
-    // the brightness doesn't flicker from frame to frame.
     let small_weight = 0.3_f64;
+
+    // pre-compute final_global_max by accumulating all steps
     let mut global_accum_r: Vec<f64> = vec![0.0; npix];
     let mut global_accum_g: Vec<f64> = vec![0.0; npix];
     let mut global_accum_b: Vec<f64> = vec![0.0; npix];
@@ -1397,7 +1520,6 @@ fn generate_connection_lines_frames_parallel(
         (px as f32, py as f32)
     }
 
-    // accumulate all steps once
     for step in 0..total_steps {
         let p0 = positions[0][step];
         let p1 = positions[1][step];
@@ -1411,7 +1533,6 @@ fn generate_connection_lines_frames_parallel(
         let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
         let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
 
-        // lines
         draw_line_segment_additive_gradient(
             &mut global_accum_r,
             &mut global_accum_g,
@@ -1456,7 +1577,6 @@ fn generate_connection_lines_frames_parallel(
         );
     }
 
-    // find the final global max
     let mut final_global_max = 0.0_f64;
     for i in 0..npix {
         let m = global_accum_r[i].max(global_accum_g[i]).max(global_accum_b[i]);
@@ -1468,14 +1588,12 @@ fn generate_connection_lines_frames_parallel(
         final_global_max = 1.0;
     }
 
-    // Now build frames in parallel
     let frame_indices: Vec<usize> = (0..total_frames).collect();
     let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
         .par_iter()
         .map(|&frame_idx| {
             let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
 
-            // accumulate up to clamp_end
             let mut accum_r: Vec<f64> = vec![0.0; npix];
             let mut accum_g: Vec<f64> = vec![0.0; npix];
             let mut accum_b: Vec<f64> = vec![0.0; npix];
@@ -1558,76 +1676,7 @@ fn generate_connection_lines_frames_parallel(
     frames
 }
 
-// Single-image auto-level
-fn auto_levels_image(
-    input: &DynamicImage,
-    black_percent: f64,
-    white_percent: f64,
-    gamma: f64,
-) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-    let rgb_img = input.to_rgb8();
-    let (w, h) = rgb_img.dimensions();
-
-    let mut hist_r = vec![0u32; 256];
-    let mut hist_g = vec![0u32; 256];
-    let mut hist_b = vec![0u32; 256];
-    for px in rgb_img.pixels() {
-        hist_r[px[0] as usize] += 1;
-        hist_g[px[1] as usize] += 1;
-        hist_b[px[2] as usize] += 1;
-    }
-    let total_px = w * h;
-
-    fn find_cutoff(hist: &[u32], percentile: f64, total_px: u32) -> u8 {
-        let target = (percentile * total_px as f64).round() as u32;
-        let mut cumsum = 0;
-        for (i, &count) in hist.iter().enumerate() {
-            cumsum += count;
-            if cumsum >= target {
-                return i as u8;
-            }
-        }
-        255
-    }
-
-    let black_r = find_cutoff(&hist_r, black_percent, total_px);
-    let black_g = find_cutoff(&hist_g, black_percent, total_px);
-    let black_b = find_cutoff(&hist_b, black_percent, total_px);
-
-    let white_r = find_cutoff(&hist_r, white_percent, total_px);
-    let white_g = find_cutoff(&hist_g, white_percent, total_px);
-    let white_b = find_cutoff(&hist_b, white_percent, total_px);
-
-    let mut out_img = ImageBuffer::new(w, h);
-
-    let map_channel = |c: u8, black: u8, white: u8| -> u8 {
-        if black >= white {
-            return c;
-        }
-        let c_val = c as f64;
-        let black_val = black as f64;
-        let white_val = white as f64;
-        let mut norm = (c_val - black_val) / (white_val - black_val);
-        if norm < 0.0 {
-            norm = 0.0;
-        } else if norm > 1.0 {
-            norm = 1.0;
-        }
-        norm = norm.powf(gamma);
-        (norm * 255.0).clamp(0.0, 255.0) as u8
-    };
-
-    for (x, y, pixel) in out_img.enumerate_pixels_mut() {
-        let orig = rgb_img.get_pixel(x, y);
-        let r = map_channel(orig[0], black_r, white_r);
-        let g = map_channel(orig[1], black_g, white_g);
-        let b = map_channel(orig[2], black_b, white_b);
-        *pixel = Rgb([r, g, b]);
-    }
-
-    out_img
-}
-
+// ============================ MAIN ============================
 fn main() {
     let args = Args::parse();
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
@@ -1782,13 +1831,13 @@ fn main() {
             println!("Trajectory image saved as {}", traj_path);
         }
 
-        // auto-level single normal image
+        // =========== NEW AUTO-LEVEL with approach #2 ===========
         let dyn_img = DynamicImage::ImageRgb8(last_frame);
         let auto_leveled = auto_levels_image(
             &dyn_img,
-            args.auto_levels_black_percent,
-            args.auto_levels_white_percent,
-            args.auto_levels_gamma,
+            args.hist_thresh_black_fraction,
+            args.hist_thresh_white_fraction,
+            args.hist_levels_gamma,
         );
         let traj_path_al = format!("pics/{}_AL.png", base_name);
         if let Err(e) = auto_leveled.save(&traj_path_al) {
@@ -1833,14 +1882,18 @@ fn main() {
         println!("Lines-only image saved as {}", lines_path);
     }
 
-    // auto-level lines-only single image
+    // =========== NEW AUTO-LEVEL lines-only single image ===========
     {
         let dyn_img = DynamicImage::ImageRgba8(lines_only_img);
+        // Convert to RGB8 if you prefer
+        let dyn_img_rgb = dyn_img.to_rgb8();
+        let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
+
         let auto_leveled_lines = auto_levels_image(
-            &dyn_img,
-            args.auto_levels_black_percent,
-            args.auto_levels_white_percent,
-            args.auto_levels_gamma,
+            &dyn_img2,
+            args.hist_thresh_black_fraction,
+            args.hist_thresh_white_fraction,
+            args.hist_levels_gamma,
         );
         let lines_path_al = format!("pics/{}_lines_only_AL.png", base_name);
         if let Err(e) = auto_leveled_lines.save(&lines_path_al) {
@@ -1868,5 +1921,5 @@ fn main() {
         println!("No lines-only video requested.");
     }
 
-    println!("\nDone: normal + lines-only videos + single images (with auto-level).");
+    println!("\nDone: normal + lines-only videos + single images (with new auto-level).");
 }

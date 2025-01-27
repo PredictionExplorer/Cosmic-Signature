@@ -10,11 +10,12 @@ import random
 SIMULATION_CONFIG = {
     # Core simulation parameters
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 1,
-    'base_seed_hex': "890130",
-    'num_runs': 500,
+    'max_concurrent': 1,            # how many runs in parallel
+    'base_seed_hex': "890130",      # base hex for seeds
+    'num_runs': 2000,                # how many seeds to append
 
     # Simulation parameters and their possible values
+    # (cartesian product from itertools.product)
     'param_ranges': {
         'num_steps': [1_000_000],
         'num_sims': [500],
@@ -41,8 +42,10 @@ SIMULATION_CONFIG = {
     # Render parameters
     'render_config': {
         'force_visible': True,
-        'auto_levels_black_percent': "0.0",
-        'auto_levels_gamma': "0.8"
+        # Replaced old auto-level keys with new histogram fraction approach:
+        'hist_thresh_black_fraction': "0.00",  # or "0.01" if desired
+        'hist_thresh_white_fraction': "0.2",
+        'hist_levels_gamma': "0.8"
     }
 }
 
@@ -67,13 +70,14 @@ class SimulationParams:
     special_color_video_tail_max: float
     special_color_image_tail_min: float
     special_color_image_tail_max: float
-    seed: str
-    auto_levels_white_percent: float
+    seed: str   # constructed from base_seed_hex + index
 
 def generate_file_name(params: SimulationParams) -> str:
-    """Create a file name using the seed value and white percent"""
-    white_percent = int(params.auto_levels_white_percent * 100)
-    return f"white_{white_percent:02d}_{params.seed[2:]}"
+    """
+    Create a file name using the seed value, e.g. 'seed_1234ABCD'.
+    Each seed is unique, so we just use that.
+    """
+    return f"seed_{params.seed[2:]}"  # skip '0x' prefix, e.g. 0xABCD -> seed_ABCD
 
 def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
     """Run the Rust program via subprocess"""
@@ -112,13 +116,15 @@ def build_command_list(program_path: str, params: SimulationParams, file_name: s
         "--special-color-image-tail-max", str(params.special_color_image_tail_max)
     ]
 
-    # Add render configuration
+    # Render toggles from SIMULATION_CONFIG['render_config']
     if SIMULATION_CONFIG['render_config']['force_visible']:
         cmd.append("--force-visible")
+
+    # New auto-level approach #2 (histogram fraction)
     cmd.extend([
-        "--auto-levels-black-percent", SIMULATION_CONFIG['render_config']['auto_levels_black_percent'],
-        "--auto-levels-white-percent", f"{params.auto_levels_white_percent:.2f}",
-        "--auto-levels-gamma", SIMULATION_CONFIG['render_config']['auto_levels_gamma']
+        "--hist-thresh-black-fraction", SIMULATION_CONFIG['render_config']['hist_thresh_black_fraction'],
+        "--hist-thresh-white-fraction", SIMULATION_CONFIG['render_config']['hist_thresh_white_fraction'],
+        "--hist-levels-gamma", SIMULATION_CONFIG['render_config']['hist_levels_gamma']
     ])
 
     # Add optional flags
@@ -139,30 +145,27 @@ class SimulationRunner:
         self.max_concurrent = max_concurrent
 
     def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
-        """Generate all parameter combinations"""
+        """Generate all parameter combinations from param_ranges, plus each seed variant."""
         param_sets = []
-        for combo in itertools.product(*SIMULATION_CONFIG['param_ranges'].values()):
+        # We'll iterate over all combinations in param_ranges
+        param_values = list(SIMULATION_CONFIG['param_ranges'].values())
+        for combo in itertools.product(*param_values):
             for i in range(num_runs):
-                seed_suffix = f"{i:04X}"
+                # Build a unique seed: e.g. 0x890130 + i in hex
+                seed_suffix = f"{i:04X}"  # 4-hex digits
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
-                params = SimulationParams(
-                    *combo,
-                    seed=full_seed,
-                    auto_levels_white_percent=0.0  # Placeholder, will be set per run
-                )
+                params = SimulationParams(*combo, seed=full_seed)
                 param_sets.append(params)
 
         return param_sets
 
     def run_simulations(self, param_sets: List[SimulationParams]):
-        """Run simulations in parallel"""
+        """Run simulations in parallel using ThreadPoolExecutor"""
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
-            for i, params in enumerate(param_sets):
-                params.auto_levels_white_percent = random.random()  # New random value per run
+            for params in param_sets:
                 file_name = generate_file_name(params)
-
                 # Skip if video already exists
                 if not params.no_video and os.path.isfile(f'vids/{file_name}.mp4'):
                     continue
@@ -193,7 +196,7 @@ def main():
         num_runs=SIMULATION_CONFIG['num_runs']
     )
 
-    random.shuffle(param_sets)
+    random.shuffle(param_sets)  # optional shuffle if you want random ordering
     print(f"Total runs to execute: {len(param_sets)}")
 
     runner.run_simulations(param_sets)
