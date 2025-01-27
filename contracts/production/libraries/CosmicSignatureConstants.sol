@@ -41,16 +41,6 @@ library CosmicSignatureConstants {
 	///		console.log(d);
 	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
 
-	// /// @notice System mode constants.
-	// /// @dev These define the operational states of the `CosmicSignatureGame` contract.
-	// uint256 internal constant MODE_RUNTIME = 0; // Normal operation.
-	// uint256 internal constant MODE_PREPARE_MAINTENANCE = 1; // Preparing for maintenance.
-	// uint256 internal constant MODE_MAINTENANCE = 2; // System under maintenance.
-	//
-	// /// @notice Error messages for system mode checks.
-	// string internal constant ERR_STR_MODE_MAINTENANCE = "System must be in MODE_MAINTENANCE.";
-	// string internal constant ERR_STR_MODE_RUNTIME = "System in maintenance mode.";
-
 	// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
 	// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
 	// todo-1 +++ Done on Jan 24 2025.

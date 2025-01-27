@@ -403,6 +403,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `onlyGame`.
 	///
 	/// todo-1 Here and elsewhere, consider replacing methods like this with `receive`.
+	/// todo-1 Find all: payable
 	/// todo-1 It would probably be cheaper gas-wise.
 	/// todo-1 Or at least write comments.
 	/// todo-1 But in this particular case `receive` won't be sufficient for our needs.

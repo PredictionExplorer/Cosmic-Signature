@@ -118,11 +118,4 @@ interface IMainPrize is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBas
 
 	/// @return The current charity ETH donation amount, in Wei.
 	function getCharityEthDonationAmount() external view returns(uint256);
-
-	// todo-1 This is really to be referred to as "beneficiary". But just delete this garbage.
-	// /// @return The given bidding round main prize winner address,
-	// /// or zero if `roundNum_` is invalid or the round has not ended yet.
-	// /// @param roundNum_ The bidding round number.
-	// /// @dev Don't use this. Instead, use `prizesWallet.mainPrizeBeneficiaryAddresses`.
-	// function tryGetMainPrizeWinnerAddress(uint256 roundNum_) external view returns(address);
 }

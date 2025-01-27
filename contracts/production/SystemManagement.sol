@@ -22,38 +22,6 @@ abstract contract SystemManagement is
 	CosmicSignatureGameStorage,
 	BiddingBase,
 	ISystemManagement {
-	// /// @dev Replaced with `onlyInactive`.
-	// modifier onlyMaintenance() {
-	// 	require(
-	// 		systemMode == CosmicSignatureConstants.MODE_MAINTENANCE,
-	// 		CosmicSignatureErrors.SystemMode(CosmicSignatureConstants.ERR_STR_MODE_MAINTENANCE, systemMode)
-	// 	);
-	// 	_;
-	// }
-	//
-	// /// @dev Replaced with `onlyActive`.
-	// modifier onlyRuntime() {
-	// 	require(
-	// 		systemMode < CosmicSignatureConstants.MODE_MAINTENANCE,
-	// 		CosmicSignatureErrors.SystemMode(CosmicSignatureConstants.ERR_STR_MODE_RUNTIME, systemMode)
-	// 	);
-	// 	_;
-	// }
-
-	// function prepareMaintenance() external override onlyOwner /*onlyRuntime*/ {
-	// 	require(
-	// 		systemMode == CosmicSignatureConstants.MODE_RUNTIME,
-	// 		CosmicSignatureErrors.SystemMode("System must be in runtime mode.", systemMode)
-	// 	);
-	// 	systemMode = CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE;
-	// 	emit SystemModeChanged(systemMode);
-	// }   
-	//
-	// function setRuntimeMode() external override onlyOwner onlyMaintenance {
-	// 	systemMode = CosmicSignatureConstants.MODE_RUNTIME;
-	// 	emit SystemModeChanged(systemMode);
-	// }
-
 	function setActivationTime(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
 		// [Comment-202411236]
 		// Imposing this requirement instead of `onlyInactive`.

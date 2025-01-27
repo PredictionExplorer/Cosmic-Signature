@@ -36,7 +36,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	uint256[1 << 64] internal _usedNfts;
 
 	/// @notice This is used to generate monotonic unique IDs.
-	/// @dev Issue. I would prefer to declare this variable `internal` (and name it `_...`),
+	/// @dev Issue. Yuriy would prefer to declare this variable `internal` (and name it `_...`),
 	/// but Nick is saying that he needs it to monitor contract activities.
 	/// But the suitability of this variable for any purpose other than what the @notice says is purely accidential.
 	/// Any refactoring can easily break things.

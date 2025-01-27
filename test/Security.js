@@ -26,7 +26,6 @@ describe("Security", function () {
 		// But, hopefully, it will work somehow.
 		await cosmicSignatureGameProxy.setActivationTime(0);
 
-		// await cosmicSignatureGameProxy.setRuntimeMode();
 		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		// await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
 

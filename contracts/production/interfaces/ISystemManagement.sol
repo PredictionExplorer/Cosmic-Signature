@@ -17,10 +17,6 @@ interface ISystemManagement is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
 	IBiddingBase {
-	// function prepareMaintenance() external;
-	//
-	// function setRuntimeMode() external;
-
 	/// @notice Sets `activationTime`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.

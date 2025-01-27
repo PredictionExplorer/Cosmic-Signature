@@ -251,6 +251,9 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActionIds`.
 	///
 	/// todo-1 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
+	/// todo-1 function\b.+?IfPossible
+	/// todo-1 function\b.+?IfNeeded
+	/// todo-1 Jan 26: I am happy, but take another look.
 	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns(address[] memory) {
 		address[] memory luckyStakerAddresses_;
 		uint256 numStakedNftsCopy_ = _numStakedNfts;

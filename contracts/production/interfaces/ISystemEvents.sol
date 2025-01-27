@@ -11,10 +11,6 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 /// @title Cosmic Signature Game Configuration Events.
 /// @author The Cosmic Signature Development Team.
 interface ISystemEvents {
-	// /// @notice Emitted when `systemMode` is changed.
-	// /// @param newValue The new value.
-	// event SystemModeChanged(uint256 newValue);
-
 	/// @notice Emitted when `activationTime` is changed.
 	/// @param newValue The new value.
 	event ActivationTimeChanged(uint256 newValue);

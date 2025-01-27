@@ -34,7 +34,6 @@ async function main() {
 		);
 	console.log("Implementation address:", implementationAddressAsString_);
 	console.log("timesEthBidPrice =", await cosmicSignatureGameProxy.timesEthBidPrice());
-	// await cosmicSignatureGameProxy.setRuntimeMode();
 }
 
 main()

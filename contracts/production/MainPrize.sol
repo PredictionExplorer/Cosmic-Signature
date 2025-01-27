@@ -582,11 +582,6 @@ abstract contract MainPrize is
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
 		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
-
-		// if (systemMode == CosmicSignatureConstants.MODE_PREPARE_MAINTENANCE) {
-		// 	systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
-		// 	emit SystemModeChanged(systemMode);
-		// }
 	}
 
 	// #endregion

@@ -64,14 +64,13 @@ contract CosmicSignatureGameOpenBid is
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
 
 		// Comment-202501012 applies.
-		// #enable_asserts assert(activationTime == 0);
+		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
 		__UUPSUpgradeable_init();
 
-		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;
@@ -137,7 +136,10 @@ contract CosmicSignatureGameOpenBid is
 	function initialize2() reinitializer(2) public {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
 
-		// Comment-202501012 applies.
+		// `initialize` is supposed to be already executed.
+		// `initialize2` is supposed to not be executed yet.
+		// Comment-202501012 relates.
+		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds > 0);
 		// #enable_asserts assert(timesEthBidPrice == 0);
 
 		timesEthBidPrice = 3;

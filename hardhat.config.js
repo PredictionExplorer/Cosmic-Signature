@@ -176,6 +176,7 @@ function populateNetworkIsMainNetOnce(hre) {
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
 	async (args, hre, runSuper) => {
+		// todo-1 Review all `===` and `!==`. Maybe in some cases delete one `=`.
 		// @ts-ignore 'args' is of type 'unknown'.
 		if (args.solcVersion === solidityVersion) {
 

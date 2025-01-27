@@ -68,14 +68,13 @@ contract CosmicSignatureGame is
 		// [Comment-202501012]
 		// We are supposed to not be initialized yet.
 		// [/Comment-202501012]
-		// #enable_asserts assert(activationTime == 0);
+		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds == 0);
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
 		__UUPSUpgradeable_init();
 
-		// systemMode = CosmicSignatureConstants.MODE_MAINTENANCE;
 		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
 		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
 		marketingWalletCstContributionAmount = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT;

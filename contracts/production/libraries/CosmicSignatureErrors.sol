@@ -35,11 +35,6 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region System Errors
 
-	// /// @notice Thrown when an action is attempted that is not permitted in the current system mode.
-	// /// @param errStr Description of the error.
-	// /// @param systemMode The current system mode.
-	// error SystemMode(string errStr, uint256 systemMode);
-
 	/// @notice Thrown when an action is attempted before the current bidding round activation time.
 	/// @param errStr Description of the error.
 	/// @param activationTime The activation time.

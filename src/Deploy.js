@@ -21,7 +21,6 @@ const basicDeployment = async function (
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
 	activationTime
-	// switchToRuntimeMode = true
 ) {
 	return await basicDeploymentAdvanced(
 		"CosmicSignatureGame",
@@ -30,7 +29,6 @@ const basicDeployment = async function (
 		charityAddr,
 		transferOwnershipToCosmicSignatureDao,
 		activationTime
-		// switchToRuntimeMode
 	);
 };
 
@@ -56,13 +54,7 @@ const basicDeploymentAdvanced = async function (
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
 	activationTime
-	// switchToRuntimeMode
 ) {
-	// if (switchToRuntimeMode === undefined) {
-	// 	console.error("switchToRuntimeMode is not set.");
-	// 	process.exit(1);
-	// }
-
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
@@ -186,9 +178,6 @@ const basicDeploymentAdvanced = async function (
 		}
 		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
 	}
-	// if (switchToRuntimeMode) {
-	// 	await cosmicSignatureGameProxy.connect(deployerAcct).setRuntimeMode();
-	// }
 
 	return {
 		cosmicSignatureGameProxy,

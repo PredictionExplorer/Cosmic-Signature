@@ -9,15 +9,12 @@ const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js"
 
 describe("SystemManagement", function () {
 	it("In the inactive mode, setters behave correctly", async function () {
-		const isRuntimeMode_ = false;
+		const modeIsActive_ = false;
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, modeIsActive_ ? 1 : 0);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-
-		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(2n);
 
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).greaterThan(+1e9);
 
@@ -143,27 +140,18 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setActivationTime(123n);
 		expect(await cosmicSignatureGameProxy.activationTime()).to.equal(123n);
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).lessThan(-1e9);
-
-		// await expect(cosmicSignatureGameProxy.prepareMaintenance()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemMode");
-		// await cosmicSignatureGameProxy.setRuntimeMode();
 	});
 	it("In the active mode, setters are not available", async function () {
-		const isRuntimeMode_ = true;
+		const modeIsActive_ = true;
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = signers;
 		const {cosmicSignatureGameProxy,} =
-			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, modeIsActive_ ? 1 : 0);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-
-		// const systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(0n);
 
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).within((-24n) * 60n * 60n, 0n);
 
 		const testAcct_ = hre.ethers.Wallet.createRandom();
-		// const revertStr = "System must be in MODE_MAINTENANCE.";
-		// await expect(cosmicSignatureGameProxy.setRuntimeMode()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemMode").withArgs(revertStr, 0n);
-		// await expect(cosmicSignatureGameProxy.setActivationTime(123n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await cosmicSignatureGameProxy.setActivationTime(123n);
 		await cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(11n * 60n * 60n);
 		await expect(cosmicSignatureGameProxy.setMarketingWalletCstContributionAmount(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
@@ -194,14 +182,13 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setNumRaffleEthPrizesForBidders(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNumRaffleCosmicSignatureNftsForBidders(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
 		await expect(cosmicSignatureGameProxy.setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsActive");
-		// await cosmicSignatureGameProxy.prepareMaintenance();
 	});
 	it("In the inactive mode, active mode methods are not available", async function () {
-		const isRuntimeMode_ = false;
+		const modeIsActive_ = false;
 		const signers = await hre.ethers.getSigners();
 		const [owner, addr1, /*addr2, addr3, addr4, addr5, addr6, addr7,*/] = signers;
 		const {cosmicSignatureGameProxy, randomWalkNft,} =
-			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, isRuntimeMode_ ? 1 : 0 /* , isRuntimeMode_ */);
+			await basicDeployment(owner, "", /*addr7.address,*/ addr1.address, false, modeIsActive_ ? 1 : 0);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).greaterThan(+1e9);
@@ -236,9 +223,6 @@ describe("SystemManagement", function () {
 		// // Comment-202501192 applies.
 		// await hre.ethers.provider.send("evm_mine");
 
-		// let systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(0n);
-
 		let durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
 		expect(durationUntilActivation_).within((-24n) * 60n * 60n, 0n);
 		const activationTime_ = await cosmicSignatureGameProxy.activationTime();
@@ -252,14 +236,8 @@ describe("SystemManagement", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 
-		// await cosmicSignatureGameProxy.prepareMaintenance();
-		// await expect(cosmicSignatureGameProxy.connect(addr1).prepareMaintenance()).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-
 		await cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(123n * 60n);
 		await expect(cosmicSignatureGameProxy.connect(addr1).setDelayDurationBeforeNextRound(123n * 60n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-
-		// systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(1n);
 
 		const delayDurationBeforeNextRound_ = await cosmicSignatureGameProxy.delayDurationBeforeNextRound();
 		expect(delayDurationBeforeNextRound_).to.equal(123n * 60n);
@@ -271,15 +249,8 @@ describe("SystemManagement", function () {
 		expect(durationUntilMainPrize_).to.equal(1n);
 		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 
-		// systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(2n);
-
 		durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
 		expect(durationUntilActivation_).equal(delayDurationBeforeNextRound_);
-
-		// await cosmicSignatureGameProxy.setRuntimeMode();
-		// systemModeCode_ = await cosmicSignatureGameProxy.systemMode();
-		// expect(systemModeCode_).to.equal(0n);
 
 		latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
@@ -295,8 +266,6 @@ describe("SystemManagement", function () {
 			await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		// await expect(cosmicSignatureGameProxy.connect(addr1).setRuntimeMode())
-		// 	.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setActivationTime(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setDelayDurationBeforeNextRound(11n * 60n * 60n))

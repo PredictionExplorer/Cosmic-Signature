@@ -148,7 +148,7 @@ describe("CosmicSignatureGame", function () {
 
 		expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
 		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
-			// It's allowed to transfer ownership even in the active mode.
+			// Ownership transfer will succeed regardless if the current bidding round is active or not.
 			await cosmicSignatureGameProxy.setActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
 
 			if (counter_ <= 0) {

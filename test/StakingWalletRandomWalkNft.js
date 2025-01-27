@@ -92,7 +92,6 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNft.getAddress());
 	// 	await newStakingWalletRandomWalkNft.waitForDeployment();
 	// 	await cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(await newStakingWalletRandomWalkNft.getAddress());
-	// 	// await cosmicSignatureGameProxy.setRuntimeMode();
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
 	// 	let sampleTokenId = 33;
