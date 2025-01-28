@@ -94,7 +94,12 @@ def generate_file_name(params: SimulationParams) -> str:
     Create a file name using the seed value, e.g. 'seed_1234ABCD'.
     We'll strip the '0x' from the seed, for uniqueness.
     """
-    return f"seed_{params.seed[2:]}"
+    result = f"seed_{params.seed[2:]}"
+    if params.special:
+        result += "_sp"
+    else:
+        result += "_reg"
+    return result
 
 
 def build_command_list(program_path: str, params: SimulationParams, file_name: str) -> List[str]:
