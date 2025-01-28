@@ -4,6 +4,19 @@ pragma solidity 0.8.28;
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
 interface IBidStatistics is ICosmicSignatureGameStorage {
+	/// @return The total number of bids in the given bidding round.
+	/// If an argument is invalid the behavior is undefined.
+	function getTotalNumBids(uint256 roundNum_) external view returns(uint256);
+
+	/// @return Bidder address in the given bidding round at the given bid index.
+	/// If an argument is invalid the behavior is undefined.
+	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view returns(address);
+
+	/// @return A tuple containing the total ETH and CST amounts spent by the given bidder in the given bidding round, in Wei.
+	/// If the given bider didn't bid in the given bidding round both return values will be zeros.
+	/// If an argument is invalid the behavior is undefined.
+	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view returns(uint256, uint256);
+
 	// /// @return The current Endurance Champion address and duration.
 	// /// @dev This method has been replaced with `tryGetCurrentChampions`.
 	// function tryGetCurrentEnduranceChampion() external view returns(address, uint256);

@@ -1,6 +1,6 @@
 // #region
 
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
 // #endregion
@@ -22,6 +22,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "./BiddingBase.sol";
 import { MainPrizeBase } from "./MainPrizeBase.sol";
 import { BidStatistics } from "./BidStatistics.sol";
+import { SecondaryPrizes } from "./SecondaryPrizes.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
 // #endregion
@@ -33,6 +34,7 @@ abstract contract MainPrize is
 	BiddingBase,
 	MainPrizeBase,
 	BidStatistics,
+	SecondaryPrizes,
 	IMainPrize {
 	// #region `claimMainPrize`
 
@@ -112,6 +114,7 @@ abstract contract MainPrize is
 			// todo-1 Write a comment to explain things.
 			CosmicSignatureHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_ =
 				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
+			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 
 			// #endregion
 			// #region
@@ -132,7 +135,7 @@ abstract contract MainPrize is
 				{
 					// #region
 
-					uint256 cstRewardAmount_ = numRaffleParticipants[roundNum] * cstRewardAmountMultiplier;
+					uint256 cstRewardAmount_ = bidderAddressesReference_.numItems * cstRewardAmountMultiplier;
 
 					// Addresses for which to mint CS NFTs.
 					// Items:
@@ -215,7 +218,7 @@ abstract contract MainPrize is
 					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length == cosmicSignatureNftOwnerBidderAddressIndex_ + numRaffleCosmicSignatureNftsForBidders);
 					for (uint256 cosmicSignatureNftOwnerIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
 						uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-						address raffleWinnerAddress_ = raffleParticipants[roundNum][randomNumber_ % numRaffleParticipants[roundNum]];
+						address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						-- cosmicSignatureNftOwnerIndex_;
 						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerIndex_] = raffleWinnerAddress_;
@@ -405,7 +408,7 @@ abstract contract MainPrize is
 								-- winnerIndex_;
 								IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[winnerIndex_];
 								uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-								address raffleWinnerAddress_ = raffleParticipants[roundNum][randomNumber_ % numRaffleParticipants[roundNum]];
+								address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
 								// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 								ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 								ethDepositReference_.amount = raffleEthPrizeAmount_;
@@ -521,20 +524,6 @@ abstract contract MainPrize is
 	}
 
 	// #endregion
-	// #region // `_updateRaffleEntropy`
-
-	// /// @notice Update the entropy used for random selection
-	// /// @dev This function updates the entropy using the current block information
-	// function _updateRaffleEntropy() private {
-	// 	// #enable_smtchecker /*
-	// 	unchecked
-	// 	// #enable_smtchecker */
-	// 	{
-	// 		raffleEntropy = keccak256(abi.encode(raffleEntropy, block.timestamp, blockhash(block.number - 1)));
-	// 	}
-	// }
-
-	// #endregion
 	// #region `_prepareNextRound`
 
 	/// @notice Updates state for the next bidding round.
@@ -593,42 +582,6 @@ abstract contract MainPrize is
 		// #enable_smtchecker */
 		{
 			return address(this).balance * mainEthPrizeAmountPercentage / 100;
-		}
-	}
-
-	// #endregion
-	// #region `getChronoWarriorEthPrizeAmount`
-
-	function getChronoWarriorEthPrizeAmount() public view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			return address(this).balance * chronoWarriorEthPrizeAmountPercentage / 100;
-		}
-	}
-
-	// #endregion
-	// #region `getRaffleTotalEthPrizeAmount`
-
-	function getRaffleTotalEthPrizeAmount() public view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			return address(this).balance * raffleTotalEthPrizeAmountPercentage / 100;
-		}
-	}
-
-	// #endregion
-	// #region `getStakingTotalEthRewardAmount`
-
-	function getStakingTotalEthRewardAmount() public view override returns(uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			return address(this).balance * stakingTotalEthRewardAmountPercentage / 100;
 		}
 	}
 

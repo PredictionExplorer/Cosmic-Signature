@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: CC0-1.0
+// todo-1 Make sure license is the same in all files, except in "*RandomWalkNFT.sol".
+// todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
+/// @dev Despite Comment-202409149, I added this interface so that the code was simuilar to other contracts.
 interface IRandomWalkNFT is IERC721Enumerable {
 	event TokenNameEvent(uint256 tokenId, string newName);
 	event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed, uint256 price);

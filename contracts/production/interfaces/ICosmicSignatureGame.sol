@@ -11,7 +11,7 @@ import { IEthDonations } from "./IEthDonations.sol";
 import { INftDonations } from "./INftDonations.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { IBidding } from "./IBidding.sol";
-import { ISpecialPrizes } from "./ISpecialPrizes.sol";
+import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 import { IMainPrize } from "./IMainPrize.sol";
 
 /// @title The Cosmic Signature Game.
@@ -29,7 +29,7 @@ interface ICosmicSignatureGame is
 	INftDonations,
 	IBidStatistics,
 	IBidding,
-	ISpecialPrizes,
+	ISecondaryPrizes,
 	IMainPrize {
 	/// @notice Initializes this upgradeable contract.
 	/// This method is to be called right after deployment.

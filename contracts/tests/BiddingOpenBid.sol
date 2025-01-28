@@ -230,7 +230,7 @@ abstract contract BiddingOpenBid is
 		// #region
 
 		// Updating bidding statistics.
-		biddersInfo[roundNum][msg.sender].totalSpentEth += paidEthBidPrice_;
+		biddersInfo[roundNum][msg.sender].totalSpentEthAmount += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
 		// ToDo-202409245-1 applies.
@@ -423,7 +423,7 @@ abstract contract BiddingOpenBid is
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
-		biddersInfo[roundNum][msg.sender].totalSpentCst += paidPrice_;
+		biddersInfo[roundNum][msg.sender].totalSpentCstAmount += paidPrice_;
 
 		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
@@ -539,13 +539,14 @@ abstract contract BiddingOpenBid is
 			_extendMainPrizeTime();
 		}
 
-		lastBidderAddress = msg.sender;
 		// lastBidType = bidType;
+		lastBidderAddress = msg.sender;
+		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
+		uint256 numBids_ = bidderAddressesReference_.numItems;
+		bidderAddressesReference_.items[numBids_] = msg.sender;
+		++ numBids_;
+		bidderAddressesReference_.numItems = numBids_;
 		biddersInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
-		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum];
-		raffleParticipants[roundNum][numRaffleParticipants_] = /*lastBidderAddress*/ msg.sender;
-		++ numRaffleParticipants_;
-		numRaffleParticipants[roundNum] = numRaffleParticipants_;
 
 		// // Comment-202501125 applies.
 		// // try
@@ -576,59 +577,6 @@ abstract contract BiddingOpenBid is
 		// // }
 
 		// _extendMainPrizeTime();
-	}
-
-	// #endregion
-	// #region `getTotalBids`
-
-	function getTotalBids() external view override returns(uint256) {
-		return numRaffleParticipants[roundNum];
-	}
-
-	// #endregion
-	// #region `getBidderAddressAtPosition`
-
-	function getBidderAddressAtPosition(uint256 position) external view override returns(address) {
-		require(position < numRaffleParticipants[roundNum], "Position out of bounds");
-		return raffleParticipants[roundNum][position];
-	}
-
-	// #endregion
-	// #region `bidderAddress`
-
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view override returns(address) {
-		require(
-			roundNum_ <= roundNum,
-			CosmicSignatureErrors.InvalidBidderQueryRoundNum(
-				"The provided bidding round number is greater than the current one's.",
-				roundNum_,
-				roundNum
-			)
-		);
-		uint256 numRaffleParticipants_ = numRaffleParticipants[roundNum_];
-		require(
-			numRaffleParticipants_ > 0,
-			CosmicSignatureErrors.BidderQueryNoBidsYet("No bids have been made in this round yet.", roundNum_)
-		);
-		require(
-			_positionFromEnd < numRaffleParticipants_,
-			CosmicSignatureErrors.InvalidBidderQueryOffset(
-				"Provided index is larger than array length.",
-				roundNum_,
-				_positionFromEnd,
-				numRaffleParticipants_
-			)
-		);
-		uint256 offset = numRaffleParticipants_ - _positionFromEnd - 1;
-		address bidderAddress_ = raffleParticipants[roundNum_][offset];
-		return bidderAddress_;
-	}
-
-	// #endregion
-	// #region `getTotalSpentByBidder`
-
-	function getTotalSpentByBidder(address bidderAddress_) external view override returns(uint256, uint256) {
-		return (biddersInfo[roundNum][bidderAddress_].totalSpentEth, biddersInfo[roundNum][bidderAddress_].totalSpentCst);
 	}
 
 	// #endregion

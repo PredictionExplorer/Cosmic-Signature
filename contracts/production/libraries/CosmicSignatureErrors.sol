@@ -102,39 +102,35 @@ library CosmicSignatureErrors {
 	// /// @param senderBalance The actual balance of the sender
 	// error InsufficientCSTBalance(string errStr, uint256 requiredAmount, uint256 senderBalance);
 
-	/// @notice Thrown when an invalid bidder query offset is provided
-	/// @param errStr Description of the error.
-	/// @param providedRoundNum The provided bidding round number.
-	/// @param providedOffset The offset provided
-	/// @param numParticipants The number of participants in the round
-	/// todo-1 Eliminate this? Otherwise name this event and its params better.
-	error InvalidBidderQueryOffset(
-		string errStr,
-		uint256 providedRoundNum,
-		uint256 providedOffset,
-		uint256 numParticipants
-	);
+	// /// @notice Thrown when an invalid bidder query bidding round number is provided.
+	// /// @param errStr Description of the error.
+	// /// @param providedRoundNum The provided bidding round number.
+	// /// @param currentRoundNum The current bidding round number.
+	// error InvalidBidderQueryRoundNum(string errStr, uint256 providedRoundNum, uint256 currentRoundNum);
 
-	/// @notice Thrown when an invalid bidder query bidding round number is provided.
-	/// @param errStr Description of the error.
-	/// @param providedRoundNum The provided bidding round number.
-	/// @param currentRoundNum The current bidding round number.
-	/// todo-1 Eliminate this? Otherwise name this event and its params better.
-	error InvalidBidderQueryRoundNum(string errStr, uint256 providedRoundNum, uint256 currentRoundNum);
+	// /// @notice Thrown when querying bidders for a round with no bids yet
+	// /// @param errStr Description of the error.
+	// /// @param providedRoundNum The provided bidding round number.
+	// error BidderQueryNoBidsYet(string errStr, uint256 providedRoundNum);
 
-	/// @notice Thrown when the bidder query offset overflows
-	/// @param errStr Description of the error.
-	/// @param providedOffset The offset provided
-	/// @param offsetFromStart The offset from the start
-	/// @dev todo-1 I dislike the word `Overflow`.
-	/// todo-1 Eliminate this? Otherwise name this event and its params better.
-	error BidderQueryOffsetOverflow(string errStr, uint256 providedOffset, uint256 offsetFromStart);
+	// /// @notice Thrown when an invalid bidder query offset is provided
+	// /// @param errStr Description of the error.
+	// /// @param providedRoundNum The provided bidding round number.
+	// /// @param providedOffset The offset provided
+	// /// @param numParticipants The number of participants in the round
+	// error InvalidBidderQueryOffset(
+	// 	string errStr,
+	// 	uint256 providedRoundNum,
+	// 	uint256 providedOffset,
+	// 	uint256 numParticipants
+	// );
 
-	/// @notice Thrown when querying bidders for a round with no bids yet
-	/// @param errStr Description of the error.
-	/// @param providedRoundNum The provided bidding round number.
-	/// todo-1 Eliminate this? Otherwise name this event and its params better.
-	error BidderQueryNoBidsYet(string errStr, uint256 providedRoundNum);
+	// /// @notice Thrown when the bidder query offset overflows
+	// /// @param errStr Description of the error.
+	// /// @param providedOffset The offset provided
+	// /// @param offsetFromStart The offset from the start
+	// /// @dev todo-1 I dislike the word `Overflow`.
+	// error BidderQueryOffsetOverflow(string errStr, uint256 providedOffset, uint256 offsetFromStart);
 
 	// #endregion
 	// #region Claim Prize Errors

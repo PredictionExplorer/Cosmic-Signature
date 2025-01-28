@@ -25,10 +25,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 ///
-/// todo-0 Restructure regions and reorder variables. They should mimic the contracts, such as bidding, main prize.
-/// todo-0 The same applies to some other contracts/libs, such as
-/// todo-0 `CosmicSignatureConstants`, `CosmicSignatureErrors`, `CosmicSignatureEvents`.
-///
 /// todo-1 Document which variables are valid under what conditions,
 /// todo-1 which variables should be accessed directly and which through an accessor,
 /// todo-1 ??? which variables emit events (some are changed programmatically without emitting an event).
@@ -166,6 +162,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The address of the account that placed the last bid.
 	/// We reset this to zero at the beginning of each bidding round.
+	/// @dev todo-1 This is the same as the last `bidderAddresses` item. So is it OK to eliminate this? At least comment.
 	address public lastBidderAddress;
 
 	/// @notice The address of the account that placed the last CST bid.
@@ -173,12 +170,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This will remain zero if nobody bids with CST.
 	address public lastCstBidderAddress;
 
-	/// @dev ToDo-202411098-1 applies.
-	/// todo-1 Rename to `roundNumBids` or better `numBids`.
-	/// todo-1 But better don't store this for past rounds.
-	mapping(uint256 roundNum => uint256 numBids) public numRaffleParticipants;
-
-	/// @notice We add an item on each bid.
 	/// @dev
 	/// [ToDo-202411098-1]
 	/// todo-1 +++ Taras wants to leave it alone.
@@ -187,14 +178,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
 	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
 	/// [/ToDo-202411098-1]
-	/// todo-0 Combine this with `numRaffleParticipants`.
-	/// todo-0 Each item should be a struct containing the number of bidders in that round and the bidders themselves.
-	/// todo-1 Rename to `roundBids` or  better `bids`.
-	/// todo-1 But better don't store this for past rounds.
-	mapping(uint256 roundNum => mapping(uint256 bidNum => address bidderAddress)) public raffleParticipants;
+	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
 
 	/// @dev ToDo-202411098-1 applies.
-	/// todo-1 Do we really need this?
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.

@@ -24,7 +24,7 @@ import { EthDonations } from "../production/EthDonations.sol";
 import { NftDonations } from "../production/NftDonations.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
 import { BiddingOpenBid } from "./BiddingOpenBid.sol";
-import { SpecialPrizes } from "../production/SpecialPrizes.sol";
+import { SecondaryPrizes } from "../production/SecondaryPrizes.sol";
 import { MainPrize } from "../production/MainPrize.sol";
 import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureGame.sol";
 
@@ -44,7 +44,7 @@ contract CosmicSignatureGameOpenBid is
 	NftDonations,
 	BidStatistics,
 	BiddingOpenBid,
-	SpecialPrizes,
+	SecondaryPrizes,
 	MainPrize,
 	ICosmicSignatureGame {
 	// #region `constructor`

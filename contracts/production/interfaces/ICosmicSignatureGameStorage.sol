@@ -14,11 +14,17 @@ interface ICosmicSignatureGameStorage {
 		string data;
 	}
 
-	/// @notice Information about a bidder.
+	/// @notice Stores each bid's bidder address.
+	struct BidderAddresses {
+		uint256 numItems;
+		mapping(uint256 bidNum => address bidderAddress) items;
+	}
+
+	/// @notice Details about a bidder.
 	struct BidderInfo {
 		// todo-1 Eliminate these total spens? It appears that they are not used in the logic.
-		uint256 totalSpentEth;
-		uint256 totalSpentCst;
+		uint256 totalSpentEthAmount;
+		uint256 totalSpentCstAmount;
 		uint256 lastBidTimeStamp;
 	}
 }
