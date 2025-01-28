@@ -1,70 +1,54 @@
 import itertools
 import os
+import random
+import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
-import subprocess
-import random
 
-# ============= Simulation Configuration =============
+# ===================== Simulation Configuration =====================
 SIMULATION_CONFIG = {
-    # Core simulation parameters
+    # Where is the compiled Rust program?
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 1,             # how many runs in parallel
-    'base_seed_hex': "890131",       # base hex for seeds
-    'num_runs': 2000,                # how many seeds to append
 
-    # Simulation parameters and their possible values
+    # Parallelism
+    'max_concurrent': 1,
+
+    # Base hex seed + how many variant runs
+    'base_seed_hex': "890132",
+    'num_runs': 2000,
+
+    # The relevant command-line arguments that still exist in the Rust code,
+    # each list can contain one or many values (for parameter sweeps).
     'param_ranges': {
-        # EXACT order must match the dataclass fields (except 'seed')
         'num_steps': [1_000_000],
         'num_sims': [500],
         'location': [300.0],
         'velocity': [1.0],
         'min_mass': [100.0],
         'max_mass': [300.0],
-        'avoid_effects': [False],
-        'no_video': [False],
-        'dynamic_bounds': [False],
-        'special_color': [None],
-
-        # Tail parameters
-        'video_tail_min': [2000.0],
-        'video_tail_max': [2000.0],
-        'image_tail_min': [2000.0],
-        'image_tail_max': [2000.0],
-        'special_color_video_tail_min': [1.0],
-        'special_color_video_tail_max': [1.0],
-        'special_color_image_tail_min': [2.0],
-        'special_color_image_tail_max': [2.0],
-
-        # New auto-level parameters
         'clip_black': [0.01],
         'clip_white': [0.99],
         'levels_gamma': [1.0],
-
-        # Add the ones that were missing:
-        'no_image': [False],
         'max_points': [100_000],
         'chaos_weight': [3.0],
         'perimeter_weight': [1.0],
         'dist_weight': [2.0],
         'lyap_weight': [2.0],
         'frame_size': [1800],
-    },
-
-    # Render parameters
-    'render_config': {
-        'force_visible': True
     }
 }
 
+
+# ===================== Dataclass for Parameters =====================
 @dataclass
 class SimulationParams:
     """
-    Holds all parameters for a single simulation run.
-    The field order here MUST match the order of 'param_ranges'
-    so that we can do: SimulationParams(*combo, seed=full_seed).
+    Reflects the Rust CLI arguments we still need:
+      --seed, --file-name,
+      --num-steps, --num-sims, --location, --velocity, --min-mass, --max-mass,
+      --max-points, --chaos-weight, --perimeter-weight, --dist-weight, --lyap-weight,
+      --clip-black, --clip-white, --levels-gamma, --frame-size
     """
     num_steps: int
     num_sims: int
@@ -72,25 +56,9 @@ class SimulationParams:
     velocity: float
     min_mass: float
     max_mass: float
-    avoid_effects: bool
-    no_video: bool
-    dynamic_bounds: bool
-    special_color: Optional[str]
-
-    video_tail_min: float
-    video_tail_max: float
-    image_tail_min: float
-    image_tail_max: float
-    special_color_video_tail_min: float
-    special_color_video_tail_max: float
-    special_color_image_tail_min: float
-    special_color_image_tail_max: float
-
     clip_black: float
     clip_white: float
     levels_gamma: float
-
-    no_image: bool
     max_points: int
     chaos_weight: float
     perimeter_weight: float
@@ -98,36 +66,20 @@ class SimulationParams:
     lyap_weight: float
     frame_size: int
 
-    # The seed is appended last (not in param_ranges)
-    seed: str
-
+    seed: str  # appended last, not in param_ranges
 
 def generate_file_name(params: SimulationParams) -> str:
     """
     Create a file name using the seed value, e.g. 'seed_1234ABCD'.
-    Each seed is unique, so we just use that.
+    We'll strip the '0x' from the seed, for uniqueness.
     """
-    return f"seed_{params.seed[2:]}"  # skip '0x' prefix, e.g. 0xABCD -> seed_ABCD
-
-
-def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
-    """Run the Rust program via subprocess and return (command_string, output)."""
-    shell_command = " ".join(command_list)
-    try:
-        result = subprocess.run(
-            command_list,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        return (shell_command, result.stdout.strip())
-    except subprocess.CalledProcessError:
-        return (shell_command, None)
+    return f"seed_{params.seed[2:]}"
 
 
 def build_command_list(program_path: str, params: SimulationParams, file_name: str) -> List[str]:
-    """Construct the command list for the simulation, matching all Rust CLI flags."""
+    """
+    Construct the command list for the Rust simulation, matching the new code’s CLI.
+    """
     cmd = [
         program_path,
 
@@ -141,44 +93,38 @@ def build_command_list(program_path: str, params: SimulationParams, file_name: s
         "--min-mass", str(params.min_mass),
         "--max-mass", str(params.max_mass),
 
-        "--video-tail-min", str(params.video_tail_min),
-        "--video-tail-max", str(params.video_tail_max),
-        "--image-tail-min", str(params.image_tail_min),
-        "--image-tail-max", str(params.image_tail_max),
-        "--special-color-video-tail-min", str(params.special_color_video_tail_min),
-        "--special-color-video-tail-max", str(params.special_color_video_tail_max),
-        "--special-color-image-tail-min", str(params.special_color_image_tail_min),
-        "--special-color-image-tail-max", str(params.special_color_image_tail_max),
-
-        "--clip-black", str(params.clip_black),
-        "--clip-white", str(params.clip_white),
-        "--levels-gamma", str(params.levels_gamma),
-
-        # Newly added:
         "--max-points", str(params.max_points),
         "--chaos-weight", str(params.chaos_weight),
         "--perimeter-weight", str(params.perimeter_weight),
         "--dist-weight", str(params.dist_weight),
         "--lyap-weight", str(params.lyap_weight),
+
+        "--clip-black", str(params.clip_black),
+        "--clip-white", str(params.clip_white),
+        "--levels-gamma", str(params.levels_gamma),
+
         "--frame-size", str(params.frame_size),
     ]
-
-    # Flags without arguments:
-    if SIMULATION_CONFIG['render_config']['force_visible']:
-        cmd.append("--force-visible")
-
-    if params.avoid_effects:
-        cmd.append("--avoid-effects")
-    if params.no_video:
-        cmd.append("--no-video")
-    if params.dynamic_bounds:
-        cmd.append("--dynamic-bounds")
-    if params.no_image:
-        cmd.append("--no-image")
-    if params.special_color:
-        cmd.extend(["--special-color", params.special_color])
-
     return cmd
+
+
+def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
+    """
+    Run the Rust program via subprocess, return (command_string, output).
+    If the subprocess fails, we return (command_string, None).
+    """
+    cmd_str = " ".join(command_list)
+    try:
+        result = subprocess.run(
+            command_list,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return (cmd_str, result.stdout.strip())
+    except subprocess.CalledProcessError:
+        return (cmd_str, None)
 
 
 class SimulationRunner:
@@ -187,41 +133,40 @@ class SimulationRunner:
         self.max_concurrent = max_concurrent
 
     def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
-        """Generate all parameter combinations from param_ranges, plus each seed variant."""
-        param_sets = []
-        # We'll iterate over all combinations in param_ranges
-        keys = list(SIMULATION_CONFIG['param_ranges'].keys())  # for reference
+        """
+        Generate all parameter combinations from param_ranges, plus each seed variant.
+        """
+        keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
+        param_sets = []
 
         for combo in itertools.product(*param_values):
             for i in range(num_runs):
-                # Build a unique seed: e.g. 0x890130 + i in hex
-                seed_suffix = f"{i:04X}"  # 4-hex digits
+                # Build a unique seed: e.g. 0x890131 + i in hex
+                seed_suffix = f"{i:04X}"  # 4 hex digits
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
-                # Each combo is a tuple matching the order we declared in param_ranges,
-                # so we pass it to SimulationParams(*combo, seed=...).
+                # "combo" is a tuple in the same order as 'keys'
+                # We pass it to SimulationParams(*combo, seed=...)
                 params = SimulationParams(*combo, seed=full_seed)
                 param_sets.append(params)
 
         return param_sets
 
     def run_simulations(self, param_sets: List[SimulationParams]):
-        """Run simulations in parallel using ThreadPoolExecutor."""
+        """
+        Run simulations in parallel using ThreadPoolExecutor, up to max_concurrent.
+        """
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
             for params in param_sets:
                 file_name = generate_file_name(params)
-                # Optional skip if the main video file already exists
-                if not params.no_video and os.path.isfile(f'vids/{file_name}.mp4'):
-                    continue
-
                 cmd_list = build_command_list(self.program_path, params, file_name)
                 fut = executor.submit(run_simulation, cmd_list)
                 futures[fut] = cmd_list
 
             for future in as_completed(futures):
-                cmd_list = futures[future]
+                cmd_str = " ".join(futures[future])
                 shell_command, output = future.result()
                 print(f"Finished command:\n  {shell_command}")
                 if output:
@@ -229,23 +174,27 @@ class SimulationRunner:
                 else:
                     print("No output or an error occurred.")
 
-
 def main():
-    print("Starting batch runs of the Rust three-body simulator...")
+    print("Starting batch runs of the Rust three-body simulator (lines-only version).")
 
+    # Create the runner with the config
     runner = SimulationRunner(
         program_path=SIMULATION_CONFIG['program_path'],
         max_concurrent=SIMULATION_CONFIG['max_concurrent']
     )
 
+    # Generate parameter combos (including seeds)
     param_sets = runner.get_parameter_combinations(
         base_seed_hex=SIMULATION_CONFIG['base_seed_hex'],
         num_runs=SIMULATION_CONFIG['num_runs']
     )
 
-    random.shuffle(param_sets)  # optional shuffle if you want random ordering
+    # Optional: shuffle them for random ordering
+    random.shuffle(param_sets)
+
     print(f"Total runs to execute: {len(param_sets)}")
 
+    # Execute them in parallel
     runner.run_simulations(param_sets)
 
 if __name__ == "__main__":
