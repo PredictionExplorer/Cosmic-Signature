@@ -1,6 +1,6 @@
 use clap::Parser;
 use hex;
-use image::{DynamicImage, ImageBuffer, ImageFormat, Rgb, Rgba, RgbaImage};
+use image::{DynamicImage, ImageBuffer, Rgb, Rgba, RgbaImage};
 use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
 use line_drawing::Bresenham;
@@ -10,11 +10,11 @@ use palette::{FromColor, Hsl, Srgb};
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
-use sha3::Digest; // <--- IMPORTANT TRAIT IMPORT
+use sha3::Digest;
 use sha3::Sha3_256;
 use statrs::statistics::Statistics;
 use std::f64::{INFINITY, NEG_INFINITY};
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::process::{Command, Stdio};
 
 /// We embed data of dimension LLE_M for the lyapunov exponent calculation.
@@ -180,9 +180,9 @@ impl Sha3RandomByteStream {
 #[derive(Clone)]
 struct Body {
     mass: f64,
-    position: Vector3<f64>,
-    velocity: Vector3<f64>,
-    acceleration: Vector3<f64>,
+    position: na::Vector3<f64>,
+    velocity: na::Vector3<f64>,
+    acceleration: na::Vector3<f64>,
 }
 
 impl Body {
@@ -432,6 +432,7 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
         let nn1 = nn_buffer[0];
         let nn2 = nn_buffer[1];
 
+        // pick the nearest *other* point
         let (nn_id, _) =
             if nn1.item == i as u64 { (nn2.item, nn2.distance) } else { (nn1.item, nn1.distance) };
         let j = nn_id as usize;
@@ -1205,27 +1206,41 @@ fn auto_levels_percentile_image(
     out_img
 }
 
-// ===================== FFMPEG video =====================
+// ===================== FFMPEG video (raw frames) =====================
 fn create_video_from_frames_in_memory(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
     frame_rate: u32,
 ) {
-    println!("Generating video... {}", output_file);
+    if frames.is_empty() {
+        eprintln!("No frames to encode, skipping video creation.");
+        return;
+    }
+
+    println!("Generating video (raw -> H.264) with FFmpeg: {}", output_file);
+
+    // We use rawvideo + rgb24 to avoid PNG overhead:
+    let width = frames[0].width();
+    let height = frames[0].height();
 
     let mut command = Command::new("ffmpeg");
     command
         .arg("-y")
+        // Read raw frames from stdin
         .arg("-f")
-        .arg("image2pipe")
-        .arg("-vcodec")
-        .arg("png")
-        .arg("-r")
+        .arg("rawvideo")
+        .arg("-pixel_format")
+        .arg("rgb24")
+        .arg("-video_size")
+        .arg(format!("{}x{}", width, height))
+        .arg("-framerate")
         .arg(frame_rate.to_string())
         .arg("-i")
         .arg("-")
+        // Let ffmpeg choose how many threads to spawn:
         .arg("-threads")
         .arg("0")
+        // Encode using libx264
         .arg("-c:v")
         .arg("libx264")
         .arg("-pix_fmt")
@@ -1236,24 +1251,24 @@ fn create_video_from_frames_in_memory(
         .stderr(Stdio::piped());
 
     let mut ffmpeg = command.spawn().expect("Failed to start ffmpeg");
-    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed ffmpeg stdin");
 
-    for frame in frames {
-        let dyn_img = DynamicImage::ImageRgb8(frame.clone());
-        let mut png_data = Vec::new();
-        {
-            let mut cursor = Cursor::new(&mut png_data);
-            dyn_img.write_to(&mut cursor, ImageFormat::Png).expect("Write frame failed");
+    // Take ownership of ffmpeg's stdin so we can drop it properly when done:
+    if let Some(mut child_stdin) = ffmpeg.stdin.take() {
+        for frame in frames {
+            child_stdin
+                .write_all(frame.as_raw())
+                .expect("Failed to write raw frame data to ffmpeg");
         }
-        ffmpeg_stdin.write_all(&png_data).expect("Failed to write to ffmpeg stdin");
+        // When we exit this block, `child_stdin` is dropped, so FFmpeg sees EOF.
     }
 
-    drop(ffmpeg.stdin.take());
-    let output = ffmpeg.wait_with_output().expect("Wait ffmpeg");
+    // Wait for FFmpeg to finish
+    let output = ffmpeg.wait_with_output().expect("Waiting for ffmpeg failed");
     if !output.status.success() {
-        eprintln!("ffmpeg error: {}", String::from_utf8_lossy(&output.stderr));
+        eprintln!("FFmpeg error:\n{}", String::from_utf8_lossy(&output.stderr));
+    } else {
+        println!("Video creation complete: {}", output_file);
     }
-    println!("Video creation complete: {}", output_file);
 }
 
 // ===================== main =====================
@@ -1324,7 +1339,7 @@ fn main() {
         Err(e) => eprintln!("Error saving lines-only image: {:?}", e),
     }
 
-    // 4) lines-only video
+    // 4) lines-only video (using raw frames -> x264)
     let num_seconds = 30;
     let target_frames = 60 * num_seconds;
     let frame_interval =
@@ -1333,6 +1348,7 @@ fn main() {
     let mut lines_frames =
         generate_lines_only_frames_raw(&positions, &colors, args.frame_size, frame_interval);
 
+    // auto-level the frames
     auto_levels_percentile_frames(
         &mut lines_frames,
         args.clip_black,
