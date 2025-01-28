@@ -38,10 +38,10 @@ SIMULATION_CONFIG = {
         'frame_size': [1800],
 
         # Bloom & special fields:
-        'special': [False, True],
-        'bloom_radius': [5],
-        'bloom_threshold': [0.7],
-        'bloom_strength': [0.3],
+        'special': [True],
+        'bloom_radius': [50],
+        'bloom_threshold': [0.3],
+        'bloom_strength': [1.0],
     }
 }
 
