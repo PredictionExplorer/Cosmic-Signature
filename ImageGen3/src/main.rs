@@ -239,6 +239,7 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     let positions: Vec<_> = bodies.iter().map(|b| b.position).collect();
     let masses: Vec<_> = bodies.iter().map(|b| b.mass).collect();
 
+    // first half-kick
     for (i, body) in bodies.iter_mut().enumerate() {
         body.reset_acceleration();
         for (j, &other_pos) in positions.iter().enumerate() {
@@ -248,10 +249,12 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
         }
     }
 
+    // drift
     for body in bodies.iter_mut() {
         body.position += body.velocity * dt + 0.5 * body.acceleration * dt * dt;
     }
 
+    // second half-kick
     let new_positions: Vec<_> = bodies.iter().map(|b| b.position).collect();
     for (i, body) in bodies.iter_mut().enumerate() {
         body.reset_acceleration();
@@ -288,425 +291,6 @@ fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64
     all_positions
 }
 
-// We'll use Hsl and Srgb from the palette crate
-fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
-    let mut colors = Vec::with_capacity(length);
-    let mut hue = rng.gen_range(0.0, 360.0);
-    for _ in 0..length {
-        // We do a tiny random walk in hue
-        if rng.next_byte() & 1 == 0 {
-            hue += 0.1;
-        } else {
-            hue -= 0.1;
-        }
-        if hue < 0.0 {
-            hue += 360.0;
-        } else if hue > 360.0 {
-            hue -= 360.0;
-        }
-        let hsl = Hsl::new(hue, 1.0, 0.5);
-        let rgb = Srgb::from_color(hsl);
-        colors.push(Rgb([
-            (rgb.red * 255.0) as u8,
-            (rgb.green * 255.0) as u8,
-            (rgb.blue * 255.0) as u8,
-        ]));
-    }
-    colors
-}
-
-fn generate_special_color_gradient(color_name: &str, length: usize) -> Vec<Rgb<u8>> {
-    let rgb_color = match color_name.to_lowercase().as_str() {
-        "gold" => Rgb([255, 215, 0]),
-        "bronze" => Rgb([205, 127, 50]),
-        "white" => Rgb([255, 255, 255]),
-        "emerald" => Rgb([144, 255, 182]),
-        "sapphire" => Rgb([70, 130, 255]),
-        "quartz" => Rgb([255, 205, 220]),
-        "amethyst" => Rgb([205, 133, 255]),
-        "topaz" => Rgb([255, 205, 133]),
-        "turquoise" => Rgb([133, 255, 205]),
-        "aqua" => Rgb([0, 255, 255]),
-        "fuchsia" => Rgb([255, 0, 128]),
-        _ => Rgb([255, 255, 255]),
-    };
-    vec![rgb_color; length]
-}
-
-fn generate_body_color_sequences(
-    rng: &mut Sha3RandomByteStream,
-    length: usize,
-    special_color: Option<&str>,
-) -> Vec<Vec<Rgb<u8>>> {
-    if let Some(color_name) = special_color {
-        let sc = generate_special_color_gradient(color_name, length);
-        vec![sc.clone(), sc.clone(), sc.clone()]
-    } else {
-        vec![
-            generate_color_gradient(rng, length),
-            generate_color_gradient(rng, length),
-            generate_color_gradient(rng, length),
-        ]
-    }
-}
-
-fn x(v: &Vector3<f64>) -> f64 {
-    v[0]
-}
-fn y(v: &Vector3<f64>) -> f64 {
-    v[1]
-}
-
-fn normalize_positions_inplace(positions: &mut [Vec<Vector3<f64>>]) {
-    let mut min_x = INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut max_y = NEG_INFINITY;
-
-    for body_pos in positions.iter() {
-        for pos in body_pos {
-            let px = x(pos);
-            let py = y(pos);
-            if px < min_x {
-                min_x = px;
-            }
-            if px > max_x {
-                max_x = px;
-            }
-            if py < min_y {
-                min_y = py;
-            }
-            if py > max_y {
-                max_y = py;
-            }
-        }
-    }
-
-    let x_center = (max_x + min_x) / 2.0;
-    let y_center = (max_y + min_y) / 2.0;
-    let mut range = (max_x - min_x).max(max_y - min_y);
-    if range < 1e-14 {
-        range = 1.0;
-    }
-
-    let half_range = range / 2.0;
-    for body_pos in positions.iter_mut() {
-        for pos in body_pos.iter_mut() {
-            pos[0] = (pos[0] - (x_center - half_range)) / range;
-            pos[1] = (pos[1] - (y_center - half_range)) / range;
-        }
-    }
-}
-
-fn compute_bounding_box_for_all_steps(
-    positions: &[Vec<Vector3<f64>>],
-    hide: &[bool],
-) -> (f64, f64, f64, f64) {
-    let mut min_x = INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut max_y = NEG_INFINITY;
-
-    for (body_i, body_positions) in positions.iter().enumerate() {
-        if hide[body_i] {
-            continue;
-        }
-        for &pos in body_positions {
-            let px = pos[0];
-            let py = pos[1];
-            if px < min_x {
-                min_x = px;
-            }
-            if px > max_x {
-                max_x = px;
-            }
-            if py < min_y {
-                min_y = py;
-            }
-            if py > max_y {
-                max_y = py;
-            }
-        }
-    }
-    (min_x, min_y, max_x, max_y)
-}
-
-fn compute_bounding_box_for_frame(
-    positions: &[Vec<Vector3<f64>>],
-    hide: &[bool],
-    trajectory_starts: &[usize],
-    current_end_step: usize,
-) -> (f64, f64, f64, f64) {
-    let mut min_x = INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut max_y = NEG_INFINITY;
-
-    for (body_i, body_positions) in positions.iter().enumerate() {
-        if hide[body_i] {
-            continue;
-        }
-        let clamp_end = current_end_step.min(body_positions.len());
-        if clamp_end == 0 {
-            continue;
-        }
-        for step in trajectory_starts[body_i]..clamp_end {
-            let px = body_positions[step][0];
-            let py = body_positions[step][1];
-            if px < min_x {
-                min_x = px;
-            }
-            if py < min_y {
-                min_y = py;
-            }
-            if px > max_x {
-                max_x = px;
-            }
-            if py > max_y {
-                max_y = py;
-            }
-        }
-    }
-    (min_x, min_y, max_x, max_y)
-}
-
-/// Draw a line from (x0, y0) to (x1, y1) via Bresenham, linearly interpolating color & additive.
-fn draw_line_segment_additive_gradient(
-    accum_r: &mut [f64],
-    accum_g: &mut [f64],
-    accum_b: &mut [f64],
-    width: u32,
-    height: u32,
-    x0: f32,
-    y0: f32,
-    x1: f32,
-    y1: f32,
-    col0: Rgb<u8>,
-    col1: Rgb<u8>,
-    small_weight: f64,
-) {
-    let start = (x0.round() as i32, y0.round() as i32);
-    let end = (x1.round() as i32, y1.round() as i32);
-
-    let points: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
-    let n = points.len();
-    if n == 0 {
-        return;
-    }
-
-    for (i, (xx, yy)) in points.into_iter().enumerate() {
-        if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
-            continue;
-        }
-        let idx = (yy as usize) * (width as usize) + (xx as usize);
-
-        // Fraction of the way along this line
-        let t = if n == 1 { 0.0 } else { i as f64 / (n.saturating_sub(1)) as f64 };
-
-        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
-        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
-        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
-
-        accum_r[idx] += r * small_weight;
-        accum_g[idx] += g * small_weight;
-        accum_b[idx] += b * small_weight;
-    }
-}
-
-fn plot_positions_parallel(
-    positions: &[Vec<Vector3<f64>>],
-    frame_size: u32,
-    trajectory_lengths: [f64; 3],
-    hide: &[bool],
-    colors: &[Vec<Rgb<u8>>],
-    frame_interval: usize,
-    avoid_effects: bool,
-    one_frame: bool,
-    dynamic_bounds_for_video: bool,
-) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-    let total_steps = positions[0].len();
-    let dynamic_bounds = if one_frame { true } else { dynamic_bounds_for_video };
-    let total_frames = if one_frame {
-        1
-    } else if frame_interval == 0 {
-        1
-    } else {
-        total_steps / frame_interval
-    };
-
-    // bounding box if not dynamic
-    let (static_min_x, static_min_y, static_max_x, static_max_y) = if !dynamic_bounds {
-        compute_bounding_box_for_all_steps(positions, hide)
-    } else {
-        (0.0, 0.0, 1.0, 1.0)
-    };
-
-    let frame_indices: Vec<usize> = (0..total_frames).collect();
-    let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
-        .par_iter()
-        .map(|&frame_index| {
-            let current_end_step = if one_frame {
-                total_steps.saturating_sub(1)
-            } else {
-                (frame_index + 1) * frame_interval
-            };
-
-            // figure out tail
-            let mut trajectory_starts = [0usize; 3];
-            for (body_i, body_positions) in positions.iter().enumerate() {
-                if hide[body_i] {
-                    continue;
-                }
-                let clamp_end = current_end_step.min(body_positions.len());
-                if clamp_end == 0 {
-                    trajectory_starts[body_i] = 0;
-                    continue;
-                }
-                let mut total_dist = 0.0;
-                let mut idx = clamp_end - 1;
-                while idx > 0 && total_dist < trajectory_lengths[body_i] {
-                    let x1 = body_positions[idx][0];
-                    let y1 = body_positions[idx][1];
-                    let x2 = body_positions[idx - 1][0];
-                    let y2 = body_positions[idx - 1][1];
-                    let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
-                    total_dist += dist;
-                    if total_dist >= trajectory_lengths[body_i] {
-                        break;
-                    }
-                    if idx == 0 {
-                        break;
-                    }
-                    idx -= 1;
-                }
-                trajectory_starts[body_i] = idx;
-            }
-
-            let (min_x, min_y, max_x, max_y) = if dynamic_bounds {
-                compute_bounding_box_for_frame(
-                    positions,
-                    hide,
-                    &trajectory_starts,
-                    current_end_step,
-                )
-            } else {
-                (static_min_x, static_min_y, static_max_x, static_max_y)
-            };
-
-            let x_center = (max_x + min_x) / 2.0;
-            let y_center = (max_y + min_y) / 2.0;
-            let mut range = (max_x - min_x).max(max_y - min_y) * 1.1;
-            if range < 1e-14 {
-                range = 1.0;
-            }
-            let adj_min_x = x_center - (range / 2.0);
-            let adj_min_y = y_center - (range / 2.0);
-
-            let mut img = ImageBuffer::from_pixel(frame_size, frame_size, Rgb([0, 0, 0]));
-
-            // draw circles
-            for (body_i, body_positions) in positions.iter().enumerate() {
-                if hide[body_i] {
-                    continue;
-                }
-                let clamp_end = current_end_step.min(body_positions.len());
-                let start_idx = trajectory_starts[body_i];
-                if start_idx >= clamp_end {
-                    continue;
-                }
-                for step in start_idx..clamp_end {
-                    let px = body_positions[step][0];
-                    let py = body_positions[step][1];
-                    let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
-                    let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
-                    let color = colors[body_i][step.min(colors[body_i].len() - 1)];
-                    draw_filled_circle_mut(&mut img, (xp, yp), 6, color);
-                }
-            }
-
-            // optional blur + highlight
-            if !avoid_effects {
-                let blurred = filter::gaussian_blur_f32(&img, 6.0);
-                let mut img2 = blurred.clone();
-                for (body_i, body_positions) in positions.iter().enumerate() {
-                    if hide[body_i] {
-                        continue;
-                    }
-                    let clamp_end = current_end_step.min(body_positions.len());
-                    let start_idx = trajectory_starts[body_i];
-                    if start_idx >= clamp_end {
-                        continue;
-                    }
-                    for step in start_idx..clamp_end {
-                        let px = body_positions[step][0];
-                        let py = body_positions[step][1];
-                        let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
-                        let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
-                        draw_filled_circle_mut(&mut img2, (xp, yp), 1, Rgb([255, 255, 255]));
-                    }
-                }
-                img = img2;
-            }
-
-            img
-        })
-        .collect();
-
-    frames
-}
-
-// create video from frames
-fn create_video_from_frames_in_memory(
-    frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
-    output_file: &str,
-    frame_rate: u32,
-) {
-    println!("Generating video... {}", output_file);
-
-    let mut command = Command::new("ffmpeg");
-    command
-        .arg("-y")
-        .arg("-f")
-        .arg("image2pipe")
-        .arg("-vcodec")
-        .arg("png")
-        .arg("-r")
-        .arg(frame_rate.to_string())
-        .arg("-i")
-        .arg("-")
-        .arg("-threads")
-        .arg("0")
-        .arg("-c:v")
-        .arg("libx264")
-        .arg("-pix_fmt")
-        .arg("yuv420p")
-        .arg(output_file)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped());
-
-    let mut ffmpeg = command.spawn().expect("Failed to start ffmpeg");
-    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed ffmpeg stdin");
-
-    for frame in frames {
-        let dyn_img = DynamicImage::ImageRgb8(frame.clone());
-        let mut png_data = Vec::new();
-        {
-            let mut cursor = Cursor::new(&mut png_data);
-            dyn_img.write_to(&mut cursor, ImageFormat::Png).expect("Write frame failed");
-        }
-        ffmpeg_stdin.write_all(&png_data).expect("Failed to write to ffmpeg stdin");
-    }
-
-    drop(ffmpeg.stdin.take());
-    let output = ffmpeg.wait_with_output().expect("Wait ffmpeg");
-    if !output.status.success() {
-        eprintln!("ffmpeg error: {}", String::from_utf8_lossy(&output.stderr));
-    }
-    println!("Video creation complete: {}", output_file);
-}
-
-// ================== Stats
 fn calculate_total_energy(bodies: &[Body]) -> f64 {
     let mut kinetic = 0.0;
     let mut potential = 0.0;
@@ -925,7 +509,7 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     }
 }
 
-// TrajectoryResult + Borda
+// Borda result
 #[derive(Debug, Clone)]
 struct TrajectoryResult {
     chaos: f64,
@@ -1123,9 +707,695 @@ fn select_best_trajectory(
     (positions_best, best_tr, best_masses, valid_count)
 }
 
-// ============= PERCENTILE-BASED AUTO-LEVEL FUNCTION =============
-// We clip the bottom `clip_black` fraction of pixels to black,
-// and the top `(1 - clip_white)` fraction to white. Then apply gamma.
+fn x(v: &Vector3<f64>) -> f64 {
+    v[0]
+}
+fn y(v: &Vector3<f64>) -> f64 {
+    v[1]
+}
+
+fn normalize_positions_inplace(positions: &mut [Vec<Vector3<f64>>]) {
+    let mut min_x = INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut max_y = NEG_INFINITY;
+
+    for body_pos in positions.iter() {
+        for pos in body_pos {
+            let px = x(pos);
+            let py = y(pos);
+            if px < min_x {
+                min_x = px;
+            }
+            if px > max_x {
+                max_x = px;
+            }
+            if py < min_y {
+                min_y = py;
+            }
+            if py > max_y {
+                max_y = py;
+            }
+        }
+    }
+
+    let x_center = (max_x + min_x) / 2.0;
+    let y_center = (max_y + min_y) / 2.0;
+    let mut range = (max_x - min_x).max(max_y - min_y);
+    if range < 1e-14 {
+        range = 1.0;
+    }
+
+    let half_range = range / 2.0;
+    for body_pos in positions.iter_mut() {
+        for pos in body_pos.iter_mut() {
+            pos[0] = (pos[0] - (x_center - half_range)) / range;
+            pos[1] = (pos[1] - (y_center - half_range)) / range;
+        }
+    }
+}
+
+// We’ll use Hsl and Srgb from the palette crate
+fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
+    let mut colors = Vec::with_capacity(length);
+    let mut hue = rng.gen_range(0.0, 360.0);
+    for _ in 0..length {
+        // Tiny random walk in hue
+        if rng.next_byte() & 1 == 0 {
+            hue += 0.1;
+        } else {
+            hue -= 0.1;
+        }
+        if hue < 0.0 {
+            hue += 360.0;
+        } else if hue > 360.0 {
+            hue -= 360.0;
+        }
+        let hsl = Hsl::new(hue, 1.0, 0.5);
+        let rgb = Srgb::from_color(hsl);
+        colors.push(Rgb([
+            (rgb.red * 255.0) as u8,
+            (rgb.green * 255.0) as u8,
+            (rgb.blue * 255.0) as u8,
+        ]));
+    }
+    colors
+}
+
+fn generate_special_color_gradient(color_name: &str, length: usize) -> Vec<Rgb<u8>> {
+    let rgb_color = match color_name.to_lowercase().as_str() {
+        "gold" => Rgb([255, 215, 0]),
+        "bronze" => Rgb([205, 127, 50]),
+        "white" => Rgb([255, 255, 255]),
+        "emerald" => Rgb([144, 255, 182]),
+        "sapphire" => Rgb([70, 130, 255]),
+        "quartz" => Rgb([255, 205, 220]),
+        "amethyst" => Rgb([205, 133, 255]),
+        "topaz" => Rgb([255, 205, 133]),
+        "turquoise" => Rgb([133, 255, 205]),
+        "aqua" => Rgb([0, 255, 255]),
+        "fuchsia" => Rgb([255, 0, 128]),
+        _ => Rgb([255, 255, 255]),
+    };
+    vec![rgb_color; length]
+}
+
+fn generate_body_color_sequences(
+    rng: &mut Sha3RandomByteStream,
+    length: usize,
+    special_color: Option<&str>,
+) -> Vec<Vec<Rgb<u8>>> {
+    if let Some(color_name) = special_color {
+        let sc = generate_special_color_gradient(color_name, length);
+        vec![sc.clone(), sc.clone(), sc.clone()]
+    } else {
+        vec![
+            generate_color_gradient(rng, length),
+            generate_color_gradient(rng, length),
+            generate_color_gradient(rng, length),
+        ]
+    }
+}
+
+/// Draw a line from (x0, y0) to (x1, y1) via Bresenham, linearly interpolating color & additive.
+fn draw_line_segment_additive_gradient(
+    accum_r: &mut [f64],
+    accum_g: &mut [f64],
+    accum_b: &mut [f64],
+    width: u32,
+    height: u32,
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32,
+    col0: Rgb<u8>,
+    col1: Rgb<u8>,
+    small_weight: f64,
+) {
+    let start = (x0.round() as i32, y0.round() as i32);
+    let end = (x1.round() as i32, y1.round() as i32);
+
+    let points: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
+    let n = points.len();
+    if n == 0 {
+        return;
+    }
+
+    for (i, (xx, yy)) in points.into_iter().enumerate() {
+        if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
+            continue;
+        }
+        let idx = (yy as usize) * (width as usize) + (xx as usize);
+
+        // fraction of the way
+        let t = if n == 1 { 0.0 } else { i as f64 / (n.saturating_sub(1)) as f64 };
+
+        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
+        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
+        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
+
+        accum_r[idx] += r * small_weight;
+        accum_g[idx] += g * small_weight;
+        accum_b[idx] += b * small_weight;
+    }
+}
+
+/// A parallel function to produce a *series* of frames (in raw/unleveled form) showing the orbits.
+/// This is a “one pass” approach that returns all frames in memory as `Vec<ImageBuffer<Rgb<u8>, Vec<u8>>>`.
+/// Then we can do a second pass to auto‐level them all consistently.
+fn generate_trajectory_frames_raw(
+    positions: &[Vec<Vector3<f64>>],
+    frame_size: u32,
+    trajectory_lengths: [f64; 3],
+    hide: &[bool],
+    colors: &[Vec<Rgb<u8>>],
+    frame_interval: usize,
+    avoid_effects: bool,
+    dynamic_bounds_for_video: bool,
+) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        return vec![];
+    }
+
+    let total_frames = if frame_interval == 0 {
+        1
+    } else {
+        (total_steps + frame_interval - 1) / frame_interval // ceil
+    };
+
+    // We need a function to compute bounding box for the entire motion or per-frame if dynamic.
+    fn compute_bounding_box_for_all_steps(
+        positions: &[Vec<Vector3<f64>>],
+        hide: &[bool],
+    ) -> (f64, f64, f64, f64) {
+        let mut min_x = INFINITY;
+        let mut min_y = INFINITY;
+        let mut max_x = NEG_INFINITY;
+        let mut max_y = NEG_INFINITY;
+
+        for (body_i, body_positions) in positions.iter().enumerate() {
+            if hide[body_i] {
+                continue;
+            }
+            for &pos in body_positions {
+                let px = pos[0];
+                let py = pos[1];
+                if px < min_x {
+                    min_x = px;
+                }
+                if px > max_x {
+                    max_x = px;
+                }
+                if py < min_y {
+                    min_y = py;
+                }
+                if py > max_y {
+                    max_y = py;
+                }
+            }
+        }
+        (min_x, min_y, max_x, max_y)
+    }
+
+    fn compute_bounding_box_for_frame(
+        positions: &[Vec<Vector3<f64>>],
+        hide: &[bool],
+        trajectory_starts: &[usize],
+        current_end_step: usize,
+    ) -> (f64, f64, f64, f64) {
+        let mut min_x = INFINITY;
+        let mut min_y = INFINITY;
+        let mut max_x = NEG_INFINITY;
+        let mut max_y = NEG_INFINITY;
+
+        for (body_i, body_positions) in positions.iter().enumerate() {
+            if hide[body_i] {
+                continue;
+            }
+            let clamp_end = current_end_step.min(body_positions.len());
+            if clamp_end == 0 {
+                continue;
+            }
+            for step in trajectory_starts[body_i]..clamp_end {
+                let px = body_positions[step][0];
+                let py = body_positions[step][1];
+                if px < min_x {
+                    min_x = px;
+                }
+                if py < min_y {
+                    min_y = py;
+                }
+                if px > max_x {
+                    max_x = px;
+                }
+                if py > max_y {
+                    max_y = py;
+                }
+            }
+        }
+        (min_x, min_y, max_x, max_y)
+    }
+
+    // bounding box if not dynamic
+    let (static_min_x, static_min_y, static_max_x, static_max_y) =
+        compute_bounding_box_for_all_steps(positions, hide);
+
+    // For each frame index, we’ll produce an image in parallel
+    let frame_indices: Vec<usize> = (0..total_frames).collect();
+    let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
+        .par_iter()
+        .map(|&frame_index| {
+            let current_end_step = (frame_index * frame_interval).min(total_steps);
+
+            // figure out tail starts
+            let mut trajectory_starts = [0usize; 3];
+            for (body_i, body_positions) in positions.iter().enumerate() {
+                if hide[body_i] {
+                    continue;
+                }
+                let clamp_end = current_end_step.min(body_positions.len());
+                if clamp_end == 0 {
+                    trajectory_starts[body_i] = 0;
+                    continue;
+                }
+                let mut total_dist = 0.0;
+                let mut idx = clamp_end - 1;
+                while idx > 0 && total_dist < trajectory_lengths[body_i] {
+                    let x1 = body_positions[idx][0];
+                    let y1 = body_positions[idx][1];
+                    let x2 = body_positions[idx - 1][0];
+                    let y2 = body_positions[idx - 1][1];
+                    let dist = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+                    total_dist += dist;
+                    if total_dist >= trajectory_lengths[body_i] {
+                        break;
+                    }
+                    if idx == 0 {
+                        break;
+                    }
+                    idx -= 1;
+                }
+                trajectory_starts[body_i] = idx;
+            }
+
+            // bounding box for this frame
+            let (min_x, min_y, max_x, max_y) = if dynamic_bounds_for_video {
+                compute_bounding_box_for_frame(
+                    positions,
+                    hide,
+                    &trajectory_starts,
+                    current_end_step,
+                )
+            } else {
+                (static_min_x, static_min_y, static_max_x, static_max_y)
+            };
+
+            let x_center = (max_x + min_x) / 2.0;
+            let y_center = (max_y + min_y) / 2.0;
+            let mut range = (max_x - min_x).max(max_y - min_y) * 1.1;
+            if range < 1e-14 {
+                range = 1.0;
+            }
+            let adj_min_x = x_center - (range / 2.0);
+            let adj_min_y = y_center - (range / 2.0);
+
+            let mut img = ImageBuffer::from_pixel(frame_size, frame_size, Rgb([0, 0, 0]));
+
+            // draw circles/trajectories
+            for (body_i, body_positions) in positions.iter().enumerate() {
+                if hide[body_i] {
+                    continue;
+                }
+                let clamp_end = current_end_step.min(body_positions.len());
+                let start_idx = trajectory_starts[body_i];
+                if start_idx >= clamp_end {
+                    continue;
+                }
+                for step in start_idx..clamp_end {
+                    let px = body_positions[step][0];
+                    let py = body_positions[step][1];
+                    let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
+                    let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
+                    let color = colors[body_i][step.min(colors[body_i].len() - 1)];
+                    draw_filled_circle_mut(&mut img, (xp, yp), 6, color);
+                }
+            }
+
+            // optional blur + highlight
+            if !avoid_effects {
+                let blurred = filter::gaussian_blur_f32(&img, 6.0);
+                let mut img2 = blurred.clone();
+                for (body_i, body_positions) in positions.iter().enumerate() {
+                    if hide[body_i] {
+                        continue;
+                    }
+                    let clamp_end = current_end_step.min(body_positions.len());
+                    let start_idx = trajectory_starts[body_i];
+                    if start_idx >= clamp_end {
+                        continue;
+                    }
+                    for step in start_idx..clamp_end {
+                        let px = body_positions[step][0];
+                        let py = body_positions[step][1];
+                        let xp = ((px - adj_min_x) / range * frame_size as f64).round() as i32;
+                        let yp = ((py - adj_min_y) / range * frame_size as f64).round() as i32;
+                        draw_filled_circle_mut(&mut img2, (xp, yp), 1, Rgb([255, 255, 255]));
+                    }
+                }
+                img = img2;
+            }
+
+            img
+        })
+        .collect();
+
+    frames
+}
+
+/// Same as above, but draws the “lines-only” style, returning raw frames.
+fn generate_lines_only_frames_raw(
+    positions: &[Vec<Vector3<f64>>],
+    body_colors: &[Vec<Rgb<u8>>],
+    out_size: u32,
+    frame_interval: usize,
+) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        return vec![];
+    }
+
+    let total_frames =
+        if frame_interval == 0 { 1 } else { (total_steps + frame_interval - 1) / frame_interval };
+
+    // bounding box
+    let mut min_x = INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut max_y = NEG_INFINITY;
+    for body_idx in 0..positions.len() {
+        for &p in &positions[body_idx] {
+            if p[0] < min_x {
+                min_x = p[0];
+            }
+            if p[0] > max_x {
+                max_x = p[0];
+            }
+            if p[1] < min_y {
+                min_y = p[1];
+            }
+            if p[1] > max_y {
+                max_y = p[1];
+            }
+        }
+    }
+    if (max_x - min_x).abs() < 1e-12 {
+        min_x -= 0.5;
+        max_x += 0.5;
+    }
+    if (max_y - min_y).abs() < 1e-12 {
+        min_y -= 0.5;
+        max_y += 0.5;
+    }
+    {
+        let wx = max_x - min_x;
+        let wy = max_y - min_y;
+        min_x -= 0.05 * wx;
+        max_x += 0.05 * wx;
+        min_y -= 0.05 * wy;
+        max_y += 0.05 * wy;
+    }
+
+    let width = out_size;
+    let height = out_size;
+    let small_weight = 0.3_f64;
+
+    let frame_indices: Vec<usize> = (0..total_frames).collect();
+    let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
+        .par_iter()
+        .map(|&frame_idx| {
+            let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
+
+            // We'll accumulate “line draws” in float buffers
+            let npix = (width * height) as usize;
+            let mut accum_r: Vec<f64> = vec![0.0; npix];
+            let mut accum_g: Vec<f64> = vec![0.0; npix];
+            let mut accum_b: Vec<f64> = vec![0.0; npix];
+
+            fn to_pixel_coords(
+                x: f64,
+                y: f64,
+                min_x: f64,
+                min_y: f64,
+                max_x: f64,
+                max_y: f64,
+                width: u32,
+                height: u32,
+            ) -> (f32, f32) {
+                let ww = max_x - min_x;
+                let hh = max_y - min_y;
+                let px = ((x - min_x) / ww) * (width as f64);
+                let py = ((y - min_y) / hh) * (height as f64);
+                (px as f32, py as f32)
+            }
+
+            for step in 0..clamp_end {
+                let p0 = positions[0][step];
+                let p1 = positions[1][step];
+                let p2 = positions[2][step];
+
+                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+
+                let (x0, y0) =
+                    to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
+                let (x1, y1) =
+                    to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
+                let (x2, y2) =
+                    to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
+
+                // draw lines (p0->p1, p1->p2, p2->p0)
+                draw_line_segment_additive_gradient(
+                    &mut accum_r,
+                    &mut accum_g,
+                    &mut accum_b,
+                    width,
+                    height,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    c0,
+                    c1,
+                    small_weight,
+                );
+                draw_line_segment_additive_gradient(
+                    &mut accum_r,
+                    &mut accum_g,
+                    &mut accum_b,
+                    width,
+                    height,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    c1,
+                    c2,
+                    small_weight,
+                );
+                draw_line_segment_additive_gradient(
+                    &mut accum_r,
+                    &mut accum_g,
+                    &mut accum_b,
+                    width,
+                    height,
+                    x2,
+                    y2,
+                    x0,
+                    y0,
+                    c2,
+                    c0,
+                    small_weight,
+                );
+            }
+
+            // find max among all accum
+            let mut maxval = 0.0;
+            for i in 0..npix {
+                let m = accum_r[i].max(accum_g[i]).max(accum_b[i]);
+                if m > maxval {
+                    maxval = m;
+                }
+            }
+            if maxval < 1e-14 {
+                maxval = 1.0;
+            }
+
+            // convert accum -> image
+            let mut img = ImageBuffer::new(width, height);
+            for y in 0..height {
+                for x in 0..width {
+                    let idx = (y as usize) * (width as usize) + (x as usize);
+                    let rr = (accum_r[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+                    let gg = (accum_g[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+                    let bb = (accum_b[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+                    img.put_pixel(x, y, Rgb([rr as u8, gg as u8, bb as u8]));
+                }
+            }
+
+            img
+        })
+        .collect();
+
+    frames
+}
+
+// ============= Two-pass “global histogram” =============
+
+/// For a set of frames, accumulate channel histograms. Returns [hist_r, hist_g, hist_b].
+fn accumulate_histograms_for_frames(
+    frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
+) -> ([u32; 256], [u32; 256], [u32; 256]) {
+    let mut hist_r = [0u32; 256];
+    let mut hist_g = [0u32; 256];
+    let mut hist_b = [0u32; 256];
+
+    frames.par_iter().for_each(|frame| {
+        // We'll keep local hist first, then merge to avoid atomic ops:
+        let mut local_r = [0u32; 256];
+        let mut local_g = [0u32; 256];
+        let mut local_b = [0u32; 256];
+
+        for pixel in frame.pixels() {
+            local_r[pixel[0] as usize] += 1;
+            local_g[pixel[1] as usize] += 1;
+            local_b[pixel[2] as usize] += 1;
+        }
+
+        // Now we add local hist to the global hist. We'll do an atomic or parallel reduce approach:
+        // But simpler is to do a local vector and collect them all after .par_iter() in a reduce step.
+        // For simplicity, let's store them in a Mutex or do a return in a reduce style.
+        // We'll do a less typical approach: Return them from .map() and reduce at the end.
+        // For clarity, let's store them in a thread-local data structure:
+        // We'll do a trick with rayon: collect them and reduce. Actually let's do a simpler approach:
+        // We'll do a "mutex" approach. Or we can do a once we finish, we do a sequential pass.
+        // We'll fix it by capturing them as a partial result.
+
+        // We'll replace this function with a "map" approach below for correctness:
+    });
+
+    // Actually the above approach requires a different pattern.
+    // Let’s do a simpler pattern: do a .map() for partial results, then we reduce them.
+
+    // But let's do the entire approach in a separate function.
+    // For clarity, we'll do it in two steps:
+    // 1) collect partial hist from each frame
+    // 2) sum them up
+    // Implementation note: to keep the code short, let's do a simpler sequential approach,
+    // but if your frames are huge, that might be slow. We'll keep it straightforward.
+
+    // We'll do a simpler sequential approach for now for demonstration:
+    for frame in frames {
+        for pixel in frame.pixels() {
+            hist_r[pixel[0] as usize] += 1;
+            hist_g[pixel[1] as usize] += 1;
+            hist_b[pixel[2] as usize] += 1;
+        }
+    }
+
+    (hist_r, hist_g, hist_b)
+}
+
+/// Build a CDF from a 256-bin histogram.
+fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
+    let mut cdf = vec![0u32; 256];
+    let mut running = 0u32;
+    for (i, &count) in hist.iter().enumerate() {
+        running += count;
+        cdf[i] = running;
+    }
+    cdf
+}
+
+/// Find the intensity cutoff for black/white
+fn find_percentile_cut(cdf: &Vec<u32>, cutoff_count: u32, from_left: bool) -> u8 {
+    if from_left {
+        // black
+        for i in 0..256 {
+            if cdf[i] >= cutoff_count {
+                return i as u8;
+            }
+        }
+        255
+    } else {
+        // white
+        for i in (0..256).rev() {
+            if cdf[i] <= cutoff_count {
+                return i as u8;
+            }
+        }
+        0
+    }
+}
+
+/// Remap [black_cut..white_cut] -> [0..255], with optional gamma
+fn remap_and_gamma(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
+    let c_val = c as f64;
+    let b_val = black_cut as f64;
+    let w_val = white_cut as f64;
+    if w_val <= b_val {
+        return c;
+    }
+    let mut t = (c_val - b_val) / (w_val - b_val);
+    t = t.clamp(0.0, 1.0);
+    t = t.powf(gamma);
+    (t * 255.0).round().clamp(0.0, 255.0) as u8
+}
+
+/// Apply global histogram percentile leveling to all frames “in place”.
+fn auto_levels_percentile_frames(
+    frames: &mut [ImageBuffer<Rgb<u8>, Vec<u8>>],
+    clip_black: f64,
+    clip_white: f64,
+    gamma: f64,
+) {
+    if frames.is_empty() {
+        return;
+    }
+
+    // 1) accumulate global hist
+    let (hist_r, hist_g, hist_b) = accumulate_histograms_for_frames(frames);
+
+    let total_pixels = frames.len() as u32 * frames[0].width() as u32 * frames[0].height() as u32;
+    let black_count = (clip_black * total_pixels as f64).round() as u32;
+    let white_count = (clip_white * total_pixels as f64).round() as u32;
+
+    // 2) build cdfs
+    let cdf_r = build_cdf(&hist_r);
+    let cdf_g = build_cdf(&hist_g);
+    let cdf_b = build_cdf(&hist_b);
+
+    // 3) find black/white cut
+    let black_cut_r = find_percentile_cut(&cdf_r, black_count, true);
+    let black_cut_g = find_percentile_cut(&cdf_g, black_count, true);
+    let black_cut_b = find_percentile_cut(&cdf_b, black_count, true);
+
+    let white_cut_r = find_percentile_cut(&cdf_r, white_count, false);
+    let white_cut_g = find_percentile_cut(&cdf_g, white_count, false);
+    let white_cut_b = find_percentile_cut(&cdf_b, white_count, false);
+
+    // 4) apply transform to each pixel in each frame
+    frames.par_iter_mut().for_each(|frame| {
+        for pixel in frame.pixels_mut() {
+            pixel[0] = remap_and_gamma(pixel[0], black_cut_r, white_cut_r, gamma);
+            pixel[1] = remap_and_gamma(pixel[1], black_cut_g, white_cut_g, gamma);
+            pixel[2] = remap_and_gamma(pixel[2], black_cut_b, white_cut_b, gamma);
+        }
+    });
+}
+
+// =============== single-image auto-level for final PNG ===============
 fn auto_levels_percentile_image(
     input: &DynamicImage,
     clip_black: f64,
@@ -1147,7 +1417,7 @@ fn auto_levels_percentile_image(
         hist_b[px[2] as usize] += 1;
     }
 
-    // 2) Build cumulative distribution
+    // 2) Build cdf
     let cdf_r = build_cdf(&hist_r);
     let cdf_g = build_cdf(&hist_g);
     let cdf_b = build_cdf(&hist_b);
@@ -1156,7 +1426,6 @@ fn auto_levels_percentile_image(
     let black_count = (clip_black * total_pixels as f64).round() as u32;
     let white_count = (clip_white * total_pixels as f64).round() as u32;
 
-    // 4) find black_cut, white_cut for each channel
     let black_cut_r = find_percentile_cut(&cdf_r, black_count, true);
     let black_cut_g = find_percentile_cut(&cdf_g, black_count, true);
     let black_cut_b = find_percentile_cut(&cdf_b, black_count, true);
@@ -1165,7 +1434,7 @@ fn auto_levels_percentile_image(
     let white_cut_g = find_percentile_cut(&cdf_g, white_count, false);
     let white_cut_b = find_percentile_cut(&cdf_b, white_count, false);
 
-    // 5) Remap each pixel
+    // 4) Remap each pixel
     let mut out_img = ImageBuffer::new(width, height);
     for (x, y, pixel) in out_img.enumerate_pixels_mut() {
         let orig = rgb_img.get_pixel(x, y);
@@ -1180,487 +1449,58 @@ fn auto_levels_percentile_image(
     out_img
 }
 
-// Build cumulative distribution from histogram
-fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
-    let mut cdf = vec![0u32; 256];
-    let mut running = 0u32;
-    for (i, &count) in hist.iter().enumerate() {
-        running += count;
-        cdf[i] = running;
+// =============== ffmpeg encoding ===============
+fn create_video_from_frames_in_memory(
+    frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
+    output_file: &str,
+    frame_rate: u32,
+) {
+    println!("Generating video... {}", output_file);
+
+    let mut command = Command::new("ffmpeg");
+    command
+        .arg("-y")
+        .arg("-f")
+        .arg("image2pipe")
+        .arg("-vcodec")
+        .arg("png")
+        .arg("-r")
+        .arg(frame_rate.to_string())
+        .arg("-i")
+        .arg("-")
+        .arg("-threads")
+        .arg("0")
+        .arg("-c:v")
+        .arg("libx264")
+        .arg("-pix_fmt")
+        .arg("yuv420p")
+        .arg(output_file)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+
+    let mut ffmpeg = command.spawn().expect("Failed to start ffmpeg");
+    let ffmpeg_stdin = ffmpeg.stdin.as_mut().expect("Failed ffmpeg stdin");
+
+    for frame in frames {
+        let dyn_img = DynamicImage::ImageRgb8(frame.clone());
+        let mut png_data = Vec::new();
+        {
+            let mut cursor = Cursor::new(&mut png_data);
+            dyn_img.write_to(&mut cursor, ImageFormat::Png).expect("Write frame failed");
+        }
+        ffmpeg_stdin.write_all(&png_data).expect("Failed to write to ffmpeg stdin");
     }
-    cdf
+
+    drop(ffmpeg.stdin.take());
+    let output = ffmpeg.wait_with_output().expect("Wait ffmpeg");
+    if !output.status.success() {
+        eprintln!("ffmpeg error: {}", String::from_utf8_lossy(&output.stderr));
+    }
+    println!("Video creation complete: {}", output_file);
 }
 
-/// Find intensity bin for a given absolute count in the CDF.
-/// If `from_left == true`, we search from the left for the black cut.
-/// If `from_left == false`, we search from the right for the white cut.
-fn find_percentile_cut(cdf: &Vec<u32>, cutoff_count: u32, from_left: bool) -> u8 {
-    if from_left {
-        // find first bin i where cdf[i] >= cutoff_count
-        for i in 0..256 {
-            if cdf[i] >= cutoff_count {
-                return i as u8;
-            }
-        }
-        255
-    } else {
-        // find from the right for white
-        // we interpret cutoff_count as the # of pixels that should be <= that bin
-        // so we want the largest i with cdf[i] <= cutoff_count
-        // we can also invert logic if we want top fraction -> we do that in main math
-        for i in (0..256).rev() {
-            if cdf[i] <= cutoff_count {
-                return i as u8;
-            }
-        }
-        0
-    }
-}
-
-/// Remap [black_cut..white_cut] -> [0..255], apply gamma
-fn remap_and_gamma(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
-    let c_val = c as f64;
-    let b_val = black_cut as f64;
-    let w_val = white_cut as f64;
-
-    if w_val <= b_val {
-        // degenerate case
-        return c;
-    }
-
-    let mut t = (c_val - b_val) / (w_val - b_val);
-    t = t.clamp(0.0, 1.0);
-    // apply gamma
-    t = t.powf(gamma);
-
-    (t * 255.0).round().clamp(0.0, 255.0) as u8
-}
-
-// ================== Single-lines-only code
-fn generate_connection_lines_single_image_cool(
-    positions: &[Vec<Vector3<f64>>],
-    body_colors: &[Vec<Rgb<u8>>],
-    out_size: u32,
-) -> RgbaImage {
-    println!("\nGenerating *colorful* additive lines-only single image (parallel chunked).");
-
-    let width = out_size;
-    let height = out_size;
-    let npix = (width * height) as usize;
-    let total_steps = positions[0].len();
-    if total_steps == 0 {
-        return RgbaImage::new(width, height);
-    }
-
-    // bounding box
-    let mut min_x = INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut max_y = NEG_INFINITY;
-    for body_idx in 0..positions.len() {
-        for &p in &positions[body_idx] {
-            if p[0] < min_x {
-                min_x = p[0];
-            }
-            if p[0] > max_x {
-                max_x = p[0];
-            }
-            if p[1] < min_y {
-                min_y = p[1];
-            }
-            if p[1] > max_y {
-                max_y = p[1];
-            }
-        }
-    }
-    if (max_x - min_x).abs() < 1e-12 {
-        // avoid degenerate bounding box
-        min_x -= 0.5;
-        max_x += 0.5;
-    }
-    if (max_y - min_y).abs() < 1e-12 {
-        min_y -= 0.5;
-        max_y += 0.5;
-    }
-    {
-        let wx = max_x - min_x;
-        let wy = max_y - min_y;
-        min_x -= 0.05 * wx;
-        max_x += 0.05 * wx;
-        min_y -= 0.05 * wy;
-        max_y += 0.05 * wy;
-    }
-
-    let small_weight = 0.3_f64;
-    let n_threads = rayon::current_num_threads();
-    let chunk_size = (total_steps / n_threads).max(1);
-
-    // We'll accumulate partial results in parallel and then combine
-    let partials: Vec<(Vec<f64>, Vec<f64>, Vec<f64>)> = (0..n_threads)
-        .into_par_iter()
-        .map(|chunk_idx| {
-            let start = chunk_idx * chunk_size;
-            let end = (start + chunk_size).min(total_steps);
-
-            let mut local_r: Vec<f64> = vec![0.0; npix];
-            let mut local_g: Vec<f64> = vec![0.0; npix];
-            let mut local_b: Vec<f64> = vec![0.0; npix];
-
-            fn to_pixel_coords(
-                x: f64,
-                y: f64,
-                min_x: f64,
-                min_y: f64,
-                max_x: f64,
-                max_y: f64,
-                width: u32,
-                height: u32,
-            ) -> (f32, f32) {
-                let ww = max_x - min_x;
-                let hh = max_y - min_y;
-                let px = ((x - min_x) / ww) * (width as f64);
-                let py = ((y - min_y) / hh) * (height as f64);
-                (px as f32, py as f32)
-            }
-
-            for step in start..end {
-                let p0 = positions[0][step];
-                let p1 = positions[1][step];
-                let p2 = positions[2][step];
-
-                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
-                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
-                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
-
-                let (x0, y0) =
-                    to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
-                let (x1, y1) =
-                    to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
-                let (x2, y2) =
-                    to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
-
-                draw_line_segment_additive_gradient(
-                    &mut local_r,
-                    &mut local_g,
-                    &mut local_b,
-                    width,
-                    height,
-                    x0,
-                    y0,
-                    x1,
-                    y1,
-                    c0,
-                    c1,
-                    small_weight,
-                );
-                draw_line_segment_additive_gradient(
-                    &mut local_r,
-                    &mut local_g,
-                    &mut local_b,
-                    width,
-                    height,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    c1,
-                    c2,
-                    small_weight,
-                );
-                draw_line_segment_additive_gradient(
-                    &mut local_r,
-                    &mut local_g,
-                    &mut local_b,
-                    width,
-                    height,
-                    x2,
-                    y2,
-                    x0,
-                    y0,
-                    c2,
-                    c0,
-                    small_weight,
-                );
-            }
-
-            (local_r, local_g, local_b)
-        })
-        .collect();
-
-    // reduce partials
-    let mut accum_r: Vec<f64> = vec![0.0; npix];
-    let mut accum_g: Vec<f64> = vec![0.0; npix];
-    let mut accum_b: Vec<f64> = vec![0.0; npix];
-
-    for (rbuf, gbuf, bbuf) in partials {
-        for i in 0..npix {
-            accum_r[i] += rbuf[i];
-            accum_g[i] += gbuf[i];
-            accum_b[i] += bbuf[i];
-        }
-    }
-
-    // find max
-    let mut maxval: f64 = 0.0;
-    for i in 0..npix {
-        let m = accum_r[i].max(accum_g[i]).max(accum_b[i]);
-        if m > maxval {
-            maxval = m;
-        }
-    }
-    if maxval < 1e-14 {
-        maxval = 1.0;
-    }
-
-    let mut img = RgbaImage::new(width, height);
-    for y in 0..height {
-        for x in 0..width {
-            let idx = (y as usize) * (width as usize) + (x as usize);
-            let rr = (accum_r[idx] / maxval).clamp(0.0, 1.0) * 255.0;
-            let gg = (accum_g[idx] / maxval).clamp(0.0, 1.0) * 255.0;
-            let bb = (accum_b[idx] / maxval).clamp(0.0, 1.0) * 255.0;
-            img.put_pixel(x, y, Rgba([rr as u8, gg as u8, bb as u8, 255]));
-        }
-    }
-
-    img
-}
-
-// lines-only frames for a video
-fn generate_connection_lines_frames_parallel(
-    positions: &[Vec<Vector3<f64>>],
-    body_colors: &[Vec<Rgb<u8>>],
-    out_size: u32,
-    frame_interval: usize,
-) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
-    let total_steps = positions[0].len();
-    if total_steps == 0 {
-        return vec![];
-    }
-
-    // bounding box
-    let mut min_x = INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut max_y = NEG_INFINITY;
-    for body_idx in 0..positions.len() {
-        for &p in &positions[body_idx] {
-            if p[0] < min_x {
-                min_x = p[0];
-            }
-            if p[0] > max_x {
-                max_x = p[0];
-            }
-            if p[1] < min_y {
-                min_y = p[1];
-            }
-            if p[1] > max_y {
-                max_y = p[1];
-            }
-        }
-    }
-    if (max_x - min_x).abs() < 1e-12 {
-        min_x -= 0.5;
-        max_x += 0.5;
-    }
-    if (max_y - min_y).abs() < 1e-12 {
-        min_y -= 0.5;
-        max_y += 0.5;
-    }
-    {
-        let wx = max_x - min_x;
-        let wy = max_y - min_y;
-        min_x -= 0.05 * wx;
-        max_x += 0.05 * wx;
-        min_y -= 0.05 * wy;
-        max_y += 0.05 * wy;
-    }
-
-    let width = out_size;
-    let height = out_size;
-    let total_frames = if frame_interval == 0 { 1 } else { total_steps / frame_interval };
-    let npix = (width * height) as usize;
-    let small_weight = 0.3_f64;
-
-    // precompute final_global_max across all steps
-    let mut global_accum_r: Vec<f64> = vec![0.0; npix];
-    let mut global_accum_g: Vec<f64> = vec![0.0; npix];
-    let mut global_accum_b: Vec<f64> = vec![0.0; npix];
-
-    fn to_pixel_coords(
-        x: f64,
-        y: f64,
-        min_x: f64,
-        min_y: f64,
-        max_x: f64,
-        max_y: f64,
-        width: u32,
-        height: u32,
-    ) -> (f32, f32) {
-        let ww = max_x - min_x;
-        let hh = max_y - min_y;
-        let px = ((x - min_x) / ww) * (width as f64);
-        let py = ((y - min_y) / hh) * (height as f64);
-        (px as f32, py as f32)
-    }
-
-    for step in 0..total_steps {
-        let p0 = positions[0][step];
-        let p1 = positions[1][step];
-        let p2 = positions[2][step];
-
-        let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
-        let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
-        let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
-
-        let (x0, y0) = to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
-        let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
-        let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
-
-        draw_line_segment_additive_gradient(
-            &mut global_accum_r,
-            &mut global_accum_g,
-            &mut global_accum_b,
-            width,
-            height,
-            x0,
-            y0,
-            x1,
-            y1,
-            c0,
-            c1,
-            small_weight,
-        );
-        draw_line_segment_additive_gradient(
-            &mut global_accum_r,
-            &mut global_accum_g,
-            &mut global_accum_b,
-            width,
-            height,
-            x1,
-            y1,
-            x2,
-            y2,
-            c1,
-            c2,
-            small_weight,
-        );
-        draw_line_segment_additive_gradient(
-            &mut global_accum_r,
-            &mut global_accum_g,
-            &mut global_accum_b,
-            width,
-            height,
-            x2,
-            y2,
-            x0,
-            y0,
-            c2,
-            c0,
-            small_weight,
-        );
-    }
-
-    let mut final_global_max = 0.0_f64;
-    for i in 0..npix {
-        let m = global_accum_r[i].max(global_accum_g[i]).max(global_accum_b[i]);
-        if m > final_global_max {
-            final_global_max = m;
-        }
-    }
-    if final_global_max < 1e-14 {
-        final_global_max = 1.0;
-    }
-
-    let frame_indices: Vec<usize> = (0..total_frames).collect();
-    let frames: Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> = frame_indices
-        .par_iter()
-        .map(|&frame_idx| {
-            let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
-
-            let mut accum_r: Vec<f64> = vec![0.0; npix];
-            let mut accum_g: Vec<f64> = vec![0.0; npix];
-            let mut accum_b: Vec<f64> = vec![0.0; npix];
-
-            for step in 0..clamp_end {
-                let p0 = positions[0][step];
-                let p1 = positions[1][step];
-                let p2 = positions[2][step];
-
-                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
-                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
-                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
-
-                let (x0, y0) =
-                    to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
-                let (x1, y1) =
-                    to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
-                let (x2, y2) =
-                    to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
-
-                draw_line_segment_additive_gradient(
-                    &mut accum_r,
-                    &mut accum_g,
-                    &mut accum_b,
-                    width,
-                    height,
-                    x0,
-                    y0,
-                    x1,
-                    y1,
-                    c0,
-                    c1,
-                    small_weight,
-                );
-                draw_line_segment_additive_gradient(
-                    &mut accum_r,
-                    &mut accum_g,
-                    &mut accum_b,
-                    width,
-                    height,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    c1,
-                    c2,
-                    small_weight,
-                );
-                draw_line_segment_additive_gradient(
-                    &mut accum_r,
-                    &mut accum_g,
-                    &mut accum_b,
-                    width,
-                    height,
-                    x2,
-                    y2,
-                    x0,
-                    y0,
-                    c2,
-                    c0,
-                    small_weight,
-                );
-            }
-
-            // convert to image
-            let mut img = ImageBuffer::new(width, height);
-            for y in 0..height {
-                for x in 0..width {
-                    let idx = (y as usize) * (width as usize) + (x as usize);
-                    let rr = (accum_r[idx] / final_global_max).clamp(0.0, 1.0) * 255.0;
-                    let gg = (accum_g[idx] / final_global_max).clamp(0.0, 1.0) * 255.0;
-                    let bb = (accum_b[idx] / final_global_max).clamp(0.0, 1.0) * 255.0;
-                    img.put_pixel(x, y, Rgb([rr as u8, gg as u8, bb as u8]));
-                }
-            }
-            img
-        })
-        .collect();
-
-    frames
-}
-
-// ============================ MAIN ============================
+// =============== main ===============
 fn main() {
     let args = Args::parse();
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
@@ -1745,10 +1585,10 @@ fn main() {
     let video_filename = format!("vids/{}.mp4", base_name);
     let lines_video_filename = format!("vids/{}_lines_only.mp4", base_name);
 
-    // For lines-only, keep unscaled
+    // For lines-only, keep unscaled positions
     let positions_unscaled = positions.clone();
 
-    // 2) normalize for normal trajectory
+    // 2) normalize for normal “trajectory circles” version
     normalize_positions_inplace(&mut positions);
 
     // 3) color sequences
@@ -1796,7 +1636,8 @@ fn main() {
 
     // 5) Single-frame normal image
     if !args.no_image {
-        let pic_frames = plot_positions_parallel(
+        // We'll plot a single “last frame” image. (Using a huge frame_interval so we get only the last.)
+        let single_frame_vec = generate_trajectory_frames_raw(
             &positions,
             frame_size,
             image_trajectory_lengths,
@@ -1804,43 +1645,43 @@ fn main() {
             &colors,
             999_999_999,
             args.avoid_effects,
-            true,
             args.dynamic_bounds,
         );
-        let last_frame = pic_frames.last().unwrap().clone();
-        let traj_path = format!("pics/{}.png", base_name);
-        if let Err(e) = last_frame.save(&traj_path) {
-            eprintln!("Error saving trajectory image: {:?}", e);
-        } else {
-            println!("Trajectory image saved as {}", traj_path);
-        }
+        if let Some(last_frame) = single_frame_vec.last() {
+            // Save raw
+            let traj_path_raw = format!("pics/{}_raw.png", base_name);
+            if let Err(e) = last_frame.save(&traj_path_raw) {
+                eprintln!("Error saving raw trajectory image: {:?}", e);
+            }
 
-        // =========== NEW PERCENTILE-BASED AUTO-LEVEL ===========
-        let dyn_img = DynamicImage::ImageRgb8(last_frame);
-        let auto_leveled = auto_levels_percentile_image(
-            &dyn_img,
-            args.clip_black,
-            args.clip_white,
-            args.levels_gamma,
-        );
-        let traj_path_al = format!("pics/{}_AL.png", base_name);
-        if let Err(e) = auto_leveled.save(&traj_path_al) {
-            eprintln!("Error saving trajectory AL image: {:?}", e);
-        } else {
-            println!("Trajectory auto-level image saved as {}", traj_path_al);
+            // Now apply single-image auto-level to that:
+            let dyn_img = DynamicImage::ImageRgb8(last_frame.clone());
+            let auto_leveled = auto_levels_percentile_image(
+                &dyn_img,
+                args.clip_black,
+                args.clip_white,
+                args.levels_gamma,
+            );
+            let traj_path_al = format!("pics/{}.png", base_name);
+            if let Err(e) = auto_leveled.save(&traj_path_al) {
+                eprintln!("Error saving trajectory AL image: {:?}", e);
+            } else {
+                println!("Trajectory single-frame image saved as {}", traj_path_al);
+            }
         }
     } else {
         println!("No single-frame trajectory image requested.");
     }
 
-    // 6) normal trajectory video
+    // 6) normal trajectory video (two-pass global histogram)
     if !args.no_video {
         let num_seconds = 30;
-        let target_length = 60 * num_seconds;
+        let target_frames = 60 * num_seconds;
         let frame_interval =
-            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 }.max(1);
+            if target_frames > 0 { args.num_steps.saturating_div(target_frames) } else { 1 }.max(1);
 
-        let frames = plot_positions_parallel(
+        // ---- FIRST PASS: generate raw frames in memory
+        let mut frames_raw = generate_trajectory_frames_raw(
             &positions,
             frame_size,
             video_trajectory_lengths,
@@ -1848,37 +1689,47 @@ fn main() {
             &colors,
             frame_interval,
             args.avoid_effects,
-            false,
             args.dynamic_bounds,
         );
-        create_video_from_frames_in_memory(&frames, &video_filename, 60);
+        // ---- compute global histogram & apply
+        auto_levels_percentile_frames(
+            &mut frames_raw,
+            args.clip_black,
+            args.clip_white,
+            args.levels_gamma,
+        );
+        // ---- encode video
+        create_video_from_frames_in_memory(&frames_raw, &video_filename, 60);
     } else {
         println!("No main trajectory video requested.");
     }
 
-    // 7) Single-frame lines-only image (unscaled)
-    let lines_only_img =
-        generate_connection_lines_single_image_cool(&positions_unscaled, &colors, frame_size);
-    let lines_path = format!("pics/{}_lines_only.png", base_name);
-    if let Err(e) = lines_only_img.save(&lines_path) {
-        eprintln!("Error saving lines-only image: {:?}", e);
-    } else {
-        println!("Lines-only image saved as {}", lines_path);
-    }
-
-    // ======== Auto-level lines-only single image ========
+    // 7) Single-frame lines-only image
     {
-        let dyn_img = DynamicImage::ImageRgba8(lines_only_img);
+        // We'll produce one lines-only image from the entire unscaled positions:
+        // We'll just generate all lines at once. For a single image, we can do it similarly
+        // to how we do a single frame in lines-only but in one step.
+        // Let's do a dedicated function for single lines image:
+
+        let lines_img = generate_lines_only_single_image(&positions_unscaled, &colors, frame_size);
+        let lines_path_raw = format!("pics/{}_lines_only_raw.png", base_name);
+        if let Err(e) = lines_img.save(&lines_path_raw) {
+            eprintln!("Error saving lines-only raw image: {:?}", e);
+        } else {
+            println!("Lines-only raw image saved as {}", lines_path_raw);
+        }
+
+        // auto-level that single lines image
+        let dyn_img = DynamicImage::ImageRgba8(lines_img);
         let dyn_img_rgb = dyn_img.to_rgb8();
         let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
-
         let auto_leveled_lines = auto_levels_percentile_image(
             &dyn_img2,
             args.clip_black,
             args.clip_white,
             args.levels_gamma,
         );
-        let lines_path_al = format!("pics/{}_lines_only_AL.png", base_name);
+        let lines_path_al = format!("pics/{}_lines_only.png", base_name);
         if let Err(e) = auto_leveled_lines.save(&lines_path_al) {
             eprintln!("Error saving lines-only AL image: {:?}", e);
         } else {
@@ -1886,25 +1737,197 @@ fn main() {
         }
     }
 
-    // 8) lines-only video
+    // 8) lines-only video with global histogram
     if !args.no_video {
         let num_seconds = 30;
-        let target_length = 60 * num_seconds;
+        let target_frames = 60 * num_seconds;
         let frame_interval =
-            if target_length > 0 { args.num_steps.saturating_div(target_length) } else { 1 }.max(1);
+            if target_frames > 0 { args.num_steps.saturating_div(target_frames) } else { 1 }.max(1);
 
-        let lines_frames = generate_connection_lines_frames_parallel(
+        // first pass
+        let mut lines_frames = generate_lines_only_frames_raw(
             &positions_unscaled,
             &colors,
             frame_size,
             frame_interval,
         );
+
+        // global histogram
+        auto_levels_percentile_frames(
+            &mut lines_frames,
+            args.clip_black,
+            args.clip_white,
+            args.levels_gamma,
+        );
+
+        // encode
         create_video_from_frames_in_memory(&lines_frames, &lines_video_filename, 60);
     } else {
         println!("No lines-only video requested.");
     }
 
-    println!(
-        "\nDone: normal + lines-only videos + single images (with percentile-based auto-level)."
-    );
+    println!("\nDone: normal + lines-only videos + single images (with global percentile-based auto-level).");
+}
+
+// A helper function for a single lines-only image from *all steps*.
+fn generate_lines_only_single_image(
+    positions: &[Vec<Vector3<f64>>],
+    body_colors: &[Vec<Rgb<u8>>],
+    out_size: u32,
+) -> RgbaImage {
+    println!("Generating lines-only single image in color-additive mode...");
+
+    let width = out_size;
+    let height = out_size;
+    let npix = (width * height) as usize;
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        return RgbaImage::new(width, height);
+    }
+
+    // bounding box
+    let mut min_x = INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut max_y = NEG_INFINITY;
+    for body_idx in 0..positions.len() {
+        for &p in &positions[body_idx] {
+            if p[0] < min_x {
+                min_x = p[0];
+            }
+            if p[0] > max_x {
+                max_x = p[0];
+            }
+            if p[1] < min_y {
+                min_y = p[1];
+            }
+            if p[1] > max_y {
+                max_y = p[1];
+            }
+        }
+    }
+    if (max_x - min_x).abs() < 1e-12 {
+        min_x -= 0.5;
+        max_x += 0.5;
+    }
+    if (max_y - min_y).abs() < 1e-12 {
+        min_y -= 0.5;
+        max_y += 0.5;
+    }
+    {
+        let wx = max_x - min_x;
+        let wy = max_y - min_y;
+        min_x -= 0.05 * wx;
+        max_x += 0.05 * wx;
+        min_y -= 0.05 * wy;
+        max_y += 0.05 * wy;
+    }
+
+    let small_weight = 0.3_f64;
+
+    // We'll accumulate partial results in float arrays
+    let mut accum_r: Vec<f64> = vec![0.0; npix];
+    let mut accum_g: Vec<f64> = vec![0.0; npix];
+    let mut accum_b: Vec<f64> = vec![0.0; npix];
+
+    fn to_pixel_coords(
+        x: f64,
+        y: f64,
+        min_x: f64,
+        min_y: f64,
+        max_x: f64,
+        max_y: f64,
+        width: u32,
+        height: u32,
+    ) -> (f32, f32) {
+        let ww = max_x - min_x;
+        let hh = max_y - min_y;
+        let px = ((x - min_x) / ww) * (width as f64);
+        let py = ((y - min_y) / hh) * (height as f64);
+        (px as f32, py as f32)
+    }
+
+    // Draw lines for *all steps*
+    for step in 0..total_steps {
+        let p0 = positions[0][step];
+        let p1 = positions[1][step];
+        let p2 = positions[2][step];
+
+        let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+        let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+        let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+
+        let (x0, y0) = to_pixel_coords(p0[0], p0[1], min_x, min_y, max_x, max_y, width, height);
+        let (x1, y1) = to_pixel_coords(p1[0], p1[1], min_x, min_y, max_x, max_y, width, height);
+        let (x2, y2) = to_pixel_coords(p2[0], p2[1], min_x, min_y, max_x, max_y, width, height);
+
+        draw_line_segment_additive_gradient(
+            &mut accum_r,
+            &mut accum_g,
+            &mut accum_b,
+            width,
+            height,
+            x0,
+            y0,
+            x1,
+            y1,
+            c0,
+            c1,
+            small_weight,
+        );
+        draw_line_segment_additive_gradient(
+            &mut accum_r,
+            &mut accum_g,
+            &mut accum_b,
+            width,
+            height,
+            x1,
+            y1,
+            x2,
+            y2,
+            c1,
+            c2,
+            small_weight,
+        );
+        draw_line_segment_additive_gradient(
+            &mut accum_r,
+            &mut accum_g,
+            &mut accum_b,
+            width,
+            height,
+            x2,
+            y2,
+            x0,
+            y0,
+            c2,
+            c0,
+            small_weight,
+        );
+    }
+
+    // We do a per-pixel normalization so we fill up [0..255] in just this raw image.
+    // For a single image, this is simpler, then we can do a second pass with auto-level if desired.
+    let mut maxval = 0.0;
+    for i in 0..npix {
+        let m = accum_r[i].max(accum_g[i]).max(accum_b[i]);
+        if m > maxval {
+            maxval = m;
+        }
+    }
+    if maxval < 1e-14 {
+        maxval = 1.0;
+    }
+
+    let mut img = RgbaImage::new(width, height);
+    for y in 0..height {
+        for x in 0..width {
+            let idx = (y as usize) * (width as usize) + (x as usize);
+            let rr = (accum_r[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            let gg = (accum_g[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            let bb = (accum_b[idx] / maxval).clamp(0.0, 1.0) * 255.0;
+            img.put_pixel(x, y, Rgba([rr as u8, gg as u8, bb as u8, 255]));
+        }
+    }
+
+    img
 }
