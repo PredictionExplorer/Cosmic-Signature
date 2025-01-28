@@ -15,7 +15,7 @@ SIMULATION_CONFIG = {
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "100019",
+    'base_seed_hex': "100020",
     'num_runs': 2000,
 
     # The relevant command-line arguments that still exist in the Rust code,
@@ -34,7 +34,7 @@ SIMULATION_CONFIG = {
         'chaos_weight': [3.0],
         'perimeter_weight': [1.0],
         'dist_weight': [2.0],
-        'lyap_weight': [2.0],
+        'lyap_weight': [2.5],
         'frame_size': [1800],
 
         # Bloom & special fields:

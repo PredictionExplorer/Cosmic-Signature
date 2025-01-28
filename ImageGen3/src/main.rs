@@ -69,7 +69,7 @@ struct Args {
     max_points: usize,
 
     /// Chaos measure weight
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 3.0)]
     chaos_weight: f64,
 
     /// Average perimeter weight
@@ -77,11 +77,11 @@ struct Args {
     perimeter_weight: f64,
 
     /// Total distance weight
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 2.0)]
     dist_weight: f64,
 
     /// Lyapunov exponent weight
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 2.5)]
     lyap_weight: f64,
 
     /// Fraction of pixels clipped to black
