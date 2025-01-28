@@ -115,37 +115,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// Comment-202501022 applies to the returned elapsed duration.
 	function getCstDutchAuctionDurations() external view returns(uint256, int256);
 
-	/// @notice Get the total number of bids in the current round
-	/// @return The total number of bids in the current round
-	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
-	/// todo-1 Rename this to `getTotalNumBids`.
-	function getTotalBids() external view returns(uint256);
-
-	/// @notice Get the address of a bidder at a specific position in the current round
-	/// @param position The position of the bidder (0-indexed)
-	/// @return The address of the bidder at the specified position
-	/// @dev todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
-	/// todo-1 Otherwise name this better.
-	function getBidderAddressAtPosition(uint256 position) external view returns(address);
-
-	/// @notice Get the address of a bidder at a specific position from the end in a given round
-	/// @param roundNum_ The bidding round number.
-	/// @param _positionFromEnd The position from the end of the bidders list
-	/// @return The address of the bidder
-	/// @dev todo-1 Rename to reflect the fact that this is position from end.
-	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
-	/// todo-1 Otherwise name this better.
-	function bidderAddress(uint256 roundNum_, uint256 _positionFromEnd) external view returns(address);
-
-	/// @notice Get the total amount spent by a bidder in the current round
-	/// @param bidderAddress_ The address of the bidder
-	/// @return The total amount spent by the bidder in wei
-	/// @dev todo-1 Rename to `getBidderTotalSpentInRound`.
-	/// todo-1 This is ETH, right? Rename to make it clear. Actually it's both ETH and CST, right? Make it clear in this comment.
-	/// todo-1 Can I eliminate this method? All involved variables are public, right? So anybody can query them.
-	/// todo-1 Otherwise name this better.
-	function getTotalSpentByBidder(address bidderAddress_) external view returns(uint256, uint256);
-
 	// /// @notice Checks if a RandomWalk NFT has ever been used for bidding.
 	// /// @param nftId_ NFT ID.
 	// /// @return `true` if the given NFT has been used; `false` otherwise.

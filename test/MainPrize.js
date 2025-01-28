@@ -37,7 +37,7 @@ describe("MainPrize", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
 		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
-		roundNum = roundNum + 1;
+		++ roundNum;
 		let totalSupplyBefore = await cosmicSignatureNft.totalSupply();
 
 		// at this point all required data was initialized, we can proceed with the test
@@ -59,7 +59,7 @@ describe("MainPrize", function () {
 		let roundNumBefore = await cosmicSignatureGameProxy.roundNum();
 
 		let tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
-		roundNum = roundNum + 1;
+		++ roundNum;
 		let receipt = await tx.wait();
 
 		// check that roundNum is incremented
@@ -108,13 +108,13 @@ describe("MainPrize", function () {
 
 		// let raffleTotalEthPrizeAmount_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmount();
 		tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
-		roundNum = roundNum + 1
+		++ roundNum;
 		receipt = await tx.wait();
 		deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 
-		// make sure numRaffleParticipants have been reset
-		let numRaffleParticipants = await cosmicSignatureGameProxy.numRaffleParticipants(roundNum);
-		expect(numRaffleParticipants).to.equal(0);
+		// Making sure the total number of bids has been reset.
+		let totalNumBids_ = await cosmicSignatureGameProxy.getTotalNumBids(roundNum);
+		expect(totalNumBids_).to.equal(0n);
 
 		const unique_winners = [];
 		for (let i = 0; i < deposit_logs.length; i++) {

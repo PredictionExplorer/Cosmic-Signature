@@ -1,6 +1,6 @@
 // #region
 
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
 // #endregion
@@ -13,6 +13,31 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 // #region
 
 abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
+	// #region `getTotalNumBids`
+
+	function getTotalNumBids(uint256 roundNum_) external view override returns(uint256) {
+		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
+		uint256 numBids_ = bidderAddressesReference_.numItems;
+		return numBids_;
+	}
+
+	// #endregion
+	// #region `getBidderAddressAt`
+
+	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns(address) {
+		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
+		return bidderAddressesReference_.items[bidIndex_];
+	}
+
+	// #endregion
+	// #region `getBidderTotalSpentAmounts`
+
+	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns(uint256, uint256) {
+		BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
+		return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
+	}
+
+	// #endregion
 	// #region `_updateChampionsIfNeeded`
 
 	/// @notice Updates the Endurance Champion and Chrono-Warrior info if needed.

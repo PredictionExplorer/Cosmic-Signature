@@ -46,7 +46,8 @@ describe("Bidding", function () {
 		const contractBalance = await hre.ethers.provider.getBalance(cosmicSignatureGameProxy.getAddress());
 		expect(contractBalance).to.equal(donationAmount_ + nextEthBidPrice_);
 
-		let spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
+		let roundNum_ = await cosmicSignatureGameProxy.roundNum();
+		let spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(roundNum_, addr1.address);
 		expect(spent[0]).to.equal(nextEthBidPrice_);
 
 		await hre.ethers.provider.send("evm_increaseTime", [100]);
@@ -136,8 +137,9 @@ describe("Bidding", function () {
 		// After the main prize claim timeout expires, anyone should be able to claim the prize.
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
-		expect(await cosmicSignatureGameProxy.getTotalBids()).to.equal(1);
-		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(0)).to.equal(addr1.address);
+		roundNum_ = await cosmicSignatureGameProxy.roundNum();
+		expect(await cosmicSignatureGameProxy.getTotalNumBids(roundNum_)).equal(1);
+		expect(await cosmicSignatureGameProxy.getBidderAddressAt(roundNum_, 0)).equal(addr1.address);
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -586,63 +588,64 @@ describe("Bidding", function () {
 		cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(nextCstBidExpectedPrice_ * 2n);
 	});
-	it("Function bidderAddress() works as expected", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner, addr1, addr2, addr3,] = signers;
-		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-
-		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
-
-		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
-		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
-		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
-
-		let bAddr = await cosmicSignatureGameProxy.bidderAddress(0,0);
-		expect(bAddr).to.equal(addr3.address);
-
-		bAddr = await cosmicSignatureGameProxy.bidderAddress(0,1); 
-		expect(bAddr).to.equal(addr2.address);
-
-		bAddr = await cosmicSignatureGameProxy.bidderAddress(0,2); 
-		expect(bAddr).to.equal(addr1.address);
-
-		bAddr = await expect(cosmicSignatureGameProxy.bidderAddress(1,2)).to.be.revertedWithCustomError(
-			cosmicSignatureGameErrorsFactory_,
-			"InvalidBidderQueryRoundNum"
-		);
-		bAddr = await expect(cosmicSignatureGameProxy.bidderAddress(0,3)).to.be.revertedWithCustomError(
-			cosmicSignatureGameErrorsFactory_,
-			"InvalidBidderQueryOffset"
-		);
-		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-		// await hre.ethers.provider.send("evm_mine");
-		await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
-		await expect(cosmicSignatureGameProxy.bidderAddress(1, 1)).to.be.revertedWithCustomError(
-			cosmicSignatureGameErrorsFactory_,
-			"BidderQueryNoBidsYet"
-		);
-
-		// lets check roundNum > 0 now
-
-		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
-		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
-		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
-
-		bAddr = await cosmicSignatureGameProxy.bidderAddress(1,0);
-		expect(bAddr).to.equal(addr3.address);
-		bAddr = await cosmicSignatureGameProxy.bidderAddress(1,1);
-		expect(bAddr).to.equal(addr2.address);
-		bAddr = await cosmicSignatureGameProxy.bidderAddress(1,2);
-		expect(bAddr).to.equal(addr1.address);
-	});
+	// todo-1 This method no longer exists. Use `getBidderAddressAt` instead. But parts of this test could still be relevant.
+	// it("Function bidderAddress() works as expected", async function () {
+	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+	// 	const [owner, addr1, addr2, addr3,] = signers;
+	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
+	//
+	// 	// ToDo-202411202-1 applies.
+	// 	cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+	//
+	// 	let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+	// 	await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+	// 	await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+	//
+	// 	let bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 0);
+	// 	expect(bAddr).to.equal(addr3.address);
+	//
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 1); 
+	// 	expect(bAddr).to.equal(addr2.address);
+	//
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 2); 
+	// 	expect(bAddr).to.equal(addr1.address);
+	//
+	// 	bAddr = await expect(cosmicSignatureGameProxy.bidderAddress(1, 2)).to.be.revertedWithCustomError(
+	// 		cosmicSignatureGameErrorsFactory_,
+	// 		"InvalidBidderQueryRoundNum"
+	// 	);
+	// 	bAddr = await expect(cosmicSignatureGameProxy.bidderAddress(0, 3)).to.be.revertedWithCustomError(
+	// 		cosmicSignatureGameErrorsFactory_,
+	// 		"InvalidBidderQueryOffset"
+	// 	);
+	// 	let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
+	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+	// 	// await hre.ethers.provider.send("evm_mine");
+	// 	await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
+	// 	await expect(cosmicSignatureGameProxy.bidderAddress(1, 1)).to.be.revertedWithCustomError(
+	// 		cosmicSignatureGameErrorsFactory_,
+	// 		"BidderQueryNoBidsYet"
+	// 	);
+	//
+	// 	// lets check roundNum > 0 now
+	//
+	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+	// 	await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+	// 	await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+	//
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(1, 0);
+	// 	expect(bAddr).to.equal(addr3.address);
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(1, 1);
+	// 	expect(bAddr).to.equal(addr2.address);
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(1, 2);
+	// 	expect(bAddr).to.equal(addr1.address);
+	// });
 	// it("Bid statistics are generating correct values and StellarSpender addr is assigned correctly", async function () {
 	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 	// 	const [owner, addr1,] = signers;
@@ -652,7 +655,7 @@ describe("Bidding", function () {
 	// 	let cstDutchAuctionDuration_ = cstDutchAuctionDurations_[0];
 	// 	let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
-	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
+	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentEth = spent[0];
 	// 	expect(spentEth).to.equal(nextEthBidPrice_);
 	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_) - 600]); // lower price to pay in CST
@@ -663,7 +666,7 @@ describe("Bidding", function () {
 	// 	log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	evt = log.args.toObject();
 	// 	let bidPriceCst = evt.numCSTTokens;
-	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
+	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentCst = spent[1];
 	// 	expect(spentCst).to.equal(bidPriceCst);
 	//
@@ -671,7 +674,7 @@ describe("Bidding", function () {
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 	// 	let totalEthSpent = nextEthBidPrice_ + spentEth;
-	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
+	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentEth = spent[0];
 	// 	expect(spentEth).to.equal(totalEthSpent);
 	//
@@ -681,14 +684,14 @@ describe("Bidding", function () {
 	// 	evt = log.args.toObject();
 	// 	bidPriceCst = evt.numCSTTokens;
 	// 	let totalSpentCst_ = bidPriceCst + spentCst;
-	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
+	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentCst = spent[1];
 	// 	expect(spentCst).to.equal(totalSpentCst_);
 	//
 	// 	let maxBidderAddr = await cosmicSignatureGameProxy.stellarSpender();
 	// 	let maxCstBidderAmount_ = await cosmicSignatureGameProxy.stellarSpenderTotalSpentCst();
 	//
-	// 	spent = await cosmicSignatureGameProxy.getTotalSpentByBidder(addr1.address);
+	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	expect(maxBidderAddr).to.equal(addr1.address);
 	// });
 	it("It is not possible to bid with CST if balance is not enough", async function () {
@@ -700,7 +703,7 @@ describe("Bidding", function () {
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InsufficientBalance");
 	});
-	it("getBidderAddressAtPosition() reverts if invalid position index is provided", async function () {
+	it("The getBidderAddressAt method behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2,] = signers;
 		
@@ -711,9 +714,11 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", {value: nextEthBidPrice_,});
 
-		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(0)).to.equal(addr1.address);
-		expect(await cosmicSignatureGameProxy.getBidderAddressAtPosition(1)).to.equal(addr2.address);
-		await expect(cosmicSignatureGameProxy.getBidderAddressAtPosition(2)).to.be.revertedWith("Position out of bounds");
+		expect(await cosmicSignatureGameProxy.getBidderAddressAt(0, 0)).to.equal(addr1.address);
+		expect(await cosmicSignatureGameProxy.getBidderAddressAt(0, 1)).to.equal(addr2.address);
+
+		// // This no longer reverts.
+		// await expect(cosmicSignatureGameProxy.getBidderAddressAtPosition(0, 2)).to.be.revertedWith("Position out of bounds");
 	});
 	// todo-1 Are this and the next tests exactly the same? If so is it a bug or a feature?
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails", async function () {

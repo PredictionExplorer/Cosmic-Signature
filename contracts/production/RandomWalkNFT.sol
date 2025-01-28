@@ -1,10 +1,3 @@
-// todo-1 Is license supposed to be the same in all files? Currently it's not.
-// todo-1 Near `IRandomWalkNFT`, I specified a different license.
-// todo-1 But, given Comment-202409149, maybe remove that interface?
-// todo-1 But I use it for setters and events, so maybe leave it alone.
-// todo-1 Comment that I added it so that the code was simuilar to other contracts.
-// todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
-// todo-1 But in this particular case see Comment-202409149.
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
@@ -15,7 +8,9 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 /// @dev
 /// [Comment-202409149]
 /// This contract has already been deployed, so it makes little sense to refactor it.
+/// But I did refactor it a little.
 /// todo-1 Compare this to an old version to make sure I didn't mess anything up.
+/// todo-1 Where I refactored code, explain things and reference this comment.
 /// [/Comment-202409149]
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
