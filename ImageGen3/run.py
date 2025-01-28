@@ -39,8 +39,8 @@ SIMULATION_CONFIG = {
         'special_color_image_tail_max': [2.0],
 
         # New auto-level parameters
-        'clip_black': [0.03],
-        'clip_white': [0.80],
+        'clip_black': [0.01],
+        'clip_white': [0.99],
         'levels_gamma': [1.0]
     },
 
