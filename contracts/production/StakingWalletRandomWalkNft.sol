@@ -6,7 +6,7 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+// import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
@@ -69,7 +69,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    // `CosmicSignatureConstants.BooleanWithPadding`.
-	///    `CosmicSignatureConstants.NftTypeCode`.
+	///    `NftTypeCode`.
 	///    `NftStaked`.
 	///    `_numStakedNfts`.
 	///    `_usedNfts`.
@@ -108,7 +108,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
 		_numStakedNfts = newNumStakedNfts_;
-		emit NftStaked(newStakeActionId_, CosmicSignatureConstants.NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
+		emit NftStaked(newStakeActionId_, NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 
 		// #endregion

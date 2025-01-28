@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
+// import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
 interface IStakingWalletNftBase is IAddressValidator {
+	enum NftTypeCode {
+		/// @notice This denotes an uninitialized or invalid value.
+		None,
+
+		CosmicSignature,
+		RandomWalk
+	}
+
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.
 	/// @param nftTypeCode NFT type code.
@@ -14,7 +22,7 @@ interface IStakingWalletNftBase is IAddressValidator {
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftStaked(
 		uint256 indexed stakeActionId,
-		CosmicSignatureConstants.NftTypeCode nftTypeCode,
+		NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts

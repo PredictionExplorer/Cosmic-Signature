@@ -17,6 +17,11 @@ interface ISystemManagement is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
 	IBiddingBase {
+	/// @notice Sets `delayDurationBeforeNextRound`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
+
 	/// @notice Sets `activationTime`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
@@ -24,21 +29,86 @@ interface ISystemManagement is
 	/// Comment-202411168 relates and/or applies.
 	function setActivationTime(uint256 newValue_) external;
 
-	/// @notice Sets `delayDurationBeforeNextRound`.
+	/// @notice Sets `ethDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
+	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `marketingWalletCstContributionAmount`.
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setMarketingWalletCstContributionAmount(uint256 newValue_) external;
+	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `cstDutchAuctionDurationDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
+
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
 	/// @notice Sets `maxMessageLength`.
 	/// Only the contract owner is permitted to call this method.
 	/// Comment-202409143 applies.
 	/// @param newValue_ The new value.
 	function setMaxMessageLength(uint256 newValue_) external;
+
+	/// @notice Sets `tokenReward`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setTokenReward(uint256 newValue_) external;
+
+	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `mainPrizeTimeIncrementInMicroSeconds`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external;
+
+	/// @notice Sets `mainPrizeTimeIncrementIncreaseDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `timeoutDurationToClaimMainPrize`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
+
+	/// @notice Sets `mainEthPrizeAmountPercentage`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMainEthPrizeAmountPercentage(uint256 newValue_) external;
+
+	/// @notice Sets `cstRewardAmountMultiplier`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setCstRewardAmountMultiplier(uint256 newValue_) external;
+
+	/// @notice Sets `chronoWarriorEthPrizeAmountPercentage`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external;
+
+	/// @notice Sets `raffleTotalEthPrizeAmountPercentage`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external;
+
+	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
+
+	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external;
+
+	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
+
+	/// @notice Sets `stakingTotalEthRewardAmountPercentage`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external;
 
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
@@ -75,88 +145,18 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setMarketingWallet(address newValue_) external;
 
+	/// @notice Sets `marketingWalletCstContributionAmount`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMarketingWalletCstContributionAmount(uint256 newValue_) external;
+
 	/// @notice Sets `charityAddress`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setCharityAddress(address newValue_) external;
 
-	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `mainPrizeTimeIncrementInMicroSeconds`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external;
-
-	/// @notice Sets `mainPrizeTimeIncrementIncreaseDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `ethDutchAuctionDurationDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
-
-	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `cstDutchAuctionDurationDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
-
-	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
-
-	/// @notice Sets `tokenReward`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setTokenReward(uint256 newValue_) external;
-
-	/// @notice Sets `mainEthPrizeAmountPercentage`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMainEthPrizeAmountPercentage(uint256 newValue_) external;
-
-	/// @notice Sets `chronoWarriorEthPrizeAmountPercentage`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external;
-
-	/// @notice Sets `raffleTotalEthPrizeAmountPercentage`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external;
-
-	/// @notice Sets `stakingTotalEthRewardAmountPercentage`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external;
-
 	/// @notice Sets `charityEthDonationAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setCharityEthDonationAmountPercentage(uint256 newValue_) external;
-
-	/// @notice Sets `timeoutDurationToClaimMainPrize`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
-
-	/// @notice Sets `cstRewardAmountMultiplier`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setCstRewardAmountMultiplier(uint256 newValue_) external;
-
-	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
-
-	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external;
-
-	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
 }

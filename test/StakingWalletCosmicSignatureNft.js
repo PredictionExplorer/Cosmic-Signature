@@ -646,8 +646,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft, "OwnableUnauthorizedAccount");
 	// 	await expect(stakingWalletCosmicSignatureNft.setCharityAddress(hre.ethers.ZeroAddress))
 	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft, "ZeroAddress");
-	// 	await expect(stakingWalletCosmicSignatureNft.setCharityAddress(addr3.address))
-	// 		.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft, "AddressAlreadySet");
+	// 	// await expect(stakingWalletCosmicSignatureNft.setCharityAddress(addr3.address))
+	// 	// 	.to.be.revertedWithCustomError(stakingWalletCosmicSignatureNft, "AddressAlreadySet");
 	// });
 
 	// it("Internal staker state variables for checking uniquness are correctly set", async function () {

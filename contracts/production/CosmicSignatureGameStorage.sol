@@ -158,7 +158,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	// /// todo-1 Tell them that I eliminated this.
 	// /// todo-9 Rename to `lastBidTypeCode`.
-	// CosmicSignatureConstants.BidType public lastBidType;
+	// BidType public lastBidType;
 
 	/// @notice The address of the account that placed the last bid.
 	/// We reset this to zero at the beginning of each bidding round.

@@ -69,7 +69,7 @@ abstract contract Bidding is
 	function _bid(int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyActive*/ {
 		// #region
 
-		// CosmicSignatureConstants.BidType bidType;
+		// BidType bidType;
 		uint256 ethBidPrice_ = getNextEthBidPrice(int256(0));
 		uint256 paidEthBidPrice_ =
 			(randomWalkNftId_ < int256(0)) ?
@@ -89,7 +89,7 @@ abstract contract Bidding is
 		// #region
 
 		if (randomWalkNftId_ < int256(0)) {
-			// // #enable_asserts assert(bidType == CosmicSignatureConstants.BidType.ETH);
+			// // #enable_asserts assert(bidType == BidType.ETH);
 		} else {
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
@@ -114,7 +114,7 @@ abstract contract Bidding is
 				)
 			);
 			usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
-			// bidType = CosmicSignatureConstants.BidType.RandomWalk;
+			// bidType = BidType.RandomWalk;
 		}
 
 		// #endregion
@@ -369,7 +369,7 @@ abstract contract Bidding is
 		}
 		lastCstBidderAddress = msg.sender;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
-		_bidCommon(message_ /* , CosmicSignatureConstants.BidType.CST */);
+		_bidCommon(message_ /* , BidType.CST */);
 		// todo-1 When raising this event, maybe in some cases pass zero instead of -1.
 		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(paidPrice_), mainPrizeTime, message_);
 	}
@@ -454,7 +454,7 @@ abstract contract Bidding is
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , CosmicSignatureConstants.BidType bidType */) internal /*nonReentrant*/ onlyActive {
+	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ onlyActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)

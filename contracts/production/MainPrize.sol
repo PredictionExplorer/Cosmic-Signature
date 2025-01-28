@@ -548,7 +548,7 @@ abstract contract MainPrize is
 		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
-		// lastBidType = CosmicSignatureConstants.BidType.ETH;
+		// lastBidType = BidType.ETH;
 
 		// // Assuming this will neither overflow nor underflow.
 		// // todo-1 Take a closer look at this and other similar formulas.

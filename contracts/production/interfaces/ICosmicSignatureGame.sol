@@ -17,7 +17,7 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// @title The Cosmic Signature Game.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the main functionality of the Cosmic Signature Game.
-/// @dev todo-1 This contract is upgradeable. So should it support a `selfdestruct` after upgrade?
+/// @dev todo-1 ??? This contract is upgradeable. So should it support a `selfdestruct` after upgrade?
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,

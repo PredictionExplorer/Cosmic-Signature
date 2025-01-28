@@ -20,7 +20,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	event NftUnstaked(
 		uint256 /*indexed*/ actionCounter,
 		uint256 indexed stakeActionId,
-		// CosmicSignatureConstants.NftTypeCode nftTypeCode,
+		// NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts,
