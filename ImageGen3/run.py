@@ -15,14 +15,14 @@ SIMULATION_CONFIG = {
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "890132",
+    'base_seed_hex': "100019",
     'num_runs': 2000,
 
     # The relevant command-line arguments that still exist in the Rust code,
     # each list can contain one or many values (for parameter sweeps).
     'param_ranges': {
         'num_steps': [1_000_000],
-        'num_sims': [500],
+        'num_sims': [10_000],
         'location': [300.0],
         'velocity': [1.0],
         'min_mass': [100.0],
@@ -36,6 +36,12 @@ SIMULATION_CONFIG = {
         'dist_weight': [2.0],
         'lyap_weight': [2.0],
         'frame_size': [1800],
+
+        # Bloom & special fields:
+        'special': [False, True],
+        'bloom_radius': [5],
+        'bloom_threshold': [0.7],
+        'bloom_strength': [0.3],
     }
 }
 
@@ -46,9 +52,18 @@ class SimulationParams:
     """
     Reflects the Rust CLI arguments we still need:
       --seed, --file-name,
-      --num-steps, --num-sims, --location, --velocity, --min-mass, --max-mass,
-      --max-points, --chaos-weight, --perimeter-weight, --dist-weight, --lyap-weight,
-      --clip-black, --clip-white, --levels-gamma, --frame-size
+
+      --num-steps, --num-sims, --location, --velocity,
+      --min-mass, --max-mass, --max-points,
+
+      --chaos-weight, --perimeter-weight, --dist-weight, --lyap-weight,
+
+      --clip-black, --clip-white, --levels-gamma,
+      --frame-size,
+
+      --special, --bloom-radius, --bloom-threshold, --bloom-strength
+
+    Then the final 'seed' appended from the base_seed_hex + suffix.
     """
     num_steps: int
     num_sims: int
@@ -66,7 +81,13 @@ class SimulationParams:
     lyap_weight: float
     frame_size: int
 
+    special: bool
+    bloom_radius: int
+    bloom_threshold: float
+    bloom_strength: float
+
     seed: str  # appended last, not in param_ranges
+
 
 def generate_file_name(params: SimulationParams) -> str:
     """
@@ -105,6 +126,18 @@ def build_command_list(program_path: str, params: SimulationParams, file_name: s
 
         "--frame-size", str(params.frame_size),
     ]
+
+    # If the user wants the special bloom effect, add --special
+    if params.special:
+        cmd.append("--special")
+
+    # Bloom params:
+    cmd.extend([
+        "--bloom-radius", str(params.bloom_radius),
+        "--bloom-threshold", str(params.bloom_threshold),
+        "--bloom-strength", str(params.bloom_strength),
+    ])
+
     return cmd
 
 
@@ -174,8 +207,9 @@ class SimulationRunner:
                 else:
                     print("No output or an error occurred.")
 
+
 def main():
-    print("Starting batch runs of the Rust three-body simulator (lines-only version).")
+    print("Starting batch runs of the Rust three-body simulator (with optional bloom).")
 
     # Create the runner with the config
     runner = SimulationRunner(
@@ -196,6 +230,7 @@ def main():
 
     # Execute them in parallel
     runner.run_simulations(param_sets)
+
 
 if __name__ == "__main__":
     main()

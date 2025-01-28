@@ -10,7 +10,7 @@ use palette::{FromColor, Hsl, Srgb};
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
-use sha3::Digest;
+use sha3::Digest; // <--- IMPORTANT TRAIT IMPORT
 use sha3::Sha3_256;
 use statrs::statistics::Statistics;
 use std::f64::{INFINITY, NEG_INFINITY};
@@ -99,6 +99,22 @@ struct Args {
     /// Image/video width/height in pixels
     #[arg(long, default_value_t = 1800)]
     frame_size: u32,
+
+    /// If true, apply a bloom/glow effect to the final images/video frames.
+    #[arg(long, default_value_t = false)]
+    special: bool,
+
+    /// Bloom radius in pixels
+    #[arg(long, default_value_t = 5)]
+    bloom_radius: u32,
+
+    /// Bloom threshold (0..1)
+    #[arg(long, default_value_t = 0.7)]
+    bloom_threshold: f32,
+
+    /// Bloom strength (0..1)
+    #[arg(long, default_value_t = 0.3)]
+    bloom_strength: f32,
 }
 
 // ===================== Our RNG =====================
@@ -1206,6 +1222,115 @@ fn auto_levels_percentile_image(
     out_img
 }
 
+// ===================== Bloom/Glow Post-processing =====================
+/// Extract bright areas (above `threshold`), blur them, add them back at `strength`.
+/// A simple two‐pass box blur is used for speed (and we do it in floats).
+fn apply_bloom_to_frames(
+    frames: &mut [ImageBuffer<Rgb<u8>, Vec<u8>>],
+    radius: u32,
+    threshold: f32,
+    strength: f32,
+) {
+    // Do in parallel, since each frame is independent
+    frames.par_iter_mut().for_each(|frame| {
+        apply_bloom_to_image(frame, radius, threshold, strength);
+    });
+}
+
+/// Bloom on a single `ImageBuffer<Rgb<u8>>`.
+fn apply_bloom_to_image(
+    frame: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
+    radius: u32,
+    threshold: f32,
+    strength: f32,
+) {
+    let (width, height) = frame.dimensions();
+    let mut bright: Vec<(f32, f32, f32)> = vec![(0.0, 0.0, 0.0); (width * height) as usize];
+
+    // 1) Extract bright regions
+    for (y, x, pixel) in frame.enumerate_pixels() {
+        let idx = (y * width + x) as usize;
+        let r = pixel[0] as f32 / 255.0;
+        let g = pixel[1] as f32 / 255.0;
+        let b = pixel[2] as f32 / 255.0;
+        let lum = (r + g + b) / 3.0;
+        // If luminous enough, keep full color
+        if lum > threshold {
+            bright[idx] = (r, g, b);
+        }
+    }
+
+    // 2) Blur horizontally into a temp buffer
+    let mut temp = vec![(0.0, 0.0, 0.0); bright.len()];
+    let r_int = radius as i32;
+
+    for y in 0..height {
+        for x in 0..width {
+            let mut sum_r = 0.0;
+            let mut sum_g = 0.0;
+            let mut sum_b = 0.0;
+            let mut count = 0.0;
+
+            // box filter of size (2*radius + 1)
+            for sx in (x as i32 - r_int)..=(x as i32 + r_int) {
+                if sx < 0 || sx >= width as i32 {
+                    continue;
+                }
+                let idx_in = (y * width + sx as u32) as usize;
+                let (rr, gg, bb) = bright[idx_in];
+                sum_r += rr;
+                sum_g += gg;
+                sum_b += bb;
+                count += 1.0;
+            }
+            let idx_out = (y * width + x) as usize;
+            temp[idx_out] = (sum_r / count, sum_g / count, sum_b / count);
+        }
+    }
+
+    // 3) Blur vertically back into `bright`
+    for x in 0..width {
+        for y in 0..height {
+            let mut sum_r = 0.0;
+            let mut sum_g = 0.0;
+            let mut sum_b = 0.0;
+            let mut count = 0.0;
+
+            for sy in (y as i32 - r_int)..=(y as i32 + r_int) {
+                if sy < 0 || sy >= height as i32 {
+                    continue;
+                }
+                let idx_in = (sy as u32 * width + x) as usize;
+                let (rr, gg, bb) = temp[idx_in];
+                sum_r += rr;
+                sum_g += gg;
+                sum_b += bb;
+                count += 1.0;
+            }
+            let idx_out = (y * width + x) as usize;
+            bright[idx_out] = (sum_r / count, sum_g / count, sum_b / count);
+        }
+    }
+
+    // 4) Add blurred bright back to original, scaled by strength
+    for (y, x, pixel) in frame.enumerate_pixels_mut() {
+        let idx = (y * width + x) as usize;
+        let (br, bg, bb) = bright[idx];
+        // Convert original to float
+        let r0 = pixel[0] as f32 / 255.0;
+        let g0 = pixel[1] as f32 / 255.0;
+        let b0 = pixel[2] as f32 / 255.0;
+        // Add bloom
+        let nr = (r0 + br * strength).clamp(0.0, 1.0);
+        let ng = (g0 + bg * strength).clamp(0.0, 1.0);
+        let nb = (b0 + bb * strength).clamp(0.0, 1.0);
+        // Back to u8
+        pixel[0] = (nr * 255.0).round().clamp(0.0, 255.0) as u8;
+        pixel[1] = (ng * 255.0).round().clamp(0.0, 255.0) as u8;
+        pixel[2] = (nb * 255.0).round().clamp(0.0, 255.0) as u8;
+    }
+}
+
 // ===================== FFMPEG video (raw frames) =====================
 fn create_video_from_frames_in_memory(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
@@ -1252,17 +1377,16 @@ fn create_video_from_frames_in_memory(
 
     let mut ffmpeg = command.spawn().expect("Failed to start ffmpeg");
 
-    // Take ownership of ffmpeg's stdin so we can drop it properly when done:
+    // Write frames to ffmpeg
     if let Some(mut child_stdin) = ffmpeg.stdin.take() {
         for frame in frames {
             child_stdin
                 .write_all(frame.as_raw())
                 .expect("Failed to write raw frame data to ffmpeg");
         }
-        // When we exit this block, `child_stdin` is dropped, so FFmpeg sees EOF.
+        // Dropping child_stdin here => EOF in ffmpeg
     }
 
-    // Wait for FFmpeg to finish
     let output = ffmpeg.wait_with_output().expect("Waiting for ffmpeg failed");
     if !output.status.success() {
         eprintln!("FFmpeg error:\n{}", String::from_utf8_lossy(&output.stderr));
@@ -1326,15 +1450,27 @@ fn main() {
 
     // 3) single lines-only image from all steps
     let single_img = generate_lines_only_single_image(&positions, &colors, args.frame_size);
-    // auto-level that single image
+    // auto-level that single image (-> RGB8)
     let single_img_al = {
         let dyn_img = DynamicImage::ImageRgba8(single_img);
         let dyn_img_rgb = dyn_img.to_rgb8();
         let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
         auto_levels_percentile_image(&dyn_img2, args.clip_black, args.clip_white, args.levels_gamma)
     };
+
+    // If --special, apply bloom
+    let mut single_img_al_bloom = single_img_al.clone();
+    if args.special {
+        apply_bloom_to_image(
+            &mut single_img_al_bloom,
+            args.bloom_radius,
+            args.bloom_threshold,
+            args.bloom_strength,
+        );
+    }
+
     let png_path = format!("pics/{}.png", args.file_name);
-    match single_img_al.save(&png_path) {
+    match single_img_al_bloom.save(&png_path) {
         Ok(_) => println!("Saved lines-only image -> {}", png_path),
         Err(e) => eprintln!("Error saving lines-only image: {:?}", e),
     }
@@ -1355,6 +1491,16 @@ fn main() {
         args.clip_white,
         args.levels_gamma,
     );
+
+    // If --special, apply bloom to each frame as well
+    if args.special {
+        apply_bloom_to_frames(
+            &mut lines_frames,
+            args.bloom_radius,
+            args.bloom_threshold,
+            args.bloom_strength,
+        );
+    }
 
     let video_filename = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_in_memory(&lines_frames, &video_filename, 60);
