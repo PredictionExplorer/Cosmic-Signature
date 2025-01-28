@@ -14,6 +14,7 @@ use sha3::Digest; // <--- IMPORTANT TRAIT IMPORT
 use sha3::Sha3_256;
 use statrs::statistics::Statistics;
 use std::f64::{INFINITY, NEG_INFINITY};
+use std::fs;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -104,16 +105,16 @@ struct Args {
     #[arg(long, default_value_t = false)]
     special: bool,
 
-    /// Bloom radius in pixels
-    #[arg(long, default_value_t = 5)]
-    bloom_radius: u32,
+    /// Bloom radius as a fraction of the min(width, height). E.g. 0.05 => 5% of smaller dimension
+    #[arg(long, default_value_t = 0.05)]
+    bloom_radius_percent: f32,
 
-    /// Bloom threshold (0..1)
-    #[arg(long, default_value_t = 0.7)]
+    /// Bloom threshold (0..1).  Default 0.5 to get a noticeable glow.
+    #[arg(long, default_value_t = 0.5)]
     bloom_threshold: f32,
 
-    /// Bloom strength (0..1)
-    #[arg(long, default_value_t = 0.3)]
+    /// Bloom strength (0..1).  Default 0.6 is fairly high for a visible effect.
+    #[arg(long, default_value_t = 0.6)]
     bloom_strength: f32,
 }
 
@@ -1223,47 +1224,48 @@ fn auto_levels_percentile_image(
 }
 
 // ===================== Bloom/Glow Post-processing =====================
-/// Extract bright areas (above `threshold`), blur them, add them back at `strength`.
-/// A simple two‐pass box blur is used for speed (and we do it in floats).
+/// Bloom on frames: the radius is computed as a fraction of the smaller dimension of each image.
 fn apply_bloom_to_frames(
     frames: &mut [ImageBuffer<Rgb<u8>, Vec<u8>>],
-    radius: u32,
+    radius_percent: f32,
     threshold: f32,
     strength: f32,
 ) {
-    // Do in parallel, since each frame is independent
     frames.par_iter_mut().for_each(|frame| {
-        apply_bloom_to_image(frame, radius, threshold, strength);
+        apply_bloom_to_image(frame, radius_percent, threshold, strength);
     });
 }
 
-/// Bloom on a single `ImageBuffer<Rgb<u8>>`.
+/// Bloom on a single `ImageBuffer<Rgb<u8>>` with percent-based radius
 fn apply_bloom_to_image(
     frame: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
-    radius: u32,
+    radius_percent: f32,
     threshold: f32,
     strength: f32,
 ) {
     let (width, height) = frame.dimensions();
+    let min_dim = width.min(height) as f32;
+    let mut radius = (min_dim * radius_percent).round() as i32;
+    if radius < 1 {
+        radius = 1; // at least 1 pixel
+    }
+
     let mut bright: Vec<(f32, f32, f32)> = vec![(0.0, 0.0, 0.0); (width * height) as usize];
 
-    // 1) Extract bright regions
+    // 1) Extract bright
     for (y, x, pixel) in frame.enumerate_pixels() {
         let idx = (y * width + x) as usize;
         let r = pixel[0] as f32 / 255.0;
         let g = pixel[1] as f32 / 255.0;
         let b = pixel[2] as f32 / 255.0;
         let lum = (r + g + b) / 3.0;
-        // If luminous enough, keep full color
         if lum > threshold {
             bright[idx] = (r, g, b);
         }
     }
 
-    // 2) Blur horizontally into a temp buffer
+    // 2) Blur horizontally
     let mut temp = vec![(0.0, 0.0, 0.0); bright.len()];
-    let r_int = radius as i32;
-
     for y in 0..height {
         for x in 0..width {
             let mut sum_r = 0.0;
@@ -1271,8 +1273,7 @@ fn apply_bloom_to_image(
             let mut sum_b = 0.0;
             let mut count = 0.0;
 
-            // box filter of size (2*radius + 1)
-            for sx in (x as i32 - r_int)..=(x as i32 + r_int) {
+            for sx in (x as i32 - radius)..=(x as i32 + radius) {
                 if sx < 0 || sx >= width as i32 {
                     continue;
                 }
@@ -1288,7 +1289,7 @@ fn apply_bloom_to_image(
         }
     }
 
-    // 3) Blur vertically back into `bright`
+    // 3) Blur vertically
     for x in 0..width {
         for y in 0..height {
             let mut sum_r = 0.0;
@@ -1296,7 +1297,7 @@ fn apply_bloom_to_image(
             let mut sum_b = 0.0;
             let mut count = 0.0;
 
-            for sy in (y as i32 - r_int)..=(y as i32 + r_int) {
+            for sy in (y as i32 - radius)..=(y as i32 + radius) {
                 if sy < 0 || sy >= height as i32 {
                     continue;
                 }
@@ -1312,19 +1313,16 @@ fn apply_bloom_to_image(
         }
     }
 
-    // 4) Add blurred bright back to original, scaled by strength
+    // 4) Add back
     for (y, x, pixel) in frame.enumerate_pixels_mut() {
         let idx = (y * width + x) as usize;
         let (br, bg, bb) = bright[idx];
-        // Convert original to float
         let r0 = pixel[0] as f32 / 255.0;
         let g0 = pixel[1] as f32 / 255.0;
         let b0 = pixel[2] as f32 / 255.0;
-        // Add bloom
         let nr = (r0 + br * strength).clamp(0.0, 1.0);
         let ng = (g0 + bg * strength).clamp(0.0, 1.0);
         let nb = (b0 + bb * strength).clamp(0.0, 1.0);
-        // Back to u8
         pixel[0] = (nr * 255.0).round().clamp(0.0, 255.0) as u8;
         pixel[1] = (ng * 255.0).round().clamp(0.0, 255.0) as u8;
         pixel[2] = (nb * 255.0).round().clamp(0.0, 255.0) as u8;
@@ -1384,7 +1382,6 @@ fn create_video_from_frames_in_memory(
                 .write_all(frame.as_raw())
                 .expect("Failed to write raw frame data to ffmpeg");
         }
-        // Dropping child_stdin here => EOF in ffmpeg
     }
 
     let output = ffmpeg.wait_with_output().expect("Waiting for ffmpeg failed");
@@ -1398,6 +1395,16 @@ fn create_video_from_frames_in_memory(
 // ===================== main =====================
 fn main() {
     let args = Args::parse();
+
+    // Create output directories if they don't exist.
+    // If there's an error, we just log it instead of crashing.
+    if let Err(e) = fs::create_dir_all("pics") {
+        eprintln!("Could not create 'pics' folder: {}", e);
+    }
+    if let Err(e) = fs::create_dir_all("vids") {
+        eprintln!("Could not create 'vids' folder: {}", e);
+    }
+
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("Invalid hex seed");
 
@@ -1450,32 +1457,35 @@ fn main() {
 
     // 3) single lines-only image from all steps
     let single_img = generate_lines_only_single_image(&positions, &colors, args.frame_size);
+    let dyn_img = DynamicImage::ImageRgba8(single_img);
+
     // auto-level that single image (-> RGB8)
-    let single_img_al = {
-        let dyn_img = DynamicImage::ImageRgba8(single_img);
-        let dyn_img_rgb = dyn_img.to_rgb8();
-        let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
-        auto_levels_percentile_image(&dyn_img2, args.clip_black, args.clip_white, args.levels_gamma)
-    };
+    let dyn_img_rgb = dyn_img.to_rgb8();
+    let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
+    let mut single_img_al = auto_levels_percentile_image(
+        &dyn_img2,
+        args.clip_black,
+        args.clip_white,
+        args.levels_gamma,
+    );
 
     // If --special, apply bloom
-    let mut single_img_al_bloom = single_img_al.clone();
     if args.special {
         apply_bloom_to_image(
-            &mut single_img_al_bloom,
-            args.bloom_radius,
+            &mut single_img_al,
+            args.bloom_radius_percent,
             args.bloom_threshold,
             args.bloom_strength,
         );
     }
 
     let png_path = format!("pics/{}.png", args.file_name);
-    match single_img_al_bloom.save(&png_path) {
+    match single_img_al.save(&png_path) {
         Ok(_) => println!("Saved lines-only image -> {}", png_path),
         Err(e) => eprintln!("Error saving lines-only image: {:?}", e),
     }
 
-    // 4) lines-only video (using raw frames -> x264)
+    // 4) lines-only video
     let num_seconds = 30;
     let target_frames = 60 * num_seconds;
     let frame_interval =
@@ -1492,11 +1502,11 @@ fn main() {
         args.levels_gamma,
     );
 
-    // If --special, apply bloom to each frame as well
+    // If --special, apply bloom to each frame
     if args.special {
         apply_bloom_to_frames(
             &mut lines_frames,
-            args.bloom_radius,
+            args.bloom_radius_percent,
             args.bloom_threshold,
             args.bloom_strength,
         );
