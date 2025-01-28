@@ -466,7 +466,7 @@ abstract contract Bidding is
 			// [Comment-202501044]
 			// It's probably more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
 			// todo-1 Cross-ref with where we ensure that ETH bid price cannot be zero, even with a RandomWalk NFT.
-			// todo-1 Mke sure it's correct to make this validation at this point, rather than sooner.
+			// todo-1 Make sure it's correct to make this validation at this point, rather than sooner.
 			// todo-1 Write a comment explaining things.
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));

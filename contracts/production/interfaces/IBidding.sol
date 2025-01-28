@@ -93,7 +93,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration, and can become zero.
-	/// todo-1 Confirmed: zero price is OK.
+	/// todo-1 +++ Confirmed: zero price is OK.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
 	/// An offset to add to `block.timestamp`.
