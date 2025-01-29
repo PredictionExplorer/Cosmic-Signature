@@ -1,5 +1,4 @@
 import itertools
-import os
 import random
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,8 +14,8 @@ SIMULATION_CONFIG = {
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "100019",
-    'num_runs': 2000,
+    'base_seed_hex': "100025",
+    'num_runs': 5000,
 
     # The relevant command-line arguments for the core parameters
     # (NOT including bloom or special).
@@ -215,31 +214,7 @@ class SimulationRunner:
         for base_params in param_sets:
             # 1) The base param is special=False
             tasks.append(base_params)
-            # 2) Create a copy with special=True
-            sp_copy = SimulationParams(
-                num_steps=base_params.num_steps,
-                num_sims=base_params.num_sims,
-                location=base_params.location,
-                velocity=base_params.velocity,
-                min_mass=base_params.min_mass,
-                max_mass=base_params.max_mass,
-                clip_black=base_params.clip_black,
-                clip_white=base_params.clip_white,
-                levels_gamma=base_params.levels_gamma,
-                max_points=base_params.max_points,
-                chaos_weight=base_params.chaos_weight,
-                perimeter_weight=base_params.perimeter_weight,
-                dist_weight=base_params.dist_weight,
-                lyap_weight=base_params.lyap_weight,
-                frame_size=base_params.frame_size,
-
-                special=True,
-                bloom_radius_percent=base_params.bloom_radius_percent,
-                bloom_threshold=base_params.bloom_threshold,
-                bloom_strength=base_params.bloom_strength,
-                seed=base_params.seed
-            )
-            tasks.append(sp_copy)
+        random.shuffle(tasks)
 
         # Now we want them to run in the exact order we appended them:
         # normal run followed by special run. So we won't shuffle tasks.
