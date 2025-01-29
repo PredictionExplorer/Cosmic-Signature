@@ -244,14 +244,14 @@ abstract contract BiddingOpenBid is
 		// #endregion
 		// #region
 
-		emit BidEvent(
-			/*lastBidderAddress*/ msg.sender,
+		emit BidPlaced(
 			roundNum,
+			msg.sender,
 			int256(paidEthBidPrice_),
-			/*params.randomWalkNftId*/ randomWalkNftId_,
 			-1,
-			mainPrizeTime,
-			/*params.message*/ message_
+			/*params.randomWalkNftId*/ randomWalkNftId_,
+			/*params.message*/ message_,
+			mainPrizeTime
 		);
 
 		// #endregion
@@ -436,7 +436,7 @@ abstract contract BiddingOpenBid is
 		lastCstBidderAddress = msg.sender;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , BidType.CST */);
-		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(paidPrice_), mainPrizeTime, message_);
+		emit BidPlaced(roundNum, msg.sender, -1, int256(paidPrice_), -1, message_, mainPrizeTime);
 	}
 
 	// #endregion

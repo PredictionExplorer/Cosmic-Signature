@@ -146,7 +146,7 @@ describe("Events", function () {
 
 		expect(await cosmicSignatureGameProxy.roundNum()).to.equal(2);
 	});
-	it("BidEvent is correctly emitted", async function () {
+	it("BidPlaced is correctly emitted", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
@@ -154,8 +154,8 @@ describe("Events", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		expect(await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "simple text", { value: nextEthBidPrice_ }))
-			.to.emit(cosmicSignatureGameProxy, "BidEvent")
-			.withArgs(addr1.address, 0, nextEthBidPrice_, -1, -1, 2000090000, "simple text");
+			.to.emit(cosmicSignatureGameProxy, "BidPlaced")
+			.withArgs(0, addr1.address, nextEthBidPrice_, -1, -1, "simple text", 2000090000);
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [2100000000]);
 		// await hre.ethers.provider.send("evm_mine");
 		const mintPrice = await randomWalkNft.getMintPrice();
@@ -163,8 +163,8 @@ describe("Events", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		expect(await cosmicSignatureGameProxy.connect(addr1).bidWithEth(0, "random walk", { value: nextEthPlusRandomWalkNftBidPrice_ }))
-			.to.emit(cosmicSignatureGameProxy, "BidEvent")
-			.withArgs(addr1.address, 0, 1020100000000000, 0, -1, 2100003601, "random walk");
+			.to.emit(cosmicSignatureGameProxy, "BidPlaced")
+			.withArgs(0, addr1.address, 1020100000000000, -1, 0, "random walk", 2100003601);
 	});
 	// todo-1 Consifder moving this to Bidding tests.
 	it("ETH + RandomWalk NFT bid price is 50% lower", async function () {
@@ -182,8 +182,8 @@ describe("Events", function () {
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth(0, "random walk", {value: nextEthPlusRandomWalkNftBidPrice_}))
-			.to.emit(cosmicSignatureGameProxy, "BidEvent")
-			.withArgs(addr1.address, 0, nextEthPlusRandomWalkNftBidPrice_, 0, -1, 100_000_000_000n + initialDurationUntilMainPrize_, "random walk");
+			.to.emit(cosmicSignatureGameProxy, "BidPlaced")
+			.withArgs(0, addr1.address, nextEthPlusRandomWalkNftBidPrice_, -1, 0, "random walk", 100_000_000_000n + initialDurationUntilMainPrize_);
 	});
 	it("DonatedNftClaimedEvent is correctly emitted", async function () {
 		const {signers, cosmicSignatureGameProxy, prizesWallet, randomWalkNft,} =

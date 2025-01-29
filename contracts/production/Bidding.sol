@@ -147,14 +147,14 @@ abstract contract Bidding is
 		// #endregion
 		// #region
 
-		emit BidEvent(
-			/*lastBidderAddress*/ msg.sender,
+		emit BidPlaced(
 			roundNum,
+			msg.sender,
 			int256(paidEthBidPrice_),
-			randomWalkNftId_,
 			-1,
-			mainPrizeTime,
-			message_
+			randomWalkNftId_,
+			message_,
+			mainPrizeTime
 		);
 
 		// #endregion
@@ -370,8 +370,7 @@ abstract contract Bidding is
 		lastCstBidderAddress = msg.sender;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , BidType.CST */);
-		// todo-0 When raising this event, maybe in some cases pass zero instead of -1.
-		emit BidEvent(/*lastBidderAddress*/ msg.sender, roundNum, -1, -1, int256(paidPrice_), mainPrizeTime, message_);
+		emit BidPlaced(roundNum, msg.sender, -1, int256(paidPrice_), -1, message_, mainPrizeTime);
 	}
 
 	// #endregion

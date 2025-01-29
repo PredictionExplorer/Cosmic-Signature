@@ -577,13 +577,13 @@ describe("Bidding", function () {
 		nextCstBidExpectedPrice_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
 		let tx = await cosmicSignatureGameProxy.connect(addr1).bidWithCst(nextCstBidExpectedPrice_ * 10n, "cst bid");
 		let receipt = await tx.wait();
-		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("BidEvent").topicHash;
+		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("BidPlaced").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignatureGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
-		expect(args.ethBidPrice).to.equal(-1n);
-		expect(args.numCSTTokens).to.equal(nextCstBidExpectedPrice_);
 		expect(args.lastBidderAddress).to.equal(addr1.address);
+		expect(args.ethBidPrice).to.equal(-1n);
+		expect(args.cstBidPrice).to.equal(nextCstBidExpectedPrice_);
 		expect(args.message).to.equal("cst bid");
 		cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(nextCstBidExpectedPrice_ * 2n);
@@ -661,14 +661,14 @@ describe("Bidding", function () {
 	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_) - 600]); // lower price to pay in CST
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	tx = await cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "");
-	// 	topic_sig = cosmicSignatureGameProxy.interface.getEvent("BidEvent").topicHash;
+	// 	topic_sig = cosmicSignatureGameProxy.interface.getEvent("BidPlaced").topicHash;
 	// 	receipt = await tx.wait();
 	// 	log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	evt = log.args.toObject();
-	// 	let bidPriceCst = evt.numCSTTokens;
+	// 	let cstBidPrice = evt.cstBidPrice;
 	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentCst = spent[1];
-	// 	expect(spentCst).to.equal(bidPriceCst);
+	// 	expect(spentCst).to.equal(cstBidPrice);
 	//
 	// 	// check that CST and ETH are accumulated in statistics
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -682,8 +682,8 @@ describe("Bidding", function () {
 	// 	receipt = await tx.wait();
 	// 	log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	evt = log.args.toObject();
-	// 	bidPriceCst = evt.numCSTTokens;
-	// 	let totalSpentCst_ = bidPriceCst + spentCst;
+	// 	cstBidPrice = evt.cstBidPrice;
+	// 	let totalSpentCst_ = cstBidPrice + spentCst;
 	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentCst = spent[1];
 	// 	expect(spentCst).to.equal(totalSpentCst_);

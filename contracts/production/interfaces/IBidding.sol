@@ -17,27 +17,25 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 		uint256 blockTimeStamp
 	);
 
-	/// @notice Emitted when a bid is placed
-	/// @param lastBidderAddress The address of the bidder who placed this bid.
+	/// @notice Emitted when a bid is placed.
 	/// @param roundNum The current bidding round number.
-	/// todo-0 Reorder the above to the beginning.
-	/// @param ethBidPrice The price of the bid
-	/// @param randomWalkNftId The ID of the RandomWalk NFT used (or -1)
-	/// @param numCSTTokens The number of CST tokens used (if any)
-	/// todo-0 Rename the above param to `cstBidPrice`.
-	/// todo-0 Maybe reorder the above param to after `ethBidPrice`.
+	/// @param lastBidderAddress The address of the bidder who placed this bid.
+	/// @param ethBidPrice Paid ETH price.
+	/// Equals -1 if this is a CST bid.
+	/// @param cstBidPrice Paid CST price.
+	/// Equals -1 if this is an ETH bid.
+	/// @param randomWalkNftId Provided RandomWalk NFT ID.
+	/// A negative value indicates that no RandomWalk NFT was used.
+	/// @param message A message from the bidder. May be empty.
 	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
-	/// todo-0 Rename the above param to how I am going to name the respective state variable.
-	/// @param message An optional message from the bidder
-	/// todo-0 Rename to `BidPlaced`.
-	event BidEvent(
-		address indexed lastBidderAddress,
+	event BidPlaced(
 		uint256 indexed roundNum,
+		address indexed lastBidderAddress,
 		int256 ethBidPrice,
+		int256 cstBidPrice,
 		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
-		int256 numCSTTokens,
-		uint256 mainPrizeTime,
-		string message
+		string message,
+		uint256 mainPrizeTime
 	);
 	
 	/// @notice Handles an incoming ETH transfer.
@@ -55,7 +53,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid.
 	/// @param randomWalkNftId_ The ID of the RandomWalk NFT to be used for bidding.
-	/// Set to -1 if no RandomWalk NFT is to be used.
+	/// Pass a negative value to not use a RandomWalk NFT.
 	/// Comment-202412036 applies.
 	/// @param message_ The bidder's message associated with the bid.
 	/// May be empty.
