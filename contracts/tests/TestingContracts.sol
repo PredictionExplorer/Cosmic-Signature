@@ -179,8 +179,8 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// Comment-202412104 relates.
 	CosmicSignatureHelpers.RandomNumberSeedWrapper private _entropy;
 
-	// function setActivationTimeRaw(uint256 newValue_) external {
-	// 	activationTime = newValue_;
+	// function setRoundActivationTimeRaw(uint256 newValue_) external {
+	// 	roundActivationTime = newValue_;
 	//
 	// 	// // Comment-202411168 applies.
 	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
@@ -190,7 +190,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// }
 
-	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
+	/// @dev todo-1 Do we really need this? We now can set `roundActivationTime` to the future and make any changes the normal way.
 	/// todo-1 Rename to `setCosmicSignatureNftRaw`.
 	function setNftContractRaw(ICosmicSignatureNft newValue_) external {
 		nft = CosmicSignatureNft(address(newValue_));
@@ -200,7 +200,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	prizesWallet = PrizesWallet(address(newValue_));
 	// }
 
-	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
+	/// @dev todo-1 Do we really need this? We now can set `roundActivationTime` to the future and make any changes the normal way.
 	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}

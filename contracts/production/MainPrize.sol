@@ -38,7 +38,7 @@ abstract contract MainPrize is
 	IMainPrize {
 	// #region `claimMainPrize`
 
-	/// @dev We don't need `onlyActive` here, which we `assert` near Comment-202411169.
+	/// @dev We don't need `onlyRoundIsActive` here, which we `assert` near Comment-202411169.
 	/// todo-1 For all contracts and all methods, think what modifiers it might need,
 	/// todo-1 who and under what conditions is permitted to call it.
 	/// todo-1 It could be possible to not require `nonReentrant` if we transferred main prize ETH
@@ -46,7 +46,7 @@ abstract contract MainPrize is
 	/// todo-1 although we could execute that transfer at the very end as well.
 	/// todo-1 But let's leave it alone.
 	/// todo-1 Comment and reference Comment-202411078.
-	function claimMainPrize() external override nonReentrant /*onlyActive*/ {
+	function claimMainPrize() external override nonReentrant /*onlyRoundIsActive*/ {
 		// #region
 
 		if (msg.sender == lastBidderAddress) {
@@ -77,7 +77,7 @@ abstract contract MainPrize is
 		// We `assert`ed or `require`d that `lastBidderAddress` is a nonzero.
 		// Therefore we know that the current bidding round is active.
 		// [/Comment-202411169]
-		// #enable_asserts assert(block.timestamp >= activationTime);
+		// #enable_asserts assert(block.timestamp >= roundActivationTime);
 
 		// #endregion
 		// #region
@@ -570,7 +570,7 @@ abstract contract MainPrize is
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
-		_setActivationTime(block.timestamp + delayDurationBeforeNextRound);
+		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 	}
 
 	// #endregion

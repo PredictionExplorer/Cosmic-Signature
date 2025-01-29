@@ -18,7 +18,7 @@ describe("Bidding", function () {
 		// This is a quick hack.
 		// To be revisited.
 		// [/ToDo-202411202-1]
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		const donationAmount_ = 10n * 10n ** 18n;
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
@@ -357,7 +357,7 @@ describe("Bidding", function () {
 		const [owner, addr1, addr2, addr3, addr4, addr5,] = signers;
 
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		let donationAmount_ = hre.ethers.parseEther("100");
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
@@ -530,7 +530,7 @@ describe("Bidding", function () {
 		// // Comment-202501192 applies.
 		// await hre.ethers.provider.send("evm_mine");
 
-		const delayDurationBeforeNextRound_ = await cosmicSignatureGameProxy.delayDurationBeforeNextRound();
+		const delayDurationBeforeRoundActivation_ = await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
@@ -550,7 +550,7 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.connect(addr1).claimMainPrize();
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
-		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeNextRound_) - 1]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeRoundActivation_) - 1]);
 		await hre.ethers.provider.send("evm_mine");
 		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
 
@@ -561,7 +561,7 @@ describe("Bidding", function () {
 		let cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(200n * (10n ** 18n));
 		let cstDutchAuctionBeginningTimeStamp_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningTimeStamp();
-		expect(cstDutchAuctionBeginningTimeStamp_).to.equal(await cosmicSignatureGameProxy.activationTime());
+		expect(cstDutchAuctionBeginningTimeStamp_).to.equal(await cosmicSignatureGameProxy.roundActivationTime());
 		let [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_,] = await cosmicSignatureGameProxy.getCstDutchAuctionDurations();
 		expect(cstDutchAuctionElapsedDuration_).to.equal(20000n);
 		++ cstDutchAuctionElapsedDuration_;
@@ -595,7 +595,7 @@ describe("Bidding", function () {
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 	//
 	// 	// ToDo-202411202-1 applies.
-	// 	cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+	// 	cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 	//
 	// 	let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
@@ -725,7 +725,7 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 
 		const BrokenCosmicSignatureToken = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken2");
 		const brokenCosmicSignatureToken = await BrokenCosmicSignatureToken.deploy(0);
@@ -734,7 +734,7 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenCosmicSignatureToken.getAddress());
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
+		await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		// See ToDo-202409245-1.
@@ -745,7 +745,7 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
-		cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 
 		const BrokenCosmicSignatureToken = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken2");
 		const numTokenMintsPerBid_ = 1;
@@ -755,7 +755,7 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.setCosmicSignatureToken(await brokenCosmicSignatureToken.getAddress());
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
+		await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
@@ -790,7 +790,7 @@ describe("Bidding", function () {
 			}
 		}
 	});
-	it("The getDurationUntilActivation and getDurationElapsedSinceActivation methods behave correctly", async function () {
+	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods behave correctly", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 
 		// [Comment-202501192]
@@ -808,16 +808,16 @@ describe("Bidding", function () {
 		await hre.ethers.provider.send("evm_mine");
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		const newActivationTime_ = latestBlock_.timestamp + 2;
-		await cosmicSignatureGameProxy.setActivationTime(newActivationTime_);
+		const newRoundActivationTime_ = latestBlock_.timestamp + 2;
+		await cosmicSignatureGameProxy.setRoundActivationTime(newRoundActivationTime_);
 
 		for ( let counter_ = -1; counter_ <= 1; ++ counter_ ) {
 			latestBlock_ = await hre.ethers.provider.getBlock("latest");
-			expect(latestBlock_.timestamp).equal(newActivationTime_ + counter_);
-			const durationUntilActivation_ = await cosmicSignatureGameProxy.getDurationUntilActivation();
-			expect(durationUntilActivation_).equal( - counter_ );
-			const durationElapsedSinceActivation_ = await cosmicSignatureGameProxy.getDurationElapsedSinceActivation();
-			expect(durationElapsedSinceActivation_).equal(counter_);
+			expect(latestBlock_.timestamp).equal(newRoundActivationTime_ + counter_);
+			const durationUntilRoundActivation_ = await cosmicSignatureGameProxy.getDurationUntilRoundActivation();
+			expect(durationUntilRoundActivation_).equal( - counter_ );
+			const durationElapsedSinceRoundActivation_ = await cosmicSignatureGameProxy.getDurationElapsedSinceRoundActivation();
+			expect(durationElapsedSinceRoundActivation_).equal(counter_);
 			await hre.ethers.provider.send("evm_mine");
 		}
 	});

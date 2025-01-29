@@ -11,13 +11,13 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 /// @title Cosmic Signature Game Configuration Events.
 /// @author The Cosmic Signature Development Team.
 interface ISystemEvents {
-	/// @notice Emitted when `delayDurationBeforeNextRound` is changed.
+	/// @notice Emitted when `delayDurationBeforeRoundActivation` is changed.
 	/// @param newValue The new value.
-	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
+	event DelayDurationBeforeRoundActivationChanged(uint256 newValue);
 
-	/// @notice Emitted when `activationTime` is changed.
+	/// @notice Emitted when `roundActivationTime` is changed.
 	/// @param newValue The new value.
-	event ActivationTimeChanged(uint256 newValue);
+	event RoundActivationTimeChanged(uint256 newValue);
 
 	/// @notice Emitted when `ethDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.

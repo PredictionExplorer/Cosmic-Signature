@@ -21,17 +21,15 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when an action is attempted before the current bidding round activation time.
 	/// @param errStr Description of the error.
-	/// @param activationTime The activation time.
+	/// @param roundActivationTime The current bidding round activation time.
 	/// @param blockTimeStamp The current block timestamp.
-	/// todo-1 Rename to not use the word "System" and instead use the word "Round".
-	error SystemIsInactive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
+	error RoundIsInactive(string errStr, uint256 roundActivationTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when an action is attempted at or after the current bidding round activation time.
 	/// @param errStr Description of the error.
-	/// @param activationTime The activation time.
+	/// @param roundActivationTime The current bidding round activation time.
 	/// @param blockTimeStamp The current block timestamp.
-	/// todo-1 Rename to not use the word "System" and instead use the word "Round".
-	error SystemIsActive(string errStr, uint256 activationTime, uint256 blockTimeStamp);
+	error RoundIsActive(string errStr, uint256 roundActivationTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when an action is attempted that is not allowed before someone places a bid
 	/// in the current bidding round.

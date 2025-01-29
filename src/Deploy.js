@@ -12,7 +12,7 @@ const { HardhatContext } = require("hardhat/internal/context");
  * @param {string} randomWalkNftAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
- * @param {number} activationTime 
+ * @param {number} roundActivationTime 
  * @returns 
  */
 const basicDeployment = async function (
@@ -20,7 +20,7 @@ const basicDeployment = async function (
 	randomWalkNftAddr,
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
-	activationTime
+	roundActivationTime
 ) {
 	return await basicDeploymentAdvanced(
 		"CosmicSignatureGame",
@@ -28,7 +28,7 @@ const basicDeployment = async function (
 		randomWalkNftAddr,
 		charityAddr,
 		transferOwnershipToCosmicSignatureDao,
-		activationTime
+		roundActivationTime
 	);
 };
 
@@ -40,7 +40,7 @@ const basicDeployment = async function (
  * @param {string} randomWalkNftAddr May be empty.
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
- * @param {number} activationTime 
+ * @param {number} roundActivationTime 
  * Possible values:
  *    0: leave the default value hardcoded in the contract.
  *    1: use the latest block timestamp.
@@ -53,7 +53,7 @@ const basicDeploymentAdvanced = async function (
 	randomWalkNftAddr,
 	charityAddr,
 	transferOwnershipToCosmicSignatureDao,
-	activationTime
+	roundActivationTime
 ) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -171,12 +171,12 @@ const basicDeploymentAdvanced = async function (
 	await cosmicSignatureGameProxy.connect(deployerAcct).setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setMarketingWallet(marketingWalletAddr);
 	await cosmicSignatureGameProxy.connect(deployerAcct).setCharityAddress(charityWalletAddr);
-	if (activationTime != 0) {
-		if (activationTime == 1) {
+	if (roundActivationTime != 0) {
+		if (roundActivationTime == 1) {
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			activationTime = latestBlock.timestamp + 1;
+			roundActivationTime = latestBlock.timestamp + 1;
 		}
-		await cosmicSignatureGameProxy.connect(deployerAcct).setActivationTime(activationTime);
+		await cosmicSignatureGameProxy.connect(deployerAcct).setRoundActivationTime(roundActivationTime);
 	}
 
 	return {

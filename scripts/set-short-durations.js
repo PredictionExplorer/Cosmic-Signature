@@ -7,7 +7,7 @@ const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function set_parameters(testingAcct, cosmicSignatureGame) {
-	// todo-1 Do we need to also set duration until activation here.
+	// todo-1 Do we need to also set duration until round activation here.
 
 	const mainPrizeTimeIncrementInMicroSeconds_ = 3n * 60n * 1_000_000n;
 	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_);

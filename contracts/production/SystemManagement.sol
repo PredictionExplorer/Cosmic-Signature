@@ -22,48 +22,48 @@ abstract contract SystemManagement is
 	CosmicSignatureGameStorage,
 	BiddingBase,
 	ISystemManagement {
-	function setDelayDurationBeforeNextRound(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
-		delayDurationBeforeNextRound = newValue_;
-		emit DelayDurationBeforeNextRoundChanged(newValue_);
+	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*onlyRoundIsInactive*/ {
+		delayDurationBeforeRoundActivation = newValue_;
+		emit DelayDurationBeforeRoundActivationChanged(newValue_);
 	}
 
-	function setActivationTime(uint256 newValue_) external override onlyOwner /*onlyInactive*/ {
+	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*onlyRoundIsInactive*/ {
 		// [Comment-202411236]
-		// Imposing this requirement instead of `onlyInactive`.
-		// This design leaves the door open for the admin to change `activationTime` to a point in the future
+		// Imposing this requirement instead of `onlyRoundIsInactive`.
+		// This design leaves the door open for the admin to change `roundActivationTime` to a point in the future
 		// and then change some parameters.
-		// todo-1 The backend and frontend must expect that activation time changes.
-		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable. Such as `nextEthBidPrice`.
+		// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
+		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable, such as `nextEthBidPrice`.
 		// [/Comment-202411236]
 		require(
 			lastBidderAddress == address(0),
 			CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
 		);
 
-		_setActivationTime(newValue_);
+		_setRoundActivationTime(newValue_);
 	}
 
-	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		ethDutchAuctionDurationDivisor = newValue_;
 		emit EthDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
-	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		ethDutchAuctionEndingBidPriceDivisor = newValue_;
 		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
-	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		nextEthBidPriceIncreaseDivisor = newValue_;
 		emit NextEthBidPriceIncreaseDivisorChanged(newValue_);
 	}
 
-	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		cstDutchAuctionDurationDivisor = newValue_;
 		emit CstDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
-	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// require(
 		// 	newValue_ >= CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
 		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCstMinLimitIsTooSmall(
@@ -77,37 +77,37 @@ abstract contract SystemManagement is
 		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 
-	function setMaxMessageLength(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setMaxMessageLength(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		maxMessageLength = newValue_;
 		emit MaxMessageLengthChanged(newValue_);
 	}
 
-	function setTokenReward(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setTokenReward(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		tokenReward = newValue_;
 		emit TokenRewardChanged(newValue_);
 	}
 
-	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		initialDurationUntilMainPrizeDivisor = newValue_;
 		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
 	}
 
-	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		mainPrizeTimeIncrementInMicroSeconds = newValue_;
 		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
 	}
 
-	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		mainPrizeTimeIncrementIncreaseDivisor = newValue_;
 		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
 	}
 
-	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		timeoutDurationToClaimMainPrize = newValue_;
 		emit TimeoutDurationToClaimMainPrizeChanged(newValue_);
 	}
 
-	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
 		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
@@ -119,12 +119,12 @@ abstract contract SystemManagement is
 		emit MainEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setCstRewardAmountMultiplier(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setCstRewardAmountMultiplier(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		cstRewardAmountMultiplier = newValue_;
 		emit CstRewardAmountMultiplierChanged(newValue_);
 	}
 
-	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
 		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + newValue_ + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
@@ -136,7 +136,7 @@ abstract contract SystemManagement is
 		emit ChronoWarriorEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
 		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + newValue_ + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
@@ -148,22 +148,22 @@ abstract contract SystemManagement is
 		emit RaffleTotalEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		numRaffleEthPrizesForBidders = newValue_;
 		emit NumRaffleEthPrizesForBiddersChanged(newValue_);
 	}
 
-	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		numRaffleCosmicSignatureNftsForBidders = newValue_;
 		emit NumRaffleCosmicSignatureNftsForBiddersChanged(newValue_);
 	}
 
-	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		numRaffleCosmicSignatureNftsForRandomWalkNftStakers = newValue_;
 		emit NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(newValue_);
 	}
 
-	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
 		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + newValue_ + charityEthDonationAmountPercentage;
 		// require(
@@ -177,7 +177,7 @@ abstract contract SystemManagement is
 
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		token = CosmicSignatureToken(address(newValue_));
 		emit CosmicSignatureTokenAddressChanged(newValue_);
@@ -185,7 +185,7 @@ abstract contract SystemManagement is
 
 	function setRandomWalkNft(IRandomWalkNFT newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		randomWalkNft = RandomWalkNFT(address(newValue_));
 		emit RandomWalkNftAddressChanged(newValue_);
@@ -193,7 +193,7 @@ abstract contract SystemManagement is
 
 	function setCosmicSignatureNft(ICosmicSignatureNft newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		nft = CosmicSignatureNft(address(newValue_));
 		emit CosmicSignatureNftAddressChanged(newValue_);
@@ -201,7 +201,7 @@ abstract contract SystemManagement is
 
 	function setPrizesWallet(IPrizesWallet newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		prizesWallet = PrizesWallet(address(newValue_));
 		emit PrizesWalletAddressChanged(newValue_);
@@ -209,7 +209,7 @@ abstract contract SystemManagement is
 
 	function setStakingWalletRandomWalkNft(IStakingWalletRandomWalkNft newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		stakingWalletRandomWalkNft = StakingWalletRandomWalkNft(address(newValue_));
 		emit StakingWalletRandomWalkNftAddressChanged(newValue_);
@@ -217,7 +217,7 @@ abstract contract SystemManagement is
 
 	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(address(newValue_)) {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 		emit StakingWalletCosmicSignatureNftAddressChanged(newValue_);
@@ -225,26 +225,26 @@ abstract contract SystemManagement is
 
 	function setMarketingWallet(address newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(newValue_) {
 		marketingWallet = newValue_;
 		emit MarketingWalletAddressChanged(newValue_);
 	}
 
-	function setMarketingWalletCstContributionAmount(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setMarketingWalletCstContributionAmount(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		marketingWalletCstContributionAmount = newValue_;
 		emit MarketingWalletCstContributionAmountChanged(newValue_);
 	}
 
 	function setCharityAddress(address newValue_) external override
 		onlyOwner
-		onlyInactive
+		onlyRoundIsInactive
 		providedAddressIsNonZero(newValue_) {
 		charityAddress = newValue_;
 		emit CharityAddressChanged(newValue_);
 	}
 
-	function setCharityEthDonationAmountPercentage(uint256 newValue_) external override onlyOwner onlyInactive {
+	function setCharityEthDonationAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
 		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + newValue_;
 		// require(

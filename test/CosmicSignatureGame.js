@@ -33,7 +33,7 @@ describe("CosmicSignatureGame", function () {
 				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 			);
 		expect(implementation1AddressAsString_).to.not.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 		const CosmicSignatureGameOpenBid = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
 		const cosmicSignatureGameProxy2 =
 			await hre.upgrades.upgradeProxy(
@@ -73,7 +73,7 @@ describe("CosmicSignatureGame", function () {
 				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 			);
 		expect(implementation1AddressAsString_).to.not.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 		const CosmicSignatureGameOpenBid = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
 		const cosmicSignatureGameOpenBid = await CosmicSignatureGameOpenBid.deploy();
 		await cosmicSignatureGameOpenBid.waitForDeployment();
@@ -103,7 +103,7 @@ describe("CosmicSignatureGame", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 
-		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 
 		const BrokenCharity = await hre.ethers.getContractFactory("BrokenCharity");
 		const brokenCharity = await BrokenCharity.deploy();
@@ -149,12 +149,12 @@ describe("CosmicSignatureGame", function () {
 		expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
 		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
 			// Ownership transfer will succeed regardless if the current bidding round is active or not.
-			await cosmicSignatureGameProxy.setActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
+			await cosmicSignatureGameProxy.setRoundActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
 
 			if (counter_ <= 0) {
-				expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).greaterThan(+1e9);
+				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
 			} else {
-				expect(await cosmicSignatureGameProxy.getDurationUntilActivation()).lessThan(-1e9);
+				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).lessThan(-1e9);
 			}
 			await cosmicSignatureGameProxy.transferOwnership(addr2.address);
 			expect(await cosmicSignatureGameProxy.owner()).to.equal(addr2.address);

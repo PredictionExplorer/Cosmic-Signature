@@ -66,7 +66,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `receive`
 
-	receive() external payable override /*nonReentrant*/ /*onlyActive*/ {
+	receive() external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// Bidding with default parameters.
 		// BidParams memory defaultParams;
 		// // defaultParams.message = "";
@@ -80,7 +80,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidAndDonateToken`
 
-	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		revert("This method is not implemented.");
 	}
 
@@ -88,7 +88,7 @@ abstract contract BiddingOpenBid is
 	// #region `bidAndDonateToken`
 
 	/// @dev ToDo-202412164-2 applies.
-	function bidAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyActive*/ {
+	function bidAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bid(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
@@ -96,7 +96,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidAndDonateNft`
 
-	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		revert("This method is not implemented.");
 	}
 
@@ -104,7 +104,7 @@ abstract contract BiddingOpenBid is
 	// #region `bidAndDonateNft`
 
 	/// @dev ToDo-202412164-2 applies.
-	function bidAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyActive*/ {
+	function bidAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bid(randomWalkNftId_, isOpenBid_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
@@ -113,7 +113,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bid`
 
-	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyActive*/ {
+	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		revert("This method is not implemented.");
 	}
 
@@ -121,7 +121,7 @@ abstract contract BiddingOpenBid is
 	// #region `bid`
 
 	/// @dev ToDo-202412164-2 applies.
-	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*nonReentrant*/ /*onlyActive*/ {
+	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bid(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
 	}
 
@@ -130,7 +130,7 @@ abstract contract BiddingOpenBid is
 
 	/// @param isOpenBid_ Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
 	/// `nextEthBidPrice` will be calculated based on `msg.value`.
-	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyActive*/ {
+	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
 		// #region
 		
 		// BidParams memory params = abi.decode(data_, (BidParams));
@@ -285,7 +285,7 @@ abstract contract BiddingOpenBid is
 				if (nextEthBidPrice_ == 0) {
 					nextEthBidPrice_ = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
-					int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceActivation() + currentTimeOffset_;
+					int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation() + currentTimeOffset_;
 					if (ethDutchAuctionElapsedDuration_ > int256(0)) {
 						// If this assertion fails, further assertions will not necessarily succeed and the behavior will not necessarily be correct.
 						// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor > 1);
@@ -337,7 +337,7 @@ abstract contract BiddingOpenBid is
 		// #enable_smtchecker */
 		{
 			uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
-			int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceActivation();
+			int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
 			return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
 		}
 	}
@@ -358,7 +358,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyActive*/ {
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
@@ -366,7 +366,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyActive*/ {
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
@@ -375,14 +375,14 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithCst`
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*onlyActive*/ {
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
 
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
 		// Comment-202501045 applies.
 
 		// Comment-202409179 applies.
@@ -519,7 +519,7 @@ abstract contract BiddingOpenBid is
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ onlyActive {
+	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ onlyRoundIsActive {
 		require(
 			bytes(message).length <= maxMessageLength,
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)

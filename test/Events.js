@@ -76,7 +76,7 @@ describe("Events", function () {
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		let mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(donor).mint({ value: mintPrice });
@@ -191,7 +191,7 @@ describe("Events", function () {
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		let mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(bidder1).mint({ value: mintPrice });
@@ -212,7 +212,7 @@ describe("Events", function () {
 			.to.emit(prizesWallet, "DonatedNftClaimed")
 			.withArgs(0, bidder1.address, await randomWalkNft.getAddress(), 0, 0);
 	});
-	it("It's not permitted to bid before activation", async function () {
+	it("It's not permitted to bid before round activation", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, charity, donor, bidder1, bidder2, bidder3, daoOwner,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
@@ -223,16 +223,16 @@ describe("Events", function () {
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		const timestampBefore = latestBlock_.timestamp;
 
-		await cosmicSignatureGameProxy.connect(owner).setActivationTime(timestampBefore + 4);
+		await cosmicSignatureGameProxy.connect(owner).setRoundActivationTime(timestampBefore + 4);
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(cosmicSignatureGameProxy.connect(bidder1).bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		await expect(cosmicSignatureGameProxy.connect(bidder1).bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
 		await expect(
 			bidder2.sendTransaction({
 				to: await cosmicSignatureGameProxy.getAddress(),
 				value: nextEthBidPrice_,
 			}),
-		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "SystemIsInactive");
+		).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
 
 		// await hre.ethers.provider.send("evm_increaseTime", [100]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -262,13 +262,13 @@ describe("Events", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 
-		const activationTime_ = 123_456_789_012n;
-		await expect(cosmicSignatureGameProxy.connect(owner).setActivationTime(activationTime_))
-			.to.emit(cosmicSignatureGameProxy, "ActivationTimeChanged")
-			.withArgs(activationTime_);
-		expect(await cosmicSignatureGameProxy.activationTime()).to.equal(activationTime_);
+		const roundActivationTime_ = 123_456_789_012n;
+		await expect(cosmicSignatureGameProxy.connect(owner).setRoundActivationTime(roundActivationTime_))
+			.to.emit(cosmicSignatureGameProxy, "RoundActivationTimeChanged")
+			.withArgs(roundActivationTime_);
+		expect(await cosmicSignatureGameProxy.roundActivationTime()).to.equal(roundActivationTime_);
 
-		// todo-1 setDelayDurationBeforeNextRound
+		// todo-1 setDelayDurationBeforeRoundActivation
 
 		// todo-1 setMarketingWalletCstContributionAmount
 

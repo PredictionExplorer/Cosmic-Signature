@@ -56,8 +56,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
 	/// [/Comment-202412312]
-	/// todo-1 Maybe rename this to `delayDurationBeforeRoundActivation`.
-	uint256 public delayDurationBeforeNextRound;
+	uint256 public delayDurationBeforeRoundActivation;
 
 	/// @notice The current bidding round activation time.
 	/// Starting at this point, people will be allowed to place bids.
@@ -69,9 +68,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411172]
 	/// @dev Comment-202411236 relates.
 	/// Comment-202411168 relates.
-	/// todo-1 Maybe rename this to `roundActivationTime`.
-	/// todo-1 Also consider renaming `onlyInactive` and `onlyActive`.
-	uint256 public activationTime;
+	uint256 public roundActivationTime;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202501025 applies
@@ -85,9 +82,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This divides `ethDutchAuctionBeginningBidPrice`, which has already been multiplied by
 	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202501063]
-	/// @dev todo-1 Develop a test that after activation sets activation time to a point in the future,
-	/// todo-1 doubles this divisor, sets activation time to a point in the past.
+	/// @dev todo-1 Develop a test that after the current time reaches `roundActivationTime`,
+	/// todo-1 sets `roundActivationTime` to a point in the future, doubles this divisor,
+	/// todo-1 sets `roundActivationTime` to a point in the past.
 	/// todo-1 The past point needs to be such that ETH bid price continues to gradually decline.
+	/// todo-1 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
+	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice Next ETH bid price.
@@ -100,10 +100,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
 	/// [/Comment-202411065]
-	/// todo-1 ??? Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
-	/// todo-1 Comment and document that after the owner executes the setter, they must set activation time to a point in the past
-	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
-	/// todo-1 The above now applies to `ethDutchAuctionEndingBidPriceDivisor`.
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.

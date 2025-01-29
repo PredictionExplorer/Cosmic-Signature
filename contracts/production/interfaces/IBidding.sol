@@ -20,16 +20,16 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @notice Emitted when a bid is placed
 	/// @param lastBidderAddress The address of the bidder who placed this bid.
 	/// @param roundNum The current bidding round number.
-	/// todo-1 Reorder the above to the beginning.
+	/// todo-0 Reorder the above to the beginning.
 	/// @param ethBidPrice The price of the bid
 	/// @param randomWalkNftId The ID of the RandomWalk NFT used (or -1)
 	/// @param numCSTTokens The number of CST tokens used (if any)
-	/// todo-1 Rename the above param to `cstBidPrice`.
-	/// todo-1 Maybe reorder the above param to after `ethBidPrice`.
+	/// todo-0 Rename the above param to `cstBidPrice`.
+	/// todo-0 Maybe reorder the above param to after `ethBidPrice`.
 	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
-	/// todo-1 Rename the above param to how I am going to name the respective state variable.
+	/// todo-0 Rename the above param to how I am going to name the respective state variable.
 	/// @param message An optional message from the bidder
-	/// todo-1 Rename to `BidPlaced`.
+	/// todo-0 Rename to `BidPlaced`.
 	event BidEvent(
 		address indexed lastBidderAddress,
 		uint256 indexed roundNum,
@@ -60,8 +60,8 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param message_ The bidder's message associated with the bid.
 	/// May be empty.
 	/// Can be used to store additional information or comments from the bidder.
-	/// todo-1 Rename this method to `bidWithEth`.
-	/// todo-1 Then also rename methods like `bidAndDonate...`.
+	/// todo-0 Rename this method to `bidWithEth`.
+	/// todo-0 Then also rename methods like `bidAndDonate...`.
 	function bid(int256 randomWalkNftId_, string memory message_) external payable;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
@@ -75,7 +75,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns(uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
-	/// The elapsed duration counts since bidding round activation. It can be negative. It makes no sense to use it
+	/// The elapsed duration counts since the current bidding round activation. It can be negative. It makes no sense to use it
 	/// after the end of the Dutch auction.
 	function getEthDutchAuctionDurations() external view returns(uint256, int256);
 

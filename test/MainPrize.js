@@ -14,7 +14,7 @@ describe("MainPrize", function () {
 		const [owner, addr1, addr2, addr3,] = signers;
 	
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		let roundNum = 0;
 

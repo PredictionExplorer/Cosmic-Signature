@@ -7,11 +7,11 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
 
 abstract contract EthDonations is CosmicSignatureGameStorage, IEthDonations {
-	function donateEth() external payable override /*onlyActive*/ {
+	function donateEth() external payable override /*onlyRoundIsActive*/ {
 		emit EthDonated(roundNum, msg.sender, msg.value);
 	}
 
-	function donateEthWithInfo(string calldata data_) external payable override /*onlyActive*/ {
+	function donateEthWithInfo(string calldata data_) external payable override /*onlyRoundIsActive*/ {
 		uint256 ethDonationWithInfoRecordIndex_ = ethDonationWithInfoRecords.length;
 		EthDonationWithInfoRecord storage ethDonationWithInfoRecordReference_ = ethDonationWithInfoRecords.push();
 		ethDonationWithInfoRecordReference_.roundNum = roundNum;

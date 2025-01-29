@@ -42,15 +42,15 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Bidding
 
-	/// @notice Default `delayDurationBeforeNextRound`.
-	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND = (1 hours) / 2;
+	/// @notice Default `delayDurationBeforeRoundActivation`.
+	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION = (1 hours) / 2;
 
-	/// @notice Initial `activationTime`.
+	/// @notice Initial `roundActivationTime`.
 	/// @dev This must be in the future -- to configure our contract after the deployment
-	/// without calling `setActivationTime` and to ensure that hackers won't attempt to bid
+	/// without calling `setRoundActivationTime` and to ensure that hackers won't attempt to bid
 	/// before the deployment script is done configuring the contract.
 	/// Comment-202411168 relates.
-	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
+	uint256 internal constant INITIAL_ROUND_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `ethDutchAuctionDurationDivisor`.
 	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (HOURS_PER_DAY * 2) - 0;

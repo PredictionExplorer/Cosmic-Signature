@@ -17,17 +17,17 @@ interface ISystemManagement is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
 	IBiddingBase {
-	/// @notice Sets `delayDurationBeforeNextRound`.
+	/// @notice Sets `delayDurationBeforeRoundActivation`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setDelayDurationBeforeNextRound(uint256 newValue_) external;
+	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external;
 
-	/// @notice Sets `activationTime`.
+	/// @notice Sets `roundActivationTime`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	/// @dev Comment-202411236 relates and/or applies.
 	/// Comment-202411168 relates and/or applies.
-	function setActivationTime(uint256 newValue_) external;
+	function setRoundActivationTime(uint256 newValue_) external;
 
 	/// @notice Sets `ethDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.

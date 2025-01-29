@@ -13,7 +13,7 @@ describe("Events2", function () {
 		const [owner, addr1, addr2, addr3,] = signers;
 
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		// we need to mint RandomWalk NFTs for all bidders that participate to avoid missing events
 		let tokenPrice = await randomWalkNft.getMintPrice();

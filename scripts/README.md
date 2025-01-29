@@ -20,7 +20,7 @@ because eth_estimateGas function produces very low gasLimit values and because A
     Example config file is located at tasks/default-config (you should copy it and change values)
 	Note: the deployment must be executed with `switchToRuntimeMode` flag set to 'false' (because
 	(we will set time intervals for bidding and claiming prize to lower values)
-    <!-- todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role. -->
+    <!-- todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role. -->
 
 ##### for local testnet:
 
@@ -41,7 +41,7 @@ Note: the main difference between localnet and Sepolia deployment is that for lo
 
 ##### Enable game-mode
 
-    <!-- todo-1 There is no such thing as runtime and maintenance modes any more. Now activation time plays that role. -->
+    <!-- todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role. -->
     PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime-mode.js --network [network-name])
 
 Copy the CosmicSignatureGameProxy contract address and run test scripts:

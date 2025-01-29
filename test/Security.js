@@ -13,7 +13,7 @@ describe("Security", function () {
 		const [owner, addr1, addr2, addr3,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
-		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 
 		// await cosmicSignatureGameProxy.setCosmicSignatureToken(await cosmicSignatureToken.getAddress());
 		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
@@ -24,10 +24,10 @@ describe("Security", function () {
 
 		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
 		// But, hopefully, it will work somehow.
-		await cosmicSignatureGameProxy.setActivationTime(0);
+		await cosmicSignatureGameProxy.setRoundActivationTime(0);
 
 		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		// await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
+		// await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(await cosmicSignatureGameProxy.getAddress());

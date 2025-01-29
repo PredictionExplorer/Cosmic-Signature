@@ -77,8 +77,8 @@ contract CosmicSignatureGame is
 
 		// ethDonationWithInfoRecords =
 		// roundNum =
-		delayDurationBeforeNextRound = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND;
-		activationTime = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		delayDurationBeforeRoundActivation = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION;
+		roundActivationTime = CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME;
 		ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
 		// ethDutchAuctionBeginningBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
@@ -86,12 +86,12 @@ contract CosmicSignatureGame is
 		nextEthBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR;
 
 		// // [Comment-202411211]
-		// // If this condition is `true` it's likely that `setActivationTime` will not be called,
+		// // If this condition is `true` it's likely that `setRoundActivationTime` will not be called,
 		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginningTimeStamp`.
 		// // [/Comment-202411211]
-		// if (CosmicSignatureConstants.INITIAL_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
+		// if (CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
 		// 	// Comment-202411168 applies.
-		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ACTIVATION_TIME;
+		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME;
 		// }
 
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
@@ -152,11 +152,11 @@ contract CosmicSignatureGame is
 
 	/// @dev
 	/// [Comment-202412188]
-	/// One might want to not impose the `onlyInactive` requirement on this -- to leave the door open for the contract owner
+	/// One might want to not impose the `onlyRoundIsInactive` requirement on this -- to leave the door open for the contract owner
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` failing.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyRoundIsInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 

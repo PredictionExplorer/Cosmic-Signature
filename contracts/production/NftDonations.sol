@@ -8,7 +8,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
 abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
-	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyActive {
+	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRoundIsActive {
 	// 	nftAddress.transferFrom(msg.sender, address(this), nftId);
 	// 	// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// 	donatedNfts[numDonatedNfts] = CosmicSignatureConstants.DonatedNft({
@@ -34,7 +34,7 @@ abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// 	emit NftDonationEvent(msg.sender, nftAddress_, roundNum, nftId_, numDonatedNfts - 1);
 	// }
 
-	// function claimDonatedNft(uint256 index) public override /*nonReentrant*/ onlyActive {
+	// function claimDonatedNft(uint256 index) public override /*nonReentrant*/ onlyRoundIsActive {
 	// 	require(index < numDonatedNfts, CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index));
 	//
 	// 	// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
@@ -49,7 +49,7 @@ abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// }
 
 	// /// todo-9 `nonReentrant` not needed here?
-	// function claimManyDonatedNfts(uint256[] calldata indices) external override nonReentrant /*onlyActive*/ {
+	// function claimManyDonatedNfts(uint256[] calldata indices) external override nonReentrant /*onlyRoundIsActive*/ {
 	// 	for ( uint256 counter_ = 0; counter_ < indices.length; ++ counter_ ) {
 	// 		claimDonatedNft(indices[counter_]);
 	// 	}
