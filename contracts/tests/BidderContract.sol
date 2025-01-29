@@ -25,28 +25,28 @@ contract BidderContract {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
 
-	function doBid() external payable {
+	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
+		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
 	}
 
-	function doBid2() external payable {
-		cosmicSignatureGame.bid{ value: msg.value }((-1), "contract bid");
+	function doBidWithEth2() external payable {
+		cosmicSignatureGame.bidWithEth{value: msg.value}((-1), "contract bid");
 	}
 
-	function doBidRWalk(int256 nftId) external payable {
+	function doBidWithEthRWalk(int256 nftId) external payable {
 		uint256 price = cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(cosmicSignatureGame.getNextEthBidPrice(int256(0)));
-		cosmicSignatureGame.bid{ value: price }(nftId, "contract bid rwalk");
+		cosmicSignatureGame.bidWithEth{value: price}(nftId, "contract bid rwalk");
 	}
 
-	function doBidRWalk2(int256 nftId) external payable {
+	function doBidWithEthRWalk2(int256 nftId) external payable {
 		RandomWalkNFT rwalk = cosmicSignatureGame.randomWalkNft();
 		rwalk.setApprovalForAll(address(cosmicSignatureGame), true);
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
-		cosmicSignatureGame.bid{ value: msg.value }(nftId, "contract bid rwalk");
+		cosmicSignatureGame.bidWithEth{value: msg.value}(nftId, "contract bid rwalk");
 	}
 
-	function doBidAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
+	function doBidWithEthAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
 		// nftAddress_.setApprovalForAll(address(cosmicSignatureGame), true);
 		nftAddress_.setApprovalForAll(address(prizesWallet_), true);
@@ -54,7 +54,7 @@ contract BidderContract {
 		uint256 numDonatedNfts_ = prizesWallet_.numDonatedNfts();
 		myDonatedNfts.push(numDonatedNfts_);
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bidAndDonateNft{value: price}((-1), "contract bid with donation", nftAddress_, nftId_);
+		cosmicSignatureGame.bidWithEthAndDonateNft{value: price}((-1), "contract bid with donation", nftAddress_, nftId_);
 	}
 
 	function doClaim() external {
@@ -122,10 +122,10 @@ contract BidderContract {
 		delete myDonatedNfts;
 	}
 
-	function doFailedBid() external payable {
+	function doFailedBidWithEth() external payable {
 		uint256 price = msg.value;
 		blockDeposits = true;
-		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
+		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
 		blockDeposits = false;
 	}
 
@@ -151,9 +151,9 @@ contract BidCNonRecv {
 
 	receive() external payable {}
 
-	function doBid() external payable {
+	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bid{ value: price }((-1), "non-IERC721Receiver bid");
+		cosmicSignatureGame.bidWithEth{value: price}((-1), "non-IERC721Receiver bid");
 	}
 	
 	function doClaim() external {

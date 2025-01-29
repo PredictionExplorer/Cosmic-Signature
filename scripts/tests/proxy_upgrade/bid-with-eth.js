@@ -27,7 +27,7 @@ async function main() {
 	// let bidParams = { message: "bid test", randomWalkNftId: -1, isOpenBid: false };
 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await cosmicSignatureGame.connect(testingAcct).bid(/*params*/ (-1), false, "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
+	await cosmicSignatureGame.connect(testingAcct).bidWithEth(/*params*/ (-1), false, "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
 }
 
 main()

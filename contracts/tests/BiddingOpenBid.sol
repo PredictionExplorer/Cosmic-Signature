@@ -73,64 +73,64 @@ abstract contract BiddingOpenBid is
 		// defaultParams.randomWalkNftId = -1;
 		// // defaultParams.isOpenBid =
 		// bytes memory param_data = abi.encode(defaultParams);
-		// bid(param_data);
-		_bid((-1), false, "");
+		// bidWithEth(param_data);
+		_bidWithEth((-1), false, "");
 	}
 
 	// #endregion
-	// #region `bidAndDonateToken`
+	// #region `bidWithEthAndDonateToken`
 
-	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		revert("This method is not implemented.");
 	}
 
 	// #endregion
-	// #region `bidAndDonateToken`
+	// #region `bidWithEthAndDonateToken`
 
 	/// @dev ToDo-202412164-2 applies.
-	function bidAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
-		_bid(randomWalkNftId_, isOpenBid_, message_);
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
 	// #endregion
-	// #region `bidAndDonateNft`
+	// #region `bidWithEthAndDonateNft`
 
-	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		revert("This method is not implemented.");
 	}
 
 	// #endregion
-	// #region `bidAndDonateNft`
+	// #region `bidWithEthAndDonateNft`
 
 	/// @dev ToDo-202412164-2 applies.
-	function bidAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
-		_bid(randomWalkNftId_, isOpenBid_, message_);
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	// #endregion
-	// #region `bid`
+	// #region `bidWithEth`
 
-	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		revert("This method is not implemented.");
 	}
 
 	// #endregion
-	// #region `bid`
+	// #region `bidWithEth`
 
 	/// @dev ToDo-202412164-2 applies.
-	function bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
-		_bid(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
+	function bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
+		_bidWithEth(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
 	}
 
 	// #endregion
-	// #region `_bid`
+	// #region `_bidWithEth`
 
 	/// @param isOpenBid_ Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
 	/// `nextEthBidPrice` will be calculated based on `msg.value`.
-	function _bid(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
+	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
 		// #region
 		
 		// BidParams memory params = abi.decode(data_, (BidParams));

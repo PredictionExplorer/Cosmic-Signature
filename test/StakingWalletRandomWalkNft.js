@@ -158,7 +158,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		}
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

@@ -140,7 +140,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
 	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
-	/// todo-1 Is it really necessary for this to be configurable?
+	/// todo-1 Is it really necessary for this to be configurable? Maybe so, just in case we add some functiopnality to process the message.
+	/// todo-1 But anyway raise this question.
 	uint256 public maxMessageLength;
 
 	/// @notice Comment-202411064 applies.

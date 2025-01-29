@@ -34,39 +34,39 @@ abstract contract Bidding is
 
 	receive() external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// Bidding with default parameters.
-		_bid((-1), "");
+		_bidWithEth((-1), "");
 	}
 
 	// #endregion
-	// #region `bidAndDonateToken`
+	// #region `bidWithEthAndDonateToken`
 
-	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
-		_bid(randomWalkNftId_, message_);
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
 	}
 
 	// #endregion
-	// #region `bidAndDonateNft`
+	// #region `bidWithEthAndDonateNft`
 
-	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
-		_bid(randomWalkNftId_, message_);
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
 	}
 
 	// #endregion
-	// #region `bid`
+	// #region `bidWithEth`
 
-	function bid(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
-		_bid(randomWalkNftId_, message_);
+	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, message_);
 	}
 
 	// #endregion
-	// #region `_bid`
+	// #region `_bidWithEth`
 
 	/// todo-1 Do we really need `nonReentrant` here?
 	/// todo-1 Keep in mind that this method can be called together with a donation method.
-	function _bid(int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
 		// #region
 
 		// BidType bidType;

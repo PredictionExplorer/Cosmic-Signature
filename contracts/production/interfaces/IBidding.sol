@@ -46,12 +46,12 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	receive() external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an ERC-20 token amount in a single transaction.
-	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an NFT in a single transaction.
 	/// @param nftAddress_ NFT contract address.
 	/// @param nftId_ NFT ID.
-	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid.
 	/// @param randomWalkNftId_ The ID of the RandomWalk NFT to be used for bidding.
@@ -60,9 +60,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param message_ The bidder's message associated with the bid.
 	/// May be empty.
 	/// Can be used to store additional information or comments from the bidder.
-	/// todo-0 Rename this method to `bidWithEth`.
-	/// todo-0 Then also rename methods like `bidAndDonate...`.
-	function bid(int256 randomWalkNftId_, string memory message_) external payable;
+	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
 	/// @param currentTimeOffset_ Comment-202501107 applies.

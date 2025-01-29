@@ -309,7 +309,7 @@ contract MaliciousNft2 is ERC721 {
 	receive() external payable {
 	}
 
-	/// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
+	/// @notice sends bidWithEthAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from_, address to_, uint256 nftId_) public override {
 		// // uint256 price = _game.getNextEthBidPrice(int256(0));
 		// // todo-1 This structure no longer exists.
@@ -322,7 +322,7 @@ contract MaliciousNft2 is ERC721 {
 		// (bool isSuccess_, /*bytes memory retval*/) =
 		// 	// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
 		// 	// todo-1 Besides, this sends zero `value`.
-		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), nftId_));
+		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
 		// if ( ! isSuccess_ ) {
 		// 	assembly {
 		// 		let ptr := mload(0x40)
@@ -337,7 +337,7 @@ contract MaliciousNft2 is ERC721 {
 
 			// This call should revert.
 			// todo-1 But it doesn't, which is probably OK. To be revisited.
-			_game.bidAndDonateNft{value: 1 ether}(-1, "", this, nftId_ + 1);
+			_game.bidWithEthAndDonateNft{value: 1 ether}(-1, "", this, nftId_ + 1);
 
 			-- _counter;
 		}

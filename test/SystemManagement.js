@@ -195,8 +195,8 @@ describe("SystemManagement", function () {
 		expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
 
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
-		await expect(cosmicSignatureGameProxy.bidAndDonateNft((-1), "", owner.address, 0, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
+		await expect(cosmicSignatureGameProxy.bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
+		await expect(cosmicSignatureGameProxy.bidWithEthAndDonateNft((-1), "", owner.address, 0, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
 		await expect(cosmicSignatureGameProxy.bidWithCst(10n ** 30n, "")).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsInactive");
 		// todo-1 This reverts with a different error. It's probably correct, but take another look. Comment.
 		await expect(cosmicSignatureGameProxy.claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "NoBidsPlacedInCurrentRound");
@@ -236,7 +236,7 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.connect(addr2).donateEth({ value: donationAmount_ });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		await cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(123n * 60n);
 		await expect(cosmicSignatureGameProxy.connect(addr1).setDelayDurationBeforeRoundActivation(123n * 60n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
@@ -261,7 +261,7 @@ describe("SystemManagement", function () {
 
 		// The next bidding round has started. So we are allowed to bid.
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	});
 	it("Unauthorized access to restricted methods is denied", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =

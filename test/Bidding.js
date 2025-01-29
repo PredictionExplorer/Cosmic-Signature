@@ -27,9 +27,9 @@ describe("Bidding", function () {
 		// let echamp = await cosmicSignatureGameProxy.tryGetCurrentEnduranceChampion();
 		let echamp = await cosmicSignatureGameProxy.tryGetCurrentChampions();
 		expect(echamp[0]).to.equal(hre.ethers.ZeroAddress);
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: 1 })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InsufficientReceivedBidAmount");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: 1 })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InsufficientReceivedBidAmount");
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ - 1n })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InsufficientReceivedBidAmount");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ - 1n })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InsufficientReceivedBidAmount");
 
 		const initialDurationUntilMainPrize_ = await cosmicSignatureGameProxy.getInitialDurationUntilMainPrize();
 		expect(initialDurationUntilMainPrize_).to.equal(24n * 60n * 60n + 1n);
@@ -40,7 +40,7 @@ describe("Bidding", function () {
 
 		// check that if we sent too much, we get our money back
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ + 1000n, });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ + 1000n, });
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).to.equal(initialDurationUntilMainPrize_);
 		const contractBalance = await hre.ethers.provider.getBalance(cosmicSignatureGameProxy.getAddress());
@@ -61,19 +61,19 @@ describe("Bidding", function () {
 		expect(echamp[0]).to.equal(addr1.address);
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).to.equal(initialDurationUntilMainPrize_ - 100n + mainPrizeTimeIncrement_ - 1n);
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).to.equal(initialDurationUntilMainPrize_ - 100n + mainPrizeTimeIncrement_ - 1n + mainPrizeTimeIncrement_ - 1n);
 
 		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "MainPrizeEarlyClaim");
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		await expect(cosmicSignatureGameProxy.connect(addr2).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "MainPrizeEarlyClaim");
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 100]);
@@ -85,12 +85,12 @@ describe("Bidding", function () {
 		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "MainPrizeClaimDenied");
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		await hre.ethers.provider.send("evm_increaseTime", [100]);
 		await hre.ethers.provider.send("evm_mine");
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		await hre.ethers.provider.send("evm_increaseTime", [10]);
 		await hre.ethers.provider.send("evm_mine");
 
@@ -118,7 +118,7 @@ describe("Bidding", function () {
 
 		// after the prize has been claimed, let's bid again!
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		await expect(cosmicSignatureGameProxy.connect(addr1).claimMainPrize()).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "MainPrizeEarlyClaim");
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
@@ -136,7 +136,7 @@ describe("Bidding", function () {
 
 		// After the main prize claim timeout expires, anyone should be able to claim the prize.
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		roundNum_ = await cosmicSignatureGameProxy.roundNum();
 		expect(await cosmicSignatureGameProxy.getTotalNumBids(roundNum_)).equal(1);
 		expect(await cosmicSignatureGameProxy.getBidderAddressAt(roundNum_, 0)).equal(addr1.address);
@@ -164,8 +164,8 @@ describe("Bidding", function () {
 		// switch to another account and attempt to use nftId=0 which we don't own
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(2n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await expect(cosmicSignatureGameProxy.connect(owner).bid(0, "hello", { value: nextEthPlusRandomWalkNftBidPrice_ * 2n })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "CallerIsNotNftOwner");
-		await cosmicSignatureGameProxy.connect(addr1).bid(0, "hello", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(owner).bidWithEth(0, "hello", { value: nextEthPlusRandomWalkNftBidPrice_ * 2n })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "CallerIsNotNftOwner");
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth(0, "hello", { value: nextEthPlusRandomWalkNftBidPrice_ });
 		tokenPrice = await randomWalkNft.getMintPrice();
 		let tx = await randomWalkNft.connect(owner).mint({ value: tokenPrice });
 		let receipt = await tx.wait();
@@ -173,19 +173,19 @@ describe("Bidding", function () {
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = randomWalkNft.interface.parseLog(log);
 		let token_id = parsed_log.args[0];
-		await expect(cosmicSignatureGameProxy.connect(owner).bid(token_id, "", { value: 0 })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InsufficientReceivedBidAmount");
+		await expect(cosmicSignatureGameProxy.connect(owner).bidWithEth(token_id, "", { value: 0 })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "InsufficientReceivedBidAmount");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(owner).bid(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.connect(owner).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ });
 		// expect(await cosmicSignatureGameProxy.wasRandomWalkNftUsed(token_id)).to.equal(true);
 		expect(await cosmicSignatureGameProxy.usedRandomWalkNfts(token_id)).to.equal(1);
 
 		// try to bid again using the same nftId
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await expect(cosmicSignatureGameProxy.connect(owner).bid(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "UsedRandomWalkNft");
+		await expect(cosmicSignatureGameProxy.connect(owner).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "UsedRandomWalkNft");
 	});
-	it("Shouldn't be possible to bid if bidder doesn't accept refunds on oversized bid() calls", async function () {
+	it("Shouldn't be possible to bid if bidder doesn't accept refunds on oversized bidWithEth calls", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 
 		let donationAmount_ = hre.ethers.parseEther("10");
@@ -196,7 +196,7 @@ describe("Bidding", function () {
 		await cBidder.waitForDeployment();
 
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
-		await expect(cBidder.doFailedBid({ value: donationAmount_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
+		await expect(cBidder.doFailedBidWithEth({ value: donationAmount_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "FundTransferFailed");
 	});
 	it("Shouldn't be possible to bid using very long message", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
@@ -207,16 +207,16 @@ describe("Bidding", function () {
 		const longMsg = "a".repeat(280 + 1);
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), longMsg, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TooLongBidMessage");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), longMsg, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "TooLongBidMessage");
 	});
 	it("getCstDutchAuctionDurations() method works", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1,] = signers;
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		let nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bidWithCst(nextCstBidPrice_, "cst bid");
@@ -245,23 +245,23 @@ describe("Bidding", function () {
 		let token_id = await mint_rwalk(addr1);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(addr1).bid(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
 		token_id = await mint_rwalk(addr2);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(addr2).bid(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
 		token_id = await mint_rwalk(addr3);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(addr3).bid(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
 		token_id = await mint_rwalk(addr4);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(addr4).bid(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr4).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
 		token_id = await mint_rwalk(addr5);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(addr5).bid(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr5).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
@@ -272,21 +272,21 @@ describe("Bidding", function () {
 		// todo-1 Maybe check that now it will revert with "NoLastBidder".
 		// todo-1 Actually it will probably revert because the round is not active yet.
 	});
-	it("After bid() , bid-related counters have correct values", async function () {
+	it("After bidWithEth, bid-related counters have correct values", async function () {
 		const {cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForTesting);
 		
 		let donationAmount_ = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		let tokenPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.mint({ value: tokenPrice }); // nftId=0
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.bid(0n, "rwalk bid", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await cosmicSignatureGameProxy.bidWithEth(0n, "rwalk bid", { value: nextEthPlusRandomWalkNftBidPrice_ });
 
 		// let lastBidType = await cosmicSignatureGameProxy.lastBidType();
 		// expect(lastBidType).to.equal(1);
@@ -317,7 +317,7 @@ describe("Bidding", function () {
 		// let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let amountSent = hre.ethers.parseEther("2");
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cBidder.doBid2({ value: amountSent });
+		await cBidder.doBidWithEth2({ value: amountSent });
 		let balanceAfter = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let expectedBalanceAfter = amountSent - nextEthBidPrice_;
 		expect(expectedBalanceAfter).to.equal(balanceAfter);
@@ -344,7 +344,7 @@ describe("Bidding", function () {
 		let tokenPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.mint({ value: tokenPrice }); // nftId=0
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cBidder.doBidRWalk2(0, { value: amountSent });
+		await cBidder.doBidWithEthRWalk2(0, { value: amountSent });
 		let balanceAfter = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let discountedBidPrice = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		expect(discountedBidPrice).to.equal((nextEthBidPrice_ + 1n) / 2n);
@@ -368,13 +368,13 @@ describe("Bidding", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [counter_ * 60 * 60]);
 			await hre.ethers.provider.send("evm_mine");
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(addr4).bid((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(addr4).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 			durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 			// await hre.ethers.provider.send("evm_mine");
@@ -404,13 +404,13 @@ describe("Bidding", function () {
 			stakeActionIds_.push(log.args.stakeActionId);
 		}
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr4).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr4).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 
 		// We need another time increase to claim as `addr5` (it has no bids, won't get raffle NFTs).
@@ -533,15 +533,15 @@ describe("Bidding", function () {
 		const delayDurationBeforeRoundActivation_ = await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
 		await hre.ethers.provider.send("evm_mine");
@@ -552,7 +552,7 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
 		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeRoundActivation_) - 1]);
 		await hre.ethers.provider.send("evm_mine");
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		// Making CST bid price cheaper.
 		await hre.ethers.provider.send("evm_increaseTime", [20000]);
@@ -598,11 +598,11 @@ describe("Bidding", function () {
 	// 	cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 	//
 	// 	let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	//
 	// 	let bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 0);
 	// 	expect(bAddr).to.equal(addr3.address);
@@ -633,11 +633,11 @@ describe("Bidding", function () {
 	// 	// lets check roundNum > 0 now
 	//
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	//
 	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(1, 0);
 	// 	expect(bAddr).to.equal(addr3.address);
@@ -654,7 +654,7 @@ describe("Bidding", function () {
 	// 	let cstDutchAuctionDurations_ = await cosmicSignatureGameProxy.getCstDutchAuctionDurations();
 	// 	let cstDutchAuctionDuration_ = cstDutchAuctionDurations_[0];
 	// 	let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentEth = spent[0];
 	// 	expect(spentEth).to.equal(nextEthBidPrice_);
@@ -672,7 +672,7 @@ describe("Bidding", function () {
 	//
 	// 	// check that CST and ETH are accumulated in statistics
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+	// 	await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	// 	let totalEthSpent = nextEthBidPrice_ + spentEth;
 	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ addr1.address);
 	// 	spentEth = spent[0];
@@ -699,7 +699,7 @@ describe("Bidding", function () {
 		const [owner, addr1,] = signers;
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid(-1n, "eth bid", {value: nextEthBidPrice_,});
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth(-1n, "eth bid", {value: nextEthBidPrice_,});
 		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InsufficientBalance");
 	});
@@ -710,9 +710,9 @@ describe("Bidding", function () {
 		let donationAmount_ = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", {value: nextEthBidPrice_,});
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", {value: nextEthBidPrice_,});
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 
 		expect(await cosmicSignatureGameProxy.getBidderAddressAt(0, 0)).to.equal(addr1.address);
 		expect(await cosmicSignatureGameProxy.getBidderAddressAt(0, 1)).to.equal(addr2.address);
@@ -738,8 +738,8 @@ describe("Bidding", function () {
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		// See ToDo-202409245-1.
-		// await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
+		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
@@ -758,11 +758,11 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		// See ToDo-202409245-1.
-		// await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
-		await expect(cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
+		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
+		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 	it("Long term bidding with CST doesn't produce irregularities", async function () {
 		if (SKIP_LONG_TESTS) return;
@@ -779,7 +779,7 @@ describe("Bidding", function () {
 				await hre.ethers.provider.send("evm_increaseTime", [timeBump]);
 				await hre.ethers.provider.send("evm_mine");
 				const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-				await cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ });
+				await cosmicSignatureGameProxy.bidWithEth((-1), "", { value: nextEthBidPrice_ });
 				const cstBalanceAmount_ = await cosmicSignatureToken.balanceOf(owner.address);
 				const nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice(1n);
 				if (cstBalanceAmount_ >= nextCstBidPrice_) {
