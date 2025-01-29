@@ -290,7 +290,7 @@ abstract contract BiddingOpenBid is
 						// If this assertion fails, further assertions will not necessarily succeed and the behavior will not necessarily be correct.
 						// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor > 1);
 
-						// Adding 1 to ensure that the result is a nonzero.
+						// Comment-202501301 applies.
 						uint256 ethDutchAuctionEndingBidPrice_ = nextEthBidPrice_ / ethDutchAuctionEndingBidPriceDivisor + 1;
 
 						// #enable_asserts assert(ethDutchAuctionEndingBidPrice_ > 0 && ethDutchAuctionEndingBidPrice_ <= nextEthBidPrice_);
@@ -320,9 +320,12 @@ abstract contract BiddingOpenBid is
 		// #enable_smtchecker */
 		{
 			// #enable_asserts assert(ethBidPrice_ > 0 && ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1));
+
+			// Comment-202501303 applies.
 			uint256 ethPlusRandomWalkNftBidPrice_ =
 				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
 				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+
 			// #enable_asserts assert(ethPlusRandomWalkNftBidPrice_ > 0 && ethPlusRandomWalkNftBidPrice_ <= ethBidPrice_);
 			return ethPlusRandomWalkNftBidPrice_;
 		}

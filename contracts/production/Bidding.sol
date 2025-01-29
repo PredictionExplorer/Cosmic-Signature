@@ -198,7 +198,9 @@ abstract contract Bidding is
 						// If this assertion fails, further assertions will not necessarily succeed and the behavior will not necessarily be correct.
 						// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor > 1);
 
+						// [Comment-202501301]
 						// Adding 1 to ensure that the result is a nonzero.
+						// [/Comment-202501301]
 						uint256 ethDutchAuctionEndingBidPrice_ = nextEthBidPrice_ / ethDutchAuctionEndingBidPriceDivisor + 1;
 
 						// #enable_asserts assert(ethDutchAuctionEndingBidPrice_ > 0 && ethDutchAuctionEndingBidPrice_ <= nextEthBidPrice_);
@@ -228,9 +230,14 @@ abstract contract Bidding is
 		// #enable_smtchecker */
 		{
 			// #enable_asserts assert(ethBidPrice_ > 0 && ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1));
+
+			// [Comment-202501303]
+			// This formula is guaranteed to produce a nonzero result.
+			// [/Comment-202501303]
 			uint256 ethPlusRandomWalkNftBidPrice_ =
 				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
 				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+
 			// #enable_asserts assert(ethPlusRandomWalkNftBidPrice_ > 0 && ethPlusRandomWalkNftBidPrice_ <= ethBidPrice_);
 			return ethPlusRandomWalkNftBidPrice_;
 		}
@@ -464,9 +471,10 @@ abstract contract Bidding is
 
 			// [Comment-202501044]
 			// It's probably more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
-			// todo-0 Cross-ref with where we ensure that ETH bid price cannot be zero, even with a RandomWalk NFT.
-			// todo-0 Make sure it's correct to make this validation at this point, rather than sooner.
-			// todo-0 Write a comment explaining things.
+			// This logic assumes that ETH bid price is a nonzero.
+			// During an ETH Dutch auction, we ensure that near Comment-202501301 and Comment-202501303.
+			// todo-1 Make sure it's correct to make this validation at this point, rather than sooner, like near Comment-202501045.
+			// todo-1 Maybe write a comment explaining things.
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
