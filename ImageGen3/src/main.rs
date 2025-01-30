@@ -828,7 +828,7 @@ fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize,
 }
 
 // ======================================================================
-// Drawing function that can optionally skip Gaussian blur
+// Drawing function (same as original) — no changes
 // ======================================================================
 fn draw_line_segment_additive_gradient_with_blur(
     accum: &mut [(f64, f64, f64)],
@@ -906,12 +906,16 @@ fn draw_line_segment_additive_gradient_with_blur(
         let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
         let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
 
+        // Add core brightness
         accum[idx].0 += r * blur_core_brightness;
         accum[idx].1 += g * blur_core_brightness;
         accum[idx].2 += b * blur_core_brightness;
     }
 }
 
+// ======================================================================
+// Simple color gradient generator
+// ======================================================================
 fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
     let mut hue = rng.gen_range(0.0, 360.0);
@@ -951,6 +955,9 @@ fn generate_body_color_sequences(
     ]
 }
 
+// ======================================================================
+// A SINGLE “lines‑only” image from all steps, done in step order
+// ======================================================================
 fn generate_lines_only_single_image(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -960,7 +967,7 @@ fn generate_lines_only_single_image(
     blur_core_brightness: f64,
     disable_blur: bool,
 ) -> RgbaImage {
-    println!("Generating lines-only single image...");
+    println!("Generating lines-only single image (incremental, single-thread).");
 
     let width = out_size;
     let height = out_size;
@@ -1013,89 +1020,74 @@ fn generate_lines_only_single_image(
     let blur_radius_px =
         if disable_blur { 0 } else { (blur_radius_fraction * smaller_dim).round() as usize };
 
-    // 2) accumulate in parallel
-    let accum_final = (0..total_steps)
-        .into_par_iter()
-        .fold(
-            || vec![(0.0, 0.0, 0.0); npix],
-            |mut local_accum, step| {
-                let p0 = positions[0][step];
-                let p1 = positions[1][step];
-                let p2 = positions[2][step];
+    // 2) Single "accum" buffer for the entire set of steps
+    let mut accum = vec![(0.0, 0.0, 0.0); npix];
 
-                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
-                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
-                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+    // Add lines in ascending step order
+    for step in 0..total_steps {
+        let p0 = positions[0][step];
+        let p1 = positions[1][step];
+        let p2 = positions[2][step];
 
-                let (x0, y0) = to_pixel(p0[0], p0[1]);
-                let (x1, y1) = to_pixel(p1[0], p1[1]);
-                let (x2, y2) = to_pixel(p2[0], p2[1]);
+        let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+        let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+        let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
 
-                // Draw lines with/without blur
-                draw_line_segment_additive_gradient_with_blur(
-                    &mut local_accum,
-                    width,
-                    height,
-                    x0,
-                    y0,
-                    x1,
-                    y1,
-                    c0,
-                    c1,
-                    blur_radius_px,
-                    blur_strength,
-                    blur_core_brightness,
-                    disable_blur,
-                );
-                draw_line_segment_additive_gradient_with_blur(
-                    &mut local_accum,
-                    width,
-                    height,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    c1,
-                    c2,
-                    blur_radius_px,
-                    blur_strength,
-                    blur_core_brightness,
-                    disable_blur,
-                );
-                draw_line_segment_additive_gradient_with_blur(
-                    &mut local_accum,
-                    width,
-                    height,
-                    x2,
-                    y2,
-                    x0,
-                    y0,
-                    c2,
-                    c0,
-                    blur_radius_px,
-                    blur_strength,
-                    blur_core_brightness,
-                    disable_blur,
-                );
+        let (x0, y0) = to_pixel(p0[0], p0[1]);
+        let (x1, y1) = to_pixel(p1[0], p1[1]);
+        let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-                local_accum
-            },
-        )
-        .reduce(
-            || vec![(0.0, 0.0, 0.0); npix],
-            |mut acc, local_acc| {
-                for (i, (r, g, b)) in local_acc.into_iter().enumerate() {
-                    acc[i].0 += r;
-                    acc[i].1 += g;
-                    acc[i].2 += b;
-                }
-                acc
-            },
+        // Draw lines
+        draw_line_segment_additive_gradient_with_blur(
+            &mut accum,
+            width,
+            height,
+            x0,
+            y0,
+            x1,
+            y1,
+            c0,
+            c1,
+            blur_radius_px,
+            blur_strength,
+            blur_core_brightness,
+            disable_blur,
         );
+        draw_line_segment_additive_gradient_with_blur(
+            &mut accum,
+            width,
+            height,
+            x1,
+            y1,
+            x2,
+            y2,
+            c1,
+            c2,
+            blur_radius_px,
+            blur_strength,
+            blur_core_brightness,
+            disable_blur,
+        );
+        draw_line_segment_additive_gradient_with_blur(
+            &mut accum,
+            width,
+            height,
+            x2,
+            y2,
+            x0,
+            y0,
+            c2,
+            c0,
+            blur_radius_px,
+            blur_strength,
+            blur_core_brightness,
+            disable_blur,
+        );
+    }
 
-    // 3) Convert accum -> RgbaImage
+    // 3) Convert accum -> RgbaImage (normalize 0..1 => 0..255)
     let mut maxval = 0.0;
-    for &(r, g, b) in &accum_final {
+    for &(r, g, b) in &accum {
         let m = r.max(g).max(b);
         if m > maxval {
             maxval = m;
@@ -1107,7 +1099,7 @@ fn generate_lines_only_single_image(
 
     let mut img = RgbaImage::new(width, height);
     for (i, pixel) in img.pixels_mut().enumerate() {
-        let (r, g, b) = accum_final[i];
+        let (r, g, b) = accum[i];
         let rr = (r / maxval).clamp(0.0, 1.0) * 255.0;
         let gg = (g / maxval).clamp(0.0, 1.0) * 255.0;
         let bb = (b / maxval).clamp(0.0, 1.0) * 255.0;
@@ -1117,7 +1109,9 @@ fn generate_lines_only_single_image(
     img
 }
 
-/// Generate frames for a lines-only animation (color-additive mode).
+// ======================================================================
+// INCREMENTAL approach to generate frames for lines-only animation
+// ======================================================================
 fn generate_lines_only_frames_raw(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -1132,8 +1126,15 @@ fn generate_lines_only_frames_raw(
     if total_steps == 0 {
         return vec![];
     }
+
+    // EXACT SAME frame count as old approach
     let total_frames =
         if frame_interval == 0 { 1 } else { (total_steps + frame_interval - 1) / frame_interval };
+
+    println!(
+        "Generating {} frames incrementally (single-thread), each with up to that frame's steps.",
+        total_frames
+    );
 
     // bounding box
     let mut min_x = INFINITY;
@@ -1177,107 +1178,123 @@ fn generate_lines_only_frames_raw(
         (px as f32, py as f32)
     };
 
-    // blur radius
     let smaller_dim = (width as f64).min(height as f64);
     let blur_radius_px =
         if disable_blur { 0 } else { (blur_radius_fraction * smaller_dim).round() as usize };
 
-    // We'll parallelize by frame
-    (0..total_frames)
-        .into_par_iter()
-        .map(|frame_idx| {
-            let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
+    // We do it incrementally:
+    //   - Keep one accum array of floats
+    //   - For frame i, we only add lines for steps from "old_end" to "clamp_end"
+    //   - Then snapshot the accum -> final frame
+    let mut accum = vec![(0.0, 0.0, 0.0); npix];
+    let mut frames = Vec::with_capacity(total_frames);
 
-            // accum array
-            let mut accum = vec![(0.0, 0.0, 0.0); npix];
+    let mut prev_end = 0;
+    for frame_idx in 0..total_frames {
+        // Old code's clamp_end = min((frame_idx+1)*frame_interval, total_steps)
+        let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
 
-            // draw lines from step=0..clamp_end
-            for step in 0..clamp_end {
-                let p0 = positions[0][step];
-                let p1 = positions[1][step];
-                let p2 = positions[2][step];
+        // Add new steps in ascending order
+        for step in prev_end..clamp_end {
+            let p0 = positions[0][step];
+            let p1 = positions[1][step];
+            let p2 = positions[2][step];
 
-                let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
-                let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
-                let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
+            let c0 = body_colors[0][step.min(body_colors[0].len() - 1)];
+            let c1 = body_colors[1][step.min(body_colors[1].len() - 1)];
+            let c2 = body_colors[2][step.min(body_colors[2].len() - 1)];
 
-                let (x0, y0) = to_pixel(p0[0], p0[1]);
-                let (x1, y1) = to_pixel(p1[0], p1[1]);
-                let (x2, y2) = to_pixel(p2[0], p2[1]);
+            let (x0, y0) = to_pixel(p0[0], p0[1]);
+            let (x1, y1) = to_pixel(p1[0], p1[1]);
+            let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-                draw_line_segment_additive_gradient_with_blur(
-                    &mut accum,
-                    width,
-                    height,
-                    x0,
-                    y0,
-                    x1,
-                    y1,
-                    c0,
-                    c1,
-                    blur_radius_px,
-                    blur_strength,
-                    blur_core_brightness,
-                    disable_blur,
-                );
-                draw_line_segment_additive_gradient_with_blur(
-                    &mut accum,
-                    width,
-                    height,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    c1,
-                    c2,
-                    blur_radius_px,
-                    blur_strength,
-                    blur_core_brightness,
-                    disable_blur,
-                );
-                draw_line_segment_additive_gradient_with_blur(
-                    &mut accum,
-                    width,
-                    height,
-                    x2,
-                    y2,
-                    x0,
-                    y0,
-                    c2,
-                    c0,
-                    blur_radius_px,
-                    blur_strength,
-                    blur_core_brightness,
-                    disable_blur,
-                );
+            // Draw lines for this step
+            draw_line_segment_additive_gradient_with_blur(
+                &mut accum,
+                width,
+                height,
+                x0,
+                y0,
+                x1,
+                y1,
+                c0,
+                c1,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                disable_blur,
+            );
+            draw_line_segment_additive_gradient_with_blur(
+                &mut accum,
+                width,
+                height,
+                x1,
+                y1,
+                x2,
+                y2,
+                c1,
+                c2,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                disable_blur,
+            );
+            draw_line_segment_additive_gradient_with_blur(
+                &mut accum,
+                width,
+                height,
+                x2,
+                y2,
+                x0,
+                y0,
+                c2,
+                c0,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                disable_blur,
+            );
+        }
+
+        // Now "snapshot" accum into an ImageBuffer
+        // Find max for normalization
+        let mut maxval = 0.0;
+        for &(r, g, b) in &accum {
+            let m = r.max(g).max(b);
+            if m > maxval {
+                maxval = m;
             }
+        }
+        if maxval < 1e-14 {
+            maxval = 1.0;
+        }
 
-            // scale accum -> [0..255]
-            let mut maxval = 0.0;
-            for (r, g, b) in &accum {
-                let m = r.max(*g).max(*b);
-                if m > maxval {
-                    maxval = m;
-                }
+        let mut img = ImageBuffer::new(width, height);
+        for y in 0..height {
+            for x in 0..width {
+                let idx = (y as usize) * w_usize + (x as usize);
+                let (r, g, b) = accum[idx];
+                let rr = (r / maxval).clamp(0.0, 1.0) * 255.0;
+                let gg = (g / maxval).clamp(0.0, 1.0) * 255.0;
+                let bb = (b / maxval).clamp(0.0, 1.0) * 255.0;
+                img.put_pixel(x, y, Rgb([rr as u8, gg as u8, bb as u8]));
             }
-            if maxval < 1e-14 {
-                maxval = 1.0;
-            }
+        }
 
-            let mut img = ImageBuffer::new(width, height);
-            for y in 0..height {
-                for x in 0..width {
-                    let idx = (y as usize) * w_usize + (x as usize);
-                    let (r, g, b) = accum[idx];
-                    let rr = (r / maxval).clamp(0.0, 1.0) * 255.0;
-                    let gg = (g / maxval).clamp(0.0, 1.0) * 255.0;
-                    let bb = (b / maxval).clamp(0.0, 1.0) * 255.0;
-                    img.put_pixel(x, y, Rgb([rr as u8, gg as u8, bb as u8]));
-                }
-            }
-            img
-        })
-        .collect()
+        frames.push(img);
+        prev_end = clamp_end;
+
+        // If clamp_end == total_steps, we've already drawn all steps
+        // The remaining frames (if any) would all look the same, but the old code
+        // stops once we reach the final step anyway (no more frames).
+        if clamp_end == total_steps {
+            // For strict equivalence, we break here because the old code wouldn't
+            // create “extra” frames if `(frame_idx+1)*frame_interval > total_steps`.
+            break;
+        }
+    }
+
+    frames
 }
 
 // ======================================================================
@@ -1660,7 +1677,7 @@ fn main() {
     // 2) Generate color sequences (one per body)
     let colors = generate_body_color_sequences(&mut rng, args.num_steps);
 
-    // 3) Single lines‐only image from all steps, auto‐leveled
+    // 3) Single lines‐only image from all steps (incremental, single‐thread)
     let single_img = generate_lines_only_single_image(
         &positions,
         &colors,
