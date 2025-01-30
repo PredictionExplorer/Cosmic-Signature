@@ -1,6 +1,8 @@
 use clap::Parser;
 use hex;
-use image::{DynamicImage, ImageBuffer, Rgb, Rgba, RgbaImage};
+use image::{
+    codecs::avif::AvifEncoder, DynamicImage, ImageBuffer, ImageEncoder, Rgb, Rgba, RgbaImage,
+};
 use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
 use line_drawing::Bresenham;
@@ -17,6 +19,10 @@ use std::f64::{INFINITY, NEG_INFINITY};
 use std::fs;
 use std::io::Write;
 use std::process::{Command, Stdio};
+// For AVIF saving:
+use std::error::Error;
+use std::fs::File;
+use std::io::BufWriter; // Add this import at the top
 
 /// We embed data of dimension LLE_M for the Lyapunov exponent calculation.
 const LLE_M: usize = 3;
@@ -115,6 +121,22 @@ struct Args {
     /// Brightness multiplier for the sharp core line
     #[arg(long, default_value_t = 1.0)]
     blur_core_brightness: f64,
+
+    /// Disable saving PNG (by default we save PNG)
+    #[arg(long, default_value_t = false)]
+    disable_png: bool,
+
+    /// Disable saving AVIF (by default we save AVIF)
+    #[arg(long, default_value_t = false)]
+    disable_avif: bool,
+
+    /// AVIF "speed" 0..10 (0=slowest/best, 10=fastest/worst)
+    #[arg(long, default_value_t = 0)]
+    avif_speed: u8,
+
+    /// AVIF "quality" 0..100 (0=best, 100=worst)
+    #[arg(long, default_value_t = 90)]
+    avif_quality: u8,
 }
 
 // ======================================================================
@@ -362,18 +384,10 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
         for pos in body_pos {
             let px = pos[0];
             let py = pos[1];
-            if px < min_x {
-                min_x = px;
-            }
-            if px > max_x {
-                max_x = px;
-            }
-            if py < min_y {
-                min_y = py;
-            }
-            if py > max_y {
-                max_y = py;
-            }
+            min_x = min_x.min(px);
+            max_x = max_x.max(px);
+            min_y = min_y.min(py);
+            max_y = max_y.max(py);
         }
     }
 
@@ -395,7 +409,7 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
     }
 }
 
-/// A measure of “non‐chaoticness”: lower = more regular orbits
+/// A measure of "non‐chaoticness": lower = more regular orbits
 fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     if len == 0 {
@@ -592,7 +606,7 @@ fn select_best_trajectory(
             let total_energy = calculate_total_energy(bodies);
             let ang_mom = calculate_total_angular_momentum(bodies).norm();
 
-            // Filter out orbits that aren’t bound or have negligible angular momentum
+            // Filter out orbits that aren't bound or have negligible angular momentum
             if total_energy >= 0.0 || ang_mom < 1e-3 {
                 None
             } else {
@@ -808,12 +822,6 @@ fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize,
 // ======================================================================
 // Lines‐Only Drawing with Gaussian Blur approach
 // ======================================================================
-
-/// Draw a single line segment with a "glow" approach:
-/// 1) Draw line into a temp buffer
-/// 2) Gaussian-blur that temp buffer
-/// 3) Add (blur_strength) of blurred line to main accum
-/// 4) Draw a crisp line directly on accum (multiplied by blur_core_brightness)
 fn draw_line_segment_additive_gradient_with_blur(
     accum: &mut [(f64, f64, f64)],
     width: u32,
@@ -896,7 +904,6 @@ fn draw_line_segment_additive_gradient_with_blur(
     }
 }
 
-/// Generate a color gradient for a single body across `length` steps
 fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
     let mut hue = rng.gen_range(0.0, 360.0);
@@ -925,7 +932,6 @@ fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec
     colors
 }
 
-/// Generate color gradients for all 3 bodies
 fn generate_body_color_sequences(
     rng: &mut Sha3RandomByteStream,
     length: usize,
@@ -937,8 +943,6 @@ fn generate_body_color_sequences(
     ]
 }
 
-/// Single lines‐only image (additive color) with all timesteps
-/// Now uses blurred line drawing in each step
 fn generate_lines_only_single_image(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -957,25 +961,17 @@ fn generate_lines_only_single_image(
         return RgbaImage::new(width, height);
     }
 
-    // 1) Find bounding box
+    // 1) bounding box
     let mut min_x = INFINITY;
     let mut min_y = INFINITY;
     let mut max_x = NEG_INFINITY;
     let mut max_y = NEG_INFINITY;
     for body_idx in 0..positions.len() {
         for &p in &positions[body_idx] {
-            if p[0] < min_x {
-                min_x = p[0];
-            }
-            if p[0] > max_x {
-                max_x = p[0];
-            }
-            if p[1] < min_y {
-                min_y = p[1];
-            }
-            if p[1] > max_y {
-                max_y = p[1];
-            }
+            min_x = min_x.min(p[0]);
+            max_x = max_x.max(p[0]);
+            min_y = min_y.min(p[1]);
+            max_y = max_y.max(p[1]);
         }
     }
     if (max_x - min_x).abs() < 1e-12 {
@@ -995,7 +991,6 @@ fn generate_lines_only_single_image(
         max_y += 0.05 * wy;
     }
 
-    // Helper to convert from world coords to pixel coords
     let to_pixel = |x: f64, y: f64| -> (f32, f32) {
         let ww = max_x - min_x;
         let hh = max_y - min_y;
@@ -1004,11 +999,11 @@ fn generate_lines_only_single_image(
         (px as f32, py as f32)
     };
 
-    // Compute an integer blur radius based on fraction
+    // blur radius
     let smaller_dim = (width as f64).min(height as f64);
     let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
 
-    // 2) We'll accumulate in "accum"
+    // 2) accumulate in parallel
     let accum_final = (0..total_steps)
         .into_par_iter()
         .fold(
@@ -1086,7 +1081,6 @@ fn generate_lines_only_single_image(
         );
 
     // 3) Convert accum -> RgbaImage
-    // Find maxval for scaling
     let mut maxval = 0.0;
     for &(r, g, b) in &accum_final {
         let m = r.max(g).max(b);
@@ -1110,8 +1104,7 @@ fn generate_lines_only_single_image(
     img
 }
 
-/// Generate frames of lines‐only drawings in color‐additive mode (with blur).
-/// Each frame i includes lines from steps [0..i*frame_interval).
+/// Generate frames for a lines-only animation (color-additive mode, with blur).
 fn generate_lines_only_frames_raw(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -1135,18 +1128,10 @@ fn generate_lines_only_frames_raw(
     let mut max_y = NEG_INFINITY;
     for body_idx in 0..positions.len() {
         for &p in &positions[body_idx] {
-            if p[0] < min_x {
-                min_x = p[0];
-            }
-            if p[0] > max_x {
-                max_x = p[0];
-            }
-            if p[1] < min_y {
-                min_y = p[1];
-            }
-            if p[1] > max_y {
-                max_y = p[1];
-            }
+            min_x = min_x.min(p[0]);
+            max_x = max_x.max(p[0]);
+            min_y = min_y.min(p[1]);
+            max_y = max_y.max(p[1]);
         }
     }
     if (max_x - min_x).abs() < 1e-12 {
@@ -1178,7 +1163,7 @@ fn generate_lines_only_frames_raw(
         (px as f32, py as f32)
     };
 
-    // Compute blur radius in pixels
+    // blur radius
     let smaller_dim = (width as f64).min(height as f64);
     let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
 
@@ -1188,10 +1173,10 @@ fn generate_lines_only_frames_raw(
         .map(|frame_idx| {
             let clamp_end = ((frame_idx + 1) * frame_interval).min(total_steps);
 
-            // accum array of (r,g,b)
+            // accum array
             let mut accum = vec![(0.0, 0.0, 0.0); npix];
 
-            // For all steps up to clamp_end, draw lines (with blur)
+            // draw lines from step=0..clamp_end
             for step in 0..clamp_end {
                 let p0 = positions[0][step];
                 let p1 = positions[1][step];
@@ -1249,7 +1234,7 @@ fn generate_lines_only_frames_raw(
                 );
             }
 
-            // Scale accum -> [0..255]
+            // scale accum -> [0..255]
             let mut maxval = 0.0;
             for (r, g, b) in &accum {
                 let m = r.max(*g).max(*b);
@@ -1264,7 +1249,7 @@ fn generate_lines_only_frames_raw(
             let mut img = ImageBuffer::new(width, height);
             for y in 0..height {
                 for x in 0..width {
-                    let idx = (y as usize) * (w_usize) + (x as usize);
+                    let idx = (y as usize) * w_usize + (x as usize);
                     let (r, g, b) = accum[idx];
                     let rr = (r / maxval).clamp(0.0, 1.0) * 255.0;
                     let gg = (g / maxval).clamp(0.0, 1.0) * 255.0;
@@ -1490,6 +1475,34 @@ fn create_video_from_frames_in_memory(
 }
 
 // ======================================================================
+// Save an RGB image as AVIF using the built-in image crate (0.25.1+, features=["avif"])
+// ======================================================================
+fn save_image_as_avif(
+    rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>,
+    path: &str,
+    speed: u8,
+    quality: u8,
+) -> Result<(), Box<dyn Error>> {
+    let dyn_img = DynamicImage::ImageRgb8(rgb_img.clone());
+    let file = File::create(path)?;
+    let writer = BufWriter::new(file);
+
+    let speed_clamped = speed.min(10);
+    let quality_clamped = quality.min(100);
+
+    let encoder = AvifEncoder::new_with_speed_quality(writer, speed_clamped, quality_clamped);
+    encoder.write_image(
+        dyn_img.as_bytes(),
+        dyn_img.width(),
+        dyn_img.height(),
+        dyn_img.color().into(),
+    )?;
+
+    println!("Saved AVIF => {}, speed={}, quality={}", path, speed_clamped, quality_clamped);
+    Ok(())
+}
+
+// ======================================================================
 // main
 // ======================================================================
 fn main() {
@@ -1577,15 +1590,27 @@ fn main() {
         args.levels_gamma,
     );
 
-    // Save PNG
-    let png_path = format!("pics/{}.png", args.file_name);
-    if let Err(e) = single_img_al.save(&png_path) {
-        eprintln!("Error saving lines-only image: {:?}", e);
-    } else {
-        println!("Saved lines-only image -> {}", png_path);
+    // 4) Save PNG if not disabled
+    if !args.disable_png {
+        let png_path = format!("pics/{}.png", args.file_name);
+        if let Err(e) = single_img_al.save(&png_path) {
+            eprintln!("Error saving PNG image: {:?}", e);
+        } else {
+            println!("Saved PNG => {}", png_path);
+        }
     }
 
-    // 4) Lines‐only video
+    // 5) Save AVIF if not disabled
+    if !args.disable_avif {
+        let avif_path = format!("pics/{}.avif", args.file_name);
+        if let Err(e) =
+            save_image_as_avif(&single_img_al, &avif_path, args.avif_speed, args.avif_quality)
+        {
+            eprintln!("Error saving AVIF: {:?}", e);
+        }
+    }
+
+    // 6) Lines‐only video
     let num_seconds = 30;
     let target_frames = 60 * num_seconds;
     let frame_interval =
@@ -1609,9 +1634,9 @@ fn main() {
         args.levels_gamma,
     );
 
-    // Create video from frames
+    // Create video
     let video_filename = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_in_memory(&lines_frames, &video_filename, 60);
 
-    println!("Done. Created 1 lines image and 1 lines video (with blurred lines).");
+    println!("Done. Created final image(s) and video (blurred lines).");
 }
