@@ -102,6 +102,19 @@ struct Args {
     /// Image/video width/height in pixels
     #[arg(long, default_value_t = 1800)]
     frame_size: u32,
+
+    /// Fraction of the smaller image dimension to use as the blur radius
+    /// e.g. 0.01 = 1% of min(width,height)
+    #[arg(long, default_value_t = 0.01)]
+    blur_radius_fraction: f64,
+
+    /// How strongly the blurred line is added
+    #[arg(long, default_value_t = 1.0)]
+    blur_strength: f64,
+
+    /// Brightness multiplier for the sharp core line
+    #[arg(long, default_value_t = 1.0)]
+    blur_core_brightness: f64,
 }
 
 // ======================================================================
@@ -700,13 +713,108 @@ fn select_best_trajectory(
 }
 
 // ======================================================================
-// Lines‐Only Drawing
+// Gaussian blur (2-pass, separable) for an in-memory buffer of (r,g,b) floats
+// ======================================================================
+fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
+    if radius == 0 {
+        return vec![1.0]; // trivial "no-blur" kernel
+    }
+    let sigma = radius as f64 / 2.0_f64.max(1.0);
+    let two_sigma_sq = 2.0 * sigma * sigma;
+    let mut kernel = Vec::with_capacity(2 * radius + 1);
+    let mut sum = 0.0;
+    for i in 0..(2 * radius + 1) {
+        let x = i as f64 - radius as f64;
+        let val = (-x * x / two_sigma_sq).exp();
+        kernel.push(val);
+        sum += val;
+    }
+    // Normalize
+    for v in kernel.iter_mut() {
+        *v /= sum;
+    }
+    kernel
+}
+
+fn gaussian_blur_1d(
+    input: &[(f64, f64, f64)],
+    output: &mut [(f64, f64, f64)],
+    width: usize,
+    height: usize,
+    kernel: &[f64],
+    radius: usize,
+    horizontal: bool,
+) {
+    // If radius == 0, skip
+    if radius == 0 {
+        output.copy_from_slice(input);
+        return;
+    }
+    output.fill((0.0, 0.0, 0.0));
+    let k_len = kernel.len();
+
+    if horizontal {
+        for y in 0..height {
+            let row_start = y * width;
+            for x in 0..width {
+                let mut rsum = 0.0;
+                let mut gsum = 0.0;
+                let mut bsum = 0.0;
+                for k in 0..k_len {
+                    let dx = k as isize - radius as isize;
+                    let xx = (x as isize + dx).clamp(0, width as isize - 1) as usize;
+                    let pix = input[row_start + xx];
+                    let w = kernel[k];
+                    rsum += pix.0 * w;
+                    gsum += pix.1 * w;
+                    bsum += pix.2 * w;
+                }
+                output[row_start + x] = (rsum, gsum, bsum);
+            }
+        }
+    } else {
+        // Vertical pass
+        for x in 0..width {
+            for y in 0..height {
+                let mut rsum = 0.0;
+                let mut gsum = 0.0;
+                let mut bsum = 0.0;
+                for k in 0..k_len {
+                    let dy = k as isize - radius as isize;
+                    let yy = (y as isize + dy).clamp(0, height as isize - 1) as usize;
+                    let pix = input[yy * width + x];
+                    let w = kernel[k];
+                    rsum += pix.0 * w;
+                    gsum += pix.1 * w;
+                    bsum += pix.2 * w;
+                }
+                output[y * width + x] = (rsum, gsum, bsum);
+            }
+        }
+    }
+}
+
+fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize, radius: usize) {
+    if radius == 0 {
+        return;
+    }
+    let kernel = build_gaussian_kernel(radius);
+    // Temp for 1D pass
+    let mut temp = vec![(0.0, 0.0, 0.0); width * height];
+    gaussian_blur_1d(buffer, &mut temp, width, height, &kernel, radius, true); // horizontal pass
+    gaussian_blur_1d(&temp, buffer, width, height, &kernel, radius, false); // vertical pass
+}
+
+// ======================================================================
+// Lines‐Only Drawing with Gaussian Blur approach
 // ======================================================================
 
-/// Draw a single line segment onto a local accumulator “(r,g,b)” buffer
-/// Color is interpolated from col0 to col1. `small_weight` is the scale factor.
-/// Accumulator is an array of `(f64, f64, f64)`.
-fn draw_line_segment_additive_gradient(
+/// Draw a single line segment with a "glow" approach:
+/// 1) Draw line into a temp buffer
+/// 2) Gaussian-blur that temp buffer
+/// 3) Add (blur_strength) of blurred line to main accum
+/// 4) Draw a crisp line directly on accum (multiplied by blur_core_brightness)
+fn draw_line_segment_additive_gradient_with_blur(
     accum: &mut [(f64, f64, f64)],
     width: u32,
     height: u32,
@@ -716,8 +824,17 @@ fn draw_line_segment_additive_gradient(
     y1: f32,
     col0: Rgb<u8>,
     col1: Rgb<u8>,
-    small_weight: f64,
+    blur_radius_px: usize,
+    blur_strength: f64,
+    blur_core_brightness: f64,
 ) {
+    let w_usize = width as usize;
+    let h_usize = height as usize;
+    let npix = w_usize * h_usize;
+
+    // 1) Draw the line into a separate temp buffer
+    let mut temp = vec![(0.0, 0.0, 0.0); npix];
+
     let start = (x0.round() as i32, y0.round() as i32);
     let end = (x1.round() as i32, y1.round() as i32);
 
@@ -734,14 +851,48 @@ fn draw_line_segment_additive_gradient(
         let idx = (yy as usize) * (width as usize) + (xx as usize);
 
         let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
-
         let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
         let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
         let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
 
-        accum[idx].0 += r * small_weight;
-        accum[idx].1 += g * small_weight;
-        accum[idx].2 += b * small_weight;
+        // You can adjust this base weight if you want more/less color
+        let small_weight = 1.0;
+        temp[idx].0 += r * small_weight;
+        temp[idx].1 += g * small_weight;
+        temp[idx].2 += b * small_weight;
+    }
+
+    // 2) Apply Gaussian blur to temp
+    gaussian_blur_2d(&mut temp, w_usize, h_usize, blur_radius_px);
+
+    // 3) Add blurred line to main accum
+    //    scaled by "blur_strength"
+    for i in 0..npix {
+        accum[i].0 += temp[i].0 * blur_strength;
+        accum[i].1 += temp[i].1 * blur_strength;
+        accum[i].2 += temp[i].2 * blur_strength;
+    }
+
+    // 4) Draw a crisp line on top (for bright "core")
+    //    using a brightness multiplier
+    let start = (x0.round() as i32, y0.round() as i32);
+    let end = (x1.round() as i32, y1.round() as i32);
+    let points2: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
+    let n2 = points2.len();
+    for (i, (xx, yy)) in points2.into_iter().enumerate() {
+        if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
+            continue;
+        }
+        let idx = (yy as usize) * (width as usize) + (xx as usize);
+
+        let t = if n2 == 1 { 0.0 } else { i as f64 / (n2 - 1) as f64 };
+        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
+        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
+        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
+
+        accum[idx].0 += r * blur_core_brightness;
+        accum[idx].1 += g * blur_core_brightness;
+        accum[idx].2 += b * blur_core_brightness;
     }
 }
 
@@ -786,13 +937,17 @@ fn generate_body_color_sequences(
     ]
 }
 
-/// Single lines‐only image (additive color) with all timesteps, **parallelized** over steps
+/// Single lines‐only image (additive color) with all timesteps
+/// Now uses blurred line drawing in each step
 fn generate_lines_only_single_image(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
     out_size: u32,
+    blur_radius_fraction: f64,
+    blur_strength: f64,
+    blur_core_brightness: f64,
 ) -> RgbaImage {
-    println!("Generating lines-only single image in color-additive mode...");
+    println!("Generating lines-only single image with Gaussian-blurred lines...");
 
     let width = out_size;
     let height = out_size;
@@ -849,11 +1004,15 @@ fn generate_lines_only_single_image(
         (px as f32, py as f32)
     };
 
-    // 2) Parallel fold: each thread accumulates in a local buffer, then we reduce
+    // Compute an integer blur radius based on fraction
+    let smaller_dim = (width as f64).min(height as f64);
+    let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
+
+    // 2) We'll accumulate in "accum"
     let accum_final = (0..total_steps)
         .into_par_iter()
         .fold(
-            || vec![(0.0, 0.0, 0.0); npix], // local accum
+            || vec![(0.0, 0.0, 0.0); npix],
             |mut local_accum, step| {
                 let p0 = positions[0][step];
                 let p1 = positions[1][step];
@@ -867,9 +1026,8 @@ fn generate_lines_only_single_image(
                 let (x1, y1) = to_pixel(p1[0], p1[1]);
                 let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-                let small_weight = 0.3_f64;
-
-                draw_line_segment_additive_gradient(
+                // Draw lines with blur
+                draw_line_segment_additive_gradient_with_blur(
                     &mut local_accum,
                     width,
                     height,
@@ -879,9 +1037,11 @@ fn generate_lines_only_single_image(
                     y1,
                     c0,
                     c1,
-                    small_weight,
+                    blur_radius_px,
+                    blur_strength,
+                    blur_core_brightness,
                 );
-                draw_line_segment_additive_gradient(
+                draw_line_segment_additive_gradient_with_blur(
                     &mut local_accum,
                     width,
                     height,
@@ -891,9 +1051,11 @@ fn generate_lines_only_single_image(
                     y2,
                     c1,
                     c2,
-                    small_weight,
+                    blur_radius_px,
+                    blur_strength,
+                    blur_core_brightness,
                 );
-                draw_line_segment_additive_gradient(
+                draw_line_segment_additive_gradient_with_blur(
                     &mut local_accum,
                     width,
                     height,
@@ -903,7 +1065,9 @@ fn generate_lines_only_single_image(
                     y0,
                     c2,
                     c0,
-                    small_weight,
+                    blur_radius_px,
+                    blur_strength,
+                    blur_core_brightness,
                 );
 
                 local_accum
@@ -946,13 +1110,16 @@ fn generate_lines_only_single_image(
     img
 }
 
-/// Generate frames of lines‐only drawings in color‐additive mode, used for the final video
+/// Generate frames of lines‐only drawings in color‐additive mode (with blur).
 /// Each frame i includes lines from steps [0..i*frame_interval).
 fn generate_lines_only_frames_raw(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
     out_size: u32,
     frame_interval: usize,
+    blur_radius_fraction: f64,
+    blur_strength: f64,
+    blur_core_brightness: f64,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let total_steps = positions[0].len();
     if total_steps == 0 {
@@ -1001,6 +1168,7 @@ fn generate_lines_only_frames_raw(
 
     let width = out_size;
     let height = out_size;
+    let w_usize = width as usize;
     let npix = (width * height) as usize;
     let to_pixel = |x: f64, y: f64| {
         let ww = max_x - min_x;
@@ -1010,6 +1178,10 @@ fn generate_lines_only_frames_raw(
         (px as f32, py as f32)
     };
 
+    // Compute blur radius in pixels
+    let smaller_dim = (width as f64).min(height as f64);
+    let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
+
     // We'll parallelize by frame
     (0..total_frames)
         .into_par_iter()
@@ -1018,9 +1190,8 @@ fn generate_lines_only_frames_raw(
 
             // accum array of (r,g,b)
             let mut accum = vec![(0.0, 0.0, 0.0); npix];
-            let small_weight = 0.3_f64;
 
-            // For all steps up to clamp_end, draw lines
+            // For all steps up to clamp_end, draw lines (with blur)
             for step in 0..clamp_end {
                 let p0 = positions[0][step];
                 let p1 = positions[1][step];
@@ -1034,7 +1205,7 @@ fn generate_lines_only_frames_raw(
                 let (x1, y1) = to_pixel(p1[0], p1[1]);
                 let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-                draw_line_segment_additive_gradient(
+                draw_line_segment_additive_gradient_with_blur(
                     &mut accum,
                     width,
                     height,
@@ -1044,9 +1215,11 @@ fn generate_lines_only_frames_raw(
                     y1,
                     c0,
                     c1,
-                    small_weight,
+                    blur_radius_px,
+                    blur_strength,
+                    blur_core_brightness,
                 );
-                draw_line_segment_additive_gradient(
+                draw_line_segment_additive_gradient_with_blur(
                     &mut accum,
                     width,
                     height,
@@ -1056,9 +1229,11 @@ fn generate_lines_only_frames_raw(
                     y2,
                     c1,
                     c2,
-                    small_weight,
+                    blur_radius_px,
+                    blur_strength,
+                    blur_core_brightness,
                 );
-                draw_line_segment_additive_gradient(
+                draw_line_segment_additive_gradient_with_blur(
                     &mut accum,
                     width,
                     height,
@@ -1068,7 +1243,9 @@ fn generate_lines_only_frames_raw(
                     y0,
                     c2,
                     c0,
-                    small_weight,
+                    blur_radius_px,
+                    blur_strength,
+                    blur_core_brightness,
                 );
             }
 
@@ -1087,7 +1264,7 @@ fn generate_lines_only_frames_raw(
             let mut img = ImageBuffer::new(width, height);
             for y in 0..height {
                 for x in 0..width {
-                    let idx = (y as usize) * (width as usize) + (x as usize);
+                    let idx = (y as usize) * (w_usize) + (x as usize);
                     let (r, g, b) = accum[idx];
                     let rr = (r / maxval).clamp(0.0, 1.0) * 255.0;
                     let gg = (g / maxval).clamp(0.0, 1.0) * 255.0;
@@ -1330,7 +1507,9 @@ fn main() {
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("Invalid hex seed");
 
-    println!("Starting 3-body simulation with lines-only visualization...");
+    println!(
+        "Starting 3-body simulation with lines-only visualization (Gaussian blur on lines)..."
+    );
 
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
@@ -1378,12 +1557,19 @@ fn main() {
     let colors = generate_body_color_sequences(&mut rng, args.num_steps);
 
     // 3) Single lines‐only image from all steps, auto‐leveled
-    let single_img = generate_lines_only_single_image(&positions, &colors, args.frame_size);
+    let single_img = generate_lines_only_single_image(
+        &positions,
+        &colors,
+        args.frame_size,
+        args.blur_radius_fraction,
+        args.blur_strength,
+        args.blur_core_brightness,
+    );
     let dyn_img = DynamicImage::ImageRgba8(single_img);
     let dyn_img_rgb = dyn_img.to_rgb8();
     let dyn_img2 = DynamicImage::ImageRgb8(dyn_img_rgb);
 
-    // Auto‐levels (no need for mut)
+    // Auto‐levels
     let single_img_al = auto_levels_percentile_image(
         &dyn_img2,
         args.clip_black,
@@ -1405,8 +1591,15 @@ fn main() {
     let frame_interval =
         if target_frames > 0 { args.num_steps.saturating_div(target_frames) } else { 1 }.max(1);
 
-    let mut lines_frames =
-        generate_lines_only_frames_raw(&positions, &colors, args.frame_size, frame_interval);
+    let mut lines_frames = generate_lines_only_frames_raw(
+        &positions,
+        &colors,
+        args.frame_size,
+        frame_interval,
+        args.blur_radius_fraction,
+        args.blur_strength,
+        args.blur_core_brightness,
+    );
 
     // Auto‐level the frames
     auto_levels_percentile_frames(
@@ -1420,5 +1613,5 @@ fn main() {
     let video_filename = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_in_memory(&lines_frames, &video_filename, 60);
 
-    println!("Done. Created 1 lines image and 1 lines video.");
+    println!("Done. Created 1 lines image and 1 lines video (with blurred lines).");
 }

@@ -15,13 +15,12 @@ SIMULATION_CONFIG = {
 
     # Base hex seed + how many variant runs
     'base_seed_hex': "100025",
-    'num_runs': 5000,
+    'num_runs': 10,   # e.g. number of seeds, adjust as needed
 
     # The relevant command-line arguments for the core parameters
-    # (NOT including bloom or special).
     'param_ranges': {
         'num_steps': [1_000_000],
-        'num_sims': [10000],
+        'num_sims': [10_000],
         'location': [300.0],
         'velocity': [1.0],
         'min_mass': [100.0],
@@ -29,7 +28,7 @@ SIMULATION_CONFIG = {
         'clip_black': [0.01],
         'clip_white': [0.99],
         'levels_gamma': [1.0],
-        'max_points': [100000],
+        'max_points': [100_000],
         'chaos_weight': [3.0],
         'perimeter_weight': [1.0],
         'dist_weight': [2.0],
@@ -37,10 +36,19 @@ SIMULATION_CONFIG = {
         'frame_size': [1800],
     },
 
-    # Bloom defaults that match the Rust code's defaults
-    'bloom_radius_percent': 0.1,
-    'bloom_threshold': 0.25,
-    'bloom_strength': 1.0,
+    # We define 5 interesting blur variants (radius fraction, strength, core brightness)
+    'blur_variants': [
+        # Variation 1: mild blur, normal strength
+        (0.005, 1.0, 1.0),
+        # Variation 2: default from the code snippet (0.01 fraction, 1.0 strength, 1.0 core)
+        (0.01,  1.0, 1.0),
+        # Variation 3: bigger blur fraction, a bit stronger core
+        (0.02,  1.0, 2.0),
+        # Variation 4: moderate blur fraction, higher blur strength, normal core
+        (0.02,  2.0, 1.0),
+        # Variation 5: large blur fraction, strong blur, big bright core
+        (0.05,  2.0, 3.0),
+    ],
 }
 
 
@@ -48,8 +56,7 @@ SIMULATION_CONFIG = {
 @dataclass
 class SimulationParams:
     """
-    Reflects the *core* Rust CLI arguments:
-
+    Reflects the *core* Rust CLI arguments used by the three_body_problem:
       --seed, --file-name,
 
       --num-steps, --num-sims, --location, --velocity,
@@ -60,11 +67,10 @@ class SimulationParams:
       --clip-black, --clip-white, --levels-gamma,
       --frame-size
 
-    Then we have *bloom‐related arguments*, but we won't generate them
-    in param_ranges. We'll just fix them to the Rust defaults.
+    Also includes the newly introduced blur fields:
+      --blur-radius-fraction, --blur-strength, --blur-core-brightness
 
-    We also store 'seed' appended last, not in param_ranges.
-    And we have a 'special' flag for bloom or not.
+    The 'seed' is appended last. 
     """
     num_steps: int
     num_sims: int
@@ -82,30 +88,32 @@ class SimulationParams:
     lyap_weight: float
     frame_size: int
 
-    # We'll fill these in ourselves, not from param_ranges:
-    special: bool
-    bloom_radius_percent: float
-    bloom_threshold: float
-    bloom_strength: float
+    # Additional blur parameters
+    blur_radius_fraction: float
+    blur_strength: float
+    blur_core_brightness: float
 
+    # The unique seed for this run
     seed: str
 
 
 def generate_file_name(params: SimulationParams) -> str:
     """
-    Create a file name using the seed value, plus suffix if special is True.
+    Create a file name using the seed value, plus the blur settings.
     We'll strip the '0x' from the seed, for uniqueness.
+    Example: "seed_10002501_blur0.010_str1.00_core2.00"
     """
     seed_part = params.seed[2:]  # remove leading '0x'
-    if params.special:
-        return f"seed_{seed_part}_sp"
-    else:
-        return f"seed_{seed_part}_reg"
+    return (f"seed_{seed_part}"
+            f"_blur{params.blur_radius_fraction:.3f}"
+            f"_str{params.blur_strength:.2f}"
+            f"_core{params.blur_core_brightness:.2f}")
 
 
 def build_command_list(program_path: str, params: SimulationParams, file_name: str) -> List[str]:
     """
-    Construct the command list for the Rust simulation, matching the new code’s CLI.
+    Construct the command list for the Rust simulation, matching the new code’s CLI
+    (with the blur arguments).
     """
     cmd = [
         program_path,
@@ -131,19 +139,12 @@ def build_command_list(program_path: str, params: SimulationParams, file_name: s
         "--levels-gamma", str(params.levels_gamma),
 
         "--frame-size", str(params.frame_size),
+
+        # The new blur arguments
+        "--blur-radius-fraction", str(params.blur_radius_fraction),
+        "--blur-strength", str(params.blur_strength),
+        "--blur-core-brightness", str(params.blur_core_brightness),
     ]
-
-    # If the user wants the special bloom effect, add --special
-    if params.special:
-        cmd.append("--special")
-
-    # Add bloom arguments (percent, threshold, strength)
-    cmd.extend([
-        "--bloom-radius-percent", str(params.bloom_radius_percent),
-        "--bloom-threshold", str(params.bloom_threshold),
-        "--bloom-strength", str(params.bloom_strength),
-    ])
-
     return cmd
 
 
@@ -162,7 +163,9 @@ def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
             text=True
         )
         return (cmd_str, result.stdout.strip())
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print("Error occurred while running command:")
+        print(e.stderr)
         return (cmd_str, None)
 
 
@@ -173,74 +176,79 @@ class SimulationRunner:
 
     def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
         """
-        Generate all *regular* parameter combos from param_ranges (NO special).
-        We'll produce them with special=False initially, but we'll also pair them
-        with special=True right after each run in run_simulations.
+        Generate all combinations from param_ranges (one set of "base" parameters),
+        then for each seed, we produce 5 variants of blur settings from 'blur_variants'.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
+
         param_sets = []
+        # We only expect typically 1 combination if each param_ranges list is size 1,
+        # but let's generalize in case multiple combos exist.
         for combo in itertools.product(*param_values):
             for i in range(num_runs):
-                # Build a unique seed: e.g. 0x100019 + i in hex
+                # Build a unique seed: e.g. 0x100025 + i in hex
                 seed_suffix = f"{i:04X}"  # 4 hex digits
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
-                # "combo" is a tuple in the same order as 'keys'
-                # We'll pass them as *args to SimulationParams, plus special=False for now.
-                # We'll fill bloom arguments from the config defaults.
-                params = SimulationParams(
-                    *combo,
-                    special=False,
-                    bloom_radius_percent=SIMULATION_CONFIG['bloom_radius_percent'],
-                    bloom_threshold=SIMULATION_CONFIG['bloom_threshold'],
-                    bloom_strength=SIMULATION_CONFIG['bloom_strength'],
-                    seed=full_seed
-                )
-                param_sets.append(params)
+                # Convert 'combo' -> dict of the base param fields
+                combo_dict = dict(zip(keys, combo))
+
+                # Now for each blur variant, create one SimulationParams
+                for (radius_frac, strength, core_bright) in SIMULATION_CONFIG['blur_variants']:
+                    params = SimulationParams(
+                        num_steps=combo_dict['num_steps'],
+                        num_sims=combo_dict['num_sims'],
+                        location=combo_dict['location'],
+                        velocity=combo_dict['velocity'],
+                        min_mass=combo_dict['min_mass'],
+                        max_mass=combo_dict['max_mass'],
+                        clip_black=combo_dict['clip_black'],
+                        clip_white=combo_dict['clip_white'],
+                        levels_gamma=combo_dict['levels_gamma'],
+                        max_points=combo_dict['max_points'],
+                        chaos_weight=combo_dict['chaos_weight'],
+                        perimeter_weight=combo_dict['perimeter_weight'],
+                        dist_weight=combo_dict['dist_weight'],
+                        lyap_weight=combo_dict['lyap_weight'],
+                        frame_size=combo_dict['frame_size'],
+
+                        blur_radius_fraction=radius_frac,
+                        blur_strength=strength,
+                        blur_core_brightness=core_bright,
+
+                        seed=full_seed
+                    )
+                    param_sets.append(params)
 
         return param_sets
 
     def run_simulations(self, param_sets: List[SimulationParams]):
         """
-        For each param set, do two runs:
-          1) special=False
-          2) special=True
-        This ensures we get a regular run *immediately* followed by
-        a "special" run with the same seed, so they can be compared.
+        Submit all param sets to a ThreadPoolExecutor. Each set is a single simulation run.
+        We'll run them in parallel up to 'max_concurrent'.
         """
-        # We'll gather tasks in a list, then run them in a pool.
-        tasks = []
-        for base_params in param_sets:
-            # 1) The base param is special=False
-            tasks.append(base_params)
-        random.shuffle(tasks)
-
-        # Now we want them to run in the exact order we appended them:
-        # normal run followed by special run. So we won't shuffle tasks.
-        # We'll still do them concurrently if max_concurrent > 1.
-        print(f"Total tasks to execute: {len(tasks)} (including normal+special pairs)")
+        print(f"Total tasks to execute: {len(param_sets)}")
 
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
-            for params in tasks:
+            for params in param_sets:
                 file_name = generate_file_name(params)
                 cmd_list = build_command_list(self.program_path, params, file_name)
                 fut = executor.submit(run_simulation, cmd_list)
                 futures[fut] = cmd_list
 
             for future in as_completed(futures):
-                cmd_str = " ".join(futures[future])
                 shell_command, output = future.result()
                 print(f"Finished command:\n  {shell_command}")
                 if output:
-                    print(f"Output:\n{output}")
+                    print(f"Output:\n{output}\n")
                 else:
-                    print("No output or an error occurred.")
+                    print("No output or an error occurred.\n")
 
 
 def main():
-    print("Starting batch runs of the Rust three-body simulator, regular and special back-to-back.")
+    print("Starting batch runs of the Rust three-body simulator with multiple blur settings per seed.")
 
     # Create the runner
     runner = SimulationRunner(
@@ -248,18 +256,16 @@ def main():
         max_concurrent=SIMULATION_CONFIG['max_concurrent']
     )
 
-    # Generate the base param sets (regular only).
+    # Generate all param sets
     param_sets = runner.get_parameter_combinations(
         base_seed_hex=SIMULATION_CONFIG['base_seed_hex'],
         num_runs=SIMULATION_CONFIG['num_runs']
     )
 
-    # Optional: shuffle them for random ordering.
-    # But if you want each pair to be run in sequence, don't shuffle. Up to you.
-    # random.shuffle(param_sets)
+    print(f"Base param sets *including* blur variants: {len(param_sets)}")
 
-    print(f"Base param sets (no special): {len(param_sets)}")
-    print("Each will be run twice: once normal, once special.")
+    # Optional shuffle to randomize execution order
+    # random.shuffle(param_sets)
 
     # Execute them in parallel
     runner.run_simulations(param_sets)
