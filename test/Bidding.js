@@ -558,7 +558,8 @@ describe("Bidding", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [20000]);
 		await hre.ethers.provider.send("evm_mine");
 
-		let cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
+		// let cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
+		let cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.nextRoundFirstCstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(200n * (10n ** 18n));
 		let cstDutchAuctionBeginningTimeStamp_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningTimeStamp();
 		expect(cstDutchAuctionBeginningTimeStamp_).to.equal(await cosmicSignatureGameProxy.roundActivationTime());

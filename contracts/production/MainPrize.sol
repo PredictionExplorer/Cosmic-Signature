@@ -112,6 +112,7 @@ abstract contract MainPrize is
 			// todo-1 Optimize: use the initial value as is; then calculate and use its hash and assign the result to itself;
 			// todo-1 only then start incrementing it and calculating its hash.
 			// todo-1 Write a comment to explain things.
+			// todo-1 Or maybe leave it alone, and only comment.
 			CosmicSignatureHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_ =
 				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
 			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
@@ -452,6 +453,7 @@ abstract contract MainPrize is
 							// todo-1 Investigate under what conditions we can possibly reach this point.
 							// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
 							// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
+							// todo-1 Does ToDo-202409245-1 relate?
 							revert
 								CosmicSignatureErrors.FundTransferFailed(
 									"ETH deposit to StakingWalletCosmicSignatureNft failed.",
@@ -529,47 +531,37 @@ abstract contract MainPrize is
 	/// @notice Updates state for the next bidding round.
 	/// This method is called after the main prize has been claimed.
 	function _prepareNextRound() private {
-		// todo-1 Consider to not reset some variables.
+		// todo-1 +++ Consider to not reset some variables.
+
+		++ roundNum;
+
+		// // [Comment-202501307]
+		// // Instead of making this assignment, it appears to be more efficient
+		// // to use `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the 1st CST Dutch auction in each bidding round.
+		// // [/Comment-202501307]
+		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
+
+		// lastBidType = BidType.ETH;
+		lastBidderAddress = address(0);
+		lastCstBidderAddress = address(0);
+		enduranceChampionAddress = address(0);
+
+		// // It's unnecessary to reset this.
+		// // Comment-202501308 applies.
+		// enduranceChampionStartTimeStamp = 0;
+
+		// // It's unnecessary to reset this.
+		// // Comment-202501308 applies.
+		// enduranceChampionDuration = 0;
+
+		// todo-1 +++ We do need to reset this, right?
+		prevEnduranceChampionDuration = 0;
+		chronoWarriorAddress = address(0);
+		chronoWarriorDuration = uint256(int256(-1));
 
 		// It's probably unnecessary to emit an event about this change.
 		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
 
-		// todo-1 Remove this garbage.
-		// if (roundNum == 0) {
-		// 	// // #enable_asserts assert(ethDutchAuctionDurationDivisor == 1);
-		// 	// ethDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR;
-		//
-		// 	// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor == 1);
-		// 	ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
-		// }
-
-		++ roundNum;
-		// todo-1 Consider not assigning this and instead using `nextRoundCstDutchAuctionBeginningBidPrice` on the 1st CST Dutch auction.
-		cstDutchAuctionBeginningBidPrice = nextRoundCstDutchAuctionBeginningBidPrice;
-		lastBidderAddress = address(0);
-		lastCstBidderAddress = address(0);
-		// lastBidType = BidType.ETH;
-
-		// // Assuming this will neither overflow nor underflow.
-		// // todo-1 Take a closer look at this and other similar formulas.
-		// // todo-1 Should we use this formula before the 1st round too?
-		// // todo-1 Should `setRoundStartCstAuctionLength` and `setMainPrizeTimeIncrementInMicroSeconds` use it too?
-		// cstAuctionLength =
-		// 	roundStartCstAuctionLength +
-		// 	// todo-1 This formula is now incorrect.
-		// 	((mainPrizeTimeIncrementInMicroSeconds - CosmicSignatureConstants.INITIAL_MAIN_PRIZE_TIME_INCREMENT) / CosmicSignatureConstants.NANOSECONDS_PER_SECOND);
-
-		// // todo-9 Maybe add 1 to ensure that the result is a nonzero.
-		// nextEthBidPrice = address(this).balance / ethDutchAuctionEndingBidPriceDivisor;
-		enduranceChampionAddress = address(0);
-		// todo-1 Is it really necessary to reset this?
-		enduranceChampionStartTimeStamp = 0;
-		// todo-1 We do need to reset this, right?
-		enduranceChampionDuration = 0;
-		// todo-1 We do need to reset this, right?
-		prevEnduranceChampionDuration = 0;
-		chronoWarriorAddress = address(0);
-		chronoWarriorDuration = uint256(int256(-1));
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 	}
 

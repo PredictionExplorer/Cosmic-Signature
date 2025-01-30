@@ -117,14 +117,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202501025]
 	uint256 public cstDutchAuctionDurationDivisor;
 
-	/// @notice
+	/// @notice CST Dutch auction beginning bid price.
+	/// This becomes valid when someone places a CST bid in the current bidding round
+	/// and remains valid until main prize gets claimed.
 	/// [Comment-202411066]
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// [/Comment-202411066]
 	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
-	uint256 public nextRoundCstDutchAuctionBeginningBidPrice;
+	/// @notice Next round first CST Dutch auction beginning bid price.
+	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.
@@ -184,6 +187,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411075]
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
 	/// [/Comment-202411075]
+	/// Comment-202501308 relates.
 	/// @dev
 	/// [Comment-202411099]
 	/// Relevant logic prototype:
@@ -191,8 +195,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411099]
 	address public enduranceChampionAddress;
 
+	/// @notice
+	/// [Comment-202501308]
+	/// This is valid only if `enduranceChampionAddress` is a nonzero.
+	/// [/Comment-202501308]
 	uint256 public enduranceChampionStartTimeStamp;
+
+	/// @notice Comment-202501308 applies.
 	uint256 public enduranceChampionDuration;
+
 	uint256 public prevEnduranceChampionDuration;
 
 	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.

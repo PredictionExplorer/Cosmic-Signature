@@ -83,7 +83,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Default `cstDutchAuctionBeginningBidPriceMinLimit`.
-	/// Initial `cstDutchAuctionBeginningBidPrice`.
+	/// Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
 	// /// @notice `startingBidPriceCstMinLimit` "hard" min limit.

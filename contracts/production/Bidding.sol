@@ -121,7 +121,7 @@ abstract contract Bidding is
 		// #region
 
 		if (lastBidderAddress == address(0)) {
-			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
 
 		// [Comment-202501061]
@@ -372,7 +372,7 @@ abstract contract Bidding is
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
 		if (lastCstBidderAddress == address(0)) {
-			nextRoundCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = msg.sender;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
@@ -393,7 +393,12 @@ abstract contract Bidding is
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
 			}
-			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
+
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice_ * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
 			return nextCstBidPrice_;
 		}
 	}
