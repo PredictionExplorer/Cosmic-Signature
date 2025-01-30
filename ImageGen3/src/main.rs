@@ -19,7 +19,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 /// We embed data of dimension LLE_M for the Lyapunov exponent calculation.
-const LLE_M: usize = 4;
+const LLE_M: usize = 3;
 /// The branching factor for the KdTree. (Used in `kiddo`.)
 const B: usize = 32;
 /// Gravitational constant, for convenience we use a typical G=9.8
