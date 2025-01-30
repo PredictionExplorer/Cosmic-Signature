@@ -7,14 +7,14 @@ from typing import List, Optional, Tuple
 
 # ===================== Simulation Configuration =====================
 SIMULATION_CONFIG = {
-    # Where is the compiled Rust program?
+    # Path to your compiled Rust program:
     'program_path': './target/release/three_body_problem',
 
     # Parallelism
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "100025",
+    'base_seed_hex': "100030",
     'num_runs': 10,   # e.g. number of seeds, adjust as needed
 
     # The relevant command-line arguments for the core parameters
@@ -34,19 +34,22 @@ SIMULATION_CONFIG = {
         'dist_weight': [2.0],
         'lyap_weight': [2.5],
         'frame_size': [1800],
+
+        # Newly included parameters corresponding to the Rust code's defaults:
+        'disable_png': [False],
+        'disable_avif': [False],
+        'disable_blur': [False],
+        'disable_video': [False],
+        'avif_speed': [0],
+        'avif_quality': [90],
     },
 
-    # We define 5 interesting blur variants (radius fraction, strength, core brightness)
+    # We define 5 "blur variants" as before (each variant changes radius fraction, strength, core brightness)
     'blur_variants': [
-        # Variation 1: mild blur, normal strength
         (0.005, 1.0, 1.0),
-        # Variation 2: default from the code snippet (0.01 fraction, 1.0 strength, 1.0 core)
         (0.01,  1.0, 1.0),
-        # Variation 3: bigger blur fraction, a bit stronger core
         (0.02,  1.0, 2.0),
-        # Variation 4: moderate blur fraction, higher blur strength, normal core
         (0.02,  2.0, 1.0),
-        # Variation 5: large blur fraction, strong blur, big bright core
         (0.05,  2.0, 3.0),
     ],
 }
@@ -56,22 +59,25 @@ SIMULATION_CONFIG = {
 @dataclass
 class SimulationParams:
     """
-    Reflects the *core* Rust CLI arguments used by the three_body_problem:
+    Reflects all Rust CLI arguments:
       --seed, --file-name,
-
       --num-steps, --num-sims, --location, --velocity,
       --min-mass, --max-mass, --max-points,
-
       --chaos-weight, --perimeter-weight, --dist-weight, --lyap-weight,
-
       --clip-black, --clip-white, --levels-gamma,
-      --frame-size
+      --frame-size,
 
-    Also includes the newly introduced blur fields:
+      And the newly introduced arguments:
+      --disable-png, --disable-avif, --disable-blur, --disable-video,
+      --avif-speed, --avif-quality,
+
+      And the three "blur" parameters:
       --blur-radius-fraction, --blur-strength, --blur-core-brightness
 
-    The 'seed' is appended last. 
+    By default, booleans (disable_*) are False so images and videos
+    will be generated.  The user can override if needed.
     """
+    # Core simulation parameters
     num_steps: int
     num_sims: int
     location: float
@@ -88,6 +94,16 @@ class SimulationParams:
     lyap_weight: float
     frame_size: int
 
+    # Booleans/flags
+    disable_png: bool
+    disable_avif: bool
+    disable_blur: bool
+    disable_video: bool
+
+    # AVIF settings
+    avif_speed: int
+    avif_quality: int
+
     # Additional blur parameters
     blur_radius_fraction: float
     blur_strength: float
@@ -101,19 +117,22 @@ def generate_file_name(params: SimulationParams) -> str:
     """
     Create a file name using the seed value, plus the blur settings.
     We'll strip the '0x' from the seed, for uniqueness.
+
     Example: "seed_10002501_blur0.010_str1.00_core2.00"
     """
     seed_part = params.seed[2:]  # remove leading '0x'
-    return (f"seed_{seed_part}"
-            f"_blur{params.blur_radius_fraction:.3f}"
-            f"_str{params.blur_strength:.2f}"
-            f"_core{params.blur_core_brightness:.2f}")
+    return (
+        f"seed_{seed_part}"
+        f"_blur{params.blur_radius_fraction:.3f}"
+        f"_str{params.blur_strength:.2f}"
+        f"_core{params.blur_core_brightness:.2f}"
+    )
 
 
 def build_command_list(program_path: str, params: SimulationParams, file_name: str) -> List[str]:
     """
-    Construct the command list for the Rust simulation, matching the new code’s CLI
-    (with the blur arguments).
+    Construct the command list for the Rust simulation.
+    Includes *every* CLI parameter present in the Rust program.
     """
     cmd = [
         program_path,
@@ -140,17 +159,36 @@ def build_command_list(program_path: str, params: SimulationParams, file_name: s
 
         "--frame-size", str(params.frame_size),
 
-        # The new blur arguments
+        # The blur-related arguments
         "--blur-radius-fraction", str(params.blur_radius_fraction),
         "--blur-strength", str(params.blur_strength),
         "--blur-core-brightness", str(params.blur_core_brightness),
     ]
+
+    # Booleans: Only add them if they're True
+    if params.disable_png:
+        cmd.append("--disable-png")
+    if params.disable_avif:
+        cmd.append("--disable-avif")
+    if params.disable_blur:
+        cmd.append("--disable-blur")
+    if params.disable_video:
+        cmd.append("--disable-video")
+
+    # AVIF speed/quality
+    cmd.append("--avif-speed")
+    cmd.append(str(params.avif_speed))
+
+    cmd.append("--avif-quality")
+    cmd.append(str(params.avif_quality))
+
     return cmd
 
 
 def run_simulation(command_list: List[str]) -> Tuple[str, Optional[str]]:
     """
-    Run the Rust program via subprocess, return (command_string, output).
+    Run the Rust program via subprocess.
+    Returns (command_string, output).
     If the subprocess fails, we return (command_string, None).
     """
     cmd_str = " ".join(command_list)
@@ -174,27 +212,34 @@ class SimulationRunner:
         self.program_path = program_path
         self.max_concurrent = max_concurrent
 
-    def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
+    def get_parameter_combinations(
+        self,
+        base_seed_hex: str,
+        num_runs: int
+    ) -> List[SimulationParams]:
         """
-        Generate all combinations from param_ranges (one set of "base" parameters),
-        then for each seed, we produce 5 variants of blur settings from 'blur_variants'.
+        Generate all combinations from 'param_ranges' in SIMULATION_CONFIG.
+        Then for each combination, produce multiple seeds, and for each seed,
+        produce multiple "blur variants".
+
+        This yields a list of SimulationParams, each describing a single run.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
 
         param_sets = []
-        # We only expect typically 1 combination if each param_ranges list is size 1,
-        # but let's generalize in case multiple combos exist.
+        # e.g. if each param has exactly 1 value, we only get 1 combo, but let's keep it general
         for combo in itertools.product(*param_values):
             for i in range(num_runs):
-                # Build a unique seed: e.g. 0x100025 + i in hex
-                seed_suffix = f"{i:04X}"  # 4 hex digits
+                # Build a unique seed, e.g. 0x100030 + i in hex
+                # i is turned into 4 hex digits => e.g. "0000", "0001", "0002"
+                seed_suffix = f"{i:04X}"
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
-                # Convert 'combo' -> dict of the base param fields
+                # Convert 'combo' -> dict of base param fields
                 combo_dict = dict(zip(keys, combo))
 
-                # Now for each blur variant, create one SimulationParams
+                # For each blur variant, create a separate SimulationParams
                 for (radius_frac, strength, core_bright) in SIMULATION_CONFIG['blur_variants']:
                     params = SimulationParams(
                         num_steps=combo_dict['num_steps'],
@@ -213,6 +258,13 @@ class SimulationRunner:
                         lyap_weight=combo_dict['lyap_weight'],
                         frame_size=combo_dict['frame_size'],
 
+                        disable_png=combo_dict['disable_png'],
+                        disable_avif=combo_dict['disable_avif'],
+                        disable_blur=combo_dict['disable_blur'],
+                        disable_video=combo_dict['disable_video'],
+                        avif_speed=combo_dict['avif_speed'],
+                        avif_quality=combo_dict['avif_quality'],
+
                         blur_radius_fraction=radius_frac,
                         blur_strength=strength,
                         blur_core_brightness=core_bright,
@@ -225,8 +277,7 @@ class SimulationRunner:
 
     def run_simulations(self, param_sets: List[SimulationParams]):
         """
-        Submit all param sets to a ThreadPoolExecutor. Each set is a single simulation run.
-        We'll run them in parallel up to 'max_concurrent'.
+        Execute each SimulationParams in a ThreadPoolExecutor, up to 'max_concurrent' concurrency.
         """
         print(f"Total tasks to execute: {len(param_sets)}")
 
@@ -248,7 +299,8 @@ class SimulationRunner:
 
 
 def main():
-    print("Starting batch runs of the Rust three-body simulator with multiple blur settings per seed.")
+    print("Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
+          "We produce 5 blur variants per seed. Images and videos are generated by default.\n")
 
     # Create the runner
     runner = SimulationRunner(
@@ -264,7 +316,7 @@ def main():
 
     print(f"Base param sets *including* blur variants: {len(param_sets)}")
 
-    # Optional shuffle to randomize execution order
+    # (Optional) shuffle to randomize execution order:
     # random.shuffle(param_sets)
 
     # Execute them in parallel

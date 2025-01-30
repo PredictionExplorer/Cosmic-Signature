@@ -141,6 +141,10 @@ struct Args {
     /// Disable Gaussian blur on lines
     #[arg(long, default_value_t = false)]
     disable_blur: bool,
+
+    /// Disable video creation (by default we save an AV1 .mkv video)
+    #[arg(long, default_value_t = false)]
+    disable_video: bool,
 }
 
 // ======================================================================
@@ -1467,9 +1471,6 @@ fn create_video_from_frames_in_memory_2pass(
             .stdout(Stdio::null())
             .stderr(Stdio::piped());
 
-        // ffmpeg -passlogfile will default to "ffmpeg2pass-0.log" unless we specify.
-        // If you want a custom passlog name, add: .arg("-passlogfile").arg("some_path")
-
         let mut ffmpeg = match command.spawn() {
             Ok(child) => child,
             Err(e) => {
@@ -1701,34 +1702,38 @@ fn main() {
         }
     }
 
-    // 6) Lines‐only video with two-pass AV1
-    let num_seconds = 30;
-    let target_frames = 60 * num_seconds; // 60 FPS * 30s = 1800 frames
-    let frame_interval =
-        if target_frames > 0 { args.num_steps.saturating_div(target_frames) } else { 1 }.max(1);
+    // 6) Lines‐only video with two-pass AV1 (only if NOT disable_video)
+    if !args.disable_video {
+        let num_seconds = 30;
+        let target_frames = 60 * num_seconds; // 60 FPS * 30s = 1800 frames
+        let frame_interval =
+            if target_frames > 0 { args.num_steps.saturating_div(target_frames) } else { 1 }.max(1);
 
-    let mut lines_frames = generate_lines_only_frames_raw(
-        &positions,
-        &colors,
-        args.frame_size,
-        frame_interval,
-        args.blur_radius_fraction,
-        args.blur_strength,
-        args.blur_core_brightness,
-        args.disable_blur,
-    );
+        let mut lines_frames = generate_lines_only_frames_raw(
+            &positions,
+            &colors,
+            args.frame_size,
+            frame_interval,
+            args.blur_radius_fraction,
+            args.blur_strength,
+            args.blur_core_brightness,
+            args.disable_blur,
+        );
 
-    // Auto‐level the frames
-    auto_levels_percentile_frames(
-        &mut lines_frames,
-        args.clip_black,
-        args.clip_white,
-        args.levels_gamma,
-    );
+        // Auto‐level the frames
+        auto_levels_percentile_frames(
+            &mut lines_frames,
+            args.clip_black,
+            args.clip_white,
+            args.levels_gamma,
+        );
 
-    // Create video (.mkv)
-    let video_filename = format!("vids/{}.mkv", args.file_name);
-    create_video_from_frames_in_memory_2pass(&lines_frames, &video_filename, 60);
+        // Create video (.mkv)
+        let video_filename = format!("vids/{}.mkv", args.file_name);
+        create_video_from_frames_in_memory_2pass(&lines_frames, &video_filename, 60);
+    } else {
+        println!("Video creation disabled. No .mkv file will be generated.");
+    }
 
-    println!("Done. Created final image(s) and video.");
+    println!("Done. Created final image(s){}", if args.disable_video { "" } else { " and video" });
 }
