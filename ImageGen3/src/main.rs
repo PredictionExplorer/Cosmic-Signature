@@ -22,7 +22,7 @@ use std::process::{Command, Stdio};
 // For AVIF saving:
 use std::error::Error;
 use std::fs::File;
-use std::io::BufWriter; // Add this import at the top
+use std::io::BufWriter; // Add this import
 
 /// We embed data of dimension LLE_M for the Lyapunov exponent calculation.
 const LLE_M: usize = 3;
@@ -38,7 +38,7 @@ const G: f64 = 9.8;
 #[command(
     author,
     version,
-    about = "Simulate & visualize the three-body problem (lines-only image + video, percentile-based auto-level)."
+    about = "Simulate & visualize the three-body problem (lines-only image + AV1 video, percentile-based auto-level)."
 )]
 struct Args {
     /// Hex seed for random generation (e.g. --seed 00 or 0xABC123)
@@ -137,6 +137,10 @@ struct Args {
     /// AVIF "quality" 0..100 (0=best, 100=worst)
     #[arg(long, default_value_t = 90)]
     avif_quality: u8,
+
+    /// Disable Gaussian blur on lines
+    #[arg(long, default_value_t = false)]
+    disable_blur: bool,
 }
 
 // ======================================================================
@@ -759,8 +763,8 @@ fn gaussian_blur_1d(
     radius: usize,
     horizontal: bool,
 ) {
-    // If radius == 0, skip
     if radius == 0 {
+        // If radius == 0, effectively no blur
         output.copy_from_slice(input);
         return;
     }
@@ -820,7 +824,7 @@ fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize,
 }
 
 // ======================================================================
-// Lines‐Only Drawing with Gaussian Blur approach
+// Drawing function that can optionally skip Gaussian blur
 // ======================================================================
 fn draw_line_segment_additive_gradient_with_blur(
     accum: &mut [(f64, f64, f64)],
@@ -835,54 +839,54 @@ fn draw_line_segment_additive_gradient_with_blur(
     blur_radius_px: usize,
     blur_strength: f64,
     blur_core_brightness: f64,
+    disable_blur: bool,
 ) {
     let w_usize = width as usize;
     let h_usize = height as usize;
     let npix = w_usize * h_usize;
 
-    // 1) Draw the line into a separate temp buffer
-    let mut temp = vec![(0.0, 0.0, 0.0); npix];
+    // Crisp line is always drawn at the end (step 4).
+    // If blur is enabled, we do steps 1..3 (temp buffer + blur + accumulation).
+    if !disable_blur {
+        // 1) Draw the line into a separate temp buffer
+        let mut temp = vec![(0.0, 0.0, 0.0); npix];
 
-    let start = (x0.round() as i32, y0.round() as i32);
-    let end = (x1.round() as i32, y1.round() as i32);
+        let start = (x0.round() as i32, y0.round() as i32);
+        let end = (x1.round() as i32, y1.round() as i32);
 
-    let points: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
-    let n = points.len();
-    if n == 0 {
-        return;
-    }
+        let points: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
+        let n = points.len();
+        if n > 0 {
+            for (i, (xx, yy)) in points.into_iter().enumerate() {
+                if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
+                    continue;
+                }
+                let idx = (yy as usize) * (width as usize) + (xx as usize);
 
-    for (i, (xx, yy)) in points.into_iter().enumerate() {
-        if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
-            continue;
+                let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
+                let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
+                let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
+                let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
+
+                let small_weight = 1.0;
+                temp[idx].0 += r * small_weight;
+                temp[idx].1 += g * small_weight;
+                temp[idx].2 += b * small_weight;
+            }
         }
-        let idx = (yy as usize) * (width as usize) + (xx as usize);
 
-        let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
-        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
-        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
-        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
+        // 2) Apply Gaussian blur to temp
+        gaussian_blur_2d(&mut temp, w_usize, h_usize, blur_radius_px);
 
-        // You can adjust this base weight if you want more/less color
-        let small_weight = 1.0;
-        temp[idx].0 += r * small_weight;
-        temp[idx].1 += g * small_weight;
-        temp[idx].2 += b * small_weight;
-    }
-
-    // 2) Apply Gaussian blur to temp
-    gaussian_blur_2d(&mut temp, w_usize, h_usize, blur_radius_px);
-
-    // 3) Add blurred line to main accum
-    //    scaled by "blur_strength"
-    for i in 0..npix {
-        accum[i].0 += temp[i].0 * blur_strength;
-        accum[i].1 += temp[i].1 * blur_strength;
-        accum[i].2 += temp[i].2 * blur_strength;
+        // 3) Add blurred line to main accum (scaled by blur_strength)
+        for i in 0..npix {
+            accum[i].0 += temp[i].0 * blur_strength;
+            accum[i].1 += temp[i].1 * blur_strength;
+            accum[i].2 += temp[i].2 * blur_strength;
+        }
     }
 
     // 4) Draw a crisp line on top (for bright "core")
-    //    using a brightness multiplier
     let start = (x0.round() as i32, y0.round() as i32);
     let end = (x1.round() as i32, y1.round() as i32);
     let points2: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
@@ -950,8 +954,9 @@ fn generate_lines_only_single_image(
     blur_radius_fraction: f64,
     blur_strength: f64,
     blur_core_brightness: f64,
+    disable_blur: bool,
 ) -> RgbaImage {
-    println!("Generating lines-only single image with Gaussian-blurred lines...");
+    println!("Generating lines-only single image...");
 
     let width = out_size;
     let height = out_size;
@@ -1001,7 +1006,8 @@ fn generate_lines_only_single_image(
 
     // blur radius
     let smaller_dim = (width as f64).min(height as f64);
-    let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
+    let blur_radius_px =
+        if disable_blur { 0 } else { (blur_radius_fraction * smaller_dim).round() as usize };
 
     // 2) accumulate in parallel
     let accum_final = (0..total_steps)
@@ -1021,7 +1027,7 @@ fn generate_lines_only_single_image(
                 let (x1, y1) = to_pixel(p1[0], p1[1]);
                 let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-                // Draw lines with blur
+                // Draw lines with/without blur
                 draw_line_segment_additive_gradient_with_blur(
                     &mut local_accum,
                     width,
@@ -1035,6 +1041,7 @@ fn generate_lines_only_single_image(
                     blur_radius_px,
                     blur_strength,
                     blur_core_brightness,
+                    disable_blur,
                 );
                 draw_line_segment_additive_gradient_with_blur(
                     &mut local_accum,
@@ -1049,6 +1056,7 @@ fn generate_lines_only_single_image(
                     blur_radius_px,
                     blur_strength,
                     blur_core_brightness,
+                    disable_blur,
                 );
                 draw_line_segment_additive_gradient_with_blur(
                     &mut local_accum,
@@ -1063,6 +1071,7 @@ fn generate_lines_only_single_image(
                     blur_radius_px,
                     blur_strength,
                     blur_core_brightness,
+                    disable_blur,
                 );
 
                 local_accum
@@ -1104,7 +1113,7 @@ fn generate_lines_only_single_image(
     img
 }
 
-/// Generate frames for a lines-only animation (color-additive mode, with blur).
+/// Generate frames for a lines-only animation (color-additive mode).
 fn generate_lines_only_frames_raw(
     positions: &[Vec<Vector3<f64>>],
     body_colors: &[Vec<Rgb<u8>>],
@@ -1113,6 +1122,7 @@ fn generate_lines_only_frames_raw(
     blur_radius_fraction: f64,
     blur_strength: f64,
     blur_core_brightness: f64,
+    disable_blur: bool,
 ) -> Vec<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     let total_steps = positions[0].len();
     if total_steps == 0 {
@@ -1165,7 +1175,8 @@ fn generate_lines_only_frames_raw(
 
     // blur radius
     let smaller_dim = (width as f64).min(height as f64);
-    let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
+    let blur_radius_px =
+        if disable_blur { 0 } else { (blur_radius_fraction * smaller_dim).round() as usize };
 
     // We'll parallelize by frame
     (0..total_frames)
@@ -1203,6 +1214,7 @@ fn generate_lines_only_frames_raw(
                     blur_radius_px,
                     blur_strength,
                     blur_core_brightness,
+                    disable_blur,
                 );
                 draw_line_segment_additive_gradient_with_blur(
                     &mut accum,
@@ -1217,6 +1229,7 @@ fn generate_lines_only_frames_raw(
                     blur_radius_px,
                     blur_strength,
                     blur_core_brightness,
+                    disable_blur,
                 );
                 draw_line_segment_additive_gradient_with_blur(
                     &mut accum,
@@ -1231,6 +1244,7 @@ fn generate_lines_only_frames_raw(
                     blur_radius_px,
                     blur_strength,
                     blur_core_brightness,
+                    disable_blur,
                 );
             }
 
@@ -1398,9 +1412,9 @@ fn auto_levels_percentile_image(
 }
 
 // ======================================================================
-// FFmpeg video creation from raw frames
+// FFmpeg two-pass AV1 video creation
 // ======================================================================
-fn create_video_from_frames_in_memory(
+fn create_video_from_frames_in_memory_2pass(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
     frame_rate: u32,
@@ -1410,72 +1424,150 @@ fn create_video_from_frames_in_memory(
         return;
     }
 
-    println!("Generating video (raw -> H.264) with FFmpeg: {}", output_file);
+    println!("Generating AV1 video (2-pass) with FFmpeg => {} at {} FPS", output_file, frame_rate);
 
     let width = frames[0].width();
     let height = frames[0].height();
 
-    let mut command = Command::new("ffmpeg");
-    command
-        .arg("-y")
-        // Read raw frames from stdin
-        .arg("-f")
-        .arg("rawvideo")
-        .arg("-pixel_format")
-        .arg("rgb24")
-        .arg("-video_size")
-        .arg(format!("{}x{}", width, height))
-        .arg("-framerate")
-        .arg(frame_rate.to_string())
-        .arg("-i")
-        .arg("-")
-        // Let ffmpeg choose how many threads to spawn
-        .arg("-threads")
-        .arg("0")
-        // Encode using libx264
-        .arg("-c:v")
-        .arg("libx264")
-        .arg("-pix_fmt")
-        .arg("yuv420p")
-        .arg(output_file)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped());
+    // First pass (output is /dev/null)
+    {
+        println!("First pass (writing to /dev/null)...");
+        let mut command = Command::new("ffmpeg");
+        command
+            .arg("-y")
+            // Read raw frames from stdin
+            .arg("-f")
+            .arg("rawvideo")
+            .arg("-pixel_format")
+            .arg("rgb24")
+            .arg("-video_size")
+            .arg(format!("{}x{}", width, height))
+            .arg("-framerate")
+            .arg(frame_rate.to_string())
+            .arg("-i")
+            .arg("-")
+            // Let ffmpeg choose how many threads to spawn
+            .arg("-threads")
+            .arg("0")
+            // Encode using libaom-av1
+            .arg("-c:v")
+            .arg("libaom-av1")
+            // Some typical high-quality settings
+            .arg("-b:v")
+            .arg("0")
+            .arg("-crf")
+            .arg("15")
+            .arg("-pass")
+            .arg("1")
+            .arg("-an") // no audio
+            .arg("-f")
+            .arg("null")
+            .arg("/dev/null")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped());
 
-    let mut ffmpeg = match command.spawn() {
-        Ok(child) => child,
-        Err(e) => {
-            eprintln!("Failed to start ffmpeg: {}", e);
-            return;
-        }
-    };
+        // ffmpeg -passlogfile will default to "ffmpeg2pass-0.log" unless we specify.
+        // If you want a custom passlog name, add: .arg("-passlogfile").arg("some_path")
 
-    // Write frames as raw RGB to ffmpeg
-    if let Some(mut child_stdin) = ffmpeg.stdin.take() {
-        for frame in frames {
-            if let Err(e) = child_stdin.write_all(frame.as_raw()) {
-                eprintln!("Failed to write frame data to ffmpeg: {}", e);
-                break;
+        let mut ffmpeg = match command.spawn() {
+            Ok(child) => child,
+            Err(e) => {
+                eprintln!("Failed to start ffmpeg (pass 1): {}", e);
+                return;
             }
+        };
+
+        // Write frames as raw RGB to ffmpeg
+        if let Some(mut child_stdin) = ffmpeg.stdin.take() {
+            for frame in frames {
+                if let Err(e) = child_stdin.write_all(frame.as_raw()) {
+                    eprintln!("Failed to write frame data to ffmpeg (pass 1): {}", e);
+                    break;
+                }
+            }
+        }
+
+        let output = match ffmpeg.wait_with_output() {
+            Ok(o) => o,
+            Err(e) => {
+                eprintln!("Failed waiting for ffmpeg (pass 1): {}", e);
+                return;
+            }
+        };
+        if !output.status.success() {
+            eprintln!("FFmpeg error (pass 1):\n{}", String::from_utf8_lossy(&output.stderr));
         }
     }
 
-    let output = match ffmpeg.wait_with_output() {
-        Ok(o) => o,
-        Err(e) => {
-            eprintln!("Failed waiting for ffmpeg: {}", e);
-            return;
+    // Second pass
+    {
+        println!("Second pass => {}", output_file);
+        let mut command = Command::new("ffmpeg");
+        command
+            .arg("-y")
+            // Read raw frames from stdin
+            .arg("-f")
+            .arg("rawvideo")
+            .arg("-pixel_format")
+            .arg("rgb24")
+            .arg("-video_size")
+            .arg(format!("{}x{}", width, height))
+            .arg("-framerate")
+            .arg(frame_rate.to_string())
+            .arg("-i")
+            .arg("-")
+            .arg("-threads")
+            .arg("0")
+            .arg("-c:v")
+            .arg("libaom-av1")
+            .arg("-b:v")
+            .arg("0")
+            .arg("-crf")
+            .arg("15")
+            .arg("-pass")
+            .arg("2")
+            .arg("-an")
+            .arg(output_file)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped());
+
+        let mut ffmpeg = match command.spawn() {
+            Ok(child) => child,
+            Err(e) => {
+                eprintln!("Failed to start ffmpeg (pass 2): {}", e);
+                return;
+            }
+        };
+
+        // Write frames again as raw RGB to ffmpeg
+        if let Some(mut child_stdin) = ffmpeg.stdin.take() {
+            for frame in frames {
+                if let Err(e) = child_stdin.write_all(frame.as_raw()) {
+                    eprintln!("Failed to write frame data to ffmpeg (pass 2): {}", e);
+                    break;
+                }
+            }
         }
-    };
-    if !output.status.success() {
-        eprintln!("FFmpeg error:\n{}", String::from_utf8_lossy(&output.stderr));
-    } else {
-        println!("Video creation complete: {}", output_file);
+
+        let output = match ffmpeg.wait_with_output() {
+            Ok(o) => o,
+            Err(e) => {
+                eprintln!("Failed waiting for ffmpeg (pass 2): {}", e);
+                return;
+            }
+        };
+        if !output.status.success() {
+            eprintln!("FFmpeg error (pass 2):\n{}", String::from_utf8_lossy(&output.stderr));
+        } else {
+            println!("Video creation complete: {}", output_file);
+        }
     }
 }
 
 // ======================================================================
-// Save an RGB image as AVIF using the built-in image crate (0.25.1+, features=["avif"])
+// Save an RGB image as AVIF using the built-in image crate
 // ======================================================================
 fn save_image_as_avif(
     rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>,
@@ -1520,9 +1612,7 @@ fn main() {
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("Invalid hex seed");
 
-    println!(
-        "Starting 3-body simulation with lines-only visualization (Gaussian blur on lines)..."
-    );
+    println!("Starting 3-body simulation with lines-only visualization...");
 
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
@@ -1577,6 +1667,7 @@ fn main() {
         args.blur_radius_fraction,
         args.blur_strength,
         args.blur_core_brightness,
+        args.disable_blur,
     );
     let dyn_img = DynamicImage::ImageRgba8(single_img);
     let dyn_img_rgb = dyn_img.to_rgb8();
@@ -1610,9 +1701,9 @@ fn main() {
         }
     }
 
-    // 6) Lines‐only video
+    // 6) Lines‐only video with two-pass AV1
     let num_seconds = 30;
-    let target_frames = 60 * num_seconds;
+    let target_frames = 60 * num_seconds; // 60 FPS * 30s = 1800 frames
     let frame_interval =
         if target_frames > 0 { args.num_steps.saturating_div(target_frames) } else { 1 }.max(1);
 
@@ -1624,6 +1715,7 @@ fn main() {
         args.blur_radius_fraction,
         args.blur_strength,
         args.blur_core_brightness,
+        args.disable_blur,
     );
 
     // Auto‐level the frames
@@ -1634,9 +1726,9 @@ fn main() {
         args.levels_gamma,
     );
 
-    // Create video
-    let video_filename = format!("vids/{}.mp4", args.file_name);
-    create_video_from_frames_in_memory(&lines_frames, &video_filename, 60);
+    // Create video (.mkv)
+    let video_filename = format!("vids/{}.mkv", args.file_name);
+    create_video_from_frames_in_memory_2pass(&lines_frames, &video_filename, 60);
 
-    println!("Done. Created final image(s) and video (blurred lines).");
+    println!("Done. Created final image(s) and video.");
 }
