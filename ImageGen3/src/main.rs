@@ -19,9 +19,9 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 /// We embed data of dimension LLE_M for the Lyapunov exponent calculation.
-const LLE_M: usize = 3;
+const LLE_M: usize = 4;
 /// The branching factor for the KdTree. (Used in `kiddo`.)
-const B: usize = 64;
+const B: usize = 32;
 /// Gravitational constant, for convenience we use a typical G=9.8
 const G: f64 = 9.8;
 
@@ -68,7 +68,7 @@ struct Args {
     max_mass: f64,
 
     /// Max points for chaos measure sub-sampling
-    #[arg(long, default_value_t = 1_000_000)]
+    #[arg(long, default_value_t = 100_000)]
     max_points: usize,
 
     /// Chaos measure weight
