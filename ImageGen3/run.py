@@ -1,7 +1,6 @@
 import itertools
 import subprocess
 import threading
-import os
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -20,8 +19,8 @@ SIMULATION_CONFIG = {
     'num_runs': 1000,  # e.g., how many different seeds to generate
 
     # The relevant command-line arguments for the core parameters
-    # using the same default values the Rust code has (adjust if desired).
-    # NOTE: These keys must match your Rust CLI argument names (minus the '--' and dashes).
+    # Make sure these keys match your Rust CLI argument long names (minus the dashes).
+    # e.g. Rust has '--num-steps-sim', so we use 'num_steps_sim' as the dictionary key here.
     'param_ranges': {
         'num_sims': [10_000],             # --num-sims
         'num_steps_sim': [1_000_000],     # --num-steps-sim
@@ -44,7 +43,7 @@ SIMULATION_CONFIG = {
         'levels_gamma': [1.0],           # --levels-gamma
     },
 
-    # Example "blur variants" if blur is enabled
+    # Example "blur_variants" if blur is enabled. Each variant is (radius_frac, strength, core_bright).
     'blur_variants': [
         (0.005, 1.0, 1.0),
         (0.01,  1.0, 1.0),
@@ -59,12 +58,11 @@ SIMULATION_CONFIG = {
 @dataclass
 class SimulationParams:
     """
-    Reflects all Rust CLI arguments (with underscores replaced by dashes in the actual CLI flags).
+    Reflects all Rust CLI arguments for the three_body_problem binary.
     """
     seed: str
     file_name: str
 
-    # Matching each arg in the Rust code:
     num_sims: int               # --num-sims
     num_steps_sim: int          # --num-steps-sim
     location: float             # --location
@@ -90,17 +88,37 @@ class SimulationParams:
 
 def generate_file_name(params: SimulationParams) -> str:
     """
-    Create a file name using the seed value plus (if blur is enabled) the blur settings.
-    We'll strip '0x' from the seed for uniqueness, e.g. "seed_10003000_blur0.010_str1.00_core1.00".
+    Create the main 'file_name' for Rust's "--file-name" argument.
+
+    If blur is disabled, name ends with "_noblur".
+    If blur is enabled, append the blur parameters for clarity.
+    e.g. "seed_100035000A_blur0.010_str1.00_core1.00"
     """
     seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
-
     if params.disable_blur:
-        # If blur is disabled, we can just name by seed
         return f"seed_{seed_part}_noblur"
     else:
         return (
             f"seed_{seed_part}"
+            f"_blur{params.blur_radius_fraction:.3f}"
+            f"_str{params.blur_strength:.2f}"
+            f"_core{params.blur_core_brightness:.2f}"
+        )
+
+
+def generate_log_prefix(params: SimulationParams) -> str:
+    """
+    Creates the prefix for the log files.
+    If blur is disabled => just "{seed}" (no '0x' if present).
+    If blur is enabled => "{seed}_blurX_strY_coreZ".
+    """
+    seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
+    if params.disable_blur:
+        # e.g. "ABC100" if seed=0xABC100
+        return seed_part
+    else:
+        return (
+            f"{seed_part}"
             f"_blur{params.blur_radius_fraction:.3f}"
             f"_str{params.blur_strength:.2f}"
             f"_core{params.blur_core_brightness:.2f}"
@@ -137,7 +155,6 @@ def build_command_list(program_path: str, params: SimulationParams) -> List[str]
         "--blur-core-brightness", str(params.blur_core_brightness),
     ]
 
-    # If blur is disabled, we add --disable-blur
     if params.disable_blur:
         cmd.append("--disable-blur")
 
@@ -179,19 +196,21 @@ def _logger_thread(
     pipe.close()
 
 
-def run_simulation(command_list: List[str], seed: str) -> int:
+def run_simulation(command_list: List[str], params: SimulationParams) -> int:
     """
     1) Print the EXACT command.
-    2) Start the child process with Popen, capturing stdout + stderr.
-    3) Two threads read stdout/stderr line by line, printing + logging.
-    4) On non-zero exit, re-print all captured lines to help debug.
+    2) Build log file names based on blur or not.
+    3) Spawn the child process, capturing stdout/stderr line by line.
+    4) On non-zero exit, re-print all lines to console *and* append them to the logs.
     5) Return the child's exit code.
     """
     cmd_str = " ".join(command_list)
     print(f"Running command: {cmd_str}")
 
-    stdout_log_file = f"{seed}_thread-1.log"
-    stderr_log_file = f"{seed}_thread-2.log"
+    # Decide the log file prefix based on blur, etc.
+    log_prefix = generate_log_prefix(params)
+    stdout_log_file = f"{log_prefix}_thread-1.log"
+    stderr_log_file = f"{log_prefix}_thread-2.log"
 
     print_lock = threading.Lock()
     stdout_lines = []
@@ -226,7 +245,7 @@ def run_simulation(command_list: List[str], seed: str) -> int:
 
     if proc.returncode != 0:
         print(f"\nERROR: child returned code {proc.returncode}. Printing all captured output:\n")
-
+        # Re-print to console
         print("---- BEGIN RUST STDOUT ----")
         for line in stdout_lines:
             print(f"[THREAD-1] {line}")
@@ -236,6 +255,17 @@ def run_simulation(command_list: List[str], seed: str) -> int:
         for line in stderr_lines:
             print(f"[THREAD-2] {line}")
         print("---- END RUST STDERR ----\n")
+
+        # Also append to the log files again
+        with open(stdout_log_file, 'a', encoding='utf-8') as f:
+            f.write("\nERROR DETECTED. REPRINTING CAPTURED STDOUT LINES:\n")
+            for line in stdout_lines:
+                f.write(f"[THREAD-1] {line}\n")
+
+        with open(stderr_log_file, 'a', encoding='utf-8') as f:
+            f.write("\nERROR DETECTED. REPRINTING CAPTURED STDERR LINES:\n")
+            for line in stderr_lines:
+                f.write(f"[THREAD-2] {line}\n")
 
     return proc.returncode
 
@@ -251,9 +281,9 @@ class SimulationRunner:
     def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
         """
         - Reads from SIMULATION_CONFIG['param_ranges'] to get possible values for each param.
-        - For each combination, produce multiple seeds (0 to num_runs-1).
-        - For each seed, either produce multiple blur variants (if blur is not forced disabled)
-          or just one variant if blur is disabled in that param combination.
+        - For each combination, produce multiple seeds (0..num_runs-1).
+        - If 'disable_blur' is True in that combination, we skip the 5 blur variants
+          and produce only 1 set of blur parameters.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
@@ -262,27 +292,26 @@ class SimulationRunner:
         for combo in itertools.product(*param_values):
             combo_dict = dict(zip(keys, combo))
 
-            # Check if blur is disabled in this combo
-            # If so, we won't produce 5 variants, just 1 "dummy" variant
             blur_is_disabled = combo_dict['disable_blur']
             if blur_is_disabled:
-                # We'll define a single "variant" that won't matter
-                # because the code will pass --disable-blur anyway.
-                chosen_blur_variants = [(combo_dict['blur_radius_fraction'],
-                                         combo_dict['blur_strength'],
-                                         combo_dict['blur_core_brightness'])]
+                # Only one "variant"
+                chosen_blur_variants = [
+                    (combo_dict['blur_radius_fraction'],
+                     combo_dict['blur_strength'],
+                     combo_dict['blur_core_brightness'])
+                ]
             else:
                 chosen_blur_variants = SIMULATION_CONFIG['blur_variants']
 
             for i in range(num_runs):
-                # Build a unique seed, e.g. 0x100030 + i in hex
+                # Build a unique seed, e.g. 0x100035 + i in hex
                 seed_suffix = f"{i:04X}"
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
                 for (radius_frac, strength, core_bright) in chosen_blur_variants:
                     p = SimulationParams(
                         seed=full_seed,
-                        file_name="output",  # default; we rename later
+                        file_name="output",  # We'll rename later for uniqueness
 
                         num_sims=combo_dict['num_sims'],
                         num_steps_sim=combo_dict['num_steps_sim'],
@@ -306,7 +335,6 @@ class SimulationRunner:
                         clip_white=combo_dict['clip_white'],
                         levels_gamma=combo_dict['levels_gamma'],
                     )
-
                     param_sets.append(p)
 
         return param_sets
@@ -321,11 +349,11 @@ class SimulationRunner:
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
             for params in param_sets:
-                file_name = generate_file_name(params)
-                params.file_name = file_name
+                # Update the file_name argument for the Rust code:
+                params.file_name = generate_file_name(params)
 
                 cmd_list = build_command_list(self.program_path, params)
-                fut = executor.submit(run_simulation, cmd_list, params.seed)
+                fut = executor.submit(run_simulation, cmd_list, params)
                 futures[fut] = cmd_list
 
             for future in as_completed(futures):
@@ -341,9 +369,11 @@ class SimulationRunner:
 
 
 def main():
-    print("Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
-          "We produce multiple blur variants per seed (unless blur is disabled). Images/video "
-          "are generated by the Rust code.\n")
+    print(
+        "Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
+        "We produce multiple blur variants per seed (unless blur is disabled). Images/video\n"
+        "are generated by the Rust code. Logs are saved per-run in real time.\n"
+    )
 
     runner = SimulationRunner(
         program_path=SIMULATION_CONFIG['program_path'],
@@ -355,7 +385,7 @@ def main():
         num_runs=SIMULATION_CONFIG['num_runs']
     )
 
-    print(f"Base param sets *including* blur variants: {len(param_sets)}")
+    print(f"Base param sets (including blur variants unless disabled): {len(param_sets)}")
 
     runner.run_simulations(param_sets)
 
