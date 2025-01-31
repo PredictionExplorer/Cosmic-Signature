@@ -6,15 +6,16 @@ use na::Vector3;
 use nalgebra as na;
 use palette::{FromColor, Hsl, Srgb};
 use rayon::prelude::*;
-use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
+use rustfft::FftPlanner;
 use sha3::{Digest, Sha3_256};
 use std::error::Error;
 use std::f64::{INFINITY, NEG_INFINITY};
-use std::fs::File;
 use std::fs;
+use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// For Borda metric calculations
 const LLE_M: usize = 3; // dimension used in embedding for Lyapunov exponent
@@ -253,10 +254,12 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
 /// Warm up, then collect `num_steps` positions
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-    // Warm up
+
+    // Warm up (quiet, no prints here to avoid spam)
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
+
     // Record
     let mut bodies2 = bodies.clone();
     let mut all_positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
@@ -299,7 +302,7 @@ fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
 // ========================================================
 use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
-use statrs::statistics::Statistics; // <--- only one import, no duplicates
+use statrs::statistics::Statistics;
 
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     let mut planner = FftPlanner::new();
@@ -490,6 +493,8 @@ struct TrajectoryResult {
     total_score_weighted: f64,
 }
 
+/// Runs the Borda search in parallel over `num_sims` random orbits.
+/// Prints progress ~every 10% of orbits processed.
 fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_sims: usize,
@@ -500,9 +505,9 @@ fn select_best_trajectory(
     dist_weight: f64,
     lyap_weight: f64,
 ) -> (Vec<Body>, TrajectoryResult) {
-    println!("Running Borda search over {num_sims} random orbits...");
+    println!("STAGE 1/7: Borda search over {num_sims} random orbits...");
 
-    // build many random orbits
+    // Build many random orbits
     let many_bodies: Vec<Vec<Body>> = (0..num_sims)
         .map(|_| {
             vec![
@@ -549,18 +554,30 @@ fn select_best_trajectory(
         })
         .collect();
 
-    // compute in parallel
+    // We'll track progress in the parallel loop
+    let progress_counter = AtomicUsize::new(0);
+    let chunk_size = (num_sims / 10).max(1);
+
+    // Compute in parallel
     let results: Vec<Option<(TrajectoryResult, usize)>> = many_bodies
         .par_iter()
         .enumerate()
         .map(|(idx, bodies)| {
+            // Update progress
+            let local_count = progress_counter.fetch_add(1, Ordering::Relaxed) + 1;
+            if local_count % chunk_size == 0 {
+                let pct = (local_count as f64 / num_sims as f64) * 100.0;
+                println!("   Borda search: {:.0}% done", pct);
+            }
+
+            // Basic checks
             let e = calculate_total_energy(bodies);
             let ang = calculate_total_angular_momentum(bodies).norm();
             // skip unbound orbits or negligible ang
             if e >= 0.0 || ang < 1e-3 {
                 None
             } else {
-                // big simulation by default: e.g. 1,000,000 steps
+                // big simulation by default, e.g. 1,000,000 steps
                 let positions = get_positions(bodies.clone(), num_steps_sim);
                 let len = positions[0].len();
                 let factor = (len / max_points).max(1);
@@ -568,8 +585,11 @@ fn select_best_trajectory(
                 let m2 = bodies[1].mass;
                 let m3 = bodies[2].mass;
 
+                // sub-sample for lyapunov
                 let body1_norms: Vec<f64> =
                     positions[0].iter().step_by(factor).map(|p| p.norm()).collect();
+
+                // Evaluate
                 let c = non_chaoticness(m1, m2, m3, &positions); // lower is better
                 let p = average_triangle_perimeter(&positions);
                 let d = total_distance(&positions);
@@ -657,7 +677,7 @@ fn select_best_trajectory(
 
     let best_bodies = many_bodies[*best_idx].clone();
     println!(
-        "Borda best => Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}",
+        "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}",
         best_tr.total_score_weighted,
         best_tr.chaos,
         best_tr.avg_perimeter,
@@ -981,12 +1001,13 @@ fn create_video_from_frames_2pass(
     let cpu_count = num_cpus::get().to_string();
 
     println!(
-        "Creating 2-pass AV1 => {output_file}, {frame_rate} FPS, using {} CPU threads",
-        cpu_count
+        "STAGE 6/7: Creating 2-pass AV1 video => {output_file}, {}x{}, {} FPS, using {} threads",
+        width, height, frame_rate, cpu_count
     );
 
     // pass1
     {
+        println!("   (pass 1) Encoding...");
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-y")
             // raw frames from stdin
@@ -1007,31 +1028,31 @@ fn create_video_from_frames_2pass(
             .arg("-cpu-used")
             .arg("0") // Slowest but highest quality
             .arg("-row-mt")
-            .arg("1") // Enable row-based multithreading
+            .arg("1")
             .arg("-tile-columns")
-            .arg("0") // Single tile column for best quality
+            .arg("0")
             .arg("-tile-rows")
-            .arg("0") // Single tile row for best quality
+            .arg("0")
             // Codec settings
             .arg("-c:v")
             .arg("libaom-av1")
             .arg("-b:v")
             .arg("0") // Use CRF mode
             .arg("-crf")
-            .arg("4") // Very high quality (0-63, lower is better)
+            .arg("4") // Very high quality
             .arg("-pass")
             .arg("1")
             // Additional quality enhancements
             .arg("-lag-in-frames")
-            .arg("35") // Maximum look-ahead frames
+            .arg("35")
             .arg("-enable-qm")
-            .arg("1") // Enable quantization matrices
+            .arg("1")
             .arg("-arnr-strength")
-            .arg("4") // Temporal filter strength
+            .arg("4")
             .arg("-arnr-maxframes")
-            .arg("15") // Maximum number of frames to filter
+            .arg("15")
             .arg("-enable-keyframe-filtering")
-            .arg("2") // Enhanced keyframe filtering
+            .arg("2")
             .arg("-error-resilience")
             .arg("1")
             // No audio
@@ -1053,11 +1074,14 @@ fn create_video_from_frames_2pass(
         let out = child.wait_with_output().expect("ffmpeg pass1 wait fail");
         if !out.status.success() {
             eprintln!("FFmpeg pass1 error:\n{}", String::from_utf8_lossy(&out.stderr));
+        } else {
+            println!("   (pass 1) Done.");
         }
     }
 
     // pass2
     {
+        println!("   (pass 2) Encoding...");
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-y")
             .arg("-f")
@@ -1117,7 +1141,7 @@ fn create_video_from_frames_2pass(
         if !out.status.success() {
             eprintln!("FFmpeg pass2 error:\n{}", String::from_utf8_lossy(&out.stderr));
         } else {
-            println!("Video creation done => {output_file}");
+            println!("   (pass 2) Done. Video creation complete => {output_file}");
         }
     }
 }
@@ -1145,7 +1169,7 @@ fn save_image_as_avif(
         dyn_img.height(),
         dyn_img.color().into(),
     )?;
-    println!("Saved AVIF => {path}");
+    println!("   Saved AVIF => {path}");
     Ok(())
 }
 
@@ -1170,7 +1194,7 @@ fn main() {
         args.velocity,
     );
 
-    // 1) Borda => best orbit (possibly 10,000 orbits each 1,000,000 steps)
+    // 1) Borda => best orbit
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
         args.num_sims,
@@ -1183,11 +1207,20 @@ fn main() {
     );
 
     // 2) re-run best orbit => get positions
-    println!("Re-running best orbit for {} steps...", args.num_steps_sim);
-    let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
+    println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
+    let positions = {
+        // We'll do a small progress print inside the loop. But `get_positions`
+        // does a big internal loop with no progress prints. We'll do a simpler approach:
+        // Just call it, since you probably don't want to spam the console with 1e6 steps.
+
+        // If you want partial prints, you could manually rewrite get_positions,
+        // but let's keep it simpler. We'll just do a single call here.
+        get_positions(best_bodies.clone(), args.num_steps_sim)
+    };
+    println!("   => Done re-running best orbit.");
 
     // 3) bounding box
-    println!("Determining bounding box for final orbit...");
+    println!("STAGE 3/7: Determining bounding box...");
     let mut min_x = INFINITY;
     let mut max_x = NEG_INFINITY;
     let mut min_y = INFINITY;
@@ -1216,8 +1249,13 @@ fn main() {
         min_y -= 0.05 * wy;
         max_y += 0.05 * wy;
     }
+    println!("   => Done bounding box.");
 
     // 4) line drawing: single pass => frames
+    println!(
+        "STAGE 4/7: Single-pass line drawing => frames + final image ({} steps).",
+        args.num_steps_sim
+    );
     let width = args.frame_size;
     let height = args.frame_size;
     let w_usize = width as usize;
@@ -1246,11 +1284,18 @@ fn main() {
     let target_frames = 1800;
     let fi = if target_frames > 0 { (args.num_steps_sim / target_frames).max(1) } else { 1 };
 
-    println!("Single-pass line drawing => frames + final image ({} steps).", args.num_steps_sim);
     let mut accum = vec![(0.0, 0.0, 0.0); npix];
     let mut frames = Vec::new();
 
+    // We'll print progress ~every 10% in the line drawing loop
+    let chunk_line = (args.num_steps_sim / 10).max(1);
+
     for step in 0..args.num_steps_sim {
+        if step % chunk_line == 0 {
+            let pct = (step as f64 / args.num_steps_sim as f64) * 100.0;
+            println!("   line drawing: {:.0}% done", pct);
+        }
+
         let p0 = positions[0][step];
         let p1 = positions[1][step];
         let p2 = positions[2][step];
@@ -1312,7 +1357,6 @@ fn main() {
 
         // snapshot if step multiple of fi or last step
         if (step % fi == 0) || (step == args.num_steps_sim - 1) {
-            // local max for the snapshot
             let mut maxval = 0.0;
             for &(r, g, b) in &accum {
                 let m = r.max(g).max(b);
@@ -1334,35 +1378,34 @@ fn main() {
             frames.push(img);
         }
     }
+    println!("   => line drawing complete. Collected {} frames.", frames.len());
 
-    // 5) We do NOT create a separate "final_img" with separate scaling
-    // We want the LAST FRAME to match the final single image exactly.
-    // So the last frame in `frames` is effectively our final single image,
-    // but not yet auto-leveled.
-
-    println!(
-        "Applying global histogram auto-level to all frames => no flicker ({} frames).",
-        frames.len()
-    );
+    // 5) global auto-level
+    println!("STAGE 5/7: Applying global histogram auto-level to {} frames...", frames.len());
     auto_levels_percentile_frames_global(
         &mut frames,
         args.clip_black,
         args.clip_white,
         args.levels_gamma,
     );
+    println!("   => Done auto-leveling.");
 
-    // The last frame is the final single image, now auto-leveled identically
+    // The last frame is the final single image
     let final_img = frames.last().unwrap().clone();
 
     // 6) create video (2-pass AV1)
     let vid_path = format!("vids/{}.mkv", args.file_name);
     create_video_from_frames_2pass(&frames, &vid_path, frame_rate);
 
-    // 7) save final single image as AVIF => exactly the last frame
+    // 7) save final single image as AVIF
+    println!("STAGE 7/7: Saving final single image as AVIF...");
     let avif_path = format!("pics/{}.avif", args.file_name);
     if let Err(e) = save_image_as_avif(&final_img, &avif_path, 0, 90) {
         eprintln!("Error saving AVIF: {e}");
     }
 
-    println!("Done! Best orbit info => Weighted Borda = {:.3}", best_info.total_score_weighted);
+    println!(
+        "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
+        best_info.total_score_weighted
+    );
 }
