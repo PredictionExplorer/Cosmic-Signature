@@ -1,6 +1,6 @@
 import itertools
-import random
 import subprocess
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -10,41 +10,39 @@ SIMULATION_CONFIG = {
     # Path to your compiled Rust program:
     'program_path': './target/release/three_body_problem',
 
-    # Parallelism
+    # Parallelism (how many simulations to run at once)
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "100030",
-    'num_runs': 10,   # e.g. number of seeds, adjust as needed
+    'base_seed_hex': "100035",
+    'num_runs': 1000,  # e.g., how many different seeds to generate
 
     # The relevant command-line arguments for the core parameters
+    # using the same default values the Rust code has (adjust if desired):
     'param_ranges': {
-        'num_steps': [1_000_000],
-        'num_sims': [10_000],
-        'location': [300.0],
-        'velocity': [1.0],
-        'min_mass': [100.0],
-        'max_mass': [300.0],
-        'clip_black': [0.01],
-        'clip_white': [0.99],
-        'levels_gamma': [1.0],
-        'max_points': [100_000],
-        'chaos_weight': [3.0],
-        'perimeter_weight': [1.0],
-        'dist_weight': [2.0],
-        'lyap_weight': [2.5],
-        'frame_size': [1800],
-
-        # Newly included parameters corresponding to the Rust code's defaults:
-        'disable_png': [False],
-        'disable_avif': [False],
-        'disable_blur': [False],
-        'disable_video': [False],
-        'avif_speed': [0],
-        'avif_quality': [90],
+        'num_steps_sim': [1_000_000],      # Rust default is 1_000_000
+        'num_sims': [10_000],             # Rust default is 10_000
+        'location': [300.0],             # Rust default is 300.0
+        'velocity': [1.0],               # Rust default is 1.0
+        'min_mass': [100.0],             # Rust default is 100.0
+        'max_mass': [300.0],             # Rust default is 300.0
+        'chaos_weight': [3.0],           # Rust default is 3.0
+        'perimeter_weight': [1.0],       # Rust default is 1.0
+        'dist_weight': [2.0],            # Rust default is 2.0
+        'lyap_weight': [2.5],            # Rust default is 2.5
+        'max_points': [100_000],         # Rust default is 100_000
+        'frame_size': [800],            # Rust default is 1800
+        'blur_radius_fraction': [0.01],  # Rust default is 0.01
+        'blur_strength': [1.0],          # Rust default is 1.0
+        'blur_core_brightness': [1.0],   # Rust default is 1.0
+        'disable_blur': [False],         # Rust default is false
+        'clip_black': [0.01],            # Rust default is 0.01
+        'clip_white': [0.99],            # Rust default is 0.99
+        'levels_gamma': [1.0],           # Rust default is 1.0
     },
 
-    # We define 5 "blur variants" as before (each variant changes radius fraction, strength, core brightness)
+    # We define 5 "blur variants" as before (each variant changes
+    # radius fraction, strength, core brightness):
     'blur_variants': [
         (0.005, 1.0, 1.0),
         (0.01,  1.0, 1.0),
@@ -59,68 +57,69 @@ SIMULATION_CONFIG = {
 @dataclass
 class SimulationParams:
     """
-    Reflects all Rust CLI arguments:
-      --seed, --file-name,
-      --num-steps, --num-sims, --location, --velocity,
-      --min-mass, --max-mass, --max-points,
-      --chaos-weight, --perimeter-weight, --dist-weight, --lyap-weight,
-      --clip-black, --clip-white, --levels-gamma,
-      --frame-size,
+    Reflects all Rust CLI arguments actually present in your Rust program:
+      --seed
+      --file-name
+      --num-sims
+      --num-steps-sim
+      --location
+      --velocity
+      --min-mass
+      --max-mass
+      --chaos-weight
+      --perimeter-weight
+      --dist-weight
+      --lyap-weight
+      --max-points
+      --frame-size
+      --blur-radius-fraction
+      --blur-strength
+      --blur-core-brightness
+      --disable-blur
+      --clip-black
+      --clip-white
+      --levels-gamma
 
-      And the newly introduced arguments:
-      --disable-png, --disable-avif, --disable-blur, --disable-video,
-      --avif-speed, --avif-quality,
-
-      And the three "blur" parameters:
-      --blur-radius-fraction, --blur-strength, --blur-core-brightness
-
-    By default, booleans (disable_*) are False so images and videos
-    will be generated.  The user can override if needed.
+    We use Rust defaults in Python, but you can override them.
+    We also generate multiple runs with different seeds & blur variants.
     """
+
     # Core simulation parameters
-    num_steps: int
+    seed: str
+    file_name: str
     num_sims: int
+    num_steps_sim: int
     location: float
     velocity: float
     min_mass: float
     max_mass: float
-    clip_black: float
-    clip_white: float
-    levels_gamma: float
-    max_points: int
     chaos_weight: float
     perimeter_weight: float
     dist_weight: float
     lyap_weight: float
+    max_points: int
     frame_size: int
 
-    # Booleans/flags
-    disable_png: bool
-    disable_avif: bool
-    disable_blur: bool
-    disable_video: bool
-
-    # AVIF settings
-    avif_speed: int
-    avif_quality: int
-
-    # Additional blur parameters
+    # Blur-related
     blur_radius_fraction: float
     blur_strength: float
     blur_core_brightness: float
+    disable_blur: bool
 
-    # The unique seed for this run
-    seed: str
+    # Clipping + gamma
+    clip_black: float
+    clip_white: float
+    levels_gamma: float
 
 
 def generate_file_name(params: SimulationParams) -> str:
     """
-    Create a file name using the seed value, plus the blur settings.
-    We'll strip the '0x' from the seed, for uniqueness.
+    Create a file name using the seed value plus the blur settings.
+    We'll strip the '0x' from the seed for uniqueness.
 
-    Example: "seed_10002501_blur0.010_str1.00_core2.00"
+    Example: "seed_10003000_blur0.010_str1.00_core1.00"
     """
-    seed_part = params.seed[2:]  # remove leading '0x'
+    seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
     return (
         f"seed_{seed_part}"
         f"_blur{params.blur_radius_fraction:.3f}"
@@ -129,58 +128,44 @@ def generate_file_name(params: SimulationParams) -> str:
     )
 
 
-def build_command_list(program_path: str, params: SimulationParams, file_name: str) -> List[str]:
+def build_command_list(program_path: str, params: SimulationParams) -> List[str]:
     """
-    Construct the command list for the Rust simulation.
-    Includes *every* CLI parameter present in the Rust program.
+    Construct the command list for the Rust simulation,
+    ensuring every CLI parameter is included.
     """
     cmd = [
         program_path,
-
         "--seed", params.seed,
-        "--file-name", file_name,
+        "--file-name", params.file_name,
 
-        "--num-steps", str(params.num_steps),
         "--num-sims", str(params.num_sims),
+        "--num-steps-sim", str(params.num_steps_sim),
         "--location", str(params.location),
         "--velocity", str(params.velocity),
         "--min-mass", str(params.min_mass),
         "--max-mass", str(params.max_mass),
 
-        "--max-points", str(params.max_points),
         "--chaos-weight", str(params.chaos_weight),
         "--perimeter-weight", str(params.perimeter_weight),
         "--dist-weight", str(params.dist_weight),
         "--lyap-weight", str(params.lyap_weight),
 
-        "--clip-black", str(params.clip_black),
-        "--clip-white", str(params.clip_white),
-        "--levels-gamma", str(params.levels_gamma),
-
+        "--max-points", str(params.max_points),
         "--frame-size", str(params.frame_size),
 
-        # The blur-related arguments
         "--blur-radius-fraction", str(params.blur_radius_fraction),
         "--blur-strength", str(params.blur_strength),
         "--blur-core-brightness", str(params.blur_core_brightness),
     ]
 
-    # Booleans: Only add them if they're True
-    if params.disable_png:
-        cmd.append("--disable-png")
-    if params.disable_avif:
-        cmd.append("--disable-avif")
     if params.disable_blur:
         cmd.append("--disable-blur")
-    if params.disable_video:
-        cmd.append("--disable-video")
 
-    # AVIF speed/quality
-    cmd.append("--avif-speed")
-    cmd.append(str(params.avif_speed))
-
-    cmd.append("--avif-quality")
-    cmd.append(str(params.avif_quality))
+    cmd += [
+        "--clip-black", str(params.clip_black),
+        "--clip-white", str(params.clip_white),
+        "--levels-gamma", str(params.levels_gamma),
+    ]
 
     return cmd
 
@@ -212,11 +197,7 @@ class SimulationRunner:
         self.program_path = program_path
         self.max_concurrent = max_concurrent
 
-    def get_parameter_combinations(
-        self,
-        base_seed_hex: str,
-        num_runs: int
-    ) -> List[SimulationParams]:
+    def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
         """
         Generate all combinations from 'param_ranges' in SIMULATION_CONFIG.
         Then for each combination, produce multiple seeds, and for each seed,
@@ -228,12 +209,12 @@ class SimulationRunner:
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
 
         param_sets = []
-        # e.g. if each param has exactly 1 value, we only get 1 combo, but let's keep it general
+        # E.g. if each param only has 1 value, we get exactly 1 combination,
+        # but let's keep this general for expansions.
         for combo in itertools.product(*param_values):
             for i in range(num_runs):
                 # Build a unique seed, e.g. 0x100030 + i in hex
-                # i is turned into 4 hex digits => e.g. "0000", "0001", "0002"
-                seed_suffix = f"{i:04X}"
+                seed_suffix = f"{i:04X}"   # i => 4-hex-digit string
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
                 # Convert 'combo' -> dict of base param fields
@@ -241,35 +222,31 @@ class SimulationRunner:
 
                 # For each blur variant, create a separate SimulationParams
                 for (radius_frac, strength, core_bright) in SIMULATION_CONFIG['blur_variants']:
+                    # We override the blur parameters for that variant
                     params = SimulationParams(
-                        num_steps=combo_dict['num_steps'],
+                        seed=full_seed,
+                        file_name="output",  # default from Rust is "output"; we will override below
                         num_sims=combo_dict['num_sims'],
+                        num_steps_sim=combo_dict['num_steps_sim'],
                         location=combo_dict['location'],
                         velocity=combo_dict['velocity'],
                         min_mass=combo_dict['min_mass'],
                         max_mass=combo_dict['max_mass'],
-                        clip_black=combo_dict['clip_black'],
-                        clip_white=combo_dict['clip_white'],
-                        levels_gamma=combo_dict['levels_gamma'],
-                        max_points=combo_dict['max_points'],
                         chaos_weight=combo_dict['chaos_weight'],
                         perimeter_weight=combo_dict['perimeter_weight'],
                         dist_weight=combo_dict['dist_weight'],
                         lyap_weight=combo_dict['lyap_weight'],
+                        max_points=combo_dict['max_points'],
                         frame_size=combo_dict['frame_size'],
-
-                        disable_png=combo_dict['disable_png'],
-                        disable_avif=combo_dict['disable_avif'],
-                        disable_blur=combo_dict['disable_blur'],
-                        disable_video=combo_dict['disable_video'],
-                        avif_speed=combo_dict['avif_speed'],
-                        avif_quality=combo_dict['avif_quality'],
 
                         blur_radius_fraction=radius_frac,
                         blur_strength=strength,
                         blur_core_brightness=core_bright,
+                        disable_blur=combo_dict['disable_blur'],
 
-                        seed=full_seed
+                        clip_black=combo_dict['clip_black'],
+                        clip_white=combo_dict['clip_white'],
+                        levels_gamma=combo_dict['levels_gamma'],
                     )
                     param_sets.append(params)
 
@@ -277,15 +254,20 @@ class SimulationRunner:
 
     def run_simulations(self, param_sets: List[SimulationParams]):
         """
-        Execute each SimulationParams in a ThreadPoolExecutor, up to 'max_concurrent' concurrency.
+        Execute each SimulationParams in a ThreadPoolExecutor,
+        up to 'max_concurrent' concurrency.
         """
         print(f"Total tasks to execute: {len(param_sets)}")
 
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
             for params in param_sets:
+                # Generate a nicer file name for each set of parameters
+                # so we don't overwrite "output" each time
                 file_name = generate_file_name(params)
-                cmd_list = build_command_list(self.program_path, params, file_name)
+                params.file_name = file_name
+
+                cmd_list = build_command_list(self.program_path, params)
                 fut = executor.submit(run_simulation, cmd_list)
                 futures[fut] = cmd_list
 
@@ -300,7 +282,7 @@ class SimulationRunner:
 
 def main():
     print("Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
-          "We produce 5 blur variants per seed. Images and videos are generated by default.\n")
+          "We produce 5 blur variants per seed. Images/video are generated by the Rust code.\n")
 
     # Create the runner
     runner = SimulationRunner(
@@ -316,7 +298,7 @@ def main():
 
     print(f"Base param sets *including* blur variants: {len(param_sets)}")
 
-    # (Optional) shuffle to randomize execution order:
+    # (Optional) shuffle to randomize execution order
     # random.shuffle(param_sets)
 
     # Execute them in parallel
