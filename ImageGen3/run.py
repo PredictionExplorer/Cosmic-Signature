@@ -22,29 +22,28 @@ SIMULATION_CONFIG = {
     # The relevant command-line arguments for the core parameters
     # using the same default values the Rust code has (adjust if desired):
     'param_ranges': {
-        'num_steps_sim': [1_000_000],      # Rust default is 1_000_000
-        'num_sims': [10_000],             # Rust default is 10_000
-        'location': [300.0],             # Rust default is 300.0
-        'velocity': [1.0],               # Rust default is 1.0
-        'min_mass': [100.0],             # Rust default is 100.0
-        'max_mass': [300.0],             # Rust default is 300.0
-        'chaos_weight': [3.0],           # Rust default is 3.0
-        'perimeter_weight': [1.0],       # Rust default is 1.0
-        'dist_weight': [2.0],            # Rust default is 2.0
-        'lyap_weight': [2.5],            # Rust default is 2.5
-        'max_points': [100_000],         # Rust default is 100_000
-        'frame_size': [800],            # Rust default is 1800
-        'blur_radius_fraction': [0.01],  # Rust default is 0.01
-        'blur_strength': [1.0],          # Rust default is 1.0
-        'blur_core_brightness': [1.0],   # Rust default is 1.0
-        'disable_blur': [False],         # Rust default is false
-        'clip_black': [0.01],            # Rust default is 0.01
-        'clip_white': [0.99],            # Rust default is 0.99
-        'levels_gamma': [1.0],           # Rust default is 1.0
+        'num_steps_sim': [1_000_000],
+        'num_sims': [10_000],
+        'location': [300.0],
+        'velocity': [1.0],
+        'min_mass': [100.0],
+        'max_mass': [300.0],
+        'chaos_weight': [3.0],
+        'perimeter_weight': [1.0],
+        'dist_weight': [2.0],
+        'lyap_weight': [2.5],
+        'max_points': [100_000],
+        'frame_size': [800],
+        'blur_radius_fraction': [0.01],
+        'blur_strength': [1.0],
+        'blur_core_brightness': [1.0],
+        'disable_blur': [False],
+        'clip_black': [0.01],
+        'clip_white': [0.99],
+        'levels_gamma': [1.0],
     },
 
-    # We define 5 "blur variants" as an example.  Each variant changes
-    # radius fraction, strength, core brightness:
+    # Example "blur_variants" to vary the blur parameters:
     'blur_variants': [
         (0.005, 1.0, 1.0),
         (0.01,  1.0, 1.0),
@@ -58,13 +57,7 @@ SIMULATION_CONFIG = {
 @dataclass
 class SimulationParams:
     """
-    Reflects all Rust CLI arguments:
-      --seed, --file-name,
-      --num-sims, --num-steps-sim, --location, --velocity,
-      --min-mass, --max-mass, --chaos-weight, --perimeter-weight,
-      --dist-weight, --lyap-weight, --max-points, --frame-size,
-      --blur-radius-fraction, --blur-strength, --blur-core-brightness,
-      --disable-blur, --clip-black, --clip-white, --levels-gamma
+    Reflects all Rust CLI arguments.
     """
     seed: str
     file_name: str
@@ -93,7 +86,6 @@ def generate_file_name(params: SimulationParams) -> str:
     """
     Create a file name using the seed value plus the blur settings.
     We'll strip the '0x' from the seed for uniqueness.
-
     Example: "seed_10003000_blur0.010_str1.00_core1.00"
     """
     seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
@@ -147,36 +139,53 @@ def build_command_list(program_path: str, params: SimulationParams) -> List[str]
     return cmd
 
 
-def _logger_thread(pipe, label: str, log_filename: str, print_lock: threading.Lock):
+def _logger_thread(
+    pipe,
+    label: str,
+    log_filename: str,
+    print_lock: threading.Lock,
+    lines_storage: list
+):
     """
-    Reads lines from the given pipe in a loop,
-    prints them immediately with [THREAD-x] label,
-    and appends them to the log file.
+    Reads lines from the given pipe in a loop, prints them immediately with a [THREAD-x] label,
+    writes them to a log file, and stores them in memory (lines_storage) so we can re-print
+    if there's an error in the child.
     """
-    # Open the log file in append mode. We'll flush each line as we go.
     with open(log_filename, 'a', encoding='utf-8') as f:
         for raw_line in iter(pipe.readline, ''):
             if not raw_line:
                 break
             line = raw_line.rstrip('\n')
-            # Print to screen with lock so lines don't interleave mid-line
+
+            # Print to screen with lock so lines from multiple threads won't interleave
             with print_lock:
                 print(f"[{label}] {line}")
-            # Also write to log file
+
+            # Write to log file
             f.write(f"[{label}] {line}\n")
             f.flush()
+
+            # Also store in memory for potential later printing on error
+            lines_storage.append(line)
+
     pipe.close()
 
 
 def run_simulation(command_list: List[str], seed: str) -> int:
     """
     Launch the Rust simulation in real-time streaming mode:
+      - Print EXACT command
       - We capture stdout + stderr with Popen.
       - We spawn two threads to read each pipe line by line.
       - Each line is printed to the console + appended to a log file
-        named "{seed}_thread-1.log" for stdout, "{seed}_thread-2.log" for stderr.
+        named "{seed}_thread-1.log" for stdout and "{seed}_thread-2.log" for stderr.
+      - We also store the lines in memory so if there's a non-zero exit,
+        we can re-print them afterwards.
     Returns the child's exit code.
     """
+    cmd_str = " ".join(command_list)
+    print(f"Running command: {cmd_str}")
+
     # We ensure logs go into the current working directory:
     stdout_log_file = f"{seed}_thread-1.log"
     stderr_log_file = f"{seed}_thread-2.log"
@@ -184,25 +193,29 @@ def run_simulation(command_list: List[str], seed: str) -> int:
     # We'll use a lock so printing doesn't get jumbled by both threads
     print_lock = threading.Lock()
 
+    # Lists to keep track of lines in memory
+    stdout_lines = []
+    stderr_lines = []
+
     # Start the subprocess
     proc = subprocess.Popen(
         command_list,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,   # so we get strings instead of bytes
-        bufsize=1,   # line-buffered
+        text=True,    # so we get strings instead of bytes
+        bufsize=1,    # line-buffered
         universal_newlines=True
     )
 
     # Spawn threads to read the child's stdout/stderr in real time
     t_out = threading.Thread(
         target=_logger_thread,
-        args=(proc.stdout, "THREAD-1", stdout_log_file, print_lock),
+        args=(proc.stdout, "THREAD-1", stdout_log_file, print_lock, stdout_lines),
         daemon=True
     )
     t_err = threading.Thread(
         target=_logger_thread,
-        args=(proc.stderr, "THREAD-2", stderr_log_file, print_lock),
+        args=(proc.stderr, "THREAD-2", stderr_log_file, print_lock, stderr_lines),
         daemon=True
     )
 
@@ -216,6 +229,20 @@ def run_simulation(command_list: List[str], seed: str) -> int:
     t_out.join()
     t_err.join()
 
+    # If non-zero exit, print all lines again
+    if proc.returncode != 0:
+        print(f"\nERROR: child returned code {proc.returncode}. Printing all captured output:\n")
+
+        print("---- BEGIN RUST STDOUT ----")
+        for line in stdout_lines:
+            print(f"[THREAD-1] {line}")
+        print("---- END RUST STDOUT ----\n")
+
+        print("---- BEGIN RUST STDERR ----")
+        for line in stderr_lines:
+            print(f"[THREAD-2] {line}")
+        print("---- END RUST STDERR ----\n")
+
     return proc.returncode
 
 
@@ -224,7 +251,7 @@ class SimulationRunner:
         self.program_path = program_path
         self.max_concurrent = max_concurrent
 
-    def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
+    def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List["SimulationParams"]:
         """
         Generate all combinations from 'param_ranges' in SIMULATION_CONFIG.
         Then for each combination, produce multiple seeds, and for each seed,
@@ -237,15 +264,14 @@ class SimulationRunner:
         for combo in itertools.product(*param_values):
             for i in range(num_runs):
                 # Build a unique seed, e.g. 0x100030 + i in hex
-                seed_suffix = f"{i:04X}"   # i => 4-hex-digit string
+                seed_suffix = f"{i:04X}"
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
-                # Convert 'combo' -> dict of base param fields
                 combo_dict = dict(zip(keys, combo))
 
                 # For each blur variant, create a separate SimulationParams
                 for (radius_frac, strength, core_bright) in SIMULATION_CONFIG['blur_variants']:
-                    params = SimulationParams(
+                    p = SimulationParams(
                         seed=full_seed,
                         file_name="output",
                         num_sims=combo_dict['num_sims'],
@@ -270,7 +296,7 @@ class SimulationRunner:
                         clip_white=combo_dict['clip_white'],
                         levels_gamma=combo_dict['levels_gamma'],
                     )
-                    param_sets.append(params)
+                    param_sets.append(p)
 
         return param_sets
 
@@ -284,21 +310,19 @@ class SimulationRunner:
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
             for params in param_sets:
-                # Generate a nicer file name so we don't overwrite "output" each time
                 file_name = generate_file_name(params)
                 params.file_name = file_name
 
                 cmd_list = build_command_list(self.program_path, params)
-
-                # Instead of returning stdout, we do real-time streaming,
-                # so we'll store the return code in the future’s result.
                 fut = executor.submit(run_simulation, cmd_list, params.seed)
                 futures[fut] = cmd_list
 
             for future in as_completed(futures):
                 cmd_list = futures[future]
                 exit_code = future.result()
-                print(f"Finished command:\n  {' '.join(cmd_list)}")
+
+                cmd_str = " ".join(cmd_list)
+                print(f"Finished command:\n  {cmd_str}")
                 if exit_code == 0:
                     print("Child process exited successfully.\n")
                 else:
@@ -307,15 +331,13 @@ class SimulationRunner:
 
 def main():
     print("Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
-          "We produce 5 blur variants per seed. Images/video are generated by the Rust code.\n")
+          "We produce multiple blur variants per seed. Images/video are generated by the Rust code.\n")
 
-    # Create the runner
     runner = SimulationRunner(
         program_path=SIMULATION_CONFIG['program_path'],
         max_concurrent=SIMULATION_CONFIG['max_concurrent']
     )
 
-    # Generate all param sets
     param_sets = runner.get_parameter_combinations(
         base_seed_hex=SIMULATION_CONFIG['base_seed_hex'],
         num_runs=SIMULATION_CONFIG['num_runs']
@@ -323,7 +345,6 @@ def main():
 
     print(f"Base param sets *including* blur variants: {len(param_sets)}")
 
-    # Execute them in parallel (or serially if max_concurrent=1).
     runner.run_simulations(param_sets)
 
 
