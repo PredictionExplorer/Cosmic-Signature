@@ -653,48 +653,54 @@ fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
     kernel
 }
 
+/// Helper: accumulate a single `(r,g,b)` pixel with weight `w` using f64x4 for partial SIMD.
+#[inline]
+fn add_weighted_pixel(accum: &mut (f64, f64, f64), pix: (f64, f64, f64), w: f64) {
+    let p = f64x4::new([pix.0, pix.1, pix.2, 0.0]);
+    let wv = f64x4::splat(w);
+    let res = p * wv; // multiply all channels by w at once
+    let arr = res.to_array();
+    accum.0 += arr[0];
+    accum.1 += arr[1];
+    accum.2 += arr[2];
+}
+
 fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize, radius: usize) {
     if radius == 0 {
         return;
     }
     let kernel = build_gaussian_kernel(radius);
-    let mut temp = vec![(0.0, 0.0, 0.0); width * height];
-    // horizontal pass
     let k_len = kernel.len();
+    let mut temp = vec![(0.0, 0.0, 0.0); width * height];
+
+    // horizontal pass
     for y in 0..height {
         let row_start = y * width;
         for x in 0..width {
-            let mut rsum = 0.0;
-            let mut gsum = 0.0;
-            let mut bsum = 0.0;
+            let mut sum_pix = (0.0, 0.0, 0.0);
             for k in 0..k_len {
-                let dx = (k as isize) - (radius as isize);
-                let xx = (x as isize + dx).clamp(0, width as isize - 1) as usize;
-                let pix = buffer[row_start + xx];
+                let dx = (x as isize + (k as isize - radius as isize)).clamp(0, width as isize - 1)
+                    as usize;
+                let pix = buffer[row_start + dx];
                 let w = kernel[k];
-                rsum += pix.0 * w;
-                gsum += pix.1 * w;
-                bsum += pix.2 * w;
+                // Use our small SIMD helper to accumulate
+                add_weighted_pixel(&mut sum_pix, pix, w);
             }
-            temp[row_start + x] = (rsum, gsum, bsum);
+            temp[row_start + x] = sum_pix;
         }
     }
     // vertical pass
     for x in 0..width {
         for y in 0..height {
-            let mut rsum = 0.0;
-            let mut gsum = 0.0;
-            let mut bsum = 0.0;
+            let mut sum_pix = (0.0, 0.0, 0.0);
             for k in 0..k_len {
-                let dy = (k as isize) - (radius as isize);
-                let yy = (y as isize + dy).clamp(0, height as isize - 1) as usize;
-                let pix = temp[yy * width + x];
+                let dy = (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
+                    as usize;
+                let pix = temp[dy * width + x];
                 let w = kernel[k];
-                rsum += pix.0 * w;
-                gsum += pix.1 * w;
-                bsum += pix.2 * w;
+                add_weighted_pixel(&mut sum_pix, pix, w);
             }
-            buffer[y * width + x] = (rsum, gsum, bsum);
+            buffer[y * width + x] = sum_pix;
         }
     }
 }
@@ -741,12 +747,14 @@ fn draw_line_segment_additive_gradient_with_blur(
             accum[i].1 += temp[i].1 * blur_strength;
             accum[i].2 += temp[i].2 * blur_strength;
         }
+        // Crisp core
+        let pts_len = pts.len();
         for (i, (xx, yy)) in pts.into_iter().enumerate() {
             if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
                 continue;
             }
             let idx = (yy as usize) * w_usize + (xx as usize);
-            let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
+            let t = if pts_len == 1 { 0.0 } else { i as f64 / (pts_len - 1) as f64 };
             let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
             let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
             let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
@@ -755,6 +763,7 @@ fn draw_line_segment_additive_gradient_with_blur(
             accum[idx].2 += b * blur_core_brightness;
         }
     } else {
+        // No blur
         let start = (x0.round() as i32, y0.round() as i32);
         let end = (x1.round() as i32, y1.round() as i32);
         let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
@@ -840,7 +849,6 @@ fn auto_levels_percentile_frames_global(
     }
     let black_count = (clip_black * (total_pix as f64)).round() as u32;
     let white_count = (clip_white * (total_pix as f64)).round() as u32;
-
     fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
         let mut cdf = vec![0u32; 256];
         let mut running = 0u32;
@@ -1096,6 +1104,7 @@ fn main() {
         args.location,
         args.velocity,
     );
+
     // 1) Borda search for the best orbit.
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
@@ -1111,6 +1120,7 @@ fn main() {
     println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
     let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
     println!("   => Done re-running best orbit.");
+
     // 3) Determine the bounding box.
     println!("STAGE 3/7: Determining bounding box...");
     let mut min_x = INFINITY;
@@ -1142,6 +1152,7 @@ fn main() {
         max_y += 0.05 * wy;
     }
     println!("   => Done bounding box.");
+
     // 4) Single-pass line drawing to build frames.
     println!(
         "STAGE 4/7: Single-pass line drawing => frames + final image ({} steps).",
@@ -1230,12 +1241,14 @@ fn main() {
             args.blur_core_brightness,
             args.disable_blur,
         );
+        // Collect frames occasionally (or final step)
         if (step % fi == 0) || (step == args.num_steps_sim - 1) {
             let img = accum_to_image(&accum, width, height);
             frames.push(img);
         }
     }
     println!("   => line drawing complete. Collected {} frames.", frames.len());
+
     // 5) Global auto-level.
     println!("STAGE 5/7: Applying global histogram auto-level to {} frames...", frames.len());
     auto_levels_percentile_frames_global(
@@ -1246,9 +1259,11 @@ fn main() {
     );
     println!("   => Done auto-leveling.");
     let final_img = frames.last().unwrap().clone();
+
     // 6) Create video via FFmpeg.
     let vid_path = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_singlepass(&frames, &vid_path, frame_rate);
+
     // 7) Save final image as PNG.
     println!("STAGE 7/7: Saving final single image as PNG...");
     let png_path = format!("pics/{}.png", args.file_name);
