@@ -91,15 +91,15 @@ struct Args {
     #[arg(long, default_value_t = 0.01)]
     blur_radius_fraction: f64,
 
-    /// How strongly the blurred line is added
+    /// How strongly the blurred “glow” is added
     #[arg(long, default_value_t = 1.0)]
     blur_strength: f64,
 
-    /// Brightness multiplier for the crisp core line
+    /// Brightness multiplier for the crisp core lines
     #[arg(long, default_value_t = 1.0)]
     blur_core_brightness: f64,
 
-    /// If true, skip the Gaussian blur pass and only draw crisp lines
+    /// If true, skip the final Gaussian blur pass (only crisp lines)
     #[arg(long, default_value_t = false)]
     disable_blur: bool,
 
@@ -221,6 +221,7 @@ impl Body {
 fn verlet_step(bodies: &mut [Body], dt: f64) {
     let positions: Vec<_> = bodies.iter().map(|b| b.position).collect();
     let masses: Vec<_> = bodies.iter().map(|b| b.mass).collect();
+
     // First half-kick
     for (i, body) in bodies.iter_mut().enumerate() {
         body.reset_acceleration();
@@ -522,8 +523,10 @@ fn select_best_trajectory(
             ]
         })
         .collect();
+
     let progress_counter = AtomicUsize::new(0);
     let chunk_size = (num_sims / 10).max(1);
+
     let results: Vec<Option<(TrajectoryResult, usize)>> = many_bodies
         .par_iter()
         .enumerate()
@@ -533,6 +536,7 @@ fn select_best_trajectory(
                 let pct = (local_count as f64 / num_sims as f64) * 100.0;
                 println!("   Borda search: {:.0}% done", pct);
             }
+            // Filter out unbound or near-zero angular momentum
             let e = calculate_total_energy(bodies);
             let ang = calculate_total_angular_momentum(bodies).norm();
             if e >= 0.0 || ang < 1e-3 {
@@ -566,11 +570,14 @@ fn select_best_trajectory(
             }
         })
         .collect();
+
     let valid: Vec<_> = results.into_iter().filter_map(|x| x).collect();
     if valid.is_empty() {
         panic!("No valid orbits found (all unbound or zero angular momentum).");
     }
     let mut info_vec = valid;
+
+    // Gather metrics separately
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
     let mut perimeter_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
@@ -581,6 +588,7 @@ fn select_best_trajectory(
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
     }
+
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
@@ -595,11 +603,14 @@ fn select_best_trajectory(
         }
         out
     }
+
+    // For "chaos", we want lower is better (so higher_better=false).
     let chaos_pts = assign_borda_scores(chaos_vals, false);
     let perimeter_pts = assign_borda_scores(perimeter_vals, true);
     let dist_pts = assign_borda_scores(dist_vals, true);
     let lyap_pts = assign_borda_scores(lyap_vals, true);
 
+    // Update each TrajectoryResult
     for (i, (tr, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_pts[i];
         tr.perimeter_pts = perimeter_pts[i];
@@ -612,6 +623,7 @@ fn select_best_trajectory(
             + (lyap_pts[i] as f64 * lyap_weight);
     }
 
+    // Pick best by total_score_weighted
     let (best_tr, best_idx) = info_vec
         .iter()
         .max_by(|(a, _), (b, _)| {
@@ -619,6 +631,7 @@ fn select_best_trajectory(
         })
         .unwrap();
     let best_bodies = many_bodies[*best_idx].clone();
+
     println!(
         "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}",
         best_tr.total_score_weighted,
@@ -631,7 +644,7 @@ fn select_best_trajectory(
 }
 
 // ========================================================
-// Simplified single-pass line drawing => produce frames, final still
+// Single-Pass Gaussian Blur (Parallel)
 // ========================================================
 fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
     if radius == 0 {
@@ -653,59 +666,65 @@ fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
     kernel
 }
 
-/// Helper: accumulate a single `(r,g,b)` pixel with weight `w` using f64x4 for partial SIMD.
+/// Helper for SIMD accumulation
 #[inline]
 fn add_weighted_pixel(accum: &mut (f64, f64, f64), pix: (f64, f64, f64), w: f64) {
     let p = f64x4::new([pix.0, pix.1, pix.2, 0.0]);
     let wv = f64x4::splat(w);
-    let res = p * wv; // multiply all channels by w at once
+    let res = p * wv;
     let arr = res.to_array();
     accum.0 += arr[0];
     accum.1 += arr[1];
     accum.2 += arr[2];
 }
 
-fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize, radius: usize) {
+/// Perform a 2D Gaussian blur in two passes (horizontal then vertical) in parallel.
+fn parallel_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize, radius: usize) {
     if radius == 0 {
         return;
     }
     let kernel = build_gaussian_kernel(radius);
     let k_len = kernel.len();
+
+    // Temp buffer for intermediate results
     let mut temp = vec![(0.0, 0.0, 0.0); width * height];
 
-    // horizontal pass
-    for y in 0..height {
-        let row_start = y * width;
+    // Horizontal pass in parallel
+    temp.par_chunks_mut(width).zip(buffer.par_chunks(width)).for_each(|(temp_row, buf_row)| {
         for x in 0..width {
             let mut sum_pix = (0.0, 0.0, 0.0);
             for k in 0..k_len {
                 let dx = (x as isize + (k as isize - radius as isize)).clamp(0, width as isize - 1)
                     as usize;
-                let pix = buffer[row_start + dx];
+                let pix = buf_row[dx];
                 let w = kernel[k];
-                // Use our small SIMD helper to accumulate
                 add_weighted_pixel(&mut sum_pix, pix, w);
             }
-            temp[row_start + x] = sum_pix;
+            temp_row[x] = sum_pix;
         }
-    }
-    // vertical pass
-    for x in 0..width {
-        for y in 0..height {
+    });
+
+    // Vertical pass in parallel
+    buffer.par_chunks_mut(width).enumerate().for_each(|(y, buf_row)| {
+        // we’ll fill buf_row[x] by scanning temp in vertical
+        for x in 0..width {
             let mut sum_pix = (0.0, 0.0, 0.0);
             for k in 0..k_len {
-                let dy = (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
+                let yy = (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
                     as usize;
-                let pix = temp[dy * width + x];
+                let pix = temp[yy * width + x];
                 let w = kernel[k];
                 add_weighted_pixel(&mut sum_pix, pix, w);
             }
-            buffer[y * width + x] = sum_pix;
+            buf_row[x] = sum_pix;
         }
-    }
+    });
 }
 
-fn draw_line_segment_additive_gradient_with_blur(
+// ========================================================
+// Crisp Line Drawing (no immediate blur)
+// ========================================================
+fn draw_line_segment_crisp(
     accum: &mut [(f64, f64, f64)],
     width: u32,
     height: u32,
@@ -715,72 +734,24 @@ fn draw_line_segment_additive_gradient_with_blur(
     y1: f32,
     col0: Rgb<u8>,
     col1: Rgb<u8>,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
-    disable_blur: bool,
 ) {
     let w_usize = width as usize;
-    let npix = w_usize * (height as usize);
-    if !disable_blur && blur_radius_px > 0 {
-        let mut temp = vec![(0.0, 0.0, 0.0); npix];
-        let start = (x0.round() as i32, y0.round() as i32);
-        let end = (x1.round() as i32, y1.round() as i32);
-        let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
-        let n = pts.len();
-        for (i, (xx, yy)) in pts.iter().enumerate() {
-            if *xx < 0 || *xx >= width as i32 || *yy < 0 || *yy >= height as i32 {
-                continue;
-            }
-            let idx = (*yy as usize) * w_usize + (*xx as usize);
-            let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
-            let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
-            let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
-            let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
-            temp[idx].0 += r;
-            temp[idx].1 += g;
-            temp[idx].2 += b;
+    let start = (x0.round() as i32, y0.round() as i32);
+    let end = (x1.round() as i32, y1.round() as i32);
+    let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
+    let n = pts.len();
+    for (i, (xx, yy)) in pts.into_iter().enumerate() {
+        if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
+            continue;
         }
-        gaussian_blur_2d(&mut temp, w_usize, height as usize, blur_radius_px);
-        for i in 0..npix {
-            accum[i].0 += temp[i].0 * blur_strength;
-            accum[i].1 += temp[i].1 * blur_strength;
-            accum[i].2 += temp[i].2 * blur_strength;
-        }
-        // Crisp core
-        let pts_len = pts.len();
-        for (i, (xx, yy)) in pts.into_iter().enumerate() {
-            if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
-                continue;
-            }
-            let idx = (yy as usize) * w_usize + (xx as usize);
-            let t = if pts_len == 1 { 0.0 } else { i as f64 / (pts_len - 1) as f64 };
-            let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
-            let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
-            let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
-            accum[idx].0 += r * blur_core_brightness;
-            accum[idx].1 += g * blur_core_brightness;
-            accum[idx].2 += b * blur_core_brightness;
-        }
-    } else {
-        // No blur
-        let start = (x0.round() as i32, y0.round() as i32);
-        let end = (x1.round() as i32, y1.round() as i32);
-        let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
-        let n = pts.len();
-        for (i, (xx, yy)) in pts.into_iter().enumerate() {
-            if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
-                continue;
-            }
-            let idx = (yy as usize) * w_usize + (xx as usize);
-            let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
-            let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
-            let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
-            let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
-            accum[idx].0 += r * blur_core_brightness;
-            accum[idx].1 += g * blur_core_brightness;
-            accum[idx].2 += b * blur_core_brightness;
-        }
+        let idx = (yy as usize) * w_usize + (xx as usize);
+        let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
+        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
+        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
+        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
+        accum[idx].0 += r;
+        accum[idx].1 += g;
+        accum[idx].2 += b;
     }
 }
 
@@ -791,6 +762,7 @@ fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec
     let mut colors = Vec::with_capacity(length);
     let mut hue = rng.next_f64() * 360.0;
     for _ in 0..length {
+        // gently shift hue
         if rng.next_byte() & 1 == 0 {
             hue += 0.1;
         } else {
@@ -824,127 +796,18 @@ fn generate_body_color_sequences(
 }
 
 // ========================================================
-// Global auto-level for frames (SIMD-enhanced)
+// SIMD-accelerated conversion from float accum to u8 image
 // ========================================================
-fn auto_levels_percentile_frames_global(
-    frames: &mut [ImageBuffer<Rgb<u8>, Vec<u8>>],
-    clip_black: f64,
-    clip_white: f64,
-    gamma: f64,
-) {
-    if frames.is_empty() {
-        return;
-    }
-    let (w, h) = (frames[0].width(), frames[0].height());
-    let total_pix = frames.len() as u64 * (w as u64) * (h as u64);
-    let mut hist_r = [0u32; 256];
-    let mut hist_g = [0u32; 256];
-    let mut hist_b = [0u32; 256];
-    for f in frames.iter() {
-        for px in f.pixels() {
-            hist_r[px[0] as usize] += 1;
-            hist_g[px[1] as usize] += 1;
-            hist_b[px[2] as usize] += 1;
-        }
-    }
-    let black_count = (clip_black * (total_pix as f64)).round() as u32;
-    let white_count = (clip_white * (total_pix as f64)).round() as u32;
-    fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
-        let mut cdf = vec![0u32; 256];
-        let mut running = 0u32;
-        for (i, &c) in hist.iter().enumerate() {
-            running += c;
-            cdf[i] = running;
-        }
-        cdf
-    }
-    fn find_percentile_cut(cdf: &[u32], cutoff_count: u32, from_left: bool) -> u8 {
-        if from_left {
-            for i in 0..256 {
-                if cdf[i] >= cutoff_count {
-                    return i as u8;
-                }
-            }
-            255
-        } else {
-            for i in (0..256).rev() {
-                if cdf[i] <= cutoff_count {
-                    return i as u8;
-                }
-            }
-            0
-        }
-    }
-    let cdf_r = build_cdf(&hist_r);
-    let cdf_g = build_cdf(&hist_g);
-    let cdf_b = build_cdf(&hist_b);
-    let black_cut_r = find_percentile_cut(&cdf_r, black_count, true);
-    let black_cut_g = find_percentile_cut(&cdf_g, black_count, true);
-    let black_cut_b = find_percentile_cut(&cdf_b, black_count, true);
-    let white_cut_r = find_percentile_cut(&cdf_r, white_count, false);
-    let white_cut_g = find_percentile_cut(&cdf_g, white_count, false);
-    let white_cut_b = find_percentile_cut(&cdf_b, white_count, false);
-
-    frames.par_iter_mut().for_each(|frame| {
-        let data = frame.as_mut();
-        for channel in 0..3 {
-            let (black_cut, white_cut) = match channel {
-                0 => (black_cut_r, white_cut_r),
-                1 => (black_cut_g, white_cut_g),
-                2 => (black_cut_b, white_cut_b),
-                _ => unreachable!(),
-            };
-            let black_cut_f = black_cut as f32;
-            let white_cut_f = white_cut as f32;
-            let range = white_cut_f - black_cut_f;
-            let mut i = channel;
-            while i + 12 <= data.len() {
-                let v = f32x4::new([
-                    data[i] as f32,
-                    data[i + 3] as f32,
-                    data[i + 6] as f32,
-                    data[i + 9] as f32,
-                ]);
-                let t = ((v - f32x4::splat(black_cut_f)) / f32x4::splat(range))
-                    .max(f32x4::splat(0.0))
-                    .min(f32x4::splat(1.0))
-                    .powf(gamma as f32)
-                    * f32x4::splat(255.0);
-                let t_arr = t.to_array();
-                data[i] = t_arr[0].round().clamp(0.0, 255.0) as u8;
-                data[i + 3] = t_arr[1].round().clamp(0.0, 255.0) as u8;
-                data[i + 6] = t_arr[2].round().clamp(0.0, 255.0) as u8;
-                data[i + 9] = t_arr[3].round().clamp(0.0, 255.0) as u8;
-                i += 12;
-            }
-            while i < data.len() {
-                let x = data[i] as f32;
-                let mut t = (x - black_cut_f) / range;
-                if t < 0.0 {
-                    t = 0.0;
-                }
-                if t > 1.0 {
-                    t = 1.0;
-                }
-                data[i] = (t.powf(gamma as f32) * 255.0).round().clamp(0.0, 255.0) as u8;
-                i += 3;
-            }
-        }
-    });
-}
-
-// ========================================================
-// SIMD-accelerated conversion from accumulation buffer to image.
-// ========================================================
-const LANES: usize = 4;
 fn accum_to_image(
     accum: &[(f64, f64, f64)],
     width: u32,
     height: u32,
 ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     let npix = accum.len();
+    // Find max to scale to 0..255 (so we keep the relative brightness before auto-level)
     let mut i = 0;
     let mut max_vec = f64x4::splat(0.0);
+    const LANES: usize = 4;
     while i + LANES <= npix {
         let r_vec = f64x4::new([accum[i].0, accum[i + 1].0, accum[i + 2].0, accum[i + 3].0]);
         let g_vec = f64x4::new([accum[i].1, accum[i + 1].1, accum[i + 2].1, accum[i + 3].1]);
@@ -953,7 +816,7 @@ fn accum_to_image(
         max_vec = max_vec.max(chunk_max);
         i += LANES;
     }
-    let mut maxval = max_vec.to_array().iter().cloned().fold(0.0, f64::max);
+    let mut maxval = max_vec.to_array().iter().fold(0.0_f64, |acc, &x| acc.max(x));
     while i < npix {
         let (r, g, b) = accum[i];
         let m = r.max(g).max(b);
@@ -963,9 +826,10 @@ fn accum_to_image(
         i += 1;
     }
     if maxval < 1e-14 {
-        maxval = 1.0;
+        maxval = 1.0; // avoid dividing by 0
     }
     let scale = 255.0 / maxval;
+
     let mut pixels = vec![0u8; npix * 3];
     i = 0;
     let mut idx = 0;
@@ -979,17 +843,20 @@ fn accum_to_image(
         let r_clamped = r_vec.max(f64x4::splat(0.0)).min(f64x4::splat(255.0)).round();
         let g_clamped = g_vec.max(f64x4::splat(0.0)).min(f64x4::splat(255.0)).round();
         let b_clamped = b_vec.max(f64x4::splat(0.0)).min(f64x4::splat(255.0)).round();
+
         let r_arr = r_clamped.to_array();
         let g_arr = g_clamped.to_array();
         let b_arr = b_clamped.to_array();
-        for j in 0..LANES {
-            pixels[idx] = r_arr[j] as u8;
-            pixels[idx + 1] = g_arr[j] as u8;
-            pixels[idx + 2] = b_arr[j] as u8;
+
+        for lane in 0..LANES {
+            pixels[idx] = r_arr[lane] as u8;
+            pixels[idx + 1] = g_arr[lane] as u8;
+            pixels[idx + 2] = b_arr[lane] as u8;
             idx += 3;
         }
         i += LANES;
     }
+    // leftover
     while i < npix {
         let (r, g, b) = accum[i];
         pixels[idx] = ((r * scale).round().clamp(0.0, 255.0)) as u8;
@@ -998,6 +865,7 @@ fn accum_to_image(
         idx += 3;
         i += 1;
     }
+
     ImageBuffer::from_raw(width, height, pixels).unwrap()
 }
 
@@ -1017,7 +885,7 @@ fn create_video_from_frames_singlepass(
     let height = frames[0].height();
     let cpu_count = num_cpus::get().to_string();
     println!(
-        "STAGE 6/7: Creating H.264 video (single pass) => {output_file}, {}x{}, {} FPS, using {} threads",
+        "STAGE 6/7: Creating H.264 video => {output_file}, {}x{}, {} FPS, using {} threads",
         width, height, frame_rate, cpu_count
     );
     let mut cmd = Command::new("ffmpeg");
@@ -1047,6 +915,7 @@ fn create_video_from_frames_singlepass(
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
+
     let mut child = match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
@@ -1058,7 +927,7 @@ fn create_video_from_frames_singlepass(
         let sin = child.stdin.as_mut().unwrap();
         for frame in frames {
             if let Err(e) = sin.write_all(frame.as_raw()) {
-                eprintln!("ffmpeg single-pass write fail: {e}");
+                eprintln!("FFmpeg write fail: {e}");
                 break;
             }
         }
@@ -1066,9 +935,9 @@ fn create_video_from_frames_singlepass(
     match child.wait_with_output() {
         Ok(out) => {
             if !out.status.success() {
-                eprintln!("FFmpeg single-pass error:\n{}", String::from_utf8_lossy(&out.stderr));
+                eprintln!("FFmpeg error:\n{}", String::from_utf8_lossy(&out.stderr));
             } else {
-                println!("   => single-pass video creation complete => {output_file}");
+                println!("   => Single-pass video creation complete => {output_file}");
             }
         }
         Err(e) => eprintln!("Error waiting for ffmpeg: {e}"),
@@ -1095,6 +964,7 @@ fn main() {
     let args = Args::parse();
     let _ = fs::create_dir_all("pics");
     let _ = fs::create_dir_all("vids");
+
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
     let mut rng = Sha3RandomByteStream::new(
@@ -1116,12 +986,13 @@ fn main() {
         args.dist_weight,
         args.lyap_weight,
     );
-    // 2) Re-run the best orbit.
+
+    // 2) Re-run the best orbit at high resolution.
     println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
     let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
     println!("   => Done re-running best orbit.");
 
-    // 3) Determine the bounding box.
+    // 3) Determine bounding box
     println!("STAGE 3/7: Determining bounding box...");
     let mut min_x = INFINITY;
     let mut max_x = NEG_INFINITY;
@@ -1153,21 +1024,18 @@ fn main() {
     }
     println!("   => Done bounding box.");
 
-    // 4) Single-pass line drawing to build frames.
-    println!(
-        "STAGE 4/7: Single-pass line drawing => frames + final image ({} steps).",
-        args.num_steps_sim
-    );
+    // 4) Single-pass line drawing => frames.  We'll do a crisp accumulation, then blur once per frame.
+    println!("STAGE 4/7: Drawing lines + building frames ({} steps).", args.num_steps_sim);
     let width = args.frame_size;
     let height = args.frame_size;
-    let w_usize = width as usize;
-    let npix = w_usize * (height as usize);
+    let npix = (width as usize) * (height as usize);
     let smaller_dim = (width as f64).min(height as f64);
     let blur_radius_px = if args.disable_blur {
         0
     } else {
         (args.blur_radius_fraction * smaller_dim).round() as usize
     };
+
     let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
         let ww = max_x - min_x;
         let hh = max_y - min_y;
@@ -1175,82 +1043,68 @@ fn main() {
         let py = ((yy - min_y) / hh) * (height as f64);
         (px as f32, py as f32)
     };
+
+    // Pre-generate color sequences
     let colors = generate_body_color_sequences(&mut rng, args.num_steps_sim);
+
+    // Decide how many frames to capture
     let frame_rate = 60;
     let target_frames = 1800;
     let fi = if target_frames > 0 { (args.num_steps_sim / target_frames).max(1) } else { 1 };
-    let mut accum = vec![(0.0, 0.0, 0.0); npix];
+
+    let mut accum_crisp = vec![(0.0, 0.0, 0.0); npix];
     let mut frames = Vec::new();
     let chunk_line = (args.num_steps_sim / 10).max(1);
+
     for step in 0..args.num_steps_sim {
         if step % chunk_line == 0 {
             let pct = (step as f64 / args.num_steps_sim as f64) * 100.0;
             println!("   line drawing: {:.0}% done", pct);
         }
+        // Draw lines between the 3 bodies
         let p0 = positions[0][step];
         let p1 = positions[1][step];
         let p2 = positions[2][step];
         let c0 = colors[0][step];
         let c1 = colors[1][step];
         let c2 = colors[2][step];
+
         let (x0, y0) = to_pixel(p0[0], p0[1]);
         let (x1, y1) = to_pixel(p1[0], p1[1]);
         let (x2, y2) = to_pixel(p2[0], p2[1]);
-        draw_line_segment_additive_gradient_with_blur(
-            &mut accum,
-            width,
-            height,
-            x0,
-            y0,
-            x1,
-            y1,
-            c0,
-            c1,
-            blur_radius_px,
-            args.blur_strength,
-            args.blur_core_brightness,
-            args.disable_blur,
-        );
-        draw_line_segment_additive_gradient_with_blur(
-            &mut accum,
-            width,
-            height,
-            x1,
-            y1,
-            x2,
-            y2,
-            c1,
-            c2,
-            blur_radius_px,
-            args.blur_strength,
-            args.blur_core_brightness,
-            args.disable_blur,
-        );
-        draw_line_segment_additive_gradient_with_blur(
-            &mut accum,
-            width,
-            height,
-            x2,
-            y2,
-            x0,
-            y0,
-            c2,
-            c0,
-            blur_radius_px,
-            args.blur_strength,
-            args.blur_core_brightness,
-            args.disable_blur,
-        );
+
+        // Crisp lines only; no blur in the line-draw step
+        draw_line_segment_crisp(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1);
+        draw_line_segment_crisp(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2);
+        draw_line_segment_crisp(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0);
+
         // Collect frames occasionally (or final step)
         if (step % fi == 0) || (step == args.num_steps_sim - 1) {
-            let img = accum_to_image(&accum, width, height);
+            // Make a copy to blur
+            let mut temp = accum_crisp.clone();
+            if blur_radius_px > 0 && !args.disable_blur {
+                parallel_blur_2d(&mut temp, width as usize, height as usize, blur_radius_px);
+            }
+            // Blend the crisp lines with the blurred result => final buffer
+            // final = crisp * blur_core_brightness + blurred * blur_strength
+            let mut accum_final = vec![(0.0, 0.0, 0.0); npix];
+            accum_final.par_iter_mut().enumerate().for_each(|(i, pix)| {
+                let c = accum_crisp[i];
+                let b = temp[i];
+                pix.0 = c.0 * args.blur_core_brightness + b.0 * args.blur_strength;
+                pix.1 = c.1 * args.blur_core_brightness + b.1 * args.blur_strength;
+                pix.2 = c.2 * args.blur_core_brightness + b.2 * args.blur_strength;
+            });
+
+            let img = accum_to_image(&accum_final, width, height);
             frames.push(img);
         }
     }
-    println!("   => line drawing complete. Collected {} frames.", frames.len());
 
-    // 5) Global auto-level.
-    println!("STAGE 5/7: Applying global histogram auto-level to {} frames...", frames.len());
+    println!("   => line drawing done. Collected {} frames.", frames.len());
+
+    // 5) Global auto-level
+    println!("STAGE 5/7: Global histogram auto-level for {} frames...", frames.len());
     auto_levels_percentile_frames_global(
         &mut frames,
         args.clip_black,
@@ -1260,11 +1114,11 @@ fn main() {
     println!("   => Done auto-leveling.");
     let final_img = frames.last().unwrap().clone();
 
-    // 6) Create video via FFmpeg.
+    // 6) Create video
     let vid_path = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_singlepass(&frames, &vid_path, frame_rate);
 
-    // 7) Save final image as PNG.
+    // 7) Save final image as PNG
     println!("STAGE 7/7: Saving final single image as PNG...");
     let png_path = format!("pics/{}.png", args.file_name);
     if let Err(e) = save_image_as_png(&final_img, &png_path) {
@@ -1274,4 +1128,120 @@ fn main() {
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
     );
+}
+
+// ========================================================
+// Global auto-level for frames (SIMD-enhanced, unchanged logic)
+// ========================================================
+fn auto_levels_percentile_frames_global(
+    frames: &mut [ImageBuffer<Rgb<u8>, Vec<u8>>],
+    clip_black: f64,
+    clip_white: f64,
+    gamma: f64,
+) {
+    if frames.is_empty() {
+        return;
+    }
+    let (w, h) = (frames[0].width(), frames[0].height());
+    let total_pix = frames.len() as u64 * (w as u64) * (h as u64);
+    let mut hist_r = [0u32; 256];
+    let mut hist_g = [0u32; 256];
+    let mut hist_b = [0u32; 256];
+
+    // Build histograms
+    for f in frames.iter() {
+        for px in f.pixels() {
+            hist_r[px[0] as usize] += 1;
+            hist_g[px[1] as usize] += 1;
+            hist_b[px[2] as usize] += 1;
+        }
+    }
+    let black_count = (clip_black * (total_pix as f64)).round() as u32;
+    let white_count = (clip_white * (total_pix as f64)).round() as u32;
+
+    fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
+        let mut cdf = vec![0u32; 256];
+        let mut running = 0u32;
+        for (i, &c) in hist.iter().enumerate() {
+            running += c;
+            cdf[i] = running;
+        }
+        cdf
+    }
+    fn find_percentile_cut(cdf: &[u32], cutoff_count: u32, from_left: bool) -> u8 {
+        if from_left {
+            for i in 0..256 {
+                if cdf[i] >= cutoff_count {
+                    return i as u8;
+                }
+            }
+            255
+        } else {
+            for i in (0..256).rev() {
+                if cdf[i] <= cutoff_count {
+                    return i as u8;
+                }
+            }
+            0
+        }
+    }
+
+    let cdf_r = build_cdf(&hist_r);
+    let cdf_g = build_cdf(&hist_g);
+    let cdf_b = build_cdf(&hist_b);
+    let black_cut_r = find_percentile_cut(&cdf_r, black_count, true);
+    let black_cut_g = find_percentile_cut(&cdf_g, black_count, true);
+    let black_cut_b = find_percentile_cut(&cdf_b, black_count, true);
+    let white_cut_r = find_percentile_cut(&cdf_r, white_count, false);
+    let white_cut_g = find_percentile_cut(&cdf_g, white_count, false);
+    let white_cut_b = find_percentile_cut(&cdf_b, white_count, false);
+
+    frames.par_iter_mut().for_each(|frame| {
+        let data = frame.as_mut();
+        for channel in 0..3 {
+            let (black_cut, white_cut) = match channel {
+                0 => (black_cut_r, white_cut_r),
+                1 => (black_cut_g, white_cut_g),
+                2 => (black_cut_b, white_cut_b),
+                _ => unreachable!(),
+            };
+            let black_cut_f = black_cut as f32;
+            let white_cut_f = white_cut as f32;
+            let range = white_cut_f - black_cut_f;
+
+            let mut i = channel;
+            while i + 12 <= data.len() {
+                let v = f32x4::new([
+                    data[i] as f32,
+                    data[i + 3] as f32,
+                    data[i + 6] as f32,
+                    data[i + 9] as f32,
+                ]);
+                let t = ((v - f32x4::splat(black_cut_f)) / f32x4::splat(range))
+                    .max(f32x4::splat(0.0))
+                    .min(f32x4::splat(1.0))
+                    .powf(gamma as f32)
+                    * f32x4::splat(255.0);
+
+                let t_arr = t.to_array();
+                data[i] = t_arr[0].round().clamp(0.0, 255.0) as u8;
+                data[i + 3] = t_arr[1].round().clamp(0.0, 255.0) as u8;
+                data[i + 6] = t_arr[2].round().clamp(0.0, 255.0) as u8;
+                data[i + 9] = t_arr[3].round().clamp(0.0, 255.0) as u8;
+                i += 12;
+            }
+            while i < data.len() {
+                let x = data[i] as f32;
+                let mut t = (x - black_cut_f) / range;
+                if t < 0.0 {
+                    t = 0.0;
+                }
+                if t > 1.0 {
+                    t = 1.0;
+                }
+                data[i] = (t.powf(gamma as f32) * 255.0).round().clamp(0.0, 255.0) as u8;
+                i += 3;
+            }
+        }
+    });
 }
