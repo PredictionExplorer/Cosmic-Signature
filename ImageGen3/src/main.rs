@@ -103,8 +103,8 @@ struct Args {
     #[arg(long, default_value_t = false)]
     disable_blur: bool,
 
-    /// Fraction of pixels clipped to black
-    #[arg(long, default_value_t = 0.01)]
+    /// Fraction of pixels clipped to black (adjusted to 0.005)
+    #[arg(long, default_value_t = 0.005)]
     clip_black: f64,
 
     /// Fraction of pixels clipped to white
@@ -1024,7 +1024,7 @@ fn main() {
     }
     println!("   => Done bounding box.");
 
-    // 4) Single-pass line drawing => frames.  We'll do a crisp accumulation, then blur once per frame.
+    // 4) Single-pass line drawing => frames. Crisp lines, optional blur, etc.
     println!("STAGE 4/7: Drawing lines + building frames ({} steps).", args.num_steps_sim);
     let width = args.frame_size;
     let height = args.frame_size;
@@ -1073,7 +1073,7 @@ fn main() {
         let (x1, y1) = to_pixel(p1[0], p1[1]);
         let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-        // Crisp lines only; no blur in the line-draw step
+        // Crisp lines only; no blur here
         draw_line_segment_crisp(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1);
         draw_line_segment_crisp(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2);
         draw_line_segment_crisp(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0);
@@ -1085,7 +1085,6 @@ fn main() {
             if blur_radius_px > 0 && !args.disable_blur {
                 parallel_blur_2d(&mut temp, width as usize, height as usize, blur_radius_px);
             }
-            // Blend the crisp lines with the blurred result => final buffer
             // final = crisp * blur_core_brightness + blurred * blur_strength
             let mut accum_final = vec![(0.0, 0.0, 0.0); npix];
             accum_final.par_iter_mut().enumerate().for_each(|(i, pix)| {
@@ -1100,10 +1099,9 @@ fn main() {
             frames.push(img);
         }
     }
-
     println!("   => line drawing done. Collected {} frames.", frames.len());
 
-    // 5) Global auto-level
+    // 5) Global auto-level all frames
     println!("STAGE 5/7: Global histogram auto-level for {} frames...", frames.len());
     auto_levels_percentile_frames_global(
         &mut frames,
@@ -1112,18 +1110,19 @@ fn main() {
         args.levels_gamma,
     );
     println!("   => Done auto-leveling.");
-    let final_img = frames.last().unwrap().clone();
 
-    // 6) Create video
+    // 6) Create video (all frames are already leveled)
     let vid_path = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_singlepass(&frames, &vid_path, frame_rate);
 
-    // 7) Save final image as PNG
+    // 7) Save final (leveled) image as PNG
     println!("STAGE 7/7: Saving final single image as PNG...");
+    let final_img = frames.last().unwrap().clone();
     let png_path = format!("pics/{}.png", args.file_name);
     if let Err(e) = save_image_as_png(&final_img, &png_path) {
         eprintln!("Error saving PNG: {e}");
     }
+
     println!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
@@ -1148,7 +1147,7 @@ fn auto_levels_percentile_frames_global(
     let mut hist_g = [0u32; 256];
     let mut hist_b = [0u32; 256];
 
-    // Build histograms
+    // Build histograms from all frames
     for f in frames.iter() {
         for px in f.pixels() {
             hist_r[px[0] as usize] += 1;
