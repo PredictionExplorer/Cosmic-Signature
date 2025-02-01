@@ -1513,6 +1513,7 @@ dependencies = [
  "rustfft",
  "sha3",
  "statrs",
+ "wide",
 ]
 
 [[package]]

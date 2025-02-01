@@ -22,7 +22,7 @@ SIMULATION_CONFIG = {
     # Make sure these keys match your Rust CLI argument long names (minus the dashes).
     # e.g. Rust has '--num-steps-sim', so we use 'num_steps_sim' as the dictionary key here.
     'param_ranges': {
-        'num_sims': [10_000],             # --num-sims
+        'num_sims': [100],             # --num-sims
         'num_steps_sim': [1_000_000],     # --num-steps-sim
         'location': [300.0],             # --location
         'velocity': [1.0],               # --velocity
@@ -33,11 +33,11 @@ SIMULATION_CONFIG = {
         'dist_weight': [2.0],            # --dist-weight
         'lyap_weight': [2.5],            # --lyap-weight
         'max_points': [100_000],         # --max-points
-        'frame_size': [800],             # --frame-size
+        'frame_size': [600],             # --frame-size
         'blur_radius_fraction': [0.01],  # --blur-radius-fraction
         'blur_strength': [1.0],          # --blur-strength
         'blur_core_brightness': [1.0],   # --blur-core-brightness
-        'disable_blur': [False],         # --disable-blur
+        'disable_blur': [True],         # --disable-blur
         'clip_black': [0.01],            # --clip-black
         'clip_white': [0.99],            # --clip-white
         'levels_gamma': [1.0],           # --levels-gamma

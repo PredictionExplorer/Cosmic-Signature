@@ -1,6 +1,6 @@
 use clap::Parser;
 use hex;
-use image::{codecs::avif::AvifEncoder, DynamicImage, ImageBuffer, ImageEncoder, Rgb};
+use image::{DynamicImage, ImageBuffer, Rgb};
 use line_drawing::Bresenham;
 use na::Vector3;
 use nalgebra as na;
@@ -12,10 +12,12 @@ use sha3::{Digest, Sha3_256};
 use std::error::Error;
 use std::f64::{INFINITY, NEG_INFINITY};
 use std::fs;
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Use the wide crate for SIMD.
+use wide::{f32x4, f64x4};
 
 /// For Borda metric calculations
 const LLE_M: usize = 3; // dimension used in embedding for Lyapunov exponent
@@ -133,7 +135,6 @@ impl Sha3RandomByteStream {
         let mut hasher = Sha3_256::new();
         hasher.update(seed);
         let buffer = hasher.clone().finalize_reset().to_vec();
-
         Self {
             hasher,
             seed: seed.to_vec(),
@@ -220,7 +221,6 @@ impl Body {
 fn verlet_step(bodies: &mut [Body], dt: f64) {
     let positions: Vec<_> = bodies.iter().map(|b| b.position).collect();
     let masses: Vec<_> = bodies.iter().map(|b| b.mass).collect();
-
     // First half-kick
     for (i, body) in bodies.iter_mut().enumerate() {
         body.reset_acceleration();
@@ -230,12 +230,10 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
             }
         }
     }
-
     // Drift
     for body in bodies.iter_mut() {
         body.position += body.velocity * dt + 0.5 * body.acceleration * dt * dt;
     }
-
     // Second half-kick
     let new_positions: Vec<_> = bodies.iter().map(|b| b.position).collect();
     for (i, body) in bodies.iter_mut().enumerate() {
@@ -251,16 +249,14 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-/// Warm up, then collect `num_steps` positions
+/// Warm up, then collect `num_steps` positions.
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
-
-    // Warm up
+    // Warm up.
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
-
-    // Record
+    // Record positions.
     let mut bodies2 = bodies.clone();
     let mut all_positions = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
     for step in 0..num_steps {
@@ -346,7 +342,6 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
     let mut max_x = NEG_INFINITY;
     let mut min_y = INFINITY;
     let mut max_y = NEG_INFINITY;
-
     for body in positions.iter() {
         for p in body.iter() {
             min_x = min_x.min(p[0]);
@@ -355,17 +350,14 @@ fn normalize_positions_for_analysis(positions: &mut [Vec<Vector3<f64>>]) {
             max_y = max_y.max(p[1]);
         }
     }
-
     let x_center = (max_x + min_x) * 0.5;
     let y_center = (max_y + min_y) * 0.5;
     let mut range = (max_x - min_x).max(max_y - min_y) * 1.1;
     if range < 1e-14 {
         range = 1.0;
     }
-
     let adj_min_x = x_center - (range * 0.5);
     let adj_min_y = y_center - (range * 0.5);
-
     for body in positions.iter_mut() {
         for p in body.iter_mut() {
             p[0] = (p[0] - adj_min_x) / range;
@@ -382,29 +374,23 @@ fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -
     let mut r1 = vec![0.0; len];
     let mut r2 = vec![0.0; len];
     let mut r3 = vec![0.0; len];
-
     for i in 0..len {
         let p1 = positions[0][i];
         let p2 = positions[1][i];
         let p3 = positions[2][i];
-
         let cm1 = (m2 * p2 + m3 * p3) / (m2 + m3);
         let cm2 = (m1 * p1 + m3 * p3) / (m1 + m3);
         let cm3 = (m1 * p1 + m2 * p2) / (m1 + m2);
-
         r1[i] = (p1 - cm1).norm();
         r2[i] = (p2 - cm2).norm();
         r3[i] = (p3 - cm3).norm();
     }
-
     let abs1: Vec<f64> = fourier_transform(&r1).iter().map(|c| c.norm()).collect();
     let abs2: Vec<f64> = fourier_transform(&r2).iter().map(|c| c.norm()).collect();
     let abs3: Vec<f64> = fourier_transform(&r3).iter().map(|c| c.norm()).collect();
-
     let sd1 = abs1.iter().copied().std_dev();
     let sd2 = abs2.iter().copied().std_dev();
     let sd3 = abs3.iter().copied().std_dev();
-
     (sd1 + sd2 + sd3) / 3.0
 }
 
@@ -413,57 +399,44 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     if data.len() < (LLE_M - 1) * tau + 1 {
         return 0.0;
     }
-    // embed
     let embedded: Vec<[f64; LLE_M]> = (0..(data.len() - (LLE_M - 1) * tau))
         .map(|i| [data[i], data[i + tau], data[i + 2 * tau]])
         .collect();
-
     let emb_len = embedded.len();
     if emb_len < 2 {
         return 0.0;
     }
-
     let mut kdtree: KdTree<f64, u64, LLE_M, B, u32> = KdTree::new();
     for (i, point) in embedded.iter().enumerate() {
         kdtree.add(point, i as u64);
     }
-
     let mut divergence = vec![0.0; max_iter];
     let mut counts = vec![0usize; max_iter];
-
     for i in 0..emb_len {
         let query = &embedded[i];
         let nn = kdtree.nearest_n::<SquaredEuclidean>(query, 2);
         let nn1 = nn[0];
         let nn2 = nn[1];
-
         let nn_id = if nn1.item == i as u64 { nn2.item as usize } else { nn1.item as usize };
-
         let allowed_steps = max_iter.min(emb_len - 1 - i).min(emb_len - 1 - nn_id);
-
         for k in 0..allowed_steps {
             let dx = embedded[i + k][0] - embedded[nn_id + k][0];
             let dy = embedded[i + k][1] - embedded[nn_id + k][1];
             let dz = embedded[i + k][2] - embedded[nn_id + k][2];
             let d = (dx * dx + dy * dy + dz * dz).sqrt();
-
             divergence[k] += d;
             counts[k] += 1;
         }
     }
-
     if max_iter < 2 {
         return 0.0;
     }
-
     let log_divergence: Vec<f64> = (0..max_iter)
         .map(|k| if counts[k] > 0 { (divergence[k] / (counts[k] as f64)).ln() } else { 0.0 })
         .collect();
-
     let x_vals: Vec<f64> = (0..max_iter).map(|i| i as f64).collect();
     let mean_x = x_vals.iter().copied().mean();
     let mean_y = log_divergence.iter().copied().mean();
-
     let mut num = 0.0;
     let mut den = 0.0;
     for i in 0..max_iter {
@@ -484,7 +457,6 @@ struct TrajectoryResult {
     avg_perimeter: f64,
     total_dist: f64,
     lyap_exp: f64,
-    // Borda
     chaos_pts: usize,
     perimeter_pts: usize,
     dist_pts: usize,
@@ -494,7 +466,6 @@ struct TrajectoryResult {
 }
 
 /// Runs the Borda search in parallel over `num_sims` random orbits.
-/// Prints progress ~every 10% of orbits processed.
 fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_sims: usize,
@@ -506,8 +477,6 @@ fn select_best_trajectory(
     lyap_weight: f64,
 ) -> (Vec<Body>, TrajectoryResult) {
     println!("STAGE 1/7: Borda search over {num_sims} random orbits...");
-
-    // Build many random orbits
     let many_bodies: Vec<Vec<Body>> = (0..num_sims)
         .map(|_| {
             vec![
@@ -553,48 +522,34 @@ fn select_best_trajectory(
             ]
         })
         .collect();
-
-    // We'll track progress in the parallel loop
     let progress_counter = AtomicUsize::new(0);
     let chunk_size = (num_sims / 10).max(1);
-
-    // Compute in parallel
     let results: Vec<Option<(TrajectoryResult, usize)>> = many_bodies
         .par_iter()
         .enumerate()
         .map(|(idx, bodies)| {
-            // Update progress
             let local_count = progress_counter.fetch_add(1, Ordering::Relaxed) + 1;
             if local_count % chunk_size == 0 {
                 let pct = (local_count as f64 / num_sims as f64) * 100.0;
                 println!("   Borda search: {:.0}% done", pct);
             }
-
-            // Basic checks
             let e = calculate_total_energy(bodies);
             let ang = calculate_total_angular_momentum(bodies).norm();
-            // skip unbound orbits or negligible ang
             if e >= 0.0 || ang < 1e-3 {
                 None
             } else {
-                // big simulation
                 let positions = get_positions(bodies.clone(), num_steps_sim);
                 let len = positions[0].len();
                 let factor = (len / max_points).max(1);
                 let m1 = bodies[0].mass;
                 let m2 = bodies[1].mass;
                 let m3 = bodies[2].mass;
-
-                // sub-sample for lyapunov
                 let body1_norms: Vec<f64> =
                     positions[0].iter().step_by(factor).map(|p| p.norm()).collect();
-
-                // Evaluate
-                let c = non_chaoticness(m1, m2, m3, &positions); // lower is better
+                let c = non_chaoticness(m1, m2, m3, &positions);
                 let p = average_triangle_perimeter(&positions);
                 let d = total_distance(&positions);
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
-
                 let tr = TrajectoryResult {
                     chaos: c,
                     avg_perimeter: p,
@@ -611,26 +566,21 @@ fn select_best_trajectory(
             }
         })
         .collect();
-
     let valid: Vec<_> = results.into_iter().filter_map(|x| x).collect();
     if valid.is_empty() {
         panic!("No valid orbits found (all unbound or zero angular momentum).");
     }
-
-    // Borda arrays
     let mut info_vec = valid;
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
-    let mut perim_vals = Vec::with_capacity(info_vec.len());
+    let mut perimeter_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
     let mut lyap_vals = Vec::with_capacity(info_vec.len());
-
     for (i, (tr, _)) in info_vec.iter().enumerate() {
         chaos_vals.push((tr.chaos, i));
-        perim_vals.push((tr.avg_perimeter, i));
+        perimeter_vals.push((tr.avg_perimeter, i));
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
     }
-
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
@@ -645,36 +595,29 @@ fn select_best_trajectory(
         }
         out
     }
-
-    // chaos lower=better
     let chaos_pts = assign_borda_scores(chaos_vals, false);
-    // perimeter higher=better
-    let perim_pts = assign_borda_scores(perim_vals, true);
-    // distance higher=better
+    let perimeter_pts = assign_borda_scores(perimeter_vals, true);
     let dist_pts = assign_borda_scores(dist_vals, true);
-    // lyap higher=better
     let lyap_pts = assign_borda_scores(lyap_vals, true);
 
     for (i, (tr, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_pts[i];
-        tr.perimeter_pts = perim_pts[i];
+        tr.perimeter_pts = perimeter_pts[i];
         tr.dist_pts = dist_pts[i];
         tr.lyap_pts = lyap_pts[i];
-        tr.total_score = chaos_pts[i] + perim_pts[i] + dist_pts[i] + lyap_pts[i];
+        tr.total_score = chaos_pts[i] + perimeter_pts[i] + dist_pts[i] + lyap_pts[i];
         tr.total_score_weighted = (chaos_pts[i] as f64 * chaos_weight)
-            + (perim_pts[i] as f64 * perimeter_weight)
+            + (perimeter_pts[i] as f64 * perimeter_weight)
             + (dist_pts[i] as f64 * dist_weight)
             + (lyap_pts[i] as f64 * lyap_weight);
     }
 
-    // pick best
     let (best_tr, best_idx) = info_vec
         .iter()
-        .max_by(|(a, _ai), (b, _bi)| {
+        .max_by(|(a, _), (b, _)| {
             a.total_score_weighted.partial_cmp(&b.total_score_weighted).unwrap()
         })
         .unwrap();
-
     let best_bodies = many_bodies[*best_idx].clone();
     println!(
         "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}",
@@ -684,12 +627,11 @@ fn select_best_trajectory(
         best_tr.total_dist,
         best_tr.lyap_exp
     );
-
     (best_bodies, best_tr.clone())
 }
 
 // ========================================================
-// Single-pass line drawing => produce frames, final still
+// Simplified single-pass line drawing => produce frames, final still
 // ========================================================
 fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
     if radius == 0 {
@@ -717,8 +659,7 @@ fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize,
     }
     let kernel = build_gaussian_kernel(radius);
     let mut temp = vec![(0.0, 0.0, 0.0); width * height];
-
-    // horizontal
+    // horizontal pass
     let k_len = kernel.len();
     for y in 0..height {
         let row_start = y * width;
@@ -738,7 +679,7 @@ fn gaussian_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize,
             temp[row_start + x] = (rsum, gsum, bsum);
         }
     }
-    // vertical
+    // vertical pass
     for x in 0..width {
         for y in 0..height {
             let mut rsum = 0.0;
@@ -774,13 +715,9 @@ fn draw_line_segment_additive_gradient_with_blur(
     disable_blur: bool,
 ) {
     let w_usize = width as usize;
-    let h_usize = height as usize;
-    let npix = w_usize * h_usize;
-
+    let npix = w_usize * (height as usize);
     if !disable_blur && blur_radius_px > 0 {
-        // 1) temp buffer
         let mut temp = vec![(0.0, 0.0, 0.0); npix];
-
         let start = (x0.round() as i32, y0.round() as i32);
         let end = (x1.round() as i32, y1.round() as i32);
         let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
@@ -790,7 +727,6 @@ fn draw_line_segment_additive_gradient_with_blur(
                 continue;
             }
             let idx = (*yy as usize) * w_usize + (*xx as usize);
-
             let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
             let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
             let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
@@ -799,18 +735,12 @@ fn draw_line_segment_additive_gradient_with_blur(
             temp[idx].1 += g;
             temp[idx].2 += b;
         }
-
-        // blur
-        gaussian_blur_2d(&mut temp, w_usize, h_usize, blur_radius_px);
-
-        // add blurred
+        gaussian_blur_2d(&mut temp, w_usize, height as usize, blur_radius_px);
         for i in 0..npix {
             accum[i].0 += temp[i].0 * blur_strength;
             accum[i].1 += temp[i].1 * blur_strength;
             accum[i].2 += temp[i].2 * blur_strength;
         }
-
-        // crisp line on top
         for (i, (xx, yy)) in pts.into_iter().enumerate() {
             if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
                 continue;
@@ -820,13 +750,11 @@ fn draw_line_segment_additive_gradient_with_blur(
             let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
             let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
             let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
-
             accum[idx].0 += r * blur_core_brightness;
             accum[idx].1 += g * blur_core_brightness;
             accum[idx].2 += b * blur_core_brightness;
         }
     } else {
-        // skip blur, just draw crisp line
         let start = (x0.round() as i32, y0.round() as i32);
         let end = (x1.round() as i32, y1.round() as i32);
         let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
@@ -836,12 +764,10 @@ fn draw_line_segment_additive_gradient_with_blur(
                 continue;
             }
             let idx = (yy as usize) * w_usize + (xx as usize);
-
             let t = if n == 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
             let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
             let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
             let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
-
             accum[idx].0 += r * blur_core_brightness;
             accum[idx].1 += g * blur_core_brightness;
             accum[idx].2 += b * blur_core_brightness;
@@ -855,7 +781,6 @@ fn draw_line_segment_additive_gradient_with_blur(
 fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
     let mut hue = rng.next_f64() * 360.0;
-
     for _ in 0..length {
         if rng.next_byte() & 1 == 0 {
             hue += 0.1;
@@ -890,50 +815,8 @@ fn generate_body_color_sequences(
 }
 
 // ========================================================
-// Global auto-level for frames
+// Global auto-level for frames (SIMD-enhanced)
 // ========================================================
-fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
-    let mut cdf = vec![0u32; 256];
-    let mut running = 0u32;
-    for (i, &c) in hist.iter().enumerate() {
-        running += c;
-        cdf[i] = running;
-    }
-    cdf
-}
-
-fn find_percentile_cut(cdf: &[u32], cutoff_count: u32, from_left: bool) -> u8 {
-    if from_left {
-        for i in 0..256 {
-            if cdf[i] >= cutoff_count {
-                return i as u8;
-            }
-        }
-        255
-    } else {
-        for i in (0..256).rev() {
-            if cdf[i] <= cutoff_count {
-                return i as u8;
-            }
-        }
-        0
-    }
-}
-
-fn remap_and_gamma(c: u8, black_cut: u8, white_cut: u8, gamma: f64) -> u8 {
-    let cf = c as f64;
-    let bf = black_cut as f64;
-    let wf = white_cut as f64;
-    if wf <= bf {
-        return c;
-    }
-    let mut t = (cf - bf) / (wf - bf);
-    t = t.clamp(0.0, 1.0);
-    t = t.powf(gamma);
-    (t * 255.0).round().clamp(0.0, 255.0) as u8
-}
-
-/// Global auto-level for all frames => no flicker
 fn auto_levels_percentile_frames_global(
     frames: &mut [ImageBuffer<Rgb<u8>, Vec<u8>>],
     clip_black: f64,
@@ -943,14 +826,11 @@ fn auto_levels_percentile_frames_global(
     if frames.is_empty() {
         return;
     }
-
     let (w, h) = (frames[0].width(), frames[0].height());
     let total_pix = frames.len() as u64 * (w as u64) * (h as u64);
-
     let mut hist_r = [0u32; 256];
     let mut hist_g = [0u32; 256];
     let mut hist_b = [0u32; 256];
-
     for f in frames.iter() {
         for px in f.pixels() {
             hist_r[px[0] as usize] += 1;
@@ -961,25 +841,156 @@ fn auto_levels_percentile_frames_global(
     let black_count = (clip_black * (total_pix as f64)).round() as u32;
     let white_count = (clip_white * (total_pix as f64)).round() as u32;
 
+    fn build_cdf(hist: &[u32; 256]) -> Vec<u32> {
+        let mut cdf = vec![0u32; 256];
+        let mut running = 0u32;
+        for (i, &c) in hist.iter().enumerate() {
+            running += c;
+            cdf[i] = running;
+        }
+        cdf
+    }
+    fn find_percentile_cut(cdf: &[u32], cutoff_count: u32, from_left: bool) -> u8 {
+        if from_left {
+            for i in 0..256 {
+                if cdf[i] >= cutoff_count {
+                    return i as u8;
+                }
+            }
+            255
+        } else {
+            for i in (0..256).rev() {
+                if cdf[i] <= cutoff_count {
+                    return i as u8;
+                }
+            }
+            0
+        }
+    }
     let cdf_r = build_cdf(&hist_r);
     let cdf_g = build_cdf(&hist_g);
     let cdf_b = build_cdf(&hist_b);
-
     let black_cut_r = find_percentile_cut(&cdf_r, black_count, true);
     let black_cut_g = find_percentile_cut(&cdf_g, black_count, true);
     let black_cut_b = find_percentile_cut(&cdf_b, black_count, true);
-
     let white_cut_r = find_percentile_cut(&cdf_r, white_count, false);
     let white_cut_g = find_percentile_cut(&cdf_g, white_count, false);
     let white_cut_b = find_percentile_cut(&cdf_b, white_count, false);
 
     frames.par_iter_mut().for_each(|frame| {
-        for px in frame.pixels_mut() {
-            px[0] = remap_and_gamma(px[0], black_cut_r, white_cut_r, gamma);
-            px[1] = remap_and_gamma(px[1], black_cut_g, white_cut_g, gamma);
-            px[2] = remap_and_gamma(px[2], black_cut_b, white_cut_b, gamma);
+        let data = frame.as_mut();
+        for channel in 0..3 {
+            let (black_cut, white_cut) = match channel {
+                0 => (black_cut_r, white_cut_r),
+                1 => (black_cut_g, white_cut_g),
+                2 => (black_cut_b, white_cut_b),
+                _ => unreachable!(),
+            };
+            let black_cut_f = black_cut as f32;
+            let white_cut_f = white_cut as f32;
+            let range = white_cut_f - black_cut_f;
+            let mut i = channel;
+            while i + 12 <= data.len() {
+                let v = f32x4::new([
+                    data[i] as f32,
+                    data[i + 3] as f32,
+                    data[i + 6] as f32,
+                    data[i + 9] as f32,
+                ]);
+                let t = ((v - f32x4::splat(black_cut_f)) / f32x4::splat(range))
+                    .max(f32x4::splat(0.0))
+                    .min(f32x4::splat(1.0))
+                    .powf(gamma as f32)
+                    * f32x4::splat(255.0);
+                let t_arr = t.to_array();
+                data[i] = t_arr[0].round().clamp(0.0, 255.0) as u8;
+                data[i + 3] = t_arr[1].round().clamp(0.0, 255.0) as u8;
+                data[i + 6] = t_arr[2].round().clamp(0.0, 255.0) as u8;
+                data[i + 9] = t_arr[3].round().clamp(0.0, 255.0) as u8;
+                i += 12;
+            }
+            while i < data.len() {
+                let x = data[i] as f32;
+                let mut t = (x - black_cut_f) / range;
+                if t < 0.0 {
+                    t = 0.0;
+                }
+                if t > 1.0 {
+                    t = 1.0;
+                }
+                data[i] = (t.powf(gamma as f32) * 255.0).round().clamp(0.0, 255.0) as u8;
+                i += 3;
+            }
         }
     });
+}
+
+// ========================================================
+// SIMD-accelerated conversion from accumulation buffer to image.
+// ========================================================
+const LANES: usize = 4;
+fn accum_to_image(
+    accum: &[(f64, f64, f64)],
+    width: u32,
+    height: u32,
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    let npix = accum.len();
+    let mut i = 0;
+    let mut max_vec = f64x4::splat(0.0);
+    while i + LANES <= npix {
+        let r_vec = f64x4::new([accum[i].0, accum[i + 1].0, accum[i + 2].0, accum[i + 3].0]);
+        let g_vec = f64x4::new([accum[i].1, accum[i + 1].1, accum[i + 2].1, accum[i + 3].1]);
+        let b_vec = f64x4::new([accum[i].2, accum[i + 1].2, accum[i + 2].2, accum[i + 3].2]);
+        let chunk_max = r_vec.max(g_vec).max(b_vec);
+        max_vec = max_vec.max(chunk_max);
+        i += LANES;
+    }
+    let mut maxval = max_vec.to_array().iter().cloned().fold(0.0, f64::max);
+    while i < npix {
+        let (r, g, b) = accum[i];
+        let m = r.max(g).max(b);
+        if m > maxval {
+            maxval = m;
+        }
+        i += 1;
+    }
+    if maxval < 1e-14 {
+        maxval = 1.0;
+    }
+    let scale = 255.0 / maxval;
+    let mut pixels = vec![0u8; npix * 3];
+    i = 0;
+    let mut idx = 0;
+    while i + LANES <= npix {
+        let r_vec =
+            f64x4::new([accum[i].0, accum[i + 1].0, accum[i + 2].0, accum[i + 3].0]) * scale;
+        let g_vec =
+            f64x4::new([accum[i].1, accum[i + 1].1, accum[i + 2].1, accum[i + 3].1]) * scale;
+        let b_vec =
+            f64x4::new([accum[i].2, accum[i + 1].2, accum[i + 2].2, accum[i + 3].2]) * scale;
+        let r_clamped = r_vec.max(f64x4::splat(0.0)).min(f64x4::splat(255.0)).round();
+        let g_clamped = g_vec.max(f64x4::splat(0.0)).min(f64x4::splat(255.0)).round();
+        let b_clamped = b_vec.max(f64x4::splat(0.0)).min(f64x4::splat(255.0)).round();
+        let r_arr = r_clamped.to_array();
+        let g_arr = g_clamped.to_array();
+        let b_arr = b_clamped.to_array();
+        for j in 0..LANES {
+            pixels[idx] = r_arr[j] as u8;
+            pixels[idx + 1] = g_arr[j] as u8;
+            pixels[idx + 2] = b_arr[j] as u8;
+            idx += 3;
+        }
+        i += LANES;
+    }
+    while i < npix {
+        let (r, g, b) = accum[i];
+        pixels[idx] = ((r * scale).round().clamp(0.0, 255.0)) as u8;
+        pixels[idx + 1] = ((g * scale).round().clamp(0.0, 255.0)) as u8;
+        pixels[idx + 2] = ((b * scale).round().clamp(0.0, 255.0)) as u8;
+        idx += 3;
+        i += 1;
+    }
+    ImageBuffer::from_raw(width, height, pixels).unwrap()
 }
 
 // ========================================================
@@ -996,21 +1007,13 @@ fn create_video_from_frames_singlepass(
     }
     let width = frames[0].width();
     let height = frames[0].height();
-
-    // For log info
     let cpu_count = num_cpus::get().to_string();
     println!(
         "STAGE 6/7: Creating H.264 video (single pass) => {output_file}, {}x{}, {} FPS, using {} threads",
         width, height, frame_rate, cpu_count
     );
-
-    // We do a single FFmpeg command that reads raw frames from stdin and writes an MP4.
-    // E.g.:
-    // ffmpeg -y -f rawvideo -pixel_format rgb24 -video_size WxH -framerate 60
-    //        -i - -threads ... -preset slow -crf 18 -pix_fmt yuv420p -c:v libx264 -an output.mp4
     let mut cmd = Command::new("ffmpeg");
     cmd.arg("-y")
-        // input from stdin
         .arg("-f")
         .arg("rawvideo")
         .arg("-pixel_format")
@@ -1021,7 +1024,6 @@ fn create_video_from_frames_singlepass(
         .arg(frame_rate.to_string())
         .arg("-i")
         .arg("-")
-        // encoder settings
         .arg("-threads")
         .arg(&cpu_count)
         .arg("-preset")
@@ -1032,14 +1034,11 @@ fn create_video_from_frames_singlepass(
         .arg("yuv420p")
         .arg("-c:v")
         .arg("libx264")
-        // no audio
         .arg("-an")
-        // output file
         .arg(output_file)
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
-
     let mut child = match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
@@ -1047,8 +1046,6 @@ fn create_video_from_frames_singlepass(
             return;
         }
     };
-
-    // Write frames to FFmpeg's stdin
     {
         let sin = child.stdin.as_mut().unwrap();
         for frame in frames {
@@ -1058,8 +1055,6 @@ fn create_video_from_frames_singlepass(
             }
         }
     }
-
-    // Wait for ffmpeg to finish
     match child.wait_with_output() {
         Ok(out) => {
             if !out.status.success() {
@@ -1073,29 +1068,15 @@ fn create_video_from_frames_singlepass(
 }
 
 // ========================================================
-// Save single image as AVIF
+// Save single image as PNG
 // ========================================================
-fn save_image_as_avif(
+fn save_image_as_png(
     rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>,
     path: &str,
-    speed: u8,
-    quality: u8,
 ) -> Result<(), Box<dyn Error>> {
     let dyn_img = DynamicImage::ImageRgb8(rgb_img.clone());
-    let file = File::create(path)?;
-    let writer = BufWriter::new(file);
-
-    let s = speed.min(10);
-    let q = quality.min(100);
-
-    let encoder = AvifEncoder::new_with_speed_quality(writer, s, q);
-    encoder.write_image(
-        dyn_img.as_bytes(),
-        dyn_img.width(),
-        dyn_img.height(),
-        dyn_img.color().into(),
-    )?;
-    println!("   Saved AVIF => {path}");
+    dyn_img.save(path)?;
+    println!("   Saved PNG => {path}");
     Ok(())
 }
 
@@ -1104,12 +1085,8 @@ fn save_image_as_avif(
 // ========================================================
 fn main() {
     let args = Args::parse();
-
-    // create dirs
     let _ = fs::create_dir_all("pics");
     let _ = fs::create_dir_all("vids");
-
-    // RNG
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
     let mut rng = Sha3RandomByteStream::new(
@@ -1119,8 +1096,7 @@ fn main() {
         args.location,
         args.velocity,
     );
-
-    // 1) Borda => best orbit
+    // 1) Borda search for the best orbit.
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
         args.num_sims,
@@ -1131,13 +1107,11 @@ fn main() {
         args.dist_weight,
         args.lyap_weight,
     );
-
-    // 2) re-run best orbit => get positions
+    // 2) Re-run the best orbit.
     println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
     let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
     println!("   => Done re-running best orbit.");
-
-    // 3) bounding box
+    // 3) Determine the bounding box.
     println!("STAGE 3/7: Determining bounding box...");
     let mut min_x = INFINITY;
     let mut max_x = NEG_INFINITY;
@@ -1168,8 +1142,7 @@ fn main() {
         max_y += 0.05 * wy;
     }
     println!("   => Done bounding box.");
-
-    // 4) line drawing
+    // 4) Single-pass line drawing to build frames.
     println!(
         "STAGE 4/7: Single-pass line drawing => frames + final image ({} steps).",
         args.num_steps_sim
@@ -1177,16 +1150,13 @@ fn main() {
     let width = args.frame_size;
     let height = args.frame_size;
     let w_usize = width as usize;
-    let h_usize = height as usize;
-    let npix = w_usize * h_usize;
-
+    let npix = w_usize * (height as usize);
     let smaller_dim = (width as f64).min(height as f64);
     let blur_radius_px = if args.disable_blur {
         0
     } else {
         (args.blur_radius_fraction * smaller_dim).round() as usize
     };
-
     let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
         let ww = max_x - min_x;
         let hh = max_y - min_y;
@@ -1194,39 +1164,27 @@ fn main() {
         let py = ((yy - min_y) / hh) * (height as f64);
         (px as f32, py as f32)
     };
-
     let colors = generate_body_color_sequences(&mut rng, args.num_steps_sim);
-
-    // We'll produce ~1800 frames if possible
     let frame_rate = 60;
     let target_frames = 1800;
     let fi = if target_frames > 0 { (args.num_steps_sim / target_frames).max(1) } else { 1 };
-
     let mut accum = vec![(0.0, 0.0, 0.0); npix];
     let mut frames = Vec::new();
-
-    // We'll print progress ~every 10% in the line drawing loop
     let chunk_line = (args.num_steps_sim / 10).max(1);
-
     for step in 0..args.num_steps_sim {
         if step % chunk_line == 0 {
             let pct = (step as f64 / args.num_steps_sim as f64) * 100.0;
             println!("   line drawing: {:.0}% done", pct);
         }
-
         let p0 = positions[0][step];
         let p1 = positions[1][step];
         let p2 = positions[2][step];
-
         let c0 = colors[0][step];
         let c1 = colors[1][step];
         let c2 = colors[2][step];
-
         let (x0, y0) = to_pixel(p0[0], p0[1]);
         let (x1, y1) = to_pixel(p1[0], p1[1]);
         let (x2, y2) = to_pixel(p2[0], p2[1]);
-
-        // Add lines to accum
         draw_line_segment_additive_gradient_with_blur(
             &mut accum,
             width,
@@ -1272,33 +1230,13 @@ fn main() {
             args.blur_core_brightness,
             args.disable_blur,
         );
-
-        // snapshot if step multiple of fi or last step
         if (step % fi == 0) || (step == args.num_steps_sim - 1) {
-            let mut maxval = 0.0;
-            for &(r, g, b) in &accum {
-                let m = r.max(g).max(b);
-                if m > maxval {
-                    maxval = m;
-                }
-            }
-            if maxval < 1e-14 {
-                maxval = 1.0;
-            }
-            let mut img = ImageBuffer::new(width, height);
-            for (i, px) in img.pixels_mut().enumerate() {
-                let (r, g, b) = accum[i];
-                let rr = (r / maxval).clamp(0.0, 1.0) * 255.0;
-                let gg = (g / maxval).clamp(0.0, 1.0) * 255.0;
-                let bb = (b / maxval).clamp(0.0, 1.0) * 255.0;
-                *px = Rgb([rr as u8, gg as u8, bb as u8]);
-            }
+            let img = accum_to_image(&accum, width, height);
             frames.push(img);
         }
     }
     println!("   => line drawing complete. Collected {} frames.", frames.len());
-
-    // 5) global auto-level
+    // 5) Global auto-level.
     println!("STAGE 5/7: Applying global histogram auto-level to {} frames...", frames.len());
     auto_levels_percentile_frames_global(
         &mut frames,
@@ -1307,21 +1245,16 @@ fn main() {
         args.levels_gamma,
     );
     println!("   => Done auto-leveling.");
-
-    // The last frame is the final single image
     let final_img = frames.last().unwrap().clone();
-
-    // 6) create video (single-pass H.264)
+    // 6) Create video via FFmpeg.
     let vid_path = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_singlepass(&frames, &vid_path, frame_rate);
-
-    // 7) save final single image as AVIF
-    println!("STAGE 7/7: Saving final single image as AVIF...");
-    let avif_path = format!("pics/{}.avif", args.file_name);
-    if let Err(e) = save_image_as_avif(&final_img, &avif_path, 0, 90) {
-        eprintln!("Error saving AVIF: {e}");
+    // 7) Save final image as PNG.
+    println!("STAGE 7/7: Saving final single image as PNG...");
+    let png_path = format!("pics/{}.png", args.file_name);
+    if let Err(e) = save_image_as_png(&final_img, &png_path) {
+        eprintln!("Error saving PNG: {e}");
     }
-
     println!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted

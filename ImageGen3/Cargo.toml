@@ -17,6 +17,7 @@ rayon = "1.8.1"
 rustfft = "6.1.0"
 sha3 = "0.10.8"
 statrs = "0.16.0"
+wide = "0.7"
 
 [profile.release]
 lto = "fat"
