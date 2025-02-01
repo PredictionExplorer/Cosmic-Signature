@@ -26,7 +26,7 @@ const G: f64 = 9.8; // gravitational constant
 #[command(
     author,
     version,
-    about = "Simulate many random 3-body orbits, pick best by Borda, then generate single image + AV1 video with global auto-level."
+    about = "Simulate many random 3-body orbits, pick best by Borda, then generate single image + H.264 MP4 video with global auto-level."
 )]
 struct Args {
     /// Hex seed for random generation (e.g. --seed 0xABC123)
@@ -255,7 +255,7 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
 
-    // Warm up (quiet, no prints here to avoid spam)
+    // Warm up
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
@@ -577,7 +577,7 @@ fn select_best_trajectory(
             if e >= 0.0 || ang < 1e-3 {
                 None
             } else {
-                // big simulation by default, e.g. 1,000,000 steps
+                // big simulation
                 let positions = get_positions(bodies.clone(), num_steps_sim);
                 let len = positions[0].len();
                 let factor = (len / max_points).max(1);
@@ -983,7 +983,7 @@ fn auto_levels_percentile_frames_global(
 }
 
 // ========================================================
-// 2-pass AV1 with multi-threading
+// 2-pass H.264 with multi-threading
 // ========================================================
 fn create_video_from_frames_2pass(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
@@ -1001,13 +1001,13 @@ fn create_video_from_frames_2pass(
     let cpu_count = num_cpus::get().to_string();
 
     println!(
-        "STAGE 6/7: Creating 2-pass AV1 video => {output_file}, {}x{}, {} FPS, using {} threads",
+        "STAGE 6/7: Creating 2-pass H.264 video => {output_file}, {}x{}, {} FPS, using {} threads",
         width, height, frame_rate, cpu_count
     );
 
     // pass1
     {
-        println!("   (pass 1) Encoding...");
+        println!("   (pass 1) Encoding (libx264)...");
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-y")
             // raw frames from stdin
@@ -1021,42 +1021,26 @@ fn create_video_from_frames_2pass(
             .arg(frame_rate.to_string())
             .arg("-i")
             .arg("-")
-            // Dynamic thread count
+            // Thread usage
             .arg("-threads")
             .arg(&cpu_count)
-            // Maximum quality settings for AV1
-            .arg("-cpu-used")
-            .arg("0") // Slowest but highest quality
-            .arg("-row-mt")
-            .arg("1")
-            .arg("-tile-columns")
-            .arg("0")
-            .arg("-tile-rows")
-            .arg("0")
-            // Codec settings
+            // H.264 codec
             .arg("-c:v")
-            .arg("libaom-av1")
-            .arg("-b:v")
-            .arg("0") // Use CRF mode
+            .arg("libx264")
+            .arg("-preset")
+            .arg("slow") // 'slow' or 'medium' is a common trade-off
+            // CRF for quality (lower = higher quality)
             .arg("-crf")
-            .arg("4") // Very high quality
+            .arg("18")
+            // Two-pass: pass 1
             .arg("-pass")
             .arg("1")
-            // Additional quality enhancements
-            .arg("-lag-in-frames")
-            .arg("35")
-            .arg("-enable-qm")
-            .arg("1")
-            .arg("-arnr-strength")
-            .arg("4")
-            .arg("-arnr-maxframes")
-            .arg("15")
-            .arg("-enable-keyframe-filtering")
-            .arg("2")
-            .arg("-error-resilience")
-            .arg("1")
+            // Typically needed to produce a valid color space
+            .arg("-pix_fmt")
+            .arg("yuv420p")
             // No audio
             .arg("-an")
+            // Output to null for pass1
             .arg("-f")
             .arg("null")
             .arg("/dev/null")
@@ -1081,7 +1065,7 @@ fn create_video_from_frames_2pass(
 
     // pass2
     {
-        println!("   (pass 2) Encoding...");
+        println!("   (pass 2) Encoding (libx264)...");
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-y")
             .arg("-f")
@@ -1096,34 +1080,16 @@ fn create_video_from_frames_2pass(
             .arg("-")
             .arg("-threads")
             .arg(&cpu_count)
-            .arg("-cpu-used")
-            .arg("0")
-            .arg("-row-mt")
-            .arg("1")
-            .arg("-tile-columns")
-            .arg("0")
-            .arg("-tile-rows")
-            .arg("0")
             .arg("-c:v")
-            .arg("libaom-av1")
-            .arg("-b:v")
-            .arg("0")
+            .arg("libx264")
+            .arg("-preset")
+            .arg("slow")
             .arg("-crf")
-            .arg("4")
+            .arg("18")
             .arg("-pass")
             .arg("2")
-            .arg("-lag-in-frames")
-            .arg("35")
-            .arg("-enable-qm")
-            .arg("1")
-            .arg("-arnr-strength")
-            .arg("4")
-            .arg("-arnr-maxframes")
-            .arg("15")
-            .arg("-enable-keyframe-filtering")
-            .arg("2")
-            .arg("-error-resilience")
-            .arg("1")
+            .arg("-pix_fmt")
+            .arg("yuv420p")
             .arg("-an")
             .arg(output_file)
             .stdin(Stdio::piped())
@@ -1208,15 +1174,7 @@ fn main() {
 
     // 2) re-run best orbit => get positions
     println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
-    let positions = {
-        // We'll do a small progress print inside the loop. But `get_positions`
-        // does a big internal loop with no progress prints. We'll do a simpler approach:
-        // Just call it, since you probably don't want to spam the console with 1e6 steps.
-
-        // If you want partial prints, you could manually rewrite get_positions,
-        // but let's keep it simpler. We'll just do a single call here.
-        get_positions(best_bodies.clone(), args.num_steps_sim)
-    };
+    let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
     println!("   => Done re-running best orbit.");
 
     // 3) bounding box
@@ -1251,7 +1209,7 @@ fn main() {
     }
     println!("   => Done bounding box.");
 
-    // 4) line drawing: single pass => frames
+    // 4) line drawing
     println!(
         "STAGE 4/7: Single-pass line drawing => frames + final image ({} steps).",
         args.num_steps_sim
@@ -1393,8 +1351,8 @@ fn main() {
     // The last frame is the final single image
     let final_img = frames.last().unwrap().clone();
 
-    // 6) create video (2-pass AV1)
-    let vid_path = format!("vids/{}.mkv", args.file_name);
+    // 6) create video (2-pass H.264)
+    let vid_path = format!("vids/{}.mp4", args.file_name);
     create_video_from_frames_2pass(&frames, &vid_path, frame_rate);
 
     // 7) save final single image as AVIF
