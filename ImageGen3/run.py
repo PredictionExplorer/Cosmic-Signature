@@ -32,7 +32,7 @@ SIMULATION_CONFIG = {
         'dist_weight': [2.0],           # --dist-weight
         'lyap_weight': [2.5],           # --lyap-weight
         'max_points': [100_000],        # --max-points
-        'frame_size': [600],            # --frame-size
+        'frame_size': [1800],            # --frame-size
 
         # If disable_blur == True, we ignore multiple blur variants
         'blur_radius_fraction': [0.01],
