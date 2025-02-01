@@ -983,9 +983,9 @@ fn auto_levels_percentile_frames_global(
 }
 
 // ========================================================
-// 2-pass H.264 with multi-threading
+// Simplified single-pass H.264 encoding with FFmpeg
 // ========================================================
-fn create_video_from_frames_2pass(
+fn create_video_from_frames_singlepass(
     frames: &[ImageBuffer<Rgb<u8>, Vec<u8>>],
     output_file: &str,
     frame_rate: u32,
@@ -997,118 +997,78 @@ fn create_video_from_frames_2pass(
     let width = frames[0].width();
     let height = frames[0].height();
 
-    // Get number of CPU cores available
+    // For log info
     let cpu_count = num_cpus::get().to_string();
-
     println!(
-        "STAGE 6/7: Creating 2-pass H.264 video => {output_file}, {}x{}, {} FPS, using {} threads",
+        "STAGE 6/7: Creating H.264 video (single pass) => {output_file}, {}x{}, {} FPS, using {} threads",
         width, height, frame_rate, cpu_count
     );
 
-    // pass1
-    {
-        println!("   (pass 1) Encoding (libx264)...");
-        let mut cmd = Command::new("ffmpeg");
-        cmd.arg("-y")
-            // raw frames from stdin
-            .arg("-f")
-            .arg("rawvideo")
-            .arg("-pixel_format")
-            .arg("rgb24")
-            .arg("-video_size")
-            .arg(format!("{}x{}", width, height))
-            .arg("-framerate")
-            .arg(frame_rate.to_string())
-            .arg("-i")
-            .arg("-")
-            // Thread usage
-            .arg("-threads")
-            .arg(&cpu_count)
-            // H.264 codec
-            .arg("-c:v")
-            .arg("libx264")
-            .arg("-preset")
-            .arg("slow") // 'slow' or 'medium' is a common trade-off
-            // CRF for quality (lower = higher quality)
-            .arg("-crf")
-            .arg("18")
-            // Two-pass: pass 1
-            .arg("-pass")
-            .arg("1")
-            // Typically needed to produce a valid color space
-            .arg("-pix_fmt")
-            .arg("yuv420p")
-            // No audio
-            .arg("-an")
-            // Output to null for pass1
-            .arg("-f")
-            .arg("null")
-            .arg("/dev/null")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped());
+    // We do a single FFmpeg command that reads raw frames from stdin and writes an MP4.
+    // E.g.:
+    // ffmpeg -y -f rawvideo -pixel_format rgb24 -video_size WxH -framerate 60
+    //        -i - -threads ... -preset slow -crf 18 -pix_fmt yuv420p -c:v libx264 -an output.mp4
+    let mut cmd = Command::new("ffmpeg");
+    cmd.arg("-y")
+        // input from stdin
+        .arg("-f")
+        .arg("rawvideo")
+        .arg("-pixel_format")
+        .arg("rgb24")
+        .arg("-video_size")
+        .arg(format!("{}x{}", width, height))
+        .arg("-framerate")
+        .arg(frame_rate.to_string())
+        .arg("-i")
+        .arg("-")
+        // encoder settings
+        .arg("-threads")
+        .arg(&cpu_count)
+        .arg("-preset")
+        .arg("slow")
+        .arg("-crf")
+        .arg("18")
+        .arg("-pix_fmt")
+        .arg("yuv420p")
+        .arg("-c:v")
+        .arg("libx264")
+        // no audio
+        .arg("-an")
+        // output file
+        .arg(output_file)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
 
-        let mut child = cmd.spawn().expect("Failed to start ffmpeg pass1");
-        {
-            let sin = child.stdin.as_mut().unwrap();
-            for frame in frames {
-                sin.write_all(frame.as_raw()).expect("ffmpeg pass1 write fail");
-            }
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to start ffmpeg: {e}");
+            return;
         }
-        let out = child.wait_with_output().expect("ffmpeg pass1 wait fail");
-        if !out.status.success() {
-            eprintln!("FFmpeg pass1 error:\n{}", String::from_utf8_lossy(&out.stderr));
-        } else {
-            println!("   (pass 1) Done.");
+    };
+
+    // Write frames to FFmpeg's stdin
+    {
+        let sin = child.stdin.as_mut().unwrap();
+        for frame in frames {
+            if let Err(e) = sin.write_all(frame.as_raw()) {
+                eprintln!("ffmpeg single-pass write fail: {e}");
+                break;
+            }
         }
     }
 
-    // pass2
-    {
-        println!("   (pass 2) Encoding (libx264)...");
-        let mut cmd = Command::new("ffmpeg");
-        cmd.arg("-y")
-            .arg("-f")
-            .arg("rawvideo")
-            .arg("-pixel_format")
-            .arg("rgb24")
-            .arg("-video_size")
-            .arg(format!("{}x{}", width, height))
-            .arg("-framerate")
-            .arg(frame_rate.to_string())
-            .arg("-i")
-            .arg("-")
-            .arg("-threads")
-            .arg(&cpu_count)
-            .arg("-c:v")
-            .arg("libx264")
-            .arg("-preset")
-            .arg("slow")
-            .arg("-crf")
-            .arg("18")
-            .arg("-pass")
-            .arg("2")
-            .arg("-pix_fmt")
-            .arg("yuv420p")
-            .arg("-an")
-            .arg(output_file)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped());
-
-        let mut child = cmd.spawn().expect("Failed to start ffmpeg pass2");
-        {
-            let sin = child.stdin.as_mut().unwrap();
-            for frame in frames {
-                sin.write_all(frame.as_raw()).expect("ffmpeg pass2 write fail");
+    // Wait for ffmpeg to finish
+    match child.wait_with_output() {
+        Ok(out) => {
+            if !out.status.success() {
+                eprintln!("FFmpeg single-pass error:\n{}", String::from_utf8_lossy(&out.stderr));
+            } else {
+                println!("   => single-pass video creation complete => {output_file}");
             }
         }
-        let out = child.wait_with_output().expect("ffmpeg pass2 wait fail");
-        if !out.status.success() {
-            eprintln!("FFmpeg pass2 error:\n{}", String::from_utf8_lossy(&out.stderr));
-        } else {
-            println!("   (pass 2) Done. Video creation complete => {output_file}");
-        }
+        Err(e) => eprintln!("Error waiting for ffmpeg: {e}"),
     }
 }
 
@@ -1237,7 +1197,7 @@ fn main() {
 
     let colors = generate_body_color_sequences(&mut rng, args.num_steps_sim);
 
-    // We produce ~1800 frames if possible
+    // We'll produce ~1800 frames if possible
     let frame_rate = 60;
     let target_frames = 1800;
     let fi = if target_frames > 0 { (args.num_steps_sim / target_frames).max(1) } else { 1 };
@@ -1351,9 +1311,9 @@ fn main() {
     // The last frame is the final single image
     let final_img = frames.last().unwrap().clone();
 
-    // 6) create video (2-pass H.264)
+    // 6) create video (single-pass H.264)
     let vid_path = format!("vids/{}.mp4", args.file_name);
-    create_video_from_frames_2pass(&frames, &vid_path, frame_rate);
+    create_video_from_frames_singlepass(&frames, &vid_path, frame_rate);
 
     // 7) save final single image as AVIF
     println!("STAGE 7/7: Saving final single image as AVIF...");
