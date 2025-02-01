@@ -1,3 +1,4 @@
+import os
 import itertools
 import subprocess
 import threading
@@ -15,44 +16,69 @@ SIMULATION_CONFIG = {
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "100035",
-    'num_runs': 1000,  # e.g., how many different seeds to generate
+    'base_seed_hex': "191056",
+    'num_runs': 10000,  # e.g., how many seeds to generate
 
     # The relevant command-line arguments for the core parameters
-    # Make sure these keys match your Rust CLI argument long names (minus the dashes).
-    # e.g. Rust has '--num-steps-sim', so we use 'num_steps_sim' as the dictionary key here.
     'param_ranges': {
-        'num_sims': [100],             # --num-sims
-        'num_steps_sim': [1_000_000],     # --num-steps-sim
-        'location': [300.0],             # --location
-        'velocity': [1.0],               # --velocity
-        'min_mass': [100.0],             # --min-mass
-        'max_mass': [300.0],             # --max-mass
-        'chaos_weight': [3.0],           # --chaos-weight
-        'perimeter_weight': [1.0],       # --perimeter-weight
-        'dist_weight': [2.0],            # --dist-weight
-        'lyap_weight': [2.5],            # --lyap-weight
-        'max_points': [100_000],         # --max-points
-        'frame_size': [600],             # --frame-size
-        'blur_radius_fraction': [0.01],  # --blur-radius-fraction
-        'blur_strength': [1.0],          # --blur-strength
-        'blur_core_brightness': [1.0],   # --blur-core-brightness
-        'disable_blur': [True],         # --disable-blur
-        'clip_black': [0.01],            # --clip-black
-        'clip_white': [0.99],            # --clip-white
-        'levels_gamma': [1.0],           # --levels-gamma
+        'num_sims': [10_000],             # --num-sims
+        'num_steps_sim': [1_000_000],    # --num-steps-sim
+        'location': [300.0],            # --location
+        'velocity': [1.0],              # --velocity
+        'min_mass': [100.0],            # --min-mass
+        'max_mass': [300.0],            # --max-mass
+        'chaos_weight': [3.0],          # --chaos-weight
+        'perimeter_weight': [1.0],      # --perimeter-weight
+        'dist_weight': [2.0],           # --dist-weight
+        'lyap_weight': [2.5],           # --lyap-weight
+        'max_points': [100_000],        # --max-points
+        'frame_size': [600],            # --frame-size
+
+        # If disable_blur == True, we ignore multiple blur variants
+        'blur_radius_fraction': [0.01],
+        'blur_strength': [1.0],
+        'blur_core_brightness': [1.0],
+        'disable_blur': [False],
+
+        'clip_black': [0.01],           # --clip-black
+        'clip_white': [0.99],           # --clip-white
+        'levels_gamma': [1.0],          # --levels-gamma
     },
 
-    # Example "blur_variants" if blur is enabled. Each variant is (radius_frac, strength, core_bright).
+    # 6 total: one "no blur," one "normal," two "wild," two "extreme."
+    # Each tuple is (blur_radius_fraction, blur_strength, blur_core_brightness)
     'blur_variants': [
-        (0.005, 1.0, 1.0),
-        (0.01,  1.0, 1.0),
-        (0.02,  1.0, 2.0),
-        (0.02,  2.0, 1.0),
-        (0.05,  2.0, 3.0),
+        (0.0,  0.0,  1.0),   # (A) "No blur"
+                             #   - radius=0.0 => effectively no blur pass
+                             #   - strength=0.0 => no added glow
+                             #   - core=1.0 => lines at normal brightness
+
+        (0.01, 1.0,  1.0),   # (B) "Normal"
+                             #   - radius=0.01 => 1% of smaller dimension
+                             #   - strength=1.0 => moderate glow
+                             #   - core=1.0 => crisp lines normal
+
+        (0.03, 2.0,  2.0),   # (C) "Wild #1"
+                             #   - radius=0.03 => 3% blur radius
+                             #   - strength=2.0 => stronger glow
+                             #   - core=2.0 => lines are twice normal brightness
+
+        (0.05, 3.0,  3.0),   # (D) "Wild #2"
+                             #   - radius=0.05 => 5% blur radius
+                             #   - strength=3.0 => even stronger glow
+                             #   - core=3.0 => lines triple normal brightness
+
+        (0.10, 8.0,  5.0),   # (E) "Extreme #1"
+                             #   - radius=0.10 => 10% blur radius
+                             #   - strength=8.0 => large glow halo
+                             #   - core=5.0 => lines are extremely bright
+
+        (0.15, 12.0, 8.0),   # (F) "Extreme #2"
+                             #   - radius=0.15 => 15% blur radius
+                             #   - strength=12.0 => intense glow
+                             #   - core=8.0 => ultra-bright core lines
     ],
 }
-
 
 # ===================== Dataclass for Parameters =====================
 @dataclass
@@ -90,45 +116,39 @@ def generate_file_name(params: SimulationParams) -> str:
     """
     Create the main 'file_name' for Rust's "--file-name" argument.
 
-    If blur is disabled, name ends with "_noblur".
-    If blur is enabled, append the blur parameters for clarity.
-    e.g. "seed_100035000A_blur0.010_str1.00_core1.00"
+    - If disable_blur is True, call it "_disableBlur".
+    - Else if blur_radius_fraction < 1e-9 => "noblur".
+    - Otherwise => "blur_radius_XXX_str_YYY_core_ZZZ".
     """
     seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
+
     if params.disable_blur:
-        return f"seed_{seed_part}_noblur"
+        return f"seed_{seed_part}_disableBlur"
     else:
-        return (
-            f"seed_{seed_part}"
-            f"_blur{params.blur_radius_fraction:.3f}"
-            f"_str{params.blur_strength:.2f}"
-            f"_core{params.blur_core_brightness:.2f}"
-        )
+        if params.blur_radius_fraction < 1e-9:
+            # effectively no blur
+            return f"seed_{seed_part}_noblur"
+        else:
+            return (
+                f"seed_{seed_part}"
+                f"_blur_radius_{params.blur_radius_fraction:.3f}"
+                f"_str_{params.blur_strength:.2f}"
+                f"_core_{params.blur_core_brightness:.2f}"
+            )
 
 
 def generate_log_prefix(params: SimulationParams) -> str:
     """
     Creates the prefix for the log files.
-    If blur is disabled => just "{seed}" (no '0x' if present).
-    If blur is enabled => "{seed}_blurX_strY_coreZ".
+    We'll reuse the same logic as generate_file_name.
     """
-    seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
-    if params.disable_blur:
-        # e.g. "ABC100" if seed=0xABC100
-        return seed_part
-    else:
-        return (
-            f"{seed_part}"
-            f"_blur{params.blur_radius_fraction:.3f}"
-            f"_str{params.blur_strength:.2f}"
-            f"_core{params.blur_core_brightness:.2f}"
-        )
+    return generate_file_name(params)
 
 
 def build_command_list(program_path: str, params: SimulationParams) -> List[str]:
     """
     Construct the command list for the Rust simulation.
-    Make sure each argument matches the Rust code's --long-arg name exactly.
+    Matches each argument to the Rust code's --long-arg name.
     """
     cmd = [
         program_path,
@@ -201,16 +221,17 @@ def run_simulation(command_list: List[str], params: SimulationParams) -> int:
     1) Print the EXACT command.
     2) Build log file names based on blur or not.
     3) Spawn the child process, capturing stdout/stderr line by line.
-    4) On non-zero exit, re-print all lines to console *and* append them to the logs.
+    4) On non-zero exit, re-print all lines to console & logs.
     5) Return the child's exit code.
     """
     cmd_str = " ".join(command_list)
     print(f"Running command: {cmd_str}")
 
-    # Decide the log file prefix based on blur, etc.
     log_prefix = generate_log_prefix(params)
-    stdout_log_file = f"{log_prefix}_thread-1.log"
-    stderr_log_file = f"{log_prefix}_thread-2.log"
+
+    # Put logs in the 'logs' folder, ensuring the folder exists
+    stdout_log_file = f"logs/{log_prefix}_thread-stdout.log"
+    stderr_log_file = f"logs/{log_prefix}_thread-stderr.log"
 
     print_lock = threading.Lock()
     stdout_lines = []
@@ -227,12 +248,12 @@ def run_simulation(command_list: List[str], params: SimulationParams) -> int:
 
     t_out = threading.Thread(
         target=_logger_thread,
-        args=(proc.stdout, "THREAD-1", stdout_log_file, print_lock, stdout_lines),
+        args=(proc.stdout, "THREAD-OUT", stdout_log_file, print_lock, stdout_lines),
         daemon=True
     )
     t_err = threading.Thread(
         target=_logger_thread,
-        args=(proc.stderr, "THREAD-2", stderr_log_file, print_lock, stderr_lines),
+        args=(proc.stderr, "THREAD-ERR", stderr_log_file, print_lock, stderr_lines),
         daemon=True
     )
 
@@ -248,24 +269,24 @@ def run_simulation(command_list: List[str], params: SimulationParams) -> int:
         # Re-print to console
         print("---- BEGIN RUST STDOUT ----")
         for line in stdout_lines:
-            print(f"[THREAD-1] {line}")
+            print(f"[THREAD-OUT] {line}")
         print("---- END RUST STDOUT ----\n")
 
         print("---- BEGIN RUST STDERR ----")
         for line in stderr_lines:
-            print(f"[THREAD-2] {line}")
+            print(f"[THREAD-ERR] {line}")
         print("---- END RUST STDERR ----\n")
 
         # Also append to the log files again
         with open(stdout_log_file, 'a', encoding='utf-8') as f:
             f.write("\nERROR DETECTED. REPRINTING CAPTURED STDOUT LINES:\n")
             for line in stdout_lines:
-                f.write(f"[THREAD-1] {line}\n")
+                f.write(f"[THREAD-OUT] {line}\n")
 
         with open(stderr_log_file, 'a', encoding='utf-8') as f:
             f.write("\nERROR DETECTED. REPRINTING CAPTURED STDERR LINES:\n")
             for line in stderr_lines:
-                f.write(f"[THREAD-2] {line}\n")
+                f.write(f"[THREAD-ERR] {line}\n")
 
     return proc.returncode
 
@@ -282,8 +303,8 @@ class SimulationRunner:
         """
         - Reads from SIMULATION_CONFIG['param_ranges'] to get possible values for each param.
         - For each combination, produce multiple seeds (0..num_runs-1).
-        - If 'disable_blur' is True in that combination, we skip the 5 blur variants
-          and produce only 1 set of blur parameters.
+        - If 'disable_blur' is True, skip the 'blur_variants' and do only 1 set from param_ranges.
+        - Otherwise, for each seed, produce all 6 items in 'blur_variants'.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
@@ -294,17 +315,20 @@ class SimulationRunner:
 
             blur_is_disabled = combo_dict['disable_blur']
             if blur_is_disabled:
-                # Only one "variant"
+                # Only one "variant" from param ranges
                 chosen_blur_variants = [
-                    (combo_dict['blur_radius_fraction'],
-                     combo_dict['blur_strength'],
-                     combo_dict['blur_core_brightness'])
+                    (
+                        combo_dict['blur_radius_fraction'],
+                        combo_dict['blur_strength'],
+                        combo_dict['blur_core_brightness'],
+                    )
                 ]
             else:
+                # Use all 6 from 'blur_variants'
                 chosen_blur_variants = SIMULATION_CONFIG['blur_variants']
 
             for i in range(num_runs):
-                # Build a unique seed, e.g. 0x100035 + i in hex
+                # Build a unique seed, e.g. "0x120056" + i in hex => "0x120056000A"
                 seed_suffix = f"{i:04X}"
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
@@ -344,6 +368,9 @@ class SimulationRunner:
         Executes each SimulationParams in a ThreadPoolExecutor
         with up to 'max_concurrent' concurrency.
         """
+        # Ensure the 'logs' folder exists (for storing log files)
+        os.makedirs("logs", exist_ok=True)
+
         print(f"Total tasks to execute: {len(param_sets)}")
 
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
@@ -372,7 +399,7 @@ def main():
     print(
         "Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
         "We produce multiple blur variants per seed (unless blur is disabled). Images/video\n"
-        "are generated by the Rust code. Logs are saved per-run in real time.\n"
+        "are generated by the Rust code. Logs are saved per-run in 'logs/' in real time.\n"
     )
 
     runner = SimulationRunner(
@@ -387,6 +414,7 @@ def main():
 
     print(f"Base param sets (including blur variants unless disabled): {len(param_sets)}")
 
+    # Run them all
     runner.run_simulations(param_sets)
 
 
