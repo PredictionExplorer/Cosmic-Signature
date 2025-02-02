@@ -16,74 +16,47 @@ SIMULATION_CONFIG = {
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "192657",
-    'num_runs': 10000,  # e.g., how many seeds to generate
+    'base_seed_hex': "155556",
+    'num_runs': 1000,  # example: how many seeds to generate
 
     # The relevant command-line arguments for the core parameters
     'param_ranges': {
-        'num_sims': [1_000],            # --num-sims
-        'num_steps_sim': [1_000_000],   # --num-steps-sim
-        'location': [300.0],           # --location
-        'velocity': [1.0],             # --velocity
-        'min_mass': [100.0],           # --min-mass
-        'max_mass': [300.0],           # --max-mass
-        'chaos_weight': [3.0],         # --chaos-weight
-        'perimeter_weight': [1.0],     # --perimeter-weight
-        'dist_weight': [2.0],          # --dist-weight
-        'lyap_weight': [2.5],          # --lyap-weight
-        'max_points': [100_000],       # --max-points
-        'frame_size': [800],          # --frame-size
+        'num_sims': [1_000],             # --num-sims
+        'num_steps_sim': [1_000_000],    # --num-steps-sim
+        'location': [300.0],            # --location
+        'velocity': [1.0],              # --velocity
+        'min_mass': [100.0],            # --min-mass
+        'max_mass': [300.0],            # --max-mass
+        'chaos_weight': [3.0],          # --chaos-weight
+        'perimeter_weight': [1.0],      # --perimeter-weight
+        'dist_weight': [2.0],           # --dist-weight
+        'lyap_weight': [2.5],           # --lyap-weight
+        'aspect_weight': [1.0],         # --aspect-weight
 
-        # If disable_blur == True, we ignore multiple blur variants
+        'max_points': [100_000],        # --max-points
+        'width': [1920],                # --width
+        'height': [1080],               # --height
+
+        # If disable_blur == True, we skip fancy blur variants
+        # else we can override below with blur_variants
         'blur_radius_fraction': [0.01],
         'blur_strength': [1.0],
         'blur_core_brightness': [1.0],
         'disable_blur': [False],
 
-        'clip_black': [0.005],         # --clip-black
-        'clip_white': [0.99],          # --clip-white
-        'levels_gamma': [1.0],         # --levels-gamma
+        'clip_black': [0.005],          # --clip-black
+        'clip_white': [0.99],           # --clip-white
+        'levels_gamma': [1.0],          # --levels-gamma
     },
 
-    # 6 total. We’ve re-labeled them to push the boundaries further.
-    # (A) "No blur" (same as before)
-    # (B) "Normal" (this was originally "Extreme #1," now our new baseline)
-    # (C) "Strong #1"
-    # (D) "Strong #2"
-    # (E) "Extreme #1"
-    # (F) "Extreme #2"
-    #
-    # Each tuple is (blur_radius_fraction, blur_strength, blur_core_brightness)
+    # 6 total blur variants. If disable_blur==False, we use them:
     'blur_variants': [
-        (0.0,  0.0,  1.0),   # (A) "No blur"
-                             #   - radius=0.0 => effectively no blur pass
-                             #   - strength=0.0 => no added glow
-                             #   - core=1.0 => lines at normal brightness
-
-        (0.10,  8.0,  5.0),  # (B) "Normal"
-                             #   - radius=0.10 => 10% blur
-                             #   - strength=8.0 => moderate/strong glow
-                             #   - core=5.0 => lines quite bright
-
-        (0.15, 12.0,  8.0),  # (C) "Strong #1"
-                             #   - radius=0.15
-                             #   - strength=12 => fairly strong halo
-                             #   - core=8.0 => lines are very bright
-
-        (0.20, 16.0, 10.0),  # (D) "Strong #2"
-                             #   - radius=0.20
-                             #   - strength=16 => even stronger halo
-                             #   - core=10.0 => lines extremely bright
-
-        (0.30, 24.0, 15.0),  # (E) "Extreme #1"
-                             #   - radius=0.30
-                             #   - strength=24 => large glow
-                             #   - core=15.0 => lines extremely bright
-
-        (0.40, 32.0, 20.0),  # (F) "Extreme #2"
-                             #   - radius=0.40 => 40% blur radius
-                             #   - strength=32 => intense glow
-                             #   - core=20.0 => ultra-bright core lines
+        (0.0,  0.0,  1.0),   # (A) No blur
+        (0.10,  8.0,  5.0),  # (B) Normal
+        (0.15, 12.0,  8.0),  # (C) Strong #1
+        (0.20, 16.0, 10.0),  # (D) Strong #2
+        (0.30, 24.0, 15.0),  # (E) Extreme #1
+        (0.40, 32.0, 20.0),  # (F) Extreme #2
     ],
 }
 
@@ -96,36 +69,39 @@ class SimulationParams:
     seed: str
     file_name: str
 
-    num_sims: int               # --num-sims
-    num_steps_sim: int          # --num-steps-sim
-    location: float             # --location
-    velocity: float             # --velocity
-    min_mass: float             # --min-mass
-    max_mass: float             # --max-mass
-    chaos_weight: float         # --chaos-weight
-    perimeter_weight: float     # --perimeter-weight
-    dist_weight: float          # --dist-weight
-    lyap_weight: float          # --lyap-weight
-    max_points: int             # --max-points
-    frame_size: int             # --frame-size
+    num_sims: int
+    num_steps_sim: int
+    location: float
+    velocity: float
+    min_mass: float
+    max_mass: float
 
-    blur_radius_fraction: float # --blur-radius-fraction
-    blur_strength: float        # --blur-strength
-    blur_core_brightness: float # --blur-core-brightness
-    disable_blur: bool          # --disable-blur
+    chaos_weight: float
+    perimeter_weight: float
+    dist_weight: float
+    lyap_weight: float
+    aspect_weight: float
 
-    clip_black: float           # --clip-black
-    clip_white: float           # --clip-white
-    levels_gamma: float         # --levels-gamma
+    max_points: int
+
+    # New: separate width/height for final image
+    width: int
+    height: int
+
+    blur_radius_fraction: float
+    blur_strength: float
+    blur_core_brightness: float
+    disable_blur: bool
+
+    clip_black: float
+    clip_white: float
+    levels_gamma: float
 
 
 def generate_file_name(params: SimulationParams) -> str:
     """
-    Create the main 'file_name' for Rust's "--file-name" argument.
-
-    - If disable_blur is True, call it "_disableBlur".
-    - Else if blur_radius_fraction < 1e-9 => "noblur".
-    - Otherwise => "blur_radius_XXX_str_YYY_core_ZZZ".
+    Create the 'file_name' for Rust's "--file-name" argument.
+    Includes info about blur if not disabled.
     """
     seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
 
@@ -155,7 +131,6 @@ def generate_log_prefix(params: SimulationParams) -> str:
 def build_command_list(program_path: str, params: SimulationParams) -> List[str]:
     """
     Construct the command list for the Rust simulation.
-    Matches each argument to the Rust code's --long-arg name.
     """
     cmd = [
         program_path,
@@ -173,9 +148,12 @@ def build_command_list(program_path: str, params: SimulationParams) -> List[str]
         "--perimeter-weight", str(params.perimeter_weight),
         "--dist-weight", str(params.dist_weight),
         "--lyap-weight", str(params.lyap_weight),
+        "--aspect-weight", str(params.aspect_weight),
 
         "--max-points", str(params.max_points),
-        "--frame-size", str(params.frame_size),
+
+        "--width", str(params.width),
+        "--height", str(params.height),
 
         "--blur-radius-fraction", str(params.blur_radius_fraction),
         "--blur-strength", str(params.blur_strength),
@@ -236,7 +214,7 @@ def run_simulation(command_list: List[str], params: SimulationParams) -> int:
 
     log_prefix = generate_log_prefix(params)
 
-    # Put logs in the 'logs' folder, ensuring the folder exists
+    # Put logs in the 'logs' folder
     stdout_log_file = f"logs/{log_prefix}_thread-stdout.log"
     stderr_log_file = f"logs/{log_prefix}_thread-stderr.log"
 
@@ -308,10 +286,7 @@ class SimulationRunner:
 
     def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
         """
-        - Reads from SIMULATION_CONFIG['param_ranges'] to get possible values for each param.
-        - For each combination, produce multiple seeds (0..num_runs-1).
-        - If 'disable_blur' is True, skip the 'blur_variants' and do only 1 set from param_ranges.
-        - Otherwise, for each seed, produce all items in 'blur_variants'.
+        Build a list of SimulationParams, including multiple blur variants if not disabled.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
@@ -342,7 +317,7 @@ class SimulationRunner:
                 for (radius_frac, strength, core_bright) in chosen_blur_variants:
                     p = SimulationParams(
                         seed=full_seed,
-                        file_name="output",  # We'll rename later for uniqueness
+                        file_name="output",  # We rename per-run
 
                         num_sims=combo_dict['num_sims'],
                         num_steps_sim=combo_dict['num_steps_sim'],
@@ -354,8 +329,12 @@ class SimulationRunner:
                         perimeter_weight=combo_dict['perimeter_weight'],
                         dist_weight=combo_dict['dist_weight'],
                         lyap_weight=combo_dict['lyap_weight'],
+                        aspect_weight=combo_dict['aspect_weight'],
+
                         max_points=combo_dict['max_points'],
-                        frame_size=combo_dict['frame_size'],
+
+                        width=combo_dict['width'],
+                        height=combo_dict['height'],
 
                         blur_radius_fraction=radius_frac,
                         blur_strength=strength,
@@ -375,7 +354,7 @@ class SimulationRunner:
         Executes each SimulationParams in a ThreadPoolExecutor
         with up to 'max_concurrent' concurrency.
         """
-        # Ensure the 'logs' folder exists (for storing log files)
+        # Ensure logs folder exists
         os.makedirs("logs", exist_ok=True)
 
         print(f"Total tasks to execute: {len(param_sets)}")
@@ -404,9 +383,9 @@ class SimulationRunner:
 
 def main():
     print(
-        "Starting batch runs of the Rust three-body simulator, enumerating all parameters.\n"
-        "We produce multiple blur variants per seed (unless blur is disabled). Images/video\n"
-        "are generated by the Rust code. Logs are saved per-run in 'logs/' in real time.\n"
+        "Starting batch runs of the Rust three-body simulator.\n"
+        "We produce multiple blur variants per seed (unless blur is disabled).\n"
+        "Images/video are generated by the Rust code. Logs are saved per-run in 'logs/'.\n"
     )
 
     runner = SimulationRunner(
@@ -419,9 +398,9 @@ def main():
         num_runs=SIMULATION_CONFIG['num_runs']
     )
 
-    print(f"Base param sets (including blur variants unless disabled): {len(param_sets)}")
+    print(f"Base param sets (including blur variants if not disabled): {len(param_sets)}")
 
-    # Run them all
+    # Run them
     runner.run_simulations(param_sets)
 
 

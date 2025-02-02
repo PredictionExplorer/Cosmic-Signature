@@ -27,7 +27,14 @@ const G: f64 = 9.8; // gravitational constant
 #[command(
     author,
     version,
-    about = "Simulate many random 3-body orbits, pick best by Borda, then generate single image + H.264 MP4 video with global auto-level, using a two-pass approach."
+    about = "
+Simulate many random 3-body orbits, pick best by Borda (including aspect ratio closeness),
+then generate single image + H.264 MP4 video with two-pass global auto-level.
+
+No rotation is done; final dimension is always width×height (defaults to 3840×2160).
+If you want orbits that fill 16:9 better, we factor an 'aspect ratio closeness' measure
+into the Borda ranking. A perfect 16:9 orbit gets closeness=1.0, bigger mismatch => 0.0.
+"
 )]
 struct Args {
     /// Hex seed for random generation (e.g. --seed 0xABC123)
@@ -78,13 +85,21 @@ struct Args {
     #[arg(long, default_value_t = 2.5)]
     lyap_weight: f64,
 
+    /// Borda weighting: aspect ratio closeness
+    #[arg(long, default_value_t = 1.0)]
+    aspect_weight: f64,
+
     /// Max points for chaos measure sub-sampling
     #[arg(long, default_value_t = 100_000)]
     max_points: usize,
 
-    /// Image/video width/height in pixels
-    #[arg(long, default_value_t = 1800)]
-    frame_size: u32,
+    /// Output image/video width in pixels
+    #[arg(long, default_value_t = 3840)]
+    width: u32,
+
+    /// Output image/video height in pixels
+    #[arg(long, default_value_t = 2160)]
+    height: u32,
 
     /// Fraction of the smaller dimension to use as the blur radius
     #[arg(long, default_value_t = 0.01)]
@@ -454,16 +469,53 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     }
 }
 
+/// measure how close the bounding box aspect ratio is to final_aspect
+/// => returns in [0,1], 1 = perfect match, 0 = extremely mismatched
+fn aspect_ratio_closeness(positions: &[Vec<Vector3<f64>>], final_aspect: f64) -> f64 {
+    let (min_x, max_x, min_y, max_y) = bounding_box_2d(positions);
+    let w = max_x - min_x;
+    let h = max_y - min_y;
+    if w < 1e-14 || h < 1e-14 {
+        // degenerate bounding box => no real shape
+        return 0.0;
+    }
+    let orbit_aspect = w / h;
+    let diff = (orbit_aspect - final_aspect).abs() / final_aspect;
+    let score = 1.0 - diff;
+    score.clamp(0.0, 1.0)
+}
+
+/// Helper to find min_x, max_x, min_y, max_y among 2D positions
+fn bounding_box_2d(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
+    let mut min_x = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_y = NEG_INFINITY;
+    for body_idx in 0..positions.len() {
+        for &p in &positions[body_idx] {
+            min_x = min_x.min(p[0]);
+            max_x = max_x.max(p[0]);
+            min_y = min_y.min(p[1]);
+            max_y = max_y.max(p[1]);
+        }
+    }
+    (min_x, max_x, min_y, max_y)
+}
+
 #[derive(Clone)]
 struct TrajectoryResult {
     chaos: f64,
     avg_perimeter: f64,
     total_dist: f64,
     lyap_exp: f64,
+    aspect_closeness: f64,
+
     chaos_pts: usize,
     perimeter_pts: usize,
     dist_pts: usize,
     lyap_pts: usize,
+    aspect_pts: usize,
+
     total_score: usize,
     total_score_weighted: f64,
 }
@@ -478,6 +530,8 @@ fn select_best_trajectory(
     perimeter_weight: f64,
     dist_weight: f64,
     lyap_weight: f64,
+    aspect_weight: f64,
+    final_aspect: f64,
 ) -> (Vec<Body>, TrajectoryResult) {
     println!("STAGE 1/8: Borda search over {num_sims} random orbits...");
     let many_bodies: Vec<Vec<Body>> = (0..num_sims)
@@ -556,15 +610,21 @@ fn select_best_trajectory(
                 let p = average_triangle_perimeter(&positions);
                 let d = total_distance(&positions);
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
+                let asp = aspect_ratio_closeness(&positions, final_aspect);
+
                 let tr = TrajectoryResult {
                     chaos: c,
                     avg_perimeter: p,
                     total_dist: d,
                     lyap_exp: ly,
+                    aspect_closeness: asp,
+
                     chaos_pts: 0,
                     perimeter_pts: 0,
                     dist_pts: 0,
                     lyap_pts: 0,
+                    aspect_pts: 0,
+
                     total_score: 0,
                     total_score_weighted: 0.0,
                 };
@@ -584,11 +644,14 @@ fn select_best_trajectory(
     let mut perimeter_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
     let mut lyap_vals = Vec::with_capacity(info_vec.len());
+    let mut aspect_vals = Vec::with_capacity(info_vec.len());
+
     for (i, (tr, _)) in info_vec.iter().enumerate() {
         chaos_vals.push((tr.chaos, i));
         perimeter_vals.push((tr.avg_perimeter, i));
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
+        aspect_vals.push((tr.aspect_closeness, i));
     }
 
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
@@ -606,11 +669,13 @@ fn select_best_trajectory(
         out
     }
 
-    // For "chaos", we want lower is better => rank higher if chaos is smaller
+    // For "chaos", lower is better => higher rank if chaos is smaller
     let chaos_pts = assign_borda_scores(chaos_vals, false);
     let perimeter_pts = assign_borda_scores(perimeter_vals, true);
     let dist_pts = assign_borda_scores(dist_vals, true);
     let lyap_pts = assign_borda_scores(lyap_vals, true);
+    // For aspect closeness, bigger => better
+    let aspect_pts = assign_borda_scores(aspect_vals, true);
 
     // Update each TrajectoryResult
     for (i, (tr, _)) in info_vec.iter_mut().enumerate() {
@@ -618,11 +683,15 @@ fn select_best_trajectory(
         tr.perimeter_pts = perimeter_pts[i];
         tr.dist_pts = dist_pts[i];
         tr.lyap_pts = lyap_pts[i];
-        tr.total_score = chaos_pts[i] + perimeter_pts[i] + dist_pts[i] + lyap_pts[i];
+        tr.aspect_pts = aspect_pts[i];
+
+        tr.total_score =
+            chaos_pts[i] + perimeter_pts[i] + dist_pts[i] + lyap_pts[i] + aspect_pts[i];
         tr.total_score_weighted = (chaos_pts[i] as f64 * chaos_weight)
             + (perimeter_pts[i] as f64 * perimeter_weight)
             + (dist_pts[i] as f64 * dist_weight)
-            + (lyap_pts[i] as f64 * lyap_weight);
+            + (lyap_pts[i] as f64 * lyap_weight)
+            + (aspect_pts[i] as f64 * aspect_weight);
     }
 
     // Pick best by total_score_weighted
@@ -635,12 +704,13 @@ fn select_best_trajectory(
     let best_bodies = many_bodies[*best_idx].clone();
 
     println!(
-        "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}",
+        "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
         best_tr.total_score_weighted,
         best_tr.chaos,
         best_tr.avg_perimeter,
         best_tr.total_dist,
-        best_tr.lyap_exp
+        best_tr.lyap_exp,
+        best_tr.aspect_closeness
     );
     (best_bodies, best_tr.clone())
 }
@@ -800,8 +870,6 @@ fn generate_body_color_sequences(
 // ========================================================
 // Single-pass H.264 encoding with FFmpeg
 // ========================================================
-/// We make this return `Result<(), Box<dyn Error>>`,
-/// so we can propagate errors if needed.
 fn create_video_from_frames_singlepass(
     width: u32,
     height: u32,
@@ -878,7 +946,7 @@ fn save_image_as_png(
 // Two-Pass Global Levels
 // ========================================================
 
-/// Utility to compute bounding box for the set of positions
+/// Utility to compute bounding box for the final pass
 fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     let mut min_x = INFINITY;
     let mut max_x = NEG_INFINITY;
@@ -900,7 +968,7 @@ fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
         min_y -= 0.5;
         max_y += 0.5;
     }
-    // Expand by 5%
+    // Expand by 5% margin
     {
         let wx = max_x - min_x;
         let wy = max_y - min_y;
@@ -964,7 +1032,6 @@ fn pass_1_build_histogram(
 
         let is_final = step == total_steps - 1;
         if (step % frame_interval == 0) || is_final {
-            // copy accum_crisp and apply blur if needed
             let mut temp = accum_crisp.clone();
             if blur_radius_px > 0 {
                 parallel_blur_2d(&mut temp, width as usize, height as usize, blur_radius_px);
@@ -978,7 +1045,7 @@ fn pass_1_build_histogram(
                 pix.1 = c.1 * blur_core_brightness + b.1 * blur_strength;
                 pix.2 = c.2 * blur_core_brightness + b.2 * blur_strength;
             });
-            // gather intensities
+
             all_r.reserve(npix);
             all_g.reserve(npix);
             all_b.reserve(npix);
@@ -1152,6 +1219,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _ = fs::create_dir_all("pics");
     let _ = fs::create_dir_all("vids");
 
+    // If user doesn't override, defaults to 3840x2160
+    let width = args.width;
+    let height = args.height;
+    let final_aspect = width as f64 / height as f64;
+
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
     let mut rng = Sha3RandomByteStream::new(
@@ -1172,6 +1244,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.perimeter_weight,
         args.dist_weight,
         args.lyap_weight,
+        args.aspect_weight,
+        final_aspect,
     );
 
     // 2) Re-run the best orbit at high resolution to get positions
@@ -1196,8 +1270,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 5) Pass 1: gather histogram
     println!("STAGE 5/8: PASS 1 => building global histogram (no frames saved)...");
-    let width = args.frame_size;
-    let height = args.frame_size;
     let smaller_dim = width.min(height) as f64;
     let blur_radius_px = if args.disable_blur {
         0
