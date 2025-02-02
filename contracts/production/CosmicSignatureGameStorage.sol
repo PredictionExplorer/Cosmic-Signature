@@ -142,16 +142,16 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
-	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
-	/// todo-1 Is it really necessary for this to be configurable? Maybe so, just in case we add some functiopnality to process the message.
+	/// todo-1 Is it really necessary for this to be configurable? Maybe so, just in case we add some functionality to process the message.
 	/// todo-1 But anyway raise this question.
-	uint256 public maxMessageLength;
+	/// todo-1 See a related todo near `DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT`.
+	uint256 public bidMessageLengthMaxLimit;
 
 	/// @notice Comment-202411064 applies.
 	/// We mint this CST amount as a bidder reward for each bid.
-	/// todo-1 Rename to `cstRewardAmountForBidding` or `cstRewardAmountForBid`.
-	/// todo-1 Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
-	uint256 public tokenReward;
+	/// We do it even for a CST bid.
+	/// todo-1 --- Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
+	uint256 public cstRewardAmountForBidding;
 
 	// #endregion
 	// #region Bid Statistics
@@ -265,8 +265,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-1 This is for bidders, right? Rename to make it clear.
-	uint256 public raffleTotalEthPrizeAmountPercentage;
+	uint256 public raffleTotalEthPrizeAmountForBiddersPercentage;
 
 	/// @notice The number of raffle ETH prizes to be distributed to bidders.
 	/// Comment-202411064 applies.
@@ -281,8 +280,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-1 This is for CS NFT stakers, right? Rename to make it clear.
-	uint256 public stakingTotalEthRewardAmountPercentage;
+	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
 
 	// #endregion
 	// #region Cosmic Signature Token

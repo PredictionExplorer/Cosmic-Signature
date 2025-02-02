@@ -39,13 +39,13 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CstDutchAuctionBeginningBidPriceMinLimitChanged(uint256 newValue);
 
-	/// @notice Emitted when `maxMessageLength` is changed.
+	/// @notice Emitted when `bidMessageLengthMaxLimit` is changed.
 	/// @param newValue The new value.
-	event MaxMessageLengthChanged(uint256 newValue);
+	event BidMessageLengthMaxLimitChanged(uint256 newValue);
 
-	/// @notice Emitted when `tokenReward` is changed.
+	/// @notice Emitted when `cstRewardAmountForBidding` is changed.
 	/// @param newValue The new value.
-	event TokenRewardChanged(uint256 newValue);
+	event CstRewardAmountForBiddingChanged(uint256 newValue);
 
 	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
 	/// @param newValue The new value.
@@ -75,9 +75,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event ChronoWarriorEthPrizeAmountPercentageChanged(uint256 newValue);
 
-	/// @notice Emitted when `raffleTotalEthPrizeAmountPercentage` is changed.
+	/// @notice Emitted when `raffleTotalEthPrizeAmountForBiddersPercentage` is changed.
 	/// @param newValue The new value.
-	event RaffleTotalEthPrizeAmountPercentageChanged(uint256 newValue);
+	event RaffleTotalEthPrizeAmountForBiddersPercentageChanged(uint256 newValue);
 
 	/// @notice Emitted when `numRaffleEthPrizesForBidders` is changed.
 	/// @param newValue The new value.
@@ -91,9 +91,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(uint256 newValue);
 
-	/// @notice Emitted when `stakingTotalEthRewardAmountPercentage` is changed.
+	/// @notice Emitted when `cosmicSignatureNftStakingTotalEthRewardAmountPercentage` is changed.
 	/// @param newValue The new value.
-	event StakingTotalEthRewardAmountPercentageChanged(uint256 newValue);
+	event CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(uint256 newValue);
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.

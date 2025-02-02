@@ -36,7 +36,7 @@ contract CosmicSignatureDao is
 		GovernorSettings(
 			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_DELAY,
 			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_PERIOD,
-			CosmicSignatureConstants.DEFAULT_TOKEN_REWARD
+			CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING
 		)
 
 		GovernorVotes(tokenAddress_)
@@ -46,7 +46,7 @@ contract CosmicSignatureDao is
 
 	// The following functions are overrides required by Solidity.
 
-	/// todo-1 Test what these return: proposalThreshold, votingDelay, votingPeriod, quorum. Done in part.
+	/// todo-1 Develop a test that tests what these return: proposalThreshold, votingDelay, votingPeriod, quorum. Done in part.
 	function proposalThreshold() public view override(IGovernor, Governor, GovernorSettings) returns(uint256) {
 		return super.proposalThreshold();
 	}

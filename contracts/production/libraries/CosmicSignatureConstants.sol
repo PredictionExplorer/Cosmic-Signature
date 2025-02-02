@@ -94,13 +94,14 @@ library CosmicSignatureConstants {
 	// /// todo-1 The web site shows 2 digits after the decimal point. Maybe in the tooltip it should show the whole number with all the digits.
 	// uint256 internal constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
 
-	/// @notice Default `maxMessageLength`.
+	/// @notice Default `bidMessageLengthMaxLimit`.
 	/// Comment-202409143 applies.
-	/// @dev Does this really have to be configurable? Maybe make this non-configurable and remove `DEFAULT_`.
-	uint256 internal constant DEFAULT_MAX_MESSAGE_LENGTH = 280;
+	/// @dev todo-1 Does this really have to be configurable? Maybe make this non-configurable and remove `DEFAULT_`.
+	/// todo-1 But see a related todo near `bidMessageLengthMaxLimit`.
+	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
-	/// @notice Default `tokenReward` and `GovernorSettings.proposalThreshold()`.
-	uint256 internal constant DEFAULT_TOKEN_REWARD = 100 ether;
+	/// @notice Default `cstRewardAmountForBidding` and `GovernorSettings.proposalThreshold()`.
+	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING = 100 ether;
 
 	// #endregion
 	// #region Bid Statistics
@@ -135,7 +136,7 @@ library CosmicSignatureConstants {
 	/// todo-1 I added this. So now other initial percentages should be readjusted.
 	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
 
-	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_PERCENTAGE = 5;
+	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE = 5;
 
 	uint256 internal constant DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3;
 
@@ -143,7 +144,7 @@ library CosmicSignatureConstants {
 
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
 
-	uint256 internal constant DEFAULT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
+	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
 
 	// #endregion
 	// #region Cosmic Signature Token
@@ -198,6 +199,8 @@ library CosmicSignatureConstants {
 	/// @dev OpenZeppelin recommends to set voting period to 1 week. In our code, it used to be set to 30 days,
 	/// which seems to be unnecessarily long. So I have reduced it to 2 weeks. Taras is OK with that.
 	uint32 internal constant GOVERNOR_DEFAULT_VOTING_PERIOD = 2 weeks;
+
+	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
 
 	/// @dev I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
 	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.

@@ -29,14 +29,14 @@ describe("Events", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(bidder1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		let charityEthDonationAmount_ = await cosmicSignatureGameProxy.getCharityEthDonationAmount();
-		let stakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getStakingTotalEthRewardAmount();
+		let cosmicSignatureNftStakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize())
 			.to.emit(charityWallet, "DonationReceived")
-			.withArgs(await cosmicSignatureGameProxy.getAddress(), charityEthDonationAmount_ + stakingTotalEthRewardAmount_);
+			.withArgs(await cosmicSignatureGameProxy.getAddress(), charityEthDonationAmount_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
 		const balance = await hre.ethers.provider.getBalance(await charityWallet.getAddress());
-		expect(balance).to.equal(charityEthDonationAmount_ + stakingTotalEthRewardAmount_);
+		expect(balance).to.equal(charityEthDonationAmount_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
 
 		// CharityAddressChanged
 		await expect(charityWallet.connect(owner).setCharityAddress(bidder3.address))
@@ -274,7 +274,7 @@ describe("Events", function () {
 
 		// todo-1 setMarketingWalletCstContributionAmount
 
-		// todo-1 setMaxMessageLength
+		// todo-1 setBidMessageLengthMaxLimit
 
 		let testAcct_ = hre.ethers.Wallet.createRandom();
 		await expect(cosmicSignatureGameProxy.connect(owner).setCosmicSignatureToken(testAcct_.address))
@@ -347,7 +347,7 @@ describe("Events", function () {
 
 		// todo-1 setCstDutchAuctionBeginningBidPriceMinLimit
 
-		// todo-1 setTokenReward
+		// todo-1 setCstRewardAmountForBidding
 
 		let percentage_ = 11n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setMainEthPrizeAmountPercentage(percentage_))
@@ -362,13 +362,13 @@ describe("Events", function () {
 		expect(await cosmicSignatureGameProxy.chronoWarriorEthPrizeAmountPercentage()).to.equal(percentage_);
 
 		percentage_ = 13n;
-		await expect(cosmicSignatureGameProxy.connect(owner).setRaffleTotalEthPrizeAmountPercentage(percentage_))
-			.to.emit(cosmicSignatureGameProxy, "RaffleTotalEthPrizeAmountPercentageChanged")
+		await expect(cosmicSignatureGameProxy.connect(owner).setRaffleTotalEthPrizeAmountForBiddersPercentage(percentage_))
+			.to.emit(cosmicSignatureGameProxy, "RaffleTotalEthPrizeAmountForBiddersPercentageChanged")
 			.withArgs(percentage_);
-		expect(await cosmicSignatureGameProxy.raffleTotalEthPrizeAmountPercentage()).to.equal(percentage_);
+		expect(await cosmicSignatureGameProxy.raffleTotalEthPrizeAmountForBiddersPercentage()).to.equal(percentage_);
 
 		// todo-1 percentage_ = 14n;
-		// todo-1 setStakingTotalEthRewardAmountPercentage(percentage_)
+		// todo-1 setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(percentage_)
 
 		percentage_ = 15n;
 		await expect(cosmicSignatureGameProxy.connect(owner).setCharityEthDonationAmountPercentage(percentage_))

@@ -104,7 +104,7 @@ describe("Bidding", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		// let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		// let charityEthDonationAmount_ = await cosmicSignatureGameProxy.getCharityEthDonationAmount();
-		// let raffleTotalEthPrizeAmount_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmount();
+		// let raffleTotalEthPrizeAmountForBidders_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmountForBidders();
 		await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
 		let mainEthPrizeAmount2_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		let balance = await hre.ethers.provider.getBalance(await cosmicSignatureGameProxy.getAddress());

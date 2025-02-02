@@ -855,7 +855,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	// await hre.ethers.provider.send("evm_mine");
 	//
 	// 	const previousModulo = await stakingWalletCosmicSignatureNft.modulo();
-	// 	const prevStakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getStakingTotalEthRewardAmount();
+	// 	const prevCosmicSignatureNftStakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
 	// 	const csTotalSupply = await cosmicSignatureNft.totalSupply();
 	// 	const roundNum = await cosmicSignatureGameProxy.roundNum();
 	// 	const tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
@@ -866,7 +866,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const depositRecord = await stakingWalletCosmicSignatureNft.ethDeposits(parsed_log.args.depositNum);
 	// 	const amountInRound = depositRecord.depositAmount / depositRecord.numStaked;
 	// 	const moduloInRound = depositRecord.depositAmount % depositRecord.numStaked;
-	// 	expect(parsed_log.args.amount).to.equal(prevStakingTotalEthRewardAmount_);
+	// 	expect(parsed_log.args.amount).to.equal(prevCosmicSignatureNftStakingTotalEthRewardAmount_);
 	// 	expect(parsed_log.args.modulo).to.equal(moduloInRound);
 	//
 	// 	const BrokenCharity = await hre.ethers.getContractFactory("BrokenCharity");

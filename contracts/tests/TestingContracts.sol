@@ -190,24 +190,42 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// }
 
-	/// @dev todo-1 Do we really need this? We now can set `roundActivationTime` to the future and make any changes the normal way.
-	/// todo-1 Rename to `setCosmicSignatureNftRaw`.
-	function setNftContractRaw(ICosmicSignatureNft newValue_) external {
-		nft = CosmicSignatureNft(address(newValue_));
-	}
+	// function setCosmicSignatureNftRaw(ICosmicSignatureNft newValue_) external {
+	// 	nft = CosmicSignatureNft(address(newValue_));
+	// }
 
 	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
 	// 	prizesWallet = PrizesWallet(address(newValue_));
 	// }
 
-	/// @dev todo-1 Do we really need this? We now can set `roundActivationTime` to the future and make any changes the normal way.
-	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
-	}
+	// function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
+	// 	stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
+	// }
 
 	// function setCharityAddressRaw(address newValue_) external {
 	// 	charityAddress = newValue_;
 	// }
+
+	function _initializeEntropyOnce() private {
+		if (_entropy.value == 0) {
+			_entropy.value = CosmicSignatureHelpers.generateRandomNumberSeed();
+		}
+	}
+
+	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
+		_initializeEntropyOnce();
+		unchecked { ++ _entropy.value; }
+		// todo-2 Should we make a high level call here?
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
+		if ( ! isSuccess_ ) {
+			assembly {
+				let ptr_ := mload(0x40)
+				let size_ := returndatasize()
+				returndatacopy(ptr_, 0, size_)
+				revert(ptr_, size_)
+			}
+		}
+	}
 
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
@@ -226,27 +244,6 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	function depositToStakingWalletCosmicSignatureNftIfPossible() external payable {
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
-	}
-	
-	function mintCosmicSignatureNft(address to_) external {
-		_initializeEntropyOnce();
-		unchecked { ++ _entropy.value; }
-		// todo-1 Should we make a high level call here?
-		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, to_, _entropy.value));
-		if ( ! isSuccess_ ) {
-			assembly {
-				let ptr_ := mload(0x40)
-				let size_ := returndatasize()
-				returndatacopy(ptr_, 0, size_)
-				revert(ptr_, size_)
-			}
-		}
-	}
-
-	function _initializeEntropyOnce() private {
-		if (_entropy.value == 0) {
-			_entropy.value = CosmicSignatureHelpers.generateRandomNumberSeed();
-		}
 	}
 }
 
@@ -284,7 +281,7 @@ contract MaliciousNft1 is ERC721 {
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// the following call should revert
 		// todo-1 This will probably now revert due to `onlyGame`.
-		// todo-1 Should we make a high level call here?
+		// todo-2 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
 			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
@@ -312,16 +309,16 @@ contract MaliciousNft2 is ERC721 {
 	/// @notice sends bidWithEthAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from_, address to_, uint256 nftId_) public override {
 		// // uint256 price = _game.getNextEthBidPrice(int256(0));
-		// // todo-1 This structure no longer exists.
+		// // todo-9 This structure no longer exists.
 		// CosmicSignatureGame.BidParams memory defaultParams;
 		// // defaultParams.message = "";
 		// defaultParams.randomWalkNftId = -1;
 		// bytes memory param_data = abi.encode(defaultParams);
 		// // This call should revert.
-		// // todo-1 Should we make a high level call here?
+		// // todo-9 Should we make a high level call here?
 		// (bool isSuccess_, /*bytes memory retval*/) =
-		// 	// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
-		// 	// todo-1 Besides, this sends zero `value`.
+		// 	// todo-9 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+		// 	// todo-9 Besides, this transfers zero `value`.
 		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
 		// if ( ! isSuccess_ ) {
 		// 	assembly {

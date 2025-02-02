@@ -358,7 +358,7 @@ abstract contract MainPrize is
 					// #region
 
 					// Comment-202501161 applies.
-					uint256 stakingTotalEthRewardAmount_ = getStakingTotalEthRewardAmount();
+					uint256 cosmicSignatureNftStakingTotalEthRewardAmount_ = getCosmicSignatureNftStakingTotalEthRewardAmount();
 
 					// #endregion
 					// #region
@@ -400,11 +400,11 @@ abstract contract MainPrize is
 							// #enable_asserts assert(numRaffleEthPrizesForBidders > 0);
 
 							// Comment-202501161 applies.
-							uint256 raffleTotalEthPrizeAmount_ = getRaffleTotalEthPrizeAmount();
+							uint256 raffleTotalEthPrizeAmountForBidders_ = getRaffleTotalEthPrizeAmountForBidders();
 
 							uint256 winnerIndex_ = numRaffleEthPrizesForBidders;
-							uint256 raffleEthPrizeAmount_ = raffleTotalEthPrizeAmount_ / winnerIndex_;
-							ethDepositsTotalAmount_ += raffleEthPrizeAmount_ * winnerIndex_;
+							uint256 raffleEthPrizeAmountForBidder_ = raffleTotalEthPrizeAmountForBidders_ / winnerIndex_;
+							ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * winnerIndex_;
 							do {
 								-- winnerIndex_;
 								IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[winnerIndex_];
@@ -412,8 +412,8 @@ abstract contract MainPrize is
 								address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
 								// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 								ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
-								ethDepositReference_.amount = raffleEthPrizeAmount_;
-								emit RaffleWinnerEthPrizeAllocated(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmount_);
+								ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
+								emit RaffleWinnerBidderEthPrizeAllocated(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmountForBidder_);
 							} while (winnerIndex_ > 0);
 						}
 
@@ -429,7 +429,7 @@ abstract contract MainPrize is
 					// #endregion
 					// #region ETH for CosmicSignature NFT stakers.
 
-					try stakingWalletCosmicSignatureNft.depositIfPossible{value: stakingTotalEthRewardAmount_}(roundNum) {
+					try stakingWalletCosmicSignatureNft.depositIfPossible{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
 					} catch (bytes memory errorDetails_) {
 						// [ToDo-202409226-1]
 						// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred_` to `true` or `false`.
@@ -458,12 +458,12 @@ abstract contract MainPrize is
 								CosmicSignatureErrors.FundTransferFailed(
 									"ETH deposit to StakingWalletCosmicSignatureNft failed.",
 									address(stakingWalletCosmicSignatureNft),
-									stakingTotalEthRewardAmount_
+									cosmicSignatureNftStakingTotalEthRewardAmount_
 								);
 						}
-						charityEthDonationAmount_ += stakingTotalEthRewardAmount_;
+						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
 
-						// One might want to reset `stakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
+						// One might want to reset `cosmicSignatureNftStakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
 					}
 
 					// #endregion

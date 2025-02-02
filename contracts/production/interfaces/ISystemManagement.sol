@@ -48,16 +48,16 @@ interface ISystemManagement is
 
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
-	/// @notice Sets `maxMessageLength`.
+	/// @notice Sets `bidMessageLengthMaxLimit`.
 	/// Only the contract owner is permitted to call this method.
 	/// Comment-202409143 applies.
 	/// @param newValue_ The new value.
-	function setMaxMessageLength(uint256 newValue_) external;
+	function setBidMessageLengthMaxLimit(uint256 newValue_) external;
 
-	/// @notice Sets `tokenReward`.
+	/// @notice Sets `cstRewardAmountForBidding`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setTokenReward(uint256 newValue_) external;
+	function setCstRewardAmountForBidding(uint256 newValue_) external;
 
 	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
 	/// Only the contract owner is permitted to call this method.
@@ -94,10 +94,10 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external;
 
-	/// @notice Sets `raffleTotalEthPrizeAmountPercentage`.
+	/// @notice Sets `raffleTotalEthPrizeAmountForBiddersPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external;
+	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external;
 
 	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
 
@@ -105,10 +105,10 @@ interface ISystemManagement is
 
 	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
 
-	/// @notice Sets `stakingTotalEthRewardAmountPercentage`.
+	/// @notice Sets `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external;
+	function setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(uint256 newValue_) external;
 
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.

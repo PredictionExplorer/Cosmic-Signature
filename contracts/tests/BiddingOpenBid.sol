@@ -234,7 +234,7 @@ abstract contract BiddingOpenBid is
 
 		// Comment-202501125 applies.
 		// ToDo-202409245-1 applies.
-		token.mint(msg.sender, tokenReward);
+		token.mint(msg.sender, cstRewardAmountForBidding);
 
 		// #endregion
 		// #region
@@ -421,7 +421,7 @@ abstract contract BiddingOpenBid is
 			mintAndBurnSpecs_[0].account = msg.sender;
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 			mintAndBurnSpecs_[1].account = msg.sender;
-			mintAndBurnSpecs_[1].value = int256(tokenReward);
+			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
 			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
@@ -529,7 +529,7 @@ abstract contract BiddingOpenBid is
 	/// ---param bidType Bid type code.
 	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ onlyRoundIsActive {
 		require(
-			bytes(message).length <= maxMessageLength,
+			bytes(message).length <= bidMessageLengthMaxLimit,
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)
 		);
 
@@ -559,14 +559,14 @@ abstract contract BiddingOpenBid is
 		// // Comment-202501125 applies.
 		// // try
 		// // ToDo-202409245-1 applies.
-		// token.mint(/*lastBidderAddress*/ msg.sender, tokenReward);
+		// token.mint(/*lastBidderAddress*/ msg.sender, cstRewardAmountForBidding);
 		// // {
 		// // } catch {
 		// // 	revert
 		// // 		CosmicSignatureErrors.ERC20Mint(
 		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
 		// // 			/*lastBidderAddress*/ msg.sender,
-		// // 			tokenReward
+		// // 			cstRewardAmountForBidding
 		// // 		);
 		// // }
 

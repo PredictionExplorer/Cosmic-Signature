@@ -77,14 +77,14 @@ abstract contract SystemManagement is
 		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 
-	function setMaxMessageLength(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		maxMessageLength = newValue_;
-		emit MaxMessageLengthChanged(newValue_);
+	function setBidMessageLengthMaxLimit(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		bidMessageLengthMaxLimit = newValue_;
+		emit BidMessageLengthMaxLimitChanged(newValue_);
 	}
 
-	function setTokenReward(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		tokenReward = newValue_;
-		emit TokenRewardChanged(newValue_);
+	function setCstRewardAmountForBidding(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		cstRewardAmountForBidding = newValue_;
+		emit CstRewardAmountForBiddingChanged(newValue_);
 	}
 
 	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
@@ -109,7 +109,7 @@ abstract contract SystemManagement is
 
 	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
-		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
 		// 	prizePercentageSum_ < 100,
 		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
@@ -126,7 +126,7 @@ abstract contract SystemManagement is
 
 	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
-		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + newValue_ + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + newValue_ + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
 		// 	prizePercentageSum_ < 100,
 		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
@@ -136,16 +136,16 @@ abstract contract SystemManagement is
 		emit ChronoWarriorEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setRaffleTotalEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
-		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + newValue_ + stakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + newValue_ + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
 		// 	prizePercentageSum_ < 100,
 		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
 		// );
 
-		raffleTotalEthPrizeAmountPercentage = newValue_;
-		emit RaffleTotalEthPrizeAmountPercentageChanged(newValue_);
+		raffleTotalEthPrizeAmountForBiddersPercentage = newValue_;
+		emit RaffleTotalEthPrizeAmountForBiddersPercentageChanged(newValue_);
 	}
 
 	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
@@ -163,16 +163,16 @@ abstract contract SystemManagement is
 		emit NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(newValue_);
 	}
 
-	function setStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+	function setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
-		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + newValue_ + charityEthDonationAmountPercentage;
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + newValue_ + charityEthDonationAmountPercentage;
 		// require(
 		// 	prizePercentageSum_ < 100,
 		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
 		// );
 
-		stakingTotalEthRewardAmountPercentage = newValue_;
-		emit StakingTotalEthRewardAmountPercentageChanged(newValue_);
+		cosmicSignatureNftStakingTotalEthRewardAmountPercentage = newValue_;
+		emit CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(newValue_);
 	}
 
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
@@ -246,7 +246,7 @@ abstract contract SystemManagement is
 
 	function setCharityEthDonationAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		// // Comment-202409215 applies.
-		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountPercentage + stakingTotalEthRewardAmountPercentage + newValue_;
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + newValue_;
 		// require(
 		// 	prizePercentageSum_ < 100,
 		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
