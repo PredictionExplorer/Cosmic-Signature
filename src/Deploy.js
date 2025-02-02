@@ -36,7 +36,8 @@ const basicDeployment = async function (
  * @param {string} cosmicSignatureGameContractName 
  * @param {import("ethers").Signer} deployerAcct 
  * todo-1 +++ Test a non-default `deployerAcct`.
- * todo-1 Test that after deployment all restricted functions revert for the default signer and work for the given signer.
+ * todo-1 Test that after deployment all restricted functions in all contracts revert for the default signer and work for the given signer.
+ * todo-1 There are tests like that in "SystemManagement.js", right? But they deploy as default signer. Change `owner` to be the last signer.
  * @param {string} randomWalkNftAddr May be empty.
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 

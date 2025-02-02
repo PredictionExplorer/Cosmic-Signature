@@ -36,7 +36,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const newCharity = await BrokenCharity.deploy();
 	// 	await newCharity.waitForDeployment();
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	// todo-9 The 3rd parameter no longer exists.
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(await cBidder.getAddress(), owner.address, await newCharity.getAddress());
 	// 	await newStakingWalletCosmicSignatureNft.waitForDeployment();
@@ -60,7 +60,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 		await newCosmicSignatureNft.mintMany(0n, [owner.address, owner.address,], 0x7ee83ce15e27a463d2d6678d149a06ab2d686878642899e9c47e7c0f0c382432n);
 
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			await owner.address
@@ -111,7 +111,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 		await newCosmicSignatureNft.mint(0n, owner.address, 0x6f593b6c214febb9f712fba692ae33a2f420bd71ab95845fd00b4a13ce1d7bcen);
 
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			await cosmicSignatureGameProxy.getAddress()
@@ -155,7 +155,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0x4d56c808b5ca6013f23cdffdc2d83e34f84f7ad06f20f93f0caef94f3691311cn);
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()
@@ -206,7 +206,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0x092628092eb505fafe152b916fc5859a2d4d307db171e887be8a9b872eeb287fn);
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()
@@ -261,7 +261,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0x6fff68608d244427fb5f06865e9a452aab971ad433031ef29b0604cd0a2b8fe3n);
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()
@@ -313,7 +313,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0x4aa1e442efd9309d8c17e38f5d2f8619380619e1f653c80386cf9528f245df78n);
 	// 	await newCosmicSignatureNft.mint(0n, addr1.address, 0x27994d887fbb9fd4b65f40e328c176f780b50bc2f7f47f3b089e40086d2cb892n);
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()
@@ -369,7 +369,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0x91ec791a796381074c375be15d9b4ee46c4f95905d8c7eeec8ec6166a67c00f1n);
 	// 	await newCosmicSignatureNft.mint(0n, addr1.address, 0x4c884940f9c056c7b72e2808797fe971f56a3550de0af0890d72988cedc6ba86n);
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()
@@ -431,7 +431,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 		await newCosmicSignatureNft.mintMany(0n, [owner.address, addr1.address,], 0xf7b8fd327591b2ee09c216dbdc1b8f36c7bbdf8febafde7fe80bf8ea829898b8n);
 	
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			await cosmicSignatureGameProxy.getAddress()
@@ -506,7 +506,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 		newCosmicSignatureNft.waitForDeployment();
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			await cosmicSignatureGameProxy.getAddress()
@@ -595,7 +595,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	const brokenStakingWalletCosmicSignatureNft = await BrokenStakingWalletCosmicSignatureNft.deploy();
 	// 	await brokenStakingWalletCosmicSignatureNft.waitForDeployment();
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await brokenStakingWalletCosmicSignatureNft.getAddress(),
@@ -659,7 +659,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	//
 	// 	// todo-1 Is this still true, given that the test passes?
 	// 	// * THIS TEST IS BROKEN for unknown reasons (hardhat trace hangs, no way to know, pending for deep debugging)
-	// 	const NewStakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('TestStakingWalletCosmicSignatureNft');
+	// 	// todo-9 This contract no longer exists.
+	// 	const NewStakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("TestStakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await NewStakingWalletCosmicSignatureNft.deploy(
 	// 		await cosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()
@@ -742,7 +743,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 		const CosmicSignatureNft = await hre.ethers.getContractFactory("CosmicSignatureNft");
 		const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			await cosmicSignatureGameProxy.getAddress()
@@ -895,7 +896,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 		await newCosmicSignatureNft.mintMany(0n, [owner.address, owner.address,], 0xd589c6e3858d6f65cf949aff0013c30c2a926438b28bba72665a0485b9e02d5fn);
 
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('TestStakingWalletCosmicSignatureNft');
+		// const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("TestStakingWalletCosmicSignatureNft");
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		let newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			await cosmicSignatureGameProxy.getAddress()
@@ -929,7 +931,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		let newCosmicSignatureNft = await CosmicSignatureNft.deploy(owner.address);
 		await newCosmicSignatureNft.mintMany(0n, [owner.address, owner.address, owner.address,], 0x2591cfa4282892204fe9978a44fd2eb34bad51ec1721cef543989de6f0742ed7n);
 
-		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+		const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 		let newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 			await newCosmicSignatureNft.getAddress(),
 			owner.address
@@ -984,7 +986,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0x6635be94e447b02fa0b9169d7aaff0e6da09775b6b70837285f1600efd5f200en);
 	// 	await newCosmicSignatureNft.mint(0n, owner.address, 0xf156dbb407ecec7d95b02144ffa583dbd66f17fe599c87783f28dad2cff7f9dfn);
 	//
-	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory('StakingWalletCosmicSignatureNft');
+	// 	const StakingWalletCosmicSignatureNft = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft");
 	// 	const newStakingWalletCosmicSignatureNft = await StakingWalletCosmicSignatureNft.deploy(
 	// 		await newCosmicSignatureNft.getAddress(),
 	// 		await cosmicSignatureGameProxy.getAddress()

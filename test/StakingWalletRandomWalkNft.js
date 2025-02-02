@@ -88,6 +88,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	//
 	// 	await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 	//
+	// 	// todo-9 This contract no longer exists.
 	// 	const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft");
 	// 	let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNft.getAddress());
 	// 	await newStakingWalletRandomWalkNft.waitForDeployment();

@@ -114,7 +114,7 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}
 
-	// todo-1 I have commented this out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
+	// I have commented this method out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
 	// function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
 	// 	uint256[] memory actions = new uint256[](1);
 	// 	uint256[] memory deposits = new uint256[](1);
@@ -151,8 +151,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// /// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function finalizeTesting() external onlyOwner {
 	// 	// CosmicSignature NFTs.
-	// 	uint256 cosmicSupply = nft.totalSupply();
-	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
+	// 	uint256 nftTotalSupply = nft.totalSupply();
+	// 	for (uint256 i = 0; i < nftTotalSupply; i++) {
 	// 		address nftOwnerAddress_ = nft.ownerOf(i);
 	// 		if (nftOwnerAddress_ == address(this)) {
 	// 			// Comment-202501145 applies.
@@ -160,9 +160,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 		}
 	// 	}
 	//
-	// 	// Issue. Making multiple external calls to `token`.
-	// 	cosmicSupply = token.balanceOf(address(this));
-	// 	token.transfer(owner(), cosmicSupply);
+	// 	uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
+	// 	token.transfer(owner(), myCstBalanceAmount_);
 	//
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
 	// 		// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
@@ -247,31 +246,33 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	}
 }
 
-/// todo-1 These legacy functions no longer exist.
-contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
-	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
+// contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
+// 	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
 
-	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
-	// 	_insertToken(_nftId, stakeActionId_);
-	// }
+// 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+// 	// 	// This method no longer exists.
+// 	// 	_insertToken(_nftId, stakeActionId_);
+// 	// }
 
-	// function doRemoveToken(uint256 _nftId) external {
-	// 	_removeToken(_nftId);
-	// }
-}
+// 	// function doRemoveToken(uint256 _nftId) external {
+// 	// 	// This method no longer exists.
+// 	// 	_removeToken(_nftId);
+// 	// }
+// }
 
-/// todo-1 These legacy functions no longer exist.
-contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
-	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
+// contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
+// 	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
 
-	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
-	// 	_insertToken(_nftId, stakeActionId_);
-	// }
+// 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+// 	// 	// This method no longer exists.
+// 	// 	_insertToken(_nftId, stakeActionId_);
+// 	// }
 	
-	// function doRemoveToken(uint256 _nftId) external {
-	// 	_removeToken(_nftId);
-	// }
-}
+// 	// function doRemoveToken(uint256 _nftId) external {
+// 	// 	// This method no longer exists.
+// 	// 	_removeToken(_nftId);
+// 	// }
+// }
 
 contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {

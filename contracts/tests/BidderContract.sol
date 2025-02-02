@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 pragma abicoder v2;
 
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
@@ -86,9 +87,10 @@ contract BidderContract {
 		// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
 		// todo-1 In any case, write comments.
 		(bool isSuccess_, ) = creator.call{value: address(this).balance}("");
-		// todo-1 Why we do this?
-		// todo-1 We don't evaluate this.
-		isSuccess_ = false;
+		require(
+			isSuccess_,
+			CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance)
+		);
 		uint256 totalSupply = nft_.totalSupply();
 		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 			address tokenOwner = nft_.ownerOf(i);
