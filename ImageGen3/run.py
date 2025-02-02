@@ -16,23 +16,23 @@ SIMULATION_CONFIG = {
     'max_concurrent': 1,
 
     # Base hex seed + how many variant runs
-    'base_seed_hex': "191056",
+    'base_seed_hex': "192657",
     'num_runs': 10000,  # e.g., how many seeds to generate
 
     # The relevant command-line arguments for the core parameters
     'param_ranges': {
-        'num_sims': [10_000],             # --num-sims
-        'num_steps_sim': [1_000_000],    # --num-steps-sim
-        'location': [300.0],            # --location
-        'velocity': [1.0],              # --velocity
-        'min_mass': [100.0],            # --min-mass
-        'max_mass': [300.0],            # --max-mass
-        'chaos_weight': [3.0],          # --chaos-weight
-        'perimeter_weight': [1.0],      # --perimeter-weight
-        'dist_weight': [2.0],           # --dist-weight
-        'lyap_weight': [2.5],           # --lyap-weight
-        'max_points': [100_000],        # --max-points
-        'frame_size': [1800],            # --frame-size
+        'num_sims': [1_000],            # --num-sims
+        'num_steps_sim': [1_000_000],   # --num-steps-sim
+        'location': [300.0],           # --location
+        'velocity': [1.0],             # --velocity
+        'min_mass': [100.0],           # --min-mass
+        'max_mass': [300.0],           # --max-mass
+        'chaos_weight': [3.0],         # --chaos-weight
+        'perimeter_weight': [1.0],     # --perimeter-weight
+        'dist_weight': [2.0],          # --dist-weight
+        'lyap_weight': [2.5],          # --lyap-weight
+        'max_points': [100_000],       # --max-points
+        'frame_size': [800],          # --frame-size
 
         # If disable_blur == True, we ignore multiple blur variants
         'blur_radius_fraction': [0.01],
@@ -40,12 +40,19 @@ SIMULATION_CONFIG = {
         'blur_core_brightness': [1.0],
         'disable_blur': [False],
 
-        'clip_black': [0.01],           # --clip-black
-        'clip_white': [0.99],           # --clip-white
-        'levels_gamma': [1.0],          # --levels-gamma
+        'clip_black': [0.005],         # --clip-black
+        'clip_white': [0.99],          # --clip-white
+        'levels_gamma': [1.0],         # --levels-gamma
     },
 
-    # 6 total: one "no blur," one "normal," two "wild," two "extreme."
+    # 6 total. We’ve re-labeled them to push the boundaries further.
+    # (A) "No blur" (same as before)
+    # (B) "Normal" (this was originally "Extreme #1," now our new baseline)
+    # (C) "Strong #1"
+    # (D) "Strong #2"
+    # (E) "Extreme #1"
+    # (F) "Extreme #2"
+    #
     # Each tuple is (blur_radius_fraction, blur_strength, blur_core_brightness)
     'blur_variants': [
         (0.0,  0.0,  1.0),   # (A) "No blur"
@@ -53,30 +60,30 @@ SIMULATION_CONFIG = {
                              #   - strength=0.0 => no added glow
                              #   - core=1.0 => lines at normal brightness
 
-        (0.01, 1.0,  1.0),   # (B) "Normal"
-                             #   - radius=0.01 => 1% of smaller dimension
-                             #   - strength=1.0 => moderate glow
-                             #   - core=1.0 => crisp lines normal
+        (0.10,  8.0,  5.0),  # (B) "Normal"
+                             #   - radius=0.10 => 10% blur
+                             #   - strength=8.0 => moderate/strong glow
+                             #   - core=5.0 => lines quite bright
 
-        (0.03, 2.0,  2.0),   # (C) "Wild #1"
-                             #   - radius=0.03 => 3% blur radius
-                             #   - strength=2.0 => stronger glow
-                             #   - core=2.0 => lines are twice normal brightness
+        (0.15, 12.0,  8.0),  # (C) "Strong #1"
+                             #   - radius=0.15
+                             #   - strength=12 => fairly strong halo
+                             #   - core=8.0 => lines are very bright
 
-        (0.05, 3.0,  3.0),   # (D) "Wild #2"
-                             #   - radius=0.05 => 5% blur radius
-                             #   - strength=3.0 => even stronger glow
-                             #   - core=3.0 => lines triple normal brightness
+        (0.20, 16.0, 10.0),  # (D) "Strong #2"
+                             #   - radius=0.20
+                             #   - strength=16 => even stronger halo
+                             #   - core=10.0 => lines extremely bright
 
-        (0.10, 8.0,  5.0),   # (E) "Extreme #1"
-                             #   - radius=0.10 => 10% blur radius
-                             #   - strength=8.0 => large glow halo
-                             #   - core=5.0 => lines are extremely bright
+        (0.30, 24.0, 15.0),  # (E) "Extreme #1"
+                             #   - radius=0.30
+                             #   - strength=24 => large glow
+                             #   - core=15.0 => lines extremely bright
 
-        (0.15, 12.0, 8.0),   # (F) "Extreme #2"
-                             #   - radius=0.15 => 15% blur radius
-                             #   - strength=12.0 => intense glow
-                             #   - core=8.0 => ultra-bright core lines
+        (0.40, 32.0, 20.0),  # (F) "Extreme #2"
+                             #   - radius=0.40 => 40% blur radius
+                             #   - strength=32 => intense glow
+                             #   - core=20.0 => ultra-bright core lines
     ],
 }
 
@@ -304,7 +311,7 @@ class SimulationRunner:
         - Reads from SIMULATION_CONFIG['param_ranges'] to get possible values for each param.
         - For each combination, produce multiple seeds (0..num_runs-1).
         - If 'disable_blur' is True, skip the 'blur_variants' and do only 1 set from param_ranges.
-        - Otherwise, for each seed, produce all 6 items in 'blur_variants'.
+        - Otherwise, for each seed, produce all items in 'blur_variants'.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
@@ -324,11 +331,11 @@ class SimulationRunner:
                     )
                 ]
             else:
-                # Use all 6 from 'blur_variants'
+                # Use all in 'blur_variants'
                 chosen_blur_variants = SIMULATION_CONFIG['blur_variants']
 
             for i in range(num_runs):
-                # Build a unique seed, e.g. "0x120056" + i in hex => "0x120056000A"
+                # Build a unique seed, e.g. "0x192056" + i in hex => "0x192056000A"
                 seed_suffix = f"{i:04X}"
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
