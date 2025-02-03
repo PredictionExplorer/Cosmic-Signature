@@ -64,7 +64,7 @@ class SimulationParams:
     max_mass: float
 
     chaos_weight: float
-    perimeter_weight: float
+    area_weight: float
     dist_weight: float
     lyap_weight: float
     aspect_weight: float
@@ -116,7 +116,7 @@ def build_command_list(program_path: str, params: SimulationParams) -> List[str]
         "--max-mass", str(params.max_mass),
 
         "--chaos-weight", str(params.chaos_weight),
-        "--perimeter-weight", str(params.perimeter_weight),
+        "--area-weight", str(params.area_weight),
         "--dist-weight", str(params.dist_weight),
         "--lyap-weight", str(params.lyap_weight),
         "--aspect-weight", str(params.aspect_weight),
@@ -279,7 +279,7 @@ class SimulationRunner:
                     min_mass=combo_dict['min_mass'],
                     max_mass=combo_dict['max_mass'],
                     chaos_weight=combo_dict['chaos_weight'],
-                    perimeter_weight=combo_dict['perimeter_weight'],
+                    area_weight=combo_dict['area_weight'],
                     dist_weight=combo_dict['dist_weight'],
                     lyap_weight=combo_dict['lyap_weight'],
                     aspect_weight=combo_dict['aspect_weight'],

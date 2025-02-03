@@ -73,9 +73,9 @@ struct Args {
     #[arg(long, default_value_t = 3.0)]
     chaos_weight: f64,
 
-    /// Borda weighting: average perimeter
+    /// Borda weighting: average triangle area
     #[arg(long, default_value_t = 1.0)]
-    perimeter_weight: f64,
+    area_weight: f64,
 
     /// Borda weighting: total distance
     #[arg(long, default_value_t = 2.0)]
@@ -314,21 +314,8 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     data
 }
 
-fn average_triangle_perimeter(positions: &[Vec<Vector3<f64>>]) -> f64 {
-    let len = positions[0].len();
-    if len < 1 {
-        return 0.0;
-    }
-    let mut sum = 0.0;
-    for i in 0..len {
-        let p1 = positions[0][i];
-        let p2 = positions[1][i];
-        let p3 = positions[2][i];
-        sum += (p1 - p2).norm() + (p2 - p3).norm() + (p3 - p1).norm();
-    }
-    sum / (len as f64)
-}
-
+/// We *normalize* positions in `total_distance` but not in other metrics; this is
+/// part of the original design, though one could unify them if desired.
 fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let mut new_pos = positions.to_vec();
     normalize_positions_for_analysis(&mut new_pos);
@@ -490,16 +477,92 @@ fn bounding_box_2d(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     (min_x, max_x, min_y, max_y)
 }
 
+/// The bounding_box function also adds a 5% margin. This is the same
+/// function used for final on-screen rendering. So we can rely on it
+/// to replicate the exact shape that ends up in the final image.
+fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
+    let mut min_x = INFINITY;
+    let mut max_x = NEG_INFINITY;
+    let mut min_y = INFINITY;
+    let mut max_y = NEG_INFINITY;
+    for body_idx in 0..positions.len() {
+        for &p in &positions[body_idx] {
+            min_x = min_x.min(p[0]);
+            max_x = max_x.max(p[0]);
+            min_y = min_y.min(p[1]);
+            max_y = max_y.max(p[1]);
+        }
+    }
+    if (max_x - min_x).abs() < 1e-12 {
+        min_x -= 0.5;
+        max_x += 0.5;
+    }
+    if (max_y - min_y).abs() < 1e-12 {
+        min_y -= 0.5;
+        max_y += 0.5;
+    }
+    // Expand by 5% margin
+    {
+        let wx = max_x - min_x;
+        let wy = max_y - min_y;
+        min_x -= 0.05 * wx;
+        max_x += 0.05 * wx;
+        min_y -= 0.05 * wy;
+        max_y += 0.05 * wy;
+    }
+    (min_x, max_x, min_y, max_y)
+}
+
+/// Compute the average triangle area in *on-screen* pixel coordinates
+/// (reflecting the final image shape).
+fn average_triangle_area_screen(positions: &[Vec<Vector3<f64>>], width: u32, height: u32) -> f64 {
+    let total_steps = positions[0].len();
+    if total_steps == 0 {
+        return 0.0;
+    }
+
+    // Use the same bounding_box logic as final rendering (5% margin).
+    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
+
+    let ww = max_x - min_x;
+    let hh = max_y - min_y;
+    if ww.abs() < 1e-14 || hh.abs() < 1e-14 {
+        // degenerate bounding box => area ~ 0
+        return 0.0;
+    }
+
+    let mut sum_area = 0.0;
+    for step in 0..total_steps {
+        let p1 = positions[0][step];
+        let p2 = positions[1][step];
+        let p3 = positions[2][step];
+
+        // Map each body to [0..width] x [0..height]
+        let x1 = (p1[0] - min_x) / ww * (width as f64);
+        let y1 = (p1[1] - min_y) / hh * (height as f64);
+        let x2 = (p2[0] - min_x) / ww * (width as f64);
+        let y2 = (p2[1] - min_y) / hh * (height as f64);
+        let x3 = (p3[0] - min_x) / ww * (width as f64);
+        let y3 = (p3[1] - min_y) / hh * (height as f64);
+
+        // Standard 2D triangle area formula
+        let area = 0.5 * ((x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)).abs();
+        sum_area += area;
+    }
+
+    sum_area / (total_steps as f64)
+}
+
 #[derive(Clone)]
 struct TrajectoryResult {
     chaos: f64,
-    avg_perimeter: f64,
+    triangle_area: f64,
     total_dist: f64,
     lyap_exp: f64,
     aspect_closeness: f64,
 
     chaos_pts: usize,
-    perimeter_pts: usize,
+    area_pts: usize,
     dist_pts: usize,
     lyap_pts: usize,
     aspect_pts: usize,
@@ -515,11 +578,13 @@ fn select_best_trajectory(
     num_steps_sim: usize,
     max_points: usize,
     chaos_weight: f64,
-    perimeter_weight: f64,
+    area_weight: f64,
     dist_weight: f64,
     lyap_weight: f64,
     aspect_weight: f64,
     final_aspect: f64,
+    width: u32,
+    height: u32,
 ) -> (Vec<Body>, TrajectoryResult) {
     println!("STAGE 1/8: Borda search over {num_sims} random orbits...");
     let many_bodies: Vec<Vec<Body>> = (0..num_sims)
@@ -589,26 +654,37 @@ fn select_best_trajectory(
                 let positions = get_positions(bodies.clone(), num_steps_sim);
                 let len = positions[0].len();
                 let factor = (len / max_points).max(1);
+
                 let m1 = bodies[0].mass;
                 let m2 = bodies[1].mass;
                 let m3 = bodies[2].mass;
+
+                // chaos measure
+                let c = non_chaoticness(m1, m2, m3, &positions);
+
+                // area measure (screen coords)
+                let area = average_triangle_area_screen(&positions, width, height);
+
+                // total distance (with normalization)
+                let d = total_distance(&positions);
+
+                // approximate Lyapunov exponent
                 let body1_norms: Vec<f64> =
                     positions[0].iter().step_by(factor).map(|p| p.norm()).collect();
-                let c = non_chaoticness(m1, m2, m3, &positions);
-                let p = average_triangle_perimeter(&positions);
-                let d = total_distance(&positions);
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
+
+                // aspect ratio closeness
                 let asp = aspect_ratio_closeness(&positions, final_aspect);
 
                 let tr = TrajectoryResult {
                     chaos: c,
-                    avg_perimeter: p,
+                    triangle_area: area,
                     total_dist: d,
                     lyap_exp: ly,
                     aspect_closeness: asp,
 
                     chaos_pts: 0,
-                    perimeter_pts: 0,
+                    area_pts: 0,
                     dist_pts: 0,
                     lyap_pts: 0,
                     aspect_pts: 0,
@@ -629,20 +705,21 @@ fn select_best_trajectory(
 
     // Gather metrics separately
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
-    let mut perimeter_vals = Vec::with_capacity(info_vec.len());
+    let mut area_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
     let mut lyap_vals = Vec::with_capacity(info_vec.len());
     let mut aspect_vals = Vec::with_capacity(info_vec.len());
 
     for (i, (tr, _)) in info_vec.iter().enumerate() {
         chaos_vals.push((tr.chaos, i));
-        perimeter_vals.push((tr.avg_perimeter, i));
+        area_vals.push((tr.triangle_area, i));
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
         aspect_vals.push((tr.aspect_closeness, i));
     }
 
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
+        // Sort descending if higher_better, ascending if lower_better
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
         } else {
@@ -657,26 +734,28 @@ fn select_best_trajectory(
         out
     }
 
-    // For "chaos", lower is better => higher rank if chaos is smaller
+    // "chaos" => lower is better => higher rank if chaos is smaller
     let chaos_pts = assign_borda_scores(chaos_vals, false);
-    let perimeter_pts = assign_borda_scores(perimeter_vals, true);
+    // "area" => bigger is better
+    let area_pts = assign_borda_scores(area_vals, true);
+    // "dist" => bigger is better
     let dist_pts = assign_borda_scores(dist_vals, true);
+    // "lyap" => bigger is better
     let lyap_pts = assign_borda_scores(lyap_vals, true);
-    // For aspect closeness, bigger => better
+    // "aspect closeness" => bigger is better
     let aspect_pts = assign_borda_scores(aspect_vals, true);
 
     // Update each TrajectoryResult
     for (i, (tr, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_pts[i];
-        tr.perimeter_pts = perimeter_pts[i];
+        tr.area_pts = area_pts[i];
         tr.dist_pts = dist_pts[i];
         tr.lyap_pts = lyap_pts[i];
         tr.aspect_pts = aspect_pts[i];
 
-        tr.total_score =
-            chaos_pts[i] + perimeter_pts[i] + dist_pts[i] + lyap_pts[i] + aspect_pts[i];
+        tr.total_score = chaos_pts[i] + area_pts[i] + dist_pts[i] + lyap_pts[i] + aspect_pts[i];
         tr.total_score_weighted = (chaos_pts[i] as f64 * chaos_weight)
-            + (perimeter_pts[i] as f64 * perimeter_weight)
+            + (area_pts[i] as f64 * area_weight)
             + (dist_pts[i] as f64 * dist_weight)
             + (lyap_pts[i] as f64 * lyap_weight)
             + (aspect_pts[i] as f64 * aspect_weight);
@@ -692,10 +771,10 @@ fn select_best_trajectory(
     let best_bodies = many_bodies[*best_idx].clone();
 
     println!(
-        "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, perim={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
+        "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
         best_tr.total_score_weighted,
         best_tr.chaos,
-        best_tr.avg_perimeter,
+        best_tr.triangle_area,
         best_tr.total_dist,
         best_tr.lyap_exp,
         best_tr.aspect_closeness
@@ -933,41 +1012,6 @@ fn save_image_as_png(
 // ========================================================
 // Two-Pass Global Levels
 // ========================================================
-
-/// Utility to compute bounding box for the final pass
-fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
-    let mut min_x = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_y = NEG_INFINITY;
-    for body_idx in 0..positions.len() {
-        for &p in &positions[body_idx] {
-            min_x = min_x.min(p[0]);
-            max_x = max_x.max(p[0]);
-            min_y = min_y.min(p[1]);
-            max_y = max_y.max(p[1]);
-        }
-    }
-    if (max_x - min_x).abs() < 1e-12 {
-        min_x -= 0.5;
-        max_x += 0.5;
-    }
-    if (max_y - min_y).abs() < 1e-12 {
-        min_y -= 0.5;
-        max_y += 0.5;
-    }
-    // Expand by 5% margin
-    {
-        let wx = max_x - min_x;
-        let wy = max_y - min_y;
-        min_x -= 0.05 * wx;
-        max_x += 0.05 * wx;
-        min_y -= 0.05 * wy;
-        max_y += 0.05 * wy;
-    }
-    (min_x, max_x, min_y, max_y)
-}
-
 /// First pass: gather histogram
 fn pass_1_build_histogram(
     positions: &[Vec<Vector3<f64>>],
@@ -1071,11 +1115,10 @@ fn compute_black_white_gamma(
         .clamp(0, (total_pix - 1) as isize) as usize;
 
     let black_r = all_r[black_idx];
-    let black_g = all_g[black_idx];
-    let black_b = all_b[black_idx];
-
     let white_r = all_r[white_idx];
+    let black_g = all_g[black_idx];
     let white_g = all_g[white_idx];
+    let black_b = all_b[black_idx];
     let white_b = all_b[white_idx];
 
     (black_r, white_r, black_g, white_g, black_b, white_b, gamma)
@@ -1222,18 +1265,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.velocity,
     );
 
-    // 1) Borda search for the best orbit.
+    // 1) Borda search for the best orbit (using on-screen triangle area).
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
         args.num_sims,
         args.num_steps_sim,
         args.max_points,
         args.chaos_weight,
-        args.perimeter_weight,
+        args.area_weight,
         args.dist_weight,
         args.lyap_weight,
         args.aspect_weight,
         final_aspect,
+        width,
+        height,
     );
 
     // 2) Re-run the best orbit at high resolution to get positions
