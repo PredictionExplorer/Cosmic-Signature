@@ -20,7 +20,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken indexed newValue);
 
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.

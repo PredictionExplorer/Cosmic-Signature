@@ -15,7 +15,7 @@ interface ICharityWallet {
 	/// @param amount The amount of ETH donated.
 	event DonationReceived(address indexed donorAddress, uint256 amount);
 
-	// todo-1 Make sense to delete this garbage? But maybe tell the guys first to make sure they don't rely on this event.
+	// todo-0 Make sense to delete this garbage? But maybe tell the guys first to make sure they don't rely on this event.
 	// /// @notice Emitted after accumulated donations were sent to the charity.
 	// /// @param charityAddress Charity address.
 	// /// @param amount The amount of ETH transferred to the charity.

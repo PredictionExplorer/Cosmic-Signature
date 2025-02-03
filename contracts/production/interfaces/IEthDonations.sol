@@ -13,7 +13,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.
 	/// @param amount The amount donated.
-	event EthDonated(uint256 roundNum, address indexed donorAddress, uint256 amount);
+	event EthDonated(uint256 indexed roundNum, address indexed donorAddress, uint256 amount);
 
 	/// @notice Emitted when someone donates ETH and provides additional information.
 	/// @param roundNum The current bidding round number.
@@ -22,7 +22,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @param ethDonationWithInfoRecordIndex The newly created `ethDonationWithInfoRecords` item index.
 	/// @dev Issue. Yuriy would prefer to include the provided data in this event and not store anything in the contract state.
 	/// But Nick prefers the things to be the way they are.
-	event EthDonatedWithInfo(uint256 roundNum, address indexed donorAddress, uint256 amount, uint256 ethDonationWithInfoRecordIndex);
+	event EthDonatedWithInfo(uint256 indexed roundNum, address indexed donorAddress, uint256 amount, uint256 indexed ethDonationWithInfoRecordIndex);
 
 	/// @notice This method allows anybody to donate ETH without placing a bid.
 	/// It's OK if `msg.value` is zero.

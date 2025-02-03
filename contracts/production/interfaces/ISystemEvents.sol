@@ -97,31 +97,31 @@ interface ISystemEvents {
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken indexed newValue);
 
 	/// @notice Emitted when `randomWalkNft` is changed.
 	/// @param newValue The new value.
-	event RandomWalkNftAddressChanged(IRandomWalkNFT newValue);
+	event RandomWalkNftAddressChanged(IRandomWalkNFT indexed newValue);
 
 	/// @notice Emitted when `nft` is changed.
 	/// @param newValue The new value.
-	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft newValue);
+	event CosmicSignatureNftAddressChanged(ICosmicSignatureNft indexed newValue);
 
 	/// @notice Emitted when `prizesWallet` is changed.
 	/// @param newValue The new value.
-	event PrizesWalletAddressChanged(IPrizesWallet newValue);
+	event PrizesWalletAddressChanged(IPrizesWallet indexed newValue);
 
 	/// @notice Emitted when `stakingWalletRandomWalkNft` is changed.
 	/// @param newValue The new value.
-	event StakingWalletRandomWalkNftAddressChanged(IStakingWalletRandomWalkNft newValue);
+	event StakingWalletRandomWalkNftAddressChanged(IStakingWalletRandomWalkNft indexed newValue);
 
 	/// @notice Emitted when `stakingWalletCosmicSignatureNft` is changed.
 	/// @param newValue The new value.
-	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft newValue);
+	event StakingWalletCosmicSignatureNftAddressChanged(IStakingWalletCosmicSignatureNft indexed newValue);
 
 	/// @notice Emitted when `marketingWallet` is changed.
 	/// @param newValue The new value.
-	event MarketingWalletAddressChanged(address newValue);
+	event MarketingWalletAddressChanged(address indexed newValue);
 
 	/// @notice Emitted when `marketingWalletCstContributionAmount` is changed.
 	/// @param newValue The new value.
