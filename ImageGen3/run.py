@@ -21,7 +21,8 @@ SIMULATION_CONFIG = {
 
     # The relevant command-line arguments for the core parameters
     'param_ranges': {
-        'num_sims': [1_000],             # --num-sims
+        # We keep these from the new Rust code:
+        'num_sims': [10_000],             # --num-sims
         'num_steps_sim': [1_000_000],    # --num-steps-sim
         'location': [300.0],            # --location
         'velocity': [1.0],              # --velocity
@@ -37,34 +38,20 @@ SIMULATION_CONFIG = {
         'width': [1920],                # --width
         'height': [1080],               # --height
 
-        # If disable_blur == True, we skip fancy blur variants
-        # else we can override below with blur_variants
-        'blur_radius_fraction': [0.01],
-        'blur_strength': [1.0],
-        'blur_core_brightness': [1.0],
-        'disable_blur': [False],
-
         'clip_black': [0.005],          # --clip-black
         'clip_white': [0.99],           # --clip-white
         'levels_gamma': [1.0],          # --levels-gamma
-    },
 
-    # 6 total blur variants. If disable_blur==False, we use them:
-    'blur_variants': [
-        (0.0,  0.0,  1.0),   # (A) No blur
-        (0.10,  8.0,  5.0),  # (B) Normal
-        (0.15, 12.0,  8.0),  # (C) Strong #1
-        (0.20, 16.0, 10.0),  # (D) Strong #2
-        (0.30, 24.0, 15.0),  # (E) Extreme #1
-        (0.40, 32.0, 20.0),  # (F) Extreme #2
-    ],
+        # New: we have only one boolean parameter for special mode
+        'special': [False, True],       # --special
+    },
 }
 
 # ===================== Dataclass for Parameters =====================
 @dataclass
 class SimulationParams:
     """
-    Reflects all Rust CLI arguments for the three_body_problem binary.
+    Reflects all Rust CLI arguments for the new three_body_problem binary.
     """
     seed: str
     file_name: str
@@ -84,46 +71,30 @@ class SimulationParams:
 
     max_points: int
 
-    # New: separate width/height for final image
     width: int
     height: int
-
-    blur_radius_fraction: float
-    blur_strength: float
-    blur_core_brightness: float
-    disable_blur: bool
 
     clip_black: float
     clip_white: float
     levels_gamma: float
 
+    special: bool
+
 
 def generate_file_name(params: SimulationParams) -> str:
     """
     Create the 'file_name' for Rust's "--file-name" argument.
-    Includes info about blur if not disabled.
+    Contains 'seed' plus 'nm' (normal) or 'sp' (special).
     """
     seed_part = params.seed[2:] if params.seed.startswith("0x") else params.seed
-
-    if params.disable_blur:
-        return f"seed_{seed_part}_disableBlur"
-    else:
-        if params.blur_radius_fraction < 1e-9:
-            # effectively no blur
-            return f"seed_{seed_part}_noblur"
-        else:
-            return (
-                f"seed_{seed_part}"
-                f"_blur_radius_{params.blur_radius_fraction:.3f}"
-                f"_str_{params.blur_strength:.2f}"
-                f"_core_{params.blur_core_brightness:.2f}"
-            )
+    # Append 'nm' if special=False, 'sp' if special=True
+    mode_str = "sp" if params.special else "nm"
+    return f"seed_{seed_part}_{mode_str}"
 
 
 def generate_log_prefix(params: SimulationParams) -> str:
     """
-    Creates the prefix for the log files.
-    We'll reuse the same logic as generate_file_name.
+    We’ll reuse the same logic as generate_file_name for the log prefix.
     """
     return generate_file_name(params)
 
@@ -155,19 +126,14 @@ def build_command_list(program_path: str, params: SimulationParams) -> List[str]
         "--width", str(params.width),
         "--height", str(params.height),
 
-        "--blur-radius-fraction", str(params.blur_radius_fraction),
-        "--blur-strength", str(params.blur_strength),
-        "--blur-core-brightness", str(params.blur_core_brightness),
-    ]
-
-    if params.disable_blur:
-        cmd.append("--disable-blur")
-
-    cmd += [
         "--clip-black", str(params.clip_black),
         "--clip-white", str(params.clip_white),
         "--levels-gamma", str(params.levels_gamma),
     ]
+
+    # Only add --special if params.special is True
+    if params.special:
+        cmd.append("--special")
 
     return cmd
 
@@ -204,7 +170,7 @@ def _logger_thread(
 def run_simulation(command_list: List[str], params: SimulationParams) -> int:
     """
     1) Print the EXACT command.
-    2) Build log file names based on blur or not.
+    2) Build log file names based on mode (special or normal).
     3) Spawn the child process, capturing stdout/stderr line by line.
     4) On non-zero exit, re-print all lines to console & logs.
     5) Return the child's exit code.
@@ -286,7 +252,8 @@ class SimulationRunner:
 
     def get_parameter_combinations(self, base_seed_hex: str, num_runs: int) -> List[SimulationParams]:
         """
-        Build a list of SimulationParams, including multiple blur variants if not disabled.
+        Build a list of SimulationParams, including 'special' and normal variants
+        as indicated by param_ranges.
         """
         keys = list(SIMULATION_CONFIG['param_ranges'].keys())
         param_values = list(SIMULATION_CONFIG['param_ranges'].values())
@@ -295,57 +262,40 @@ class SimulationRunner:
         for combo in itertools.product(*param_values):
             combo_dict = dict(zip(keys, combo))
 
-            blur_is_disabled = combo_dict['disable_blur']
-            if blur_is_disabled:
-                # Only one "variant" from param ranges
-                chosen_blur_variants = [
-                    (
-                        combo_dict['blur_radius_fraction'],
-                        combo_dict['blur_strength'],
-                        combo_dict['blur_core_brightness'],
-                    )
-                ]
-            else:
-                # Use all in 'blur_variants'
-                chosen_blur_variants = SIMULATION_CONFIG['blur_variants']
-
+            # Generate different seeds for each run
             for i in range(num_runs):
-                # Build a unique seed, e.g. "0x192056" + i in hex => "0x192056000A"
+                # Example: "0x155556" + i => "0x155556000A"
                 seed_suffix = f"{i:04X}"
                 full_seed = f"0x{base_seed_hex}{seed_suffix}"
 
-                for (radius_frac, strength, core_bright) in chosen_blur_variants:
-                    p = SimulationParams(
-                        seed=full_seed,
-                        file_name="output",  # We rename per-run
+                p = SimulationParams(
+                    seed=full_seed,
+                    file_name="output",  # We rename per-run below
 
-                        num_sims=combo_dict['num_sims'],
-                        num_steps_sim=combo_dict['num_steps_sim'],
-                        location=combo_dict['location'],
-                        velocity=combo_dict['velocity'],
-                        min_mass=combo_dict['min_mass'],
-                        max_mass=combo_dict['max_mass'],
-                        chaos_weight=combo_dict['chaos_weight'],
-                        perimeter_weight=combo_dict['perimeter_weight'],
-                        dist_weight=combo_dict['dist_weight'],
-                        lyap_weight=combo_dict['lyap_weight'],
-                        aspect_weight=combo_dict['aspect_weight'],
+                    num_sims=combo_dict['num_sims'],
+                    num_steps_sim=combo_dict['num_steps_sim'],
+                    location=combo_dict['location'],
+                    velocity=combo_dict['velocity'],
+                    min_mass=combo_dict['min_mass'],
+                    max_mass=combo_dict['max_mass'],
+                    chaos_weight=combo_dict['chaos_weight'],
+                    perimeter_weight=combo_dict['perimeter_weight'],
+                    dist_weight=combo_dict['dist_weight'],
+                    lyap_weight=combo_dict['lyap_weight'],
+                    aspect_weight=combo_dict['aspect_weight'],
 
-                        max_points=combo_dict['max_points'],
+                    max_points=combo_dict['max_points'],
 
-                        width=combo_dict['width'],
-                        height=combo_dict['height'],
+                    width=combo_dict['width'],
+                    height=combo_dict['height'],
 
-                        blur_radius_fraction=radius_frac,
-                        blur_strength=strength,
-                        blur_core_brightness=core_bright,
-                        disable_blur=blur_is_disabled,
+                    clip_black=combo_dict['clip_black'],
+                    clip_white=combo_dict['clip_white'],
+                    levels_gamma=combo_dict['levels_gamma'],
 
-                        clip_black=combo_dict['clip_black'],
-                        clip_white=combo_dict['clip_white'],
-                        levels_gamma=combo_dict['levels_gamma'],
-                    )
-                    param_sets.append(p)
+                    special=combo_dict['special'],
+                )
+                param_sets.append(p)
 
         return param_sets
 
@@ -362,7 +312,7 @@ class SimulationRunner:
         with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
             futures = {}
             for params in param_sets:
-                # Update the file_name argument for the Rust code:
+                # Update the file_name argument for the Rust code
                 params.file_name = generate_file_name(params)
 
                 cmd_list = build_command_list(self.program_path, params)
@@ -383,8 +333,8 @@ class SimulationRunner:
 
 def main():
     print(
-        "Starting batch runs of the Rust three-body simulator.\n"
-        "We produce multiple blur variants per seed (unless blur is disabled).\n"
+        "Starting batch runs of the Rust three-body simulator (new version).\n"
+        "We produce both normal and special mode for each seed.\n"
         "Images/video are generated by the Rust code. Logs are saved per-run in 'logs/'.\n"
     )
 
@@ -398,7 +348,7 @@ def main():
         num_runs=SIMULATION_CONFIG['num_runs']
     )
 
-    print(f"Base param sets (including blur variants if not disabled): {len(param_sets)}")
+    print(f"Base param sets (including special/normal modes): {len(param_sets)}")
 
     # Run them
     runner.run_simulations(param_sets)

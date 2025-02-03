@@ -31,7 +31,7 @@ const G: f64 = 9.8; // gravitational constant
 Simulate many random 3-body orbits, pick best by Borda (including aspect ratio closeness),
 then generate single image + H.264 MP4 video with two-pass global auto-level.
 
-No rotation is done; final dimension is always width×height (defaults to 3840×2160).
+No rotation is done; final dimension is always width×height (defaults to 1920×1080).
 If you want orbits that fill 16:9 better, we factor an 'aspect ratio closeness' measure
 into the Borda ranking. A perfect 16:9 orbit gets closeness=1.0, bigger mismatch => 0.0.
 "
@@ -93,29 +93,13 @@ struct Args {
     #[arg(long, default_value_t = 100_000)]
     max_points: usize,
 
-    /// Output image/video width in pixels
-    #[arg(long, default_value_t = 3840)]
+    /// Output image/video width in pixels (default 1920)
+    #[arg(long, default_value_t = 1920)]
     width: u32,
 
-    /// Output image/video height in pixels
-    #[arg(long, default_value_t = 2160)]
+    /// Output image/video height in pixels (default 1080)
+    #[arg(long, default_value_t = 1080)]
     height: u32,
-
-    /// Fraction of the smaller dimension to use as the blur radius
-    #[arg(long, default_value_t = 0.01)]
-    blur_radius_fraction: f64,
-
-    /// How strongly the blurred “glow” is added
-    #[arg(long, default_value_t = 1.0)]
-    blur_strength: f64,
-
-    /// Brightness multiplier for the crisp core lines
-    #[arg(long, default_value_t = 1.0)]
-    blur_core_brightness: f64,
-
-    /// If true, skip the final Gaussian blur pass (only crisp lines)
-    #[arg(long, default_value_t = false)]
-    disable_blur: bool,
 
     /// Fraction of pixels clipped to black
     #[arg(long, default_value_t = 0.005)]
@@ -128,6 +112,10 @@ struct Args {
     /// Gamma correction after clipping
     #[arg(long, default_value_t = 1.0)]
     levels_gamma: f64,
+
+    /// If true, use the “special” mode. Otherwise uses regular blur settings.
+    #[arg(long, default_value_t = false)]
+    special: bool,
 }
 
 // ========================================================
@@ -1219,7 +1207,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _ = fs::create_dir_all("pics");
     let _ = fs::create_dir_all("vids");
 
-    // If user doesn't override, defaults to 3840x2160
+    // If user doesn't override, we now default to 1920x1080
     let width = args.width;
     let height = args.height;
     let final_aspect = width as f64 / height as f64;
@@ -1268,16 +1256,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         min_x, max_x, min_y, max_y
     );
 
-    // 5) Pass 1: gather histogram
-    println!("STAGE 5/8: PASS 1 => building global histogram (no frames saved)...");
-    let smaller_dim = width.min(height) as f64;
-    let blur_radius_px = if args.disable_blur {
-        0
+    // Decide blur parameters: "regular" vs. "special"
+    let (blur_radius_fraction, blur_strength, blur_core_brightness) = if args.special {
+        // special mode
+        (0.4, 32.0, 20.0)
     } else {
-        (args.blur_radius_fraction * smaller_dim).round() as usize
+        // regular mode (default)
+        (0.08, 6.0, 4.0)
     };
 
-    // Decide how many frames to produce in final video
+    // The blur radius in pixels is based on the smaller dimension
+    let smaller_dim = width.min(height) as f64;
+    let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
+
+    // 5) Pass 1: gather histogram
+    println!("STAGE 5/8: PASS 1 => building global histogram (no frames saved)...");
+    // We produce ~1800 frames at 60 FPS => ~30s
     let frame_rate = 60;
     let target_frames = 1800;
     let frame_interval =
@@ -1293,8 +1287,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         width,
         height,
         blur_radius_px,
-        args.blur_strength,
-        args.blur_core_brightness,
+        blur_strength,
+        blur_core_brightness,
         frame_interval,
         &mut all_r,
         &mut all_g,
@@ -1330,8 +1324,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 width,
                 height,
                 blur_radius_px,
-                args.blur_strength,
-                args.blur_core_brightness,
+                blur_strength,
+                blur_core_brightness,
                 frame_interval,
                 black_r,
                 white_r,
