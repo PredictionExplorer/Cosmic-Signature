@@ -29,7 +29,7 @@ SIMULATION_CONFIG = {
         'min_mass': [100.0],            # --min-mass
         'max_mass': [300.0],            # --max-mass
         'chaos_weight': [3.0],          # --chaos-weight
-        'perimeter_weight': [1.0],      # --perimeter-weight
+        'area_weight': [1.0],           # --area-weight
         'dist_weight': [2.0],           # --dist-weight
         'lyap_weight': [2.5],           # --lyap-weight
         'aspect_weight': [1.0],         # --aspect-weight
