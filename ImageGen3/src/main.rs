@@ -46,7 +46,7 @@ struct Args {
     file_name: String,
 
     /// Number of random orbits to consider (Borda)
-    #[arg(long, default_value_t = 10_000)]
+    #[arg(long, default_value_t = 30_000)]
     num_sims: usize,
 
     /// Number of steps used to judge each candidate orbit
