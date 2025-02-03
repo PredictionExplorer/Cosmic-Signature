@@ -132,9 +132,10 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		(bool isSuccess_, ) = destination.call{value: amount}("");
 		require(isSuccess_, "Transfer failed.");
 
-		// todo-1 Slither dislikes it that we make external calls and then emit events.
-		// todo-1 In Slither report, see: reentrancy-events
-		// todo-1 Ask ChatGPT: In Solidity, is it ok to make an external call and then emit an event? Is it good practice?
+		// todo-0 Slither dislikes it that we make external calls and then emit events.
+		// todo-0 In Slither report, see: reentrancy-events
+		// todo-0 Review the order of event emits.
+		// todo-0 Ask ChatGPT: In Solidity, is it ok to make an external call and then emit an event? Is it good practice?
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 

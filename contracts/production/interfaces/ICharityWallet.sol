@@ -15,6 +15,7 @@ interface ICharityWallet {
 	/// @param amount The amount of ETH donated.
 	event DonationReceived(address indexed donorAddress, uint256 amount);
 
+	// todo-1 Make sense to delete this garbage? But maybe tell the guys first to make sure they don't rely on this event.
 	// /// @notice Emitted after accumulated donations were sent to the charity.
 	// /// @param charityAddress Charity address.
 	// /// @param amount The amount of ETH transferred to the charity.
@@ -37,6 +38,6 @@ interface ICharityWallet {
 	/// This function is intentionally not restricted to `onlyOwner` to ensure transparency
 	/// and allow regular donations. It can be called by anyone at any time.
 	/// [/Comment-202409273]
-	/// todo-1 Do we need an oveload of this accepting an amount to send?
+	/// todo-0 Do we need an oveload of this accepting an amount to send?
 	function send() external;
 }

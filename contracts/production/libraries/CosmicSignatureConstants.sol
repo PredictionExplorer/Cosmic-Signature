@@ -92,6 +92,7 @@ library CosmicSignatureConstants {
 	// /// and we want to support a sufficient number of significant digits.
 	// /// Issue. Actually the above comment is BS. We do not actually round prices. A price can be any amount in Weis.
 	// /// todo-1 The web site shows 2 digits after the decimal point. Maybe in the tooltip it should show the whole number with all the digits.
+	// /// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1738533218252629
 	// uint256 internal constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
 
 	/// @notice Default `bidMessageLengthMaxLimit`.
@@ -117,9 +118,6 @@ library CosmicSignatureConstants {
 	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
 
 	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
-	/// @dev todo-1 Since we now increase `mainPrizeTimeIncrementInMicroSeconds` once per round,
-	/// todo-1 Taras needs to simulate a better value for this.
-	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
@@ -133,7 +131,6 @@ library CosmicSignatureConstants {
 	/// @notice Default `cstRewardAmountMultiplier`.
 	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
 
-	/// todo-1 I added this. So now other initial percentages should be readjusted.
 	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
 
 	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE = 5;
@@ -168,11 +165,7 @@ library CosmicSignatureConstants {
 	// #region Prizes Wallet
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	/// @dev todo-1 Increase to 31 days or at least 2 weeks, just in case our front end crashes and remains down for too long?
-	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1731974036727899
-	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732036126494949
-	/// todo-1 Create another thread to discuss.
-	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 days;
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 2 weeks;
 
 	// #endregion
 	// #region NFT Staking

@@ -30,7 +30,7 @@ interface IMarketingWallet is IAddressValidator {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev todo-1 Maybe eliminate this method and declare `token` `immutable`.
+	/// @dev todo-0 Maybe eliminate this method and declare `token` `immutable`.
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.

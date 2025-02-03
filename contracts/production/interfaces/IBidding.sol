@@ -33,7 +33,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 		address indexed lastBidderAddress,
 		int256 ethBidPrice,
 		int256 cstBidPrice,
-		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
+		int256 randomWalkNftId,
 		string message,
 		uint256 mainPrizeTime
 	);

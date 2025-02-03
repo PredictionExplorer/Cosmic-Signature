@@ -49,7 +49,6 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	/// The prize ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIndex Winner index.
-	/// todo-1 Should it be `indexed`?
 	/// @param winnerAddress Winner address.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	/// @dev Comment-202412189 applies.
@@ -64,7 +63,7 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIsRandomWalkNftStaker Whether the winner is a RandomWalk NFT staker or a bidder.
 	/// @param winnerIndex Winner index.
-	/// todo-1 Should it be `indexed`?
+	/// Issue. Should it be declared `indexed`? But there are already 3 params like that.
 	/// @param winnerAddress Winner address.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	event RaffleWinnerCosmicSignatureNftAwarded(
