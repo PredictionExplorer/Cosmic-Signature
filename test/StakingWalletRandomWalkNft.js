@@ -86,14 +86,15 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	const [owner,] = signers;
 	// 	const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 	//
-	// 	await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+	// 	await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 	//
+	// 	// todo-9 This contract no longer exists.
 	// 	const NewStakingWalletRandomWalkNft = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft");
 	// 	let newStakingWalletRandomWalkNft = await NewStakingWalletRandomWalkNft.deploy(await randomWalkNft.getAddress());
 	// 	await newStakingWalletRandomWalkNft.waitForDeployment();
 	// 	await cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(await newStakingWalletRandomWalkNft.getAddress());
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-	// 	await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
+	// 	await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 	// 	let sampleTokenId = 33;
 	// 	let tokenStaked = await newStakingWalletRandomWalkNft.isTokenStaked(sampleTokenId);
 	// 	expect(tokenStaked).to.equal(false);
@@ -158,7 +159,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		}
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

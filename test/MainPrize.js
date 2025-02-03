@@ -14,7 +14,7 @@ describe("MainPrize", function () {
 		const [owner, addr1, addr2, addr3,] = signers;
 	
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		let roundNum = 0;
 
@@ -32,7 +32,7 @@ describe("MainPrize", function () {
 		// now we need to do a dummy claimMainPrize() because our CosmicSignatureNft contract is empty
 		// and does not contain any tokens but we need them to test token distribution (the holder loop)
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -45,12 +45,12 @@ describe("MainPrize", function () {
 		let topic_sig = prizesWallet.interface.getEvent("EthReceived").topicHash;
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		await cosmicSignatureGameProxy.connect(addr1).bidWithCst(10n ** 30n, "");
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
@@ -96,17 +96,17 @@ describe("MainPrize", function () {
 
 		// let's begin a new round
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
 
-		// let raffleTotalEthPrizeAmount_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmount();
+		// let raffleTotalEthPrizeAmountForBidders_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmountForBidders();
 		tx = await cosmicSignatureGameProxy.connect(addr3).claimMainPrize();
 		++ roundNum;
 		receipt = await tx.wait();
@@ -150,11 +150,11 @@ describe("MainPrize", function () {
 		await stakingWalletCosmicSignatureNft.connect(addr1).stake(0); // we need to stake, otherwise the deposit would be rejected
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr2).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 
 		// we are using BidderContract for this test because there won't be any subtraction
 		// for paying gas price since it is accounted on the EOA that sends the TX,
@@ -164,19 +164,19 @@ describe("MainPrize", function () {
 		await cBidder.waitForDeployment();
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cBidder.doBid({ value: nextEthBidPrice_ });
+		await cBidder.doBidWithEth({ value: nextEthBidPrice_ });
 
 		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		let charityEthDonationAmount_ = await cosmicSignatureGameProxy.getCharityEthDonationAmount();
-		let stakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getStakingTotalEthRewardAmount();
+		let cosmicSignatureNftStakingTotalEthRewardAmount_ = await cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
 		let balanceBefore = await hre.ethers.provider.getBalance(await cBidder.getAddress());
 		let balanceCharityBefore = await hre.ethers.provider.getBalance(charityAddr);
 		let balanceStakingBefore = await hre.ethers.provider.getBalance(await stakingWalletCosmicSignatureNft.getAddress());
-		let raffleTotalEthPrizeAmount_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmount();
+		let raffleTotalEthPrizeAmountForBidders_ = await cosmicSignatureGameProxy.getRaffleTotalEthPrizeAmountForBidders();
 		let numRaffleEthPrizesForBidders_ = await cosmicSignatureGameProxy.numRaffleEthPrizesForBidders();
-		// let raffleEthPrizeAmount_ = raffleTotalEthPrizeAmount_ / numRaffleEthPrizesForBidders_;
-		let raffleTotalEthPrizeAmountRemainder_ = raffleTotalEthPrizeAmount_ % numRaffleEthPrizesForBidders_;
-		raffleTotalEthPrizeAmount_ -= raffleTotalEthPrizeAmountRemainder_; // clean the value from remainder if not divisible by numRaffleEthPrizesForBidders_
+		// let raffleEthPrizeAmountForBidder_ = raffleTotalEthPrizeAmountForBidders_ / numRaffleEthPrizesForBidders_;
+		let raffleTotalEthPrizeAmountForBiddersRemainder_ = raffleTotalEthPrizeAmountForBidders_ % numRaffleEthPrizesForBidders_;
+		raffleTotalEthPrizeAmountForBidders_ -= raffleTotalEthPrizeAmountForBiddersRemainder_; // clean the value from remainder if not divisible by numRaffleEthPrizesForBidders_
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -186,9 +186,10 @@ describe("MainPrize", function () {
 		let balanceCharityAfter = await hre.ethers.provider.getBalance(charityAddr);
 		let balanceStakingAfter = await hre.ethers.provider.getBalance(await stakingWalletCosmicSignatureNft.getAddress());
 
-		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerEthPrizeAllocated").topicHash;
+		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerBidderEthPrizeAllocated").topicHash;
 		let deposit_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 		const unique_winners = [];
+		// todo-1 Chrono-warrior gets ETH, right? But this doesn't seem to account for that. Make sense to add that amount to this test?
 		let sumDeposits = 0n;
 		for (let i = 0; i < deposit_logs.length; i++) {
 			let wlog = cosmicSignatureGameProxy.interface.parseLog(deposit_logs[i]);
@@ -203,13 +204,13 @@ describe("MainPrize", function () {
 				unique_winners[winnerAddress_] = 1;
 			}
 		}
-		expect(sumDeposits).to.equal(raffleTotalEthPrizeAmount_);
+		expect(sumDeposits).to.equal(raffleTotalEthPrizeAmountForBidders_);
 
 		let expectedBalanceAfter = balanceBefore + mainEthPrizeAmount_;
 		expect(expectedBalanceAfter).to.equal(balanceAfter);
 		let expectedBalanceCharityAfter = balanceCharityBefore + charityEthDonationAmount_;
 		expect(expectedBalanceCharityAfter).to.equal(balanceCharityAfter);
-		let expectedBalanceStakingAfter = balanceStakingBefore + stakingTotalEthRewardAmount_;
+		let expectedBalanceStakingAfter = balanceStakingBefore + cosmicSignatureNftStakingTotalEthRewardAmount_;
 		expect(expectedBalanceStakingAfter).to.equal(balanceStakingAfter);
 	});
 	it("The msg.sender will get the prize if the lastBidderAddress won't claim it", async function () {
@@ -226,7 +227,7 @@ describe("MainPrize", function () {
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 
 		// forward time 2 days

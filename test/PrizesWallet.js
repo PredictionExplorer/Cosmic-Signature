@@ -62,7 +62,7 @@ describe("PrizesWallet", function () {
 		const [owner, addr1,] = signers;
 
 		// ToDo-202411202-1 applies.
-		cosmicSignatureGameProxy.setDelayDurationBeforeNextRound(0n);
+		cosmicSignatureGameProxy.setDelayDurationBeforeRoundActivation(0n);
 
 		let mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
@@ -71,7 +71,7 @@ describe("PrizesWallet", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let tx = await cosmicSignatureGameProxy
 			.connect(addr1)
-			.bidAndDonateNft((-1), "", await randomWalkNft.getAddress(), 0, { value: nextEthBidPrice_ });
+			.bidWithEthAndDonateNft((-1), "", await randomWalkNft.getAddress(), 0, { value: nextEthBidPrice_ });
 		let receipt = await tx.wait();
 		// let topic_sig = cosmicSignatureGameProxy.interface.getEvent("NftDonationEvent").topicHash;
 		let topic_sig = prizesWallet.interface.getEvent("NftDonated").topicHash;
@@ -84,7 +84,7 @@ describe("PrizesWallet", function () {
 		mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(addr1).mint({ value: mintPrice });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bidAndDonateNft((-1), "", await randomWalkNft.getAddress(), 1, { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEthAndDonateNft((-1), "", await randomWalkNft.getAddress(), 1, { value: nextEthBidPrice_ });
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);

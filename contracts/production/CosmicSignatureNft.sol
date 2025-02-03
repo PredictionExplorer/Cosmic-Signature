@@ -21,18 +21,19 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
-	/// todo-1 Declare some other variables `immutable`.
-	/// todo-1 But first think which variables should be changeable and which should not be.
-	/// todo-1 Do we need to make any contracts upgradeable or replaceable?
-	/// todo-1 If we use the `CREATE2` opcode to deploy contracrs we will know their addresses in advance,
-	/// todo-1 so we will be able to declare all addresses `immutable`.
-	/// todo-1 But the use of `CREATE2` won't be helpful because the Game anyway can't contain `immutable` variables.
-	/// todo-1 In addition, do we want to have an option to deploy new versions of staking wallets?
-	/// todo-1 There was a discussion about that on Slack.
+	/// todo-0 Declare some other variables `immutable`.
+	/// todo-0 But first think which variables should be changeable and which should not be.
+	/// todo-0 Do we need to make any contracts upgradeable or replaceable?
+	/// todo-0 If we use the `CREATE2` opcode to deploy contracrs we will know their addresses in advance,
+	/// todo-0 so we will be able to declare all addresses `immutable`.
+	/// todo-0 But the use of `CREATE2` won't be helpful because the Game anyway can't contain `immutable` variables.
+	/// todo-0 In addition, do we want to have an option to deploy new versions of staking wallets?
+	/// todo-0 There was a discussion about that on Slack.
 	address public immutable game;
 
 	/// @notice The base URI for NFT metadata.
 	/// todo-1 Do we need to hardcode a valid value here?
+	/// todo-0 Should this be `public`? If so rename it without `_`.
 	string private _nftBaseUri;
 
 	/// @notice An IPFS link to a script that generates NFT images and videos based on the given seed.
@@ -61,7 +62,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
-	/// todo-1 What about changing the symbol to "CSN"?
+	/// todo-0 What about changing the symbol to "CSN"?
 	constructor(address game_)
 		Ownable(_msgSender())
 		ERC721("CosmicSignatureNft", "CSS")

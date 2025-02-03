@@ -17,27 +17,25 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 		uint256 blockTimeStamp
 	);
 
-	/// @notice Emitted when a bid is placed
-	/// @param lastBidderAddress The address of the bidder who placed this bid.
+	/// @notice Emitted when a bid is placed.
 	/// @param roundNum The current bidding round number.
-	/// todo-1 Reorder the above to the beginning.
-	/// @param ethBidPrice The price of the bid
-	/// @param randomWalkNftId The ID of the RandomWalk NFT used (or -1)
-	/// @param numCSTTokens The number of CST tokens used (if any)
-	/// todo-1 Rename the above param to `cstBidPrice`.
-	/// todo-1 Maybe reorder the above param to after `ethBidPrice`.
+	/// @param lastBidderAddress The address of the bidder who placed this bid.
+	/// @param ethBidPrice Paid ETH price.
+	/// Equals -1 if this is a CST bid.
+	/// @param cstBidPrice Paid CST price.
+	/// Equals -1 if this is an ETH bid.
+	/// @param randomWalkNftId Provided RandomWalk NFT ID.
+	/// A negative value indicates that no RandomWalk NFT was used.
+	/// @param message A message from the bidder. May be empty.
 	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
-	/// todo-1 Rename the above param to how I am going to name the respective state variable.
-	/// @param message An optional message from the bidder
-	/// todo-1 Rename to `BidPlaced`.
-	event BidEvent(
-		address indexed lastBidderAddress,
+	event BidPlaced(
 		uint256 indexed roundNum,
+		address indexed lastBidderAddress,
 		int256 ethBidPrice,
-		int256 randomWalkNftId, // todo-1 Should this be `indexed`?
-		int256 numCSTTokens,
-		uint256 mainPrizeTime,
-		string message
+		int256 cstBidPrice,
+		int256 randomWalkNftId,
+		string message,
+		uint256 mainPrizeTime
 	);
 	
 	/// @notice Handles an incoming ETH transfer.
@@ -46,23 +44,21 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	receive() external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an ERC-20 token amount in a single transaction.
-	function bidAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid and donates an NFT in a single transaction.
 	/// @param nftAddress_ NFT contract address.
 	/// @param nftId_ NFT ID.
-	function bidAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
 	/// @notice Places an ETH plus optional RandomWalk NFT bid.
 	/// @param randomWalkNftId_ The ID of the RandomWalk NFT to be used for bidding.
-	/// Set to -1 if no RandomWalk NFT is to be used.
+	/// Pass a negative value to not use a RandomWalk NFT.
 	/// Comment-202412036 applies.
 	/// @param message_ The bidder's message associated with the bid.
 	/// May be empty.
 	/// Can be used to store additional information or comments from the bidder.
-	/// todo-1 Rename this method to `bidWithEth`.
-	/// todo-1 Then also rename methods like `bidAndDonate...`.
-	function bid(int256 randomWalkNftId_, string memory message_) external payable;
+	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable;
 
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
@@ -75,7 +71,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns(uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
-	/// The elapsed duration counts since bidding round activation. It can be negative. It makes no sense to use it
+	/// The elapsed duration counts since the current bidding round activation. It can be negative. It makes no sense to use it
 	/// after the end of the Dutch auction.
 	function getEthDutchAuctionDurations() external view returns(uint256, int256);
 
@@ -93,7 +89,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration, and can become zero.
-	/// todo-1 Confirmed: zero price is OK.
+	/// todo-1 +++ Confirmed: zero price is OK.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
 	/// An offset to add to `block.timestamp`.

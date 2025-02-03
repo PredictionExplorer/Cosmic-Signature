@@ -15,7 +15,7 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await cosmicSignatureGame.connect(testingAcct).bid((-1), "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
+	await cosmicSignatureGame.connect(testingAcct).bidWithEth((-1), "bid test", {value: nextEthBidPrice_, gasLimit: 30000000});
 }
 
 main()

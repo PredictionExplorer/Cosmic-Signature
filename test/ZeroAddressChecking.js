@@ -21,7 +21,7 @@ describe("ZeroAddressChecking", function () {
 	it("Shouldn't be possible to set a zero charity address in CosmicSignatureGame", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 
-		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
 	});
 	it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {

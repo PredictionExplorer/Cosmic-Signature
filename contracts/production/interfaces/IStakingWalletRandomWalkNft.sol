@@ -16,7 +16,7 @@ interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftUnstaked(
 		uint256 indexed stakeActionId,
-		// CosmicSignatureConstants.NftTypeCode nftTypeCode,
+		// NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts

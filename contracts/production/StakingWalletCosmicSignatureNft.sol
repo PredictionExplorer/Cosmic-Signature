@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 // #region
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+// import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
@@ -141,11 +141,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @param nft_ The `CosmicSignatureNft` contract address.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	/// @dev
-	/// todo-1 Is `nft_` the same as `game_.nft()`?
-	/// todo-1 I am also going to add `nft_.game()`, right? So comment:
-	/// todo-1 Is `game_` the same as `nft_.game()`?
-	/// todo-1 Even if so it's not necessarily a good idea to get one from another, at least because it would cost more gas.
-	///
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `Ownable.constructor`.
@@ -192,7 +187,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    // `CosmicSignatureConstants.BooleanWithPadding`.
-	///    `CosmicSignatureConstants.NftTypeCode`.
+	///    `NftTypeCode`.
 	///    `NftStaked`.
 	///    `_numStakedNfts`.
 	///    `_usedNfts`.
@@ -233,7 +228,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// Comment-202410168 relates.
 		_nftWasStakedAfterPrevEthDeposit = 1;
 
-		emit NftStaked(newStakeActionId_, CosmicSignatureConstants.NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
+		emit NftStaked(newStakeActionId_, NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
 		nft.transferFrom(msg.sender, address(this), nftId_);
 		
 		// #endregion
@@ -402,11 +397,11 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `ethDeposits`.
 	///    `onlyGame`.
 	///
-	/// todo-1 Here and elsewhere, consider replacing methods like this with `receive`.
-	/// todo-1 Find all: payable
-	/// todo-1 It would probably be cheaper gas-wise.
-	/// todo-1 Or at least write comments.
-	/// todo-1 But in this particular case `receive` won't be sufficient for our needs.
+	/// todo-0 Here and elsewhere, consider replacing methods like this with `receive`.
+	/// todo-0 Find all: payable
+	/// todo-0 It would probably be cheaper gas-wise.
+	/// todo-0 Or at least write comments.
+	/// todo-0 But in this particular case `receive` won't be sufficient for our needs.
 	function depositIfPossible(uint256 roundNum_) external payable override onlyGame {
 		// #region
 

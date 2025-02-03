@@ -11,21 +11,89 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 /// @title Cosmic Signature Game Configuration Events.
 /// @author The Cosmic Signature Development Team.
 interface ISystemEvents {
-	/// @notice Emitted when `activationTime` is changed.
+	/// @notice Emitted when `delayDurationBeforeRoundActivation` is changed.
 	/// @param newValue The new value.
-	event ActivationTimeChanged(uint256 newValue);
+	event DelayDurationBeforeRoundActivationChanged(uint256 newValue);
 
-	/// @notice Emitted when `delayDurationBeforeNextRound` is changed.
+	/// @notice Emitted when `roundActivationTime` is changed.
 	/// @param newValue The new value.
-	event DelayDurationBeforeNextRoundChanged(uint256 newValue);
+	event RoundActivationTimeChanged(uint256 newValue);
 
-	/// @notice Emitted when `marketingWalletCstContributionAmount` is changed.
+	/// @notice Emitted when `ethDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.
-	event MarketingWalletCstContributionAmountChanged(uint256 newValue);
+	event EthDutchAuctionDurationDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `maxMessageLength` is changed.
+	/// @notice Emitted when `ethDutchAuctionEndingBidPriceDivisor` is changed.
 	/// @param newValue The new value.
-	event MaxMessageLengthChanged(uint256 newValue);
+	event EthDutchAuctionEndingBidPriceDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `nextEthBidPriceIncreaseDivisor` is changed.
+	/// @param newValue The new value.
+	event NextEthBidPriceIncreaseDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
+	/// @param newValue The new value.
+	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `cstDutchAuctionBeginningBidPriceMinLimit` is changed.
+	/// @param newValue The new value.
+	event CstDutchAuctionBeginningBidPriceMinLimitChanged(uint256 newValue);
+
+	/// @notice Emitted when `bidMessageLengthMaxLimit` is changed.
+	/// @param newValue The new value.
+	event BidMessageLengthMaxLimitChanged(uint256 newValue);
+
+	/// @notice Emitted when `cstRewardAmountForBidding` is changed.
+	/// @param newValue The new value.
+	event CstRewardAmountForBiddingChanged(uint256 newValue);
+
+	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
+	/// @param newValue The new value.
+	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
+	/// @param newValue The new value.
+	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
+
+	/// @notice Emitted when `mainPrizeTimeIncrementIncreaseDivisor` is changed.
+	/// @param newValue The new value.
+	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `timeoutDurationToClaimMainPrize` is changed.
+	/// @param newValue The new value.
+	event TimeoutDurationToClaimMainPrizeChanged(uint256 newValue);
+
+	/// @notice Emitted when `mainEthPrizeAmountPercentage` is changed.
+	/// @param newValue The new value.
+	event MainEthPrizeAmountPercentageChanged(uint256 newValue);
+
+	/// @notice Emitted when `cstRewardAmountMultiplier` is changed.
+	/// @param newValue The new value.
+	event CstRewardAmountMultiplierChanged(uint256 newValue);
+
+	/// @notice Emitted when `chronoWarriorEthPrizeAmountPercentage` is changed.
+	/// @param newValue The new value.
+	event ChronoWarriorEthPrizeAmountPercentageChanged(uint256 newValue);
+
+	/// @notice Emitted when `raffleTotalEthPrizeAmountForBiddersPercentage` is changed.
+	/// @param newValue The new value.
+	event RaffleTotalEthPrizeAmountForBiddersPercentageChanged(uint256 newValue);
+
+	/// @notice Emitted when `numRaffleEthPrizesForBidders` is changed.
+	/// @param newValue The new value.
+	event NumRaffleEthPrizesForBiddersChanged(uint256 newValue);
+
+	/// @notice Emitted when `numRaffleCosmicSignatureNftsForBidders` is changed.
+	/// @param newValue The new value.
+	event NumRaffleCosmicSignatureNftsForBiddersChanged(uint256 newValue);
+
+	/// @notice Emitted when `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` is changed.
+	/// @param newValue The new value.
+	event NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(uint256 newValue);
+
+	/// @notice Emitted when `cosmicSignatureNftStakingTotalEthRewardAmountPercentage` is changed.
+	/// @param newValue The new value.
+	event CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(uint256 newValue);
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
@@ -55,83 +123,15 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event MarketingWalletAddressChanged(address newValue);
 
+	/// @notice Emitted when `marketingWalletCstContributionAmount` is changed.
+	/// @param newValue The new value.
+	event MarketingWalletCstContributionAmountChanged(uint256 newValue);
+
 	/// @notice Emitted when `charityAddress` is changed.
 	/// @param newValue The new value.
 	event CharityAddressChanged(address indexed newValue);
 
-	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
-	/// @param newValue The new value.
-	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
-	/// @param newValue The new value.
-	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
-
-	/// @notice Emitted when `mainPrizeTimeIncrementIncreaseDivisor` is changed.
-	/// @param newValue The new value.
-	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `ethDutchAuctionDurationDivisor` is changed.
-	/// @param newValue The new value.
-	event EthDutchAuctionDurationDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `ethDutchAuctionEndingBidPriceDivisor` is changed.
-	/// @param newValue The new value.
-	event EthDutchAuctionEndingBidPriceDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `nextEthBidPriceIncreaseDivisor` is changed.
-	/// @param newValue The new value.
-	event NextEthBidPriceIncreaseDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
-	/// @param newValue The new value.
-	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `cstDutchAuctionBeginningBidPriceMinLimit` is changed.
-	/// @param newValue The new value.
-	event CstDutchAuctionBeginningBidPriceMinLimitChanged(uint256 newValue);
-
-	/// @notice Emitted when `tokenReward` is changed.
-	/// @param newValue The new value.
-	event TokenRewardChanged(uint256 newValue);
-
-	/// @notice Emitted when `mainEthPrizeAmountPercentage` is changed.
-	/// @param newValue The new value.
-	event MainEthPrizeAmountPercentageChanged(uint256 newValue);
-
-	/// @notice Emitted when `chronoWarriorEthPrizeAmountPercentage` is changed.
-	/// @param newValue The new value.
-	event ChronoWarriorEthPrizeAmountPercentageChanged(uint256 newValue);
-
-	/// @notice Emitted when `raffleTotalEthPrizeAmountPercentage` is changed.
-	/// @param newValue The new value.
-	event RaffleTotalEthPrizeAmountPercentageChanged(uint256 newValue);
-
-	/// @notice Emitted when `stakingTotalEthRewardAmountPercentage` is changed.
-	/// @param newValue The new value.
-	event StakingTotalEthRewardAmountPercentageChanged(uint256 newValue);
-
 	/// @notice Emitted when `charityEthDonationAmountPercentage` is changed.
 	/// @param newValue The new value.
 	event CharityEthDonationAmountPercentageChanged(uint256 newValue);
-
-	/// @notice Emitted when `timeoutDurationToClaimMainPrize` is changed.
-	/// @param newValue The new value.
-	event TimeoutDurationToClaimMainPrizeChanged(uint256 newValue);
-
-	/// @notice Emitted when `cstRewardAmountMultiplier` is changed.
-	/// @param newValue The new value.
-	event CstRewardAmountMultiplierChanged(uint256 newValue);
-
-	/// @notice Emitted when `numRaffleEthPrizesForBidders` is changed.
-	/// @param newValue The new value.
-	event NumRaffleEthPrizesForBiddersChanged(uint256 newValue);
-
-	/// @notice Emitted when `numRaffleCosmicSignatureNftsForBidders` is changed.
-	/// @param newValue The new value.
-	event NumRaffleCosmicSignatureNftsForBiddersChanged(uint256 newValue);
-
-	/// @notice Emitted when `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` is changed.
-	/// @param newValue The new value.
-	event NumRaffleCosmicSignatureNftsForRandomWalkNftStakersChanged(uint256 newValue);
 }

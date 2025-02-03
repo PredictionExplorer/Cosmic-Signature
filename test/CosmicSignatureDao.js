@@ -24,7 +24,7 @@ describe("CosmicSignatureDao", function () {
 
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
 			let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(signers[counter_]).bid((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(signers[counter_]).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		}
 
 		const votingDelay_ = await cosmicSignatureDao.votingDelay();

@@ -45,15 +45,14 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 		uint256 ethPrizeAmount
 	);
 
-	/// @notice Emitted when a raffle winner ETH prize becomes available to be withdrawn.
+	/// @notice Emitted when a raffle winner among bidders ETH prize becomes available to be withdrawn.
 	/// The prize ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIndex Winner index.
-	/// todo-1 Should it be `indexed`?
 	/// @param winnerAddress Winner address.
 	/// @param ethPrizeAmount The ETH amount awarded.
 	/// @dev Comment-202412189 applies.
-	event RaffleWinnerEthPrizeAllocated(
+	event RaffleWinnerBidderEthPrizeAllocated(
 		uint256 indexed roundNum,
 		uint256 winnerIndex,
 		address indexed winnerAddress,
@@ -64,7 +63,7 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIsRandomWalkNftStaker Whether the winner is a RandomWalk NFT staker or a bidder.
 	/// @param winnerIndex Winner index.
-	/// todo-1 Should it be `indexed`?
+	/// Issue. Should it be declared `indexed`? But there are already 3 params like that.
 	/// @param winnerAddress Winner address.
 	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
 	event RaffleWinnerCosmicSignatureNftAwarded(
@@ -78,9 +77,9 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	/// @return The current Chrono-Warrior ETH prize amount, in Wei.
 	function getChronoWarriorEthPrizeAmount() external view returns(uint256);
 
-	/// @return The current raffle total ETH prize amount, in Wei.
-	function getRaffleTotalEthPrizeAmount() external view returns(uint256);
+	/// @return The current raffle total ETH prize amount for bidders, in Wei.
+	function getRaffleTotalEthPrizeAmountForBidders() external view returns(uint256);
 
-	/// @return The current staking total ETH reward amount, in Wei.
-	function getStakingTotalEthRewardAmount() external view returns(uint256);
+	/// @return The current Cosmic Signature NFT staking total ETH reward amount, in Wei.
+	function getCosmicSignatureNftStakingTotalEthRewardAmount() external view returns(uint256);
 }

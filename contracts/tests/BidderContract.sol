@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 pragma abicoder v2;
 
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
@@ -25,28 +26,28 @@ contract BidderContract {
 		require(!blockDeposits, "I am not accepting deposits");
 	}
 
-	function doBid() external payable {
+	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
+		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
 	}
 
-	function doBid2() external payable {
-		cosmicSignatureGame.bid{ value: msg.value }((-1), "contract bid");
+	function doBidWithEth2() external payable {
+		cosmicSignatureGame.bidWithEth{value: msg.value}((-1), "contract bid");
 	}
 
-	function doBidRWalk(int256 nftId) external payable {
+	function doBidWithEthRWalk(int256 nftId) external payable {
 		uint256 price = cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(cosmicSignatureGame.getNextEthBidPrice(int256(0)));
-		cosmicSignatureGame.bid{ value: price }(nftId, "contract bid rwalk");
+		cosmicSignatureGame.bidWithEth{value: price}(nftId, "contract bid rwalk");
 	}
 
-	function doBidRWalk2(int256 nftId) external payable {
+	function doBidWithEthRWalk2(int256 nftId) external payable {
 		RandomWalkNFT rwalk = cosmicSignatureGame.randomWalkNft();
 		rwalk.setApprovalForAll(address(cosmicSignatureGame), true);
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
-		cosmicSignatureGame.bid{ value: msg.value }(nftId, "contract bid rwalk");
+		cosmicSignatureGame.bidWithEth{value: msg.value}(nftId, "contract bid rwalk");
 	}
 
-	function doBidAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
+	function doBidWithEthAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
 		// nftAddress_.setApprovalForAll(address(cosmicSignatureGame), true);
 		nftAddress_.setApprovalForAll(address(prizesWallet_), true);
@@ -54,7 +55,7 @@ contract BidderContract {
 		uint256 numDonatedNfts_ = prizesWallet_.numDonatedNfts();
 		myDonatedNfts.push(numDonatedNfts_);
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bidAndDonateNft{value: price}((-1), "contract bid with donation", nftAddress_, nftId_);
+		cosmicSignatureGame.bidWithEthAndDonateNft{value: price}((-1), "contract bid with donation", nftAddress_, nftId_);
 	}
 
 	function doClaim() external {
@@ -80,15 +81,16 @@ contract BidderContract {
 		}
 	
 		CosmicSignatureNft nft_ = cosmicSignatureGame.nft();
-		// todo-1 Review all calls to `call`.
-		// todo-1 I didn't replace those with high level calls when it's used simply to send funds.
-		// todo-1 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
-		// todo-1 Maybe in the mode in which SMTChecker is enabled make high level calls.
-		// todo-1 In any case, write comments.
+		// todo-0 Review all calls to `call`.
+		// todo-0 I didn't replace those with high level calls when it's used simply to send funds.
+		// todo-0 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
+		// todo-0 Maybe in the mode in which SMTChecker is enabled make high level calls.
+		// todo-0 In any case, write comments.
 		(bool isSuccess_, ) = creator.call{value: address(this).balance}("");
-		// todo-1 Why we do this?
-		// todo-1 We don't evaluate this.
-		isSuccess_ = false;
+		require(
+			isSuccess_,
+			CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance)
+		);
 		uint256 totalSupply = nft_.totalSupply();
 		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 			address tokenOwner = nft_.ownerOf(i);
@@ -122,10 +124,10 @@ contract BidderContract {
 		delete myDonatedNfts;
 	}
 
-	function doFailedBid() external payable {
+	function doFailedBidWithEth() external payable {
 		uint256 price = msg.value;
 		blockDeposits = true;
-		cosmicSignatureGame.bid{ value: price }((-1), "contract bid");
+		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
 		blockDeposits = false;
 	}
 
@@ -151,9 +153,9 @@ contract BidCNonRecv {
 
 	receive() external payable {}
 
-	function doBid() external payable {
+	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bid{ value: price }((-1), "non-IERC721Receiver bid");
+		cosmicSignatureGame.bidWithEth{value: price}((-1), "non-IERC721Receiver bid");
 	}
 	
 	function doClaim() external {

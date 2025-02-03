@@ -18,7 +18,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// [/Comment-202412033]
 ///
 /// todo-1 Document in a user manual that to bid with CST, bidders don't need to approve any allowance,
-/// todo-1 meaning to call `CosmicToken.approve`.
+/// todo-1 meaning to call `CosmicSignatureToken.approve`.
 /// todo-1 Will this apply to trading on our exchange as well? Maybe not because it could be a security concern.
 ///
 /// todo-1 +++ Research modern features that we might need to implement.
@@ -45,6 +45,7 @@ interface ICosmicSignatureToken is IERC20, IAddressValidator {
 
 	// /// @notice Emitted when `marketingWalletAddress` is changed.
 	// /// @param newValue The new value.
+	// /// todo-9 Should it be declared `indexed`? 
 	// event MarketingWalletAddressChanged(address newValue);
 
 	// /// @notice Emitted when `marketingWalletBalanceAmountMaxLimit` is changed.

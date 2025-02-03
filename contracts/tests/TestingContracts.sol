@@ -114,7 +114,7 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
 	}
 
-	// todo-1 I have commented this out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
+	// I have commented this method out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
 	// function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
 	// 	uint256[] memory actions = new uint256[](1);
 	// 	uint256[] memory deposits = new uint256[](1);
@@ -151,8 +151,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// /// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function finalizeTesting() external onlyOwner {
 	// 	// CosmicSignature NFTs.
-	// 	uint256 cosmicSupply = nft.totalSupply();
-	// 	for (uint256 i = 0; i < cosmicSupply; i++) {
+	// 	uint256 nftTotalSupply = nft.totalSupply();
+	// 	for (uint256 i = 0; i < nftTotalSupply; i++) {
 	// 		address nftOwnerAddress_ = nft.ownerOf(i);
 	// 		if (nftOwnerAddress_ == address(this)) {
 	// 			// Comment-202501145 applies.
@@ -160,9 +160,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 		}
 	// 	}
 	//
-	// 	// Issue. Making multiple external calls to `token`.
-	// 	cosmicSupply = token.balanceOf(address(this));
-	// 	token.transfer(owner(), cosmicSupply);
+	// 	uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
+	// 	token.transfer(owner(), myCstBalanceAmount_);
 	//
 	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
 	// 		// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
@@ -179,8 +178,8 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// Comment-202412104 relates.
 	CosmicSignatureHelpers.RandomNumberSeedWrapper private _entropy;
 
-	// function setActivationTimeRaw(uint256 newValue_) external {
-	// 	activationTime = newValue_;
+	// function setRoundActivationTimeRaw(uint256 newValue_) external {
+	// 	roundActivationTime = newValue_;
 	//
 	// 	// // Comment-202411168 applies.
 	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
@@ -190,24 +189,42 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// }
 
-	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
-	/// todo-1 Rename to `setCosmicSignatureNftRaw`.
-	function setNftContractRaw(ICosmicSignatureNft newValue_) external {
-		nft = CosmicSignatureNft(address(newValue_));
-	}
+	// function setCosmicSignatureNftRaw(ICosmicSignatureNft newValue_) external {
+	// 	nft = CosmicSignatureNft(address(newValue_));
+	// }
 
 	// function setPrizesWalletRaw(IPrizesWallet newValue_) external {
 	// 	prizesWallet = PrizesWallet(address(newValue_));
 	// }
 
-	/// @dev todo-1 Do we really need this? We now can set activation time to the future and make any changes the normal way.
-	function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
-		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
-	}
+	// function setStakingWalletCosmicSignatureNftRaw(IStakingWalletCosmicSignatureNft newValue_) external {
+	// 	stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
+	// }
 
 	// function setCharityAddressRaw(address newValue_) external {
 	// 	charityAddress = newValue_;
 	// }
+
+	function _initializeEntropyOnce() private {
+		if (_entropy.value == 0) {
+			_entropy.value = CosmicSignatureHelpers.generateRandomNumberSeed();
+		}
+	}
+
+	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
+		_initializeEntropyOnce();
+		unchecked { ++ _entropy.value; }
+		// todo-2 Should we make a high level call here?
+		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
+		if ( ! isSuccess_ ) {
+			assembly {
+				let ptr_ := mload(0x40)
+				let size_ := returndatasize()
+				returndatacopy(ptr_, 0, size_)
+				revert(ptr_, size_)
+			}
+		}
+	}
 
 	// function depositStakingCST() external payable {
 	//		// todo-9 Should we make a high level call here?
@@ -227,54 +244,35 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function depositToStakingWalletCosmicSignatureNftIfPossible() external payable {
 		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
 	}
+}
+
+// contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
+// 	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
+
+// 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+// 	// 	// This method no longer exists.
+// 	// 	_insertToken(_nftId, stakeActionId_);
+// 	// }
+
+// 	// function doRemoveToken(uint256 _nftId) external {
+// 	// 	// This method no longer exists.
+// 	// 	_removeToken(_nftId);
+// 	// }
+// }
+
+// contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
+// 	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
+
+// 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
+// 	// 	// This method no longer exists.
+// 	// 	_insertToken(_nftId, stakeActionId_);
+// 	// }
 	
-	function mintCosmicSignatureNft(address to_) external {
-		_initializeEntropyOnce();
-		unchecked { ++ _entropy.value; }
-		// todo-1 Should we make a high level call here?
-		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, to_, _entropy.value));
-		if ( ! isSuccess_ ) {
-			assembly {
-				let ptr_ := mload(0x40)
-				let size_ := returndatasize()
-				returndatacopy(ptr_, 0, size_)
-				revert(ptr_, size_)
-			}
-		}
-	}
-
-	function _initializeEntropyOnce() private {
-		if (_entropy.value == 0) {
-			_entropy.value = CosmicSignatureHelpers.generateRandomNumberSeed();
-		}
-	}
-}
-
-/// todo-1 These legacy functions no longer exist.
-contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
-	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
-
-	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
-	// 	_insertToken(_nftId, stakeActionId_);
-	// }
-
-	// function doRemoveToken(uint256 _nftId) external {
-	// 	_removeToken(_nftId);
-	// }
-}
-
-/// todo-1 These legacy functions no longer exist.
-contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
-	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
-
-	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
-	// 	_insertToken(_nftId, stakeActionId_);
-	// }
-	
-	// function doRemoveToken(uint256 _nftId) external {
-	// 	_removeToken(_nftId);
-	// }
-}
+// 	// function doRemoveToken(uint256 _nftId) external {
+// 	// 	// This method no longer exists.
+// 	// 	_removeToken(_nftId);
+// 	// }
+// }
 
 contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
@@ -284,7 +282,7 @@ contract MaliciousNft1 is ERC721 {
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// the following call should revert
 		// todo-1 This will probably now revert due to `onlyGame`.
-		// todo-1 Should we make a high level call here?
+		// todo-2 Should we make a high level call here?
 		(bool isSuccess_, /*bytes memory retval*/) =
 			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
@@ -309,20 +307,20 @@ contract MaliciousNft2 is ERC721 {
 	receive() external payable {
 	}
 
-	/// @notice sends bidAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
+	/// @notice sends bidWithEthAndDonateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from_, address to_, uint256 nftId_) public override {
 		// // uint256 price = _game.getNextEthBidPrice(int256(0));
-		// // todo-1 This structure no longer exists.
+		// // todo-9 This structure no longer exists.
 		// CosmicSignatureGame.BidParams memory defaultParams;
 		// // defaultParams.message = "";
 		// defaultParams.randomWalkNftId = -1;
 		// bytes memory param_data = abi.encode(defaultParams);
 		// // This call should revert.
-		// // todo-1 Should we make a high level call here?
+		// // todo-9 Should we make a high level call here?
 		// (bool isSuccess_, /*bytes memory retval*/) =
-		// 	// todo-1 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
-		// 	// todo-1 Besides, this sends zero `value`.
-		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidAndDonateNft.selector, param_data, address(this), nftId_));
+		// 	// todo-9 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+		// 	// todo-9 Besides, this transfers zero `value`.
+		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
 		// if ( ! isSuccess_ ) {
 		// 	assembly {
 		// 		let ptr := mload(0x40)
@@ -337,7 +335,7 @@ contract MaliciousNft2 is ERC721 {
 
 			// This call should revert.
 			// todo-1 But it doesn't, which is probably OK. To be revisited.
-			_game.bidAndDonateNft{value: 1 ether}(-1, "", this, nftId_ + 1);
+			_game.bidWithEthAndDonateNft{value: 1 ether}(-1, "", this, nftId_ + 1);
 
 			-- _counter;
 		}

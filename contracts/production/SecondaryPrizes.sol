@@ -25,26 +25,26 @@ abstract contract SecondaryPrizes is CosmicSignatureGameStorage, ISecondaryPrize
 	}
 
 	// #endregion
-	// #region `getRaffleTotalEthPrizeAmount`
+	// #region `getRaffleTotalEthPrizeAmountForBidders`
 
-	function getRaffleTotalEthPrizeAmount() public view override returns(uint256) {
+	function getRaffleTotalEthPrizeAmountForBidders() public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			return address(this).balance * raffleTotalEthPrizeAmountPercentage / 100;
+			return address(this).balance * raffleTotalEthPrizeAmountForBiddersPercentage / 100;
 		}
 	}
 
 	// #endregion
-	// #region `getStakingTotalEthRewardAmount`
+	// #region `getCosmicSignatureNftStakingTotalEthRewardAmount`
 
-	function getStakingTotalEthRewardAmount() public view override returns(uint256) {
+	function getCosmicSignatureNftStakingTotalEthRewardAmount() public view override returns(uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			return address(this).balance * stakingTotalEthRewardAmountPercentage / 100;
+			return address(this).balance * cosmicSignatureNftStakingTotalEthRewardAmountPercentage / 100;
 		}
 	}
 

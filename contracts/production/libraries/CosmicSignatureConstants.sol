@@ -1,79 +1,56 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
+
+// #endregion
+// #region
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-/// @title Constants and structures.
+// #endregion
+// #region
+
+/// @title Data types and constants.
 /// @author The Cosmic Signature Development Team.
-/// @notice Default values and types used across the Cosmic Signature ecosystem.
-/// @dev These constants are used for initial state variables but may be updated later.
+/// @notice Most of these constants are used to initialize state variables.
+/// @dev
+/// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
+/// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
+/// todo-1 +++ Done on Jan 24 2025.
 library CosmicSignatureConstants {
-	/// @notice Represents one thousand. Useful for calculations involving thousands.
-	uint256 internal constant THOUSAND = 1e3;
+	// #region // Data Types
 
-	/// @notice Represents one million. Useful for calculations involving millions.
-	uint256 internal constant MILLION = THOUSAND * THOUSAND;
+	// /// @dev It appears that this was a bad idea.
+	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
+	// struct BooleanWithPadding {
+	// 	bool value;
+	// 	uint248 padding;
+	// }
 
-	/// @notice Represents one billion. Useful for calculations involving billions.
-	uint256 internal constant BILLION = THOUSAND * MILLION;
+	// #endregion
+	// #region System Management
 
-	uint256 internal constant NANOSECONDS_PER_SECOND = BILLION;
-	uint256 internal constant MICROSECONDS_PER_SECOND = MILLION;
-	uint256 internal constant MILLISECONDS_PER_SECOND = THOUSAND;
-	uint256 internal constant MINUTES_PER_HOUR = (1 hours) / (1 minutes);
-	uint256 internal constant HOURS_PER_DAY = (1 days) / (1 hours);
-	uint256 internal constant NANOSECONDS_PER_MINUTE = NANOSECONDS_PER_SECOND * (1 minutes);
-	uint256 internal constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
-	uint256 internal constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
-	uint256 internal constant MICROSECONDS_PER_MINUTE = MICROSECONDS_PER_SECOND * (1 minutes);
-	uint256 internal constant MICROSECONDS_PER_HOUR = MICROSECONDS_PER_SECOND * (1 hours);
-	uint256 internal constant MICROSECONDS_PER_DAY = MICROSECONDS_PER_SECOND * (1 days);
-	uint256 internal constant MILLISECONDS_PER_MINUTE = MILLISECONDS_PER_SECOND * (1 minutes);
-	uint256 internal constant MILLISECONDS_PER_HOUR = MILLISECONDS_PER_SECOND * (1 hours);
-	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
+	// Empty.
 
-	/// @notice This is equivalent to the midnight of 9000-01-01.
-	/// @dev JavaScript  code to calculate this.
-	///		const n = (new Date(9000, 1 - 1, 1)).getTime() / 1000;
-	///		console.log(n);
-	///		const d = new Date(n * 1000);
-	///		console.log(d);
-	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
+	// #endregion
+	// #region ETH Donations
 
-	// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
-	// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
-	// todo-1 +++ Done on Jan 24 2025.
+	// Empty.
 
-	/// @notice Initial `activationTime`.
+	// #endregion
+	// #region Bidding
+
+	/// @notice Default `delayDurationBeforeRoundActivation`.
+	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION = (1 hours) / 2;
+
+	/// @notice Initial `roundActivationTime`.
 	/// @dev This must be in the future -- to configure our contract after the deployment
-	/// without calling `setActivationTime` and to ensure that hackers won't attempt to bid
+	/// without calling `setRoundActivationTime` and to ensure that hackers won't attempt to bid
 	/// before the deployment script is done configuring the contract.
 	/// Comment-202411168 relates.
-	uint256 internal constant INITIAL_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
-
-	/// @notice Default `delayDurationBeforeNextRound`.
-	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_NEXT_ROUND = (1 hours) / 2;
-
-	/// @notice Default `marketingWalletCstContributionAmount`.
-	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
-	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
-
-	/// @notice Default `maxMessageLength`.
-	/// Comment-202409143 applies.
-	/// @dev Does this really have to be configurable? Maybe make this non-configurable and remove `DEFAULT_`.
-	uint256 internal constant DEFAULT_MAX_MESSAGE_LENGTH = 280;
-
-	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
-	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
-
-	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
-
-	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
-	/// @dev todo-1 Since we now increase `mainPrizeTimeIncrementInMicroSeconds` once per round,
-	/// todo-1 Taras needs to simulate a better value for this.
-	/// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735492056099589?thread_ts=1735275853.000929&cid=C02EDDE5UF8
-	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
+	uint256 internal constant INITIAL_ROUND_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `ethDutchAuctionDurationDivisor`.
 	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (HOURS_PER_DAY * 2) - 0;
@@ -106,7 +83,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Default `cstDutchAuctionBeginningBidPriceMinLimit`.
-	/// Initial `cstDutchAuctionBeginningBidPrice`.
+	/// Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
 	// /// @notice `startingBidPriceCstMinLimit` "hard" min limit.
@@ -115,41 +92,100 @@ library CosmicSignatureConstants {
 	// /// and we want to support a sufficient number of significant digits.
 	// /// Issue. Actually the above comment is BS. We do not actually round prices. A price can be any amount in Weis.
 	// /// todo-1 The web site shows 2 digits after the decimal point. Maybe in the tooltip it should show the whole number with all the digits.
+	// /// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1738533218252629
 	// uint256 internal constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
 
-	/// @notice Default `tokenReward` and `GovernorSettings.proposalThreshold()`.
-	uint256 internal constant DEFAULT_TOKEN_REWARD = 100 ether;
+	/// @notice Default `bidMessageLengthMaxLimit`.
+	/// Comment-202409143 applies.
+	/// @dev todo-1 Does this really have to be configurable? Maybe make this non-configurable and remove `DEFAULT_`.
+	/// todo-1 But see a related todo near `bidMessageLengthMaxLimit`.
+	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
-	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
-	/// todo-1 I added this. So now other initial percentages should be readjusted.
-	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
-	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_PERCENTAGE = 5;
-	uint256 internal constant DEFAULT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
-	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE = 10;
+	/// @notice Default `cstRewardAmountForBidding` and `GovernorSettings.proposalThreshold()`.
+	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING = 100 ether;
+
+	// #endregion
+	// #region Bid Statistics
+
+	// Empty.
+
+	// #endregion
+	// #region Main Prize
+
+	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
+	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
+
+	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
+
+	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
+	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
 
-	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	/// @dev todo-1 Increase to 31 days or at least 2 weeks, just in case our front end crashes and remains down for too long?
-	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1731974036727899
-	/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1732036126494949
-	/// todo-1 Create another thread to discuss.
-	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 10 days;
+	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
+
+	// #endregion
+	// #region Secondary Prizes
 
 	/// @notice Default `cstRewardAmountMultiplier`.
 	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
 
+	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
+
+	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE = 5;
+
 	uint256 internal constant DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3;
+
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS = 5;
+
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
+
+	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
+
+	// #endregion
+	// #region Cosmic Signature Token
 
 	// /// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
 	// /// @dev todo-9 Is this amount OK?
 	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 2_000 ether;
 
+	// #endregion
+	// #region RandomWalk NFT
+
+	// Empty.
+
+	// #endregion
+	// #region Cosmic Signature NFT
+
 	/// @notice Comment-202409143 applies.
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;
+
+	// #endregion
+	// #region Prizes Wallet
+
+	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 2 weeks;
+
+	// #endregion
+	// #region NFT Staking
+
+	// Empty.
+
+	// #endregion
+	// #region Marketing
+
+	/// @notice Default `marketingWalletCstContributionAmount`.
+	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
+
+	// #endregion
+	// #region Charity
+
+	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE = 10;
+
+	// #endregion
+	// #region DAO
 
 	uint48 internal constant GOVERNOR_DEFAULT_VOTING_DELAY = 1 days;
 
@@ -157,41 +193,51 @@ library CosmicSignatureConstants {
 	/// which seems to be unnecessarily long. So I have reduced it to 2 weeks. Taras is OK with that.
 	uint32 internal constant GOVERNOR_DEFAULT_VOTING_PERIOD = 2 weeks;
 
+	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
+
 	/// @dev I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
 	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.
 	uint256 internal constant GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE = 2;
 
-	// todo-1 +++ Move some structs to interfaces?
+	// #endregion
+	// #region Time
 
-	// /// @dev It appears that this was a bad idea.
-	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
-	// struct BooleanWithPadding {
-	// 	bool value;
-	// 	uint248 padding;
-	// }
+	uint256 internal constant NANOSECONDS_PER_SECOND = BILLION;
+	uint256 internal constant MICROSECONDS_PER_SECOND = MILLION;
+	uint256 internal constant MILLISECONDS_PER_SECOND = THOUSAND;
+	uint256 internal constant MINUTES_PER_HOUR = (1 hours) / (1 minutes);
+	uint256 internal constant HOURS_PER_DAY = (1 days) / (1 hours);
+	uint256 internal constant NANOSECONDS_PER_MINUTE = NANOSECONDS_PER_SECOND * (1 minutes);
+	uint256 internal constant NANOSECONDS_PER_HOUR = NANOSECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant NANOSECONDS_PER_DAY = NANOSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MICROSECONDS_PER_MINUTE = MICROSECONDS_PER_SECOND * (1 minutes);
+	uint256 internal constant MICROSECONDS_PER_HOUR = MICROSECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant MICROSECONDS_PER_DAY = MICROSECONDS_PER_SECOND * (1 days);
+	uint256 internal constant MILLISECONDS_PER_MINUTE = MILLISECONDS_PER_SECOND * (1 minutes);
+	uint256 internal constant MILLISECONDS_PER_HOUR = MILLISECONDS_PER_SECOND * (1 hours);
+	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
 
-	enum NftTypeCode {
-		/// @notice This denotes an uninitialized or invalid value.
-		None,
+	/// @notice This is equivalent to the midnight of 9000-01-01.
+	/// @dev JavaScript  code to calculate this.
+	///		const n = (new Date(9000, 1 - 1, 1)).getTime() / 1000;
+	///		console.log(n);
+	///		const d = new Date(n * 1000);
+	///		console.log(d);
+	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
 
-		CosmicSignature,
-		RandomWalk
-	}
+	// #endregion
+	// #region Common
 
-	// /// @notice Types of bids that can be made in the Game.
-	// /// todo-9 Move this to `IBiddingBase`?
-	// /// todo-9 Rename to `BidTypeCode`.
-	// enum BidType {
-	// 	/// @notice Bid using Ether.
-	// 	/// todo-9 Rename to `Eth`.
-	// 	ETH,
-	//
-	// 	/// @notice Bid using Ether + a RandomWalk NFT.
-	// 	/// todo-9 Rename to `EthPlusRandomWalkNft`.
-	// 	RandomWalk,
-	//
-	// 	/// @notice Bid using Cosmic Signature Tokens.
-	// 	/// todo-9 Rename to `Cst`.
-	// 	CST
-	// }
+	/// @notice Represents one thousand. Useful for calculations involving thousands.
+	uint256 internal constant THOUSAND = 1e3;
+
+	/// @notice Represents one million. Useful for calculations involving millions.
+	uint256 internal constant MILLION = THOUSAND * THOUSAND;
+
+	/// @notice Represents one billion. Useful for calculations involving billions.
+	uint256 internal constant BILLION = THOUSAND * MILLION;
+
+	// #endregion
 }
+
+// #endregion

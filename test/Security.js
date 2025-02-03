@@ -13,7 +13,7 @@ describe("Security", function () {
 		const [owner, addr1, addr2, addr3,] = signers;
 		const cosmicSignatureGameErrorsFactory_ = await hre.ethers.getContractFactory("CosmicSignatureErrors");
 
-		await cosmicSignatureGameProxy.setActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 
 		// await cosmicSignatureGameProxy.setCosmicSignatureToken(await cosmicSignatureToken.getAddress());
 		// await cosmicSignatureGameProxy.setRandomWalkNft(await randomWalkNft.getAddress());
@@ -24,10 +24,10 @@ describe("Security", function () {
 
 		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
 		// But, hopefully, it will work somehow.
-		await cosmicSignatureGameProxy.setActivationTime(0);
+		await cosmicSignatureGameProxy.setRoundActivationTime(0);
 
 		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		// await cosmicSignatureGameProxy.setActivationTime(latestBlock_.timestamp + 1);
+		// await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 
 		const ReClaim = await hre.ethers.getContractFactory("ReClaim");
 		const reclaim = await ReClaim.deploy(await cosmicSignatureGameProxy.getAddress());
@@ -36,7 +36,7 @@ describe("Security", function () {
 		await cosmicSignatureGameProxy.donateEth({ value: donationAmount_ });
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr3).bid((-1), "", { value: nextEthBidPrice_ }); // this works
+		await cosmicSignatureGameProxy.connect(addr3).bidWithEth((-1), "", { value: nextEthBidPrice_ }); // this works
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 24 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -82,7 +82,7 @@ describe("Security", function () {
 	// 	await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
-	it("bidAndDonateNft() function is confirmed to be non-reentrant", async function () {
+	it("bidWithEthAndDonateNft() function is confirmed to be non-reentrant", async function () {
 		const {signers, cosmicSignatureGameProxy, prizesWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 	
@@ -96,6 +96,6 @@ describe("Security", function () {
 		await owner.sendTransaction({to: await maliciousNft.getAddress(), value: donationAmount_});
 
 		// await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
-		await expect(cosmicSignatureGameProxy.connect(owner).bidAndDonateNft(-1n, "", await maliciousNft.getAddress(), 0, {value: bidAmount_})).revertedWithCustomError(prizesWallet, "UnauthorizedCaller");
+		await expect(cosmicSignatureGameProxy.connect(owner).bidWithEthAndDonateNft(-1n, "", await maliciousNft.getAddress(), 0, {value: bidAmount_})).revertedWithCustomError(prizesWallet, "UnauthorizedCaller");
 	});
 });

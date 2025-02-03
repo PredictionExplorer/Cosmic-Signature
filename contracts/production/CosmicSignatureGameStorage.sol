@@ -56,8 +56,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
 	/// [/Comment-202412312]
-	/// todo-1 Maybe rename this to `delayDurationBeforeRoundActivation`.
-	uint256 public delayDurationBeforeNextRound;
+	uint256 public delayDurationBeforeRoundActivation;
 
 	/// @notice The current bidding round activation time.
 	/// Starting at this point, people will be allowed to place bids.
@@ -69,9 +68,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411172]
 	/// @dev Comment-202411236 relates.
 	/// Comment-202411168 relates.
-	/// todo-1 Maybe rename this to `roundActivationTime`.
-	/// todo-1 Also consider renaming `onlyInactive` and `onlyActive`.
-	uint256 public activationTime;
+	uint256 public roundActivationTime;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202501025 applies
@@ -85,9 +82,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This divides `ethDutchAuctionBeginningBidPrice`, which has already been multiplied by
 	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202501063]
-	/// @dev todo-1 Develop a test that after activation sets activation time to a point in the future,
-	/// todo-1 doubles this divisor, sets activation time to a point in the past.
+	/// @dev todo-1 Develop a test that after the current time reaches `roundActivationTime`,
+	/// todo-1 sets `roundActivationTime` to a point in the future, doubles this divisor,
+	/// todo-1 sets `roundActivationTime` to a point in the past.
 	/// todo-1 The past point needs to be such that ETH bid price continues to gradually decline.
+	/// todo-1 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
+	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice Next ETH bid price.
@@ -100,10 +100,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411065]
 	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
 	/// [/Comment-202411065]
-	/// todo-1 ??? Add a setter to change this? We don't currently have one, right? Because the price can be too high for anybody to bid.
-	/// todo-1 Comment and document that after the owner executes the setter, they must set activation time to a point in the past
-	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
-	/// todo-1 The above now applies to `ethDutchAuctionEndingBidPriceDivisor`.
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411064 applies.
@@ -121,14 +117,17 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202501025]
 	uint256 public cstDutchAuctionDurationDivisor;
 
-	/// @notice
+	/// @notice CST Dutch auction beginning bid price.
+	/// This becomes valid when someone places a CST bid in the current bidding round
+	/// and remains valid until main prize gets claimed.
 	/// [Comment-202411066]
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// [/Comment-202411066]
 	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
-	uint256 public nextRoundCstDutchAuctionBeginningBidPrice;
+	/// @notice Next round first CST Dutch auction beginning bid price.
+	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411064 applies.
 	/// Comment-202411066 relates.
@@ -143,22 +142,23 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
-	/// todo-1 Rename this to `bidMessageLengthMaxLimit`.
-	/// todo-1 Is it really necessary for this to be configurable?
-	uint256 public maxMessageLength;
+	/// todo-1 Is it really necessary for this to be configurable? Maybe so, just in case we add some functionality to process the message.
+	/// todo-1 But anyway raise this question.
+	/// todo-1 See a related todo near `DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT`.
+	uint256 public bidMessageLengthMaxLimit;
 
 	/// @notice Comment-202411064 applies.
 	/// We mint this CST amount as a bidder reward for each bid.
-	/// todo-1 Rename to `cstRewardAmountForBidding` or `cstRewardAmountForBid`.
-	/// todo-1 Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
-	uint256 public tokenReward;
+	/// We do it even for a CST bid.
+	/// todo-1 --- Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
+	uint256 public cstRewardAmountForBidding;
 
 	// #endregion
 	// #region Bid Statistics
 
 	// /// todo-1 Tell them that I eliminated this.
 	// /// todo-9 Rename to `lastBidTypeCode`.
-	// CosmicSignatureConstants.BidType public lastBidType;
+	// BidType public lastBidType;
 
 	/// @notice The address of the account that placed the last bid.
 	/// We reset this to zero at the beginning of each bidding round.
@@ -187,6 +187,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411075]
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
 	/// [/Comment-202411075]
+	/// Comment-202501308 relates.
 	/// @dev
 	/// [Comment-202411099]
 	/// Relevant logic prototype:
@@ -194,8 +195,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411099]
 	address public enduranceChampionAddress;
 
+	/// @notice
+	/// [Comment-202501308]
+	/// This is valid only if `enduranceChampionAddress` is a nonzero.
+	/// [/Comment-202501308]
 	uint256 public enduranceChampionStartTimeStamp;
+
+	/// @notice Comment-202501308 applies.
 	uint256 public enduranceChampionDuration;
+
 	uint256 public prevEnduranceChampionDuration;
 
 	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
@@ -257,8 +265,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-1 This is for bidders, right? Rename to make it clear.
-	uint256 public raffleTotalEthPrizeAmountPercentage;
+	uint256 public raffleTotalEthPrizeAmountForBiddersPercentage;
 
 	/// @notice The number of raffle ETH prizes to be distributed to bidders.
 	/// Comment-202411064 applies.
@@ -273,8 +280,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
 	/// @notice Comment-202411064 applies.
-	/// todo-1 This is for CS NFT stakers, right? Rename to make it clear.
-	uint256 public stakingTotalEthRewardAmountPercentage;
+	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
 
 	// #endregion
 	// #region Cosmic Signature Token
