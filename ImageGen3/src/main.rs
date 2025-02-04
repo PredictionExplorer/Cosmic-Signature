@@ -1,7 +1,3 @@
-// =============================
-// three_body_problem main code
-// =============================
-
 use clap::Parser;
 use hex;
 use image::{DynamicImage, ImageBuffer, Rgb};
@@ -16,7 +12,7 @@ use sha3::{Digest, Sha3_256};
 use std::error::Error;
 use std::f64::{INFINITY, NEG_INFINITY};
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -723,7 +719,6 @@ fn select_best_trajectory(
     }
 
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
-        // Sort descending if higher_better, ascending if lower_better
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
         } else {
@@ -812,7 +807,6 @@ fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
 /// Helper for SIMD accumulation (just adds `pix * w` to `accum`)
 #[inline]
 fn add_weighted_pixel(accum: &mut (f64, f64, f64), pix: (f64, f64, f64), w: f64) {
-    // FIX: replaced f64x4::from_array(...) with f64x4::new(...)
     let p = f64x4::new([pix.0, pix.1, pix.2, 0.0]);
     let wv = f64x4::splat(w);
     let res = p * wv;
@@ -942,6 +936,8 @@ fn generate_body_color_sequences(
 // ========================================================
 // Single-pass H.264 encoding with FFmpeg
 // ========================================================
+/// We now read FFmpeg’s stderr in a thread, logging it to
+/// `<output_file>.ffmpeg_stderr.log` to avoid pipe saturation.
 fn create_video_from_frames_singlepass(
     width: u32,
     height: u32,
@@ -958,6 +954,7 @@ fn create_video_from_frames_singlepass(
         "STAGE 7/8: Creating H.264 video => {output_file}, {}x{}, {} FPS, using {} threads",
         width, height, frame_rate, cpu_count
     );
+
     let mut cmd = Command::new("ffmpeg");
     cmd.arg("-y")
         .arg("-f")
@@ -987,16 +984,46 @@ fn create_video_from_frames_singlepass(
         .stderr(Stdio::piped());
 
     let mut child = cmd.spawn()?;
+
+    // Create a log file for FFmpeg's stderr
+    let log_file_path = format!("{}.ffmpeg_stderr.log", output_file);
+    let mut log_file = fs::File::create(&log_file_path)?;
+
+    // 1) Take the child's stderr
+    let mut child_stderr = child.stderr.take().expect("Failed to take ffmpeg stderr");
+    // 2) Spawn a thread to read from it, writing to a log file
+    std::thread::spawn(move || {
+        let mut buf = [0u8; 4096];
+        loop {
+            match child_stderr.read(&mut buf) {
+                Ok(0) => break, // EOF
+                Ok(n) => {
+                    // Write what we read to our log file
+                    let _ = log_file.write_all(&buf[..n]);
+                }
+                Err(_) => break,
+            }
+        }
+    });
+
+    // Now write frames to ffmpeg on the main thread
     {
         if let Some(ref mut sin) = child.stdin {
             frames_iter(sin)?;
         }
     }
+
+    // Wait for ffmpeg to finish
     let out = child.wait_with_output()?;
     if !out.status.success() {
-        eprintln!("FFmpeg error:\n{}", String::from_utf8_lossy(&out.stderr));
+        eprintln!(
+            "FFmpeg error (exit code {}):\n{}",
+            out.status,
+            String::from_utf8_lossy(&out.stderr)
+        );
     } else {
         println!("   => Single-pass video creation complete => {output_file}");
+        println!("   => FFmpeg stderr log saved => {log_file_path}");
     }
     Ok(())
 }
