@@ -1,3 +1,7 @@
+// =============================
+// three_body_problem main code
+// =============================
+
 use clap::Parser;
 use hex;
 use image::{DynamicImage, ImageBuffer, Rgb};
@@ -808,6 +812,7 @@ fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
 /// Helper for SIMD accumulation (just adds `pix * w` to `accum`)
 #[inline]
 fn add_weighted_pixel(accum: &mut (f64, f64, f64), pix: (f64, f64, f64), w: f64) {
+    // FIX: replaced f64x4::from_array(...) with f64x4::new(...)
     let p = f64x4::new([pix.0, pix.1, pix.2, 0.0]);
     let wv = f64x4::splat(w);
     let res = p * wv;
@@ -1265,7 +1270,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.velocity,
     );
 
-    // 1) Borda search for the best orbit (using on-screen triangle area).
+    // 1) Borda search for the best orbit
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
         args.num_sims,
@@ -1281,7 +1286,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         height,
     );
 
-    // 2) Re-run the best orbit at high resolution to get positions
+    // 2) Re-run the best orbit at high resolution
     println!(
         "STAGE 2/8: Re-running best orbit for {} steps (to store positions)...",
         args.num_steps_sim
@@ -1293,7 +1298,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("STAGE 3/8: Generating color sequences...");
     let colors = generate_body_color_sequences(&mut rng, args.num_steps_sim);
 
-    // 4) Determine bounding box (just to show info)
+    // 4) Determine bounding box
     println!("STAGE 4/8: Determining bounding box...");
     let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
     println!(
@@ -1301,22 +1306,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         min_x, max_x, min_y, max_y
     );
 
-    // Decide blur parameters: "regular" vs. "special"
-    let (blur_radius_fraction, blur_strength, blur_core_brightness) = if args.special {
-        // special mode
-        (0.4, 32.0, 20.0)
-    } else {
-        // regular mode (default)
-        (0.08, 6.0, 4.0)
-    };
-
-    // The blur radius in pixels is based on the smaller dimension
+    // Decide blur parameters: "special" vs "regular"
+    let (blur_radius_fraction, blur_strength, blur_core_brightness) =
+        if args.special { (0.4, 32.0, 20.0) } else { (0.08, 6.0, 4.0) };
     let smaller_dim = width.min(height) as f64;
     let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
 
     // 5) Pass 1: gather histogram
     println!("STAGE 5/8: PASS 1 => building global histogram (no frames saved)...");
-    // We produce ~1800 frames at 60 FPS => ~30s
     let frame_rate = 60;
     let target_frames = 1800;
     let frame_interval =
@@ -1355,7 +1352,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         black_r, white_r, black_g, white_g, black_b, white_b, gamma
     );
 
-    // 7) Pass 2: produce frames & feed to ffmpeg on-the-fly
+    // Now that thresholds are computed, free the large histogram vectors
+    all_r.clear();
+    all_r.shrink_to_fit();
+    all_g.clear();
+    all_g.shrink_to_fit();
+    all_b.clear();
+    all_b.shrink_to_fit();
+
+    // 7) Pass 2: produce frames & feed them to ffmpeg
     println!("STAGE 7/8: PASS 2 => generating final frames + piping to FFmpeg...");
     let vid_path = format!("vids/{}.mp4", args.file_name);
 
@@ -1389,9 +1394,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok(())
         };
 
-        // actually create the video
         create_video_from_frames_singlepass(width, height, frame_rate, frames_writer, &vid_path)?;
     }
+
+    // Drop big arrays once they're not needed
+    drop(positions);
+    drop(colors);
 
     // 8) Save final (leveled) image as PNG => same as last video frame
     println!("STAGE 8/8: Saving final single image as PNG...");
