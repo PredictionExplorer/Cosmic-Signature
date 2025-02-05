@@ -15,7 +15,7 @@ def main():
       3) --hue_shift only
       4) both --log_blend and --hue_shift
 
-    We always do --num_sims=3000, no --special.
+    We always do --num-sims=3000, no --special.
     """
     base_hex = CONFIG['base_seed_hex']
     for i in range(CONFIG['num_runs']):
@@ -63,7 +63,7 @@ def main():
             CONFIG['program_path'],
             "--seed", seed_str,
             "--file-name", file_name_both,
-            "--num_sims", "3000",
+            "--num-sims", "3000",
             "--log-blend",
             "--hue-shift"
         ]
