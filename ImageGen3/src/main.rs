@@ -12,7 +12,7 @@ use sha3::{Digest, Sha3_256};
 use std::error::Error;
 use std::f64::{INFINITY, NEG_INFINITY};
 use std::fs;
-use std::io::{Read, Write};
+use std::io::Write; // Removed 'Read', keeping only 'Write'.
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -45,9 +45,11 @@ struct Args {
     #[arg(long, default_value = "output")]
     file_name: String,
 
-    /// Number of random orbits to consider (Borda)
-    #[arg(long, default_value_t = 30_000)]
-    num_sims: usize,
+    /// Number of random orbits to consider. If not provided, defaults:
+    ///   - 100,000 if --special
+    ///   - 30,000 otherwise
+    #[arg(long)]
+    num_sims: Option<usize>,
 
     /// Number of steps used to judge each candidate orbit
     #[arg(long, default_value_t = 1_000_000)]
@@ -113,7 +115,7 @@ struct Args {
     #[arg(long, default_value_t = 1.0)]
     levels_gamma: f64,
 
-    /// If true, use the “special” mode. Otherwise uses regular blur settings.
+    /// If true, use the “special” mode => changes some defaults
     #[arg(long, default_value_t = false)]
     special: bool,
 }
@@ -934,10 +936,9 @@ fn generate_body_color_sequences(
 }
 
 // ========================================================
-// Single-pass H.264 encoding with FFmpeg
+// Single-pass H.264 encoding with FFmpeg (NO logs saved)
 // ========================================================
-/// We now read FFmpeg’s stderr in a thread, logging it to
-/// `<output_file>.ffmpeg_stderr.log` to avoid pipe saturation.
+/// We remove all file logging of ffmpeg output. We also redirect ffmpeg’s stdout/stderr to null.
 fn create_video_from_frames_singlepass(
     width: u32,
     height: u32,
@@ -979,43 +980,22 @@ fn create_video_from_frames_singlepass(
         .arg("libx264")
         .arg("-an")
         .arg(output_file)
+        // Important: redirect stdout/stderr to null => no logs
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
-        .stderr(Stdio::piped());
+        .stderr(Stdio::null());
 
     let mut child = cmd.spawn()?;
 
-    // Create a log file for FFmpeg's stderr
-    let log_file_path = format!("{}.ffmpeg_stderr.log", output_file);
-    let mut log_file = fs::File::create(&log_file_path)?;
-
-    // 1) Take the child's stderr
-    let mut child_stderr = child.stderr.take().expect("Failed to take ffmpeg stderr");
-    // 2) Spawn a thread to read from it, writing to a log file
-    std::thread::spawn(move || {
-        let mut buf = [0u8; 4096];
-        loop {
-            match child_stderr.read(&mut buf) {
-                Ok(0) => break, // EOF
-                Ok(n) => {
-                    // Write what we read to our log file
-                    let _ = log_file.write_all(&buf[..n]);
-                }
-                Err(_) => break,
-            }
-        }
-    });
-
     // Now write frames to ffmpeg on the main thread
-    {
-        if let Some(ref mut sin) = child.stdin {
-            frames_iter(sin)?;
-        }
+    if let Some(ref mut sin) = child.stdin {
+        frames_iter(sin)?;
     }
 
     // Wait for ffmpeg to finish
     let out = child.wait_with_output()?;
     if !out.status.success() {
+        // We do not save this to file, just print to stderr if something fails
         eprintln!(
             "FFmpeg error (exit code {}):\n{}",
             out.status,
@@ -1023,7 +1003,6 @@ fn create_video_from_frames_singlepass(
         );
     } else {
         println!("   => Single-pass video creation complete => {output_file}");
-        println!("   => FFmpeg stderr log saved => {log_file_path}");
     }
     Ok(())
 }
@@ -1279,6 +1258,21 @@ fn pass_2_write_frames(
 // ========================================================
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
+
+    // Here we pick the default num_sims based on the --special flag
+    // unless the user explicitly set num_sims on the command line.
+    let num_sims = match args.num_sims {
+        Some(val) => val,
+        None => {
+            if args.special {
+                100_000
+            } else {
+                30_000
+            }
+        }
+    };
+
+    // Make sure output directories exist
     let _ = fs::create_dir_all("pics");
     let _ = fs::create_dir_all("vids");
 
@@ -1300,7 +1294,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 1) Borda search for the best orbit
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
-        args.num_sims,
+        num_sims,
         args.num_steps_sim,
         args.max_points,
         args.chaos_weight,
