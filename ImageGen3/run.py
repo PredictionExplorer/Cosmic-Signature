@@ -28,7 +28,7 @@ def main():
             CONFIG['program_path'],
             "--seed", seed_str,
             "--file-name", file_name_noflags,
-            "--num_sims", "3000"
+            "--num-sims", "3000"
         ]
         print("Running command (no flags):", " ".join(cmd_noflags))
         subprocess.run(cmd_noflags, check=True)
@@ -39,8 +39,8 @@ def main():
             CONFIG['program_path'],
             "--seed", seed_str,
             "--file-name", file_name_log,
-            "--num_sims", "3000",
-            "--log_blend"
+            "--num-sims", "3000",
+            "--log-blend"
         ]
         print("Running command (log_blend only):", " ".join(cmd_log))
         subprocess.run(cmd_log, check=True)
@@ -51,8 +51,8 @@ def main():
             CONFIG['program_path'],
             "--seed", seed_str,
             "--file-name", file_name_hue,
-            "--num_sims", "3000",
-            "--hue_shift"
+            "--num-sims", "3000",
+            "--hue-shift"
         ]
         print("Running command (hue_shift only):", " ".join(cmd_hue))
         subprocess.run(cmd_hue, check=True)
@@ -64,8 +64,8 @@ def main():
             "--seed", seed_str,
             "--file-name", file_name_both,
             "--num_sims", "3000",
-            "--log_blend",
-            "--hue_shift"
+            "--log-blend",
+            "--hue-shift"
         ]
         print("Running command (log_blend + hue_shift):", " ".join(cmd_both))
         subprocess.run(cmd_both, check=True)
