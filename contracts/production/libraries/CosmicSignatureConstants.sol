@@ -15,7 +15,8 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @title Data types and constants.
 /// @author The Cosmic Signature Development Team.
 /// @notice Most of these constants are used to initialize state variables.
-/// @dev
+/// @dev If a state variable will be automatically updated during the normal operation
+/// the constant to initialize it from is named `INITIAL_...`; otherwise: `DEFAULT_...`.
 /// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
 /// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
 /// todo-1 +++ Done on Jan 24 2025.
@@ -73,6 +74,25 @@ library CosmicSignatureConstants {
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
+	/// @notice Default `ethBidRefundAmountInGasMinLimit`.
+	/// [Comment-202502052]
+	/// This drives the logic that prevents refunding excess ETH that a bidder transferred to us if the refund is too small
+	/// to justify the transfer transaction fee.
+	/// This is expressed in gas.
+	/// We multiply this by `block.basefee` and if the refund is at least as big as the result,
+	/// we will transfer the refund back to the bidder; otherwise the excess ETH will simply stay in the Game contract balance.
+	/// [/Comment-202502052]
+	/// @dev
+	/// [Comment-202502054]
+	/// If we ran on the mainnnet, we would probably set this to something like 21100,
+	/// because on the mainnet a simple ETH transfer costs 21000 plus an incentive fee.
+	/// However on Arbitrum, which is an L2 network, there are both L2 and L1 gas fees.
+	/// The former appears to always be 21000, while the latter varies and tends to be bigger than the former.
+	/// We don't know what the L1 gas fee is going to be, so this value is approximate.
+	/// todo-2 It will liikely need tweaking over time, especially after Arbitrum decentralizes their blockchain.
+	/// [/Comment-202502054]
+	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = 29 * 21000 / 10;
+
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
 	/// @dev
 	/// todo-1 +++ Rename any "Auction" to "Dutch Auction".
@@ -97,8 +117,6 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `bidMessageLengthMaxLimit`.
 	/// Comment-202409143 applies.
-	/// @dev todo-1 Does this really have to be configurable? Maybe make this non-configurable and remove `DEFAULT_`.
-	/// todo-1 But see a related todo near `bidMessageLengthMaxLimit`.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
 	/// @notice Default `cstRewardAmountForBidding` and `GovernorSettings.proposalThreshold()`.
@@ -160,6 +178,12 @@ library CosmicSignatureConstants {
 
 	/// @notice Comment-202409143 applies.
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT = 32;
+
+	/// @dev todo-1 Hardcode a valid value here.
+	string internal constant DEFAULT_COSMIC_SIGNATURE_NFT_BASE_URI = "TBD";
+
+	/// @dev todo-1 Hardcode a valid value here.
+	string internal constant DEFAULT_COSMIC_SIGNATURE_NFT_GENERATION_SCRIPT_URI = "ipfs://TBD";
 
 	// #endregion
 	// #region Prizes Wallet

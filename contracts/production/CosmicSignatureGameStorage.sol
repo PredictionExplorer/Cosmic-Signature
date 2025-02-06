@@ -29,10 +29,8 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 which variables should be accessed directly and which through an accessor,
 /// todo-1 ??? which variables emit events (some are changed programmatically without emitting an event).
 ///
-/// todo-1 Consider making some params non-configurable.
-/// todo-1 Some variables should be `immutable`
-/// todo-1 (although because the Game contract is upgradeable it can't have `immutable` variables).
-/// todo-1 The same applies to other contracts.
+/// todo-1 +++ Think of what params are currently not configurable, but might need to be configurable, such as `nextEthBidPrice`.
+/// todo-1 +++ Consider making some params non-configurable.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 
@@ -51,7 +49,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public roundNum;
 
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
-	/// Comment-202411064 applies.
+	/// [Comment-202411064]
+	/// This is a configurable parameter.
+	/// [/Comment-202411064]
 	/// @dev
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
@@ -60,9 +60,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The current bidding round activation time.
 	/// Starting at this point, people will be allowed to place bids.
-	/// [Comment-202411064]
-	/// This is a configurable parameter.
-	/// [/Comment-202411064]
+	/// Comment-202411064 applies.
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
 	/// [/Comment-202411172]
@@ -106,6 +104,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411065 relates.
 	uint256 public nextEthBidPriceIncreaseDivisor;
 
+	/// @notice Comment-202411064 applies.
+	/// Comment-202502052 applies.
+	/// @dev Comment-202502054 applies.
+	uint256 public ethBidRefundAmountInGasMinLimit;
+
 	/// @notice When the current CST Dutch auction began.
 	/// Comment-202501022 applies.
 	/// @dev Comment-202411168 relates.
@@ -142,15 +145,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
-	/// todo-1 Is it really necessary for this to be configurable? Maybe so, just in case we add some functionality to process the message.
-	/// todo-1 But anyway raise this question.
-	/// todo-1 See a related todo near `DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT`.
+	/// @dev One might want to make this non-configurable.
+	/// But I feel that by keeping this configurable we leave the door open to change message format
+	/// and the logic the Front End and the Back End employ to process the message.
 	uint256 public bidMessageLengthMaxLimit;
 
 	/// @notice Comment-202411064 applies.
 	/// We mint this CST amount as a bidder reward for each bid.
 	/// We do it even for a CST bid.
-	/// todo-1 --- Or are we going to use it only for non-CST bids? If so reflect that in the name and/or write a comment.
 	uint256 public cstRewardAmountForBidding;
 
 	// #endregion
@@ -162,7 +164,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice The address of the account that placed the last bid.
 	/// We reset this to zero at the beginning of each bidding round.
-	/// @dev todo-1 This is the same as the last `bidderAddresses` item. So is it OK to eliminate this? At least comment.
+	/// @dev
+	/// [Comment-202502044]
+	/// Issue This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
+	/// But let's leave it alone.
+	/// [/Comment-202502044]
 	address public lastBidderAddress;
 
 	/// @notice The address of the account that placed the last CST bid.
@@ -171,16 +177,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	address public lastCstBidderAddress;
 
 	/// @dev
-	/// [ToDo-202411098-1]
-	/// todo-1 +++ Taras wants to leave it alone.
-	/// Is it really necessary to save info about past rounds?
-	/// But Nick wrote at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1729540799827169?thread_ts=1729208829.862549&cid=C02EDDE5UF8 :
-	///    Taras wanted to keep this info per round because he has another project that will be giving rewards
-	///    based on bidding statistics. This project is called Prisoner' Dillema in Game Theory, you can search for it on Slack history.
-	/// [/ToDo-202411098-1]
+	/// [Comment-202411098]
+	/// Issue. Is it really necessary to save info about past rounds?
+	/// But the project founders consider using the info for other purposes.
+	/// Comment-202502045 relates.
+	/// [/Comment-202411098]
+	/// Comment-202502044 relates.
 	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
 
-	/// @dev ToDo-202411098-1 applies.
+	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.

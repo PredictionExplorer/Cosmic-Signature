@@ -31,6 +31,10 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event NextEthBidPriceIncreaseDivisorChanged(uint256 newValue);
 
+	/// @notice Emitted when `ethBidRefundAmountInGasMinLimit` is changed.
+	/// @param newValue The new value.
+	event EthBidRefundAmountInGasMinLimitChanged(uint256 newValue);
+
 	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
 	/// @param newValue The new value.
 	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);

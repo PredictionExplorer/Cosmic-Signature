@@ -82,6 +82,9 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.setNextEthBidPriceIncreaseDivisor(99n);
 		expect(await cosmicSignatureGameProxy.nextEthBidPriceIncreaseDivisor()).to.equal(99n);
 
+		await cosmicSignatureGameProxy.setEthBidRefundAmountInGasMinLimit(99n);
+		expect(await cosmicSignatureGameProxy.ethBidRefundAmountInGasMinLimit()).to.equal(99n);
+
 		await cosmicSignatureGameProxy.setCstDutchAuctionDurationDivisor(11n);
 		expect(await cosmicSignatureGameProxy.cstDutchAuctionDurationDivisor()).to.equal(11n);
 
@@ -169,6 +172,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.setMainPrizeTimeIncrementIncreaseDivisor(899n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.setEthDutchAuctionEndingBidPriceDivisor(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.setNextEthBidPriceIncreaseDivisor(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
+		await expect(cosmicSignatureGameProxy.setEthBidRefundAmountInGasMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.setCstDutchAuctionDurationDivisor(11n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.setCstDutchAuctionBeginningBidPriceMinLimit(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.setCstRewardAmountForBidding(99n)).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "RoundIsActive");
@@ -301,6 +305,8 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(addr1).setEthDutchAuctionEndingBidPriceDivisor(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setNextEthBidPriceIncreaseDivisor(101n))
+			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureGameProxy.connect(addr1).setEthBidRefundAmountInGasMinLimit(101n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(addr1).setCstDutchAuctionDurationDivisor(11n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
