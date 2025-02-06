@@ -10,7 +10,7 @@
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
-			# 'npx' 'hardhat' 'test' '--grep' 'bidWithEthAndDonateNft\(\) function is confirmed to be non-reentrant'
+			# 'npx' 'hardhat' 'test' '--grep' 'Should be possible to bid'
 			'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then

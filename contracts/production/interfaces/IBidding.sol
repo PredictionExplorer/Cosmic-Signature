@@ -97,9 +97,11 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// after Arbitrum decentralizes their blockchain.
 	/// Sensible values:
 	///    0 when the result is to be used within the same transaction.
-	///    0 when bidding programmatically from an external script. But change it to 1 after the decentalization.
-	///       Although an external script can have a smarter time aware logic that can conditionally pass different values.
-	///    1 when bidding manually, assuming that human hands aren't too fast. But change it to 2 after the decentalization.
+	///    0 when bidding programmatically from an external script.
+	///       But the script developer will probably need to change it to 1 after the decentalization.
+	///       Although an external script can have a smarter time aware logic that conditionally passes different values.
+	///    1 when bidding manually, like through our web site, assuming that human hands aren't too fast.
+	///       todo-2 But in the front end change it to 1 after the decentalization.
 	///    1 for testing on the Hardhat Network.
 	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.

@@ -131,11 +131,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		// Transfer half of the balance to the last minter.
 		(bool isSuccess_, ) = destination.call{value: amount}("");
 		require(isSuccess_, "Transfer failed.");
-
-		// todo-0 Slither dislikes it that we make external calls and then emit events.
-		// todo-0 In Slither report, see: reentrancy-events
-		// todo-0 Review the order of event emits.
-		// todo-0 Ask ChatGPT: In Solidity, is it ok to make an external call and then emit an event? Is it good practice?
+		
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 
@@ -165,6 +161,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 			require(isSuccess_, "Transfer failed.");
 		}
 
+		// Issue. Possible reentrancy vulnerability. During the call to `lastMinter.call`, `lastMinter` could have changed.
 		emit MintEvent(tokenId, lastMinter, entropy, price);
 	}
 

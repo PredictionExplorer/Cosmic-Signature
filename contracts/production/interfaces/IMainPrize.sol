@@ -37,7 +37,6 @@ interface IMainPrize is
 
 	/// @notice Claims the current bidding round main prize.
 	/// This method distributes main and secondary prizes, updates game state, and prepares to start a new bidding round.
-	/// todo-1 Specify prize type in all names: claim(?:.(?!main))*?prize
 	function claimMainPrize() external;
 
 	/// @return The current main ETH prize amount, in Wei.

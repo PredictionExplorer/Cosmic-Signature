@@ -469,13 +469,15 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#constrained-horn-clauses-chc
 		engine: "all",
 
-		// When we make an external call like `Contract1(address1).function1()`, SMTChecker will, by default, expect that
+		// [Comment-202502057]
+		// When we make an external call like `Contract1(address1).method1()`, SMTChecker will, by default, expect that
 		// we are calling into potentially malicious code.
 		// This parameter results in SMTChecker assuming that we are calling our own known contract.
 		// This implies that for this to work correct we must cast an address to a specific contract, rather than to its interface.
-		// A problem is that we make a lot of low level calls, like `call` or `delegatecall`, but SMTChecker doesn't recognize those.
-		// So it would be beneficial at least in the mode in which SMTChecker is enabled to make high level calls.
+		// We also must avoid low level calls, like `call` or `delegatecall`, which SMTChecker doesn't recognize.
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#trusted-external-calls
+		// Comment-202502043 relates.
+		// [/Comment-202502057]
 		extCalls: "trusted",
 
 		// By default, these won't be reported.

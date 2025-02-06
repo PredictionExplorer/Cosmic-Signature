@@ -38,9 +38,17 @@ interface ICosmicSignatureGameStorage {
 
 	/// @notice Details about a bidder.
 	struct BidderInfo {
-		// todo-1 Eliminate these total spens? It appears that they are not used in the logic.
+		/// @dev
+		/// [Comment-202502045]
+		/// Issue. It could make sense to eliminate this variable. It's not used in the logic, right?
+		/// But the project founders consider using the info for other purposes.
+		/// Comment-202411098 relates.
+		/// [/Comment-202502045]
 		uint256 totalSpentEthAmount;
+
+		/// @dev Comment-202502045 applies.
 		uint256 totalSpentCstAmount;
+
 		uint256 lastBidTimeStamp;
 	}
 }
