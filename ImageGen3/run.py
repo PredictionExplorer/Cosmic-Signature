@@ -3,7 +3,7 @@ import subprocess
 # ===================== Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'base_seed_hex': 'beef13',  # Adjust as desired
+    'base_seed_hex': 'beef16',  # Adjust as desired
     'num_runs': 1000           # Number of distinct seeds
 }
 
@@ -11,9 +11,9 @@ def main():
     """
     For each seed, run four times:
       1) no flags (default additive)
-      2) --painterly
-      3) --heatmap
-      4) --watercolor
+      2) --color-dodge
+      3) --color-burn
+      4) --overlay
 
     Always do --num-sims=3000, no --special.
     """
@@ -33,41 +33,41 @@ def main():
         print("Running command (no flags):", " ".join(cmd_noflags))
         subprocess.run(cmd_noflags, check=True)
 
-        # ---------- 2) Painterly ----------
-        file_name_painterly = f"seed-{seed_str[2:]}-painterly"
-        cmd_painterly = [
+        # ---------- 2) Color Dodge ----------
+        file_name_dodge = f"seed-{seed_str[2:]}-color-dodge"
+        cmd_dodge = [
             CONFIG['program_path'],
             "--seed", seed_str,
-            "--file-name", file_name_painterly,
+            "--file-name", file_name_dodge,
             "--num-sims", "3000",
-            "--painterly"
+            "--color-dodge"
         ]
-        print("Running command (painterly):", " ".join(cmd_painterly))
-        subprocess.run(cmd_painterly, check=True)
+        print("Running command (color-dodge):", " ".join(cmd_dodge))
+        subprocess.run(cmd_dodge, check=True)
 
-        # ---------- 3) Heatmap ----------
-        file_name_heatmap = f"seed-{seed_str[2:]}-heatmap"
-        cmd_heatmap = [
+        # ---------- 3) Color Burn ----------
+        file_name_burn = f"seed-{seed_str[2:]}-color-burn"
+        cmd_burn = [
             CONFIG['program_path'],
             "--seed", seed_str,
-            "--file-name", file_name_heatmap,
+            "--file-name", file_name_burn,
             "--num-sims", "3000",
-            "--heatmap"
+            "--color-burn"
         ]
-        print("Running command (heatmap):", " ".join(cmd_heatmap))
-        subprocess.run(cmd_heatmap, check=True)
+        print("Running command (color-burn):", " ".join(cmd_burn))
+        subprocess.run(cmd_burn, check=True)
 
-        # ---------- 4) Watercolor ----------
-        file_name_water = f"seed-{seed_str[2:]}-watercolor"
-        cmd_water = [
+        # ---------- 4) Overlay ----------
+        file_name_overlay = f"seed-{seed_str[2:]}-overlay"
+        cmd_overlay = [
             CONFIG['program_path'],
             "--seed", seed_str,
-            "--file-name", file_name_water,
+            "--file-name", file_name_overlay,
             "--num-sims", "3000",
-            "--watercolor"
+            "--overlay"
         ]
-        print("Running command (watercolor):", " ".join(cmd_water))
-        subprocess.run(cmd_water, check=True)
+        print("Running command (overlay):", " ".join(cmd_overlay))
+        subprocess.run(cmd_overlay, check=True)
 
 
 if __name__ == "__main__":
