@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
@@ -147,10 +148,16 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	constructor() CosmicSignatureGame() {
 	}
 
+	function initialize(address ownerAddress_) external override initializer() {
+		// // #enable_asserts // #disable_smtchecker console.log("4 initialize");
+
+		_initialize(ownerAddress_);
+	}
+
 	// /// @notice returns all the assets to the creator of the contract and self-destroys
 	// /// todo-1 This method no longer compiles because I moved NFT donations to `PrizesWallet`.
 	// function finalizeTesting() external onlyOwner {
-	// 	// CosmicSignature NFTs.
+	// 	// Cosmic Signature NFTs.
 	// 	uint256 nftTotalSupply = nft.totalSupply();
 	// 	for (uint256 i = 0; i < nftTotalSupply; i++) {
 	// 		address nftOwnerAddress_ = nft.ownerOf(i);
@@ -168,6 +175,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 		CosmicSignatureConstants.DonatedNft memory dnft = donatedNfts[i];
 	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);
 	// 	}
+	//
+	// 	// todo-2 Isn't this supposed to selfdestruct both the game and its proxy?
 	// 	selfdestruct(payable(owner()));
 	// }
 }
@@ -177,6 +186,12 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// @dev Issue. Entropy related logic in this test contract is lousy, but keeping it simple.
 	/// Comment-202412104 relates.
 	CosmicSignatureHelpers.RandomNumberSeedWrapper private _entropy;
+
+	function initialize(address ownerAddress_) external override initializer() {
+		// // #enable_asserts // #disable_smtchecker console.log("3 initialize");
+
+		_initialize(ownerAddress_);
+	}
 
 	// function setRoundActivationTimeRaw(uint256 newValue_) external {
 	// 	roundActivationTime = newValue_;
@@ -214,7 +229,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
 		_initializeEntropyOnce();
 		unchecked { ++ _entropy.value; }
-		// todo-2 Should we make a high level call here?
+		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
 		if ( ! isSuccess_ ) {
 			assembly {
@@ -227,7 +242,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	}
 
 	// function depositStakingCST() external payable {
-	//		// todo-9 Should we make a high level call here?
+	//		// todo-9 Should we make a high level call here? Comment-202502043 relates.
 	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
 	// 		abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
 	// 	);
@@ -282,7 +297,7 @@ contract MaliciousNft1 is ERC721 {
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// the following call should revert
 		// todo-1 This will probably now revert due to `onlyGame`.
-		// todo-2 Should we make a high level call here?
+		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, /*bytes memory retval*/) =
 			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
@@ -316,10 +331,10 @@ contract MaliciousNft2 is ERC721 {
 		// defaultParams.randomWalkNftId = -1;
 		// bytes memory param_data = abi.encode(defaultParams);
 		// // This call should revert.
-		// // todo-9 Should we make a high level call here?
+		// // todo-9 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+		// // todo-9 Besides, this transfers zero `value`.
+		// // todo-9 Should we make a high level call here? Comment-202502043 relates.
 		// (bool isSuccess_, /*bytes memory retval*/) =
-		// 	// todo-9 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
-		// 	// todo-9 Besides, this transfers zero `value`.
 		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
 		// if ( ! isSuccess_ ) {
 		// 	assembly {

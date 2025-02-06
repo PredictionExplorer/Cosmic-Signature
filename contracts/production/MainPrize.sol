@@ -117,18 +117,26 @@ abstract contract MainPrize is
 				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
 			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 
+			// todo-1 We are supposed to declare this near ToDo-202502065-1.
+			ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
+
 			// #endregion
 			// #region
 
 			{
 				// #region
 
-				// CST minting specs.
-				// Items:
-				//    [0] for `marketingWallet`.
-				//    [1] for `enduranceChampionAddress`.
-				//    [2] for `lastCstBidderAddress`. This item is not guaranteed to exist.
-				ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
+				// [ToDo-202502065-1]
+				// To eliminate compile errors, I had to move this declaration elsewhere.
+				// To be revisited.
+				// ToDo-202502067-1 relates.
+				// [/ToDo-202502065-1]
+				// // CST minting specs.
+				// // Items:
+				// //    [0] for `marketingWallet`.
+				// //    [1] for `enduranceChampionAddress`.
+				// //    [2] for `lastCstBidderAddress`. This item is not guaranteed to exist.
+				// ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
 
 				// #endregion
 				// #region
@@ -337,7 +345,12 @@ abstract contract MainPrize is
 				// #endregion
 				// #region Minting CSTs.
 
-				token.mintMany(cosmicSignatureTokenMintSpecs_);
+				// [ToDo-202502067-1]
+				// To eliminate compile errors, I had to move this action elsewhere.
+				// To be revisited.
+				// ToDo-202502065-1 relates.
+				// [/ToDo-202502067-1]
+				// token.mintMany(cosmicSignatureTokenMintSpecs_);
 
 				// #endregion
 			}
@@ -418,6 +431,12 @@ abstract contract MainPrize is
 						}
 
 						// #endregion
+						// #region Minting CSTs.
+
+						// todo-1 We are supposed to do this near ToDo-202502067-1.
+						token.mintMany(cosmicSignatureTokenMintSpecs_);
+
+						// #endregion
 						// #region
 
 						// All calculations marked with Comment-202501161 must be made before this.
@@ -484,7 +503,14 @@ abstract contract MainPrize is
 					// todo-1 Remember about the above. Cross-ref that rechecking with this comment.
 					// #enable_asserts assert(charityAddress != address(0));
 
+					// [Comment-202502043]
+					// In most cases, we make high level calls to strongly typed addresses --
+					// to let SMTChecker know what exactly method on what contract we are calling.
+					// But we make a low level call like this to make a simple ETH transfer.
+					// Comment-202502057 relates.
+					// [/Comment-202502043]
 					(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
+
 					if (isSuccess_) {
 						emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
 					} else {
@@ -518,8 +544,12 @@ abstract contract MainPrize is
 			// todo-1 If this fails, maybe send the funds to `prizesWallet`.
 			// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
 			// todo-1 Write and cross-ref comments.
+			// Comment-202502043 applies.
 			(bool isSuccess_, ) = msg.sender.call{value: mainEthPrizeAmount_}("");
-			require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_));
+
+			if ( ! isSuccess_ ) {
+				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_);
+			}
 		}
 
 		// #endregion

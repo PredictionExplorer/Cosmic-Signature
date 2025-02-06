@@ -10,8 +10,6 @@ pragma solidity 0.8.28;
 /// @author The Cosmic Signature Development Team.
 /// @notice This library contains events used throughout the Cosmic Signature contracts.
 /// See also: `CosmicSignatureErrors`.
-/// @dev todo-0 Everywhere, review which events params need to be declared `indexed`.
-/// @dev todo-0 __events.odt
 library CosmicSignatureEvents {
 	// #region Charity
 

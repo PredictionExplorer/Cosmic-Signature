@@ -47,10 +47,10 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param roundNum Bidding round number.
 	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit action.
 	/// @param depositIndex `EthDeposit` instance index in `ethDeposits` (1-based).
-	/// It can remain the same as it was in the previous event.
+	/// It can remain the same as in the previous event.
 	/// `numEthDeposits` can be reset near Comment-202410166. Afterwards, this event will be emitted with `depositIndex == 1`.
 	/// @param depositId `EthDeposit` instance ID.
-	/// It can remain the same as it was in the previous event.
+	/// It can remain the same as in the previous event.
 	/// If a new `EthDeposit` instance was created, `depositId == actionCounter`.
 	/// @param depositAmount The deposited ETH amount.
 	/// @param numStakedNfts The current staked NFT count.
@@ -58,7 +58,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 		uint256 indexed roundNum,
 		uint256 /*indexed*/ actionCounter,
 		uint256 depositIndex,
-		uint256 depositId,
+		uint256 indexed depositId,
 		uint256 depositAmount,
 		uint256 numStakedNfts
 	);

@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 // #region
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+// import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
@@ -24,7 +24,7 @@ import { IBidding } from "./interfaces/IBidding.sol";
 // #region
 
 abstract contract Bidding is
-	ReentrancyGuardTransientUpgradeable,
+	// ReentrancyGuardTransientUpgradeable,
 	CosmicSignatureGameStorage,
 	BiddingBase,
 	MainPrizeBase,
@@ -40,6 +40,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
+	/// @dev Comment-202502051 relates.
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
@@ -48,6 +49,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
+	/// @dev Comment-202502051 relates.
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		// _donateNft(nftAddress_, nftId_);
@@ -64,9 +66,13 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithEth`
 
-	/// todo-1 Do we really need `nonReentrant` here?
-	/// todo-1 Keep in mind that this method can be called together with a donation method.
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
+	/// @dev
+	/// [Comment-202502051]
+	/// I feel that we will get by without `nonReentrant` here.
+	/// Keep in mind that this method can be called together with a donation method.
+	/// In that case a reentry can skew the order of donation related event emits, but it's probably not too bad.
+	/// [/Comment-202502051]
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// #region
 
 		// BidType bidType;
@@ -103,9 +109,11 @@ abstract contract Bidding is
 				)
 			);
 			require(
-				// todo-1 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
-				// todo-1 But in OpenZeppelin 4.x the method doesn't exist. A similar method existed, named `_isApprovedOrOwner`.
+				// It would probably be a bad idea to evaluate something like
+				// `randomWalkNft._isAuthorized` or `randomWalkNft._isApprovedOrOwner`
+				// Comment-202502063 relates.
 				msg.sender == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
+
 				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
@@ -126,6 +134,8 @@ abstract contract Bidding is
 
 		// [Comment-202501061]
 		// This formula ensures that the result increases.
+		// todo-1 Everywhere we use formulas that add 1, make sure the web site uses the same formulas.
+		// todo-1 For example, it offers to increase bid price by 1% or 2%.
 		// [/Comment-202501061]
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
 
@@ -162,17 +172,20 @@ abstract contract Bidding is
 
 		if (overpaidEthBidPrice_ > int256(0)) {
 			// Refunding excess ETH if the bidder sent more than required.
-			// todo-1 Issue. During the initial Dutch auction, we will likely refund a very small amount that would not justify the gas fees.
-			// todo-1 At least comment.
-			// todo-1 Maybe if the bid price a half a minute or a minute (make it a constant in `CosmicSignatureConstants`) ago
-			// todo-1 was >= `msg.value`, don't refund.
-			// uint256 amountToSend = msg.value - paidEthBidPrice_;
-			// todo-1 No reentrancy vulnerability?
-			(bool isSuccess_, ) = msg.sender.call{value: /*amountToSend*/ uint256(overpaidEthBidPrice_)}("");
-			require(
-				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, /*amountToSend*/ uint256(overpaidEthBidPrice_))
-			);
+			// But first checking if the refund is big enough to justify the refund transfer transaction fee.
+			// Comment-202502052 relates and/or applies.
+			// Comment-202502054 relates and/or applies.
+			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
+			if (uint256(overpaidEthBidPrice_) >= ethBidRefundAmountMinLimit_) {
+				// A reentry can happen here.
+				// Comment-202502051 relates.
+				// Comment-202502043 applies.
+				(bool isSuccess_, ) = msg.sender.call{value: uint256(overpaidEthBidPrice_)}("");
+
+				if ( ! isSuccess_ ) {
+					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, uint256(overpaidEthBidPrice_));
+				}
+			}
 		}
 
 		// #endregion
@@ -297,7 +310,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
+	/// todo-1 +++ Does this really have to be `nonReentrant`? No!
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// [Comment-202501045]
 		// We are going to `require` that the first bid in a bidding round is ETH near Comment-202501044.
 		// [/Comment-202501045]

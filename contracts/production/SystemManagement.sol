@@ -33,7 +33,6 @@ abstract contract SystemManagement is
 		// This design leaves the door open for the admin to change `roundActivationTime` to a point in the future
 		// and then change some parameters.
 		// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
-		// todo-1 Think of what params are currently not adjustable, but might need to be adjustable, such as `nextEthBidPrice`.
 		// [/Comment-202411236]
 		require(
 			lastBidderAddress == address(0),
@@ -56,6 +55,11 @@ abstract contract SystemManagement is
 	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		nextEthBidPriceIncreaseDivisor = newValue_;
 		emit NextEthBidPriceIncreaseDivisorChanged(newValue_);
+	}
+
+	function setEthBidRefundAmountInGasMinLimit(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		ethBidRefundAmountInGasMinLimit = newValue_;
+		emit EthBidRefundAmountInGasMinLimitChanged(newValue_);
 	}
 
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {

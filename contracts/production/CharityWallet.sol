@@ -27,16 +27,21 @@ contract CharityWallet is Ownable, ICharityWallet {
 	}
 
 	function send() external override {
+		uint256 amount_ = address(this).balance;
+		send(amount_);
+	}
+
+	function send(uint256 amount_) public override {
 		address charityAddressCopy_ = charityAddress;
 		require(charityAddressCopy_ != address(0), CosmicSignatureErrors.ZeroAddress("Charity address not set."));
-		uint256 amount_ = address(this).balance;
-
-		// // Comment-202409215 applies.
-		// require(amount_ > 0, CosmicSignatureErrors.ZeroBalance("No funds to send."));
-
 		// emit DonationSent(charityAddressCopy_, amount_);
 		emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddressCopy_, amount_);
+
+		// Comment-202502043 applies.
 		(bool isSuccess_, ) = charityAddressCopy_.call{value: amount_}("");
-		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddressCopy_, amount_));
+
+		if ( ! isSuccess_ ) {
+			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddressCopy_, amount_);
+		}
 	}
 }

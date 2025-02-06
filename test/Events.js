@@ -342,6 +342,12 @@ describe("Events", function () {
 			.withArgs(nextEthBidPriceIncreaseDivisor_);
 		expect(await cosmicSignatureGameProxy.nextEthBidPriceIncreaseDivisor()).equal(nextEthBidPriceIncreaseDivisor_);
 
+		const ethBidRefundAmountInGasMinLimit_ = 1007n;
+		await expect(cosmicSignatureGameProxy.connect(owner).setEthBidRefundAmountInGasMinLimit(ethBidRefundAmountInGasMinLimit_))
+			.to.emit(cosmicSignatureGameProxy, "EthBidRefundAmountInGasMinLimitChanged")
+			.withArgs(ethBidRefundAmountInGasMinLimit_);
+		expect(await cosmicSignatureGameProxy.ethBidRefundAmountInGasMinLimit()).equal(ethBidRefundAmountInGasMinLimit_);
+
 		// todo-1 setCstDutchAuctionDurationDivisor
 		// todo-1 Also the same for ETH.
 

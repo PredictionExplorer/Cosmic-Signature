@@ -110,8 +110,8 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param amount Token amount.
 	event DonatedTokenClaimed(
 		uint256 indexed roundNum,
-		address beneficiaryAddress,
-		IERC20 tokenAddress,
+		address indexed beneficiaryAddress,
+		IERC20 indexed tokenAddress,
 		uint256 amount
 	);
 
@@ -138,8 +138,8 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param index `donatedNfts` item index.
 	event DonatedNftClaimed(
 		uint256 indexed roundNum,
-		address beneficiaryAddress,
-		IERC721 nftAddress,
+		address indexed beneficiaryAddress,
+		IERC721 indexed nftAddress,
 		uint256 nftId,
 		uint256 index
 	);

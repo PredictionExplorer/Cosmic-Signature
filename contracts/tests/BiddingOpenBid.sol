@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 // #region
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+// import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -25,7 +25,7 @@ import { IBidding } from "../production/interfaces/IBidding.sol";
 // #region
 
 abstract contract BiddingOpenBid is
-	ReentrancyGuardTransientUpgradeable,
+	// ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	BiddingBase,
@@ -87,7 +87,8 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev Comment-202502051 relates.
+	/// ToDo-202412164-2 applies.
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
@@ -103,7 +104,8 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev Comment-202502051 relates.
+	/// ToDo-202412164-2 applies.
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		// _donateNft(nftAddress_, nftId_);
@@ -130,7 +132,8 @@ abstract contract BiddingOpenBid is
 
 	/// @param isOpenBid_ Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
 	/// `nextEthBidPrice` will be calculated based on `msg.value`.
-	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 applies.
+	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// #region
 		
 		// BidParams memory params = abi.decode(data_, (BidParams));
@@ -259,12 +262,20 @@ abstract contract BiddingOpenBid is
 
 		if (overpaidEthBidPrice_ > int256(0)) {
 			// Refunding excess ETH if the bidder sent more than required.
-			// todo-1 No reentrancy vulnerability?
-			(bool isSuccess_, ) = msg.sender.call{value: uint256(overpaidEthBidPrice_)}("");
-			require(
-				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, uint256(overpaidEthBidPrice_))
-			);
+			// But first checking if the refund is big enough to justify the refund transfer transaction fee.
+			// Comment-202502052 relates and/or applies.
+			// Comment-202502054 relates and/or applies.
+			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
+			if (uint256(overpaidEthBidPrice_) >= ethBidRefundAmountMinLimit_) {
+				// A reentry can happen here.
+				// Comment-202502051 relates.
+				// Comment-202502043 applies.
+				(bool isSuccess_, ) = msg.sender.call{value: uint256(overpaidEthBidPrice_)}("");
+
+				if ( ! isSuccess_ ) {
+					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, uint256(overpaidEthBidPrice_));
+				}
+			}
 		}
 
 		// #endregion
@@ -385,7 +396,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// Comment-202501045 applies.
 
 		// Comment-202409179 applies.

@@ -45,8 +45,7 @@ interface ICosmicSignatureToken is IERC20, IAddressValidator {
 
 	// /// @notice Emitted when `marketingWalletAddress` is changed.
 	// /// @param newValue The new value.
-	// /// todo-9 Should it be declared `indexed`? 
-	// event MarketingWalletAddressChanged(address newValue);
+	// event MarketingWalletAddressChanged(address indexed newValue);
 
 	// /// @notice Emitted when `marketingWalletBalanceAmountMaxLimit` is changed.
 	// /// @param newValue The new value.

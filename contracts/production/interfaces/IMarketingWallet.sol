@@ -20,7 +20,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.
-	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken newValue);
+	event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken indexed newValue);
 
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
@@ -30,7 +30,6 @@ interface IMarketingWallet is IAddressValidator {
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev todo-0 Maybe eliminate this method and declare `token` `immutable`.
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.

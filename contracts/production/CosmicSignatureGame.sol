@@ -62,9 +62,16 @@ contract CosmicSignatureGame is
 	// #endregion
 	// #region `initialize`
 
-	function initialize(address ownerAddress_) external override initializer() {
+	function initialize(address ownerAddress_) external override virtual initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
 
+		_initialize(ownerAddress_);
+	}
+
+	// #endregion
+	// #region `_initialize`
+
+	function _initialize(address ownerAddress_) internal {
 		// [Comment-202501012]
 		// We are supposed to not be initialized yet.
 		// [/Comment-202501012]
@@ -84,6 +91,7 @@ contract CosmicSignatureGame is
 		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
 		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		nextEthBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR;
+		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
 
 		// // [Comment-202411211]
 		// // If this condition is `true` it's likely that `setRoundActivationTime` will not be called,

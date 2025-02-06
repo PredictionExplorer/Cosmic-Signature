@@ -5,6 +5,7 @@ pragma solidity 0.8.28;
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
 /// @dev todo-1 Eliminate this interface and contract.
+/// @dev todo-1 Or leave it and remove all garbage?
 interface INftDonations is ICosmicSignatureGameStorage {
 	// /// @notice Emitted when an NFT is donated
 	// /// @param donorAddress The address of the donor

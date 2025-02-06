@@ -15,7 +15,8 @@ interface ICharityWallet {
 	/// @param amount The amount of ETH donated.
 	event DonationReceived(address indexed donorAddress, uint256 amount);
 
-	// todo-1 Make sense to delete this garbage? But maybe tell the guys first to make sure they don't rely on this event.
+	// todo-1 +++ I posted a message that I had eliminated this: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1738629443108849
+	// todo-1 +++ Leave this commented? Don't remove?
 	// /// @notice Emitted after accumulated donations were sent to the charity.
 	// /// @param charityAddress Charity address.
 	// /// @param amount The amount of ETH transferred to the charity.
@@ -31,13 +32,21 @@ interface ICharityWallet {
 	/// It's OK if it's zero -- to give the contract owner an option to temporarily suspend charity donations.
 	function setCharityAddress(address newValue_) external;
 
-	/// @notice Sends all accumulated donations to the designated charity.
-	/// Expected to be called approximately once a month, but frequency may vary
+	/// @notice Sends all accumulated ETH donations to the designated charity.
+	/// [Comment-202502035]
+	/// Expected to be called approximately once a month, but frequency may vary.
+	/// [/Comment-202502035]
 	/// @dev
 	/// [Comment-202409273]
-	/// This function is intentionally not restricted to `onlyOwner` to ensure transparency
-	/// and allow regular donations. It can be called by anyone at any time.
+	/// This method is intentionally not restricted to `onlyOwner`. Anybody is welcomed to call it at any time.
+	/// This design ensures transparency and encourages regular donations.
 	/// [/Comment-202409273]
-	/// todo-0 Do we need an oveload of this accepting an amount to send?
 	function send() external;
+
+	/// @notice Sends the given ETH amount to the designated charity.
+	/// Comment-202502035 applies.
+	/// @param amount_ ETH amount to transfer to charity.
+	/// It's OK if it's zero.
+	/// @dev Comment-202409273 applies.
+	function send(uint256 amount_) external;
 }
