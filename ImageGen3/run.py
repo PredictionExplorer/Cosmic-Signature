@@ -3,71 +3,53 @@ import subprocess
 # ===================== Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'base_seed_hex': 'beef16',  # Adjust as desired
-    'num_runs': 1000           # Number of distinct seeds
+    'base_seed_hex': 'beef17',
+    'num_seeds': 7,   # We’ll generate 7 distinct seeds
+    # The 7 blend/compositing modes we want to test:
+    'blend_modes': [
+        "add",
+        "alpha1",
+        "alpha2",
+        "alpha3",
+        "partial1",
+        "partial2",
+        "partial3"
+    ],
+    # Example: you might want a fixed number of total orbits to search
+    'num_sims': 3000
 }
+
 
 def main():
     """
-    For each seed, run four times:
-      1) no flags (default additive)
-      2) --color-dodge
-      3) --color-burn
-      4) --overlay
-
-    Always do --num-sims=3000, no --special.
+    For each of 7 seeds, run the Rust program 7 times (one per blend_mode).
+    Each run will produce a distinct video/image based on that blend_mode.
     """
+    program_path = CONFIG['program_path']
     base_hex = CONFIG['base_seed_hex']
-    for i in range(CONFIG['num_runs']):
-        # Build the seed string (e.g. "0xBEEF130000", "0xBEEF130001", etc.)
+    num_seeds = CONFIG['num_seeds']
+    blend_modes = CONFIG['blend_modes']
+    num_sims = CONFIG['num_sims']
+
+    for i in range(num_seeds):
+        # Construct a seed string in hex. Example: 0xbeef160000, 0xbeef160001, etc.
         seed_str = f"0x{base_hex}{i:04X}"
 
-        # ---------- 1) No flags ----------
-        file_name_noflags = f"seed-{seed_str[2:]}-noflags"
-        cmd_noflags = [
-            CONFIG['program_path'],
-            "--seed", seed_str,
-            "--file-name", file_name_noflags,
-            "--num-sims", "3000"
-        ]
-        print("Running command (no flags):", " ".join(cmd_noflags))
-        subprocess.run(cmd_noflags, check=True)
+        for mode in blend_modes:
+            # Build an output file name that includes the seed suffix & the blend mode
+            # Example: "seed-beef160000-add", "seed-beef160000-alpha1", etc.
+            file_name = f"seed-{seed_str[2:]}-{mode}"
 
-        # ---------- 2) Color Dodge ----------
-        file_name_dodge = f"seed-{seed_str[2:]}-color-dodge"
-        cmd_dodge = [
-            CONFIG['program_path'],
-            "--seed", seed_str,
-            "--file-name", file_name_dodge,
-            "--num-sims", "3000",
-            "--color-dodge"
-        ]
-        print("Running command (color-dodge):", " ".join(cmd_dodge))
-        subprocess.run(cmd_dodge, check=True)
+            cmd = [
+                program_path,
+                "--seed", seed_str,
+                "--file-name", file_name,
+                "--num-sims", str(num_sims),
+                "--blend-mode", mode
+            ]
 
-        # ---------- 3) Color Burn ----------
-        file_name_burn = f"seed-{seed_str[2:]}-color-burn"
-        cmd_burn = [
-            CONFIG['program_path'],
-            "--seed", seed_str,
-            "--file-name", file_name_burn,
-            "--num-sims", "3000",
-            "--color-burn"
-        ]
-        print("Running command (color-burn):", " ".join(cmd_burn))
-        subprocess.run(cmd_burn, check=True)
-
-        # ---------- 4) Overlay ----------
-        file_name_overlay = f"seed-{seed_str[2:]}-overlay"
-        cmd_overlay = [
-            CONFIG['program_path'],
-            "--seed", seed_str,
-            "--file-name", file_name_overlay,
-            "--num-sims", "3000",
-            "--overlay"
-        ]
-        print("Running command (overlay):", " ".join(cmd_overlay))
-        subprocess.run(cmd_overlay, check=True)
+            print("Running command:", " ".join(cmd))
+            subprocess.run(cmd, check=True)
 
 
 if __name__ == "__main__":
