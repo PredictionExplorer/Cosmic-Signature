@@ -64,6 +64,7 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // Comment-202409011 applies.
 // [ToDo-202409098-1]
 // When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
+// >>> Also ToDo-202502065-1 and ToDo-202502067-1.
 // [/ToDo-202409098-1]
 const solidityVersion = "0.8.28";
 

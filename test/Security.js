@@ -82,7 +82,7 @@ describe("Security", function () {
 	// 	await expect(cosmicSignatureGameProxy.connect(owner).donateNft(await maliciousNft.getAddress(), 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
-	it("bidWithEthAndDonateNft() function is confirmed to be non-reentrant", async function () {
+	it("The bidWithEthAndDonateNft method is confirmed to be non-reentrant", async function () {
 		const {signers, cosmicSignatureGameProxy, prizesWallet,} = await loadFixture(deployContractsForTesting);
 		const [owner,] = signers;
 	

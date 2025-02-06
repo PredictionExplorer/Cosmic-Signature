@@ -117,18 +117,26 @@ abstract contract MainPrize is
 				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
 			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 
+			// todo-1 We are supposed to declare this near ToDo-202502065-1.
+			ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
+
 			// #endregion
 			// #region
 
 			{
 				// #region
 
-				// CST minting specs.
-				// Items:
-				//    [0] for `marketingWallet`.
-				//    [1] for `enduranceChampionAddress`.
-				//    [2] for `lastCstBidderAddress`. This item is not guaranteed to exist.
-				ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
+				// [ToDo-202502065-1]
+				// To eliminate compile errors, I had to move this declaration elsewhere.
+				// To be revisited.
+				// ToDo-202502067-1 relates.
+				// [/ToDo-202502065-1]
+				// // CST minting specs.
+				// // Items:
+				// //    [0] for `marketingWallet`.
+				// //    [1] for `enduranceChampionAddress`.
+				// //    [2] for `lastCstBidderAddress`. This item is not guaranteed to exist.
+				// ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_;
 
 				// #endregion
 				// #region
@@ -337,7 +345,12 @@ abstract contract MainPrize is
 				// #endregion
 				// #region Minting CSTs.
 
-				token.mintMany(cosmicSignatureTokenMintSpecs_);
+				// [ToDo-202502067-1]
+				// To eliminate compile errors, I had to move this action elsewhere.
+				// To be revisited.
+				// ToDo-202502065-1 relates.
+				// [/ToDo-202502067-1]
+				// token.mintMany(cosmicSignatureTokenMintSpecs_);
 
 				// #endregion
 			}
@@ -416,6 +429,12 @@ abstract contract MainPrize is
 								emit RaffleWinnerBidderEthPrizeAllocated(roundNum, winnerIndex_, raffleWinnerAddress_, raffleEthPrizeAmountForBidder_);
 							} while (winnerIndex_ > 0);
 						}
+
+						// #endregion
+						// #region Minting CSTs.
+
+						// todo-1 We are supposed to do this near ToDo-202502067-1.
+						token.mintMany(cosmicSignatureTokenMintSpecs_);
 
 						// #endregion
 						// #region
