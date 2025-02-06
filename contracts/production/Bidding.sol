@@ -109,9 +109,11 @@ abstract contract Bidding is
 				)
 			);
 			require(
-				// todo-0 Here and in some other places, check something like `randomWalkNft.isAuthorized`?
-				// todo-0 But in OpenZeppelin 4.x the method doesn't exist. A similar method existed, named `_isApprovedOrOwner`.
+				// It would probably be a bad idea to evaluate something like
+				// `randomWalkNft._isAuthorized` or `randomWalkNft._isApprovedOrOwner`
+				// Comment-202502063 relates.
 				msg.sender == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
+
 				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
@@ -132,6 +134,8 @@ abstract contract Bidding is
 
 		// [Comment-202501061]
 		// This formula ensures that the result increases.
+		// todo-1 Everywhere we use formulas that add 1, make sure the web site uses the same formulas.
+		// todo-1 For example, it offers to increase bid price by 1% or 2%.
 		// [/Comment-202501061]
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
 
@@ -176,21 +180,6 @@ abstract contract Bidding is
 				// A reentry can happen here.
 				// Comment-202502051 relates.
 				// Comment-202502043 applies.
-				//
-				// todo-0 Issue. During the initial Dutch auction, we will likely refund a very small amount that would not justify the gas fees.
-				// todo-0 At least comment.
-				// todo-0 Maybe if the bid price a half a minute or a minute (make it a constant in `CosmicSignatureConstants`) ago
-				// todo-0 was >= `msg.value`, don't refund.
-				// 
-				// todo-0 Add a param that equals 21000 by default.
-				// todo-0 Multiply it by block.basefee.
-				// toso-0 uint256 refundTransferTransactionFeeInEth_ = 21000(take this from a param) * block.basefee;
-				// todo-0 If we need to refund more than that do the refund.
-				// todo-0 Ask Taras and Nick if this logic is correct.
-				// todo-0 ??? Only check this if this was the 1st bid in a round.
-				// 
-				// todo-0 Start with findig a regular transfer transaction of arbscan and studying its fees.
-				// 
 				(bool isSuccess_, ) = msg.sender.call{value: uint256(overpaidEthBidPrice_)}("");
 
 				if ( ! isSuccess_ ) {
@@ -502,8 +491,8 @@ abstract contract Bidding is
 			// It's probably more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
 			// This logic assumes that ETH bid price is a nonzero.
 			// During an ETH Dutch auction, we ensure that near Comment-202501301 and Comment-202501303.
-			// todo-0 Make sure it's correct to make this validation at this point, rather than sooner, like near Comment-202501045.
-			// todo-0 Maybe write a comment explaining things.
+			// todo-1 Make sure it's correct to make this validation at this point, rather than sooner, like near Comment-202501045.
+			// todo-1 Maybe write a comment explaining things.
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 

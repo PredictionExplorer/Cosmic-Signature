@@ -12,6 +12,9 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 /// todo-1 Compare this to an old version to make sure I didn't mess anything up.
 /// todo-1 Where I refactored code, explain things and reference this comment.
 /// [/Comment-202409149]
+///
+/// OpenZeppelin of the latest version is not compatible with the already deployed contract.
+/// Comment-202502063 relates.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 
@@ -77,8 +80,10 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
-		// Issue. This method doesn't exist in the already deployed contract.
+		// [Comment-202502063]
+		// Issue. `_isAuthorized` doesn't exist in the already deployed contract.
 		// In OpenZeppelin 4.x there was a similar method, named `_isApprovedOrOwner`.
+		// [/Comment-202502063]
 		require(_isAuthorized(_ownerOf(tokenId), _msgSender(), tokenId), "setTokenName caller is not owner nor approved");
 
 		require(bytes(name).length <= 32, "Token name is too long.");
