@@ -396,12 +396,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `numEthDeposits`.
 	///    `ethDeposits`.
 	///    `onlyGame`.
-	///
-	/// todo-0 Here and elsewhere, consider replacing methods like this with `receive`.
-	/// todo-0 Find all: payable
-	/// todo-0 It would probably be cheaper gas-wise.
-	/// todo-0 Or at least write comments.
-	/// todo-0 But in this particular case `receive` won't be sufficient for our needs.
 	function depositIfPossible(uint256 roundNum_) external payable override onlyGame {
 		// #region
 
@@ -527,6 +521,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			// if (amount_ > 0)
 
 			{
+				// Comment-202502043 applies.
 				// [Comment-202409214]
 				// There is no reentrancy vulnerability here.
 				// [/Comment-202409214]
@@ -819,15 +814,15 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// if (rewardAmount_ > 0)
 
 		{
+			// Comment-202502043 applies.
 			// [Comment-202410158]
 			// Comment-202409214 applies.
 			// [/Comment-202410158]
 			(bool isSuccess_, ) = msg.sender.call{value: rewardAmount_}("");
 
-			require(
-				isSuccess_,
-				CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", msg.sender, rewardAmount_)
-			);
+			if ( ! isSuccess_ ) {
+				revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", msg.sender, rewardAmount_);
+			}
 		}
 
 		// #endregion

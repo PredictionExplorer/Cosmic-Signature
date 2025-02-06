@@ -172,8 +172,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
 		emit EthWithdrawn(msg.sender, msg.sender, ethBalanceAmountCopy_);
+
+		// Comment-202502043 applies.
 		(bool isSuccess_, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
-		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
+
+		if ( ! isSuccess_ ) {
+			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_);
+		}
 	}
 
 	// #endregion
@@ -194,8 +199,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
 		emit EthWithdrawn(prizeWinnerAddress_, msg.sender, ethBalanceAmountCopy_);
+
+		// Comment-202502043 applies.
 		(bool isSuccess_, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
-		require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_));
+
+		if ( ! isSuccess_ ) {
+			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_);
+		}
 	}
 
 	// #endregion

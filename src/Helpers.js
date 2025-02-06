@@ -15,6 +15,18 @@
 const { HardhatContext } = require("hardhat/internal/context");
 
 // #endregion
+// #region `generateRandomUInt32`
+
+function generateRandomUInt32() {
+	// Comment-202409255 applies.
+	const hre_ = HardhatContext.getHardhatContext().environment;
+
+	const randomBytes_ = hre_.ethers.randomBytes(4);
+	const randomNumber_ = hre_.ethers.toNumber(randomBytes_);
+	return randomNumber_;
+}
+
+// #endregion
 // #region `generateRandomUInt256`
 
 function generateRandomUInt256() {
@@ -81,6 +93,7 @@ function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_
 // #region
 
 module.exports = {
+	generateRandomUInt32,
 	generateRandomUInt256,
 	parseBooleanEnvironmentVariable,
 	parseIntegerEnvironmentVariable,

@@ -7,7 +7,8 @@ pragma solidity 0.8.28;
 // #region
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ERC721Enumerable, ERC721 } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
@@ -21,24 +22,13 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
-	/// todo-0 Declare some other variables `immutable`.
-	/// todo-0 But first think which variables should be changeable and which should not be.
-	/// todo-0 Do we need to make any contracts upgradeable or replaceable?
-	/// todo-0 If we use the `CREATE2` opcode to deploy contracrs we will know their addresses in advance,
-	/// todo-0 so we will be able to declare all addresses `immutable`.
-	/// todo-0 But the use of `CREATE2` won't be helpful because the Game anyway can't contain `immutable` variables.
-	/// todo-0 In addition, do we want to have an option to deploy new versions of staking wallets?
-	/// todo-0 There was a discussion about that on Slack.
 	address public immutable game;
 
 	/// @notice The base URI for NFT metadata.
-	/// todo-1 Do we need to hardcode a valid value here?
-	/// todo-0 Should this be `public`? If so rename it without `_`.
-	string private _nftBaseUri;
+	string public nftBaseUri = CosmicSignatureConstants.DEFAULT_COSMIC_SIGNATURE_NFT_BASE_URI;
 
 	/// @notice An IPFS link to a script that generates NFT images and videos based on the given seed.
-	/// todo-1 Do we need to hardcode a valid value here?
-	string public nftGenerationScriptUri = "ipfs://TBD";
+	string public nftGenerationScriptUri = CosmicSignatureConstants.DEFAULT_COSMIC_SIGNATURE_NFT_GENERATION_SCRIPT_URI;
 
 	/// @notice For each NFT index (which equals NFT ID), contains NFT details.
 	NftInfo[1 << 64] private _nftsInfo;
@@ -62,7 +52,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
-	/// todo-0 What about changing the symbol to "CSN"?
 	constructor(address game_)
 		Ownable(_msgSender())
 		ERC721("CosmicSignatureNft", "CSS")
@@ -74,7 +63,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #region `setNftBaseUri`
 
 	function setNftBaseUri(string memory newValue_) external override onlyOwner {
-		_nftBaseUri = newValue_;
+		nftBaseUri = newValue_;
 		emit NftBaseUriChanged(newValue_);
 	}
 
@@ -82,7 +71,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #region `_baseURI`
 
 	function _baseURI() internal view override returns(string memory) {
-		return _nftBaseUri;
+		return nftBaseUri;
 	}
 
 	// #endregion

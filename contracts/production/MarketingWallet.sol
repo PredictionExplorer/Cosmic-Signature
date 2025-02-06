@@ -28,6 +28,8 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	}
 
 	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
+		emit RewardPaid(marketerAddress_, amount_);
+
 		// try
 		// [Comment-202501137]
 		// This will validate that the given address is a nonzero.
@@ -38,25 +40,20 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 		// } catch {
 		// 	revert CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", marketerAddress_, amount_);
 		// }
-
-		emit RewardPaid(marketerAddress_, amount_);
 	}
 
 	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {
-		// Comment-202501137 applies.
-		token.transferMany(marketerAddresses_, amount_);
-
 		for (uint256 index_ = marketerAddresses_.length; index_ > 0; ) {
 			-- index_;
 			address marketerAddress_ = marketerAddresses_[index_];
 			emit RewardPaid(marketerAddress_, amount_);
 		}
+
+		// Comment-202501137 applies.
+		token.transferMany(marketerAddresses_, amount_);
 	}
 
 	function payManyRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override onlyOwner {
-		// Comment-202501137 applies.
-		token.transferMany(specs_);
-
 		for (uint256 index_ = specs_.length; index_ > 0; ) {
 			-- index_;
 			ICosmicSignatureToken.MintSpec calldata specReference_ = specs_[index_];
@@ -64,5 +61,8 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 			uint256 amount_ = specReference_.value;
 			emit RewardPaid(marketerAddress_, amount_);
 		}
+
+		// Comment-202501137 applies.
+		token.transferMany(specs_);
 	}
 }

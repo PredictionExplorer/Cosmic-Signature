@@ -4,6 +4,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame", function () {
@@ -179,11 +180,13 @@ describe("CosmicSignatureGame", function () {
 	// So now the call reverts "without a reason".
 	it("The fallback method behaves correctly", async function () {
 		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		
+
 		await expect(
 			hre.ethers.provider.call({
 				to: await cosmicSignatureGameProxy.getAddress(),
-				data: "0xffffffff", // non-existent selector
+
+				// non-existent selector
+				data: /*"0xffffffff"*/ "0x" + generateRandomUInt32().toString(16).padStart(8, "0"),
 			})
 		// ).to.be.revertedWith("Method does not exist.");
 		).to.be.reverted;

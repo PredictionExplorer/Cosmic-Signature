@@ -22,7 +22,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// todo-1 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
 /// todo-1 At least write a comment here and near `RandomWalkNFT` and/or near respective interfaces.
 interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
-	/// @notice Details about a CosmicSignature NFT.
+	/// @notice Details about a Cosmic Signature NFT.
 	struct NftInfo {
 		/// @notice The custom name set for the NFT.
 		/// It's not required to provide one.
@@ -51,7 +51,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 		uint256 nftId;
 	}
 
-	/// @notice Emitted when `_nftBaseUri` is changed.
+	/// @notice Emitted when `nftBaseUri` is changed.
 	/// @param newValue The new value.
 	event NftBaseUriChanged(string newValue);
 
@@ -71,7 +71,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @param nftName The custom name set for the NFT.
 	event NftNameChanged(uint256 indexed nftId, string nftName);
 
-	/// @notice Sets `_nftBaseUri`.
+	/// @notice Sets `nftBaseUri`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setNftBaseUri(string memory newValue_) external;

@@ -81,16 +81,13 @@ contract BidderContract {
 		}
 	
 		CosmicSignatureNft nft_ = cosmicSignatureGame.nft();
-		// todo-0 Review all calls to `call`.
-		// todo-0 I didn't replace those with high level calls when it's used simply to send funds.
-		// todo-0 Think if it's still possible to communicate to SMTChecker which specific contract we send funds to.
-		// todo-0 Maybe in the mode in which SMTChecker is enabled make high level calls.
-		// todo-0 In any case, write comments.
+
+		// Comment-202502043 applies.
 		(bool isSuccess_, ) = creator.call{value: address(this).balance}("");
-		require(
-			isSuccess_,
-			CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance)
-		);
+
+		if ( ! isSuccess_ ) {
+			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance);
+		}
 		uint256 totalSupply = nft_.totalSupply();
 		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 			address tokenOwner = nft_.ownerOf(i);

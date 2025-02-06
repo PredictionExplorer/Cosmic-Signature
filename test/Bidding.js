@@ -38,9 +38,13 @@ describe("Bidding", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).lessThan(-1e9);
 
-		// check that if we sent too much, we get our money back
+		// let latestBlock_ = await hre.ethers.provider.getBlock("latest");
+		// console.log(latestBlock_.baseFeePerGas);
+
+		// Testing that if we send too much, we will get a refund back.
+		// Keeping in mind that a too small refund won't be transferred back to the bidder.
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ + 1000n, });
+		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ + BigInt(10 ** 15), });
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).to.equal(initialDurationUntilMainPrize_);
 		const contractBalance = await hre.ethers.provider.getBalance(cosmicSignatureGameProxy.getAddress());
