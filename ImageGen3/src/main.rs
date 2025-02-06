@@ -72,7 +72,7 @@ struct Args {
     max_mass: f64,
 
     /// Borda weighting: chaos measure
-    #[arg(long, default_value_t = 3.0)]
+    #[arg(long, default_value_t = 5.0)]
     chaos_weight: f64,
 
     /// Borda weighting: average triangle area
@@ -84,7 +84,7 @@ struct Args {
     dist_weight: f64,
 
     /// Borda weighting: lyapunov exponent
-    #[arg(long, default_value_t = 2.5)]
+    #[arg(long, default_value_t = 5.0)]
     lyap_weight: f64,
 
     /// Borda weighting: aspect ratio closeness
