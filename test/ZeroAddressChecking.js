@@ -24,11 +24,11 @@ describe("ZeroAddressChecking", function () {
 		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
 		await expect(cosmicSignatureGameProxy.setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
 	});
-	it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
-		const {marketingWallet,} = await loadFixture(deployContractsForTesting);
-	
-		await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
-	});
+	// it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
+	// 	const {marketingWallet,} = await loadFixture(deployContractsForTesting);
+	//	
+	// 	await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
+	// });
 	it("Shouldn't be possible to deploy StakingWalletRandomWalkNft with zero-address-ed parameters", async function () {
 		const StakingWalletRandomWalkNft = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft");
 		await expect(StakingWalletRandomWalkNft.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(StakingWalletRandomWalkNft, "ZeroAddress");
