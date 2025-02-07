@@ -159,7 +159,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param roundNum_ The current bidding round number.
 	/// @param mainPrizeBeneficiaryAddress_ Main prize beneficiary address.
 	/// Comment-202411254 applies.
-	/// The Game contract passes `msg.sender` for this parameter.
+	/// The Game contract passes `_msgSender()` for this parameter.
 	/// An alternative would be to pass `lastBidderAddress` instead.
 	/// As a result, even if the last bidder forgets to claim the main prize, we would still record them as the winner,
 	/// which would make them entitled to claim donated ERC-20 tokens and ERC-721 NFTs.
@@ -195,7 +195,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param prizeWinnerAddress_ Prize winner address.
 	function withdrawEth(address prizeWinnerAddress_) external;
 
-	/// @return Details on ETH balance belonging to `msg.sender`.
+	/// @return Details on ETH balance belonging to `_msgSender()`.
 	/// @dev Comment-202410274 relates.
 	function getEthBalanceInfo() external view returns(EthBalanceInfo memory);
 

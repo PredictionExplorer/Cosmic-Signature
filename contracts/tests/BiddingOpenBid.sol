@@ -91,7 +91,7 @@ abstract contract BiddingOpenBid is
 	/// ToDo-202412164-2 applies.
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
-		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
 	// #endregion
@@ -109,7 +109,7 @@ abstract contract BiddingOpenBid is
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		// _donateNft(nftAddress_, nftId_);
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
@@ -215,12 +215,12 @@ abstract contract BiddingOpenBid is
 				)
 			);
 			require(
-				msg.sender == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
+				_msgSender() == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
 				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
 					uint256(/*params.randomWalkNftId*/ randomWalkNftId_),
-					msg.sender
+					_msgSender()
 				)
 			);
 			usedRandomWalkNfts[uint256(/*params.randomWalkNftId*/ randomWalkNftId_)] = 1;
@@ -233,11 +233,11 @@ abstract contract BiddingOpenBid is
 		// #region
 
 		// Updating bidding statistics.
-		biddersInfo[roundNum][msg.sender].totalSpentEthAmount += paidEthBidPrice_;
+		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
 		// ToDo-202409245-1 applies.
-		token.mint(msg.sender, cstRewardAmountForBidding);
+		token.mint(_msgSender(), cstRewardAmountForBidding);
 
 		// #endregion
 		// #region
@@ -249,7 +249,7 @@ abstract contract BiddingOpenBid is
 
 		emit BidPlaced(
 			roundNum,
-			msg.sender,
+			_msgSender(),
 			int256(paidEthBidPrice_),
 			-1,
 			/*params.randomWalkNftId*/ randomWalkNftId_,
@@ -270,10 +270,10 @@ abstract contract BiddingOpenBid is
 				// A reentry can happen here.
 				// Comment-202502051 relates.
 				// Comment-202502043 applies.
-				(bool isSuccess_, ) = msg.sender.call{value: uint256(overpaidEthBidPrice_)}("");
+				(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthBidPrice_)}("");
 
 				if ( ! isSuccess_ ) {
-					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", msg.sender, uint256(overpaidEthBidPrice_));
+					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthBidPrice_));
 				}
 			}
 		}
@@ -374,7 +374,7 @@ abstract contract BiddingOpenBid is
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
-		prizesWallet.donateToken(roundNum, msg.sender, tokenAddress_, amount_);
+		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
 	// #endregion
@@ -383,7 +383,7 @@ abstract contract BiddingOpenBid is
 	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		// _donateNft(nftAddress_, nftId_);
-		prizesWallet.donateNft(roundNum, msg.sender, nftAddress_, nftId_);
+		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
@@ -409,9 +409,9 @@ abstract contract BiddingOpenBid is
 		);
 
 		// Comment-202412251 applies.
-		// #enable_asserts assert(msg.sender != marketingWallet);
+		// #enable_asserts assert(_msgSender() != marketingWallet);
 
-		// uint256 userBalance = token.balanceOf(msg.sender);
+		// uint256 userBalance = token.balanceOf(_msgSender());
 
 		// // Comment-202409181 applies.
 		// require(
@@ -425,19 +425,19 @@ abstract contract BiddingOpenBid is
 
 		// Comment-202409177 applies.
 		// Comment-202501125 applies.
-		// token.burn(msg.sender, paidPrice_);
-		// token.transferToMarketingWalletOrBurn(msg.sender, paidPrice_);
+		// token.burn(_msgSender(), paidPrice_);
+		// token.transferToMarketingWalletOrBurn(_msgSender(), paidPrice_);
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
-			mintAndBurnSpecs_[0].account = msg.sender;
+			mintAndBurnSpecs_[0].account = _msgSender();
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
-			mintAndBurnSpecs_[1].account = msg.sender;
+			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
 			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
-		biddersInfo[roundNum][msg.sender].totalSpentCstAmount += paidPrice_;
+		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 
 		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
@@ -447,10 +447,10 @@ abstract contract BiddingOpenBid is
 		if (lastCstBidderAddress == address(0)) {
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
-		lastCstBidderAddress = msg.sender;
+		lastCstBidderAddress = _msgSender();
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		_bidCommon(message_ /* , BidType.CST */);
-		emit BidPlaced(roundNum, msg.sender, -1, int256(paidPrice_), -1, message_, mainPrizeTime);
+		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, mainPrizeTime);
 	}
 
 	// #endregion
@@ -559,24 +559,24 @@ abstract contract BiddingOpenBid is
 		}
 
 		// lastBidType = bidType;
-		lastBidderAddress = msg.sender;
+		lastBidderAddress = _msgSender();
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 		uint256 numBids_ = bidderAddressesReference_.numItems;
-		bidderAddressesReference_.items[numBids_] = msg.sender;
+		bidderAddressesReference_.items[numBids_] = _msgSender();
 		++ numBids_;
 		bidderAddressesReference_.numItems = numBids_;
-		biddersInfo[roundNum][msg.sender].lastBidTimeStamp = block.timestamp;
+		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 
 		// // Comment-202501125 applies.
 		// // try
 		// // ToDo-202409245-1 applies.
-		// token.mint(/*lastBidderAddress*/ msg.sender, cstRewardAmountForBidding);
+		// token.mint(/*lastBidderAddress*/ _msgSender(), cstRewardAmountForBidding);
 		// // {
 		// // } catch {
 		// // 	revert
 		// // 		CosmicSignatureErrors.ERC20Mint(
 		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
-		// // 			/*lastBidderAddress*/ msg.sender,
+		// // 			/*lastBidderAddress*/ _msgSender(),
 		// // 			cstRewardAmountForBidding
 		// // 		);
 		// // }

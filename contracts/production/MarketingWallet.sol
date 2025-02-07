@@ -15,7 +15,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	/// @notice Constructor.
 	/// @param token_ The `CosmicSignatureToken` contract address.
 	constructor(CosmicSignatureToken token_)
-		Ownable(msg.sender)
+		Ownable(_msgSender())
 		providedAddressIsNonZero(address(token_)) {
 		token = token_;
 	}

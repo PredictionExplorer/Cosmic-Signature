@@ -128,8 +128,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// [/Comment-202411253]
 	modifier onlyGame() {
 		require(
-			msg.sender == game,
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+			_msgSender() == game,
+			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
 		);
 		_;
 	}
@@ -142,7 +142,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `msg.sender`.
+	///    `_msgSender`.
 	///    `Ownable.constructor`.
 	///    `providedAddressIsNonZero`.
 	///    `StakingWalletNftBase.constructor`.
@@ -153,7 +153,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `numEthDeposits`.
 	///    `numStateResets`.
 	constructor(CosmicSignatureNft nft_, address game_)
-		Ownable(msg.sender)
+		Ownable(_msgSender())
 		providedAddressIsNonZero(address(nft_))
 		providedAddressIsNonZero(game_) {
 		// #region
@@ -184,9 +184,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Problem is that there supposed to be only a single virtual method with this name. But this looks like we have 2 of them.
 	/// [/Comment-202411023]
 	/// Observable universe entities accessed here:
-	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    // `CosmicSignatureConstants.BooleanWithPadding`.
+	///    `_msgSender`.
 	///    `NftTypeCode`.
 	///    `NftStaked`.
 	///    `_numStakedNfts`.
@@ -220,7 +220,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 newStakeActionId_ = newActionCounter_;
 		StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
-		newStakeActionReference_.nftOwnerAddress = msg.sender;
+		newStakeActionReference_.nftOwnerAddress = _msgSender();
 		// #enable_asserts assert(newStakeActionReference_.maxUnpaidEthDepositIndex == 0);
 		uint256 newNumStakedNfts_ = _numStakedNfts + 1;
 		_numStakedNfts = newNumStakedNfts_;
@@ -228,8 +228,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// Comment-202410168 relates.
 		_nftWasStakedAfterPrevEthDeposit = 1;
 
-		emit NftStaked(newStakeActionId_, NftTypeCode.CosmicSignature, nftId_, msg.sender, newNumStakedNfts_);
-		nft.transferFrom(msg.sender, address(this), nftId_);
+		emit NftStaked(newStakeActionId_, NftTypeCode.CosmicSignature, nftId_, _msgSender(), newNumStakedNfts_);
+		nft.transferFrom(_msgSender(), address(this), nftId_);
 		
 		// #endregion
 		// #region
@@ -240,7 +240,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(nft.ownerOf(nftId_) == address(this));
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftId == nftId_);
-		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == msg.sender);
+		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == _msgSender());
 		// #enable_asserts assert(stakeActions[newStakeActionId_].maxUnpaidEthDepositIndex == 0);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 1);
 
@@ -385,9 +385,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `msg.sender`.
 	///    `msg.value`.
 	///    `CosmicSignatureErrors.NoStakedNfts`.
+	///    `_msgSender`.
 	///    `_numStakedNfts`.
 	///    `actionCounter`.
 	///    `EthDepositReceived`.
@@ -473,10 +473,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `address.call`.
 	///    `address.balance`.
-	///    `msg.sender` (indirectly).
 	///    `CosmicSignatureErrors.InvalidOperationInCurrentState`.
 	///    `CosmicSignatureEvents.FundTransferFailed`.
 	///    `CosmicSignatureEvents.FundsTransferredToCharity`.
+	///    `_msgSender` (indirectly).
 	///    `_numStakedNfts`.
 	///    `owner` (indirectly).
 	///    `onlyOwner`.
@@ -559,10 +559,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// The caller is required to pay the returned reward amount to the staker.
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
 	///    `CosmicSignatureErrors.NftAlreadyUnstaked`.
+	///    `_msgSender`.
 	///    `_numStakedNfts`.
 	///    `actionCounter`.
 	///    `NftUnstaked`.
@@ -590,9 +590,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
+		if (_msgSender() != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
-				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
+				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, _msgSender());
 			} else {
 				// [Comment-202410182]
 				// It's also possible that this stake action has already been deleted, but we have no knowledge about that.
@@ -622,17 +622,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		_numStakedNfts = newNumStakedNfts_;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
-		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, _msgSender(), newNumStakedNfts_, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
 
 		// Comment-202501145 relates.
-		nft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
+		nft.transferFrom(address(this), _msgSender(), stakeActionCopy_.nftId);
 
 		// #endregion
 		// #region
 
 		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - 1);
 		// #enable_asserts assert(actionCounter > 0);
-		// #enable_asserts assert(nft.ownerOf(stakeActionCopy_.nftId) == msg.sender);
+		// #enable_asserts assert(nft.ownerOf(stakeActionCopy_.nftId) == _msgSender());
 		// #enable_asserts assert(numUnpaidStakeActions - initialNumUnpaidStakeActions_ <= 1);
 		// // #enable_asserts assert(stakeActions[stakeActionId_].nftId == 0);
 		// // #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
@@ -648,10 +648,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @dev This method is to be called after the `NftUnstaked` or `RewardPaid` event was emitted
 	/// with a nonzero `maxUnpaidEthDepositIndex`.
 	/// Observable universe entities accessed here:
-	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
 	///    `CosmicSignatureErrors.NftNotUnstaked`.
+	///    `_msgSender`.
 	///    `RewardPaid`.
 	///    `StakeAction`.
 	///    `_NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
@@ -674,9 +674,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
+		if (_msgSender() != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
-				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to receive staking reward.", stakeActionId_, msg.sender);
+				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to receive staking reward.", stakeActionId_, _msgSender());
 			} else {
 				// Comment-202410182 applies.
 				revert CosmicSignatureErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
@@ -699,7 +699,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			// #enable_asserts assert(stakeActionReference_.maxUnpaidEthDepositIndex == 0);
 			-- numUnpaidStakeActions;
 		}
-		emit RewardPaid(stakeActionId_, stakeActionCopy_.nftId, msg.sender, rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
+		emit RewardPaid(stakeActionId_, stakeActionCopy_.nftId, _msgSender(), rewardAmount_, stakeActionCopy_.maxUnpaidEthDepositIndex);
 
 		// #endregion
 		// #region
@@ -787,8 +787,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `address.call`.
-	///    `msg.sender`.
 	///    `CosmicSignatureErrors.FundTransferFailed`.
+	///    `_msgSender`.
 	function _payReward(uint256 rewardAmount_) private {
 		// #region
 
@@ -818,10 +818,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			// [Comment-202410158]
 			// Comment-202409214 applies.
 			// [/Comment-202410158]
-			(bool isSuccess_, ) = msg.sender.call{value: rewardAmount_}("");
+			(bool isSuccess_, ) = _msgSender().call{value: rewardAmount_}("");
 
 			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", msg.sender, rewardAmount_);
+				revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", _msgSender(), rewardAmount_);
 			}
 		}
 

@@ -213,7 +213,7 @@ describe("MainPrize", function () {
 		let expectedBalanceStakingAfter = balanceStakingBefore + cosmicSignatureNftStakingTotalEthRewardAmount_;
 		expect(expectedBalanceStakingAfter).to.equal(balanceStakingAfter);
 	});
-	it("The msg.sender will get the prize if the lastBidderAddress won't claim it", async function () {
+	it("The _msgSender() will get the prize if the lastBidderAddress won't claim it", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
 		const [owner, addr1, addr2, addr3,] = signers;
 
