@@ -91,7 +91,7 @@ library CosmicSignatureConstants {
 	/// We don't know what the L1 gas fee is going to be, so this value is approximate.
 	/// todo-2 It will liikely need tweaking over time, especially after Arbitrum decentralizes their blockchain.
 	/// [/Comment-202502054]
-	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = 29 * 21000 / 10;
+	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = 21000 * 29 / 10;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
 	/// @dev
@@ -113,6 +113,10 @@ library CosmicSignatureConstants {
 	// /// Issue. Actually the above comment is BS. We do not actually round prices. A price can be any amount in Weis.
 	// /// todo-1 The web site shows 2 digits after the decimal point. Maybe in the tooltip it should show the whole number with all the digits.
 	// /// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1738533218252629
+	// /// todo-1 They will increase the number of shown significant digits, right?
+	// /// todo-1 Besides, it won't let the user to bid if they have no enough funds.
+	// /// todo-1 So we are probably OK here.
+	// /// todo-1 Comment and/or remove garbage.
 	// uint256 internal constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
 
 	/// @notice Default `bidMessageLengthMaxLimit`.

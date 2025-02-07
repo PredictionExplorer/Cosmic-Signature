@@ -21,7 +21,7 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// Note that `SelfDestructibleCosmicSignatureGame` supports a `selfdestruct`.
 /// But I have no time to get such an unsafe feature right in the production code.
 ///
-/// todo-1 This contract is too big. So we need to implement some kind of a Diamond pattern.
+/// todo-0 This contract is too big. So we need to implement some kind of a Diamond pattern.
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,

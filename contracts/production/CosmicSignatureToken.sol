@@ -41,6 +41,7 @@ contract CosmicSignatureToken is
 	// /// The held amount is replenished when someone bids with CST.
 	// /// todo-9 The above comment is incorrect. We now mint at the end of a round.
 	// /// Comment-202412201 relates and/or applies.
+	// /// todo-9 Declare this `immutable`?
 	// address public marketingWalletAddress;
 
 	// /// @notice

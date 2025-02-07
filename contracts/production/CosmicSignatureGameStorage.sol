@@ -25,9 +25,10 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 ///
-/// todo-1 Document which variables are valid under what conditions,
-/// todo-1 which variables should be accessed directly and which through an accessor,
-/// todo-1 ??? which variables emit events (some are changed programmatically without emitting an event).
+/// todo-0 Document which variables are valid under what conditions,
+/// todo-0 which variables should be accessed directly and which through an accessor,
+/// todo-0 ??? which variables emit events (some are changed programmatically without emitting an event).
+/// todo-0 See Comment-202501022.
 ///
 /// todo-1 +++ Think of what params are currently not configurable, but might need to be configurable, such as `nextEthBidPrice`.
 /// todo-1 +++ Consider making some params non-configurable.
@@ -91,9 +92,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Next ETH bid price.
 	/// [Comment-202501022]
 	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
-	/// todo-1 ??? Therefore would it make sense to declare this `internal` and rename to `_...` and add a smarter getter?
-	/// todo-1 The same applies to other variables that are not always valid.
-	/// todo-1 Think where to reference this comment. It applies to some method return values too.
+	/// todo-0 ??? Therefore would it make sense to declare this `internal` and rename to `_...` and add a smarter getter?
+	/// todo-0 The same applies to other variables that are not always valid.
+	/// todo-0 Think where to reference this comment. It applies to some method return values too.
 	/// [/Comment-202501022]
 	/// [Comment-202411065]
 	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
@@ -158,7 +159,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-1 Tell them that I eliminated this.
+	// /// todo-0 Tell them that I eliminated this.
 	// /// todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
@@ -234,13 +235,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202412152 relates.
 	/// We use this on a number of other occasions as well.
-	/// todo-1 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
+	/// todo-0 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
 	/// [/Comment-202411067]
-	/// todo-1 Reference Comment-202501025.
+	/// todo-0 Reference Comment-202501025.
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
 	/// @notice Comment-202411064 applies.

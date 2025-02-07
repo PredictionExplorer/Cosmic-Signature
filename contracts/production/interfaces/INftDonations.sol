@@ -4,8 +4,8 @@ pragma solidity 0.8.28;
 // import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
-/// @dev todo-1 Eliminate this interface and contract.
-/// @dev todo-1 Or leave it and remove all garbage?
+/// @dev todo-0 Eliminate this interface and contract.
+/// @dev todo-0 Or leave it and remove all garbage?
 interface INftDonations is ICosmicSignatureGameStorage {
 	// /// @notice Emitted when an NFT is donated
 	// /// @param donorAddress The address of the donor

@@ -144,6 +144,7 @@ abstract contract Bidding is
 
 		// Comment-202501125 applies.
 		// [ToDo-202409245-1]
+		// todo-0
 		// Can this, realistically, fail?
 		// Comment-202412033 says that this can't overflow.
 		// [/ToDo-202409245-1]

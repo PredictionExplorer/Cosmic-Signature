@@ -70,7 +70,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param amount ETH amount.
 	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
-	/// todo-1 Maybe talk to Nick again about that later.
+	/// todo-1 ??? Maybe talk to Nick again about that later.
 	event EthReceived(uint256 indexed roundNum, address indexed prizeWinnerAddress, uint256 amount);
 
 	/// @notice Emitted when someone withdraws ETH.
@@ -151,6 +151,7 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice Calling this method is equivalent to calling `registerRoundEnd` once and then `depositEth` zero or more times.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
+	/// Comments near `registerRoundEnd` and `depositEth` apply.
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable;
 
 	/// @notice `CosmicSignatureGame` calls this method on main prize claim.
@@ -163,7 +164,10 @@ interface IPrizesWallet is IAddressValidator {
 	/// As a result, even if the last bidder forgets to claim the main prize, we would still record them as the winner,
 	/// which would make them entitled to claim donated ERC-20 tokens and ERC-721 NFTs.
 	/// But the team feels that it's better to simply treat the person who clicked "Claim" as the winner.
-	/// @dev todo-1 This method is not used. At least comment.
+	/// @dev
+	/// [Comment-202502076]
+	/// Issue. `registerRoundEnd` and `depositEth` are not used.
+	/// [/Comment-202502076]
 	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external;
 
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
@@ -179,7 +183,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// It's OK if `msg.value` is zero.
 	/// @param roundNum_ The current bidding round number.
 	/// @param prizeWinnerAddress_ Prize winner address.
-	/// @dev todo-1 This method is not used. At least comment.
+	/// @dev Comment-202502076 applies.
 	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable;
 
 	/// @notice A prize winner calls this method to withdraw their ETH balance.

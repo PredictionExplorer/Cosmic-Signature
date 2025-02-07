@@ -38,6 +38,7 @@ const basicDeployment = async function (
  * todo-1 +++ Test a non-default `deployerAcct`.
  * todo-1 Test that after deployment all restricted functions in all contracts revert for the default signer and work for the given signer.
  * todo-1 There are tests like that in "SystemManagement.js", right? But they deploy as default signer. Change `owner` to be the last signer.
+ * todo-1 All tests should use a custom `owner`.
  * @param {string} randomWalkNftAddr May be empty.
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 

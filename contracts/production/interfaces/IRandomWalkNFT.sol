@@ -1,5 +1,6 @@
 // todo-1 Make sure license is the same in all files, except in "*RandomWalkNFT.sol".
 // todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
+// todo-1 Done, but recheck this.
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 

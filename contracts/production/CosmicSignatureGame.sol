@@ -31,8 +31,8 @@ import { ICosmicSignatureGame } from "./interfaces/ICosmicSignatureGame.sol";
 // #endregion
 // #region
 
-/// todo-1 Everywhere, declare some `public`/`external` functions `private`/`internal` (and name them `_...`).
-/// todo-1 Everywhere, declare some `public` functions `external`.
+/// todo-0 Everywhere, declare some `public`/`external` functions `private`/`internal` (and name them `_...`).
+/// todo-0 Everywhere, declare some `public` functions `external`.
 contract CosmicSignatureGame is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,

@@ -11,9 +11,11 @@ contract CharityWallet is Ownable, ICharityWallet {
 	/// It can be zero.
 	address public charityAddress;
 
-	/// todo-1 Review where we use `_msgSender` and other `Context` methods.
-	/// todo-1 Is it really a good idea to use them?
-	/// todo-1 >>> It probably is.
+	/// todo-0 Review where we use `_msgSender` and `_msgData` from `Context`.
+	/// todo-0 Is it really a good idea to use them?
+	/// todo-0 >>> It probably is.
+	/// todo-0 Find (case sens, whle word): msg
+	/// todo-1 Later review it again.
 	constructor() Ownable(_msgSender()) {
 	}
 

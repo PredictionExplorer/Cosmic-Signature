@@ -22,7 +22,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
-	address public game;
+	address public immutable game;
 
 	/// @notice For each bidding round number, contains the main prize beneficiary address.
 	/// Comment-202411254 applies.
