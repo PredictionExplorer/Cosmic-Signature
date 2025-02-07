@@ -299,7 +299,7 @@ contract MaliciousNft1 is ERC721 {
 		// todo-1 This will probably now revert due to `onlyGame`.
 		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, /*bytes memory retval*/) =
-			msg.sender.call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
+			_msgSender().call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -331,11 +331,11 @@ contract MaliciousNft2 is ERC721 {
 		// defaultParams.randomWalkNftId = -1;
 		// bytes memory param_data = abi.encode(defaultParams);
 		// // This call should revert.
-		// // todo-9 This call is now incorrect because `msg.sender` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
+		// // todo-9 This call is now incorrect because `_msgSender()` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
 		// // todo-9 Besides, this transfers zero `value`.
 		// // todo-9 Should we make a high level call here? Comment-202502043 relates.
 		// (bool isSuccess_, /*bytes memory retval*/) =
-		// 	msg.sender.call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
+		// 	_msgSender().call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
 		// if ( ! isSuccess_ ) {
 		// 	assembly {
 		// 		let ptr := mload(0x40)

@@ -50,7 +50,7 @@ describe("BidderContract", function () {
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		parsed_log = randomWalkNft.interface.parseLog(log);
 		let rwalk_token_id = parsed_log.args.tokenId;
-		await randomWalkNft.connect(owner).transferFrom(owner.address,await bidderContract.getAddress(), rwalk_token_id);
+		await randomWalkNft.connect(owner).transferFrom(owner.address, await bidderContract.getAddress(), rwalk_token_id);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		await bidderContract.connect(owner).doBidWithEthRWalk(rwalk_token_id, { value: nextEthPlusRandomWalkNftBidPrice_ });

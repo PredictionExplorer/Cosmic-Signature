@@ -22,7 +22,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
-	address public game;
+	address public immutable game;
 
 	/// @notice For each bidding round number, contains the main prize beneficiary address.
 	/// Comment-202411254 applies.
@@ -59,8 +59,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// @dev Comment-202411253 applies.
 	modifier onlyGame() {
 		require(
-			msg.sender == game,
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+			_msgSender() == game,
+			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
 		);
 		_;
 	}
@@ -71,7 +71,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	constructor(address game_)
-		Ownable(msg.sender)
+		Ownable(_msgSender())
 		providedAddressIsNonZero(game_) {
 		game = game_;
 	}
@@ -163,7 +163,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `withdrawEth`
 
 	function withdrawEth() public override /*nonReentrant*/ {
-		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(msg.sender)];
+		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(_msgSender())];
 		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
 		// // Comment-202409215 applies.
@@ -171,13 +171,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
-		emit EthWithdrawn(msg.sender, msg.sender, ethBalanceAmountCopy_);
+		emit EthWithdrawn(_msgSender(), _msgSender(), ethBalanceAmountCopy_);
 
 		// Comment-202502043 applies.
-		(bool isSuccess_, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
+		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountCopy_}("");
 
 		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_);
+			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountCopy_);
 		}
 	}
 
@@ -198,13 +198,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
-		emit EthWithdrawn(prizeWinnerAddress_, msg.sender, ethBalanceAmountCopy_);
+		emit EthWithdrawn(prizeWinnerAddress_, _msgSender(), ethBalanceAmountCopy_);
 
 		// Comment-202502043 applies.
-		(bool isSuccess_, ) = msg.sender.call{value: ethBalanceAmountCopy_}("");
+		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountCopy_}("");
 
 		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", msg.sender, ethBalanceAmountCopy_);
+			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountCopy_);
 		}
 	}
 
@@ -212,7 +212,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `getEthBalanceInfo`
 
 	function getEthBalanceInfo() external view override returns(EthBalanceInfo memory) {
-		return _ethBalancesInfo[uint160(msg.sender)];
+		return _ethBalancesInfo[uint160(_msgSender())];
 	}
 
 	// #endregion
@@ -234,8 +234,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
 		DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
 		newDonatedTokenReference_.amount += amount_;
-		emit TokenDonated(roundNum_, /*msg.sender*/ donorAddress_, tokenAddress_, amount_);
-		SafeERC20.safeTransferFrom(tokenAddress_, /*msg.sender*/ donorAddress_, address(this), amount_);
+		emit TokenDonated(roundNum_, donorAddress_, tokenAddress_, amount_);
+		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(this), amount_);
 	}
 
 	// #endregion
@@ -252,14 +252,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
 		// [/Comment-202411286]
 		// [Comment-202411287/]
-		if (msg.sender != mainPrizeBeneficiaryAddresses[roundNum_]) {
+		if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 				CosmicSignatureErrors.DonatedTokenClaimDenied(
 					"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation until a timeout expires.",
 					roundNum_,
-					msg.sender,
+					_msgSender(),
 					tokenAddress_
 				)
 			);
@@ -272,8 +272,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// Comment-202409215 applies to validating that `donatedTokenCopy_.amount` is a nonzero.
 
 		delete donatedTokenReference_.amount;
-		emit DonatedTokenClaimed(roundNum_, msg.sender, tokenAddress_, donatedTokenCopy_.amount);
-		SafeERC20.safeTransfer(tokenAddress_, msg.sender, donatedTokenCopy_.amount);
+		emit DonatedTokenClaimed(roundNum_, _msgSender(), tokenAddress_, donatedTokenCopy_.amount);
+		SafeERC20.safeTransfer(tokenAddress_, _msgSender(), donatedTokenCopy_.amount);
 	}
 
 	// #endregion
@@ -321,10 +321,11 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		newDonatedNftReference_.roundNum = roundNum_;
 		newDonatedNftReference_.nftAddress = nftAddress_;
 		newDonatedNftReference_.nftId = nftId_;
-		emit NftDonated(roundNum_, /*msg.sender*/ donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
+		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
-		nftAddress_.transferFrom(/*msg.sender*/ donorAddress_, address(this), nftId_);
+		// todo-1 Develop a test when an authorized spender donetes someone's NFT.
+		nftAddress_.transferFrom(/*donorAddress_*/ nftAddress_.ownerOf(nftId_), address(this), nftId_);
 	}
 
 	// #endregion
@@ -346,13 +347,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		}
 
 		// Comment-202411286 applies.
-		if (msg.sender != mainPrizeBeneficiaryAddresses[donatedNftCopy_.roundNum]) {
+		if (_msgSender() != mainPrizeBeneficiaryAddresses[donatedNftCopy_.roundNum]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[donatedNftCopy_.roundNum];
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 				CosmicSignatureErrors.DonatedNftClaimDenied(
 					"Only the bidding round main prize beneficiary is permitted to claim this NFT until a timeout expires.",
-					msg.sender,
+					_msgSender(),
 					index_
 				)
 			);
@@ -361,8 +362,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		delete donatedNftReference_.roundNum;
 		delete donatedNftReference_.nftAddress;
 		delete donatedNftReference_.nftId;
-		emit DonatedNftClaimed(donatedNftCopy_.roundNum, msg.sender, donatedNftCopy_.nftAddress, donatedNftCopy_.nftId, index_);
-		donatedNftCopy_.nftAddress.transferFrom(address(this), msg.sender, donatedNftCopy_.nftId);
+		emit DonatedNftClaimed(donatedNftCopy_.roundNum, _msgSender(), donatedNftCopy_.nftAddress, donatedNftCopy_.nftId, index_);
+		donatedNftCopy_.nftAddress.transferFrom(address(this), _msgSender(), donatedNftCopy_.nftId);
 	}
 
 	// #endregion

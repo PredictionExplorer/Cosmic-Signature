@@ -9,7 +9,7 @@ import { INftDonations } from "./interfaces/INftDonations.sol";
 
 abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// function donateNft(IERC721 nftAddress, uint256 nftId) external override nonReentrant onlyRoundIsActive {
-	// 	nftAddress.transferFrom(msg.sender, address(this), nftId);
+	// 	nftAddress.transferFrom(_msgSender(), address(this), nftId);
 	// 	// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// 	donatedNfts[numDonatedNfts] = CosmicSignatureConstants.DonatedNft({
 	// 		roundNum: roundNum,
@@ -18,11 +18,11 @@ abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// 		claimed: false
 	// 	});
 	// 	++ numDonatedNfts;
-	// 	emit NftDonationEvent(msg.sender, nftAddress, roundNum, nftId, numDonatedNfts - 1);
+	// 	emit NftDonationEvent(_msgSender(), nftAddress, roundNum, nftId, numDonatedNfts - 1);
 	// }
 
 	// function _donateNft(IERC721 nftAddress_, uint256 nftId_) internal {
-	// 	nftAddress_.transferFrom(msg.sender, address(this), nftId_);
+	// 	nftAddress_.transferFrom(_msgSender(), address(this), nftId_);
 	// 	// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// 	donatedNfts[numDonatedNfts] = CosmicSignatureConstants.DonatedNft({
 	// 		roundNum: roundNum,
@@ -31,7 +31,7 @@ abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// 		claimed: false
 	// 	});
 	// 	++ numDonatedNfts;
-	// 	emit NftDonationEvent(msg.sender, nftAddress_, roundNum, nftId_, numDonatedNfts - 1);
+	// 	emit NftDonationEvent(_msgSender(), nftAddress_, roundNum, nftId_, numDonatedNfts - 1);
 	// }
 
 	// function claimDonatedNft(uint256 index) public override /*nonReentrant*/ onlyRoundIsActive {
@@ -40,12 +40,12 @@ abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
 	// 	// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// 	CosmicSignatureConstants.DonatedNft storage donatedNft = donatedNfts[index];
 	// 	require(!donatedNft.claimed, CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", index));
-	// 	require(winners[donatedNft.roundNum] == msg.sender, CosmicSignatureErrors.DonatedNftClaimDenied("Only the bidding round main prize winner is permitted to claim this NFT.", msg.sender, index));
+	// 	require(winners[donatedNft.roundNum] == _msgSender(), CosmicSignatureErrors.DonatedNftClaimDenied("Only the bidding round main prize winner is permitted to claim this NFT.", _msgSender(), index));
 	//
 	// 	donatedNft.claimed = true;
-	// 	donatedNft.nftAddress.transferFrom(address(this), msg.sender, donatedNft.nftId);
+	// 	donatedNft.nftAddress.transferFrom(address(this), _msgSender(), donatedNft.nftId);
 	//
-	// 	emit DonatedNftClaimedEvent(donatedNft.roundNum, index, msg.sender, address(donatedNft.nftAddress), donatedNft.nftId);
+	// 	emit DonatedNftClaimedEvent(donatedNft.roundNum, index, _msgSender(), address(donatedNft.nftAddress), donatedNft.nftId);
 	// }
 
 	// /// todo-9 `nonReentrant` not needed here?

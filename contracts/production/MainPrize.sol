@@ -8,6 +8,7 @@ pragma solidity 0.8.28;
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 // import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -30,6 +31,7 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
 abstract contract MainPrize is
 	ReentrancyGuardTransientUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	BiddingBase,
 	MainPrizeBase,
@@ -39,17 +41,17 @@ abstract contract MainPrize is
 	// #region `claimMainPrize`
 
 	/// @dev We don't need `onlyRoundIsActive` here, which we `assert` near Comment-202411169.
-	/// todo-1 For all contracts and all methods, think what modifiers it might need,
-	/// todo-1 who and under what conditions is permitted to call it.
-	/// todo-1 It could be possible to not require `nonReentrant` if we transferred main prize ETH
-	/// todo-1 to `msg.sender` after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us,
-	/// todo-1 although we could execute that transfer at the very end as well.
-	/// todo-1 But let's leave it alone.
-	/// todo-1 Comment and reference Comment-202411078.
+	/// todo-0 For all contracts and all methods, think what modifiers it might need,
+	/// todo-0 who and under what conditions is permitted to call it.
+	/// todo-0 It could be possible to not require `nonReentrant` if we transferred main prize ETH
+	/// todo-0 to `_msgSender()` after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us,
+	/// todo-0 although we could execute that transfer at the very end as well.
+	/// todo-0 But let's leave it alone.
+	/// todo-0 Comment and reference Comment-202411078.
 	function claimMainPrize() external override nonReentrant /*onlyRoundIsActive*/ {
 		// #region
 
-		if (msg.sender == lastBidderAddress) {
+		if (_msgSender() == lastBidderAddress) {
 			// Comment-202411169 relates.
 			// #enable_asserts assert(lastBidderAddress != address(0));
 			
@@ -67,7 +69,7 @@ abstract contract MainPrize is
 				CosmicSignatureErrors.MainPrizeClaimDenied(
 					"Only the last bidder is permitted to claim the bidding round main prize until a timeout expires.",
 					lastBidderAddress,
-					msg.sender,
+					_msgSender(),
 					uint256(durationUntilOperationIsPermitted_)
 				)
 			);
@@ -109,12 +111,10 @@ abstract contract MainPrize is
 		{
 			// #region
 
-			// todo-1 Optimize: use the initial value as is; then calculate and use its hash and assign the result to itself;
-			// todo-1 only then start incrementing it and calculating its hash.
-			// todo-1 Write a comment to explain things.
-			// todo-1 Or maybe leave it alone, and only comment.
+			// Issue. It appears that the optimization idea described in Comment-202502077 would be difficult to implement here.
 			CosmicSignatureHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_ =
 				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
+
 			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 
 			// todo-1 We are supposed to declare this near ToDo-202502065-1.
@@ -150,7 +150,7 @@ abstract contract MainPrize is
 					// Items:
 					//    0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` items. RandomWalk NFT stakers.
 					//    0 or 1 items. `lastCstBidderAddress`.
-					//    1 item. `msg.sender`, that's the main prize beneficiary.
+					//    1 item. `_msgSender()`, that's the main prize beneficiary.
 					//    1 item. `enduranceChampionAddress`.
 					//    `numRaffleCosmicSignatureNftsForBidders` items. Bidders.
 					address[] memory cosmicSignatureNftOwnerAddresses_;
@@ -210,7 +210,7 @@ abstract contract MainPrize is
 					// #endregion
 					// #region CS NFT for the Main Prize Beneficiary.
 
-					cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_] = msg.sender;
+					cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_] = _msgSender();
 
 					// #endregion
 					// #region CST and CS NFT for Endurance Champion.
@@ -291,9 +291,9 @@ abstract contract MainPrize is
 						// #region ETH and CS NFT for the Main Prize Beneficiary.
 
 						-- cosmicSignatureNftIndex_;
-						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == msg.sender);
+						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == _msgSender());
 						-- cosmicSignatureNftId_;
-						emit MainPrizeClaimed(roundNum, msg.sender, mainEthPrizeAmount_, cosmicSignatureNftId_);
+						emit MainPrizeClaimed(roundNum, _msgSender(), mainEthPrizeAmount_, cosmicSignatureNftId_);
 
 						// #endregion
 						// #region CST and CS NFT for the last CST bidder.
@@ -380,8 +380,8 @@ abstract contract MainPrize is
 						// #region
 
 						// ETH deposits to make to `prizesWallet`.
-						// Some of these can be equal `msg.sender`, in which case one might want
-						// instead of sending the funds to `prizesWallet` to send them directly to `msg.sender` near Comment-202501183.
+						// Some of these can be equal `_msgSender()`, in which case one might want
+						// instead of sending the funds to `prizesWallet` to send them directly to `_msgSender()` near Comment-202501183.
 						// But keeping it simple.
 						// Items:
 						//    `numRaffleEthPrizesForBidders` items. Bidders.
@@ -440,7 +440,7 @@ abstract contract MainPrize is
 						// #region
 
 						// All calculations marked with Comment-202501161 must be made before this.
-						prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, msg.sender, ethDeposits_);
+						prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, _msgSender(), ethDeposits_);
 
 						// #endregion
 					}
@@ -534,10 +534,11 @@ abstract contract MainPrize is
 		// which would result in incorrect behavior if we ignore that error.
 		// [/Comment-202501183]
 		{
+			// todo-0 Take a look at this messy todo.
 			// todo-1 Can/should we specify how much gas an untrusted external call is allowed to use?
 			// todo-1 `transfer` allows only 3500 gas, right?
 			// todo-1 At the same time, can/should we forward all gas to trusted external calls?
-			// todo-1 And don't limit gas when sending ETH or whatever tokens to `msg.sender`.
+			// todo-1 And don't limit gas when sending ETH or whatever tokens to `_msgSender()`.
 			// todo-1 Really, the only potentially vulnerable external call is the one near Comment-202411077.
 			// todo-1 See also: Comment-202411077, Comment-202411078.
 			// todo-1 Make sure all external calls whose fails we don't ignore cannot fail.
@@ -545,10 +546,10 @@ abstract contract MainPrize is
 			// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
 			// todo-1 Write and cross-ref comments.
 			// Comment-202502043 applies.
-			(bool isSuccess_, ) = msg.sender.call{value: mainEthPrizeAmount_}("");
+			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
 
 			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", msg.sender, mainEthPrizeAmount_);
+				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", _msgSender(), mainEthPrizeAmount_);
 			}
 		}
 

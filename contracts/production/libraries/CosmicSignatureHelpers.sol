@@ -9,13 +9,26 @@ library CosmicSignatureHelpers {
 	/// [/Comment-202412104]
 	/// todo-1 ??? Does this belong to `CosmicSignatureConstants`?
 	struct RandomNumberSeedWrapper {
-		/// @dev It's important that calculations involving this variable ignored overflows.
+		/// @dev
+		/// [Comment-202502075]
+		/// This is a random number seed.
+		/// We generate a random number by incrementing its seed and calculating a hash sum of the result.
+		/// It's important that calculations involving this variable ignored overflows.
 		/// That includes cases when we pass it to a method by value and then the method makes calculations involving the passed value.
 		/// todo-1 Make sure the above is the case.
+		/// [/Comment-202502075]
+		/// [Comment-202502077]
+		/// Optimization idea.
+		/// Use the initially generated random number seed as a random number.
+		/// Then, without incrementing it, calculate its hash sum, assign the result to itself, and use it as a random number.
+		/// Only then start incrementing random number seed.
+		/// [/Comment-202502077]
 		uint256 value;
 	}
 
-	/// @dev Comment-202412104 applies.
+	/// @dev Comment-202502075 applies to the return value.
+	/// Comment-202502077 applies to the return value.
+	/// Comment-202412104 applies.
 	function generateRandomNumberSeed() internal view returns(uint256) {
 		return block.prevrandao ^ block.basefee;
 	}

@@ -220,7 +220,7 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
 	/// @param errStr Description of the error.
 	/// @param callerAddress Caller address.
-	/// @dev todo-1 Do we have any other errors of this kind? Try to eliminate them.
+	/// @dev todo-1 +++ We don't have any other errors of this kind, right? If I find any, try to eliminate them.
 	error UnauthorizedCaller(string errStr, address callerAddress);
 
 	// #endregion

@@ -21,7 +21,7 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// Note that `SelfDestructibleCosmicSignatureGame` supports a `selfdestruct`.
 /// But I have no time to get such an unsafe feature right in the production code.
 ///
-/// todo-1 This contract is too big. So we need to implement some kind of a Diamond pattern.
+/// todo-0 This contract is too big. So we need to implement some kind of a Diamond pattern.
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
@@ -38,7 +38,7 @@ interface ICosmicSignatureGame is
 	/// @notice Initializes this upgradeable contract.
 	/// This method is to be called right after deployment.
 	/// @param ownerAddress_ Contract owner address.
-	/// It could make sense to eliminate this parameter and use `msg.sender` instead, but let's leave it alone.
+	/// It could make sense to eliminate this parameter and use `_msgSender()` instead, but let's leave it alone.
 	function initialize(address ownerAddress_) external;
 
 	/// @dev

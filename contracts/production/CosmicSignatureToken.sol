@@ -41,6 +41,7 @@ contract CosmicSignatureToken is
 	// /// The held amount is replenished when someone bids with CST.
 	// /// todo-9 The above comment is incorrect. We now mint at the end of a round.
 	// /// Comment-202412201 relates and/or applies.
+	// /// todo-9 Declare this `immutable`?
 	// address public marketingWalletAddress;
 
 	// /// @notice
@@ -56,8 +57,8 @@ contract CosmicSignatureToken is
 	/// @dev Comment-202411253 applies.
 	modifier onlyGame() {
 		require(
-			msg.sender == game,
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", msg.sender)
+			_msgSender() == game,
+			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
 		);
 		_;
 	}
@@ -68,7 +69,7 @@ contract CosmicSignatureToken is
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	constructor(address game_ /* , address marketingWalletAddress_ */)
-		// Ownable(msg.sender)
+		// Ownable(_msgSender())
 		ERC20("CosmicSignatureToken", "CST")
 		ERC20Permit("CosmicSignatureToken")
 		providedAddressIsNonZero(game_)
@@ -172,7 +173,7 @@ contract CosmicSignatureToken is
 	// #region `transferMany`
 
 	function transferMany(address[] calldata tos_, uint256 value_) external override {
-		address from_ = msg.sender;
+		address from_ = _msgSender();
 		for (uint256 index_ = tos_.length; index_ > 0; ) {
 			-- index_;
 			address to_ = tos_[index_];
@@ -184,7 +185,7 @@ contract CosmicSignatureToken is
 	// #region `transferMany`
 
 	function transferMany(MintSpec[] calldata specs_) external override {
-		address from_ = msg.sender;
+		address from_ = _msgSender();
 		for (uint256 index_ = specs_.length; index_ > 0; ) {
 			-- index_;
 			MintSpec calldata specReference_ = specs_[index_];
@@ -207,7 +208,7 @@ contract CosmicSignatureToken is
 	// 	// Comment-202409215 applies.
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
 	//
-	// 	uint256 allowance_ = allowance(msg.sender, spender_);
+	// 	uint256 allowance_ = allowance(_msgSender(), spender_);
 	// 	if (allowance_ < oldAllowance_) {
 	// 		uint256 diff_ = oldAllowance_ - allowance_;
 	// 		if (diff_ < newAllowance_) {
@@ -216,7 +217,7 @@ contract CosmicSignatureToken is
 	// 			newAllowance_ = 0;
 	// 		}
 	// 	}
-	// 	_approve(msg.sender, spender_, newAllowance_);
+	// 	_approve(_msgSender(), spender_, newAllowance_);
 	// }
 
 	// #endregion

@@ -40,7 +40,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	/// but Nick is saying that he needs it to monitor contract activities.
 	/// But the suitability of this variable for any purpose other than what the @notice says is purely accidential.
 	/// Any refactoring can easily break things.
-	/// todo-1 Talk to Nick again.
+	/// todo-1 ??? Talk to Nick again.
 	uint256 public actionCounter;
 
 	// #endregion
