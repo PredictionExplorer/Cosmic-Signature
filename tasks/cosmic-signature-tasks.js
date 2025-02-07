@@ -1,4 +1,4 @@
-// npx hardhat deploy-cosmic-signature --deployconfig tasks/default-config/deploy-local.json
+// npx hardhat deploy-cosmic-signature --deployConfig tasks/default-config/deploy-local.json
 
 "use strict";
 
@@ -8,9 +8,9 @@ const nodeFsModule = require("node:fs");
 const { basicDeployment } = require("../src/Deploy.js");
 
 task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, hre) => {
-	const configFile = args.deployconfig;
+	const configFile = args.deployConfig;
 	if (typeof configFile === "undefined" || configFile.length == 0) {
-		console.log("Please provide config file : --deployconfig [file_path]");
+		console.log("Please provide a config file: --deployConfig [file_path]");
 		return;
 	}
 	const config_params_file = nodeFsModule.readFileSync(configFile, "utf8");
@@ -44,12 +44,12 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 			config_params.transferOwnershipToCosmicSignatureDao,
 			config_params.roundActivationTime
 		);
-	console.log("contracts deployed");
+	console.log("Contracts deployed.");
 	if (config_params.donateEthToGameContract) {
 		const ethValue = "2";
 		const donationAmount_ = hre.ethers.parseEther(ethValue);
 		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount_});
-		console.log("Donated " + ethValue + " ETH to contract.");
+		console.log("Donated " + ethValue + " ETH to the CosmicSignatureGame proxy contract.");
 	}
 	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());
 	console.log("CosmicSignatureNft address:", await contracts.cosmicSignatureNft.getAddress());
@@ -90,4 +90,4 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 
 		"')",
 	);
-}).addParam("deployconfig", "Config file (JSON)");
+}).addParam("deployConfig", "Config file (JSON) path");
