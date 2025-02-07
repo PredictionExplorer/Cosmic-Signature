@@ -8,6 +8,7 @@ pragma solidity 0.8.28;
 
 // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 // import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -30,6 +31,7 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
 abstract contract MainPrize is
 	ReentrancyGuardTransientUpgradeable,
+	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	BiddingBase,
 	MainPrizeBase,
