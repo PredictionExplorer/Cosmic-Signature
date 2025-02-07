@@ -324,9 +324,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
-		// todo-0 Instead of `donorAddress_`, should we use the actual owner of this NFT?
-		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
-		// nftAddress_.transferFrom(/*donorAddress_*/ nftAddress_.ownerOf(nftId_), address(this), nftId_);
+		// todo-1 Develop a test when an authorized spender donetes someone's NFT.
+		nftAddress_.transferFrom(/*donorAddress_*/ nftAddress_.ownerOf(nftId_), address(this), nftId_);
 	}
 
 	// #endregion
