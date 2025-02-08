@@ -10,36 +10,27 @@ CONFIG = {
 def main():
     """
     Runs the Rust three_body_problem binary for a series of seeds.
-    For each seed, runs twice: normal (no --special) and special (with --special).
-    Only passes --seed, --file-name, and --special (when needed).
+    For each seed, it runs only once (no --special).
+    Passes --seed, --file-name, --num-sims 3000.
     """
     base_hex = CONFIG['base_seed_hex']
     for i in range(CONFIG['num_runs']):
-        # Build the seed string (e.g. 0x1555560000, 0x1555560001, ...)
+        # Build the seed string (e.g. 0xCAFE0000, 0xCAFE0001, etc.)
         seed_str = f"0x{base_hex}{i:04X}"
 
-        # 1) Normal run
-        file_name_nm = f"seed_{seed_str[2:]}_nm"  # remove "0x" in the seed for file_name
-        cmd_normal = [
-            CONFIG['program_path'],
-            "--seed", seed_str,
-            "--file-name", file_name_nm,
-            "--num-sims, "3000"
-        ]
-        print("Running command (normal):", " ".join(cmd_normal))
-        subprocess.run(cmd_normal, check=True)
+        # Construct a file name from the hex part after "0x"
+        file_name = f"seed_{seed_str[2:]}"  # remove "0x"
 
-        # 2) Special run
-        file_name_sp = f"seed_{seed_str[2:]}_sp"
-        cmd_special = [
+        # Single run per seed
+        cmd = [
             CONFIG['program_path'],
             "--seed", seed_str,
-            "--file-name", file_name_sp,
-            "--num-sims, "3000",
-            "--special"
+            "--file-name", file_name,
+            "--num-sims", "3000"
         ]
-        print("Running command (special):", " ".join(cmd_special))
-        subprocess.run(cmd_special, check=True)
+
+        print("Running command:", " ".join(cmd))
+        subprocess.run(cmd, check=True)
 
 if __name__ == "__main__":
     main()
