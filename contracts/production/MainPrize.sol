@@ -13,7 +13,7 @@ import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableW
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
-import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
@@ -41,13 +41,13 @@ abstract contract MainPrize is
 	// #region `claimMainPrize`
 
 	/// @dev We don't need `onlyRoundIsActive` here, which we `assert` near Comment-202411169.
-	/// todo-0 For all contracts and all methods, think what modifiers it might need,
-	/// todo-0 who and under what conditions is permitted to call it.
-	/// todo-0 It could be possible to not require `nonReentrant` if we transferred main prize ETH
-	/// todo-0 to `_msgSender()` after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us,
-	/// todo-0 although we could execute that transfer at the very end as well.
-	/// todo-0 But let's leave it alone.
-	/// todo-0 Comment and reference Comment-202411078.
+	/// todo-1 For all contracts and all methods, think what modifiers it might need,
+	/// todo-1 who and under what conditions is permitted to call it.
+	/// todo-1 It could be possible to not require `nonReentrant` if we transferred main prize ETH
+	/// todo-1 to `_msgSender()` after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us,
+	/// todo-1 although we could execute that transfer at the very end as well.
+	/// todo-1 But let's leave it alone.
+	/// todo-1 Comment and reference Comment-202411078.
 	function claimMainPrize() external override nonReentrant /*onlyRoundIsActive*/ {
 		// #region
 
@@ -112,8 +112,8 @@ abstract contract MainPrize is
 			// #region
 
 			// Issue. It appears that the optimization idea described in Comment-202502077 would be difficult to implement here.
-			CosmicSignatureHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_ =
-				CosmicSignatureHelpers.RandomNumberSeedWrapper(CosmicSignatureHelpers.generateRandomNumberSeed());
+			RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_ =
+				RandomNumberHelpers.RandomNumberSeedWrapper(RandomNumberHelpers.generateRandomNumberSeed());
 
 			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 
@@ -226,7 +226,7 @@ abstract contract MainPrize is
 					// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length == cosmicSignatureNftOwnerBidderAddressIndex_ + numRaffleCosmicSignatureNftsForBidders);
 					for (uint256 cosmicSignatureNftOwnerIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
-						uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeedWrapper_);
+						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
 						address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						-- cosmicSignatureNftOwnerIndex_;
@@ -421,7 +421,7 @@ abstract contract MainPrize is
 							do {
 								-- winnerIndex_;
 								IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[winnerIndex_];
-								uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeedWrapper_);
+								uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
 								address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
 								// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 								ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
@@ -472,7 +472,6 @@ abstract contract MainPrize is
 							// todo-1 Investigate under what conditions we can possibly reach this point.
 							// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
 							// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
-							// todo-1 Does ToDo-202409245-1 relate?
 							revert
 								CosmicSignatureErrors.FundTransferFailed(
 									"ETH deposit to StakingWalletCosmicSignatureNft failed.",
@@ -532,19 +531,11 @@ abstract contract MainPrize is
 		// Making this transfer at the end. Otherwise a hacker could attempt to exploit the 63/64 rule
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
 		// which would result in incorrect behavior if we ignore that error.
+		// If this fails, we could transfer the funds to `prizesWallet`.
+		// Another option would be to transfer funds there unconditionally. It's likely not the only prize for this address anyway.
+		// But keeping it simple.
 		// [/Comment-202501183]
 		{
-			// todo-0 Take a look at this messy todo.
-			// todo-1 Can/should we specify how much gas an untrusted external call is allowed to use?
-			// todo-1 `transfer` allows only 3500 gas, right?
-			// todo-1 At the same time, can/should we forward all gas to trusted external calls?
-			// todo-1 And don't limit gas when sending ETH or whatever tokens to `_msgSender()`.
-			// todo-1 Really, the only potentially vulnerable external call is the one near Comment-202411077.
-			// todo-1 See also: Comment-202411077, Comment-202411078.
-			// todo-1 Make sure all external calls whose fails we don't ignore cannot fail.
-			// todo-1 If this fails, maybe send the funds to `prizesWallet`.
-			// todo-1 We really can send funds there unconditionally. It will likely be not the only prize for this address anyway.
-			// todo-1 Write and cross-ref comments.
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
 

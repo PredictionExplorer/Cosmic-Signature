@@ -215,7 +215,9 @@ abstract contract BiddingOpenBid is
 				)
 			);
 			require(
+				// Comment-202502091 applies.
 				_msgSender() == randomWalkNft.ownerOf(uint256(/*params.randomWalkNftId*/ randomWalkNftId_)),
+
 				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of the RandomWalk NFT.",
 					address(randomWalkNft),
@@ -236,7 +238,6 @@ abstract contract BiddingOpenBid is
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
-		// ToDo-202409245-1 applies.
 		token.mint(_msgSender(), cstRewardAmountForBidding);
 
 		// #endregion
@@ -433,7 +434,6 @@ abstract contract BiddingOpenBid is
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
-			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
@@ -566,45 +566,7 @@ abstract contract BiddingOpenBid is
 		++ numBids_;
 		bidderAddressesReference_.numItems = numBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
-
-		// // Comment-202501125 applies.
-		// // try
-		// // ToDo-202409245-1 applies.
-		// token.mint(/*lastBidderAddress*/ _msgSender(), cstRewardAmountForBidding);
-		// // {
-		// // } catch {
-		// // 	revert
-		// // 		CosmicSignatureErrors.ERC20Mint(
-		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
-		// // 			/*lastBidderAddress*/ _msgSender(),
-		// // 			cstRewardAmountForBidding
-		// // 		);
-		// // }
-
-		// // try
-		// // ToDo-202409245-1 applies.
-		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		// // token.mintToMarketingWallet(marketingWalletCstContributionAmount);
-		// // {
-		// // } catch {
-		// // 	revert
-		// // 		CosmicSignatureErrors.ERC20Mint(
-		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// // 			marketingWallet,
-		// // 			marketingWalletCstContributionAmount
-		// // 		);
-		// // }
-
-		// _extendMainPrizeTime();
 	}
-
-	// #endregion
-	// #region // `wasRandomWalkNftUsed`
-
-	// function wasRandomWalkNftUsed(uint256 nftId_) external view override returns(bool) {
-	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNfts[nftId_];
-	// }
 
 	// #endregion
 }

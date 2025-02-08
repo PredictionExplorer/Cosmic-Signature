@@ -112,7 +112,10 @@ abstract contract SystemManagement is
 	}
 
 	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		// // Comment-202409215 applies.
+		// // [Comment-202409215]
+		// // It appears to be unnecessary to spend gas on this validation.
+		// // todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
+		// // [/Comment-202409215]
 		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
 		// require(
 		// 	prizePercentageSum_ < 100,

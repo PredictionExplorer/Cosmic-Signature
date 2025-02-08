@@ -30,16 +30,10 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
 		emit RewardPaid(marketerAddress_, amount_);
 
-		// try
 		// [Comment-202501137]
 		// This will validate that the given address is a nonzero.
 		// [/Comment-202501137]
-		// ToDo-202409245-1 applies.
 		token.transfer(marketerAddress_, amount_);
-		// {
-		// } catch {
-		// 	revert CosmicSignatureErrors.ERC20TransferFailed("Transfer failed.", marketerAddress_, amount_);
-		// }
 	}
 
 	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {

@@ -15,6 +15,8 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 ///
 /// OpenZeppelin of the latest version is not compatible with the already deployed contract.
 /// Comment-202502063 relates.
+///
+/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 

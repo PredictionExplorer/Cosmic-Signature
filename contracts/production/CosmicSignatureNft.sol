@@ -11,13 +11,14 @@ import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 
 // #endregion
 // #region
 
+/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 
@@ -115,7 +116,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 		// Although, given that only the Game is permitted to call us, it's not going to provide a zero address.
 		_mint(nftOwnerAddress_, nftId_);
 
-		uint256 nftSeed_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
+		uint256 nftSeed_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeed_);
 		_nftsInfo[nftId_].seed = nftSeed_;
 		emit NftMinted(roundNum_, nftOwnerAddress_, nftSeed_, nftId_);
 		return nftId_;

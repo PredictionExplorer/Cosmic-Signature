@@ -164,10 +164,9 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function withdrawEth() public override /*nonReentrant*/ {
 		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(_msgSender())];
-		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
-		// // Comment-202409215 applies.
-		// require(ethBalanceAmountCopy_ > 0, CosmicSignatureErrors.ZeroBalance("Your balance amount is zero."));
+		// It's OK if this is zero.
+		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
@@ -191,10 +190,9 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 			CosmicSignatureErrors.EarlyWithdrawal("Not enough time has elapsed.", roundTimeoutTimeToWithdrawPrizes_, block.timestamp)
 		);
-		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
-		// // Comment-202409215 applies.
-		// require(ethBalanceAmountCopy_ > 0, CosmicSignatureErrors.ZeroBalance("The balance amount is zero."));
+		// It's OK if this is zero.
+		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 
 		delete ethBalanceInfoReference_.amount;
 		delete ethBalanceInfoReference_.roundNum;
@@ -227,14 +225,16 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function donateToken(uint256 roundNum_, address donorAddress_, IERC20 tokenAddress_, uint256 amount_) external override
 		// nonReentrant
-		onlyGame
-		providedAddressIsNonZero(address(tokenAddress_)) {
+		onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 
 		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
 		DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
 		newDonatedTokenReference_.amount += amount_;
 		emit TokenDonated(roundNum_, donorAddress_, tokenAddress_, amount_);
+
+		// This would fail if `tokenAddress_` is zero.
+		// todo-1 Test the above.
 		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(this), amount_);
 	}
 
@@ -244,11 +244,9 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) public override /*nonReentrant*/ {
 		// According to Comment-202411283, we must validate `roundNum_` here.
 		// But array bounds check near Comment-202411287 will implicitly validate it.
-		//
-		// Comment-202409215 applies to validating that `tokenAddress_` is a nonzero.
 
 		// [Comment-202411286]
-		// Nothing will be broken if the `mainPrizeBeneficiaryAddresses` item is still zero.
+		// Nothing would be broken if the `mainPrizeBeneficiaryAddresses` item is still zero.
 		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
 		// [/Comment-202411286]
 		// [Comment-202411287/]
@@ -267,12 +265,15 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
 		DonatedToken storage donatedTokenReference_ = donatedTokens[donatedTokenIndex_];
-		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
 
-		// Comment-202409215 applies to validating that `donatedTokenCopy_.amount` is a nonzero.
+		// It's OK if `donatedTokenCopy_.amount` is zero.
+		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
 
 		delete donatedTokenReference_.amount;
 		emit DonatedTokenClaimed(roundNum_, _msgSender(), tokenAddress_, donatedTokenCopy_.amount);
+
+		// This would fail if `tokenAddress_` is zero.
+		// todo-1 Test the above.
 		SafeERC20.safeTransfer(tokenAddress_, _msgSender(), donatedTokenCopy_.amount);
 	}
 
@@ -313,8 +314,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external override
 		// nonReentrant
-		onlyGame
-		providedAddressIsNonZero(address(nftAddress_)) {
+		onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 		uint256 numDonatedNftsCopy_ = numDonatedNfts;
 		DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
@@ -324,8 +324,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
-		// todo-1 Develop a test when an authorized spender donetes someone's NFT.
-		nftAddress_.transferFrom(/*donorAddress_*/ nftAddress_.ownerOf(nftId_), address(this), nftId_);
+
+		// This would fail if `nftAddress_` is zero.
+		// todo-1 Test the above.
+		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
 	}
 
 	// #endregion

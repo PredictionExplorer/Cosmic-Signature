@@ -181,7 +181,6 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		await cosmicSignatureGameProxy.connect(owner).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		// expect(await cosmicSignatureGameProxy.wasRandomWalkNftUsed(token_id)).to.equal(true);
 		expect(await cosmicSignatureGameProxy.usedRandomWalkNfts(token_id)).to.equal(1);
 
 		// try to bid again using the same nftId
@@ -742,8 +741,6 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.setRoundActivationTime(latestBlock_.timestamp + 1);
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		// See ToDo-202409245-1.
-		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
@@ -765,8 +762,6 @@ describe("Bidding", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		// See ToDo-202409245-1.
-		// await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameErrorsFactory_, "ERC20Mint");
 		await expect(cosmicSignatureGameProxy.connect(addr1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 	it("Long term bidding with CST doesn't produce irregularities", async function () {

@@ -515,32 +515,28 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		if (charityAddress_ != address(0)) {
+			// It's OK if this is zero.
 			uint256 amount_ = address(this).balance;
 
-			// // Comment-202409215 applies.
-			// if (amount_ > 0)
+			// Comment-202502043 applies.
+			// [Comment-202409214]
+			// There is no reentrancy vulnerability here.
+			// [/Comment-202409214]
+			(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
 
-			{
-				// Comment-202502043 applies.
-				// [Comment-202409214]
-				// There is no reentrancy vulnerability here.
-				// [/Comment-202409214]
-				(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
+			// require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_));
+			if (isSuccess_) {
+				// [Comment-202410159]
+				// Issue. Because we can be reentered near Comment-202409214,
+				// this assertion is not necessarily guaranteed to succeed.
+				// [/Comment-202410159]
+				// #enable_asserts assert(address(this).balance == 0);
 
-				// require(isSuccess_, CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_));
-				if (isSuccess_) {
-					// [Comment-202410159]
-					// Issue. Because we can be reentered near Comment-202409214,
-					// this assertion is not necessarily guaranteed to succeed.
-					// [/Comment-202410159]
-					// #enable_asserts assert(address(this).balance == 0);
-
-					emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
-				} else {
-					// #enable_asserts assert(address(this).balance == amount_);
-					emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_);
-					returnValue_ = false;
-				}
+				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
+			} else {
+				// #enable_asserts assert(address(this).balance == amount_);
+				emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_);
+				returnValue_ = false;
 			}
 		}
 
@@ -784,6 +780,18 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	// #region `_payReward`
 
 	/// @notice This stupid method just transfers the given ETH amount to whoever calls it.
+	/// @param rewardAmount_ The ETH amount to transfer.
+	/// It's OK if it's zero.
+	/// [Comment-202411294]
+	/// It will be zero in the following cases:
+	/// 1. The staker stakes and, before we receive anotehr deposit, unstakes their NFT.
+	/// 2. Someone calls `unstakeMany` or `payManyRewards` with an empty array of stake action IDs.
+	/// 3. We evaluated only a single deposit and determined that the staker isn't entitled to it.
+	///    This case is elaborated in Comment-202410142.
+	/// 4. All deposits we received while this stake was active
+	///    were too small for the formula near Comment-202410161 to produce a nonzero.
+	///    Although that's probably unlikely to happen.
+	/// [/Comment-202411294]
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `address.call`.
@@ -797,32 +805,14 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		// // [Comment-202409215]
-		// // It appears to be unnecessary to spend gas on this validation.
-		// // todo-0 In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
-		// // [/Comment-202409215]
-		// // [Comment-202411294]
-		// // This will be zero in the following cases:
-		// // 1. The staker stakes and, before we receive anotehr deposit, unstakes their NFT.
-		// // 2. Someone calls `unstakeMany` or `payManyRewards` with an empty array of stake action IDs.
-		// // 3. We evaluated only a single deposit and determined that the staker isn't entitled to it.
-		// //    This case is elaborated in Comment-202410142.
-		// // 4. All deposits we received while this stake was active
-		// //    were too small for the formula near Comment-202410161 to produce a nonzero.
-		// //    Although that's probably unlikely to happen.
-		// // [/Comment-202411294]
-		// if (rewardAmount_ > 0)
+		// Comment-202502043 applies.
+		// [Comment-202410158]
+		// Comment-202409214 applies.
+		// [/Comment-202410158]
+		(bool isSuccess_, ) = _msgSender().call{value: rewardAmount_}("");
 
-		{
-			// Comment-202502043 applies.
-			// [Comment-202410158]
-			// Comment-202409214 applies.
-			// [/Comment-202410158]
-			(bool isSuccess_, ) = _msgSender().call{value: rewardAmount_}("");
-
-			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", _msgSender(), rewardAmount_);
-			}
+		if ( ! isSuccess_ ) {
+			revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", _msgSender(), rewardAmount_);
 		}
 
 		// #endregion

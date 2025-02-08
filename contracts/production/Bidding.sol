@@ -111,9 +111,11 @@ abstract contract Bidding is
 				)
 			);
 			require(
+				// [Comment-202502091]
 				// It would probably be a bad idea to evaluate something like
 				// `randomWalkNft._isAuthorized` or `randomWalkNft._isApprovedOrOwner`
 				// Comment-202502063 relates.
+				// [/Comment-202502091]
 				_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
@@ -145,11 +147,6 @@ abstract contract Bidding is
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
-		// [ToDo-202409245-1]
-		// todo-0
-		// Can this, realistically, fail?
-		// Comment-202412033 says that this can't overflow.
-		// [/ToDo-202409245-1]
 		token.mint(_msgSender(), cstRewardAmountForBidding);
 
 		// #endregion
@@ -374,7 +371,6 @@ abstract contract Bidding is
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
-			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
@@ -515,45 +511,7 @@ abstract contract Bidding is
 		++ numBids_;
 		bidderAddressesReference_.numItems = numBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
-
-		// // Comment-202501125 applies.
-		// // try
-		// // ToDo-202409245-1 applies.
-		// token.mint(/*lastBidderAddress*/ _msgSender(), cstRewardAmountForBidding);
-		// // {
-		// // } catch {
-		// // 	revert
-		// // 		CosmicSignatureErrors.ERC20Mint(
-		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
-		// // 			/*lastBidderAddress*/ _msgSender(),
-		// // 			cstRewardAmountForBidding
-		// // 		);
-		// // }
-
-		// // try
-		// // ToDo-202409245-1 applies.
-		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		// // token.mintToMarketingWallet(marketingWalletCstContributionAmount);
-		// // {
-		// // } catch {
-		// // 	revert
-		// // 		CosmicSignatureErrors.ERC20Mint(
-		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// // 			marketingWallet,
-		// // 			marketingWalletCstContributionAmount
-		// // 		);
-		// // }
-
-		// _extendMainPrizeTime();
 	}
-
-	// #endregion
-	// #region // `wasRandomWalkNftUsed`
-
-	// function wasRandomWalkNftUsed(uint256 nftId_) external view override returns(bool) {
-	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNfts[nftId_];
-	// }
 
 	// #endregion
 }

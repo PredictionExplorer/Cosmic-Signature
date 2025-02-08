@@ -25,11 +25,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 ///
-/// todo-0 Document which variables are valid under what conditions,
-/// todo-0 which variables should be accessed directly and which through an accessor,
-/// todo-0 ??? which variables emit events (some are changed programmatically without emitting an event).
-/// todo-0 See Comment-202501022.
-///
 /// todo-1 +++ Think of what params are currently not configurable, but might need to be configurable, such as `nextEthBidPrice`.
 /// todo-1 +++ Consider making some params non-configurable.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
@@ -73,6 +68,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202501025 applies
 	uint256 public ethDutchAuctionDurationDivisor;
 
+	/// @notice ETH Dutch auction beginning bid price.
+	/// On the first bid of each bidding round (which is required to be ETH), we assign a valid value to this variable.
+	/// After contract deployment, this variable remains zero until we assign a valid value to it.
 	/// @notice Comment-202501063 relates.
 	uint256 public ethDutchAuctionBeginningBidPrice;
 
@@ -91,10 +89,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Next ETH bid price.
 	/// [Comment-202501022]
-	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
-	/// todo-0 ??? Therefore would it make sense to declare this `internal` and rename to `_...` and add a smarter getter?
-	/// todo-0 The same applies to other variables that are not always valid.
-	/// todo-0 Think where to reference this comment. It applies to some method return values too.
+	/// This variable is valid only after the 1st ETH bid has been placed in the current bidding round.
 	/// [/Comment-202501022]
 	/// [Comment-202411065]
 	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
@@ -122,12 +117,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public cstDutchAuctionDurationDivisor;
 
 	/// @notice CST Dutch auction beginning bid price.
-	/// This becomes valid when someone places a CST bid in the current bidding round
+	/// This variable becomes valid when someone places a CST bid in the current bidding round
 	/// and remains valid until main prize gets claimed.
 	/// [Comment-202411066]
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// [/Comment-202411066]
-	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
+	/// @dev This value is based on an actual price someone pays, therefore Comment-202412033 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
 	/// @notice Next round first CST Dutch auction beginning bid price.
@@ -159,7 +154,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-0 Tell them that I eliminated this.
 	// /// todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
@@ -227,21 +221,20 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
 	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
+	/// Comment-202501022 applies.
 	/// [Comment-202412152]
 	/// On each bid, we calculate the new value of this variable
 	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
 	/// [/Comment-202412152]
 	uint256 public mainPrizeTime;
 
-	/// @notice Comment-202412152 relates.
-	/// We use this on a number of other occasions as well.
-	/// todo-0 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
-	/// Comment-202411064 applies.
+	/// @notice Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
 	/// [/Comment-202411067]
-	/// todo-0 Reference Comment-202501025.
+	/// Comment-202412152 relates.
+	/// Comment-202501025 relates.
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
 	/// @notice Comment-202411064 applies.

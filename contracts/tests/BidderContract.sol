@@ -74,7 +74,6 @@ contract BidderContract {
 		// Issue. `PrizesWallet.withdrawEth` won't revert on zero balance any more.
 		// So it could make sense to call it without checking balance.
 		// But it would cost more gas if the balance amount is zero.
-		// Comment-202409215 relates.
 		uint256 bal_ = prizesWallet_.getEthBalanceInfo().amount;
 		if (bal_ > 0) {
 			prizesWallet_.withdrawEth();
