@@ -10,7 +10,6 @@ use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
 use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
-
 use std::error::Error;
 use std::f64::{INFINITY, NEG_INFINITY};
 use std::fs;
@@ -34,7 +33,7 @@ const B: usize = 32;
     version,
     about = "
 Three‐Body orbits => Borda => final image & MP4,
-with alpha blending in Lab, partial fade, thicker lines, etc.
+accumulating all trajectories, with a mild glow pass for a neon effect.
 "
 )]
 struct Args {
@@ -276,6 +275,7 @@ fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
 // =============================================
 // Borda
 // =============================================
+
 fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(input.len());
@@ -359,9 +359,11 @@ use kiddo::float::kdtree::KdTree;
 use kiddo::SquaredEuclidean;
 
 fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
+    // quick dimension-based check
     if data.len() < (LLE_M - 1) * tau + 1 {
         return 0.0;
     }
+    // embed
     let embedded: Vec<[f64; LLE_M]> = (0..(data.len() - (LLE_M - 1) * tau))
         .map(|i| [data[i], data[i + tau], data[i + 2 * tau]])
         .collect();
@@ -369,6 +371,7 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     if emb_len < 2 {
         return 0.0;
     }
+    // build kdtree
     let mut kdtree: KdTree<f64, u64, LLE_M, B, u32> = KdTree::new();
     for (i, point) in embedded.iter().enumerate() {
         kdtree.add(point, i as u64);
@@ -379,6 +382,9 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
     for i in 0..emb_len {
         let query = &embedded[i];
         let nn = kdtree.nearest_n::<SquaredEuclidean>(query, 2);
+        if nn.len() < 2 {
+            continue;
+        }
         let nn1 = nn[0];
         let nn2 = nn[1];
         let nn_id = if nn1.item == (i as u64) { nn2.item as usize } else { nn1.item as usize };
@@ -813,6 +819,7 @@ fn draw_thick_line_segment(
 
 #[inline]
 fn lch_interpolate(c0: MyLCH, c1: MyLCH, t: f32) -> MyLCH {
+    // hue interpolation with shortest hue distance
     let mut dh = c1.hue_deg - c0.hue_deg;
     if dh.abs() > 180.0 {
         if dh > 0.0 {
@@ -831,17 +838,6 @@ fn lch_interpolate(c0: MyLCH, c1: MyLCH, t: f32) -> MyLCH {
     let l_ = c0.l + (c1.l - c0.l) * t;
     let c_ = c0.c + (c1.c - c0.c) * t;
     MyLCH { l: l_, c: c_, hue_deg: h_wrap }
-}
-
-// A "fade" step => for each pixel, we fade it in Lab toward black
-fn fade_accum_in_lab(accum: &mut [MyLCH], factor: f32) {
-    accum.par_iter_mut().for_each(|pix| {
-        let (l, a, b) = lch_to_lab(*pix);
-        let l2 = l * factor;
-        let a2 = a * factor;
-        let b2 = b * factor;
-        *pix = lab_to_lch_clamped(l2, a2, b2);
-    });
 }
 
 // For blur
@@ -1087,7 +1083,7 @@ fn generate_body_color_sequences_my_lch(
 ) -> Vec<Vec<MyLCH>> {
     // We'll do exactly 3 bodies: body0 => base hue=0°, body1 =>120°, body2=>240°,
     // so they are distinct. For each body, random L in [0.3..0.7], random C in [0.1..0.3].
-    // Then each step => small hue drift ±5°, so they don't roam the entire color wheel.
+    // Then each step => small hue drift ±5° => some color variation
     let base_hues = [0.0, 120.0, 240.0];
     let mut out = vec![vec![MyLCH { l: 0.5, c: 0.2, hue_deg: 0.0 }; length]; n_bodies];
     for b in 0..n_bodies.min(3) {
@@ -1146,7 +1142,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.velocity,
     );
 
-    // 1) Borda
+    // 1) Borda selection of best orbit
     let (best_bodies, best_info) = select_best_trajectory(
         &mut rng,
         num_sims,
@@ -1175,9 +1171,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
     println!("   => X in [{:.3},{:.3}], Y in [{:.3},{:.3}]", min_x, max_x, min_y, max_y);
 
-    // 5) accumulation
-    println!("STAGE 5/8: building frames in MyLCH => alpha blend, fade, blur, etc.");
+    // 5) accumulation buffer (no global fade)
+    println!("STAGE 5/8: building frames => alpha blend + mild glow each frame");
     let npix = (width as usize) * (height as usize);
+    // Initialize to mid-gray in LCH, or black if you prefer
     let mut accum_my_lch = vec![MyLCH { l: 0.5, c: 0.0, hue_deg: 0.0 }; npix];
 
     let frame_rate = 60;
@@ -1185,9 +1182,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let frame_interval =
         if target_frames > 0 { (args.num_steps_sim / target_frames).max(1) } else { 1 };
 
+    // mild blur radius for the glow pass
     let smaller_dim = width.min(height) as f64;
-    let blur_radius_px = (0.01 * smaller_dim).round() as usize;
+    let glow_radius = (0.01 * smaller_dim).round() as usize;
+    let glow_alpha = 0.1_f32; // how strongly we blend the blurred copy back
 
+    // Helper to map 3D positions -> pixel coords
     fn to_pixel(
         min_x: f64,
         max_x: f64,
@@ -1214,12 +1214,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             let total_steps = positions[0].len();
             let chunk_line = (total_steps / 10).max(1);
 
-            // alpha for the main pixel & neighbors
+            // alpha for line drawing
             let alpha_main = 0.1_f32;
             let alpha_neighbor = 0.05_f32;
-
-            // fade factor => each step we multiply Lab by factor
-            let fade_factor = 0.995_f32;
 
             for step in 0..total_steps {
                 if step % chunk_line == 0 {
@@ -1227,10 +1224,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("   => step {} / {} ({:.0}%)", step, total_steps, pct);
                 }
 
-                // 6a) fade entire accumulation
-                fade_accum_in_lab(&mut accum_my_lch, fade_factor);
-
-                // 6b) draw lines for the triangle
+                // 6a) draw lines for the triangle (no global fade)
                 let p0 = positions[0][step];
                 let p1 = positions[1][step];
                 let p2 = positions[2][step];
@@ -1242,6 +1236,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let (x1, y1) = to_pixel(min_x, max_x, min_y, max_y, width, height, p1[0], p1[1]);
                 let (x2, y2) = to_pixel(min_x, max_x, min_y, max_y, width, height, p2[0], p2[1]);
 
+                // 3 edges
                 draw_thick_line_segment(
                     &mut accum_my_lch,
                     width,
@@ -1281,32 +1276,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                     alpha_main,
                     alpha_neighbor,
                 );
+
+                // 6b) mild glow pass
+                let mut blurred = accum_my_lch.clone();
+                parallel_blur_2d_my_lch(&mut blurred, width as usize, height as usize, glow_radius);
+                accum_my_lch.par_iter_mut().enumerate().for_each(|(i, pix)| {
+                    *pix = alpha_lch_blend(*pix, blurred[i], glow_alpha);
+                });
 
                 // 6c) possibly output a frame
-                let is_final = step == (total_steps - 1);
+                let is_final = (step == total_steps - 1);
                 if (step % frame_interval == 0) || is_final {
-                    // blur if you want: (small radius)
-                    let mut temp = accum_my_lch.clone();
-                    parallel_blur_2d_my_lch(
-                        &mut temp,
-                        width as usize,
-                        height as usize,
-                        blur_radius_px,
-                    );
-
-                    // combine partial: e.g. 80% accum, 20% blur
-                    let mut final_buf = vec![MyLCH { l: 0.0, c: 0.0, hue_deg: 0.0 }; npix];
-                    final_buf.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                        let base = accum_my_lch[i];
-                        let blur = temp[i];
-                        // alpha-blend in Lab
-                        *pix = alpha_lch_blend(base, blur, 0.2);
-                    });
-
-                    // convert final_buf => sRGB
+                    // convert accum_my_lch => sRGB for this video frame
                     let mut frame_rgb24 = vec![0u8; npix * 3];
                     frame_rgb24.par_chunks_mut(3).enumerate().for_each(|(i, chunk)| {
-                        let cc = final_buf[i];
+                        let cc = accum_my_lch[i];
                         let pal_lch = Oklch::new(cc.l, cc.c, cc.hue_deg);
                         let srgb = Srgb::from_color(pal_lch).clamp();
                         let r = (srgb.red * 255.0).round().clamp(0.0, 255.0) as u8;
@@ -1338,7 +1322,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 8) save PNG
     println!("STAGE 8/8: saving final image...");
-    fs::create_dir_all("pics")?; // ensure
+    fs::create_dir_all("pics")?;
     let png_path = format!("pics/{}.png", args.file_name);
     let img_buf = ImageBuffer::from_raw(width, height, final_png_rgb).unwrap();
     let dyn_img = DynamicImage::ImageRgb8(img_buf);
@@ -1346,8 +1330,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("   => saved {png_path}");
 
     println!(
-        "Done! Weighted Borda = {:.3}. Enjoy your softer alpha-blended orbits!",
+        "Done! Weighted Borda = {:.3}. Your orbits now accumulate with a neon glow!",
         best_info.total_score_weighted
     );
+
     Ok(())
 }
