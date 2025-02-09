@@ -3,7 +3,7 @@ import subprocess
 # ===================== Minimal Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'base_seed_hex': 'beef12',
+    'base_seed_hex': 'cafe00',
     'num_runs': 1000
 }
 
@@ -23,21 +23,11 @@ def main():
         cmd_normal = [
             CONFIG['program_path'],
             "--seed", seed_str,
-            "--file-name", file_name_nm
+            "--file-name", file_name_nm,
+            "--num-sims", "3000"
         ]
         print("Running command (normal):", " ".join(cmd_normal))
         subprocess.run(cmd_normal, check=True)
-
-        # 2) Special run
-        file_name_sp = f"seed_{seed_str[2:]}_sp"
-        cmd_special = [
-            CONFIG['program_path'],
-            "--seed", seed_str,
-            "--file-name", file_name_sp,
-            "--special"
-        ]
-        print("Running command (special):", " ".join(cmd_special))
-        subprocess.run(cmd_special, check=True)
 
 if __name__ == "__main__":
     main()
