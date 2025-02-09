@@ -95,11 +95,11 @@ struct Args {
     #[arg(long, default_value_t = 100_000)]
     max_points: usize,
 
-    /// Output image/video width in pixels (default 1920)
+    /// Output image/video width in pixels
     #[arg(long, default_value_t = 1920 / 2)]
     width: u32,
 
-    /// Output image/video height in pixels (default 1080)
+    /// Output image/video height in pixels
     #[arg(long, default_value_t = 1080 / 2)]
     height: u32,
 
@@ -115,7 +115,7 @@ struct Args {
     #[arg(long, default_value_t = 1.0)]
     levels_gamma: f64,
 
-    /// If true, use the “special” mode => changes some defaults
+    /// If true, use “special” mode => changes some defaults
     #[arg(long, default_value_t = false)]
     special: bool,
 }
@@ -190,6 +190,10 @@ impl Sha3RandomByteStream {
 
     pub fn random_velocity(&mut self) -> f64 {
         self.gen_range(-self.velocity_range, self.velocity_range)
+    }
+
+    pub fn random_alpha(&mut self, min_a: f64, max_a: f64) -> f64 {
+        self.gen_range(min_a, max_a)
     }
 }
 
@@ -316,8 +320,7 @@ fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     data
 }
 
-/// We *normalize* positions in `total_distance` but not in other metrics; this is
-/// part of the original design.
+/// We *normalize* positions in `total_distance` but not in other metrics; part of the original design.
 fn total_distance(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let mut new_pos = positions.to_vec();
     normalize_positions_for_analysis(&mut new_pos);
@@ -447,7 +450,7 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
 }
 
 /// measure how close the bounding box aspect ratio is to final_aspect
-/// => returns in [0,1], 1 = perfect match, 0 = extremely mismatched
+/// => returns in [0,1], 1=perfect match, 0=extremely mismatched
 fn aspect_ratio_closeness(positions: &[Vec<Vector3<f64>>], final_aspect: f64) -> f64 {
     let (min_x, max_x, min_y, max_y) = bounding_box_2d(positions);
     let w = max_x - min_x;
@@ -477,7 +480,7 @@ fn bounding_box_2d(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     (min_x, max_x, min_y, max_y)
 }
 
-/// The bounding_box function also adds a 5% margin (for final rendering).
+/// Also adds a 5% margin for final rendering.
 fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     let mut min_x = INFINITY;
     let mut max_x = NEG_INFINITY;
@@ -663,7 +666,7 @@ fn select_best_trajectory(
                     positions[0].iter().step_by(factor).map(|p| p.norm()).collect();
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
 
-                // aspect ratio closeness
+                // aspect closeness
                 let asp = aspect_ratio_closeness(&positions, final_aspect);
 
                 let tr = TrajectoryResult {
@@ -693,7 +696,7 @@ fn select_best_trajectory(
     }
     let mut info_vec = valid;
 
-    // Gather metrics separately
+    // Gather metrics
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
     let mut area_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
@@ -723,18 +726,17 @@ fn select_best_trajectory(
         out
     }
 
-    // "chaos" => lower is better
+    // chaos => lower is better
     let chaos_pts = assign_borda_scores(chaos_vals, false);
-    // "area" => bigger is better
+    // area => bigger is better
     let area_pts = assign_borda_scores(area_vals, true);
-    // "dist" => bigger is better
+    // dist => bigger is better
     let dist_pts = assign_borda_scores(dist_vals, true);
-    // "lyap" => bigger is better
+    // lyap => bigger is better
     let lyap_pts = assign_borda_scores(lyap_vals, true);
-    // "aspect closeness" => bigger is better
+    // aspect => bigger is better
     let aspect_pts = assign_borda_scores(aspect_vals, true);
 
-    // Update each TrajectoryResult
     for (i, (tr, _)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_pts[i];
         tr.area_pts = area_pts[i];
@@ -750,7 +752,7 @@ fn select_best_trajectory(
             + (aspect_pts[i] as f64 * aspect_weight);
     }
 
-    // Pick best by total_score_weighted
+    // pick best by total_score_weighted
     let (best_tr, best_idx) = info_vec
         .iter()
         .max_by(|(a, _), (b, _)| {
@@ -760,7 +762,7 @@ fn select_best_trajectory(
     let best_bodies = many_bodies[*best_idx].clone();
 
     println!(
-        "   => Borda best: Weighted total = {:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
+        "   => Borda best: Weighted total={:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
         best_tr.total_score_weighted,
         best_tr.chaos,
         best_tr.triangle_area,
@@ -772,7 +774,7 @@ fn select_best_trajectory(
 }
 
 // ========================================================
-// Single-Pass Gaussian Blur (Parallel) for float buffers
+// Single-Pass Gaussian Blur (Parallel), now 4-channel
 // ========================================================
 fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
     if radius == 0 {
@@ -794,65 +796,69 @@ fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
     kernel
 }
 
-/// Helper for SIMD accumulation (just adds `pix * w` to `accum`)
-#[inline]
-fn add_weighted_pixel(accum: &mut (f64, f64, f64), pix: (f64, f64, f64), w: f64) {
-    let p = f64x4::new([pix.0, pix.1, pix.2, 0.0]);
-    let wv = f64x4::splat(w);
-    let res = p * wv;
-    let arr = res.to_array();
-    accum.0 += arr[0];
-    accum.1 += arr[1];
-    accum.2 += arr[2];
-}
-
-/// Perform a 2D Gaussian blur in two passes (horizontal then vertical).
-fn parallel_blur_2d(buffer: &mut [(f64, f64, f64)], width: usize, height: usize, radius: usize) {
+/// We'll blur `(r,g,b,a)` naïvely in non-premultiplied form.
+fn parallel_blur_2d_rgba(
+    buffer: &mut [(f64, f64, f64, f64)],
+    width: usize,
+    height: usize,
+    radius: usize,
+) {
     if radius == 0 {
         return;
     }
     let kernel = build_gaussian_kernel(radius);
     let k_len = kernel.len();
 
-    let mut temp = vec![(0.0, 0.0, 0.0); width * height];
+    // We'll keep a temp buffer
+    let mut temp = vec![(0.0, 0.0, 0.0, 0.0); width * height];
 
     // Horizontal pass
     temp.par_chunks_mut(width).zip(buffer.par_chunks(width)).for_each(|(temp_row, buf_row)| {
         for x in 0..width {
-            let mut sum_pix = (0.0, 0.0, 0.0);
+            // We'll do sum_r, sum_g, sum_b, sum_a
+            let mut sum = f64x4::splat(0.0);
             for k in 0..k_len {
                 let dx = (x as isize + (k as isize - radius as isize)).clamp(0, width as isize - 1)
                     as usize;
-                let pix = buf_row[dx];
-                let w = kernel[k];
-                add_weighted_pixel(&mut sum_pix, pix, w);
+                let (rr, gg, bb, aa) = buf_row[dx];
+                let weight = kernel[k];
+                let vec_pix = f64x4::new([rr, gg, bb, aa]);
+                sum += vec_pix * f64x4::splat(weight);
             }
-            temp_row[x] = sum_pix;
+            let arr = sum.to_array();
+            temp_row[x] = (arr[0], arr[1], arr[2], arr[3]);
         }
     });
 
     // Vertical pass
     buffer.par_chunks_mut(width).enumerate().for_each(|(y, buf_row)| {
         for x in 0..width {
-            let mut sum_pix = (0.0, 0.0, 0.0);
+            let mut sum = f64x4::splat(0.0);
             for k in 0..k_len {
                 let yy = (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
                     as usize;
-                let pix = temp[yy * width + x];
-                let w = kernel[k];
-                add_weighted_pixel(&mut sum_pix, pix, w);
+                let (rr, gg, bb, aa) = temp[yy * width + x];
+                let weight = kernel[k];
+                let vec_pix = f64x4::new([rr, gg, bb, aa]);
+                sum += vec_pix * f64x4::splat(weight);
             }
-            buf_row[x] = sum_pix;
+            let arr = sum.to_array();
+            buf_row[x] = (arr[0], arr[1], arr[2], arr[3]);
         }
     });
 }
 
 // ========================================================
-// Crisp Line Drawing (modified to AVERAGE lines)
-// =======================================================
-fn draw_line_segment_crisp_average(
-    accum: &mut [(f64, f64, f64)],
-    accum_count: &mut [f64],
+// Crisp Line Drawing with “Alpha Over”
+// ========================================================
+/// Over-compositing (non-premultiplied):
+///
+/// new_a = src_a + dst_a * (1 - src_a)
+/// new_rgb = (src_rgb * src_a + dst_rgb * dst_a * (1 - src_a)) / new_a
+///
+/// We'll linear-interpolate color of endpoints to get `(src_r, src_g, src_b, src_a)` for each pixel.
+fn draw_line_segment_crisp_alpha(
+    accum: &mut [(f64, f64, f64, f64)], // (r, g, b, a) in non-premultiplied form
     width: u32,
     height: u32,
     x0: f32,
@@ -861,6 +867,8 @@ fn draw_line_segment_crisp_average(
     y1: f32,
     col0: Rgb<u8>,
     col1: Rgb<u8>,
+    alpha0: f64,
+    alpha1: f64,
 ) {
     let w_usize = width as usize;
     let start = (x0.round() as i32, y0.round() as i32);
@@ -873,26 +881,31 @@ fn draw_line_segment_crisp_average(
         }
         let idx = (yy as usize) * w_usize + (xx as usize);
         let t = if n <= 1 { 0.0 } else { i as f64 / (n - 1) as f64 };
-        let r = (col0[0] as f64) * (1.0 - t) + (col1[0] as f64) * t;
-        let g = (col0[1] as f64) * (1.0 - t) + (col1[1] as f64) * t;
-        let b = (col0[2] as f64) * (1.0 - t) + (col1[2] as f64) * t;
 
-        // INCREMENTAL AVERAGE
-        // old average is accum[idx], count is accum_count[idx]
-        let old_count = accum_count[idx];
-        let new_count = old_count + 1.0;
+        // Interpolate the color & alpha at fraction t
+        let src_a = alpha0 * (1.0 - t) + alpha1 * t;
+        let src_r = ((col0[0] as f64) / 255.0) * (1.0 - t) + ((col1[0] as f64) / 255.0) * t;
+        let src_g = ((col0[1] as f64) / 255.0) * (1.0 - t) + ((col1[1] as f64) / 255.0) * t;
+        let src_b = ((col0[2] as f64) / 255.0) * (1.0 - t) + ((col1[2] as f64) / 255.0) * t;
 
-        // new average = (old_avg * old_count + new_value) / new_count
-        accum[idx].0 = (accum[idx].0 * old_count + r) / new_count;
-        accum[idx].1 = (accum[idx].1 * old_count + g) / new_count;
-        accum[idx].2 = (accum[idx].2 * old_count + b) / new_count;
-
-        accum_count[idx] = new_count;
+        // “Over” compositing with what's in accum
+        let (dst_r, dst_g, dst_b, dst_a) = accum[idx];
+        let new_a = src_a + dst_a * (1.0 - src_a);
+        if new_a > 1e-14 {
+            let new_r = (src_r * src_a + dst_r * dst_a * (1.0 - src_a)) / new_a;
+            let new_g = (src_g * src_a + dst_g * dst_a * (1.0 - src_a)) / new_a;
+            let new_b = (src_b * src_a + dst_b * dst_a * (1.0 - src_a)) / new_a;
+            accum[idx] = (new_r, new_g, new_b, new_a);
+        } else {
+            // If new_a is ~0, that means the source is nearly transparent and the destination was nearly 0 alpha
+            // -> effectively nothing
+            // We can just keep accum[idx] as is.
+        }
     }
 }
 
 // ========================================================
-// Generate color sequences
+// Generate color sequences (+ alpha selection)
 // ========================================================
 fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
@@ -909,7 +922,6 @@ fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec
         } else if hue >= 360.0 {
             hue -= 360.0;
         }
-        // Using HSL with saturation=1, lightness=0.5
         let hsl = Hsl::new(hue, 1.0, 0.5);
         let rgb = Srgb::from_color(hsl);
         colors.push(Rgb([
@@ -921,19 +933,28 @@ fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec
     colors
 }
 
+/// For each body, we have a color sequence + **one random alpha** in [0.1..0.3].
 fn generate_body_color_sequences(
     rng: &mut Sha3RandomByteStream,
     length: usize,
-) -> Vec<Vec<Rgb<u8>>> {
-    vec![
+) -> (Vec<Vec<Rgb<u8>>>, Vec<f64>) {
+    let body1_alpha = rng.random_alpha(0.1, 0.3);
+    let body2_alpha = rng.random_alpha(0.1, 0.3);
+    let body3_alpha = rng.random_alpha(0.1, 0.3);
+
+    println!("   => Body alphas = {:.3}, {:.3}, {:.3}", body1_alpha, body2_alpha, body3_alpha);
+
+    let seqs = vec![
         generate_color_gradient(rng, length),
         generate_color_gradient(rng, length),
         generate_color_gradient(rng, length),
-    ]
+    ];
+    let alphas = vec![body1_alpha, body2_alpha, body3_alpha];
+    (seqs, alphas)
 }
 
 // ========================================================
-// Single-pass H.264 encoding (stdout/stderr -> null)
+// Single-pass H.264 encoding
 // ========================================================
 fn create_video_from_frames_singlepass(
     width: u32,
@@ -1017,9 +1038,20 @@ fn save_image_as_png(
 // ========================================================
 
 /// First pass: gather histogram
+///
+///   - We have an accumulation buffer `(r,g,b,a)` in non-premultiplied alpha.
+///   - After drawing lines, we want to see how “over black” it appears:
+///         display_r = r * a, display_g = g*a, display_b = b*a
+///     This is the color if you composited the pixel on black.
+///   - Then we optionally blur (including alpha channel), combine crisp + blur,
+///     and again interpret the result as `(color_over_black) = color.r*g*a`.
+///
+/// We'll do it exactly like we do in the final pass, but we discard the frames,
+/// except we track histogram across all frames to figure out black/white thresholds.
 fn pass_1_build_histogram(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<Rgb<u8>>],
+    body_alphas: &[f64],
     width: u32,
     height: u32,
     blur_radius_px: usize,
@@ -1032,9 +1064,8 @@ fn pass_1_build_histogram(
 ) {
     let npix = (width as usize) * (height as usize);
 
-    // We'll keep two buffers: accum_crisp + accum_crisp_count
-    let mut accum_crisp = vec![(0.0, 0.0, 0.0); npix];
-    let mut accum_count = vec![0.0; npix];
+    // We'll keep a 4-channel buffer for crisp lines
+    let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
@@ -1053,21 +1084,27 @@ fn pass_1_build_histogram(
             let pct = (step as f64 / total_steps as f64) * 100.0;
             println!("   pass 1 (histogram): {:.0}% done", pct);
         }
+
         // Draw lines among the 3 bodies
         let p0 = positions[0][step];
         let p1 = positions[1][step];
         let p2 = positions[2][step];
+
         let c0 = colors[0][step];
         let c1 = colors[1][step];
         let c2 = colors[2][step];
+
+        // Each body has a fixed alpha
+        let a0 = body_alphas[0];
+        let a1 = body_alphas[1];
+        let a2 = body_alphas[2];
 
         let (x0, y0) = to_pixel(p0[0], p0[1]);
         let (x1, y1) = to_pixel(p1[0], p1[1]);
         let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-        draw_line_segment_crisp_average(
+        draw_line_segment_crisp_alpha(
             &mut accum_crisp,
-            &mut accum_count,
             width,
             height,
             x0,
@@ -1076,10 +1113,11 @@ fn pass_1_build_histogram(
             y1,
             c0,
             c1,
+            a0,
+            a1,
         );
-        draw_line_segment_crisp_average(
+        draw_line_segment_crisp_alpha(
             &mut accum_crisp,
-            &mut accum_count,
             width,
             height,
             x1,
@@ -1088,10 +1126,11 @@ fn pass_1_build_histogram(
             y2,
             c1,
             c2,
+            a1,
+            a2,
         );
-        draw_line_segment_crisp_average(
+        draw_line_segment_crisp_alpha(
             &mut accum_crisp,
-            &mut accum_count,
             width,
             height,
             x2,
@@ -1100,34 +1139,43 @@ fn pass_1_build_histogram(
             y0,
             c2,
             c0,
+            a2,
+            a0,
         );
 
-        // Possibly save this frame if step % frame_interval == 0 or final
         let is_final = step == total_steps - 1;
         if (step % frame_interval == 0) || is_final {
-            // Make a temp clone for blur
+            // Blur pass
             let mut temp = accum_crisp.clone();
             if blur_radius_px > 0 {
-                parallel_blur_2d(&mut temp, width as usize, height as usize, blur_radius_px);
+                parallel_blur_2d_rgba(&mut temp, width as usize, height as usize, blur_radius_px);
             }
-            // combine crisp + blur
-            let mut final_frame = vec![(0.0, 0.0, 0.0); npix];
+            // Combine crisp + blur
+            let mut final_frame = vec![(0.0, 0.0, 0.0, 0.0); npix];
             final_frame.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let c = accum_crisp[i];
-                let b = temp[i];
-                pix.0 = c.0 * blur_core_brightness + b.0 * blur_strength;
-                pix.1 = c.1 * blur_core_brightness + b.1 * blur_strength;
-                pix.2 = c.2 * blur_core_brightness + b.2 * blur_strength;
+                let (cr, cg, cb, ca) = accum_crisp[i];
+                let (br, bg, bb, ba) = temp[i];
+                // Weighted combination
+                let out_r = cr * blur_core_brightness + br * blur_strength;
+                let out_g = cg * blur_core_brightness + bg * blur_strength;
+                let out_b = cb * blur_core_brightness + bb * blur_strength;
+                let out_a = ca * blur_core_brightness + ba * blur_strength;
+                *pix = (out_r, out_g, out_b, out_a);
             });
 
-            // Add this frame's pixels to the global histogram
+            // Now, interpret each pixel “over black”
+            // => display_r = final_r * final_a, etc.
             all_r.reserve(npix);
             all_g.reserve(npix);
             all_b.reserve(npix);
-            for &(r, g, b) in &final_frame {
-                all_r.push(r);
-                all_g.push(g);
-                all_b.push(b);
+
+            for &(r, g, b, a) in &final_frame {
+                let dr = r * a;
+                let dg = g * a;
+                let db = b * a;
+                all_r.push(dr);
+                all_g.push(dg);
+                all_b.push(db);
             }
         }
     }
@@ -1167,9 +1215,13 @@ fn compute_black_white_gamma(
 }
 
 /// Second pass: re-render frames, apply black/white/gamma on-the-fly, feed frames to sink
+///
+/// Same logic as pass 1, but we actually produce frames for a video file.
+/// We store the last frame for PNG output.
 fn pass_2_write_frames(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<Rgb<u8>>],
+    body_alphas: &[f64],
     width: u32,
     height: u32,
     blur_radius_px: usize,
@@ -1188,8 +1240,8 @@ fn pass_2_write_frames(
 ) -> Result<(), Box<dyn Error>> {
     let npix = (width as usize) * (height as usize);
 
-    let mut accum_crisp = vec![(0.0, 0.0, 0.0); npix];
-    let mut accum_count = vec![0.0; npix];
+    // Accumulation buffer for crisp lines
+    let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
@@ -1203,7 +1255,7 @@ fn pass_2_write_frames(
         (px as f32, py as f32)
     };
 
-    // Precompute channel ranges
+    // For black/white/gamma we need the range
     let range_r = (white_r - black_r).max(1e-14);
     let range_g = (white_g - black_g).max(1e-14);
     let range_b = (white_b - black_b).max(1e-14);
@@ -1220,15 +1272,17 @@ fn pass_2_write_frames(
         let c0 = colors[0][step];
         let c1 = colors[1][step];
         let c2 = colors[2][step];
+        let a0 = body_alphas[0];
+        let a1 = body_alphas[1];
+        let a2 = body_alphas[2];
 
         let (x0, y0) = to_pixel(p0[0], p0[1]);
         let (x1, y1) = to_pixel(p1[0], p1[1]);
         let (x2, y2) = to_pixel(p2[0], p2[1]);
 
-        // Draw lines in "average" mode
-        draw_line_segment_crisp_average(
+        // Draw lines with alpha-over
+        draw_line_segment_crisp_alpha(
             &mut accum_crisp,
-            &mut accum_count,
             width,
             height,
             x0,
@@ -1237,10 +1291,11 @@ fn pass_2_write_frames(
             y1,
             c0,
             c1,
+            a0,
+            a1,
         );
-        draw_line_segment_crisp_average(
+        draw_line_segment_crisp_alpha(
             &mut accum_crisp,
-            &mut accum_count,
             width,
             height,
             x1,
@@ -1249,10 +1304,11 @@ fn pass_2_write_frames(
             y2,
             c1,
             c2,
+            a1,
+            a2,
         );
-        draw_line_segment_crisp_average(
+        draw_line_segment_crisp_alpha(
             &mut accum_crisp,
-            &mut accum_count,
             width,
             height,
             x2,
@@ -1261,6 +1317,8 @@ fn pass_2_write_frames(
             y0,
             c2,
             c0,
+            a2,
+            a0,
         );
 
         let is_final = step == total_steps - 1;
@@ -1268,29 +1326,40 @@ fn pass_2_write_frames(
             // blur
             let mut temp = accum_crisp.clone();
             if blur_radius_px > 0 {
-                parallel_blur_2d(&mut temp, width as usize, height as usize, blur_radius_px);
+                parallel_blur_2d_rgba(&mut temp, width as usize, height as usize, blur_radius_px);
             }
             // combine crisp + blur
-            let mut final_frame = vec![(0.0, 0.0, 0.0); npix];
+            let mut final_frame = vec![(0.0, 0.0, 0.0, 0.0); npix];
             final_frame.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let c = accum_crisp[i];
-                let b = temp[i];
-                pix.0 = c.0 * blur_core_brightness + b.0 * blur_strength;
-                pix.1 = c.1 * blur_core_brightness + b.1 * blur_strength;
-                pix.2 = c.2 * blur_core_brightness + b.2 * blur_strength;
+                let (cr, cg, cb, ca) = accum_crisp[i];
+                let (br, bg, bb, ba) = temp[i];
+                let out_r = cr * blur_core_brightness + br * blur_strength;
+                let out_g = cg * blur_core_brightness + bg * blur_strength;
+                let out_b = cb * blur_core_brightness + bb * blur_strength;
+                let out_a = ca * blur_core_brightness + ba * blur_strength;
+                *pix = (out_r, out_g, out_b, out_a);
             });
 
-            // Now apply black/white/gamma => 8-bit
+            // Now interpret final_frame “over black” => (dr,dg,db) = (r*a, g*a, b*a)
+            // Then do black/white/gamma => 8-bit
             let mut buf_8bit = vec![0u8; npix * 3];
             buf_8bit.par_chunks_mut(3).zip(final_frame.par_iter()).for_each(
-                |(chunk, &(fr, fg, fb))| {
-                    let mut rr = (fr - black_r) / range_r;
-                    let mut gg = (fg - black_g) / range_g;
-                    let mut bb = (fb - black_b) / range_b;
+                |(chunk, &(fr, fg, fb, fa))| {
+                    // 1) Over black
+                    let mut rr = fr * fa;
+                    let mut gg = fg * fa;
+                    let mut bb = fb * fa;
+
+                    // 2) Clip black/white
+                    rr = (rr - black_r) / range_r;
+                    gg = (gg - black_g) / range_g;
+                    bb = (bb - black_b) / range_b;
+
                     rr = rr.clamp(0.0, 1.0);
                     gg = gg.clamp(0.0, 1.0);
                     bb = bb.clamp(0.0, 1.0);
 
+                    // 3) gamma
                     if gamma != 1.0 {
                         rr = rr.powf(gamma);
                         gg = gg.powf(gamma);
@@ -1307,9 +1376,10 @@ fn pass_2_write_frames(
                 },
             );
 
-            // Send the frame to FFmpeg
+            // Send the frame out
             frame_sink(&buf_8bit)?;
 
+            // If it's the last frame, store for PNG
             if is_final {
                 let image_buf = ImageBuffer::from_raw(width, height, buf_8bit).unwrap();
                 *last_frame_out = Some(image_buf);
@@ -1377,9 +1447,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
     println!("   => Done re-running best orbit.");
 
-    // 3) Build color sequences
-    println!("STAGE 3/8: Generating color sequences...");
-    let colors = generate_body_color_sequences(&mut rng, args.num_steps_sim);
+    // 3) Generate color sequences + pick alpha
+    println!("STAGE 3/8: Generating color sequences + alpha...");
+    let (colors, body_alphas) = generate_body_color_sequences(&mut rng, args.num_steps_sim);
 
     // 4) bounding box
     println!("STAGE 4/8: Determining bounding box...");
@@ -1395,10 +1465,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let smaller_dim = width.min(height) as f64;
     let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
 
-    // 5) pass 1 => histogram
+    // 5) pass 1 => gather histogram
     println!("STAGE 5/8: PASS 1 => building global histogram (no frames saved)...");
     let frame_rate = 60;
-    let target_frames = 1800;
+    let target_frames = 1800; // ~30 seconds at 60 FPS
     let frame_interval =
         if target_frames > 0 { (args.num_steps_sim / target_frames).max(1) } else { 1 };
 
@@ -1409,6 +1479,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     pass_1_build_histogram(
         &positions,
         &colors,
+        &body_alphas,
         width,
         height,
         blur_radius_px,
@@ -1452,6 +1523,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             pass_2_write_frames(
                 &positions,
                 &colors,
+                &body_alphas,
                 width,
                 height,
                 blur_radius_px,
