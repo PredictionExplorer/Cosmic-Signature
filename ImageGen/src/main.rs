@@ -2,13 +2,13 @@ use clap::Parser;
 use hex;
 use image::{DynamicImage, ImageBuffer};
 use line_drawing::Bresenham;
-use nalgebra::Vector3; // We only need Vector3, so let's import it directly.
+use nalgebra::Vector3;
 use palette::oklch::Oklch;
 use palette::{Clamp, FromColor, Srgb};
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
-use sha3::{Digest, Sha3_256}; // <-- Import Sha3_256 so it's recognized
+use sha3::{Digest, Sha3_256};
 use statrs::statistics::Statistics;
 
 use std::error::Error;
@@ -34,8 +34,7 @@ const B: usize = 32;
     author,
     version,
     about = "
-Three‐Body orbits => Borda => final image & MP4.
-Storing color in a custom LCH so we avoid blowouts, and we do a final auto‐levels in sRGB.
+Three‐Body orbits => Borda => final image & MP4 (with hue‐only random walk, additive Lab blending).
 "
 )]
 struct Args {
@@ -101,7 +100,7 @@ struct Args {
 // RNG
 // =============================================
 pub struct Sha3RandomByteStream {
-    hasher: Sha3_256, // <— now recognized
+    hasher: Sha3_256,
     seed: Vec<u8>,
     buffer: Vec<u8>,
     index: usize,
@@ -233,9 +232,11 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
 
 fn get_positions(mut bodies: Vec<Body>, num_steps: usize) -> Vec<Vec<Vector3<f64>>> {
     let dt = 0.001;
+    // warm-up
     for _ in 0..num_steps {
         verlet_step(&mut bodies, dt);
     }
+    // record
     let mut bodies2 = bodies.clone();
     let mut out = vec![vec![Vector3::zeros(); num_steps]; bodies.len()];
     for step in 0..num_steps {
@@ -583,6 +584,7 @@ fn select_best_trajectory(
             }
             let e = calculate_total_energy(bodies);
             let ang = calculate_total_angular_momentum(bodies).norm();
+            // filter unbound orbits
             if e >= 0.0 || ang < 1e-3 {
                 None
             } else {
@@ -644,8 +646,10 @@ fn select_best_trajectory(
 
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
         if higher_better {
+            // sort descending on the .0
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
         } else {
+            // sort ascending on the .0
             vals.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         }
         let n = vals.len();
@@ -682,13 +686,14 @@ fn select_best_trajectory(
         })
         .unwrap();
     let best_bodies = many_bodies[*best_idx].clone();
-    println!("   => Borda best => Weighted={:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
-             best_tr.total_score_weighted,
-             best_tr.chaos,
-             best_tr.triangle_area,
-             best_tr.total_dist,
-             best_tr.lyap_exp,
-             best_tr.aspect_closeness
+    println!(
+        "   => Borda best => Weighted={:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
+        best_tr.total_score_weighted,
+        best_tr.chaos,
+        best_tr.triangle_area,
+        best_tr.total_dist,
+        best_tr.lyap_exp,
+        best_tr.aspect_closeness
     );
     (best_bodies, best_tr.clone())
 }
@@ -709,46 +714,55 @@ impl MyLCH {
     }
 }
 
-/// Generate random color sequences in MyLCH
-fn generate_body_color_sequences_my_lch(
-    rng: &mut Sha3RandomByteStream,
-    length: usize,
-    n_bodies: usize,
-) -> Vec<Vec<MyLCH>> {
-    let mut out = vec![vec![MyLCH::new(0.5, 0.0, 0.0); length]; n_bodies];
-    for b in 0..n_bodies {
-        let mut l = rng.next_f64() * 0.6 + 0.2;
-        let mut c = rng.next_f64() * 0.25;
-        let mut hue = rng.next_f64() * 360.0;
-
-        let step_l = 0.01;
-        let step_c = 0.01;
-        let step_h = 0.5;
-        for i in 0..length {
-            out[b][i] = MyLCH::new(l as f32, c as f32, hue as f32);
-
-            let dl = (rng.next_f64() - 0.5) * 2.0 * step_l;
-            let dc = (rng.next_f64() - 0.5) * 2.0 * step_c;
-            let dh = (rng.next_f64() - 0.5) * 2.0 * step_h;
-            l += dl;
-            c += dc;
-            hue += dh;
-            l = l.clamp(0.0, 1.0);
-            c = c.clamp(0.0, 0.4);
-            if hue < 0.0 {
-                hue += 360.0;
-            } else if hue >= 360.0 {
-                hue -= 360.0;
-            }
-        }
-    }
-    out
+// Convert MyLCH <--> Lab (for additive blending in Lab)
+#[inline]
+fn lch_to_lab(lch: MyLCH) -> (f32, f32, f32) {
+    // L, C, h => Lab
+    // a = C*cos(h), b = C*sin(h), with h in radians
+    let hr = lch.hue_deg.to_radians();
+    let a = lch.c * hr.cos();
+    let b = lch.c * hr.sin();
+    (lch.l, a, b)
 }
 
-const ALPHA: f32 = 0.2;
+#[inline]
+fn lab_to_lch(lab: (f32, f32, f32)) -> MyLCH {
+    let (l, a, b) = lab;
+    let c = (a * a + b * b).sqrt();
+    // typical usage is atan2(b, a) for converting back from Lab,
+    // but we'll keep consistent with the usage above:
+    let mut h = a.atan2(b).to_degrees();
+    if h < 0.0 {
+        h += 360.0;
+    } else if h >= 360.0 {
+        h -= 360.0;
+    }
+    MyLCH::new(l, c, h)
+}
 
-fn blend_my_lch_partial(accum: &mut MyLCH, line: MyLCH) {
-    let mut dh = line.hue_deg - accum.hue_deg;
+/// Additive Lab blend with a small alpha factor:
+/// result_lab = base_lab + alpha * src_lab
+fn additive_lch_blend(base: MyLCH, src: MyLCH, alpha: f32) -> MyLCH {
+    // convert both to Lab
+    let (l1, a1, b1) = lch_to_lab(base);
+    let (l2, a2, b2) = lch_to_lab(src);
+
+    // do partial additive
+    let l_sum = l1 + alpha * l2;
+    let a_sum = a1 + alpha * a2;
+    let b_sum = b1 + alpha * b2;
+
+    // clamp L to [0..1] to avoid going out of range
+    let l_clamped = l_sum.clamp(0.0, 1.0);
+
+    lab_to_lch((l_clamped, a_sum, b_sum))
+}
+
+/// Linear interpolation in LCH (including hue) to get intermediate color
+#[inline]
+fn lch_interpolate(c0: MyLCH, c1: MyLCH, t: f32) -> MyLCH {
+    let mut dh = c1.hue_deg - c0.hue_deg;
+    // minimal hue difference
     if dh.abs() > 180.0 {
         if dh > 0.0 {
             dh -= 360.0;
@@ -756,22 +770,20 @@ fn blend_my_lch_partial(accum: &mut MyLCH, line: MyLCH) {
             dh += 360.0;
         }
     }
-    let new_l = accum.l + ALPHA * (line.l - accum.l);
-    let new_c = accum.c + ALPHA * (line.c - accum.c);
-    let new_h = accum.hue_deg + ALPHA * dh;
-    let mut h2 = new_h;
-    if h2 < 0.0 {
-        h2 += 360.0;
-    } else if h2 >= 360.0 {
-        h2 -= 360.0;
+    let hue = c0.hue_deg + dh * t;
+    let mut hue_wrapped = hue;
+    if hue_wrapped < 0.0 {
+        hue_wrapped += 360.0;
+    } else if hue_wrapped >= 360.0 {
+        hue_wrapped -= 360.0;
     }
-    accum.l = new_l;
-    accum.c = new_c;
-    accum.hue_deg = h2;
+    let l = c0.l + (c1.l - c0.l) * t;
+    let c = c0.c + (c1.c - c0.c) * t;
+    MyLCH::new(l, c, hue_wrapped)
 }
 
-/// Crisp line
-fn draw_line_segment_my_lch(
+/// Crisp line, uses additive blending in Lab
+fn draw_line_segment_my_lch_additive(
     accum: &mut [MyLCH],
     width: u32,
     height: u32,
@@ -781,39 +793,25 @@ fn draw_line_segment_my_lch(
     y1: f32,
     col0: MyLCH,
     col1: MyLCH,
+    alpha: f32,
 ) {
     let w_usize = width as usize;
     let start = (x0.round() as i32, y0.round() as i32);
     let end = (x1.round() as i32, y1.round() as i32);
     let pts: Vec<(i32, i32)> = Bresenham::new(start, end).collect();
     let n = pts.len();
+    if n < 2 {
+        return;
+    }
     for (i, (xx, yy)) in pts.into_iter().enumerate() {
         if xx < 0 || xx >= width as i32 || yy < 0 || yy >= height as i32 {
             continue;
         }
         let idx = (yy as usize) * w_usize + (xx as usize);
-        let t = if n <= 1 { 0.0 } else { i as f32 / (n - 1) as f32 };
-        let l = col0.l * (1.0 - t) + col1.l * t;
-        let c = col0.c * (1.0 - t) + col1.c * t;
-
-        let mut dh = col1.hue_deg - col0.hue_deg;
-        if dh.abs() > 180.0 {
-            if dh > 0.0 {
-                dh -= 360.0;
-            } else {
-                dh += 360.0;
-            }
-        }
-        let h_ = col0.hue_deg + dh * t;
-        let mut h_wrapped = h_;
-        if h_wrapped < 0.0 {
-            h_wrapped += 360.0;
-        } else if h_wrapped >= 360.0 {
-            h_wrapped -= 360.0;
-        }
-        let line_col = MyLCH::new(l, c, h_wrapped);
-
-        blend_my_lch_partial(&mut accum[idx], line_col);
+        let t = i as f32 / (n - 1) as f32; // 0..1 along the line
+        let line_col = lch_interpolate(col0, col1, t);
+        // do additive blending
+        accum[idx] = additive_lch_blend(accum[idx], line_col, alpha);
     }
 }
 
@@ -842,6 +840,7 @@ fn hue_to_xy(h_deg: f32) -> (f32, f32) {
     let r = h_deg.to_radians();
     (r.cos(), r.sin())
 }
+
 fn xy_to_hue(x: f32, y: f32) -> f32 {
     let mut ang_deg = x.atan2(y).to_degrees();
     if ang_deg < 0.0 {
@@ -852,6 +851,7 @@ fn xy_to_hue(x: f32, y: f32) -> f32 {
     ang_deg
 }
 
+/// Simple 2D blur in MyLCH. We do it by converting hue -> (x,y), blur in (L, C, x, y), then back.
 fn parallel_blur_2d_my_lch(buf: &mut [MyLCH], width: usize, height: usize, radius: usize) {
     if radius == 0 {
         return;
@@ -860,7 +860,7 @@ fn parallel_blur_2d_my_lch(buf: &mut [MyLCH], width: usize, height: usize, radiu
     let k_len = kernel.len();
     let mut temp = vec![MyLCH::new(0.5, 0.0, 0.0); width * height];
 
-    // horizontal
+    // horizontal pass
     temp.par_chunks_mut(width).zip(buf.par_chunks(width)).for_each(|(dst_row, src_row)| {
         for x in 0..width {
             let mut sum_l = 0.0;
@@ -875,8 +875,8 @@ fn parallel_blur_2d_my_lch(buf: &mut [MyLCH], width: usize, height: usize, radiu
                 sum_l += w * (s.l as f64);
                 sum_c += w * (s.c as f64);
                 let (xx, yy) = hue_to_xy(s.hue_deg);
-                sum_x += w * (xx as f64);
-                sum_y += w * (yy as f64);
+                sum_x += w * xx as f64;
+                sum_y += w * yy as f64;
             }
             let out_l = sum_l as f32;
             let out_c = sum_c as f32;
@@ -887,7 +887,7 @@ fn parallel_blur_2d_my_lch(buf: &mut [MyLCH], width: usize, height: usize, radiu
         }
     });
 
-    // vertical
+    // vertical pass
     buf.par_chunks_mut(width).enumerate().for_each(|(y, dst_row)| {
         for x in 0..width {
             let mut sum_l = 0.0;
@@ -902,8 +902,8 @@ fn parallel_blur_2d_my_lch(buf: &mut [MyLCH], width: usize, height: usize, radiu
                 sum_l += w * (s.l as f64);
                 sum_c += w * (s.c as f64);
                 let (xx, yy2) = hue_to_xy(s.hue_deg);
-                sum_x += w * (xx as f64);
-                sum_y += w * (yy2 as f64);
+                sum_x += w * xx as f64;
+                sum_y += w * yy2 as f64;
             }
             let out_l = sum_l as f32;
             let out_c = sum_c as f32;
@@ -928,7 +928,9 @@ fn create_video_from_frames_singlepass(
         return Ok(());
     }
     let cpu_count = num_cpus::get().to_string();
-    println!("STAGE 7/8: Creating MP4 => {output_file}, {width}x{height}, {frame_rate} FPS, using {cpu_count} threads");
+    println!(
+        "STAGE 7/8: Creating MP4 => {output_file}, {width}x{height}, {frame_rate} FPS, using {cpu_count} threads"
+    );
 
     let mut cmd = Command::new("ffmpeg");
     cmd.arg("-y")
@@ -986,7 +988,6 @@ fn pass_auto_levels(
     let mut float_rgb = vec![(0.0, 0.0, 0.0); npix];
     float_rgb.par_iter_mut().enumerate().for_each(|(i, outpix)| {
         let c = buf_my_lch[i];
-        // build palette::oklch::Oklch
         let pal_lch = Oklch::new(c.l, c.c, c.hue_deg);
         let srgb = Srgb::from_color(pal_lch).clamp();
         outpix.0 = srgb.red as f64;
@@ -994,7 +995,7 @@ fn pass_auto_levels(
         outpix.2 = srgb.blue as f64;
     });
 
-    // hist
+    // gather channels
     let mut all_r = Vec::with_capacity(npix);
     let mut all_g = Vec::with_capacity(npix);
     let mut all_b = Vec::with_capacity(npix);
@@ -1003,6 +1004,7 @@ fn pass_auto_levels(
         all_g.push(g);
         all_b.push(b);
     }
+    // sort f64 ascending
     all_r.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     all_g.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     all_b.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
@@ -1045,6 +1047,42 @@ fn pass_auto_levels(
         chunk[2] = bb.round().clamp(0.0, 255.0) as u8;
     });
     out8
+}
+
+// =============================================
+// Generate color sequences (Hue only random walk)
+// =============================================
+fn generate_body_color_sequences_my_lch(
+    rng: &mut Sha3RandomByteStream,
+    length: usize,
+    n_bodies: usize,
+) -> Vec<Vec<MyLCH>> {
+    // Each body has a random L in [0.3, 0.7], random C in [0.1, 0.3],
+    // random initial Hue in [0..360). Then each step => small drift in hue.
+    let mut out = vec![vec![MyLCH::new(0.5, 0.2, 0.0); length]; n_bodies];
+
+    for b in 0..n_bodies {
+        let fixed_l = rng.gen_range(0.3, 0.7) as f32;
+        let fixed_c = rng.gen_range(0.1, 0.3) as f32;
+        let base_h = rng.gen_range(0.0, 360.0) as f32;
+
+        // small hue step range => ±0.4 deg
+        let hue_step_max = 0.4;
+
+        let mut current_h = base_h;
+        for i in 0..length {
+            out[b][i] = MyLCH::new(fixed_l, fixed_c, current_h);
+            // do a small random step in hue
+            let dh = (rng.next_f64() - 0.5) * (2.0 * hue_step_max);
+            current_h += dh as f32;
+            if current_h < 0.0 {
+                current_h += 360.0;
+            } else if current_h >= 360.0 {
+                current_h -= 360.0;
+            }
+        }
+    }
+    out
 }
 
 // =============================================
@@ -1101,8 +1139,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("STAGE 2/8: Re-run best => {} steps...", args.num_steps_sim);
     let positions = get_positions(best_bodies, args.num_steps_sim);
 
-    // 3) color sequences
-    println!("STAGE 3/8: generating color sequences in MyLCH...");
+    // 3) color sequences => hue only random walk
+    println!("STAGE 3/8: generating color sequences in MyLCH (hue-only)...");
     let colors = generate_body_color_sequences_my_lch(&mut rng, args.num_steps_sim, 3);
 
     // 4) bounding box
@@ -1111,7 +1149,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("   => X in [{:.3},{:.3}], Y in [{:.3},{:.3}]", min_x, max_x, min_y, max_y);
 
     // 5) accumulation
-    println!("STAGE 5/8: building frames in MyLCH, partial blend + blur");
+    println!("STAGE 5/8: building frames in MyLCH, additive blend + blur");
     let npix = (width as usize) * (height as usize);
     let mut accum_my_lch = vec![MyLCH::new(0.5, 0.0, 0.0); npix];
 
@@ -1149,12 +1187,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             let total_steps = positions[0].len();
             let chunk_line = (total_steps / 10).max(1);
 
+            // alpha for additive blending
+            let alpha = 0.06_f32;
+
             for step in 0..total_steps {
                 if step % chunk_line == 0 {
                     let pct = (step as f64 / total_steps as f64) * 100.0;
                     println!("   => step {} / {} ({:.0}%)", step, total_steps, pct);
                 }
-                // draw lines
+                // draw lines for the triangle
                 let p0 = positions[0][step];
                 let p1 = positions[1][step];
                 let p2 = positions[2][step];
@@ -1166,9 +1207,42 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let (x1, y1) = to_pixel(min_x, max_x, min_y, max_y, width, height, p1[0], p1[1]);
                 let (x2, y2) = to_pixel(min_x, max_x, min_y, max_y, width, height, p2[0], p2[1]);
 
-                draw_line_segment_my_lch(&mut accum_my_lch, width, height, x0, y0, x1, y1, c0, c1);
-                draw_line_segment_my_lch(&mut accum_my_lch, width, height, x1, y1, x2, y2, c1, c2);
-                draw_line_segment_my_lch(&mut accum_my_lch, width, height, x2, y2, x0, y0, c2, c0);
+                draw_line_segment_my_lch_additive(
+                    &mut accum_my_lch,
+                    width,
+                    height,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    c0,
+                    c1,
+                    alpha,
+                );
+                draw_line_segment_my_lch_additive(
+                    &mut accum_my_lch,
+                    width,
+                    height,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    c1,
+                    c2,
+                    alpha,
+                );
+                draw_line_segment_my_lch_additive(
+                    &mut accum_my_lch,
+                    width,
+                    height,
+                    x2,
+                    y2,
+                    x0,
+                    y0,
+                    c2,
+                    c0,
+                    alpha,
+                );
 
                 let is_final = step == (total_steps - 1);
                 if (step % frame_interval == 0) || is_final {
@@ -1181,30 +1255,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                         blur_radius_px,
                     );
 
-                    // combine
+                    // combine partial (just to keep some crispness vs blur)
                     let mut final_buf = vec![MyLCH::new(0.0, 0.0, 0.0); npix];
                     final_buf.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                        let c = accum_my_lch[i];
-                        let b = temp[i];
-                        pix.l = c.l * 0.7 + b.l * 0.3;
-                        pix.c = c.c * 0.7 + b.c * 0.3;
-
-                        let mut dh = b.hue_deg - c.hue_deg;
-                        if dh.abs() > 180.0 {
-                            if dh > 0.0 {
-                                dh -= 360.0;
-                            } else {
-                                dh += 360.0;
-                            }
-                        }
-                        let h_out = c.hue_deg + 0.3 * dh;
-                        let mut h2 = h_out;
-                        if h2 < 0.0 {
-                            h2 += 360.0;
-                        } else if h2 >= 360.0 {
-                            h2 -= 360.0;
-                        }
-                        pix.hue_deg = h2;
+                        let c_accum = accum_my_lch[i];
+                        let c_blur = temp[i];
+                        // Weighted average of original and blur in Lab
+                        let (l1, a1, b1) = lch_to_lab(c_accum);
+                        let (l2, a2, b2) = lch_to_lab(c_blur);
+                        let w1 = 0.7;
+                        let w2 = 0.3;
+                        let l_sum = w1 * l1 + w2 * l2;
+                        let a_sum = w1 * a1 + w2 * a2;
+                        let b_sum = w1 * b1 + w2 * b2;
+                        *pix = lab_to_lch((l_sum as f32, a_sum as f32, b_sum as f32));
                     });
 
                     // convert final_buf => sRGB
@@ -1250,7 +1314,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("   => saved {png_path}");
 
     println!(
-        "Done! Weighted Borda = {:.3}. Enjoy your MyLCH-based art!",
+        "Done! Weighted Borda = {:.3}. Enjoy your hue‐only + additive Lab art!",
         best_info.total_score_weighted
     );
     Ok(())
