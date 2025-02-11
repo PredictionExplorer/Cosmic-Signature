@@ -72,7 +72,7 @@ struct Args {
     max_mass: f64,
 
     /// Borda weighting: chaos measure
-    #[arg(long, default_value_t = 3.0)]
+    #[arg(long, default_value_t = 7.0)]
     chaos_weight: f64,
 
     /// Borda weighting: average triangle area
@@ -84,11 +84,11 @@ struct Args {
     dist_weight: f64,
 
     /// Borda weighting: lyapunov exponent
-    #[arg(long, default_value_t = 2.5)]
+    #[arg(long, default_value_t = 7.0)]
     lyap_weight: f64,
 
     /// Borda weighting: aspect ratio closeness
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 2.0)]
     aspect_weight: f64,
 
     /// Max points for chaos measure sub-sampling
@@ -96,11 +96,11 @@ struct Args {
     max_points: usize,
 
     /// Output image/video width in pixels
-    #[arg(long, default_value_t = 1920 / 2)]
+    #[arg(long, default_value_t = 1920)]
     width: u32,
 
     /// Output image/video height in pixels
-    #[arg(long, default_value_t = 1080 / 2)]
+    #[arg(long, default_value_t = 1080)]
     height: u32,
 
     /// Fraction of pixels clipped to black
@@ -118,6 +118,14 @@ struct Args {
     /// If true, use “special” mode => changes some defaults
     #[arg(long, default_value_t = false)]
     special: bool,
+
+    /// If true, disable blur entirely (default = true => no blur by default).
+    #[arg(long, default_value_t = true)]
+    disable_blur: bool,
+
+    /// Denominator for alpha = 1 / alpha_denom (e.g. 1/1e6, 1/2e6, etc.)
+    #[arg(long, default_value_t = 1_000_000)]
+    alpha_denom: usize,
 }
 
 // ========================================================
@@ -190,10 +198,6 @@ impl Sha3RandomByteStream {
 
     pub fn random_velocity(&mut self) -> f64 {
         self.gen_range(-self.velocity_range, self.velocity_range)
-    }
-
-    pub fn random_alpha(&mut self, min_a: f64, max_a: f64) -> f64 {
-        self.gen_range(min_a, max_a)
     }
 }
 
@@ -430,7 +434,13 @@ fn lyapunov_exponent_kdtree(data: &[f64], tau: usize, max_iter: usize) -> f64 {
         return 0.0;
     }
     let log_divergence: Vec<f64> = (0..max_iter)
-        .map(|k| if counts[k] > 0 { (divergence[k] / (counts[k] as f64)).ln() } else { 0.0 })
+        .map(|k| {
+            if counts[k] > 0 {
+                (divergence[k] / (counts[k] as f64)).ln()
+            } else {
+                0.0
+            }
+        })
         .collect();
     let x_vals: Vec<f64> = (0..max_iter).map(|i| i as f64).collect();
     let mean_x = x_vals.iter().copied().mean();
@@ -756,7 +766,9 @@ fn select_best_trajectory(
     let (best_tr, best_idx) = info_vec
         .iter()
         .max_by(|(a, _), (b, _)| {
-            a.total_score_weighted.partial_cmp(&b.total_score_weighted).unwrap()
+            a.total_score_weighted
+                .partial_cmp(&b.total_score_weighted)
+                .unwrap()
         })
         .unwrap();
     let best_bodies = many_bodies[*best_idx].clone();
@@ -815,7 +827,6 @@ fn parallel_blur_2d_rgba(
     // Horizontal pass
     temp.par_chunks_mut(width).zip(buffer.par_chunks(width)).for_each(|(temp_row, buf_row)| {
         for x in 0..width {
-            // We'll do sum_r, sum_g, sum_b, sum_a
             let mut sum = f64x4::splat(0.0);
             for k in 0..k_len {
                 let dx = (x as isize + (k as isize - radius as isize)).clamp(0, width as isize - 1)
@@ -835,8 +846,9 @@ fn parallel_blur_2d_rgba(
         for x in 0..width {
             let mut sum = f64x4::splat(0.0);
             for k in 0..k_len {
-                let yy = (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
-                    as usize;
+                let yy =
+                    (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
+                        as usize;
                 let (rr, gg, bb, aa) = temp[yy * width + x];
                 let weight = kernel[k];
                 let vec_pix = f64x4::new([rr, gg, bb, aa]);
@@ -896,16 +908,12 @@ fn draw_line_segment_crisp_alpha(
             let new_g = (src_g * src_a + dst_g * dst_a * (1.0 - src_a)) / new_a;
             let new_b = (src_b * src_a + dst_b * dst_a * (1.0 - src_a)) / new_a;
             accum[idx] = (new_r, new_g, new_b, new_a);
-        } else {
-            // If new_a is ~0, that means the source is nearly transparent and the destination was nearly 0 alpha
-            // -> effectively nothing
-            // We can just keep accum[idx] as is.
         }
     }
 }
 
 // ========================================================
-// Generate color sequences (+ alpha selection)
+// Generate color sequences (+ fixed alpha from CLI)
 // ========================================================
 fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
@@ -933,23 +941,27 @@ fn generate_color_gradient(rng: &mut Sha3RandomByteStream, length: usize) -> Vec
     colors
 }
 
-/// For each body, we have a color sequence + **one random alpha** in [0.1..0.3].
+/// Instead of random alpha, we now fix alpha = 1 / alpha_denom
 fn generate_body_color_sequences(
     rng: &mut Sha3RandomByteStream,
     length: usize,
+    alpha_value: f64,
 ) -> (Vec<Vec<Rgb<u8>>>, Vec<f64>) {
-    let body1_alpha = rng.random_alpha(0.1, 0.3);
-    let body2_alpha = rng.random_alpha(0.1, 0.3);
-    let body3_alpha = rng.random_alpha(0.1, 0.3);
+    // We just create a 3-element vector of the same alpha for all bodies.
+    // Each body still has its own color gradient, though.
+    let body1_colors = generate_color_gradient(rng, length);
+    let body2_colors = generate_color_gradient(rng, length);
+    let body3_colors = generate_color_gradient(rng, length);
 
-    println!("   => Body alphas = {:.3}, {:.3}, {:.3}", body1_alpha, body2_alpha, body3_alpha);
+    let alphas = vec![alpha_value; 3];
+    let seqs = vec![body1_colors, body2_colors, body3_colors];
 
-    let seqs = vec![
-        generate_color_gradient(rng, length),
-        generate_color_gradient(rng, length),
-        generate_color_gradient(rng, length),
-    ];
-    let alphas = vec![body1_alpha, body2_alpha, body3_alpha];
+    println!(
+        "   => Setting all body alphas to 1 / {} = {:.3e}",
+        (1.0 / alpha_value).round(),
+        alpha_value
+    );
+
     (seqs, alphas)
 }
 
@@ -1038,16 +1050,6 @@ fn save_image_as_png(
 // ========================================================
 
 /// First pass: gather histogram
-///
-///   - We have an accumulation buffer `(r,g,b,a)` in non-premultiplied alpha.
-///   - After drawing lines, we want to see how “over black” it appears:
-///         display_r = r * a, display_g = g*a, display_b = b*a
-///     This is the color if you composited the pixel on black.
-///   - Then we optionally blur (including alpha channel), combine crisp + blur,
-///     and again interpret the result as `(color_over_black) = color.r*g*a`.
-///
-/// We'll do it exactly like we do in the final pass, but we discard the frames,
-/// except we track histogram across all frames to figure out black/white thresholds.
 fn pass_1_build_histogram(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<Rgb<u8>>],
@@ -1094,7 +1096,6 @@ fn pass_1_build_histogram(
         let c1 = colors[1][step];
         let c2 = colors[2][step];
 
-        // Each body has a fixed alpha
         let a0 = body_alphas[0];
         let a1 = body_alphas[1];
         let a2 = body_alphas[2];
@@ -1164,7 +1165,6 @@ fn pass_1_build_histogram(
             });
 
             // Now, interpret each pixel “over black”
-            // => display_r = final_r * final_a, etc.
             all_r.reserve(npix);
             all_g.reserve(npix);
             all_b.reserve(npix);
@@ -1215,9 +1215,6 @@ fn compute_black_white_gamma(
 }
 
 /// Second pass: re-render frames, apply black/white/gamma on-the-fly, feed frames to sink
-///
-/// Same logic as pass 1, but we actually produce frames for a video file.
-/// We store the last frame for PNG output.
 fn pass_2_write_frames(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<Rgb<u8>>],
@@ -1340,8 +1337,7 @@ fn pass_2_write_frames(
                 *pix = (out_r, out_g, out_b, out_a);
             });
 
-            // Now interpret final_frame “over black” => (dr,dg,db) = (r*a, g*a, b*a)
-            // Then do black/white/gamma => 8-bit
+            // Now interpret final_frame “over black”
             let mut buf_8bit = vec![0u8; npix * 3];
             buf_8bit.par_chunks_mut(3).zip(final_frame.par_iter()).for_each(
                 |(chunk, &(fr, fg, fb, fa))| {
@@ -1413,7 +1409,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = args.height;
     let final_aspect = width as f64 / height as f64;
 
-    let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
+    let hex_seed = if args.seed.starts_with("0x") {
+        &args.seed[2..]
+    } else {
+        &args.seed
+    };
     let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
@@ -1447,9 +1447,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let positions = get_positions(best_bodies.clone(), args.num_steps_sim);
     println!("   => Done re-running best orbit.");
 
-    // 3) Generate color sequences + pick alpha
+    // 3) Generate color sequences + pick alpha from alpha_denom
     println!("STAGE 3/8: Generating color sequences + alpha...");
-    let (colors, body_alphas) = generate_body_color_sequences(&mut rng, args.num_steps_sim);
+    let alpha_value = 1.0 / (args.alpha_denom as f64);
+    let (colors, body_alphas) = generate_body_color_sequences(&mut rng, args.num_steps_sim, alpha_value);
 
     // 4) bounding box
     println!("STAGE 4/8: Determining bounding box...");
@@ -1459,11 +1460,35 @@ fn main() -> Result<(), Box<dyn Error>> {
         min_x, max_x, min_y, max_y
     );
 
-    // pick blur radius
-    let (blur_radius_fraction, blur_strength, blur_core_brightness) =
-        if args.special { (0.4, 32.0, 20.0) } else { (0.08, 6.0, 4.0) };
-    let smaller_dim = width.min(height) as f64;
-    let blur_radius_px = (blur_radius_fraction * smaller_dim).round() as usize;
+    // Decide blur parameters:
+    let (blur_radius_px, blur_strength, blur_core_brightness) = if args.disable_blur {
+        // No blur
+        (0, 0.0, 1.0)
+    } else {
+        if args.special {
+            // "special" defaults
+            let blur_radius_fraction = 0.4;
+            let blur_strength = 32.0;
+            let blur_core_brightness = 20.0;
+            let smaller_dim = width.min(height) as f64;
+            (
+                (blur_radius_fraction * smaller_dim).round() as usize,
+                blur_strength,
+                blur_core_brightness,
+            )
+        } else {
+            // normal defaults
+            let blur_radius_fraction = 0.08;
+            let blur_strength = 6.0;
+            let blur_core_brightness = 4.0;
+            let smaller_dim = width.min(height) as f64;
+            (
+                (blur_radius_fraction * smaller_dim).round() as usize,
+                blur_strength,
+                blur_core_brightness,
+            )
+        }
+    };
 
     // 5) pass 1 => gather histogram
     println!("STAGE 5/8: PASS 1 => building global histogram (no frames saved)...");
