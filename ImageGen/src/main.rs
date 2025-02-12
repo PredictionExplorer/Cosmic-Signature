@@ -66,7 +66,7 @@ struct Args {
     #[arg(long, default_value_t = 7.0)]
     chaos_weight: f64,
 
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 8.0)]
     area_weight: f64,
 
     #[arg(long, default_value_t = 2.0)]
@@ -105,7 +105,7 @@ struct Args {
     #[arg(long, default_value_t = 1_000_000)]
     alpha_denom: usize,
 
-    #[arg(long, default_value_t = 3.0)]
+    #[arg(long, default_value_t = 8.0)]
     coverage_weight: f64,
 
     #[arg(long, default_value_t = 1000)]
@@ -802,7 +802,7 @@ fn select_best_trajectory(
     }
 
     let chaos_pts = assign_borda_scores(chaos_vals, false);
-    let area_pts = assign_borda_scores(area_vals, true);
+    let area_pts = assign_borda_scores(area_vals, false);
     let dist_pts = assign_borda_scores(dist_vals, true);
     let lyap_pts = assign_borda_scores(lyap_vals, true);
     let aspect_pts = assign_borda_scores(aspect_vals, true);
@@ -1090,8 +1090,6 @@ fn create_video_from_frames_singlepass(
 // ========================================================
 // Save single image as PNG
 // ========================================================
-use image::GenericImage;
-
 fn save_image_as_png(
     rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>,
     path: &str,
