@@ -20,9 +20,6 @@ use wide::f64x4;
 // For line drawing
 use line_drawing::Bresenham;
 
-// We assume `geo = "0.29.x"` in your Cargo.toml
-use geo::{BooleanOps, Coord, LineString, MultiPolygon, Polygon};
-
 // --------------------------------------
 // Borda constants
 // --------------------------------------
@@ -63,7 +60,7 @@ struct Args {
     #[arg(long, default_value_t = 300.0)]
     max_mass: f64,
 
-    #[arg(long, default_value_t = 9.0)]
+    #[arg(long, default_value_t = 7.0)]
     chaos_weight: f64,
 
     #[arg(long, default_value_t = 2.0)]
@@ -72,7 +69,7 @@ struct Args {
     #[arg(long, default_value_t = 2.0)]
     dist_weight: f64,
 
-    #[arg(long, default_value_t = 9.0)]
+    #[arg(long, default_value_t = 7.0)]
     lyap_weight: f64,
 
     #[arg(long, default_value_t = 2.0)]
@@ -104,17 +101,9 @@ struct Args {
 
     #[arg(long, default_value_t = 10_000_000)]
     alpha_denom: usize,
-
-    #[arg(long, default_value_t = 3.0)]
-    coverage_weight: f64,
-
-    #[arg(long, default_value_t = 1000)]
-    max_union_triangles: usize,
 }
 
-// ========================================================
-// Custom RNG (SHA3-based)
-// ========================================================
+/// A custom RNG (SHA3‐based).
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
     seed: Vec<u8>,
@@ -493,6 +482,7 @@ fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     (min_x, max_x, min_y, max_y)
 }
 
+/// The average area of the triangle formed by the 3 bodies (in screen coords).
 fn average_triangle_area_screen(positions: &[Vec<Vector3<f64>>], width: u32, height: u32) -> f64 {
     let total_steps = positions[0].len();
     if total_steps == 0 {
@@ -523,43 +513,7 @@ fn average_triangle_area_screen(positions: &[Vec<Vector3<f64>>], width: u32, hei
     sum_area / (total_steps as f64)
 }
 
-// ========================================================
-// Manual area (shoelace) for `geo::MultiPolygon<f64>`
-// (the coords are a slice of `Coord<f64>`, not `(f64,f64)`)
-// ========================================================
-fn ring_area(coords: &[Coord<f64>]) -> f64 {
-    if coords.len() < 2 {
-        return 0.0;
-    }
-    let mut sum = 0.0;
-    // Shoelace sum
-    for i in 0..(coords.len() - 1) {
-        let (x1, y1) = (coords[i].x, coords[i].y);
-        let (x2, y2) = (coords[i + 1].x, coords[i + 1].y);
-        sum += x1 * y2 - x2 * y1;
-    }
-    0.5 * sum.abs()
-}
-
-fn polygon_area(poly: &Polygon<f64>) -> f64 {
-    let outer_coords = poly.exterior().0.as_slice(); // & [Coord<f64>]
-    let outer_area = ring_area(outer_coords);
-
-    let holes_area: f64 = poly
-        .interiors()
-        .iter()
-        .map(|ls| ring_area(ls.0.as_slice()))
-        .sum();
-    outer_area - holes_area
-}
-
-fn multipolygon_area(mp: &MultiPolygon<f64>) -> f64 {
-    mp.0.iter().map(|poly| polygon_area(poly)).sum()
-}
-
-// ========================================================
-// EXACT UNION-OF-TRIANGLES COVERAGE
-// ========================================================
+/// Result struct **without coverage**.
 #[derive(Clone)]
 struct TrajectoryResult {
     chaos: f64,
@@ -567,77 +521,18 @@ struct TrajectoryResult {
     total_dist: f64,
     lyap_exp: f64,
     aspect_closeness: f64,
-    coverage: f64,
 
     chaos_pts: usize,
     area_pts: usize,
     dist_pts: usize,
     lyap_pts: usize,
     aspect_pts: usize,
-    coverage_pts: usize,
 
     total_score: usize,
     total_score_weighted: f64,
 }
 
-/// Fraction of bounding box covered by union of all triangles
-fn coverage_fraction_union(positions: &[Vec<Vector3<f64>>], max_union_triangles: usize) -> f64 {
-    let total_steps = positions[0].len();
-    if total_steps < 1 {
-        return 0.0;
-    }
-    let (min_x, max_x, min_y, max_y) = bounding_box_2d(positions);
-    let w = max_x - min_x;
-    let h = max_y - min_y;
-    if w < 1e-14 || h < 1e-14 {
-        return 0.0;
-    }
-    let step_size = (total_steps / max_union_triangles).max(1);
-
-    let mut union_mp: Option<MultiPolygon<f64>> = None;
-    let mut count_polys = 0;
-
-    for step in (0..total_steps).step_by(step_size) {
-        let p1 = positions[0][step];
-        let p2 = positions[1][step];
-        let p3 = positions[2][step];
-
-        let x1 = p1[0] - min_x;
-        let y1 = p1[1] - min_y;
-        let x2 = p2[0] - min_x;
-        let y2 = p2[1] - min_y;
-        let x3 = p3[0] - min_x;
-        let y3 = p3[1] - min_y;
-
-        // Build a triangle polygon
-        let ring = LineString::from(vec![
-            Coord { x: x1, y: y1 },
-            Coord { x: x2, y: y2 },
-            Coord { x: x3, y: y3 },
-            Coord { x: x1, y: y1 },
-        ]);
-        let tri_poly = Polygon::new(ring, vec![]);
-        let tri_mp: MultiPolygon<f64> = tri_poly.into();
-
-        // union is from `geo::BooleanOps` (built-in to geo >=0.28+)
-        union_mp = Some(match union_mp {
-            None => tri_mp,
-            Some(acc) => acc.union(&tri_mp),
-        });
-
-        count_polys += 1;
-        if count_polys >= max_union_triangles {
-            break;
-        }
-    }
-
-    let union_area = match union_mp {
-        None => 0.0,
-        Some(ref mp) => multipolygon_area(mp),
-    };
-    union_area / (w * h)
-}
-
+/// Borda search over random orbits, picks the best.
 fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_sims: usize,
@@ -648,11 +543,9 @@ fn select_best_trajectory(
     dist_weight: f64,
     lyap_weight: f64,
     aspect_weight: f64,
-    coverage_weight: f64,
     final_aspect: f64,
     width: u32,
     height: u32,
-    max_union_triangles: usize,
 ) -> (Vec<Body>, TrajectoryResult) {
     println!("STAGE 1/8: Borda search over {num_sims} random orbits...");
     let many_bodies: Vec<Vec<Body>> = (0..num_sims)
@@ -713,9 +606,9 @@ fn select_best_trajectory(
                 let pct = (local_count as f64 / num_sims as f64) * 100.0;
                 println!("   Borda search: {:.0}% done", pct);
             }
+            // We filter by energy & angular momentum
             let e = calculate_total_energy(bodies);
             let ang = calculate_total_angular_momentum(bodies).norm();
-            // Filter out unbound/trivial
             if e >= 0.0 || ang < 1e-3 {
                 None
             } else {
@@ -737,7 +630,6 @@ fn select_best_trajectory(
                 let ly = lyapunov_exponent_kdtree(&body1_norms, 1, 50);
 
                 let asp = aspect_ratio_closeness(&positions, final_aspect);
-                let cov = coverage_fraction_union(&positions, max_union_triangles);
 
                 let tr = TrajectoryResult {
                     chaos: c,
@@ -745,14 +637,12 @@ fn select_best_trajectory(
                     total_dist: d,
                     lyap_exp: ly,
                     aspect_closeness: asp,
-                    coverage: cov,
 
                     chaos_pts: 0,
                     area_pts: 0,
                     dist_pts: 0,
                     lyap_pts: 0,
                     aspect_pts: 0,
-                    coverage_pts: 0,
 
                     total_score: 0,
                     total_score_weighted: 0.0,
@@ -769,12 +659,12 @@ fn select_best_trajectory(
 
     let mut info_vec = valid;
 
+    // Prepare Borda vectors
     let mut chaos_vals = Vec::with_capacity(info_vec.len());
     let mut area_vals = Vec::with_capacity(info_vec.len());
     let mut dist_vals = Vec::with_capacity(info_vec.len());
     let mut lyap_vals = Vec::with_capacity(info_vec.len());
     let mut aspect_vals = Vec::with_capacity(info_vec.len());
-    let mut coverage_vals = Vec::with_capacity(info_vec.len());
 
     for (i, (tr, _)) in info_vec.iter().enumerate() {
         chaos_vals.push((tr.chaos, i));
@@ -782,10 +672,9 @@ fn select_best_trajectory(
         dist_vals.push((tr.total_dist, i));
         lyap_vals.push((tr.lyap_exp, i));
         aspect_vals.push((tr.aspect_closeness, i));
-        coverage_vals.push((tr.coverage, i));
     }
 
-    // Borda ranking
+    // Borda ranking helper
     fn assign_borda_scores(mut vals: Vec<(f64, usize)>, higher_better: bool) -> Vec<usize> {
         if higher_better {
             vals.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
@@ -795,41 +684,40 @@ fn select_best_trajectory(
         let n = vals.len();
         let mut out = vec![0; n];
         for (rank, (_val, idx)) in vals.into_iter().enumerate() {
-            let score = n - rank; 
+            let score = n - rank;
             out[idx] = score;
         }
         out
     }
 
+    // Assign Borda points
     let chaos_pts = assign_borda_scores(chaos_vals, false);
     let area_pts = assign_borda_scores(area_vals, false);
     let dist_pts = assign_borda_scores(dist_vals, true);
     let lyap_pts = assign_borda_scores(lyap_vals, true);
     let aspect_pts = assign_borda_scores(aspect_vals, true);
-    let coverage_pts = assign_borda_scores(coverage_vals, true);
 
+    // Fill in final
     for (i, (tr, _idx)) in info_vec.iter_mut().enumerate() {
         tr.chaos_pts = chaos_pts[i];
         tr.area_pts = area_pts[i];
         tr.dist_pts = dist_pts[i];
         tr.lyap_pts = lyap_pts[i];
         tr.aspect_pts = aspect_pts[i];
-        tr.coverage_pts = coverage_pts[i];
 
         tr.total_score = chaos_pts[i]
             + area_pts[i]
             + dist_pts[i]
             + lyap_pts[i]
-            + aspect_pts[i]
-            + coverage_pts[i];
+            + aspect_pts[i];
         tr.total_score_weighted = (chaos_pts[i] as f64 * chaos_weight)
             + (area_pts[i] as f64 * area_weight)
             + (dist_pts[i] as f64 * dist_weight)
             + (lyap_pts[i] as f64 * lyap_weight)
-            + (aspect_pts[i] as f64 * aspect_weight)
-            + (coverage_pts[i] as f64 * coverage_weight);
+            + (aspect_pts[i] as f64 * aspect_weight);
     }
 
+    // Pick best
     let (best_tr, best_idx) = info_vec
         .iter()
         .max_by(|(a, _), (b, _)| {
@@ -841,14 +729,13 @@ fn select_best_trajectory(
 
     let best_bodies = many_bodies[*best_idx].clone();
     println!(
-        "   => Borda best: Weighted total={:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}, coverage={:.3}",
+        "   => Borda best: Weighted total={:.3}, chaos={:.3e}, area={:.3}, dist={:.3}, lyap={:.3}, aspect={:.3}",
         best_tr.total_score_weighted,
         best_tr.chaos,
         best_tr.triangle_area,
         best_tr.total_dist,
         best_tr.lyap_exp,
         best_tr.aspect_closeness,
-        best_tr.coverage
     );
     (best_bodies, best_tr.clone())
 }
@@ -889,7 +776,7 @@ fn parallel_blur_2d_rgba(
     let k_len = kernel.len();
     let mut temp = vec![(0.0, 0.0, 0.0, 0.0); width * height];
 
-    // Horizontal
+    // Horizontal pass
     temp.par_chunks_mut(width)
         .zip(buffer.par_chunks(width))
         .for_each(|(temp_row, buf_row)| {
@@ -908,7 +795,7 @@ fn parallel_blur_2d_rgba(
             }
         });
 
-    // Vertical
+    // Vertical pass
     buffer
         .par_chunks_mut(width)
         .enumerate()
@@ -1475,11 +1362,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.dist_weight,
         args.lyap_weight,
         args.aspect_weight,
-        args.coverage_weight,
         final_aspect,
         width,
         height,
-        args.max_union_triangles,
     );
 
     // 2) Re-run best orbit
@@ -1523,7 +1408,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("STAGE 5/8: PASS 1 => building global histogram...");
     let frame_rate = 60;
-    let target_frames = 1800; 
+    let target_frames = 1800; // ~30 seconds at 60 FPS
     let frame_interval = (args.num_steps_sim / target_frames).max(1);
 
     let mut all_r = Vec::new();
