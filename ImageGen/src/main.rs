@@ -63,16 +63,16 @@ struct Args {
     #[arg(long, default_value_t = 300.0)]
     max_mass: f64,
 
-    #[arg(long, default_value_t = 7.0)]
+    #[arg(long, default_value_t = 9.0)]
     chaos_weight: f64,
 
-    #[arg(long, default_value_t = 8.0)]
+    #[arg(long, default_value_t = 2.0)]
     area_weight: f64,
 
     #[arg(long, default_value_t = 2.0)]
     dist_weight: f64,
 
-    #[arg(long, default_value_t = 7.0)]
+    #[arg(long, default_value_t = 9.0)]
     lyap_weight: f64,
 
     #[arg(long, default_value_t = 2.0)]
@@ -90,7 +90,7 @@ struct Args {
     #[arg(long, default_value_t = 0.005)]
     clip_black: f64,
 
-    #[arg(long, default_value_t = 0.99)]
+    #[arg(long, default_value_t = 0.995)]
     clip_white: f64,
 
     #[arg(long, default_value_t = 1.0)]
@@ -102,10 +102,10 @@ struct Args {
     #[arg(long, default_value_t = true)]
     disable_blur: bool,
 
-    #[arg(long, default_value_t = 1_000_000)]
+    #[arg(long, default_value_t = 10_000_000)]
     alpha_denom: usize,
 
-    #[arg(long, default_value_t = 8.0)]
+    #[arg(long, default_value_t = 3.0)]
     coverage_weight: f64,
 
     #[arg(long, default_value_t = 1000)]
