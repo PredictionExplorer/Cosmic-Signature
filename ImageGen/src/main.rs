@@ -67,13 +67,13 @@ struct Args {
     #[arg(long, default_value_t = 2.0)]
     area_weight: f64,
 
-    #[arg(long, default_value_t = 2.0)]
+    #[arg(long, default_value_t = 2.5)]
     dist_weight: f64,
 
     #[arg(long, default_value_t = 7.0)]
     lyap_weight: f64,
 
-    #[arg(long, default_value_t = 2.0)]
+    #[arg(long, default_value_t = 1.5)]
     aspect_weight: f64,
 
     #[arg(long, default_value_t = 100_000)]
