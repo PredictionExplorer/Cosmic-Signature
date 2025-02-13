@@ -97,13 +97,10 @@ struct Args {
     #[arg(long, default_value_t = false)]
     special: bool,
 
-    #[arg(long, default_value_t = true)]
-    disable_blur: bool,
-
     #[arg(long, default_value_t = 10_000_000)]
     alpha_denom: usize,
 
-    /// NEW: If a body’s energy in COM frame is above this, we treat it as “escaping.”
+    /// If a body’s energy in COM frame is above this, we treat it as “escaping.”
     #[arg(long, default_value_t = -0.3)]
     escape_threshold: f64,
 }
@@ -1517,20 +1514,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 5) pass 1 => gather histogram for global black/white/gamma
     println!("STAGE 5/8: PASS 1 => building global histogram...");
-    let (blur_radius_px, blur_strength, blur_core_brightness) = if args.disable_blur {
-        (0, 0.0, 1.0)
-    } else if args.special {
+    let (blur_radius_px, blur_strength, blur_core_brightness) = if args.special {
         (
-            (0.4 * width.min(height) as f64).round() as usize,
-            32.0,
-            20.0,
-        )
-    } else {
-        (
-            (0.08 * width.min(height) as f64).round() as usize,
-            6.0,
+            (0.008 * width.min(height) as f64).round() as usize,
+            4.0,
             4.0,
         )
+    } else {
+        (0, 0.0, 1.0)
     };
 
     let frame_rate = 60;

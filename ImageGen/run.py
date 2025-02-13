@@ -3,7 +3,7 @@ import subprocess
 # ===================== Minimal Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'base_seed_hex': 'beef12',
+    'base_seed_hex': 'cafe20',
     'num_runs': 1000
 }
 
