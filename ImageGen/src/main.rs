@@ -1516,12 +1516,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("STAGE 5/8: PASS 1 => building global histogram...");
     let (blur_radius_px, blur_strength, blur_core_brightness) = if args.special {
         (
+            (0.01 * width.min(height) as f64).round() as usize,
+            6.0,
+            6.0,
+        )
+    } else {
+        (
             (0.008 * width.min(height) as f64).round() as usize,
             4.0,
             4.0,
         )
-    } else {
-        (0, 0.0, 1.0)
     };
 
     let frame_rate = 60;
