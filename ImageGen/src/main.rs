@@ -61,7 +61,7 @@ struct Args {
     #[arg(long, default_value_t = 300.0)]
     max_mass: f64,
 
-    #[arg(long, default_value_t = 11.0)]
+    #[arg(long, default_value_t = 9.0)]
     chaos_weight: f64,
 
     #[arg(long, default_value_t = 2.0)]
