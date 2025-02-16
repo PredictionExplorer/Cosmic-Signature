@@ -61,7 +61,7 @@ describe("Security", function () {
 
 	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	// // todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
-	// it("donateNft() function is confirmed to be non-reentrant", async function () {
+	// it("The donateNft method is confirmed to be non-reentrant", async function () {
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0,] = signers;
 	//
@@ -94,8 +94,6 @@ describe("Security", function () {
 		const maliciousNftAddr = await maliciousNft.getAddress();
 
 		await signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_});
-
-		// await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0)).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
-		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft(-1n, "", maliciousNftAddr, 0, {value: bidAmount_})).revertedWithCustomError(prizesWallet, "UnauthorizedCaller");
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0, {value: bidAmount_})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });
