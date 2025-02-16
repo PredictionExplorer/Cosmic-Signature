@@ -77,13 +77,6 @@ contract BrokenCharity {
 	}
 }
 
-/// @notice used to test `revert` statements for charity deposits.
-contract BrokenCharityWallet is CharityWallet {
-	function clearCharityAddress() external {
-		charityAddress = address(0);
-	}
-}
-
 /// @notice Used to test `revert` statements in `StakingWalletCosmicSignatureNft`
 contract BrokenStakingWalletCosmicSignatureNft {
 	StakingWalletCosmicSignatureNft private _stakingWalletCosmicSignatureNft;
