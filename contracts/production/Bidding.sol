@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 // #region
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-// import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -25,7 +25,7 @@ import { IBidding } from "./interfaces/IBidding.sol";
 // #region
 
 abstract contract Bidding is
-	// ReentrancyGuardTransientUpgradeable,
+	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	BiddingBase,
@@ -42,8 +42,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev Comment-202502051 relates.
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 applies.
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -51,8 +51,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev Comment-202502051 relates.
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 applies.
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -61,6 +61,12 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEth`
 
+	/// @dev
+	/// [Comment-202502051]
+	/// I feel that `bidWithEth` can get by without `nonReentrant`.
+	/// At the same time, `bidWithEthAndDonateToken` and `bidWithEthAndDonateNft` need it,
+	/// at least to pervent the possibility to reorder bidding and donation events.
+	/// [/Comment-202502051]
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 	}
@@ -68,13 +74,6 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithEth`
 
-	/// @dev
-	/// [Comment-202502051]
-	/// I feel that we will get by without `nonReentrant` here.
-	/// Keep in mind that this method can be called together with a donation method.
-	/// In that case a reentry can skew the order of donation related event emits, but it's probably not too bad.
-	/// todo-0 But revisit the above. `bidWithEthAndDonate...` should be `nonReentrant`.
-	/// [/Comment-202502051]
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// #region
 

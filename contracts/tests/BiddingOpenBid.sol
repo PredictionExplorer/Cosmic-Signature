@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 // #region
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-// import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -25,7 +25,7 @@ import { IBidding } from "../production/interfaces/IBidding.sol";
 // #region
 
 abstract contract BiddingOpenBid is
-	// ReentrancyGuardTransientUpgradeable,
+	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	BiddingBase,
@@ -87,9 +87,9 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev Comment-202502051 relates.
+	/// @dev Comment-202502051 applies.
 	/// ToDo-202412164-2 applies.
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable nonReentrant /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -104,9 +104,9 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev Comment-202502051 relates.
+	/// @dev Comment-202502051 applies.
 	/// ToDo-202412164-2 applies.
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable nonReentrant /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -122,7 +122,8 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEth`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev Comment-202502051 applies.
+	/// ToDo-202412164-2 applies.
 	function bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
 	}
@@ -132,7 +133,6 @@ abstract contract BiddingOpenBid is
 
 	/// @param isOpenBid_ Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
 	/// `nextEthBidPrice` will be calculated based on `msg.value`.
-	/// @dev Comment-202502051 applies.
 	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// #region
 		
