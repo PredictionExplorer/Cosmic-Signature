@@ -73,6 +73,7 @@ abstract contract Bidding is
 	/// I feel that we will get by without `nonReentrant` here.
 	/// Keep in mind that this method can be called together with a donation method.
 	/// In that case a reentry can skew the order of donation related event emits, but it's probably not too bad.
+	/// todo-0 But revisit the above. `bidWithEthAndDonate...` should be `nonReentrant`.
 	/// [/Comment-202502051]
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// #region
