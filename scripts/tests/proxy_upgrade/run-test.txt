@@ -9,7 +9,7 @@ Execute the following commands:
 	#in another terminal run all the remaining commands:
 	# todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
 	# (previously set switchToRuntimeMode=false and donateEthToGameContract=false to get maintenance mode with no transactions)
-	npx hardhat deploy-cosmic-signature --deployConfig deploy-local.json --network localhost
+	npx hardhat deploy-cosmic-signature --deployConfigFilePath deploy-local.json --network localhost
 
 	#deploy new proxy implementation contract
 	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./deploy-new-logic.js --network localhost
