@@ -84,11 +84,12 @@ describe("CosmicSignatureGame", function () {
 		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).to.equal(0n);
 		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
 
+		// [Comment-202502164]
 		// It's possible that a hacker will make this call before we get a chance to, which would not inflict a lot of damage,
 		// except when we make this call, the call will revert.
 		// But if this method had parameters the hacker would be able to pass malicious values.
 		// To prevent that possibility, we could require `initialize2` to be `onlyOwner`.
-		// todo-0 Find all "initialize2" and cross-ref the above comment.
+		// [/Comment-202502164]
 		await cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2();
 
 		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");

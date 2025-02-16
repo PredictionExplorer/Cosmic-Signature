@@ -20,8 +20,6 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// @dev Issue. This contract is upgradeable. So it could make sense for it to support a `selfdestruct` after a successful upgrade.
 /// Note that `SelfDestructibleCosmicSignatureGame` supports a `selfdestruct`.
 /// But I have no time to get such an unsafe feature right in the production code.
-///
-/// todo-0 This contract is too big. So we need to implement some kind of a Diamond pattern.
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,

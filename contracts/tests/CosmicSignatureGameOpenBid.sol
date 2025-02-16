@@ -134,7 +134,7 @@ contract CosmicSignatureGameOpenBid is
 	// #endregion
 	// #region `initialize2`
 
-	/// @dev
+	/// @dev Comment-202502164 relates.
 	/// [ToDo-202412164-2]
 	/// This method should be declared in an inherited interface.
 	/// [/ToDo-202412164-2]

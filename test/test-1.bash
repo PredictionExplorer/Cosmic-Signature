@@ -11,7 +11,6 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 			# 'npx' 'hardhat' 'test' '--grep' 't be possible to bid if bidder doesn'
-			# todo-0 This test currently fails. To be revisited.
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!The bidWithEthAndDonateNft method is confirmed to be non-reentrant)$'
 			'npx' 'hardhat' 'test'
 
