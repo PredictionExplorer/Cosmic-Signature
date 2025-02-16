@@ -47,7 +47,7 @@ interface ICosmicSignatureGame is
 	/// which calls `upgradeToAndCall`, which we inherited from `UUPSUpgradeable`.
 	/// I believe that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would call `upgradeTo`
 	/// if `upgradeToAndCall` didn't exist.
-	/// A little problem is that `upgradeToAndCall` does a bunch of thngs that not necessarily benefot us, while costing some gas.
+	/// A little problem is that `upgradeToAndCall` does a bunch of thngs that not necessarily benefit us, while costing some gas.
 	/// So this minimalistic `upgradeTo` method performs only the actions that we do need.
 	/// To use it, instead of calling `HardhatRuntimeEnvironment.upgrades.upgradeProxy`,
 	/// we simply need to deploy a new version of the contract like we do a non-upgradeable contract and then call `upgradeTo`.
