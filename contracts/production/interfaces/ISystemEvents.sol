@@ -51,26 +51,6 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CstRewardAmountForBiddingChanged(uint256 newValue);
 
-	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
-	/// @param newValue The new value.
-	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
-	/// @param newValue The new value.
-	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
-
-	/// @notice Emitted when `mainPrizeTimeIncrementIncreaseDivisor` is changed.
-	/// @param newValue The new value.
-	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
-
-	/// @notice Emitted when `timeoutDurationToClaimMainPrize` is changed.
-	/// @param newValue The new value.
-	event TimeoutDurationToClaimMainPrizeChanged(uint256 newValue);
-
-	/// @notice Emitted when `mainEthPrizeAmountPercentage` is changed.
-	/// @param newValue The new value.
-	event MainEthPrizeAmountPercentageChanged(uint256 newValue);
-
 	/// @notice Emitted when `cstRewardAmountMultiplier` is changed.
 	/// @param newValue The new value.
 	event CstRewardAmountMultiplierChanged(uint256 newValue);
@@ -98,6 +78,26 @@ interface ISystemEvents {
 	/// @notice Emitted when `cosmicSignatureNftStakingTotalEthRewardAmountPercentage` is changed.
 	/// @param newValue The new value.
 	event CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(uint256 newValue);
+
+	/// @notice Emitted when `initialDurationUntilMainPrizeDivisor` is changed.
+	/// @param newValue The new value.
+	event InitialDurationUntilMainPrizeDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `mainPrizeTimeIncrementInMicroSeconds` is changed.
+	/// @param newValue The new value.
+	event MainPrizeTimeIncrementInMicroSecondsChanged(uint256 newValue);
+
+	/// @notice Emitted when `mainPrizeTimeIncrementIncreaseDivisor` is changed.
+	/// @param newValue The new value.
+	event MainPrizeTimeIncrementIncreaseDivisorChanged(uint256 newValue);
+
+	/// @notice Emitted when `timeoutDurationToClaimMainPrize` is changed.
+	/// @param newValue The new value.
+	event TimeoutDurationToClaimMainPrizeChanged(uint256 newValue);
+
+	/// @notice Emitted when `mainEthPrizeAmountPercentage` is changed.
+	/// @param newValue The new value.
+	event MainEthPrizeAmountPercentageChanged(uint256 newValue);
 
 	/// @notice Emitted when `token` is changed.
 	/// @param newValue The new value.

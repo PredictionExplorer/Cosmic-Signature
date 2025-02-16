@@ -555,14 +555,6 @@ abstract contract MainPrize is
 	function _prepareNextRound() private {
 		// todo-1 +++ Consider to not reset some variables.
 
-		++ roundNum;
-
-		// // [Comment-202501307]
-		// // Instead of making this assignment, it appears to be more efficient
-		// // to use `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the 1st CST Dutch auction in each bidding round.
-		// // [/Comment-202501307]
-		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
-
 		// lastBidType = BidType.ETH;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
@@ -580,6 +572,13 @@ abstract contract MainPrize is
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
+		++ roundNum;
+
+		// // [Comment-202501307]
+		// // Instead of making this assignment, it appears to be more efficient
+		// // to use `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the 1st CST Dutch auction in each bidding round.
+		// // [/Comment-202501307]
+		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 		// It's probably unnecessary to emit an event about this change.
 		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;

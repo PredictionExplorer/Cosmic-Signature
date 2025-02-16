@@ -38,6 +38,68 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	EthDonationWithInfoRecord[] public ethDonationWithInfoRecords;
 
 	// #endregion
+	// #region Bid Statistics
+
+	// /// todo-9 Rename to `lastBidTypeCode`.
+	// BidType public lastBidType;
+
+	/// @notice The address of the account that placed the last bid.
+	/// We reset this to zero at the beginning of each bidding round.
+	/// @dev
+	/// [Comment-202502044]
+	/// Issue This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
+	/// But let's leave it alone.
+	/// [/Comment-202502044]
+	address public lastBidderAddress;
+
+	/// @notice The address of the account that placed the last CST bid.
+	/// We reset this to zero at the beginning of each bidding round.
+	/// This will remain zero if nobody bids with CST.
+	address public lastCstBidderAddress;
+
+	/// @dev
+	/// [Comment-202411098]
+	/// Issue. Is it really necessary to save info about past rounds?
+	/// But the project founders consider using the info for other purposes.
+	/// Comment-202502045 relates.
+	/// [/Comment-202411098]
+	/// Comment-202502044 relates.
+	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+
+	/// @dev Comment-202411098 applies.
+	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
+
+	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
+	/// [Comment-202411075]
+	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
+	/// [/Comment-202411075]
+	/// Comment-202501308 relates.
+	/// @dev
+	/// [Comment-202411099]
+	/// Relevant logic prototype:
+	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/ChampionFinder.sol
+	/// [/Comment-202411099]
+	address public enduranceChampionAddress;
+
+	/// @notice
+	/// [Comment-202501308]
+	/// This is valid only if `enduranceChampionAddress` is a nonzero.
+	/// [/Comment-202501308]
+	uint256 public enduranceChampionStartTimeStamp;
+
+	/// @notice Comment-202501308 applies.
+	uint256 public enduranceChampionDuration;
+
+	uint256 public prevEnduranceChampionDuration;
+
+	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
+	/// Comment-202411075 applies.
+	/// Comment-202411099 applies.
+	address public chronoWarriorAddress;
+
+	uint256 public chronoWarriorDuration;
+
+	// #endregion
 	// #region Bidding
 
 	/// @notice Bidding round counter.
@@ -152,66 +214,32 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public cstRewardAmountForBidding;
 
 	// #endregion
-	// #region Bid Statistics
+	// #region Secondary Prizes
 
-	// /// todo-9 Rename to `lastBidTypeCode`.
-	// BidType public lastBidType;
+	/// @notice The last CST bidder and Endurance Champion CST reward amount multiplier.
+	/// Comment-202411064 applies.
+	uint256 public cstRewardAmountMultiplier;
 
-	/// @notice The address of the account that placed the last bid.
-	/// We reset this to zero at the beginning of each bidding round.
-	/// @dev
-	/// [Comment-202502044]
-	/// Issue This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
-	/// But let's leave it alone.
-	/// [/Comment-202502044]
-	address public lastBidderAddress;
+	/// @notice Comment-202411064 applies.
+	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
-	/// @notice The address of the account that placed the last CST bid.
-	/// We reset this to zero at the beginning of each bidding round.
-	/// This will remain zero if nobody bids with CST.
-	address public lastCstBidderAddress;
+	/// @notice Comment-202411064 applies.
+	uint256 public raffleTotalEthPrizeAmountForBiddersPercentage;
 
-	/// @dev
-	/// [Comment-202411098]
-	/// Issue. Is it really necessary to save info about past rounds?
-	/// But the project founders consider using the info for other purposes.
-	/// Comment-202502045 relates.
-	/// [/Comment-202411098]
-	/// Comment-202502044 relates.
-	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+	/// @notice The number of raffle ETH prizes to be distributed to bidders.
+	/// Comment-202411064 applies.
+	uint256 public numRaffleEthPrizesForBidders;
 
-	/// @dev Comment-202411098 applies.
-	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
+	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to bidders.
+	/// Comment-202411064 applies.
+	uint256 public numRaffleCosmicSignatureNftsForBidders;
 
-	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
-	/// [Comment-202411075]
-	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
-	/// [/Comment-202411075]
-	/// Comment-202501308 relates.
-	/// @dev
-	/// [Comment-202411099]
-	/// Relevant logic prototype:
-	/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/ChampionFinder.sol
-	/// [/Comment-202411099]
-	address public enduranceChampionAddress;
+	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to RandomWalk NFT stakers.
+	/// Comment-202411064 applies.
+	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
-	/// @notice
-	/// [Comment-202501308]
-	/// This is valid only if `enduranceChampionAddress` is a nonzero.
-	/// [/Comment-202501308]
-	uint256 public enduranceChampionStartTimeStamp;
-
-	/// @notice Comment-202501308 applies.
-	uint256 public enduranceChampionDuration;
-
-	uint256 public prevEnduranceChampionDuration;
-
-	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
-	/// Comment-202411075 applies.
-	/// Comment-202411099 applies.
-	address public chronoWarriorAddress;
-
-	uint256 public chronoWarriorDuration;
+	/// @notice Comment-202411064 applies.
+	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
 
 	// #endregion
 	// #region Main Prize
@@ -252,34 +280,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice The percentage of ETH in the Game account to be paid to the main prize beneficiary.
 	/// Comment-202411064 applies.
 	uint256 public mainEthPrizeAmountPercentage;
-
-	// #endregion
-	// #region Secondary Prizes
-
-	/// @notice The last CST bidder and Endurance Champion CST reward amount multiplier.
-	/// Comment-202411064 applies.
-	uint256 public cstRewardAmountMultiplier;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public chronoWarriorEthPrizeAmountPercentage;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public raffleTotalEthPrizeAmountForBiddersPercentage;
-
-	/// @notice The number of raffle ETH prizes to be distributed to bidders.
-	/// Comment-202411064 applies.
-	uint256 public numRaffleEthPrizesForBidders;
-
-	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to bidders.
-	/// Comment-202411064 applies.
-	uint256 public numRaffleCosmicSignatureNftsForBidders;
-
-	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to RandomWalk NFT stakers.
-	/// Comment-202411064 applies.
-	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
-
-	/// @notice Comment-202411064 applies.
-	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
 
 	// #endregion
 	// #region Cosmic Signature Token

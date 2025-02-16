@@ -91,41 +91,6 @@ abstract contract SystemManagement is
 		emit CstRewardAmountForBiddingChanged(newValue_);
 	}
 
-	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		initialDurationUntilMainPrizeDivisor = newValue_;
-		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
-	}
-
-	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		mainPrizeTimeIncrementInMicroSeconds = newValue_;
-		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
-	}
-
-	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		mainPrizeTimeIncrementIncreaseDivisor = newValue_;
-		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
-	}
-
-	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		timeoutDurationToClaimMainPrize = newValue_;
-		emit TimeoutDurationToClaimMainPrizeChanged(newValue_);
-	}
-
-	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		// // [Comment-202409215]
-		// // It appears to be unnecessary to spend gas on this validation.
-		// // todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
-		// // [/Comment-202409215]
-		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
-		// require(
-		// 	prizePercentageSum_ < 100,
-		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
-		// );
-
-		mainEthPrizeAmountPercentage = newValue_;
-		emit MainEthPrizeAmountPercentageChanged(newValue_);
-	}
-
 	function setCstRewardAmountMultiplier(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
 		cstRewardAmountMultiplier = newValue_;
 		emit CstRewardAmountMultiplierChanged(newValue_);
@@ -180,6 +145,41 @@ abstract contract SystemManagement is
 
 		cosmicSignatureNftStakingTotalEthRewardAmountPercentage = newValue_;
 		emit CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(newValue_);
+	}
+
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		initialDurationUntilMainPrizeDivisor = newValue_;
+		emit InitialDurationUntilMainPrizeDivisorChanged(newValue_);
+	}
+
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		mainPrizeTimeIncrementInMicroSeconds = newValue_;
+		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
+	}
+
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		mainPrizeTimeIncrementIncreaseDivisor = newValue_;
+		emit MainPrizeTimeIncrementIncreaseDivisorChanged(newValue_);
+	}
+
+	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		timeoutDurationToClaimMainPrize = newValue_;
+		emit TimeoutDurationToClaimMainPrizeChanged(newValue_);
+	}
+
+	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
+		// // [Comment-202409215]
+		// // It appears to be unnecessary to spend gas on this validation.
+		// // todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
+		// // [/Comment-202409215]
+		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// require(
+		// 	prizePercentageSum_ < 100,
+		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must be lower than 100.", prizePercentageSum_)
+		// );
+
+		mainEthPrizeAmountPercentage = newValue_;
+		emit MainEthPrizeAmountPercentageChanged(newValue_);
 	}
 
 	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
