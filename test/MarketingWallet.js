@@ -3,53 +3,55 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("MarketingWallet", function () {
 	// it("MarketingWallet.setCosmicSignatureToken behaves correctly", async function () {
-	// 	const {signers, marketingWallet,} = await loadFixture(deployContractsForTesting);
-	// 	const [owner, addr1, addr2,] = signers;
+	// 	const {ownerAcct, signers, marketingWallet,} = await loadFixture(deployContractsForUnitTesting);
+	// 	const [signer0, signer1, signer2,] = signers;
 	//
-	// 	await expect(marketingWallet.connect(addr1).setCosmicSignatureToken(addr1.address)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
-	// 	await expect(marketingWallet.setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
-	// 	await expect(marketingWallet.setCosmicSignatureToken(addr2.address)).to.emit(marketingWallet, "CosmicSignatureTokenAddressChanged").withArgs(addr2.address);
+	// 	await expect(marketingWallet.connect(signer1).setCosmicSignatureToken(signer1.address)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
+	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
+	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(signer2.address)).to.emit(marketingWallet, "CosmicSignatureTokenAddressChanged").withArgs(signer2.address);
 	// });
 	it("MarketingWallet.payReward behaves correctly", async function () {
-		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken, marketingWallet,} =
-			await loadFixture(deployContractsForTesting);
-		const [owner, addr1,] = signers;
+		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureToken, marketingWallet,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
 
-		const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-		const cBidder = await BidderContract.deploy(await cosmicSignatureGameProxy.getAddress());
-		await cBidder.waitForDeployment();
+		const bidderContractFactory = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
+		const bidderContract = await bidderContractFactory.deploy(cosmicSignatureGameProxyAddr);
+		await bidderContract.waitForDeployment();
+		const bidderContractAddr = await bidderContract.getAddress();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cBidder.doBidWithEth({ value: nextEthBidPrice_ });
+		await bidderContract.connect(signer0).doBidWithEth({ value: nextEthBidPrice_ });
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		await cBidder.doClaim();
+		await bidderContract.connect(signer0).doClaim();
 
 		const marketingReward = hre.ethers.parseEther("15");
-		// await expect(marketingWallet.payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
-		await expect(marketingWallet.payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InvalidReceiver");
-		// await expect(marketingWallet.payReward(addr1.address, 0n)).to.be.revertedWithCustomError(marketingWallet, "ZeroValue");
-		await marketingWallet.payReward(addr1, 0n);
-		await expect(marketingWallet.connect(addr1).payReward(await cBidder.getAddress(), 0n)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
-		await marketingWallet.payReward(addr1, marketingReward);
+		// await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
+		await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InvalidReceiver");
+		// await expect(marketingWallet.connect(ownerAcct).payReward(signer1.address, 0n)).to.be.revertedWithCustomError(marketingWallet, "ZeroValue");
+		await marketingWallet.connect(ownerAcct).payReward(signer1, 0n);
+		await expect(marketingWallet.connect(signer1).payReward(bidderContractAddr, 0n)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
+		await marketingWallet.connect(ownerAcct).payReward(signer1, marketingReward);
 
 		// // Issue. Because I eliminated `MarketingWallet.setCosmicSignatureToken`,
 		// // this part of the test no longer works.
 		// {
-		// 	await marketingWallet.setCosmicSignatureToken(await cBidder.getAddress());
-		// 	await expect(marketingWallet.connect(addr1).setCosmicSignatureToken(await cBidder.getAddress())).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
+		// 	await marketingWallet.connect(ownerAcct).setCosmicSignatureToken(bidderContractAddr);
+		// 	await expect(marketingWallet.connect(signer1).setCosmicSignatureToken(bidderContractAddr)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
 		//			
 		// 	// note : following call reverts because of unknown selector, not because of require() in the fallback function of BidderContract
 		// 	// so no need to use startBlockingDeposits() function in this case
-		// 	await expect(marketingWallet.payReward(await cBidder.getAddress(), marketingReward)).to.be.reverted;
+		// 	// todo-9 `revertedWithoutReason`?
+		// 	await expect(marketingWallet.connect(ownerAcct).payReward(bidderContractAddr, marketingReward)).to.be.reverted;
 		// }
 
-		let balanceAfter = await cosmicSignatureToken.balanceOf(addr1);
-		expect(balanceAfter).to.equal(marketingReward);
+		let balanceAmountAfter = await cosmicSignatureToken.balanceOf(signer1);
+		expect(balanceAmountAfter).to.equal(marketingReward);
 	});
 });

@@ -33,7 +33,10 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	expect(parsed_log.args.amount).to.equal(mainEthPrizeAmount_);
 
 	let cosmicSignatureNftAddr = await cosmicSignatureGame.nft();
+
+	// Comment-202502096 applies.
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddr);
+
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerCosmicSignatureNftAwarded");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	for (let i = 0; i < event_logs.length; i++) {
@@ -43,13 +46,19 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	}
 
 	let prizesWalletAddr = await cosmicSignatureGame.prizesWallet();
+
+	// Comment-202502096 applies.
 	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
+
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 
 	let charityWalletAddr = await cosmicSignatureGame.charityAddress();
+
+	// Comment-202502096 applies.
 	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddr);
+	
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
