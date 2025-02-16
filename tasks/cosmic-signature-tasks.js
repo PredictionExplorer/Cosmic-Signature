@@ -27,23 +27,17 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	console.log(configObjectToLog);
 	const deployerAcct = new hre.ethers.Wallet(configObject.privKey, hre.ethers.provider);
 
-	// todo-0 I dislike this charity address logic.
-	// todo-0 The charity address is really supposed to be provided in the config file. It should not be optional.
-	if (configObject.charityAddr.length === 0 /* || config_params.marketingWalletAddr.length === 0 */) {
-		const signers = await hre.ethers.getSigners();
-		// if (config_params.charityAddr.length === 0) {
-			configObject.charityAddr = signers[1].address;
-		// }
-		// if (config_params.marketingWalletAddr.length === 0) {
-		// 	config_params.marketingWalletAddr = signers[7].address;
-		// }
-	}
+	// // I dislike this charity address logic. So I have commented it out.
+	// // The charity address is really supposed to be provided in the config file. It should not be optional.
+	// if (configObject.charityAddr.length === 0) {
+	// 	const signers = await hre.ethers.getSigners();
+	// 	configObject.charityAddr = signers[1].address;
+	// }
 
 	const contracts =
 		await deployContracts(
 			deployerAcct,
 			configObject.randomWalkNftAddr,
-			// config_params.marketingWalletAddr,
 			configObject.charityAddr,
 			configObject.transferOwnershipToCosmicSignatureDao,
 			configObject.roundActivationTime
