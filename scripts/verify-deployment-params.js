@@ -14,7 +14,10 @@ async function main() {
 	let roundActivationTime = await cosmicSignatureGame.roundActivationTime();
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
 	let charityAddr = await cosmicSignatureGame.charityAddress();
+
+	// Comment-202502096 applies.
 	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
+	
 	let charityWalletContractOwner = await charityWalletContract.owner();
 	let charityDonationsReceiverAddress = await charityWalletContract.charityAddress();
 

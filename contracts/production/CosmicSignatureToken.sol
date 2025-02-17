@@ -20,6 +20,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #endregion
 // #region
 
+/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
 contract CosmicSignatureToken is
 	// Ownable,
 	ERC20,
@@ -72,8 +73,8 @@ contract CosmicSignatureToken is
 		// Ownable(_msgSender())
 		ERC20("CosmicSignatureToken", "CST")
 		ERC20Permit("CosmicSignatureToken")
-		providedAddressIsNonZero(game_)
-		/*providedAddressIsNonZero(marketingWalletAddress_)*/ {
+		providedAddressIsNonZero(game_) {
+		// providedAddressIsNonZero(marketingWalletAddress_) {
 		game = game_;
 		// marketingWalletAddress = marketingWalletAddress_;
 		// marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;

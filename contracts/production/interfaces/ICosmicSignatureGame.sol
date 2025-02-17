@@ -20,8 +20,6 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// @dev Issue. This contract is upgradeable. So it could make sense for it to support a `selfdestruct` after a successful upgrade.
 /// Note that `SelfDestructibleCosmicSignatureGame` supports a `selfdestruct`.
 /// But I have no time to get such an unsafe feature right in the production code.
-///
-/// todo-0 This contract is too big. So we need to implement some kind of a Diamond pattern.
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
@@ -47,7 +45,7 @@ interface ICosmicSignatureGame is
 	/// which calls `upgradeToAndCall`, which we inherited from `UUPSUpgradeable`.
 	/// I believe that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would call `upgradeTo`
 	/// if `upgradeToAndCall` didn't exist.
-	/// A little problem is that `upgradeToAndCall` does a bunch of thngs that not necessarily benefot us, while costing some gas.
+	/// A little problem is that `upgradeToAndCall` does a bunch of thngs that not necessarily benefit us, while costing some gas.
 	/// So this minimalistic `upgradeTo` method performs only the actions that we do need.
 	/// To use it, instead of calling `HardhatRuntimeEnvironment.upgrades.upgradeProxy`,
 	/// we simply need to deploy a new version of the contract like we do a non-upgradeable contract and then call `upgradeTo`.

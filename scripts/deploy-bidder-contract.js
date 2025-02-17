@@ -6,13 +6,16 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
+	const cosmicSignatureGameAddr = await cosmicSignatureGame.getAddress();
 
-	const [owner,] = await hre.ethers.getSigners();
-	const BidderContract = await hre.ethers.getContractFactory("BidderContract");
-	const bidderContract = await BidderContract.connect(owner).deploy(cosmicSignatureGame.address);
-	await bidderContract.deployed();
+	// todo-1 Take `deployerAcct` from the `PRIVKEY` environment variable.
+	const [deployerAcct,] = await hre.ethers.getSigners();
+	const bidderContractFactory = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
+	const bidderContract = await bidderContractFactory.deploy(cosmicSignatureGameAddr);
+	await bidderContract.waitForDeployment();
+	const bidderContractAddr = await bidderContract.getAddress();
 
-	console.log("BidderContract address: " + bidderContract.address);
+	console.log("BidderContract address: " + bidderContractAddr);
 }
 
 main()

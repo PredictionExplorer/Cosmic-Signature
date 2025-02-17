@@ -3,11 +3,11 @@
 "use strict";
 
 const hre = require("hardhat");
-const { basicDeploymentAdvanced } = require("../src/Deploy.js");
+const { deployContractsAdvanced } = require("../src/ContractDeploymentHelpers.js");
 
 async function main() {
 	const privKey = process.env.PRIVKEY;
-	if (typeof privKey === "undefined" || privKey.length == 0) {
+	if (typeof privKey === "undefined" || privKey.length === 0) {
 		console.log(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
@@ -16,26 +16,26 @@ async function main() {
 	}
 	const deployerAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	const contracts =
-		await basicDeploymentAdvanced(
-			"SelfDestructibleCosmicSignatureGame",
+		await deployContractsAdvanced(
 			deployerAcct,
+			"SelfDestructibleCosmicSignatureGame",
 			"", //"0x1111111111111111111111111111111111111111",
 			// "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
 			"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
 			true,
 			1
 		);
-	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());
-	console.log("CosmicSignatureNft address:", await contracts.cosmicSignatureNft.getAddress());
-	console.log("CosmicSignatureToken address:", await contracts.cosmicSignatureToken.getAddress());
-	console.log("CosmicSignatureDao address:", await contracts.cosmicSignatureDao.getAddress());
-	console.log("CharityWallet address:", await contracts.charityWallet.getAddress());
-	console.log("PrizesWallet address:", await contracts.prizesWallet.getAddress());
-	console.log("RandomWalkNFT address:", await contracts.randomWalkNft.getAddress());
-	console.log("StakingWalletCosmicSignatureNft address:", await contracts.stakingWalletCosmicSignatureNft.getAddress());
-	console.log("StakingWalletRandomWalkNft address:", await contracts.stakingWalletRandomWalkNft.getAddress());
-	console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
-	console.log("CosmicSignatureGame address:", await contracts.cosmicSignatureGame.getAddress());
+	console.log("CosmicSignatureGame proxy address:", contracts.cosmicSignatureGameProxyAddr);
+	console.log("CosmicSignatureNft address:", contracts.cosmicSignatureNftAddr);
+	console.log("CosmicSignatureToken address:", contracts.cosmicSignatureTokenAddr);
+	console.log("CosmicSignatureDao address:", contracts.cosmicSignatureDaoAddr);
+	console.log("CharityWallet address:", contracts.charityWalletAddr);
+	console.log("PrizesWallet address:", contracts.prizesWalletAddr);
+	console.log("RandomWalkNFT address:", contracts.randomWalkNftAddr);
+	console.log("StakingWalletCosmicSignatureNft address:", contracts.stakingWalletCosmicSignatureNftAddr);
+	console.log("StakingWalletRandomWalkNft address:", contracts.stakingWalletRandomWalkNftAddr);
+	console.log("MarketingWallet address:", contracts.marketingWalletAddr);
+	console.log("CosmicSignatureGame implementation address:", contracts.cosmicSignatureGameImplementationAddr);
 }
 
 main()

@@ -25,11 +25,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 ///
-/// todo-0 Document which variables are valid under what conditions,
-/// todo-0 which variables should be accessed directly and which through an accessor,
-/// todo-0 ??? which variables emit events (some are changed programmatically without emitting an event).
-/// todo-0 See Comment-202501022.
-///
 /// todo-1 +++ Think of what params are currently not configurable, but might need to be configurable, such as `nextEthBidPrice`.
 /// todo-1 +++ Consider making some params non-configurable.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
@@ -43,123 +38,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	EthDonationWithInfoRecord[] public ethDonationWithInfoRecords;
 
 	// #endregion
-	// #region Bidding
-
-	/// @notice Bidding round counter.
-	/// For the first round, this equals zero.
-	uint256 public roundNum;
-
-	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
-	/// [Comment-202411064]
-	/// This is a configurable parameter.
-	/// [/Comment-202411064]
-	/// @dev
-	/// [Comment-202412312]
-	/// We do not automatically increase this.
-	/// [/Comment-202412312]
-	uint256 public delayDurationBeforeRoundActivation;
-
-	/// @notice The current bidding round activation time.
-	/// Starting at this point, people will be allowed to place bids.
-	/// Comment-202411064 applies.
-	/// [Comment-202411172]
-	/// At the same time, this is a variable that the logic changes.
-	/// [/Comment-202411172]
-	/// @dev Comment-202411236 relates.
-	/// Comment-202411168 relates.
-	uint256 public roundActivationTime;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies
-	uint256 public ethDutchAuctionDurationDivisor;
-
-	/// @notice Comment-202501063 relates.
-	uint256 public ethDutchAuctionBeginningBidPrice;
-
-	/// @notice Comment-202411064 applies.
-	/// [Comment-202501063]
-	/// This divides `ethDutchAuctionBeginningBidPrice`, which has already been multiplied by
-	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
-	/// [/Comment-202501063]
-	/// @dev todo-1 Develop a test that after the current time reaches `roundActivationTime`,
-	/// todo-1 sets `roundActivationTime` to a point in the future, doubles this divisor,
-	/// todo-1 sets `roundActivationTime` to a point in the past.
-	/// todo-1 The past point needs to be such that ETH bid price continues to gradually decline.
-	/// todo-1 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
-	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
-	uint256 public ethDutchAuctionEndingBidPriceDivisor;
-
-	/// @notice Next ETH bid price.
-	/// [Comment-202501022]
-	/// This is valid only after the 1st ETH bid has been placed in the current bidding round.
-	/// todo-0 ??? Therefore would it make sense to declare this `internal` and rename to `_...` and add a smarter getter?
-	/// todo-0 The same applies to other variables that are not always valid.
-	/// todo-0 Think where to reference this comment. It applies to some method return values too.
-	/// [/Comment-202501022]
-	/// [Comment-202411065]
-	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
-	/// [/Comment-202411065]
-	uint256 public nextEthBidPrice;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202411065 relates.
-	uint256 public nextEthBidPriceIncreaseDivisor;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202502052 applies.
-	/// @dev Comment-202502054 applies.
-	uint256 public ethBidRefundAmountInGasMinLimit;
-
-	/// @notice When the current CST Dutch auction began.
-	/// Comment-202501022 applies.
-	/// @dev Comment-202411168 relates.
-	uint256 public cstDutchAuctionBeginningTimeStamp;
-
-	/// @notice Comment-202411064 applies.
-	/// [Comment-202501025]
-	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
-	/// [/Comment-202501025]
-	uint256 public cstDutchAuctionDurationDivisor;
-
-	/// @notice CST Dutch auction beginning bid price.
-	/// This becomes valid when someone places a CST bid in the current bidding round
-	/// and remains valid until main prize gets claimed.
-	/// [Comment-202411066]
-	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
-	/// [/Comment-202411066]
-	/// @dev This is based on an actual price someone pays, therefore Comment-202412033 applies.
-	uint256 public cstDutchAuctionBeginningBidPrice;
-
-	/// @notice Next round first CST Dutch auction beginning bid price.
-	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
-
-	/// @notice Comment-202411064 applies.
-	/// Comment-202411066 relates.
-	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
-
-	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
-	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNfts;
-	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
-
-	/// @notice The maximum allowed length of a bid message.
-	/// [Comment-202409143]
-	/// This limits the number of bytes, which can be fewer UTF-8 characters.
-	/// [/Comment-202409143]
-	/// Comment-202411064 applies.
-	/// @dev One might want to make this non-configurable.
-	/// But I feel that by keeping this configurable we leave the door open to change message format
-	/// and the logic the Front End and the Back End employ to process the message.
-	uint256 public bidMessageLengthMaxLimit;
-
-	/// @notice Comment-202411064 applies.
-	/// We mint this CST amount as a bidder reward for each bid.
-	/// We do it even for a CST bid.
-	uint256 public cstRewardAmountForBidding;
-
-	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-0 Tell them that I eliminated this.
 	// /// todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
@@ -220,45 +100,118 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public chronoWarriorDuration;
 
 	// #endregion
-	// #region Main Prize
+	// #region Bidding
+
+	/// @notice Bidding round counter.
+	/// For the first round, this equals zero.
+	uint256 public roundNum;
+
+	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
+	/// [Comment-202411064]
+	/// This is a configurable parameter.
+	/// [/Comment-202411064]
+	/// @dev
+	/// [Comment-202412312]
+	/// We do not automatically increase this.
+	/// [/Comment-202412312]
+	uint256 public delayDurationBeforeRoundActivation;
+
+	/// @notice The current bidding round activation time.
+	/// Starting at this point, people will be allowed to place bids.
+	/// Comment-202411064 applies.
+	/// [Comment-202411172]
+	/// At the same time, this is a variable that the logic changes.
+	/// [/Comment-202411172]
+	/// @dev Comment-202411236 relates.
+	/// Comment-202411168 relates.
+	uint256 public roundActivationTime;
 
 	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
-	uint256 public initialDurationUntilMainPrizeDivisor;
+	/// Comment-202501025 applies
+	uint256 public ethDutchAuctionDurationDivisor;
 
-	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
-	/// [Comment-202412152]
-	/// On each bid, we calculate the new value of this variable
-	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
-	/// [/Comment-202412152]
-	uint256 public mainPrizeTime;
-
-	/// @notice Comment-202412152 relates.
-	/// We use this on a number of other occasions as well.
-	/// todo-0 Review where we use this. Maybe comment near involved variables about all those uses. Reference the comments here.
-	/// Comment-202411064 applies.
-	/// Comment-202411172 applies.
-	/// [Comment-202411067]
-	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
-	/// [/Comment-202411067]
-	/// todo-0 Reference Comment-202501025.
-	uint256 public mainPrizeTimeIncrementInMicroSeconds;
+	/// @notice ETH Dutch auction beginning bid price.
+	/// On the first bid of each bidding round (which is required to be ETH), we assign a valid value to this variable.
+	/// After contract deployment, this variable remains zero until we assign a valid value to it.
+	/// @notice Comment-202501063 relates.
+	uint256 public ethDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
-	/// Comment-202411067 relates.
-	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
+	/// [Comment-202501063]
+	/// This divides `ethDutchAuctionBeginningBidPrice`, which has already been multiplied by
+	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// [/Comment-202501063]
+	/// @dev todo-1 Develop a test that after the current time reaches `roundActivationTime`,
+	/// todo-1 sets `roundActivationTime` to a point in the future, doubles this divisor,
+	/// todo-1 sets `roundActivationTime` to a point in the past.
+	/// todo-1 The past point needs to be such that ETH bid price continues to gradually decline.
+	/// todo-1 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
+	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
+	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
-	/// @notice If the main prize winner doesn't claim the prize within this timeout,
-	/// anybody will be welcomed to claim it.
-	/// Comment-202411064 applies.
-	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
-	/// @dev Comment-202412312 applies.
-	uint256 public timeoutDurationToClaimMainPrize;
+	/// @notice Next ETH bid price.
+	/// [Comment-202501022]
+	/// This variable is valid only after the 1st ETH bid has been placed in the current bidding round.
+	/// [/Comment-202501022]
+	/// [Comment-202411065]
+	/// We increase this based on `nextEthBidPriceIncreaseDivisor`.
+	/// [/Comment-202411065]
+	uint256 public nextEthBidPrice;
 
-	/// @notice The percentage of ETH in the Game account to be paid to the main prize beneficiary.
+	/// @notice Comment-202411064 applies.
+	/// Comment-202411065 relates.
+	uint256 public nextEthBidPriceIncreaseDivisor;
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202502052 applies.
+	/// @dev Comment-202502054 applies.
+	uint256 public ethBidRefundAmountInGasMinLimit;
+
+	/// @notice When the current CST Dutch auction began.
+	/// Comment-202501022 applies.
+	/// @dev Comment-202411168 relates.
+	uint256 public cstDutchAuctionBeginningTimeStamp;
+
+	/// @notice Comment-202411064 applies.
+	/// [Comment-202501025]
+	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
+	/// [/Comment-202501025]
+	uint256 public cstDutchAuctionDurationDivisor;
+
+	/// @notice CST Dutch auction beginning bid price.
+	/// This variable becomes valid when someone places a CST bid in the current bidding round
+	/// and remains valid until main prize gets claimed.
+	/// [Comment-202411066]
+	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// [/Comment-202411066]
+	/// @dev This value is based on an actual price someone pays, therefore Comment-202412033 applies.
+	uint256 public cstDutchAuctionBeginningBidPrice;
+
+	/// @notice Next round first CST Dutch auction beginning bid price.
+	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202411066 relates.
+	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
+
+	/// @notice A RandomWalk NFT is allowed to be used for bidding only once.
+	// mapping(uint256 nftId => bool nftWasUsed) public usedRandomWalkNfts;
+	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
+
+	/// @notice The maximum allowed length of a bid message.
+	/// [Comment-202409143]
+	/// This limits the number of bytes, which can be fewer UTF-8 characters.
+	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
-	uint256 public mainEthPrizeAmountPercentage;
+	/// @dev One might want to make this non-configurable.
+	/// But I feel that by keeping this configurable we leave the door open to change message format
+	/// and the logic the Front End and the Back End employ to process the message.
+	uint256 public bidMessageLengthMaxLimit;
+
+	/// @notice Comment-202411064 applies.
+	/// We mint this CST amount as a bidder reward for each bid.
+	/// We do it even for a CST bid.
+	uint256 public cstRewardAmountForBidding;
 
 	// #endregion
 	// #region Secondary Prizes
@@ -287,6 +240,46 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202411064 applies.
 	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
+
+	// #endregion
+	// #region Main Prize
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202501025 applies.
+	uint256 public initialDurationUntilMainPrizeDivisor;
+
+	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
+	/// Comment-202501022 applies.
+	/// [Comment-202412152]
+	/// On each bid, we calculate the new value of this variable
+	/// by adding `mainPrizeTimeIncrementInMicroSeconds` to `max(mainPrizeTime, block.timestamp)`.
+	/// [/Comment-202412152]
+	uint256 public mainPrizeTime;
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202411172 applies.
+	/// [Comment-202411067]
+	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
+	/// [/Comment-202411067]
+	/// Comment-202412152 relates.
+	/// Comment-202501025 relates.
+	uint256 public mainPrizeTimeIncrementInMicroSeconds;
+
+	/// @notice Comment-202411064 applies.
+	/// Comment-202501025 applies.
+	/// Comment-202411067 relates.
+	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
+
+	/// @notice If the main prize winner doesn't claim the prize within this timeout,
+	/// anybody will be welcomed to claim it.
+	/// Comment-202411064 applies.
+	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
+	/// @dev Comment-202412312 applies.
+	uint256 public timeoutDurationToClaimMainPrize;
+
+	/// @notice The percentage of ETH in the Game account to be paid to the main prize beneficiary.
+	/// Comment-202411064 applies.
+	uint256 public mainEthPrizeAmountPercentage;
 
 	// #endregion
 	// #region Cosmic Signature Token

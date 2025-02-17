@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
-import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
+import { RandomNumberHelpers } from "../production/libraries/RandomNumberHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
@@ -74,13 +74,6 @@ contract BrokenCharity {
 	
 	receive() external payable {
 		require(false, "Test deposit failed.");
-	}
-}
-
-/// @notice used to test `revert` statements for charity deposits.
-contract BrokenCharityWallet is CharityWallet {
-	function clearCharityAddress() external {
-		charityAddress = address(0);
 	}
 }
 
@@ -185,7 +178,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// @dev Issue. Entropy related logic in this test contract is lousy, but keeping it simple.
 	/// Comment-202412104 relates.
-	CosmicSignatureHelpers.RandomNumberSeedWrapper private _entropy;
+	RandomNumberHelpers.RandomNumberSeedWrapper private _entropy;
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("3 initialize");
@@ -222,7 +215,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	function _initializeEntropyOnce() private {
 		if (_entropy.value == 0) {
-			_entropy.value = CosmicSignatureHelpers.generateRandomNumberSeed();
+			_entropy.value = RandomNumberHelpers.generateRandomNumberSeed();
 		}
 	}
 

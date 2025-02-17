@@ -87,7 +87,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// Can be used to store additional information or comments from the bidder.
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
-	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
+	/// @notice Calculates the current (next) price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration, and can become zero.
 	/// todo-1 +++ Confirmed: zero price is OK.
 	/// @param currentTimeOffset_ .
@@ -112,11 +112,4 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// Comment-202501022 applies to the returned elapsed duration.
 	function getCstDutchAuctionDurations() external view returns(uint256, int256);
-
-	// /// @notice Checks if a RandomWalk NFT has ever been used for bidding.
-	// /// @param nftId_ NFT ID.
-	// /// @return `true` if the given NFT has been used; `false` otherwise.
-	// /// @dev I have eliminated this method. All involved variables are `public`. So anybody can query them.
-	// /// todo-9 It would be more efficient if this returns a number, like `IStakingWalletNftBase.wasNftUsed` does.
-	// function wasRandomWalkNftUsed(uint256 nftId_) external view returns(bool);
 }

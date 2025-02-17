@@ -23,7 +23,10 @@ async function bid_simple(testingAcct, cosmicSignatureGame) {
 
 async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 	// let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
+
+	// // Comment-202502096 applies.
 	// let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
+
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 	let tx = await cosmicSignatureGame.connect(testingAcct).bidWithEth(nftId, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice_});
@@ -39,7 +42,10 @@ async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 
 async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) {
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
+
+	// Comment-202502096 applies.
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
+
 	await randomWalkNft_.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
@@ -64,7 +70,10 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 
 async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId, tokenIdBidding) {
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
+
+	// Comment-202502096 applies.
 	let randomWalkNft_ = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr_);
+	
 	await randomWalkNft_.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
@@ -109,8 +118,8 @@ async function main() {
 		process.exit(1);
 	}
 
-	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
-	let cosmicSignatureGame = await getCosmicSignatureGameContract();
+	const testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
+	const cosmicSignatureGame = await getCosmicSignatureGameContract();
 
 	await bid_simple(testingAcct, cosmicSignatureGame);
 	await bid_with_rwalk(testingAcct, cosmicSignatureGame, tokenList[0]);

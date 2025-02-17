@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 // #region
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-// import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -25,7 +25,7 @@ import { IBidding } from "./interfaces/IBidding.sol";
 // #region
 
 abstract contract Bidding is
-	// ReentrancyGuardTransientUpgradeable,
+	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	BiddingBase,
@@ -42,8 +42,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev Comment-202502051 relates.
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 applies.
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -51,8 +51,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev Comment-202502051 relates.
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 applies.
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -61,6 +61,12 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEth`
 
+	/// @dev
+	/// [Comment-202502051]
+	/// I feel that `bidWithEth` can get by without `nonReentrant`.
+	/// At the same time, `bidWithEthAndDonateToken` and `bidWithEthAndDonateNft` need it,
+	/// at least to pervent the possibility to reorder bidding and donation events.
+	/// [/Comment-202502051]
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 	}
@@ -68,12 +74,6 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithEth`
 
-	/// @dev
-	/// [Comment-202502051]
-	/// I feel that we will get by without `nonReentrant` here.
-	/// Keep in mind that this method can be called together with a donation method.
-	/// In that case a reentry can skew the order of donation related event emits, but it's probably not too bad.
-	/// [/Comment-202502051]
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
 		// #region
 
@@ -111,9 +111,11 @@ abstract contract Bidding is
 				)
 			);
 			require(
+				// [Comment-202502091]
 				// It would probably be a bad idea to evaluate something like
 				// `randomWalkNft._isAuthorized` or `randomWalkNft._isApprovedOrOwner`
 				// Comment-202502063 relates.
+				// [/Comment-202502091]
 				_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
@@ -145,11 +147,6 @@ abstract contract Bidding is
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthBidPrice_;
 
 		// Comment-202501125 applies.
-		// [ToDo-202409245-1]
-		// todo-0
-		// Can this, realistically, fail?
-		// Comment-202412033 says that this can't overflow.
-		// [/ToDo-202409245-1]
 		token.mint(_msgSender(), cstRewardAmountForBidding);
 
 		// #endregion
@@ -374,7 +371,6 @@ abstract contract Bidding is
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
-			// ToDo-202409245-1 applies.
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
@@ -515,45 +511,7 @@ abstract contract Bidding is
 		++ numBids_;
 		bidderAddressesReference_.numItems = numBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
-
-		// // Comment-202501125 applies.
-		// // try
-		// // ToDo-202409245-1 applies.
-		// token.mint(/*lastBidderAddress*/ _msgSender(), cstRewardAmountForBidding);
-		// // {
-		// // } catch {
-		// // 	revert
-		// // 		CosmicSignatureErrors.ERC20Mint(
-		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for the bidder.",
-		// // 			/*lastBidderAddress*/ _msgSender(),
-		// // 			cstRewardAmountForBidding
-		// // 		);
-		// // }
-
-		// // try
-		// // ToDo-202409245-1 applies.
-		// token.mint(marketingWallet, marketingWalletCstContributionAmount);
-		// // token.mintToMarketingWallet(marketingWalletCstContributionAmount);
-		// // {
-		// // } catch {
-		// // 	revert
-		// // 		CosmicSignatureErrors.ERC20Mint(
-		// // 			"CosmicSignatureToken.mint failed to mint reward tokens for MarketingWallet.",
-		// // 			marketingWallet,
-		// // 			marketingWalletCstContributionAmount
-		// // 		);
-		// // }
-
-		// _extendMainPrizeTime();
 	}
-
-	// #endregion
-	// #region // `wasRandomWalkNftUsed`
-
-	// function wasRandomWalkNftUsed(uint256 nftId_) external view override returns(bool) {
-	// 	// todo-9 This is now a `uint256`.
-	// 	return usedRandomWalkNfts[nftId_];
-	// }
 
 	// #endregion
 }

@@ -8,7 +8,7 @@ pragma solidity 0.8.28;
 
 // import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
 import { IStakingWalletNftBase, StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWalkNft.sol";
@@ -244,7 +244,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicSignatureHelpers.generateRandomNumber`.
+	///    `RandomNumberHelpers.generateRandomNumber`.
 	///    `_numStakedNfts`.
 	///    `StakeAction`.
 	///    `stakeActions`.
@@ -261,7 +261,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 			luckyStakerAddresses_ = new address[](numStakerAddresses_);
 			for (uint256 luckyStakerIndex_ = numStakerAddresses_; luckyStakerIndex_ > 0; ) {
 				unchecked { ++ randomNumberSeed_; }
-				uint256 randomNumber_ = CosmicSignatureHelpers.generateRandomNumber(randomNumberSeed_);
+				uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeed_);
 				uint256 luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_;
 				uint256 luckyStakeActionId_ = stakeActionIds[luckyStakeActionIndex_];
 				// #enable_asserts assert(stakeActions[luckyStakeActionId_].index == luckyStakeActionIndex_);

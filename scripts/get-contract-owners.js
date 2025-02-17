@@ -13,17 +13,17 @@ async function main() {
 	let addr;
 
 	// // This contract is no longer `Ownable`.
-	// addr = cosmicSignatureGame.token();
+	// addr = await cosmicSignatureGame.token();
 	// let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", addr);
 	// o = await cosmicSignatureToken.owner();
 	// console.log("Owner of CosmicSignatureToken: " + o);
 
-	addr = cosmicSignatureGame.nft();
+	addr = await cosmicSignatureGame.nft();
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", addr);
 	o = await cosmicSignatureNft.owner();
 	console.log("Owner of CosmicSignatureNft: " + o);
 
-	addr = cosmicSignatureGame.prizesWallet();
+	addr = await cosmicSignatureGame.prizesWallet();
 	let prizesWalletContract = await hre.ethers.getContractAt("PrizesWallet", addr);
 	o = await prizesWalletContract.owner();
 	console.log("Owner of PrizesWallet: " + o);

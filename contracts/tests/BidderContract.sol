@@ -12,14 +12,14 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract BidderContract {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
-	address public immutable creator;
+	// address public immutable creator;
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNfts;
 	bool public blockDeposits = false;
 	
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
-		creator = msg.sender;
+		// creator = msg.sender;
 	}
 
 	receive() external payable {
@@ -74,7 +74,6 @@ contract BidderContract {
 		// Issue. `PrizesWallet.withdrawEth` won't revert on zero balance any more.
 		// So it could make sense to call it without checking balance.
 		// But it would cost more gas if the balance amount is zero.
-		// Comment-202409215 relates.
 		uint256 bal_ = prizesWallet_.getEthBalanceInfo().amount;
 		if (bal_ > 0) {
 			prizesWallet_.withdrawEth();
@@ -83,17 +82,20 @@ contract BidderContract {
 		CosmicSignatureNft nft_ = cosmicSignatureGame.nft();
 
 		// Comment-202502043 applies.
-		(bool isSuccess_, ) = creator.call{value: address(this).balance}("");
+		// (bool isSuccess_, ) = creator.call{value: address(this).balance}("");
+		(bool isSuccess_, ) = msg.sender.call{value: address(this).balance}("");
 
 		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance);
+			// revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance);
+			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to msg.sender failed.", msg.sender, address(this).balance);
 		}
 		uint256 totalSupply = nft_.totalSupply();
 		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
 			address tokenOwner = nft_.ownerOf(i);
 			if (tokenOwner == address(this)) {
 				// Comment-202501145 applies.
-				nft_.transferFrom(address(this), creator, i);
+				// nft_.transferFrom(address(this), creator, i);
+				nft_.transferFrom(address(this), msg.sender, i);
 			}
 		}
 		if (totalSupply > 0) {
@@ -104,7 +106,8 @@ contract BidderContract {
 		// Issue. Making multiple external calls to `token_`.
 		uint256 ctokenBalance = token_.balanceOf(address(this));
 		if (ctokenBalance > 0) {
-			token_.transfer(creator, ctokenBalance);
+			// token_.transfer(creator, ctokenBalance);
+			token_.transfer(msg.sender, ctokenBalance);
 		}
 	
 		for (uint256 i = 0; i < myDonatedNfts.length; i++) {
@@ -116,7 +119,8 @@ contract BidderContract {
 			// Issue. Making multiple external calls to `prizesWallet_`.
 			prizesWallet_.claimDonatedNft(num);
 
-			tokenAddr.transferFrom(address(this), creator, nftId);
+			// tokenAddr.transferFrom(address(this), creator, nftId);
+			tokenAddr.transferFrom(address(this), msg.sender, nftId);
 		}
 		delete myDonatedNfts;
 	}
@@ -141,11 +145,11 @@ contract BidderContract {
 /// ToDo-202412176-1 relates and/or applies.
 contract BidCNonRecv {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
-	address public immutable creator;
+	// address public immutable creator;
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
-		creator = msg.sender;
+		// creator = msg.sender;
 	}
 
 	receive() external payable {}

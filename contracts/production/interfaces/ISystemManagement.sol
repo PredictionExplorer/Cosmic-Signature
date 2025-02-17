@@ -64,31 +64,6 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setCstRewardAmountForBidding(uint256 newValue_) external;
 
-	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `mainPrizeTimeIncrementInMicroSeconds`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external;
-
-	/// @notice Sets `mainPrizeTimeIncrementIncreaseDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `timeoutDurationToClaimMainPrize`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
-
-	/// @notice Sets `mainEthPrizeAmountPercentage`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setMainEthPrizeAmountPercentage(uint256 newValue_) external;
-
 	/// @notice Sets `cstRewardAmountMultiplier`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
@@ -114,6 +89,31 @@ interface ISystemManagement is
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(uint256 newValue_) external;
+
+	/// @notice Sets `initialDurationUntilMainPrizeDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setInitialDurationUntilMainPrizeDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `mainPrizeTimeIncrementInMicroSeconds`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external;
+
+	/// @notice Sets `mainPrizeTimeIncrementIncreaseDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `timeoutDurationToClaimMainPrize`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setTimeoutDurationToClaimMainPrize(uint256 newValue_) external;
+
+	/// @notice Sets `mainEthPrizeAmountPercentage`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setMainEthPrizeAmountPercentage(uint256 newValue_) external;
 
 	/// @notice Sets `token`.
 	/// Only the contract owner is permitted to call this method.

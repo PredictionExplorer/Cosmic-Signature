@@ -284,6 +284,7 @@ const hardhatUserConfig = {
 						"storageLayout",
 						// "ir",
 						// "irOptimized",
+						// "bytecode",
 					],
 				},
 			},

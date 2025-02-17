@@ -5,130 +5,134 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt32 } = require("../src/Helpers.js");
-const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("CosmicSignatureGame", function () {
 	it("Smoke test", async function () {
-		const {cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForTesting);
+		const {ownerAcct, cosmicSignatureGameImplementation, cosmicSignatureGameImplementationAddr, cosmicSignatureGameProxy,} =
+			await loadFixture(deployContractsForUnitTesting);
 
-		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).to.equal(60 * 60 * 1000 * 1000);
-		expect(await cosmicSignatureToken.totalSupply()).to.equal(0);
+		const cosmicSignatureGameImplementationByteCodeSize =
+			(await hre.ethers.provider.getCode(cosmicSignatureGameImplementationAddr)).length / 2 - 1;
+		expect(cosmicSignatureGameImplementationByteCodeSize).greaterThanOrEqual(22 * 1024);
+		console.log(
+			"CosmicSignatureGame implementation bytecode size is " +
+			cosmicSignatureGameImplementationByteCodeSize.toString() +
+			" bytes, which is less than the maximum allowed by " +
+			(24 * 1024 - cosmicSignatureGameImplementationByteCodeSize).toString() +
+			"."
+		);
+		expect(await cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
+		expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct);
+		expect(await cosmicSignatureGameImplementation.mainPrizeTimeIncrementInMicroSeconds()).equal(0n);
+		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(60n * 60n * 1000n * 1000n);
 	});
-	it("The initialize method is disabled", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
 
-		await expect(cosmicSignatureGameProxy.initialize(owner.address)).revertedWithCustomError(cosmicSignatureGameProxy, "InvalidInitialization");
+	it("The initialize method is disabled", async function () {
+		const {ownerAcct, cosmicSignatureGameImplementation, cosmicSignatureGameProxy,} =
+			await loadFixture(deployContractsForUnitTesting);
+
+		await expect(cosmicSignatureGameImplementation.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGameProxy, "InvalidInitialization");
+		await expect(cosmicSignatureGameProxy.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGameProxy, "InvalidInitialization");
 	});
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using the recommended approach", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
+		const {ownerAcct, cosmicSignatureGameImplementationAddr, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
 
-		const implementation1AddressAsString_ =
-			await cosmicSignatureGameProxy.runner.provider.getStorage(
-				await cosmicSignatureGameProxy.getAddress(),
-
-				// Comment-202412063 applies.
-				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-			);
-		expect(implementation1AddressAsString_).to.not.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
-		const CosmicSignatureGameOpenBid = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
-		const cosmicSignatureGameProxy2 =
+		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		const cosmicSignatureGameOpenBidFactory = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", ownerAcct);
+		const cosmicSignatureGame2Proxy =
 			await hre.upgrades.upgradeProxy(
 				cosmicSignatureGameProxy,
-				CosmicSignatureGameOpenBid,
+				cosmicSignatureGameOpenBidFactory,
 				{
 					kind: "uups",
 					call: "initialize2",
 				}
 			);
-		expect(await cosmicSignatureGameProxy2.getAddress()).to.equal(await cosmicSignatureGameProxy.getAddress());
-		const implementation2AddressAsString_ =
-			await cosmicSignatureGameProxy2.runner.provider.getStorage(
-				await cosmicSignatureGameProxy2.getAddress(),
-
-				// Comment-202412063 applies.
-				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-			);
-		expect(implementation2AddressAsString_).not.equal(implementation1AddressAsString_);
-		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(3n);
-		await cosmicSignatureGameProxy2.setTimesEthBidPrice(10n);
-		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(10n);
-		await expect(cosmicSignatureGameProxy2.initialize(owner.address)).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
-		await expect(cosmicSignatureGameProxy2.initialize2()).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
+		await cosmicSignatureGame2Proxy.waitForDeployment();
+		expect(await cosmicSignatureGame2Proxy.getAddress()).equal(cosmicSignatureGameProxyAddr);
+		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
+		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
+		const cosmicSignatureGame2ImplementationAddr = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddr);
+		expect(cosmicSignatureGame2ImplementationAddr).not.equal(cosmicSignatureGameImplementationAddr);
+		const cosmicSignatureGame2Implementation = cosmicSignatureGameOpenBidFactory.attach(cosmicSignatureGame2ImplementationAddr);
+		await expect(cosmicSignatureGame2Implementation.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Implementation, "InvalidInitialization");
+		await expect(cosmicSignatureGame2Implementation.connect(ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Implementation, "InvalidInitialization");
+		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).equal(3n);
+		await cosmicSignatureGame2Proxy.connect(ownerAcct).setTimesEthBidPrice(10n);
+		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).equal(10n);
+		expect(await cosmicSignatureGame2Implementation.timesEthBidPrice()).equal(0n);
 	});
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using our minimalistic unsafe approach", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
-		
-		const implementation1AddressAsString_ =
-			await cosmicSignatureGameProxy.runner.provider.getStorage(
-				await cosmicSignatureGameProxy.getAddress(),
+		const {deployerAcct, ownerAcct, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
 
-				// Comment-202412063 applies.
-				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-			);
-		expect(implementation1AddressAsString_).to.not.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
-		const CosmicSignatureGameOpenBid = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
-		const cosmicSignatureGameOpenBid = await CosmicSignatureGameOpenBid.deploy();
-		await cosmicSignatureGameOpenBid.waitForDeployment();
-		await cosmicSignatureGameProxy.upgradeTo(await cosmicSignatureGameOpenBid.getAddress());
-		const cosmicSignatureGameProxy2 = await hre.ethers.getContractAt("CosmicSignatureGameOpenBid", await cosmicSignatureGameProxy.getAddress());
-		const implementation2AddressAsString_ =
-			await cosmicSignatureGameProxy2.runner.provider.getStorage(
-				await cosmicSignatureGameProxy2.getAddress(),
+		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		const cosmicSignatureGameOpenBidFactory = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", deployerAcct);
+		const cosmicSignatureGame2Implementation = await cosmicSignatureGameOpenBidFactory.deploy();
+		await cosmicSignatureGame2Implementation.waitForDeployment();
+		const cosmicSignatureGame2ImplementationAddr = await cosmicSignatureGame2Implementation.getAddress();
+		await expect(cosmicSignatureGame2Implementation.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Implementation, "InvalidInitialization");
+		await expect(cosmicSignatureGame2Implementation.connect(ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Implementation, "InvalidInitialization");
+		await cosmicSignatureGameProxy.connect(ownerAcct).upgradeTo(cosmicSignatureGame2ImplementationAddr);
+		const cosmicSignatureGame2Proxy = cosmicSignatureGameOpenBidFactory.attach(cosmicSignatureGameProxyAddr);
+		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).to.equal(0n);
+		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
 
-				// Comment-202412063 applies.
-				"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-			);
-		const implementation2Address_ = hre.ethers.getAddress(BigInt(implementation2AddressAsString_).toString(16).padStart(40, "0"));
-		expect(implementation2Address_).equal(await cosmicSignatureGameOpenBid.getAddress());
-		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(0n);
-		await cosmicSignatureGameProxy2.initialize2();
-		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(3n);
-		await cosmicSignatureGameProxy2.setTimesEthBidPrice(10n);
-		expect(await cosmicSignatureGameProxy2.timesEthBidPrice()).to.equal(10n);
-		await expect(cosmicSignatureGameProxy2.initialize(owner.address)).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
-		await expect(cosmicSignatureGameProxy2.initialize2()).revertedWithCustomError(cosmicSignatureGameProxy2, "InvalidInitialization");
+		// [Comment-202502164]
+		// It's possible that a hacker will make this call before we get a chance to, which would not inflict a lot of damage,
+		// except when we make this call, the call will revert.
+		// But if this method had parameters the hacker would be able to pass malicious values.
+		// To prevent that possibility, we could require `initialize2` to be `onlyOwner`.
+		// [/Comment-202502164]
+		await cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2();
+
+		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
+		expect(await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddr)).equal(cosmicSignatureGame2ImplementationAddr);
+		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).equal(3n);
+		await cosmicSignatureGame2Proxy.connect(ownerAcct).setTimesEthBidPrice(10n);
+		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).equal(10n);
+		expect(await cosmicSignatureGame2Implementation.timesEthBidPrice()).equal(0n);
 	});
 
 	// `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would not allow doing this.
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade to a completely different contract using our minimalistic unsafe approach", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
+		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0,] = signers;
 
-		await cosmicSignatureGameProxy.setRoundActivationTime(123_456_789_012n);
+		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
-		const BrokenCharity = await hre.ethers.getContractFactory("BrokenCharity");
-		const brokenCharity = await BrokenCharity.deploy();
+		const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
+		const brokenCharity = await brokenCharityFactory.deploy();
 		await brokenCharity.waitForDeployment();
+		const brokenCharityAddr = await brokenCharity.getAddress();
 
-		await cosmicSignatureGameProxy.upgradeTo(await brokenCharity.getAddress());
+		await cosmicSignatureGameProxy.connect(ownerAcct).upgradeTo(brokenCharityAddr);
 
-		// If we upgraded to `CosmicSignatureGameOpenBid`, we would call `cosmicSignatureGameProxy2.initialize2` at this point.
+		// If we upgraded to `CosmicSignatureGameOpenBid`, we would call `cosmicSignatureGame2Proxy.initialize2` at this point.
 
-		await expect(owner.sendTransaction({ to: await cosmicSignatureGameProxy.getAddress(), value: 1000000000000000000n})).revertedWith("Test deposit failed.");
+		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: 10n ** 18n})).revertedWith("Test deposit failed.");
 	});
 
 	// Comment-202412129 relates.
 	it("Only the owner is permitted to upgrade CosmicSignatureGame", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner, addr1, addr2,] = signers;
+		const {ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1, signer2,] = signers;
 
 		// The recommended approach.
 		{
-			const CosmicSignatureGameOpenBid = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
+			const cosmicSignatureGameOpenBidFactory = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", ownerAcct);
 			const tx =
 				hre.upgrades.upgradeProxy(
-					cosmicSignatureGameProxy/*.connect(addr2)*/,
-					CosmicSignatureGameOpenBid.connect(addr2),
+					cosmicSignatureGameProxy/*.connect(signer2)*/,
+					cosmicSignatureGameOpenBidFactory.connect(signer2),
 					{
 						kind: "uups",
 						call: "initialize2",
@@ -140,55 +144,59 @@ describe("CosmicSignatureGame", function () {
 
 		// Our minimalistic unsafe approach.
 		{
-			await expect(cosmicSignatureGameProxy.connect(addr2).upgradeTo(addr1.address)).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+			await expect(cosmicSignatureGameProxy.connect(signer2).upgradeTo(signer1.address)).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		}
 	});
-	it("The transferOwnership method behaves correctly", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner, addr1, addr2,] = signers;
 
-		expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
+	it("The transferOwnership method behaves correctly", async function () {
+		const {ownerAcct, signers, cosmicSignatureGameImplementation, cosmicSignatureGameProxy,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1, signer2,] = signers;
+
+		expect(await cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
+		await expect(cosmicSignatureGameImplementation.connect(ownerAcct).transferOwnership(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGameImplementation, "OwnableUnauthorizedAccount");
+		expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct.address);
 		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
 			// Ownership transfer will succeed regardless if the current bidding round is active or not.
-			await cosmicSignatureGameProxy.setRoundActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
+			await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
 
 			if (counter_ <= 0) {
 				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
 			} else {
 				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).lessThan(-1e9);
 			}
-			await cosmicSignatureGameProxy.transferOwnership(addr2.address);
-			expect(await cosmicSignatureGameProxy.owner()).to.equal(addr2.address);
-			await cosmicSignatureGameProxy.connect(addr2).transferOwnership(owner.address);
-			expect(await cosmicSignatureGameProxy.owner()).to.equal(owner.address);
+			// todo-1 Add a call that will fail.
+			await cosmicSignatureGameProxy.connect(ownerAcct).transferOwnership(signer2.address);
+			expect(await cosmicSignatureGameProxy.owner()).equal(signer2.address);
+			await cosmicSignatureGameProxy.connect(signer2).transferOwnership(ownerAcct.address);
+			expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct.address);
 		}
 	});
+
+	// todo-1 Move this test to "Bidding.js".
 	it("The receive method is executing a bid", async function () {
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
-		const [owner,] = signers;
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
 
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await owner.sendTransaction({
-			to: await cosmicSignatureGameProxy.getAddress(),
-			value: nextEthBidPrice_,
-		});
+		await signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,});
 		const nextEthBidPriceAfter_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		expect(nextEthBidPriceAfter_).greaterThan(nextEthBidPrice_);
 	});
 
 	// Issue. I have eliminated the `fallback` method.
-	// So now the call reverts "without a reason".
 	it("The fallback method behaves correctly", async function () {
-		const {cosmicSignatureGameProxy,} = await loadFixture(deployContractsForTesting);
+		const {cosmicSignatureGameProxyAddr,} = await loadFixture(deployContractsForUnitTesting);
 
 		await expect(
 			hre.ethers.provider.call({
-				to: await cosmicSignatureGameProxy.getAddress(),
+				to: cosmicSignatureGameProxyAddr,
 
 				// non-existent selector
 				data: /*"0xffffffff"*/ "0x" + generateRandomUInt32().toString(16).padStart(8, "0"),
 			})
-		// ).to.be.revertedWith("Method does not exist.");
-		).to.be.reverted;
+		// ).revertedWith("Method does not exist.");
+		).revertedWithoutReason();
 	});
 });

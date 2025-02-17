@@ -19,10 +19,10 @@ const { HardhatContext } = require("hardhat/internal/context");
 
 function generateRandomUInt32() {
 	// Comment-202409255 applies.
-	const hre_ = HardhatContext.getHardhatContext().environment;
+	const hre = HardhatContext.getHardhatContext().environment;
 
-	const randomBytes_ = hre_.ethers.randomBytes(4);
-	const randomNumber_ = hre_.ethers.toNumber(randomBytes_);
+	const randomBytes_ = hre.ethers.randomBytes(4);
+	const randomNumber_ = hre.ethers.toNumber(randomBytes_);
 	return randomNumber_;
 }
 
@@ -31,10 +31,10 @@ function generateRandomUInt32() {
 
 function generateRandomUInt256() {
 	// Comment-202409255 applies.
-	const hre_ = HardhatContext.getHardhatContext().environment;
+	const hre = HardhatContext.getHardhatContext().environment;
 
-	const randomBytes_ = hre_.ethers.randomBytes(32);
-	const randomBigInt_ = hre_.ethers.toBigInt(randomBytes_);
+	const randomBytes_ = hre.ethers.randomBytes(32);
+	const randomBigInt_ = hre.ethers.toBigInt(randomBytes_);
 	return randomBigInt_;
 }
 

@@ -41,6 +41,11 @@ library CosmicSignatureConstants {
 	// Empty.
 
 	// #endregion
+	// #region Bid Statistics
+
+	// Empty.
+
+	// #endregion
 	// #region Bidding
 
 	/// @notice Default `delayDurationBeforeRoundActivation`.
@@ -127,27 +132,6 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING = 100 ether;
 
 	// #endregion
-	// #region Bid Statistics
-
-	// Empty.
-
-	// #endregion
-	// #region Main Prize
-
-	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
-	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
-
-	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
-
-	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
-	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
-
-	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
-	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
-
-	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
-
-	// #endregion
 	// #region Secondary Prizes
 
 	/// @notice Default `cstRewardAmountMultiplier`.
@@ -164,6 +148,22 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
 
 	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
+
+	// #endregion
+	// #region Main Prize
+
+	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
+	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
+
+	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
+
+	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
+	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
+
+	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
+
+	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
 
 	// #endregion
 	// #region Cosmic Signature Token

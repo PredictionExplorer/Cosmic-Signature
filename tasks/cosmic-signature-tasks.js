@@ -1,93 +1,90 @@
-// npx hardhat deploy-cosmic-signature --deployConfig tasks/default-config/deploy-local.json
+// npx hardhat deploy-cosmic-signature --deployConfigFilePath tasks/default-config/deploy-local.json
 
 "use strict";
 
 const nodeFsModule = require("node:fs");
 
 // Comment-202409255 relates.
-const { basicDeployment } = require("../src/Deploy.js");
+const { deployContracts } = require("../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, hre) => {
-	const configFile = args.deployConfig;
-	if (typeof configFile === "undefined" || configFile.length == 0) {
-		console.log("Please provide a config file: --deployConfig [file_path]");
+	const configFilePath = args.deployConfigFilePath;
+	if (configFilePath === undefined || configFilePath.length === 0) {
+		console.log("Please provide a config file: --deployConfigFilePath [file_path]");
 		return;
 	}
-	const config_params_file = nodeFsModule.readFileSync(configFile, "utf8");
-	let config_params;
+	const configJsonText = nodeFsModule.readFileSync(configFilePath, "utf8");
+	let configObject;
 	try {
-		config_params = JSON.parse(config_params_file);
+		configObject = JSON.parse(configJsonText);
 	} catch (err) {
 		console.error("Error while parsing JSON data:", err);
 		return;
 	}
-	const param_copy = JSON.parse(JSON.stringify(config_params));
-	param_copy.privKey = '*******';
-	console.log("Using file:");
-	console.log(param_copy);
-	const deployerAcct = new hre.ethers.Wallet(config_params.privKey, hre.ethers.provider);
-	if (config_params.charityAddr.length === 0 /* || config_params.marketingWalletAddr.length === 0 */) {
-		const signers = await hre.ethers.getSigners();
-		// if (config_params.charityAddr.length === 0) {
-			config_params.charityAddr = signers[1].address;
-		// }
-		// if (config_params.marketingWalletAddr.length === 0) {
-		// 	config_params.marketingWalletAddr = signers[7].address;
-		// }
-	}
+	const configObjectToLog = JSON.parse(JSON.stringify(configObject));
+	configObjectToLog.privKey = "******";
+	console.log("Using configuration:");
+	console.log(configObjectToLog);
+	const deployerAcct = new hre.ethers.Wallet(configObject.privKey, hre.ethers.provider);
+
+	// // I dislike this charity address logic. So I have commented it out.
+	// // The charity address is really supposed to be provided in the config file. It should not be optional.
+	// if (configObject.charityAddr.length === 0) {
+	// 	const signers = await hre.ethers.getSigners();
+	// 	configObject.charityAddr = signers[1].address;
+	// }
+
 	const contracts =
-		await basicDeployment(
+		await deployContracts(
 			deployerAcct,
-			config_params.randomWalkNftAddr,
-			// config_params.marketingWalletAddr,
-			config_params.charityAddr,
-			config_params.transferOwnershipToCosmicSignatureDao,
-			config_params.roundActivationTime
+			configObject.randomWalkNftAddr,
+			configObject.charityAddr,
+			configObject.transferOwnershipToCosmicSignatureDao,
+			configObject.roundActivationTime
 		);
 	console.log("Contracts deployed.");
-	if (config_params.donateEthToGameContract) {
+	if (configObject.donateEthToGameContract) {
 		const ethValue = "2";
-		const donationAmount_ = hre.ethers.parseEther(ethValue);
-		await contracts.cosmicSignatureGameProxy.connect(deployerAcct).donateEth({value: donationAmount_});
+		const donationAmount = hre.ethers.parseEther(ethValue);
+		await contracts.cosmicSignatureGameProxy.donateEth({value: donationAmount});
 		console.log("Donated " + ethValue + " ETH to the CosmicSignatureGame proxy contract.");
 	}
-	console.log("CosmicSignatureGame proxy address:", await contracts.cosmicSignatureGameProxy.getAddress());
-	console.log("CosmicSignatureNft address:", await contracts.cosmicSignatureNft.getAddress());
-	console.log("CosmicSignatureToken address:", await contracts.cosmicSignatureToken.getAddress());
-	console.log("CosmicSignatureDao address:", await contracts.cosmicSignatureDao.getAddress());
-	console.log("CharityWallet address:", await contracts.charityWallet.getAddress());
-	console.log("PrizesWallet address:", await contracts.prizesWallet.getAddress());
-	console.log("RandomWalkNFT address:", await contracts.randomWalkNft.getAddress());
-	console.log("StakingWalletCosmicSignatureNft address:", await contracts.stakingWalletCosmicSignatureNft.getAddress());
-	console.log("StakingWalletRandomWalkNft address:", await contracts.stakingWalletRandomWalkNft.getAddress());
-	console.log("MarketingWallet address:", await contracts.marketingWallet.getAddress());
-	console.log("CosmicSignatureGame address:", await contracts.cosmicSignatureGame.getAddress());
+	console.log("CosmicSignatureGame proxy address:", contracts.cosmicSignatureGameProxyAddr);
+	console.log("CosmicSignatureNft address:", contracts.cosmicSignatureNftAddr);
+	console.log("CosmicSignatureToken address:", contracts.cosmicSignatureTokenAddr);
+	console.log("CosmicSignatureDao address:", contracts.cosmicSignatureDaoAddr);
+	console.log("CharityWallet address:", contracts.charityWalletAddr);
+	console.log("PrizesWallet address:", contracts.prizesWalletAddr);
+	console.log("RandomWalkNFT address:", contracts.randomWalkNftAddr);
+	console.log("StakingWalletCosmicSignatureNft address:", contracts.stakingWalletCosmicSignatureNftAddr);
+	console.log("StakingWalletRandomWalkNft address:", contracts.stakingWalletRandomWalkNftAddr);
+	console.log("MarketingWallet address:", contracts.marketingWalletAddr);
+	console.log("CosmicSignatureGame implementation address:", contracts.cosmicSignatureGameImplementationAddr);
 	console.log(
 		"INSERT INTO cg_contracts VALUES('" +
-		await contracts.cosmicSignatureGameProxy.getAddress() +
+		contracts.cosmicSignatureGameProxyAddr +
 		"','" +
-		await contracts.cosmicSignatureNft.getAddress() +
+		contracts.cosmicSignatureNftAddr +
 		"','" +
-		await contracts.cosmicSignatureToken.getAddress() +
+		contracts.cosmicSignatureTokenAddr +
 		"','" +
-		await contracts.cosmicSignatureDao.getAddress() +
+		contracts.cosmicSignatureDaoAddr +
 		"','" +
-		await contracts.charityWallet.getAddress() +
+		contracts.charityWalletAddr +
 		"','" +
-		await contracts.prizesWallet.getAddress() +
+		contracts.prizesWalletAddr +
 		"','" +
-		await contracts.randomWalkNft.getAddress() +
+		contracts.randomWalkNftAddr +
 		"','" +
-		await contracts.stakingWalletCosmicSignatureNft.getAddress() +
+		contracts.stakingWalletCosmicSignatureNftAddr +
 		"','" +
-		await contracts.stakingWalletRandomWalkNft.getAddress() +
+		contracts.stakingWalletRandomWalkNftAddr +
 		"','" +
-		await contracts.marketingWallet.getAddress() +
+		contracts.marketingWalletAddr +
 		"','" +
-		
-		// Issue. According to Comment-202412059, this is the same as `cosmicSignatureGameProxy`.
-		await contracts.cosmicSignatureGame.getAddress() +
-
+		// todo-1 Tell Nick that in his scripts this used to be the same as `cosmicSignatureGameProxyAddr`,
+		// todo-1 but now this is the game contract implementation address.
+		contracts.cosmicSignatureGameImplementationAddr +
 		"')",
 	);
-}).addParam("deployConfig", "Config file (JSON) path");
+}).addParam("deployConfigFilePath", "Config file (JSON) path");
