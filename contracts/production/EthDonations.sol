@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 // import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
+import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
 

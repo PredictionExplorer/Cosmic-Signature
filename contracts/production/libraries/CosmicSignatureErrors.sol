@@ -219,7 +219,7 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region Common
 
-	error UnknownError(string errStr);
+	// error UnknownError(string errStr);
 
 	/// @notice Thrown when an operation is not possible in the current contract state.
 	/// @param errStr Description of the error.
