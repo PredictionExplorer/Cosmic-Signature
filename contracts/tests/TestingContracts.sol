@@ -169,7 +169,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);
 	// 	}
 	//
-	// 	// todo-2 Isn't this supposed to selfdestruct both the game and its proxy?
+	// 	// todo-2 Isn't this supposed to `selfdestruct` both the game implementation and its proxy?
+	// 	// todo-2 But `selfdestruct` does nothing besides transferring ETH, so maybe just transfer ETH.
 	// 	selfdestruct(payable(owner()));
 	// }
 }
@@ -288,11 +289,12 @@ contract MaliciousNft1 is ERC721 {
 
 	/// @notice sends donateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from, address to, uint256 nftId) public override {
-		// the following call should revert
+		// This call shall revert.
 		// todo-1 This will probably now revert due to `onlyGame`.
 		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, /*bytes memory retval*/) =
 			_msgSender().call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));
+
 		if ( ! isSuccess_ ) {
 			assembly {
 				let ptr := mload(0x40)
@@ -323,12 +325,14 @@ contract MaliciousNft2 is ERC721 {
 		// // defaultParams.message = "";
 		// defaultParams.randomWalkNftId = -1;
 		// bytes memory param_data = abi.encode(defaultParams);
-		// // This call should revert.
+		//
+		// // This call shall revert.
 		// // todo-9 This call is now incorrect because `_msgSender()` points at `PrizesWallet`, rather than at `CosmicSignatureGame`.
 		// // todo-9 Besides, this transfers zero `value`.
 		// // todo-9 Should we make a high level call here? Comment-202502043 relates.
 		// (bool isSuccess_, /*bytes memory retval*/) =
 		// 	_msgSender().call(abi.encodeWithSelector(IBidding.bidWithEthAndDonateNft.selector, param_data, address(this), nftId_));
+		//
 		// if ( ! isSuccess_ ) {
 		// 	assembly {
 		// 		let ptr := mload(0x40)
@@ -338,11 +342,10 @@ contract MaliciousNft2 is ERC721 {
 		// 	}
 		// }
 
-		if (_counter < 3) {
+		if (_counter <= 0) {
 			++ _counter;
 
-			// This call should revert.
-			// todo-1 But it doesn't, which is probably OK. To be revisited.
+			// This call shall revert.
 			_game.bidWithEthAndDonateNft{value: 1 ether}(-1, "", this, nftId_ + 1);
 
 			-- _counter;
