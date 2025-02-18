@@ -111,19 +111,6 @@ library CosmicSignatureConstants {
 	/// Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
-	// /// @notice `startingBidPriceCstMinLimit` "hard" min limit.
-	// /// This is used as a min limit on another min limit.
-	// /// @dev This should not be smaller because we calculate CST bid price in the `1 / MILLION` resolution
-	// /// and we want to support a sufficient number of significant digits.
-	// /// Issue. Actually the above comment is BS. We do not actually round prices. A price can be any amount in Weis.
-	// /// todo-1 The web site shows 2 digits after the decimal point. Maybe in the tooltip it should show the whole number with all the digits.
-	// /// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1738533218252629
-	// /// todo-1 They will increase the number of shown significant digits, right?
-	// /// todo-1 Besides, it won't let the user to bid if they have no enough funds.
-	// /// todo-1 So we are probably OK here.
-	// /// todo-1 Comment and/or remove garbage.
-	// uint256 internal constant STARTING_BID_PRICE_CST_HARD_MIN_LIMIT = 1 ether;
-
 	/// @notice Default `bidMessageLengthMaxLimit`.
 	/// Comment-202409143 applies.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;

@@ -68,15 +68,6 @@ abstract contract SystemManagement is
 	}
 
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner onlyRoundIsInactive {
-		// require(
-		// 	newValue_ >= CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT,
-		// 	CosmicSignatureErrors.ProvidedStartingBidPriceCstMinLimitIsTooSmall(
-		// 		// todo-9 Can I phrase this better? Maybe "starting CST bid price".
-		// 		"The provided starting bid price in CST min limit is too small.",
-		// 		newValue_,
-		// 		CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT
-		// 	)
-		// );
 		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
 		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}

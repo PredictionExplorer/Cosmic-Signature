@@ -33,8 +33,7 @@ library RandomNumberHelpers {
 		return block.prevrandao ^ block.basefee;
 	}
 
-	/// @dev
-	/// todo-1 Test that `seedWrapper_` changes after this call.
+	/// @dev todo-1 +++ Test that `seedWrapper_` changes after this call.
 	function generateRandomNumber(RandomNumberSeedWrapper memory seedWrapper_) internal pure returns(uint256) {
 		unchecked { ++ seedWrapper_.value; }
 		return generateRandomNumber(seedWrapper_.value);

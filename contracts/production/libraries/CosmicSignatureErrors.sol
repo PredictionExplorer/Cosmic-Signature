@@ -181,6 +181,15 @@ library CosmicSignatureErrors {
 	error NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange(string errStr, uint256 numEthDepositsToEvaluateMaxLimit);
 
 	// #endregion
+	// #region Security
+
+	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
+	/// @param errStr Description of the error.
+	/// @param callerAddress Caller address.
+	/// @dev todo-1 +++ We don't have any other errors of this kind, right? If I find any, try to eliminate them.
+	error UnauthorizedCaller(string errStr, address callerAddress);
+
+	// #endregion
 	// #region Monetary Transfers
 
 	/// @notice Thrown when a fund transfer fails.
@@ -216,12 +225,6 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	/// @dev In .NET, `InvalidOperationException` serves the same purpose.
 	error InvalidOperationInCurrentState(string errStr);
-
-	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
-	/// @param errStr Description of the error.
-	/// @param callerAddress Caller address.
-	/// @dev todo-1 +++ We don't have any other errors of this kind, right? If I find any, try to eliminate them.
-	error UnauthorizedCaller(string errStr, address callerAddress);
 
 	// #endregion
 }

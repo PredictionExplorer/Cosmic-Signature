@@ -85,7 +85,6 @@ describe("SystemManagement", function () {
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setCstDutchAuctionBeginningBidPriceMinLimit(hre.ethers.parseEther("111"));
 		expect(await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).to.equal(hre.ethers.parseEther("111"));
-		// await expect(cosmicSignatureGameProxy.connect(ownerAcct).setStartingBidPriceCstMinLimit(111n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ProvidedStartingBidPriceCstMinLimitIsTooSmall");
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setCstRewardAmountForBidding(1234567890n);
 		expect(await cosmicSignatureGameProxy.cstRewardAmountForBidding()).to.equal(1234567890n);

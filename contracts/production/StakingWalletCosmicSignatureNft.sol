@@ -64,7 +64,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	uint256 internal constant _NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max / 256;
 
 	// /// @notice Precision factor for calculations.
-	// /// Was this intended to be somethig similar to `CosmicSignatureConstants.STARTING_BID_PRICE_CST_HARD_MIN_LIMIT`?
+	// /// @dev todo-9 Move this to `CosmicSignatureConstants`.
+	// /// todo-9 Name this better.
 	// uint256 private constant _PRECISION = 1 ether;
 
 	// #endregion
