@@ -17,6 +17,8 @@ import { CharityWallet } from "../production/CharityWallet.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
+// todo-1 Move each contract to a separate file.
+
 // /// @notice used to test revert() statements in token transfers in claimMainPrize() function
 // contract BrokenCosmicSignatureToken1 {
 // 	uint256 private _counter;

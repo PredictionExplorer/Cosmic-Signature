@@ -10,6 +10,8 @@ import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
+// todo-1 Move each contract to a separate file.
+
 contract BidderContract {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	// address public immutable creator;
