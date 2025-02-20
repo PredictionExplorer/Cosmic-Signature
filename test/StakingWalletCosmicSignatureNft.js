@@ -75,7 +75,9 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		// expect(await newStakingWalletCosmicSignatureNft.stakerByTokenId(99n)).to.equal(hre.ethers.ZeroAddress);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
-		// todo-1 Everywhere, it's unnecessary to check for the `.not.reverted`, right? It's better to just not call `expect`.
+		// todo-1 Everywhere, it's unnecessary to check for the `.not.reverted`, right?
+		// todo-1 ---It's better to just not call `expect`.
+		// todo-1 Wrong! Call it! Otherwise there is a small chance of a race.
 		await expect(newStakingWalletCosmicSignatureNft.connect(signer0).unstake(1, 1000)).not.to.be.reverted;
 		await expect(newStakingWalletCosmicSignatureNft.connect(signer0).unstake(1, 1000)).to.be.revertedWithCustomError(
 			newStakingWalletCosmicSignatureNft,
@@ -90,6 +92,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const d = await newStakingWalletCosmicSignatureNft.ethDeposits(1);
 		expect(d.rewardAmountPerStakedNft).to.equal(hre.ethers.parseEther("3"));
 	});
+
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -124,6 +127,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			"NftStakeActionAccessDenied"
 		);
 	});
+
 	// it("Shouldn't be possible to claim reward without executing unstake()", async function () {
 	// 	const [signer0, signer1,] = await hre.ethers.getSigners();
 	// 	// todo-9 Instead of this, call `loadFixture` or at least `deployContractsForUnitTesting` or `deployContractsForUnitTestingAdvanced`.
@@ -170,6 +174,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		"NftNotUnstaked"
 	// 	);
 	// });
+
 	// it("Shouldn't be possible to claim deposit more than once", async function () {
 	// 	const [signer0, signer1,] = await hre.ethers.getSigners();
 	// 	// todo-9 Instead of this, call `loadFixture` or at least `deployContractsForUnitTesting` or `deployContractsForUnitTestingAdvanced`.
@@ -220,6 +225,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		"DepositAlreadyClaimed"
 	// 	);
 	// });
+
 	// it("Shouldn't be possible to claim deposit by a user different from the owner", async function () {
 	// 	const [signer0, signer1,] = await hre.ethers.getSigners();
 	// 	// todo-9 Instead of this, call `loadFixture` or at least `deployContractsForUnitTesting` or `deployContractsForUnitTestingAdvanced`.
@@ -265,6 +271,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		"NftStakeActionAccessDenied"
 	// 	);
 	// });
+
 	// it("Shouldn't be possible to claim deposits made earlier than stakeDate", async function () {
 	// 	const [signer0, signer1,] = await hre.ethers.getSigners();
 	// 	// todo-9 Instead of this, call `loadFixture` or at least `deployContractsForUnitTesting` or `deployContractsForUnitTestingAdvanced`.
@@ -316,6 +323,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		"DepositOutsideStakingWindow"
 	// 	);
 	// });
+
 	// it("Shouldn't be possible to claim deposits after unstakeTime", async function () {
 	// 	const [signer0, signer1,] = await hre.ethers.getSigners();
 	// 	// todo-9 Instead of this, call `loadFixture` or at least `deployContractsForUnitTesting` or `deployContractsForUnitTestingAdvanced`.
@@ -374,6 +382,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 		"DepositOutsideStakingWindow"
 	// 	);
 	// });
+
 	// it("Shouldn't be possible to claim deposits with invalid stakeActionId or ethDepositId", async function () {
 	it("Shouldn't be possible to unstake with invalid stakeActionId", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
@@ -447,6 +456,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		);
 		await expect(newStakingWalletCosmicSignatureNft.connect(signer1).unstakeMany([2], 1000)).not.to.be.reverted;
 	});
+
 	// it("It is not possible to claim reward if transfer to sender address fails", async function () {
 	it("It is not possible to unstake if transfer to sender address fails", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory, stakingWalletCosmicSignatureNftAddr,} =
@@ -688,6 +698,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	// const m = await newStakingWalletCosmicSignatureNft.modulo();
 	// 	// expect(m).to.equal(contractBalance);
 	// });
+
 	it("User stakes his 10 CosmicSignature NFTs and gets all of them back after unstake", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -874,6 +885,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		// await expect(newStakingWalletCosmicSignatureNft.connect(signer0).doInsertToken(1n, 1n)).to.be.revertedWithCustomError(newStakingWalletCosmicSignatureNft, "TokenAlreadyInserted");
 		// await expect(newStakingWalletCosmicSignatureNft.connect(signer0).doRemoveToken(0n)).to.be.revertedWithCustomError(newStakingWalletCosmicSignatureNft, "TokenAlreadyDeleted");
 	});
+
 	it("Deposits with value=0 do not create irregularities in StakingWalletCosmicSignatureNft", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -924,6 +936,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		// await expect(newStakingWalletCosmicSignatureNft.connect(signer0).unstakeClaim(3, 1)).not.to.be.reverted;
 		await newStakingWalletCosmicSignatureNft.connect(signer0).unstakeMany([5, 4], 1000);
 	});
+	
 	// it("User can't claim rewards on his second deposit", async function () {
 	// 	const [signer0, signer1,] = await hre.ethers.getSigners();
 	// 	// todo-9 Instead of this, call `loadFixture` or at least `deployContractsForUnitTesting` or `deployContractsForUnitTestingAdvanced`.
