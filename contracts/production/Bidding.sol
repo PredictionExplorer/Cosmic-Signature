@@ -178,6 +178,9 @@ abstract contract Bidding is
 			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
 			if (uint256(overpaidEthBidPrice_) >= ethBidRefundAmountMinLimit_) {
 				// A reentry can happen here.
+				// [ToDo-202502186-0]
+				// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
+				// [/ToDo-202502186-0]
 				// Comment-202502051 relates.
 				// Comment-202502043 applies.
 				(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthBidPrice_)}("");

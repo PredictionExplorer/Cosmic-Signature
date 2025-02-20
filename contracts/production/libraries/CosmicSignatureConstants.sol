@@ -71,6 +71,7 @@ library CosmicSignatureConstants {
 	/// Comment-202501063 applies.
 	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 10 * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 
+	// @dev Comment-202502191 depends on this value.
 	uint256 internal constant DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 
 	/// @notice
@@ -105,6 +106,7 @@ library CosmicSignatureConstants {
 	/// todo-1 Done, but re-check it again.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
+	// @dev Comment-202502193 depends on this value.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Default `cstDutchAuctionBeginningBidPriceMinLimit`.

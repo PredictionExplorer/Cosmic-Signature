@@ -4,6 +4,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 const SKIP_LONG_TESTS = false;
@@ -157,6 +158,7 @@ describe("Bidding", function () {
 		await cosmicSignatureGameProxy.connect(signer2).claimMainPrize();
 		expect(await cosmicSignatureGameProxy.lastBidderAddress()).to.equal(hre.ethers.ZeroAddress);
 	});
+
 	it("Should be possible to bid with RandomWalk NFT", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -187,6 +189,7 @@ describe("Bidding", function () {
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "UsedRandomWalkNft");
 	});
+
 	it("Shouldn't be possible to bid if bidder doesn't accept refunds on oversized bidWithEth calls", async function () {
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -199,6 +202,7 @@ describe("Bidding", function () {
 		let bidAmount = hre.ethers.parseEther("10");
 		await expect(bidderContract.connect(signer0).doFailedBidWithEth({ value: bidAmount })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
 	});
+
 	it("Shouldn't be possible to bid using very long message", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -209,6 +213,7 @@ describe("Bidding", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), longMsg, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "TooLongBidMessage");
 	});
+
 	it("getCstDutchAuctionDurations() method works", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -226,6 +231,7 @@ describe("Bidding", function () {
 		const cstDutchAuctionElapsedDuration_ = cstDutchAuctionDurations_[1];
 		expect(cstDutchAuctionElapsedDuration_).to.equal(0n);
 	});
+
 	it("There is an execution path for all bidders being RandomWalk NFT bidders", async function () {
 		// todo-1 Move this function to a separate file and use it everywhere.
 		async function mint_rwalk(a) {
@@ -272,6 +278,7 @@ describe("Bidding", function () {
 		// todo-1 Maybe check that now it will revert with "NoLastBidder".
 		// todo-1 Actually it will probably revert because the round is not active yet.
 	});
+
 	it("After bidWithEth, bid-related counters have correct values", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -302,6 +309,7 @@ describe("Bidding", function () {
 		// lastBidType = await cosmicSignatureGameProxy.lastBidType();
 		// expect(lastBidType).to.equal(2);
 	});
+
 	it("On ETH bid, we refund the correct amount when msg.value is greater than required", async function () {
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -325,6 +333,7 @@ describe("Bidding", function () {
 		let bidderContractExpectedBalanceAmountAfter = amountSent - nextEthBidPrice_;
 		expect(bidderContractBalanceAmountAfter).to.equal(bidderContractExpectedBalanceAmountAfter);
 	});
+
 	it("On ETH + RandomWalk NFT bid, we refund the correct amount when msg.value is greater than required", async function () {
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -356,6 +365,7 @@ describe("Bidding", function () {
 		let bidderContractExpectedBalanceAmountAfter = amountSent - discountedBidPrice;
 		expect(bidderContractBalanceAmountAfter).to.equal(bidderContractExpectedBalanceAmountAfter);
 	});
+
 	it("Bidding a lot & staking a lot works correctly", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, stakingWalletCosmicSignatureNft, stakingWalletCosmicSignatureNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -528,6 +538,7 @@ describe("Bidding", function () {
 			}
 		}
 	});
+
 	it("Bidding with CST works", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
@@ -594,6 +605,7 @@ describe("Bidding", function () {
 		cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(nextCstBidExpectedPrice_ * 2n);
 	});
+
 	// todo-1 This method no longer exists. Use `getBidderAddressAt` instead. But parts of this test could still be relevant.
 	// it("Function bidderAddress() works as expected", async function () {
 	// 	const {ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
@@ -708,6 +720,7 @@ describe("Bidding", function () {
 		// await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InsufficientBalance");
 	});
+
 	it("The getBidderAddressAt method behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
@@ -725,6 +738,7 @@ describe("Bidding", function () {
 		// // This no longer reverts.
 		// await expect(cosmicSignatureGameProxy.getBidderAddressAtPosition(0, 2)).to.be.revertedWith("Position out of bounds");
 	});
+
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -744,6 +758,7 @@ describe("Bidding", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
+
 	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -766,32 +781,172 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
-	it("Long term bidding with CST doesn't produce irregularities", async function () {
+
+	// This is a stress test that executes multiple transactions per block.
+	//
+	// todo-1 It would be nice to validate that the behavior is correct.
+	//
+	// todo-1 Add `claimMainPrize` calls.
+	//
+	// todo-1 Arbitrum mines 4 blocks per second with equal timestamps. Try to test that.
+	// todo-1 There is the `allowBlocksWithSameTimestamp` parameter, but setting it would make all blocks having the same timestamp,
+	// todo-1 which would break all tests and other scripts. It appears to be impossible to change it temporarily at runtime.
+	// 
+	// todo-1 Develop a separate test and/or refactor this one to test `bidWithEth` reentrancy. They can bid by reentering.
+	// todo-1 But see ToDo-202502186-0.
+	it("Long-term aggressive bidding doesn't produce irregularities", async function () {
 		if (SKIP_LONG_TESTS) return;
 
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
-		const [signer0,] = signers;
 		
-		const numIterationsMain = 30;
-		// const numIterationsSecondary = 10000;
+		// Comment-202501192 applies.
+		await hre.ethers.provider.send("evm_mine");
 
-		for ( let i = 0; i < numIterationsMain; ++ i ) {
-			const timeBump = (i + 4) * 60;
-			for ( /*let j = 0*/; /*j < numIterationsSecondary*/; /*++ j*/ ) {
-				await hre.ethers.provider.send("evm_increaseTime", [timeBump]);
-				await hre.ethers.provider.send("evm_mine");
-				const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-				await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "", { value: nextEthBidPrice_ });
-				const cstBalanceAmount_ = await cosmicSignatureToken.balanceOf(signer0.address);
-				const nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice(1n);
-				if (cstBalanceAmount_ >= nextCstBidPrice_) {
-					// console.log(i, j, Number(cstBalanceAmount_) / (10.0 ** 18.0), Number(nextCstBidPrice_) / (10.0 ** 18.0));
-					await cosmicSignatureGameProxy.connect(signer0).bidWithCst(nextCstBidPrice_, "");
-					break;
+		// {
+		// 	let latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
+		// 	console.log(latestBlockTimeStamp);
+		// 	// await hre.ethers.provider.send("evm_increaseTime", [0]);
+		// 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [latestBlockTimeStamp]);
+		// 	await hre.ethers.provider.send("evm_mine");
+		// 	latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
+		// 	console.log(latestBlockTimeStamp);
+		// 	// await hre.ethers.provider.send("evm_mine");
+		// 	latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
+		// 	console.log(latestBlockTimeStamp);
+		// 	console.log();
+		// }
+
+		const transactions = [];
+		let randomNumber;
+
+		const mineBlockIfNeeded = async (force) => {
+			let timeIncrease = force ? 1 : ((randomNumber & 0xFF) - 0xB0);
+			if (timeIncrease > 0) {
+				if (timeIncrease >= 10) {
+					timeIncrease *= 40;
 				}
+				if (timeIncrease > 1) {
+					await hre.ethers.provider.send("evm_increaseTime", [timeIncrease]);
+				}
+
+				// todo-1 Bug. Even if `timeIncrease` is zero the next block timestamp will still be incremented.
+				// todo-1 Sending "evm_increaseTime" of zero won't help.
+				await hre.ethers.provider.send("evm_mine");
+
+				let errorDetails;
+				for (const transaction of transactions) {
+					try {
+						// console.log(transaction);
+
+						// // todo-1 This can throw an error, but the error doesn't appear to contain usable info on what caused the error.
+						// await transaction.wait();
+
+						// await expect(transaction).not.reverted;
+						// await expect(transaction).fulfilled;
+
+						// We are going to also be OK with the transaction not reverting.
+						// todo-1 This fails to detect the actual error, if any, and always throws that the transaction didn't revert,
+						// todo-1 probably for the same reason `transaction.wait` doesn't throw a usable error.
+						await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
+
+						// console.log("Success 1.", transactions.length);
+					} catch (error2Details) {
+						// console.log("Error.", transactions.length);
+
+						// console.log();
+						// console.log(error2Details.message);
+						// console.log(error2Details);
+
+						// // ChatGPT recommended this approach, but it doesn't work.
+						// const revertData = error2Details.data;
+						// // const revertData = error2Details;
+						// if (revertData) {
+						// 	const decodedError = cosmicSignatureGameProxy.interface.parseError(revertData);
+						// 	console.log("Custom Error Name:", decodedError.name);
+						// } else {
+						// 	console.error("Error data not found.");
+						// }
+
+						if(error2Details.message.endsWith(", but it didn't revert")) {
+							// console.log("Success 2.", transactions.length);
+						} else if ( errorDetails === undefined ||
+										errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") &&
+										( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )
+									) {
+							errorDetails = error2Details;
+						}
+					}
+				}
+				transactions.length = 0;
+				if (errorDetails !== undefined) {
+					// console.log(errorDetails.message);
+					throw errorDetails;
+				}
+			}
+		};
+
+		await hre.ethers.provider.send("evm_setAutomine", [false]);
+		try {
+			// This loop will keep spinning until an error is thrown due to a signer running out of ETH,
+			// or any other error.
+			for ( let counter = 0; /*counter < 300*/; ++ counter ) {
+				randomNumber = generateRandomUInt32();
+				const signer = signers[(randomNumber & 0xFFFF) % signers.length];
+				// if ((counter & 0xFF) == 0) {
+				// 	console.log((
+				// 		await hre.ethers.provider.getBlock("latest")).timestamp,
+				// 		((await hre.ethers.provider.getBalance(signer.address)) + 10n ** 18n / 2n) / (10n ** 18n),
+				// 		Number(await cosmicSignatureGameProxy.getNextEthBidPrice(1n)) / (10 ** 18)
+				// 	);
+				// }
+				let transactionQueued = false;
+				if (await cosmicSignatureGameProxy.lastBidderAddress() != hre.ethers.ZeroAddress) {
+					const cstBalanceAmount_ = await cosmicSignatureToken.balanceOf(signer.address);
+					const nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice(1n);
+
+					// [Comment-202502193]
+					// This is (likely) going to be enough for each of up to 2 CST bids. Further bids within the same block will (likely) fail.
+					// [/Comment-202502193]
+					const nextCstBidPrice2_ = nextCstBidPrice_ * 2n;
+
+					if (cstBalanceAmount_ >= nextCstBidPrice2_) {
+						transactions.push(await cosmicSignatureGameProxy.connect(signer).bidWithCst(nextCstBidPrice2_, "", {gasLimit: 450_000}));
+						transactionQueued = true;
+					}
+				}
+				if ( ! transactionQueued ) {
+					const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+					// const nextEthBidPrice2_ = 11n;
+
+					// [Comment-202502191]
+					// This is going to be enough for each of up to 4 ETH bids. Further bids within the same block will fail.
+					// [/Comment-202502191]
+					const nextEthBidPrice2_ = nextEthBidPrice_ * 1041n / 1000n;
+
+					transactions.push(await cosmicSignatureGameProxy.connect(signer).bidWithEth((-1n), "", {value: nextEthBidPrice2_, gasLimit: 450_000}));
+				}
+				randomNumber >>= 16;
+				await mineBlockIfNeeded(false);
+			}
+		} catch (errorDetails) {
+			// console.log(errorDetails.message);
+			let error2Details;
+			try {
+				// Mining whatever was queued.
+				await mineBlockIfNeeded(true);
+			} catch (error2Details2) {
+				error2Details = error2Details2;
+			}
+			await hre.ethers.provider.send("evm_setAutomine", [true]);
+			if ( ! errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") ) {
+				throw errorDetails;
+			}
+			if (error2Details !== undefined && ( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )) {
+				throw error2Details;
 			}
 		}
 	});
+
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods behave correctly", async function () {
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
