@@ -129,9 +129,10 @@ contract BidderContract {
 
 	function doFailedBidWithEth() external payable {
 		uint256 price = msg.value;
+		bool blockDepositsCopy_ = blockDeposits;
 		blockDeposits = true;
 		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
-		blockDeposits = false;
+		blockDeposits = blockDepositsCopy_;
 	}
 
 	function startBlockingDeposits() external {

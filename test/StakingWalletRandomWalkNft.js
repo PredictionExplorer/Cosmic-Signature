@@ -42,6 +42,7 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		await expect(newStakingWalletRandomWalkNft.connect(signer0).unstake(1)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
 	});
+	
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -65,6 +66,7 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		await expect(newStakingWalletRandomWalkNft.connect(signer1).unstake(1)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionAccessDenied");
 	});
+	
 	// it("Internal staker state variables for checking uniquness are correctly set", async function () {
 	// 	const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, randomWalkNft, randomWalkNftAddr,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
@@ -130,6 +132,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
 	// 	expect(numStakedNfts_).to.equal(0);
 	// });
+	
 	it("User stakes his 10 RandomWalk NFTs and gets all of them back after unstake", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -164,6 +167,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			expect(o).to.equal(signer0.address);
 		}
 	});
+
 	it("The random picking of a staker is really random", async function () {
 		const {signers, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -218,6 +222,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			}
 		}
 	});
+	
 	it("Shouldn't be possible to use an NFT twice for stake/unstake", async function () {
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
