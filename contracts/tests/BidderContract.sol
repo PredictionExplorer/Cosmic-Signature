@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 pragma abicoder v2;
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
@@ -30,23 +31,35 @@ contract BidderContract {
 
 	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
+		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
+		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 	}
 
 	function doBidWithEth2() external payable {
+		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.bidWithEth{value: msg.value}((-1), "contract bid");
+		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth2; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 	}
 
 	function doBidWithEthRWalk(int256 nftId) external payable {
 		uint256 price = cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(cosmicSignatureGame.getNextEthBidPrice(int256(0)));
+		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.bidWithEth{value: price}(nftId, "contract bid rwalk");
+		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthRWalk; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 	}
 
 	function doBidWithEthRWalk2(int256 nftId) external payable {
 		RandomWalkNFT rwalk = cosmicSignatureGame.randomWalkNft();
 		rwalk.setApprovalForAll(address(cosmicSignatureGame), true);
 		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
+		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.bidWithEth{value: msg.value}(nftId, "contract bid rwalk");
+		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthRWalk2; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 	}
 
 	function doBidWithEthAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {
@@ -57,11 +70,17 @@ contract BidderContract {
 		uint256 numDonatedNfts_ = prizesWallet_.numDonatedNfts();
 		myDonatedNfts.push(numDonatedNfts_);
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
+		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.bidWithEthAndDonateNft{value: price}((-1), "contract bid with donation", nftAddress_, nftId_);
+		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthAndDonateNft; CosmicSignatureGame.bidWithEthAndDonateNft gas used =", gasUsed_);
 	}
 
 	function doClaim() external {
+		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.claimMainPrize();
+		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaim; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
 	}
 
 	// function withdrawEthPrize(address destination) external {
