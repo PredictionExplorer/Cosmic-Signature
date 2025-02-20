@@ -792,8 +792,19 @@ describe("Bidding", function () {
 	// todo-1 There is the `allowBlocksWithSameTimestamp` parameter, but setting it would make all blocks having the same timestamp,
 	// todo-1 which would break all tests and other scripts. It appears to be impossible to change it temporarily at runtime.
 	// 
+	// todo-1 Maybe refactor this to mine 1 transaction per block. Then Chai matchers will work to correctly show
+	// todo-1 what caused transaction reversal. They re-execute the transaction in simulation to find out what went wrong.
+	// todo-1 Then just review then Solidity code to make sure that
+	// todo-1 regardless if `block.timestamp` or `block.number` change or don't change, the behavior will be correct.
+	//
 	// todo-1 Develop a separate test and/or refactor this one to test `bidWithEth` reentrancy. They can bid by reentering.
 	// todo-1 But see ToDo-202502186-0.
+	//
+	// todo-1 Nick wrote:
+	// todo-1 As this is not really a unit test anymore, but an integration test, it should be done as standalone script
+	// todo-1 (and maybe go in "scripts" directory, and probably in its own folder) .
+	// todo-1 So you could run it over local-chain geth instance
+	// todo-1 with its own genesis.json and account balances for this particular test.
 	it("Long-term aggressive bidding doesn't produce irregularities", async function () {
 		if (SKIP_LONG_TESTS) return;
 
