@@ -53,19 +53,19 @@ async function deployContractsForUnitTestingAdvanced(
 	contracts.deployerAcct = deployerAcct;
 	// todo-1 Reorder these calls better?
 	// todo-1 Is this now going to become `Ownable`? Maybe not.
-	// await contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address);
-	await contracts.randomWalkNft.transferOwnership(ownerAcct.address);
-	await contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address);
-	await contracts.charityWallet.transferOwnership(ownerAcct.address);
-	await contracts.marketingWallet.transferOwnership(ownerAcct.address);
-	await contracts.prizesWallet.transferOwnership(ownerAcct.address);
+	// await (await contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.randomWalkNft.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.charityWallet.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.marketingWallet.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.prizesWallet.transferOwnership(ownerAcct.address)).wait();
 	// todo-1 Is this now going to become `Ownable`? Maybe not.
-	// await contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address);
-	await contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
+	// await (await contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
 	// todo-1 Is this now going to become `Ownable`? Maybe not.
-	// await contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address);
-	// await contracts.cosmicSignatureGameImplementationAddr.transferOwnership(ownerAcct.address);
-	await contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address);
+	// await (await contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address)).wait();
+	// await (await contracts.cosmicSignatureGameImplementationAddr.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address)).wait();
 	return contracts;
 }
 

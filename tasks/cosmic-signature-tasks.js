@@ -8,12 +8,12 @@ const nodeFsModule = require("node:fs");
 const { deployContracts } = require("../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, hre) => {
-	const configFilePath = args.deployConfigFilePath;
-	if (configFilePath === undefined || configFilePath.length === 0) {
+	const deployConfigFilePath = args.deployConfigFilePath;
+	if (deployConfigFilePath === undefined || deployConfigFilePath.length === 0) {
 		console.log("Please provide a config file: --deployConfigFilePath [file_path]");
 		return;
 	}
-	const configJsonText = nodeFsModule.readFileSync(configFilePath, "utf8");
+	const configJsonText = nodeFsModule.readFileSync(deployConfigFilePath, "utf8");
 	let configObject;
 	try {
 		configObject = JSON.parse(configJsonText);
@@ -45,8 +45,8 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	console.log("Contracts deployed.");
 	if (configObject.donateEthToGameContract) {
 		const ethValue = "2";
-		const donationAmount = hre.ethers.parseEther(ethValue);
-		await contracts.cosmicSignatureGameProxy.donateEth({value: donationAmount});
+		const ethDonationAmount = hre.ethers.parseEther(ethValue);
+		await (await contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmount})).wait();
 		console.log("Donated " + ethValue + " ETH to the CosmicSignatureGame proxy contract.");
 	}
 	console.log("CosmicSignatureGame proxy address:", contracts.cosmicSignatureGameProxyAddr);

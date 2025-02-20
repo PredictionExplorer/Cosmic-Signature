@@ -358,10 +358,15 @@ const hardhatUserConfig = {
 	networks: {
 		hardhat: {
 			allowUnlimitedContractSize: true,
+			// allowBlocksWithSameTimestamp: true,
+
+			// // This is needed so that the minimg of multiple transactions per block worked.
+			// // Actually, this appears to be unnecessary if we specify `gasLimit` when making a contract metod call.
+			// gas: "auto",
 
 			// [Comment-202501193]
 			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` function.
-			// Block timestamp increment is 1 second, despite of the `interval` parameter being zero.
+			// Block timestamp increment is actually 1 second, despite of the `interval` parameter being zero.
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,
