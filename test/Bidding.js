@@ -878,7 +878,7 @@ describe("Bidding", function () {
 						// 	console.error("Error data not found.");
 						// }
 
-						if(error2Details.message.endsWith(", but it didn't revert")) {
+						if (error2Details.message.endsWith(", but it didn't revert")) {
 							// console.log("Success 2.", transactions.length);
 						} else if ( errorDetails === undefined ||
 										errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") &&

@@ -6,7 +6,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBiddingBase } from "./interfaces/IBiddingBase.sol";
 
 abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
-	modifier onlyRoundIsInactive() {
+	modifier _onlyRoundIsInactive() {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		require(
 			block.timestamp < roundActivationTimeCopy_,
@@ -15,7 +15,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		_;
 	}
 
-	modifier onlyRoundIsActive() {
+	modifier _onlyRoundIsActive() {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		require(
 			block.timestamp >= roundActivationTimeCopy_,
@@ -37,7 +37,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		emit RoundActivationTimeChanged(newValue_);
 	}
 
-	function getDurationUntilRoundActivation() public view override returns(int256) {
+	function getDurationUntilRoundActivation() public view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -47,7 +47,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		}
 	}
 
-	function getDurationElapsedSinceRoundActivation() public view override returns(int256) {
+	function getDurationElapsedSinceRoundActivation() public view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

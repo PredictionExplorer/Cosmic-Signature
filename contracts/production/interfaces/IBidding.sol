@@ -63,17 +63,17 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return The next ETH bid price, in Wei.
-	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns(uint256);
+	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @notice Calculates and returns an ETH + RandomWalk NFT bid price, given an ETH only bid price.
 	/// The result is guaranteed to be a nonzero, provided `ethBidPrice_` is a nonzero.
 	/// This method doesn't check for overflow, which implies that `ethBidPrice_` must not be close to overflow.
-	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns(uint256);
+	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns (uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current ETH Dutch auction.
 	/// The elapsed duration counts since the current bidding round activation. It can be negative. It makes no sense to use it
 	/// after the end of the Dutch auction.
-	function getEthDutchAuctionDurations() external view returns(uint256, int256);
+	function getEthDutchAuctionDurations() external view returns (uint256, int256);
 
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
 
@@ -107,9 +107,9 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @return The next CST bid price, in Wei.
 	/// Comment-202501022 applies to the return value.
 	/// @dev Comment-202409179 relates.
-	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns(uint256);
+	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// Comment-202501022 applies to the returned elapsed duration.
-	function getCstDutchAuctionDurations() external view returns(uint256, int256);
+	function getCstDutchAuctionDurations() external view returns (uint256, int256);
 }

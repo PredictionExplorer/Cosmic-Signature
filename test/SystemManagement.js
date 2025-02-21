@@ -177,7 +177,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 	});
 	// todo-1 Doesn't this test belong to "Bidding.js"?
-	it("When the current bidding round is inactive, onlyRoundIsActive methods are not available", async function () {
+	it("When the current bidding round is inactive, _onlyRoundIsActive methods are not available", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

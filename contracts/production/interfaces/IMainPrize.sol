@@ -40,10 +40,10 @@ interface IMainPrize is
 	function claimMainPrize() external;
 
 	/// @return The current main ETH prize amount, in Wei.
-	function getMainEthPrizeAmount() external view returns(uint256);
+	function getMainEthPrizeAmount() external view returns (uint256);
 
 	/// @return The current charity ETH donation amount, in Wei.
 	/// @dev This probably doesn't belong to `ISecondaryPrizes`.
 	/// One might want to move this to a yet another separate interface and respective contract, but let's keep it simple.
-	function getCharityEthDonationAmount() external view returns(uint256);
+	function getCharityEthDonationAmount() external view returns (uint256);
 }

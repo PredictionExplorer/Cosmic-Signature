@@ -91,7 +91,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// [/Comment-202501148]
 	/// Assuming that the caller hasn't used this particular value.
 	/// @return The newly minted NFT ID.
-	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external returns(uint256);
+	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external returns (uint256);
 
 	/// @notice Mints zero or more new CosmicSignature NFTs.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
@@ -102,11 +102,11 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// Assuming that the caller hasn't used this particular value or subsequent values.
 	/// @return The first newly minted NFT ID. Further minted NFT IDs are sequential.
 	/// If `nftOwnerAddresses_` is empty the return value is indeterminate.
-	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns(uint256);
+	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns (uint256);
 
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.
-	function getNftInfo(uint256 nftId_) external view returns(NftInfo memory);
+	function getNftInfo(uint256 nftId_) external view returns (NftInfo memory);
 
 	/// @notice Allows an NFT owner or authorized caller to set a custom name for an NFT.
 	/// @param nftId_ NFT ID.
@@ -115,9 +115,9 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.
-	function getNftName(uint256 nftId_) external view returns(string memory);
+	function getNftName(uint256 nftId_) external view returns (string memory);
 
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.
-	function getNftSeed(uint256 nftId_) external view returns(uint256);
+	function getNftSeed(uint256 nftId_) external view returns (uint256);
 }

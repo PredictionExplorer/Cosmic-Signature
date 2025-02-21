@@ -54,10 +54,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	DonatedNft[1 << 64] public donatedNfts;
 
 	// #endregion
-	// #region `onlyGame`
+	// #region `_onlyGame`
 
 	/// @dev Comment-202411253 applies.
-	modifier onlyGame() {
+	modifier _onlyGame() {
 		require(
 			_msgSender() == game,
 			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
@@ -72,7 +72,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	constructor(address game_)
 		Ownable(_msgSender())
-		providedAddressIsNonZero(game_) {
+		// todo-1 Do this before calling inherited constuctors.
+		_providedAddressIsNonZero(game_) {
 		game = game_;
 	}
 
@@ -87,7 +88,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
 
-	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override onlyGame {
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override _onlyGame {
 		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 		// #enable_asserts uint256 amountSum_ = 0;
 		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
@@ -102,7 +103,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEnd`
 
-	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override onlyGame {
+	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override _onlyGame {
 		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 	}
 
@@ -137,7 +138,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `depositEth`
 
-	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override onlyGame {
+	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override _onlyGame {
 		_depositEth(roundNum_, prizeWinnerAddress_, msg.value);
 	}
 
@@ -209,14 +210,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo() external view override returns(EthBalanceInfo memory) {
+	function getEthBalanceInfo() external view override returns (EthBalanceInfo memory) {
 		return _ethBalancesInfo[uint160(_msgSender())];
 	}
 
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo(address prizeWinnerAddress_) external view override returns(EthBalanceInfo memory) {
+	function getEthBalanceInfo(address prizeWinnerAddress_) external view override returns (EthBalanceInfo memory) {
 		return _ethBalancesInfo[uint160(prizeWinnerAddress_)];
 	}
 
@@ -225,7 +226,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function donateToken(uint256 roundNum_, address donorAddress_, IERC20 tokenAddress_, uint256 amount_) external override
 		// nonReentrant
-		onlyGame {
+		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 
 		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
@@ -291,7 +292,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `getDonatedTokenAmount`
 
-	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override returns(uint256) {
+	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override returns (uint256) {
 		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
 		return donatedTokens[donatedTokenIndex_].amount;
 	}
@@ -299,7 +300,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `_calculateDonatedTokenIndex`
 
-	function _calculateDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns(uint256) {
+	function _calculateDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns (uint256) {
 		// Comment-202409215 applies.
 		// [Comment-202411283]
 		// But in some cases the caller must validate this.
@@ -314,7 +315,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external override
 		// nonReentrant
-		onlyGame {
+		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 		uint256 numDonatedNftsCopy_ = numDonatedNfts;
 		DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];

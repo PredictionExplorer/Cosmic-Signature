@@ -47,27 +47,27 @@ contract CosmicSignatureDao is
 	// The following functions are overrides required by Solidity.
 
 	/// todo-1 Develop a test that tests what these return: proposalThreshold, votingDelay, votingPeriod, quorum. Done in part.
-	function proposalThreshold() public view override(IGovernor, Governor, GovernorSettings) returns(uint256) {
+	function proposalThreshold() public view override(IGovernor, Governor, GovernorSettings) returns (uint256) {
 		return super.proposalThreshold();
 	}
 
-	function votingDelay() public view override(IGovernor, Governor, GovernorSettings) returns(uint256) {
+	function votingDelay() public view override(IGovernor, Governor, GovernorSettings) returns (uint256) {
 		return super.votingDelay();
 	}
 
-	function votingPeriod() public view override(IGovernor, Governor, GovernorSettings) returns(uint256) {
+	function votingPeriod() public view override(IGovernor, Governor, GovernorSettings) returns (uint256) {
 		return super.votingPeriod();
 	}
 
-	function quorum(uint256 timepoint_) public view override(IGovernor, Governor, GovernorVotesQuorumFraction) returns(uint256) {
+	function quorum(uint256 timepoint_) public view override(IGovernor, Governor, GovernorVotesQuorumFraction) returns (uint256) {
 		return super.quorum(timepoint_);
 	}
 
-	function CLOCK_MODE() public view override(IERC6372, Governor, GovernorVotes) returns(string memory) {
+	function CLOCK_MODE() public view override(IERC6372, Governor, GovernorVotes) returns (string memory) {
 		return super.CLOCK_MODE();
 	}
 
-	function clock() public view override(IERC6372, Governor, GovernorVotes) returns(uint48) {
+	function clock() public view override(IERC6372, Governor, GovernorVotes) returns (uint48) {
 		return super.clock();
 	}
 }

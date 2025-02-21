@@ -7,7 +7,7 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IMainPrizeBase } from "./interfaces/IMainPrizeBase.sol";
 
 abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
-	function getInitialDurationUntilMainPrize() public view override returns(uint256) {
+	function getInitialDurationUntilMainPrize() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -17,7 +17,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		}
 	}
 
-	function getDurationUntilMainPrize() public view override returns(int256) {
+	function getDurationUntilMainPrize() public view override returns (int256) {
 		// todo-1 Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked
@@ -28,7 +28,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		}
 	}
 
-	function getMainPrizeTimeIncrement() public view returns(uint256) {
+	function getMainPrizeTimeIncrement() public view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

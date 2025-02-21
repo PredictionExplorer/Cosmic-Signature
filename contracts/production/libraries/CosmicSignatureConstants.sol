@@ -159,7 +159,7 @@ library CosmicSignatureConstants {
 
 	// /// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
 	// /// @dev todo-9 Is this amount OK?
-	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 2_000 ether;
+	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 1_000 ether;
 
 	// #endregion
 	// #region RandomWalk NFT

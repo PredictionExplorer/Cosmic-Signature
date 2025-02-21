@@ -33,5 +33,5 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @param data_ Additional info in JSON format.
 	function donateEthWithInfo(string calldata data_) external payable;
 
-	function numEthDonationWithInfoRecords() external view returns(uint256);
+	function numEthDonationWithInfoRecords() external view returns (uint256);
 }

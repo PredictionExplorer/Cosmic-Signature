@@ -16,13 +16,14 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	/// @param token_ The `CosmicSignatureToken` contract address.
 	constructor(CosmicSignatureToken token_)
 		Ownable(_msgSender())
-		providedAddressIsNonZero(address(token_)) {
+		// todo-1 Do this before calling inherited constuctors.
+		_providedAddressIsNonZero(address(token_)) {
 		token = token_;
 	}
 
 	// function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
 	// 	onlyOwner
-	// 	providedAddressIsNonZero(address(newValue_)) {
+	// 	_providedAddressIsNonZero(address(newValue_)) {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// 	emit CosmicSignatureTokenAddressChanged(newValue_);
 	// }

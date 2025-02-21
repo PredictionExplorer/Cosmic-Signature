@@ -53,10 +53,10 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @param randomWalkNft_ The `RandomWalkNFT` contract address.
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `providedAddressIsNonZero`.
+	///    `_providedAddressIsNonZero`.
 	///    `StakingWalletNftBase.constructor`.
 	///    `randomWalkNft`.
-	constructor(RandomWalkNFT randomWalkNft_) providedAddressIsNonZero(address(randomWalkNft_)) {
+	constructor(RandomWalkNFT randomWalkNft_) _providedAddressIsNonZero(address(randomWalkNft_)) {
 		randomWalkNft = randomWalkNft_;
 		// #enable_asserts assert(address(randomWalkNft) == address(randomWalkNft_));
 	}
@@ -224,7 +224,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// ///    `StakeAction`.
 	// ///    `stakeActions`.
 	// ///    `stakeActionIds`.
-	// function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns(address) {
+	// function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns (address) {
 	// 	uint256 numStakedNftsCopy_ = _numStakedNfts;
 	//
 	// 	if (numStakedNftsCopy_ == 0) {
@@ -254,7 +254,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// todo-1 function\b.+?IfPossible
 	/// todo-1 function\b.+?IfNeeded
 	/// todo-1 Jan 26: I am happy, but take another look.
-	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns(address[] memory) {
+	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns (address[] memory) {
 		address[] memory luckyStakerAddresses_;
 		uint256 numStakedNftsCopy_ = _numStakedNfts;
 		if (numStakedNftsCopy_ > 0) {

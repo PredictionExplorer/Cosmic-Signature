@@ -151,5 +151,5 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// As mentioned above, only the `owner()` is permitted to call this method. But if it was making a transfer
 	/// to an internally stored charity address, it would probably make sense to let anybody call it,
 	/// which is the case for methods tagged with Comment-202409273.
-	function tryPerformMaintenance(bool resetState_, address charityAddress_) external returns(bool);
+	function tryPerformMaintenance(bool resetState_, address charityAddress_) external returns (bool);
 }

@@ -160,11 +160,11 @@ contract CosmicSignatureGame is
 
 	/// @dev
 	/// [Comment-202412188]
-	/// One might want to not impose the `onlyRoundIsInactive` requirement on this -- to leave the door open for the contract owner
+	/// One might want to not impose the `_onlyRoundIsInactive` requirement on this -- to leave the door open for the contract owner
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` failing.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 

@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title The official ERC-20 token for the Cosmic Signature ecosystem.
@@ -20,12 +21,13 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// todo-1 Document in a user manual that to bid with CST, bidders don't need to approve any allowance,
 /// todo-1 meaning to call `CosmicSignatureToken.approve`.
 /// todo-1 Will this apply to trading on our exchange as well? Maybe not because it could be a security concern.
+/// todo-1 But we are not going to develop an exchange.
 ///
 /// todo-1 +++ Research modern features that we might need to implement.
 ///
 /// todo-1 +++ Make sure this contract is Uniswap and other similar exchanges compliant.
 /// todo-1 Test manually that we can trade this on Uniswap and the others.
-interface ICosmicSignatureToken is IERC20, IAddressValidator {
+interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 	/// @dev Comment-202501144 relates.
 	struct MintSpec {
 		address account;

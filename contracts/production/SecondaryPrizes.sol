@@ -15,7 +15,7 @@ import { ISecondaryPrizes } from "./interfaces/ISecondaryPrizes.sol";
 abstract contract SecondaryPrizes is CosmicSignatureGameStorage, ISecondaryPrizes {
 	// #region `getChronoWarriorEthPrizeAmount`
 
-	function getChronoWarriorEthPrizeAmount() public view override returns(uint256) {
+	function getChronoWarriorEthPrizeAmount() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -27,7 +27,7 @@ abstract contract SecondaryPrizes is CosmicSignatureGameStorage, ISecondaryPrize
 	// #endregion
 	// #region `getRaffleTotalEthPrizeAmountForBidders`
 
-	function getRaffleTotalEthPrizeAmountForBidders() public view override returns(uint256) {
+	function getRaffleTotalEthPrizeAmountForBidders() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -39,7 +39,7 @@ abstract contract SecondaryPrizes is CosmicSignatureGameStorage, ISecondaryPrize
 	// #endregion
 	// #region `getCosmicSignatureNftStakingTotalEthRewardAmount`
 
-	function getCosmicSignatureNftStakingTotalEthRewardAmount() public view override returns(uint256) {
+	function getCosmicSignatureNftStakingTotalEthRewardAmount() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

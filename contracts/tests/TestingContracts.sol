@@ -292,7 +292,7 @@ contract MaliciousNft1 is ERC721 {
 	/// @notice sends donateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// This call shall revert.
-		// todo-1 This will probably now revert due to `onlyGame`.
+		// todo-1 This will probably now revert due to `_onlyGame`.
 		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, /*bytes memory retval*/) =
 			_msgSender().call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));

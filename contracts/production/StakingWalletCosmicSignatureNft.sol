@@ -121,13 +121,13 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	uint256 public numStateResets;
 
 	// #endregion
-	// #region `onlyGame`
+	// #region `_onlyGame`
 
 	/// @dev
 	/// [Comment-202411253]
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202411253]
-	modifier onlyGame() {
+	modifier _onlyGame() {
 		require(
 			_msgSender() == game,
 			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
@@ -145,7 +145,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `_msgSender`.
 	///    `Ownable.constructor`.
-	///    `providedAddressIsNonZero`.
+	///    `_providedAddressIsNonZero`.
 	///    `StakingWalletNftBase.constructor`.
 	///    `nft`.
 	///    `game`.
@@ -155,8 +155,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `numStateResets`.
 	constructor(CosmicSignatureNft nft_, address game_)
 		Ownable(_msgSender())
-		providedAddressIsNonZero(address(nft_))
-		providedAddressIsNonZero(game_) {
+		// todo-1 Do these before calling inherited constuctors.
+		_providedAddressIsNonZero(address(nft_))
+		_providedAddressIsNonZero(game_) {
 		// #region
 
 		nft = nft_;
@@ -396,8 +397,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `_nftWasStakedAfterPrevEthDeposit`.
 	///    `numEthDeposits`.
 	///    `ethDeposits`.
-	///    `onlyGame`.
-	function depositIfPossible(uint256 roundNum_) external payable override onlyGame {
+	///    `_onlyGame`.
+	function depositIfPossible(uint256 roundNum_) external payable override _onlyGame {
 		// #region
 
 		// #enable_asserts uint256 initialNumEthDeposits_ = numEthDeposits;
@@ -486,7 +487,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    // `_nftWasStakedAfterPrevEthDeposit`.
 	///    `numEthDeposits`.
 	///    `numStateResets`.
-	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns(bool) {
+	function tryPerformMaintenance(bool resetState_, address charityAddress_) external override onlyOwner returns (bool) {
 		// #region
 
 		require(_numStakedNfts == 0, CosmicSignatureErrors.InvalidOperationInCurrentState("There are still staked NFTs."));
@@ -571,7 +572,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `numEthDeposits`.
 	///    `_calculateRewardAmount`.
 	function _unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) private
-		returns(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
+		returns (uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
@@ -656,7 +657,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `stakeActions`.
 	///    `_calculateRewardAmount`.
 	function _preparePayReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) private
-		returns(uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
+		returns (uint256 rewardAmount_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
 		// #enable_asserts uint256 initialNumUnpaidStakeActions_ = numUnpaidStakeActions;
@@ -716,7 +717,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `_NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT`.
 	///    `ethDeposits`.
 	function _calculateRewardAmount(uint256 stakeActionId_, uint256 maxUnpaidEthDepositIndex_, uint256 numEthDepositsToEvaluateMaxLimit_) private view
-		returns(uint256 rewardAmount_, uint256 remainingMaxUnpaidEthDepositIndex_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
+		returns (uint256 rewardAmount_, uint256 remainingMaxUnpaidEthDepositIndex_, uint256 remainingNumEthDepositsToEvaluateMaxLimit_) {
 		// #region
 
 		// This can be zero.

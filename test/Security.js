@@ -74,7 +74,7 @@ describe("Security", function () {
 	// 	await maliciousNft.waitForDeployment();
 	// 	const maliciousNftAddr = await maliciousNft.getAddress();
 	//
-	// 	// todo-1 This will probably now revert due to `onlyGame`.
+	// 	// todo-1 This will probably now revert due to `_onlyGame`.
 	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	

@@ -197,12 +197,12 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @return Details on ETH balance belonging to `_msgSender()`.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo() external view returns(EthBalanceInfo memory);
+	function getEthBalanceInfo() external view returns (EthBalanceInfo memory);
 
 	/// @return Details on ETH balance belonging to the given address.
 	/// @param prizeWinnerAddress_ Prize winner address.
 	/// @dev Comment-202410274 relates.
-	function getEthBalanceInfo(address prizeWinnerAddress_) external view returns(EthBalanceInfo memory);
+	function getEthBalanceInfo(address prizeWinnerAddress_) external view returns (EthBalanceInfo memory);
 
 	/// @notice This method allows anybody to make an ERC-20 token donation.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
@@ -232,7 +232,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @return The ERC-20 token amount donated during the given bidding round that has not been claimed yet.
 	/// @param roundNum_ Bidding round number.
 	/// @param tokenAddress_ The ERC-20 contract address.
-	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns(uint256);
+	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns (uint256);
 
 	/// @notice This method allows anybody to donate an NFT.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.

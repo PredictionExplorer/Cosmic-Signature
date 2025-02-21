@@ -81,9 +81,9 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.7893614a.Linux.g+
 // Comment-202409011 applies.
 // Comment-202411136 relates.
 let solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-if( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
+if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
 	solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
-	if( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
+	if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
 		solidityCompilerPath = "/usr/bin/solc";
 	}
 }
@@ -148,14 +148,14 @@ let networkIsMainNet = undefined;
 @param {import("hardhat/types").HardhatRuntimeEnvironment} hre
 */
 function populateNetworkIsMainNetOnce(hre) {
-	if(networkIsMainNet != undefined) {
+	if (networkIsMainNet != undefined) {
 		return;
 	}
 
 	// [Comment-202408313]
 	// To be safe, checking if the network is a known testnet. Otherwise we will suspect that it could be a mainnet.
 	// [/Comment-202408313]
-	switch(hre.network.name) {
+	switch (hre.network.name) {
 		case "hardhat":
 		case "localhost":
 		case "rinkeby":

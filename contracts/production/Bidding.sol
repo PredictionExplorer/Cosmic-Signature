@@ -34,7 +34,7 @@ abstract contract Bidding is
 	IBidding {
 	// #region `receive`
 
-	receive() external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// Bidding with default parameters.
 		_bidWithEth((-1), "");
 	}
@@ -43,7 +43,7 @@ abstract contract Bidding is
 	// #region `bidWithEthAndDonateToken`
 
 	/// @dev Comment-202502051 applies.
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*onlyRoundIsActive*/ {
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -52,7 +52,7 @@ abstract contract Bidding is
 	// #region `bidWithEthAndDonateNft`
 
 	/// @dev Comment-202502051 applies.
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*onlyRoundIsActive*/ {
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -67,14 +67,14 @@ abstract contract Bidding is
 	/// At the same time, `bidWithEthAndDonateToken` and `bidWithEthAndDonateNft` need it,
 	/// at least to pervent the possibility to reorder bidding and donation events.
 	/// [/Comment-202502051]
-	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 	}
 
 	// #endregion
 	// #region `_bidWithEth`
 
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// #region
 
 		// BidType bidType;
@@ -197,7 +197,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextEthBidPrice`
 
-	function getNextEthBidPrice(int256 currentTimeOffset_) public view override returns(uint256) {
+	function getNextEthBidPrice(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -240,7 +240,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getEthPlusRandomWalkNftBidPrice`
 
-	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) public pure override returns(uint256) {
+	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) public pure override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -262,7 +262,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getEthDutchAuctionDurations`
 
-	function getEthDutchAuctionDurations() external view override returns(uint256, int256) {
+	function getEthDutchAuctionDurations() external view override returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -276,7 +276,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getEthDutchAuctionDuration`
 
-	function _getEthDutchAuctionDuration() internal view returns(uint256) {
+	function _getEthDutchAuctionDuration() internal view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -289,7 +289,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -297,7 +297,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		// _donateNft(nftAddress_, nftId_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -306,7 +306,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCst`
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
 
@@ -314,7 +314,7 @@ abstract contract Bidding is
 	// #region `_bidWithCst`
 
 	/// todo-1 +++ Does this really have to be `nonReentrant`? No!
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*nonReentrant*/ /*onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// [Comment-202501045]
 		// We are going to `require` that the first bid in a bidding round is ETH near Comment-202501044.
 		// [/Comment-202501045]
@@ -398,7 +398,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextCstBidPrice`
 
-	function getNextCstBidPrice(int256 currentTimeOffset_) public view override returns(uint256) {
+	function getNextCstBidPrice(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -421,7 +421,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
-	function getCstDutchAuctionDurations() external view override returns(uint256, int256) {
+	function getCstDutchAuctionDurations() external view override returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -435,7 +435,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionDuration`
 
-	function _getCstDutchAuctionDuration() internal view returns(uint256) {
+	function _getCstDutchAuctionDuration() internal view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -448,7 +448,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
-	function _getCstDutchAuctionElapsedDuration() internal view returns(int256) {
+	function _getCstDutchAuctionElapsedDuration() internal view returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -461,7 +461,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionTotalAndRemainingDurations`
 
-	function _getCstDutchAuctionTotalAndRemainingDurations() internal view returns(uint256, int256) {
+	function _getCstDutchAuctionTotalAndRemainingDurations() internal view returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -480,7 +480,7 @@ abstract contract Bidding is
 	/// @dev This function updates game state and distributes rewards
 	/// @param message The bidder's message
 	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ onlyRoundIsActive {
+	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ _onlyRoundIsActive {
 		require(
 			bytes(message).length <= bidMessageLengthMaxLimit,
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)
