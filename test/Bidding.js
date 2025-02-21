@@ -543,8 +543,8 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
-		// // Comment-202501192 applies.
-		// await hre.ethers.provider.send("evm_mine");
+		// Comment-202501192 applies.
+		await hre.ethers.provider.send("evm_mine");
 
 		const delayDurationBeforeRoundActivation_ = await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation();
 
@@ -783,6 +783,8 @@ describe("Bidding", function () {
 	});
 
 	// This is a stress test that executes multiple transactions per block.
+	//
+	// Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1739909248214549
 	//
 	// todo-1 It would be nice to validate that the behavior is correct.
 	//
