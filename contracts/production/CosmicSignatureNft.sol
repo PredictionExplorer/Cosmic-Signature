@@ -18,7 +18,8 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 // #endregion
 // #region
 
-/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
+/// @dev
+/// todo-1 +++ Review again what can possibly fail here and cause a transaction reversal.
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 
@@ -40,11 +41,10 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	/// @dev Comment-202411253 applies.
 	// modifier _onlyGameMint() {
 	modifier _onlyGame() {
-		require(
-			_msgSender() == game,
-			// CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender())
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
-		);
+		if (_msgSender() != game) {
+			// revert CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender());
+			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
+		}
 		_;
 	}
 
@@ -54,17 +54,16 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	constructor(address game_)
+		_providedAddressIsNonZero(game_)
 		Ownable(_msgSender())
-		ERC721("CosmicSignatureNft", "CSN")
-		// todo-1 Do this before calling inherited constuctors.
-		_providedAddressIsNonZero(game_) {
+		ERC721("CosmicSignatureNft", "CSN") {
 		game = game_;
 	}
 
 	// #endregion
 	// #region `setNftBaseUri`
 
-	function setNftBaseUri(string memory newValue_) external override onlyOwner {
+	function setNftBaseUri(string calldata newValue_) external override onlyOwner {
 		nftBaseUri = newValue_;
 		emit NftBaseUriChanged(newValue_);
 	}
@@ -79,7 +78,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `setNftGenerationScriptUri`
 
-	function setNftGenerationScriptUri(string memory newValue_) external override onlyOwner {
+	function setNftGenerationScriptUri(string calldata newValue_) external override onlyOwner {
 		nftGenerationScriptUri = newValue_;
 		emit NftGenerationScriptUriChanged(newValue_);
 	}
@@ -133,16 +132,15 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `setNftName`
 
-	function setNftName(uint256 nftId_, string memory nftName_) external override {
+	function setNftName(uint256 nftId_, string calldata nftName_) external override {
 		// require(
 		// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
 		// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
 		// );
 		_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
-		require(
-			bytes(nftName_).length <= CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT,
-			CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length)
-		);
+		if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT) {
+			revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);
+		}
 		_nftsInfo[nftId_].name = nftName_;
 		emit NftNameChanged(nftId_, nftName_);
 	}

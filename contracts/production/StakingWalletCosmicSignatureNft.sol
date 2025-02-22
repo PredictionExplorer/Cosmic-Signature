@@ -128,10 +128,9 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202411253]
 	modifier _onlyGame() {
-		require(
-			_msgSender() == game,
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
-		);
+		if (_msgSender() != game) {
+			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
+		}
 		_;
 	}
 

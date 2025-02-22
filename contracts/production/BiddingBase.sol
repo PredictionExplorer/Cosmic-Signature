@@ -8,19 +8,17 @@ import { IBiddingBase } from "./interfaces/IBiddingBase.sol";
 abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 	modifier _onlyRoundIsInactive() {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
-		require(
-			block.timestamp < roundActivationTimeCopy_,
-			CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp)
-		);
+		if ( ! (block.timestamp < roundActivationTimeCopy_) ) {
+			revert CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp);
+		}
 		_;
 	}
 
 	modifier _onlyRoundIsActive() {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
-		require(
-			block.timestamp >= roundActivationTimeCopy_,
-			CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp)
-		);
+		if ( ! (block.timestamp >= roundActivationTimeCopy_) ) {
+			revert CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp);
+		}
 		_;
 	}
 

@@ -77,7 +77,7 @@ abstract contract Bidding is
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// #region
 
-		// BidType bidType;
+		// BidType bidType_;
 		uint256 ethBidPrice_ = getNextEthBidPrice(int256(0));
 		uint256 paidEthBidPrice_ =
 			(randomWalkNftId_ < int256(0)) ?
@@ -97,7 +97,7 @@ abstract contract Bidding is
 		// #region
 
 		if (randomWalkNftId_ < int256(0)) {
-			// // #enable_asserts assert(bidType == BidType.ETH);
+			// // #enable_asserts assert(bidType_ == BidType.ETH);
 		} else {
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
@@ -126,7 +126,7 @@ abstract contract Bidding is
 				)
 			);
 			usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
-			// bidType = BidType.RandomWalk;
+			// bidType_ = BidType.RandomWalk;
 		}
 
 		// #endregion
@@ -152,7 +152,7 @@ abstract contract Bidding is
 		// #endregion
 		// #region
 
-		_bidCommon(message_ /* , bidType */);
+		_bidCommon(message_ /* , bidType_ */);
 
 		// #endregion
 		// #region
@@ -476,14 +476,14 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidCommon`
 
-	/// @notice Internal function to handle common bid logic
-	/// @dev This function updates game state and distributes rewards
-	/// @param message The bidder's message
-	/// ---param bidType Bid type code.
-	function _bidCommon(string memory message /* , BidType bidType */) internal /*nonReentrant*/ _onlyRoundIsActive {
+	/// @notice Internal function to handle common bid logic.
+	/// @dev This function updates game state and distributes rewards.
+	/// @param message_ The bidder's message.
+	/// --- param bidType_ Bid type code.
+	function _bidCommon(string memory message_ /* , BidType bidType_ */) internal /*nonReentrant*/ _onlyRoundIsActive {
 		require(
-			bytes(message).length <= bidMessageLengthMaxLimit,
-			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message).length)
+			bytes(message_).length <= bidMessageLengthMaxLimit,
+			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
 		);
 
 		// First bid of the round?
@@ -506,7 +506,7 @@ abstract contract Bidding is
 			_extendMainPrizeTime();
 		}
 
-		// lastBidType = bidType;
+		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 		uint256 numBids_ = bidderAddressesReference_.numItems;
