@@ -53,7 +53,7 @@ contract CosmicSignatureToken is
 	// /// If `marketingWalletAddress` already holds at least this token amount, any new received funds will be burned.
 	// /// This limit can be exceeded by a little.
 	// /// [/Comment-202412201]
-	// uint256 public marketingWalletBalanceAmountMaxLimit;
+	// uint256 public marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 
 	// #endregion
 	// #region `_onlyGame`
@@ -79,7 +79,6 @@ contract CosmicSignatureToken is
 		ERC20Permit("CosmicSignatureToken") {
 		game = game_;
 		// marketingWalletAddress = marketingWalletAddress_;
-		// marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 	}
 
 	// #endregion

@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title A wallet to hold the Cosmic Signature Game prizes and donations.
@@ -28,6 +27,8 @@ interface IPrizesWallet is IAddressValidator {
 
 	struct EthBalanceInfo {
 		uint256 roundNum;
+
+		/// @notice This can be zero.
 		uint256 amount;
 	}
 
@@ -39,9 +40,9 @@ interface IPrizesWallet is IAddressValidator {
 		/// @notice
 		/// [Comment-202501243]
 		/// Token amount.
-		/// It's OK if this is zero.
-		/// But the front-end should prohibit zero donations and ignore or hide any zero donations.
-		/// todo-1 +++ Done. Tell Nick about the above.
+		/// It's OK if it's zero.
+		/// But higher levels of our software should prohibit and ignore or hide zero donations.
+		/// todo-1 +++ Tell Nick about the above.
 		/// [/Comment-202501243]
 		uint256 amount;
 	}
@@ -68,6 +69,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param roundNum The current bidding round number.
 	/// @param prizeWinnerAddress Prize winner address.
 	/// @param amount ETH amount.
+	/// It can potentially be zero.
 	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
 	/// todo-1 ??? Maybe talk to Nick again about that later.
@@ -83,6 +85,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// Comment-202501249 relates.
 	/// [/Comment-202411285]
 	/// @param amount ETH amount.
+	/// It can potentially be zero, especially if someone withdraws an already withdrawn ETH balance.
 	event EthWithdrawn(address indexed prizeWinnerAddress, address indexed beneficiaryAddress, uint256 amount);
 
 	/// @notice Emitted when someone makes an ERC-20 token donation.
@@ -90,6 +93,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param donorAddress Donor address.
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
+	/// It can be zero.
 	event TokenDonated(
 		uint256 indexed roundNum,
 		address indexed donorAddress,
@@ -108,6 +112,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// [/Comment-202501249]
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
+	/// It can potentially be zero, especially if someone claims an already claimed ERC-20 token donation.
 	event DonatedTokenClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
@@ -155,6 +160,7 @@ interface IPrizesWallet is IAddressValidator {
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable;
 
 	/// @notice `CosmicSignatureGame` calls this method on main prize claim.
+	/// Actually, see Comment-202502076.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param mainPrizeBeneficiaryAddress_ Main prize beneficiary address.
@@ -166,7 +172,8 @@ interface IPrizesWallet is IAddressValidator {
 	/// But the team feels that it's better to simply treat the person who clicked "Claim" as the winner.
 	/// @dev
 	/// [Comment-202502076]
-	/// Issue. `registerRoundEnd` and `depositEth` are not used.
+	/// Issue. `registerRoundEnd` and `depositEth` are never called.
+	/// `registerRoundEndAndDepositEthMany` is called instead.
 	/// [/Comment-202502076]
 	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external;
 
@@ -232,6 +239,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @return The ERC-20 token amount donated during the given bidding round that has not been claimed yet.
 	/// @param roundNum_ Bidding round number.
 	/// @param tokenAddress_ The ERC-20 contract address.
+	/// @dev Comment-202410274 relates.
 	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns (uint256);
 
 	/// @notice This method allows anybody to donate an NFT.
