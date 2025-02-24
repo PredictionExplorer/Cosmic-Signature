@@ -24,6 +24,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	/// [/Comment-202412025]
 	/// [Comment-202410274]
 	/// It could make sense to declare this `public`, but this is not because there is an accessor method for this.
+	/// todo-0 Maybe declare this `public` (and rename) and eliminate the accessor.
 	/// [/Comment-202410274]
 	uint256 internal _numStakedNfts;
 

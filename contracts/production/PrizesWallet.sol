@@ -41,12 +41,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	/// @notice For each prize winner address, contains an `EthBalanceInfo`.
 	/// @dev Comment-202411252 relates.
-	/// Comment-202410274 applies.
 	EthBalanceInfo[1 << 160] private _ethBalancesInfo;
 
 	/// @notice Contains info about ERC-20 token donations.
 	/// Call `_getDonatedTokenIndex` to calculate item index.
-	/// Comment-202410274 applies.
 	DonatedToken[(1 << 64) * (1 << 160)] private _donatedTokens;
 
 	/// @notice This includes deleted items.
