@@ -93,7 +93,7 @@ describe("Security", function () {
 		await maliciousNft.waitForDeployment();
 		const maliciousNftAddr = await maliciousNft.getAddress();
 
-		await signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_});
+		await expect(signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_,})).not.reverted;
 		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0, {value: bidAmount_})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });

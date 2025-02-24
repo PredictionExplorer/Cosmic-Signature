@@ -195,7 +195,7 @@ describe("SystemManagement", function () {
 		// await expect(cosmicSignatureGameProxy.connect(signer0).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		// // todo-1 I have moved NFT donations to `PrizesWallet`.
 		// await expect(cosmicSignatureGameProxy.connect(signer0).claimManyDonatedNfts([0])).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
-		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
+		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: nextEthBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEthWithInfo("{}", {value: nextEthBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 

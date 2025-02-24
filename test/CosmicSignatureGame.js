@@ -118,7 +118,7 @@ describe("CosmicSignatureGame", function () {
 
 		// If we upgraded to `CosmicSignatureGameOpenBid`, we would call `cosmicSignatureGame2Proxy.initialize2` at this point.
 
-		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: 10n ** 18n})).revertedWith("Test deposit failed.");
+		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: 10n ** 18n,})).revertedWith("Test deposit failed.");
 	});
 
 	// Comment-202412129 relates.
@@ -180,7 +180,7 @@ describe("CosmicSignatureGame", function () {
 		const [signer0, signer1,] = signers;
 
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,});
+		await expect(signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).not.reverted;
 		const nextEthBidPriceAfter_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		expect(nextEthBidPriceAfter_).greaterThan(nextEthBidPrice_);
 	});
