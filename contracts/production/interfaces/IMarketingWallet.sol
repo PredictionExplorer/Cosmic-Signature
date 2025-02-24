@@ -6,9 +6,9 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
 /// @title Marketer reward wallet.
 /// @author The Cosmic Signature Development Team.
-/// @notice This wallet holds and manages CST rewards to be paid to people for marketing the project on social media
-/// and to fund whatever other marketing activities. The Game contract mints a configurable CST amount to this wallet
-/// on main prize claim.
+/// @notice This wallet holds and manages CST funds used to reward people for marketing the project on social media
+/// and to fund whatever other marketing activities. The `CosmicSignatureGame` contract
+/// mints a configurable CST amount to this wallet on main prize claim.
 /// Eventually, the project founders will transfer this wallet ownership to a treasurer appointed by the DAO.
 ///
 /// @dev todo-1 +++ Taras dislikes the idea to eliminate this contract.
@@ -20,16 +20,19 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 interface IMarketingWallet is IAddressValidator {
 	// /// @notice Emitted when `token` is changed.
 	// /// @param newValue The new value.
+	// /// @dev Comment-202502235 applies.
 	// event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken indexed newValue);
 
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
 	/// @param amount Amount paid.
+	/// It can be zero.
 	event RewardPaid(address indexed marketerAddress, uint256 amount);
 
 	// /// @notice Sets `token`.
 	// /// Only the contract owner is permitted to call this method.
 	// /// @param newValue_ The new value.
+	// /// @dev Comment-202502235 applies.
 	// function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.
