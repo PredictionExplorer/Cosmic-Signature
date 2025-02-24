@@ -238,8 +238,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 		emit TokenDonated(roundNum_, donorAddress_, tokenAddress_, amount_);
 
-		// This would revert if `tokenAddress_` is zero.
+		// [Comment-202502242]
+		// This would revert if `tokenAddress_` is zero or there is no ERC-20-compatible contract there.
 		// todo-1 Test the above.
+		// [/Comment-202502242]
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this token amount.
 		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(this), amount_);
@@ -249,12 +251,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `claimDonatedToken`
 
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) public override /*nonReentrant*/ {
+		// [Comment-202502244]
 		// According to Comment-202411283, we must validate `roundNum_` here.
 		// But array bounds check near Comment-202411287 will implicitly validate it.
+		// [/Comment-202502244]
 
 		// [Comment-202411286]
 		// Nothing would be broken if the `mainPrizeBeneficiaryAddresses` item is still zero.
-		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
+		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item would also be zero.
 		// [/Comment-202411286]
 		{
 			// [Comment-202411287/]
@@ -273,17 +277,19 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 			}
 		}
 
+		// Comment-202502244 relates.
 		uint256 donatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
+
 		DonatedToken storage donatedTokenReference_ = _donatedTokens[donatedTokenIndex_];
 
 		// It's OK if `donatedTokenCopy_.amount` is zero.
+		// It would be zero if this donation was never made or has already been claimed.
 		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
 
 		delete donatedTokenReference_.amount;
 		emit DonatedTokenClaimed(roundNum_, _msgSender(), tokenAddress_, donatedTokenCopy_.amount);
 
-		// This would revert if `tokenAddress_` is zero.
-		// todo-1 Test the above.
+		// Comment-202502242 applies.
 		SafeERC20.safeTransfer(tokenAddress_, _msgSender(), donatedTokenCopy_.amount);
 	}
 
@@ -335,8 +341,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
 
-		// This would revert if `nftAddress_` is zero.
+		// [Comment-202502245]
+		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
 		// todo-1 Test the above.
+		// [/Comment-202502245]
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this NFT.
 		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);

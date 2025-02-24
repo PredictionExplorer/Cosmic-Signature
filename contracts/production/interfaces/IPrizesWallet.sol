@@ -214,6 +214,9 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param tokenAddress_ The ERC-20 contract address.
+	/// [Comment-202502248]
+	/// As explained in Comment-202502242, an invalid value would cause transaction reversal.
+	/// [/Comment-202502248]
 	/// @param amount_ Comment-202501243 applies.
 	/// @dev
 	/// [Comment-202411288]
@@ -229,14 +232,18 @@ interface IPrizesWallet is IAddressValidator {
 	/// [/Comment-202411289]
 	/// @param roundNum_ Bidding round number.
 	/// @param tokenAddress_ The ERC-20 contract address.
+	/// Comment-202502248 applies.
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external;
 
 	/// @notice Similarly to `claimDonatedToken`, claims zero or more ERC-20 token donations in a single transaction.
 	function claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
 
-	/// @return The ERC-20 token amount donated during the given bidding round that has not been claimed yet.
+	/// @return The ERC-20 token amount donated during the given bidding round.
+	/// If the donation was never made or has already been claimed returns zero.
 	/// @param roundNum_ Bidding round number.
+	/// If it's invalid the return value is indeterminate.
 	/// @param tokenAddress_ The ERC-20 contract address.
+	/// If it's invalid the return value is indeterminate.
 	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns (uint256);
 
 	/// @notice This method allows anybody to donate an NFT.
@@ -244,6 +251,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param nftAddress_ NFT contract address.
+	/// As explained in Comment-202502245, an invalid value would cause transaction reversal.
 	/// @param nftId_ NFT ID.
 	/// @dev Comment-202411288 applies.
 	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external;
