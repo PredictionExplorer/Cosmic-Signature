@@ -67,7 +67,7 @@ describe("Security", function () {
 	//
 	// 	// todo-1 Why do we need this donation here? Comment it out?
 	// 	const donationAmount_ = hre.ethers.parseEther("10");
-	// 	await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });
+	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_})).not.reverted;
 	//
 	// 	const maliciousNftFactory = await hre.ethers.getContractFactory("MaliciousNft1", deployerAcct);
 	// 	const maliciousNft = await maliciousNftFactory.deploy("Bad NFT", "BAD");
@@ -86,7 +86,7 @@ describe("Security", function () {
 	
 		const bidAmount_ = hre.ethers.parseEther("1");
 		const donationAmount_ = bidAmount_ * 10n;
-		// await cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_});
+		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_})).not.reverted;
 	
 		const maliciousNftFactory = await hre.ethers.getContractFactory("MaliciousNft2", deployerAcct);
 		const maliciousNft = await maliciousNftFactory.deploy(cosmicSignatureGameProxyAddr, "Bad NFT", "BAD");
