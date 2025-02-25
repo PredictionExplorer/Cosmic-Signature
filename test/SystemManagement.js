@@ -212,8 +212,8 @@ describe("SystemManagement", function () {
 		const [signer0, signer1, signer2,] = signers;
 		// let ownableErr = cosmicSignatureGameProxy.interface.getError("OwnableUnauthorizedAccount");
 
-		// // Comment-202501192 applies.
-		// await hre.ethers.provider.send("evm_mine");
+		// Comment-202501192 applies.
+		await hre.ethers.provider.send("evm_mine");
 
 		let durationUntilRoundActivation_ = await cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 		expect(durationUntilRoundActivation_).within((-24n) * 60n * 60n, 0n);
