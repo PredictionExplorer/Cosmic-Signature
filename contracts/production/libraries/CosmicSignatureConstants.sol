@@ -12,25 +12,15 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // #endregion
 // #region
 
-/// @title Data types and constants.
+/// @title Constants.
 /// @author The Cosmic Signature Development Team.
 /// @notice Most of these constants are used to initialize state variables.
 /// @dev If a state variable will be automatically updated during the normal operation
 /// the constant to initialize it from is named `INITIAL_...`; otherwise: `DEFAULT_...`.
-/// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
+/// todo-1 +++ Rename some `INITIAL_` to `DEFAULT_`.
 /// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
 /// todo-1 +++ Done on Jan 24 2025.
 library CosmicSignatureConstants {
-	// #region // Data Types
-
-	// /// @dev It appears that this was a bad idea.
-	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
-	// struct BooleanWithPadding {
-	// 	bool value;
-	// 	uint248 padding;
-	// }
-
-	// #endregion
 	// #region System Management
 
 	// Empty.
