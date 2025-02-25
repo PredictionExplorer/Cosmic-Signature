@@ -242,7 +242,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region Overrides Required By Solidity
 
-	function _update(address from_, address to_, uint256 value_) internal override(ERC20, ERC20Votes) {
+	function _update(address from_, address to_, uint256 value_) internal override (ERC20, ERC20Votes) {
 		// // #enable_asserts // #disable_smtchecker console.log("_update entered.");
 		super._update(from_, to_, value_);
 		// // #enable_asserts // #disable_smtchecker console.log("_update exiting.");
@@ -251,12 +251,12 @@ contract CosmicSignatureToken is
 	// // @dev I have tested that `super._update` calls this.
 	// // So I have confirmed that by calling `super._update` we call `ERC20Votes._update`, rather than `ERC20._update`.
 	// function _transferVotingUnits(address from_, address to_, uint256 amount_) internal override {
-	// 	// // #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits entered.");
+	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits entered.");
 	// 	super._transferVotingUnits(from_, to_, amount_);
-	// 	// // #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits exiting.");
+	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits exiting.");
 	// }
 
-	function nonces(address owner_) public view override(IERC20Permit, Nonces, ERC20Permit) returns (uint256) {
+	function nonces(address owner_) public view override (IERC20Permit, Nonces, ERC20Permit) returns (uint256) {
 		return super.nonces(owner_);
 	}
 

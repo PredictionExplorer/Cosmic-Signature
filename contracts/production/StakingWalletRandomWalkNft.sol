@@ -78,7 +78,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
-	function stake(uint256 nftId_) public override(IStakingWalletNftBase, StakingWalletNftBase) {
+	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
 		// #region
 
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;

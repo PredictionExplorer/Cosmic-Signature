@@ -197,7 +197,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `nft`.
 	///    `stakeActions`.
 	///    `_nftWasStakedAfterPrevEthDeposit`.
-	function stake(uint256 nftId_) public override(IStakingWalletNftBase, StakingWalletNftBase) {
+	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
 		// #region
 
 		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
