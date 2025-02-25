@@ -68,11 +68,10 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
-	///    // `CosmicSignatureConstants.BooleanWithPadding`.
 	///    `NftTypeCode`.
 	///    `NftStaked`.
-	///    `_numStakedNfts`.
-	///    `_usedNfts`.
+	///    `numStakedNfts`.
+	///    `usedNfts`.
 	///    `actionCounter`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
@@ -81,48 +80,45 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
 		// #region
 
-		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
+		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
 
 		// #endregion
 		// #region
 
 		require(
-			// ( ! _usedNfts[nftId_].value ),
-			_usedNfts[nftId_] == 0,
+			usedNfts[nftId_] == 0,
 			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
 		);
 
 		// #endregion
 		// #region
 
-		// _usedNfts[nftId_] = CosmicSignatureConstants.BooleanWithPadding(true, 0);
-		_usedNfts[nftId_] = 1;
+		usedNfts[nftId_] = 1;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
 		StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
 		newStakeActionReference_.nftId = nftId_;
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
-		uint256 newStakeActionIndex_ = _numStakedNfts;
+		uint256 newStakeActionIndex_ = numStakedNfts;
 		newStakeActionReference_.index = newStakeActionIndex_;
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
-		_numStakedNfts = newNumStakedNfts_;
+		numStakedNfts = newNumStakedNfts_;
 		emit NftStaked(newStakeActionId_, NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 
 		// #endregion
 		// #region
 
-		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ + 1);
-		// // #enable_asserts assert(_usedNfts[nftId_].value);
-		// #enable_asserts assert(_usedNfts[nftId_] == 1);
+		// #enable_asserts assert(numStakedNfts == initialNumStakedNfts_ + 1);
+		// #enable_asserts assert(usedNfts[nftId_] == 1);
 		// #enable_asserts assert(actionCounter > 0);
 		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
-		// #enable_asserts assert(stakeActions[newStakeActionId_].index == _numStakedNfts - 1);
+		// #enable_asserts assert(stakeActions[newStakeActionId_].index == numStakedNfts - 1);
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftId == nftId_);
 		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == msg.sender);
-		// #enable_asserts assert(stakeActionIds[_numStakedNfts - 1] == newStakeActionId_);
+		// #enable_asserts assert(stakeActionIds[numStakedNfts - 1] == newStakeActionId_);
 
 		// #endregion
 	}
@@ -135,7 +131,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
-	///    `_numStakedNfts`.
+	///    `numStakedNfts`.
 	///    `NftUnstaked`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
@@ -144,7 +140,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	function unstake(uint256 stakeActionId_) public override {
 		// #region
 
-		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
+		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
 
 		// #endregion
 		// #region
@@ -173,8 +169,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
-		uint256 newNumStakedNfts_ = _numStakedNfts - 1;
-		_numStakedNfts = newNumStakedNfts_;
+		uint256 newNumStakedNfts_ = numStakedNfts - 1;
+		numStakedNfts = newNumStakedNfts_;
 		uint256 lastStakeActionId = stakeActionIds[newNumStakedNfts_];
 		stakeActions[lastStakeActionId].index = stakeActionCopy_.index;
 		delete stakeActionReference_.index;
@@ -188,12 +184,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
-		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - 1);
+		// #enable_asserts assert(numStakedNfts == initialNumStakedNfts_ - 1);
 		// #enable_asserts assert(randomWalkNft.ownerOf(stakeActionCopy_.nftId) == msg.sender);
 		// #enable_asserts assert(stakeActions[stakeActionId_].index == 0);
 		// #enable_asserts assert(stakeActions[stakeActionId_].nftId == 0);
 		// #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
-		// #enable_asserts assert(stakeActionIds[_numStakedNfts] == 0);
+		// #enable_asserts assert(stakeActionIds[numStakedNfts] == 0);
 
 		// #endregion
 	}
@@ -203,16 +199,16 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `_numStakedNfts`.
+	///    `numStakedNfts`.
 	///    `unstake`.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external override {
-		// #enable_asserts uint256 initialNumStakedNfts_ = _numStakedNfts;
+		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
 
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
 			unstake(stakeActionIds_[stakeActionIdIndex_]);
 		}
 
-		// #enable_asserts assert(_numStakedNfts == initialNumStakedNfts_ - stakeActionIds_.length);
+		// #enable_asserts assert(numStakedNfts == initialNumStakedNfts_ - stakeActionIds_.length);
 	}
 
 	// #endregion
@@ -220,12 +216,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	// /// @dev
 	// /// Observable universe entities accessed here:
-	// ///    `_numStakedNfts`.
+	// ///    `numStakedNfts`.
 	// ///    `StakeAction`.
 	// ///    `stakeActions`.
 	// ///    `stakeActionIds`.
 	// function pickRandomStakerAddressIfPossible(uint256 randomNumber_) external view override returns (address) {
-	// 	uint256 numStakedNftsCopy_ = _numStakedNfts;
+	// 	uint256 numStakedNftsCopy_ = numStakedNfts;
 	//
 	// 	if (numStakedNftsCopy_ == 0) {
 	// 		return address(0);
@@ -245,7 +241,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `RandomNumberHelpers.generateRandomNumber`.
-	///    `_numStakedNfts`.
+	///    `numStakedNfts`.
 	///    `StakeAction`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
@@ -256,7 +252,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// todo-1 Jan 26: I am happy, but take another look.
 	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns (address[] memory) {
 		address[] memory luckyStakerAddresses_;
-		uint256 numStakedNftsCopy_ = _numStakedNfts;
+		uint256 numStakedNftsCopy_ = numStakedNfts;
 		if (numStakedNftsCopy_ > 0) {
 			luckyStakerAddresses_ = new address[](numStakerAddresses_);
 			for (uint256 luckyStakerIndex_ = numStakerAddresses_; luckyStakerIndex_ > 0; ) {

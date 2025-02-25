@@ -446,8 +446,7 @@ describe("Bidding", function () {
 			// let ownr = await cosmicSignatureNft.ownerOf(rlog.args.prizeCosmicSignatureNftId);
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(rlog.args.prizeCosmicSignatureNftId);
 			// expect(stakerAddr).to.equal("0x0000000000000000000000000000000000000000");
-			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.wasNftUsed(rlog.args.prizeCosmicSignatureNftId);
-			// expect(nftWasUsed_).to.equal(false);
+			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.usedNfts(rlog.args.prizeCosmicSignatureNftId);
 			expect(nftWasUsed_).to.equal(0n);
 		}
 
@@ -457,8 +456,7 @@ describe("Bidding", function () {
 		for (let i = 0; i < Number(ts); i++) {
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(i);
 			// if (stakerAddr == "0x0000000000000000000000000000000000000000") {
-			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.wasNftUsed(i);
-			// if ( ! nftWasUsed_ ) {
+			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.usedNfts(i);
 			if (nftWasUsed_ == 0n) {
 				let ownr = await cosmicSignatureNft.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
