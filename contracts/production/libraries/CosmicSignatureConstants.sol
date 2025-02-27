@@ -86,6 +86,9 @@ library CosmicSignatureConstants {
 	/// The former appears to always be 21000, while the latter varies and tends to be bigger than the former.
 	/// We don't know what the L1 gas fee is going to be, so this value is approximate.
 	/// todo-2 It will liikely need tweaking over time, especially after Arbitrum decentralizes their blockchain.
+	/// todo-1 Nick is saying that it costs 9000 gas to call the `call` function.
+	/// todo-1 Do a better review of things on ArbiScan and test on Arbitrum Sepolia if this value makes sense
+	/// todo-1 and possibly correct it.
 	/// [/Comment-202502054]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = 21000 * 29 / 10;
 
