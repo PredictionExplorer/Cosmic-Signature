@@ -16,10 +16,15 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #region State
 
 	/// @notice The current staked NFT count.
-	/// @dev In `StakingWalletRandomWalkNft`, this is the total number of `stakeActions` items,
+	/// @dev
+	/// [Comment-202502266]
+	/// In `StakingWalletRandomWalkNft`, this is the number of `stakeActions` items,
 	/// which matches the number of `stakeActionIds` items.
+	/// [/Comment-202502266]
+	/// [Comment-202502268]
 	/// In `StakingWalletCosmicSignatureNft`, this is the number of `stakeActions` items
 	/// containing a zero `maxUnpaidEthDepositIndex`.
+	/// [/Comment-202502268]
 	uint256 public numStakedNfts = 0;
 
 	/// @notice If an item of this array at a particular index is a nonzero it means
@@ -67,8 +72,12 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	function stakeMany(uint256[] calldata nftIds_) external override {
 		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
 
-		for (uint256 nftIdIndex_ = nftIds_.length; nftIdIndex_ > 0; ) {
-			-- nftIdIndex_;
+		// [Comment-202502265]
+		// Issue. It could be more efficient to iterate this loop in the reverse.
+		// But let's leave it alone.
+		// [/Comment-202502265]
+		for ( uint256 nftIdIndex_ = 0; nftIdIndex_ < nftIds_.length; ++ nftIdIndex_ ) {
+
 			stake(nftIds_[nftIdIndex_]);
 		}
 

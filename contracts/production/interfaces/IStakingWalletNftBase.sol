@@ -35,5 +35,6 @@ interface IStakingWalletNftBase is IAddressValidator {
 
 	/// @notice Similarly to `stake`, stakes zero or more NFTs.
 	/// @param nftIds_ NFT to stake IDs.
+	/// It's OK if it's empty.
 	function stakeMany(uint256[] calldata nftIds_) external;
 }

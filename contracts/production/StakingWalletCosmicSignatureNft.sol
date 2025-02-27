@@ -81,7 +81,8 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// In other words, this is the number of `stakeActions` items containing a nonzero `maxUnpaidEthDepositIndex`.
 	uint256 public numUnpaidStakeActions;
 
-	/// @notice Info about currently staked NFTs.
+	/// todo-0 Reference Comment-202502268, similarly to how I referenced Comment-202502266.
+	/// @notice Details about currently staked NFTs.
 	/// This also contains unstaked, but not yet fully rewarded NFTs.
 	/// This array is sparse (can contain gaps).
 	/// Item index corresponds to stake action ID.
@@ -165,7 +166,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #endregion
 		// #region
 
-		// #enable_asserts assert(address(nft) == address(nft_));
+		// #enable_asserts assert(nft == nft_);
 		// #enable_asserts assert(game == game_);
 		// #enable_asserts assert(numUnpaidStakeActions == 0);
 		// #enable_asserts assert(_nftWasStakedAfterPrevEthDeposit == 0);
@@ -301,7 +302,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 remainingNumEthDepositsToEvaluateMaxLimit_ = numEthDepositsToEvaluateMaxLimit_ - stakeActionIds_.length;
 
 		uint256 rewardAmountsSum_ = 0;
+
+		// Comment-202502265 applies.
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
+
 			// [Comment-202411054]
 			// Compensating for what we subtracted near Comment-202410311.
 			// As a result, we fulfill the Comment-202410309 requirement.
@@ -366,7 +370,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		uint256 remainingNumEthDepositsToEvaluateMaxLimit_ = numEthDepositsToEvaluateMaxLimit_ - stakeActionIds_.length;
 
 		uint256 rewardAmountsSum_ = 0;
+
+		// Comment-202502265 applies.
 		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
+
 			// Comment-202411054 applies.
 			++ remainingNumEthDepositsToEvaluateMaxLimit_;
 
@@ -585,12 +592,11 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		if (_msgSender() != stakeActionCopy_.nftOwnerAddress) {
+			// todo-0 Flip this condition?
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
 				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, _msgSender());
 			} else {
-				// [Comment-202410182]
-				// It's also possible that this stake action has already been deleted, but we have no knowledge about that.
-				// [/Comment-202410182]
+				// Comment-202410182 applies.
 				revert CosmicSignatureErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
 			}
 		}
@@ -669,6 +675,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		// #region
 
 		if (_msgSender() != stakeActionCopy_.nftOwnerAddress) {
+			// todo-0 Flip this condition?
 			if (stakeActionCopy_.nftOwnerAddress != address(0)) {
 				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to receive staking reward.", stakeActionId_, _msgSender());
 			} else {

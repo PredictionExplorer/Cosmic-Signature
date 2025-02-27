@@ -92,7 +92,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// 10000 deposits, or, in a marginal case, 1 more deposit, if another deposit arrives right before the unstake.
 	/// An uglier situation will happen if 20000 deposits need to be evaluated, of which the staker is entitled to 19999 ones.
 	/// The client code passes `numEthDepositsToEvaluateMaxLimit_ = 20000`, but a new deposit arrives right before the unstake.
-	/// In this case, the staker will get all their rewards from 20000 deposits, but the staking action state will not be finalized.
+	/// In this case, the staker will get all their rewards from 20000 deposits, but the stake action state will not be finalized.
 	/// In this case, it would be dishonest for the client code to trick the staker into spending gas to call the contract again
 	/// without being rewarded just to properly update contract state. Nothing would, really, be broken
 	/// if a stake action remains unfinalized, except, as noted in Comment-202410296, the `tryPerformMaintenance` method
@@ -104,8 +104,9 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// [/Comment-202410142]
 	function unstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
-	/// @notice Similarly to `unstake`, performs the instake action for zero or more stake actions in a single transaction.
+	/// @notice Similarly to `unstake`, unstakes zero or more NFTs in a single transaction.
 	/// @param stakeActionIds_ Stake action IDs.
+	/// It's OK if it's empty.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
 	/// @dev Comment-202410142 applies.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
