@@ -9,7 +9,7 @@ import { ICharityWallet } from "./interfaces/ICharityWallet.sol";
 contract CharityWallet is Ownable, ICharityWallet {
 	/// @notice The current designated charity address.
 	/// It can be zero.
-	address public charityAddress;
+	address public charityAddress = address(0);
 
 	constructor() Ownable(_msgSender()) {
 	}
