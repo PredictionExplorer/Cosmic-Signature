@@ -259,12 +259,12 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 // contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
 // 	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
-
+//
 // 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 // 	// 	// This method no longer exists.
 // 	// 	_insertToken(_nftId, stakeActionId_);
 // 	// }
-
+//
 // 	// function doRemoveToken(uint256 _nftId) external {
 // 	// 	// This method no longer exists.
 // 	// 	_removeToken(_nftId);
@@ -273,12 +273,12 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 // contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
 // 	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
-
+//
 // 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 // 	// 	// This method no longer exists.
 // 	// 	_insertToken(_nftId, stakeActionId_);
 // 	// }
-	
+//
 // 	// function doRemoveToken(uint256 _nftId) external {
 // 	// 	// This method no longer exists.
 // 	// 	_removeToken(_nftId);

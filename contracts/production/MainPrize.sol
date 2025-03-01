@@ -528,7 +528,7 @@ abstract contract MainPrize is
 
 		// [Comment-202501183]
 		// Main ETH prize for main prize beneficiary.
-		// Making this transfer at the end. Otherwise a hacker could attempt to exploit the 63/64 rule
+		// Making this transfer at the end. Otherwise hackers could attempt to exploit the 63/64 rule
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
 		// which would result in incorrect behavior if we ignore that error.
 		// If this fails, we could transfer the funds to `prizesWallet`.
