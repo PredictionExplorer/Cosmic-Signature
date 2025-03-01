@@ -16,6 +16,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param numStakedNfts Staked NFT count after this action.
 	/// @param rewardAmount Reward amount paid to the staker.
+	/// It can potentially be zero.
 	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
 	event NftUnstaked(
 		uint256 /*indexed*/ actionCounter,
@@ -34,9 +35,11 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param stakerAddress Staker (NFT owner) address.
 	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param rewardAmount Reward amount paid to the staker.
+	/// It can potentially be zero.
 	/// @param maxUnpaidEthDepositIndex Comment-202410268 applies.
 	event RewardPaid(
 		uint256 indexed stakeActionId,
+		// NftTypeCode nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 rewardAmount,
@@ -45,7 +48,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 
 	/// @notice Emitted when an ETH deposit is received.
 	/// @param roundNum Bidding round number.
-	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit action.
+	/// @param actionCounter An always increasing by at least 1 unique ID of this deposit reception.
 	/// @param depositIndex `EthDeposit` instance index in `ethDeposits` (1-based).
 	/// It can remain the same as in the previous event.
 	/// `numEthDeposits` can be reset near Comment-202410166. Afterwards, this event will be emitted with `depositIndex == 1`.
@@ -53,7 +56,9 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// It can remain the same as in the previous event.
 	/// If a new `EthDeposit` instance was created, `depositId == actionCounter`.
 	/// @param depositAmount The deposited ETH amount.
+	/// It can potentially be zero.
 	/// @param numStakedNfts The current staked NFT count.
+	/// It cannot be zero.
 	event EthDepositReceived(
 		uint256 indexed roundNum,
 		uint256 /*indexed*/ actionCounter,
@@ -64,7 +69,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	);
 
 	/// @notice Emitted when contract state is reset.
-	/// @param numStateResets The number of state resets completed so far.
+	/// @param numStateResets The number of contract state resets completed so far.
 	event StateReset(
 		uint256 /*indexed*/ numStateResets
 	);
@@ -72,8 +77,10 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice Unstakes an NFT and pays at least a part of its reward to the staker.
 	/// Transfers the NFT back to the owner, pays at least a part of its reward to the staker,
 	/// and, in case the whole reward has been paid, deletes the stake action.
+	/// Only the NFT owner who staked the given NFT is permitted to call this method.
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
+	/// Comment-202410309 applies.
 	/// @dev
 	/// [Comment-202410142]
 	/// The `numEthDepositsToEvaluateMaxLimit_` parameter makes it possible to ensure that the method gas fee
@@ -108,18 +115,23 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param stakeActionIds_ Stake action IDs.
 	/// It's OK if it's empty.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
+	/// Comment-202410311 applies.
 	/// @dev Comment-202410142 applies.
 	function unstakeMany(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @notice After an NFT has been unstaked, pays another part of the reward to the staker.
+	/// Only the NFT owner who staked the given NFT is permitted to call this method.
 	/// @param stakeActionId_ Stake action ID.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
+	/// Comment-202410309 applies.
 	/// @dev Comment-202410142 applies.
 	function payReward(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
 	/// @notice Similarly to `payReward`, performs the pay reward action for zero or more stake actions in a single transaction.
 	/// @param stakeActionIds_ Stake action IDs.
+	/// It's OK if it's empty.
 	/// @param numEthDepositsToEvaluateMaxLimit_ Evaluate at most this many `EthDeposit` instances.
+	/// Comment-202410311 applies.
 	/// @dev Comment-202410142 applies.
 	function payManyRewards(uint256[] calldata stakeActionIds_, uint256 numEthDepositsToEvaluateMaxLimit_) external;
 
@@ -129,7 +141,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// which the caller must be prepared to handle (it is, indeed, prepared).
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ Bidding round number.
-	/// @dev We have to restrict who is permitted to call us because otherwise a malicious actor could attempt to DoS us.
+	/// @dev We have to restrict who is permitted to call us because otherwise hackers could attempt to DoS us.
 	/// The deposited amount isn't supposed to be zero, and is unlikely to ever be, but a zero would not break things,
 	/// although the behavior would not necessarily be perfect.
 	/// Comment-202411294 relates.

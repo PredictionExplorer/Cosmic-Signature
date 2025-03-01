@@ -180,7 +180,12 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region NFT Staking
 
-	// Empty.
+	// todo-0 Empty.
+
+	/// @notice A max limit on another max limit.
+	/// This value is quite big, and, at the same time, it's nowhere close to the point of overflow.
+	/// @dev todo-0 Eliminate this.
+	uint256 internal constant STAKING_WALLET_COSMIC_SIGNATURE_NFT_NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max >> 8;
 
 	// #endregion
 	// #region Marketing

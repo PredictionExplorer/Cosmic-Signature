@@ -107,9 +107,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
 		StakeAction storage newStakeActionReference_ = stakeActions[newStakeActionId_];
+		// #enable_asserts assert(newStakeActionReference_.nftId == 0);
 		newStakeActionReference_.nftId = nftId_;
+		// #enable_asserts assert(newStakeActionReference_.nftOwnerAddress == address(0));
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
 		uint256 newStakeActionIndex_ = numStakedNfts;
+		// #enable_asserts assert(newStakeActionReference_.index == 0);
 		newStakeActionReference_.index = newStakeActionIndex_;
 
 		// It's possible that this item is already populated because we didn't delete it near Comment-202502263.

@@ -16,7 +16,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #region State
 
 	/// @notice The current staked NFT count.
-	/// @dev
+	/// @dev todo-0 Revisit these comments. Combine them into one? Still cross-ref with `stakeActions`.
 	/// [Comment-202502266]
 	/// In `StakingWalletRandomWalkNft`, this is the number of `stakeActions` items,
 	/// which matches the number of `stakeActionIds` items.
@@ -75,6 +75,8 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 		// [Comment-202502265]
 		// Issue. It could be more efficient to iterate this loop in the reverse.
 		// But let's leave it alone.
+		// todo-0 Or maybe do this?
+		// todo-0 Tell Nick.
 		// [/Comment-202502265]
 		for ( uint256 nftIdIndex_ = 0; nftIdIndex_ < nftIds_.length; ++ nftIdIndex_ ) {
 
