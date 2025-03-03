@@ -259,12 +259,12 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 // contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
 // 	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
-
+//
 // 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 // 	// 	// This method no longer exists.
 // 	// 	_insertToken(_nftId, stakeActionId_);
 // 	// }
-
+//
 // 	// function doRemoveToken(uint256 _nftId) external {
 // 	// 	// This method no longer exists.
 // 	// 	_removeToken(_nftId);
@@ -273,18 +273,19 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 // contract TestStakingWalletRandomWalkNft is StakingWalletRandomWalkNft {
 // 	constructor(RandomWalkNFT nft_) StakingWalletRandomWalkNft(nft_) {}
-
+//
 // 	// function doInsertToken(uint256 _nftId, uint256 stakeActionId_) external {
 // 	// 	// This method no longer exists.
 // 	// 	_insertToken(_nftId, stakeActionId_);
 // 	// }
-	
+//
 // 	// function doRemoveToken(uint256 _nftId) external {
 // 	// 	// This method no longer exists.
 // 	// 	_removeToken(_nftId);
 // 	// }
 // }
 
+/// @dev todo-1 Do I need to refactor this similarly to `MaliciousNft2`?
 contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
 	}
@@ -292,7 +293,7 @@ contract MaliciousNft1 is ERC721 {
 	/// @notice sends donateNft() inside a call to transfer an NFT, generating reentrant function call
 	function transferFrom(address from, address to, uint256 nftId) public override {
 		// This call shall revert.
-		// todo-1 This will probably now revert due to `onlyGame`.
+		// todo-1 This will probably now revert due to `_onlyGame`.
 		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, /*bytes memory retval*/) =
 			_msgSender().call(abi.encodeWithSelector(IPrizesWallet.donateNft.selector, uint256(0), address(this), uint256(0)));

@@ -2,27 +2,30 @@
 pragma solidity 0.8.28;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-// import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
 contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	/// @notice The `CosmicSignatureToken` contract address.
-	/// Comment-202411064 applies.
+	/// Comment-202411064 no longer applies, because of Comment-202502235.
+	/// @dev
+	/// [Comment-202502235]
+	/// I have declared `token` `immutable` and eliminatd `setCosmicSignatureToken` and `CosmicSignatureTokenAddressChanged`.
+	/// [/Comment-202502235]
 	CosmicSignatureToken public immutable token;
 
 	/// @notice Constructor.
 	/// @param token_ The `CosmicSignatureToken` contract address.
 	constructor(CosmicSignatureToken token_)
-		Ownable(_msgSender())
-		providedAddressIsNonZero(address(token_)) {
+		_providedAddressIsNonZero(address(token_))
+		Ownable(_msgSender()) {
 		token = token_;
 	}
 
 	// function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
 	// 	onlyOwner
-	// 	providedAddressIsNonZero(address(newValue_)) {
+	// 	_providedAddressIsNonZero(address(newValue_)) {
 	// 	token = CosmicSignatureToken(address(newValue_));
 	// 	emit CosmicSignatureTokenAddressChanged(newValue_);
 	// }

@@ -17,6 +17,7 @@ library CosmicSignatureEvents {
 	/// This is used only for ETH.
 	/// @param charityAddress Charity address.
 	/// @param amount Amount transferred to charity.
+	/// It can be zero.
 	event FundsTransferredToCharity(address indexed charityAddress, uint256 amount);
 
 	// #endregion

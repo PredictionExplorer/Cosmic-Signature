@@ -41,11 +41,11 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	/// @notice For each prize winner address, contains an `EthBalanceInfo`.
 	/// @dev Comment-202411252 relates.
-	/// Comment-202410274 applies.
 	EthBalanceInfo[1 << 160] private _ethBalancesInfo;
 
 	/// @notice Contains info about ERC-20 token donations.
-	DonatedToken[(1 << 64) * (1 << 160)] public donatedTokens;
+	/// Call `_getDonatedTokenIndex` to calculate item index.
+	DonatedToken[(1 << 64) * (1 << 160)] private _donatedTokens;
 
 	/// @notice This includes deleted items.
 	uint256 public numDonatedNfts = 0;
@@ -54,14 +54,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	DonatedNft[1 << 64] public donatedNfts;
 
 	// #endregion
-	// #region `onlyGame`
+	// #region `_onlyGame`
 
 	/// @dev Comment-202411253 applies.
-	modifier onlyGame() {
-		require(
-			_msgSender() == game,
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
-		);
+	modifier _onlyGame() {
+		if (_msgSender() != game) {
+			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
+		}
 		_;
 	}
 
@@ -71,8 +70,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	constructor(address game_)
-		Ownable(_msgSender())
-		providedAddressIsNonZero(game_) {
+		_providedAddressIsNonZero(game_)
+		Ownable(_msgSender()) {
 		game = game_;
 	}
 
@@ -87,7 +86,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
 
-	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override onlyGame {
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override _onlyGame {
 		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 		// #enable_asserts uint256 amountSum_ = 0;
 		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
@@ -102,7 +101,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEnd`
 
-	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override onlyGame {
+	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override _onlyGame {
 		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 	}
 
@@ -137,7 +136,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `depositEth`
 
-	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override onlyGame {
+	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override _onlyGame {
 		_depositEth(roundNum_, prizeWinnerAddress_, msg.value);
 	}
 
@@ -153,9 +152,12 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// we will forget and overwrite that past bidding round number,
 		// which will reinitialize the timeout to withdraw the cumulative balance.
 		// [/Comment-202411252]
+		// #enable_asserts assert(roundNum_ >= ethBalanceInfoReference_.roundNum);
 		ethBalanceInfoReference_.roundNum = roundNum_;
 
+		// This will not overflow, given that this amount is in ETH.
 		ethBalanceInfoReference_.amount += amount_;
+
 		emit EthReceived(roundNum_, prizeWinnerAddress_, amount_);
 	}
 
@@ -209,14 +211,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo() external view override returns(EthBalanceInfo memory) {
+	function getEthBalanceInfo() external view override returns (EthBalanceInfo memory) {
 		return _ethBalancesInfo[uint160(_msgSender())];
 	}
 
 	// #endregion
 	// #region `getEthBalanceInfo`
 
-	function getEthBalanceInfo(address prizeWinnerAddress_) external view override returns(EthBalanceInfo memory) {
+	function getEthBalanceInfo(address prizeWinnerAddress_) external view override returns (EthBalanceInfo memory) {
 		return _ethBalancesInfo[uint160(prizeWinnerAddress_)];
 	}
 
@@ -225,16 +227,23 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function donateToken(uint256 roundNum_, address donorAddress_, IERC20 tokenAddress_, uint256 amount_) external override
 		// nonReentrant
-		onlyGame {
+		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
+		uint256 newDonatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
+		DonatedToken storage newDonatedTokenReference_ = _donatedTokens[newDonatedTokenIndex_];
 
-		uint256 newDonatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
-		DonatedToken storage newDonatedTokenReference_ = donatedTokens[newDonatedTokenIndex_];
+		// This can revert due to overflow, which, in turn, probably can happen only if the donor
+		// and/or the provided ERC-20 contract are malicious.
 		newDonatedTokenReference_.amount += amount_;
+
 		emit TokenDonated(roundNum_, donorAddress_, tokenAddress_, amount_);
 
-		// This would fail if `tokenAddress_` is zero.
+		// [Comment-202502242]
+		// This would revert if `tokenAddress_` is zero or there is no ERC-20-compatible contract there.
 		// todo-1 Test the above.
+		// [/Comment-202502242]
+		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this token amount.
+		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(this), amount_);
 	}
 
@@ -242,38 +251,45 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `claimDonatedToken`
 
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) public override /*nonReentrant*/ {
+		// [Comment-202502244]
 		// According to Comment-202411283, we must validate `roundNum_` here.
 		// But array bounds check near Comment-202411287 will implicitly validate it.
+		// [/Comment-202502244]
 
 		// [Comment-202411286]
 		// Nothing would be broken if the `mainPrizeBeneficiaryAddresses` item is still zero.
-		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item will also be zero.
+		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item would also be zero.
 		// [/Comment-202411286]
-		// [Comment-202411287/]
-		if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
-			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
-			require(
-				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicSignatureErrors.DonatedTokenClaimDenied(
-					"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation until a timeout expires.",
-					roundNum_,
-					_msgSender(),
-					tokenAddress_
-				)
-			);
+		{
+			// [Comment-202411287/]
+			if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
+				
+				uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
+				require(
+					block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
+					CosmicSignatureErrors.DonatedTokenClaimDenied(
+						"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation until a timeout expires.",
+						roundNum_,
+						_msgSender(),
+						tokenAddress_
+					)
+				);
+			}
 		}
 
-		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
-		DonatedToken storage donatedTokenReference_ = donatedTokens[donatedTokenIndex_];
+		// Comment-202502244 relates.
+		uint256 donatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
+
+		DonatedToken storage donatedTokenReference_ = _donatedTokens[donatedTokenIndex_];
 
 		// It's OK if `donatedTokenCopy_.amount` is zero.
+		// It would be zero if this donation was never made or has already been claimed.
 		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
 
 		delete donatedTokenReference_.amount;
 		emit DonatedTokenClaimed(roundNum_, _msgSender(), tokenAddress_, donatedTokenCopy_.amount);
 
-		// This would fail if `tokenAddress_` is zero.
-		// todo-1 Test the above.
+		// Comment-202502242 applies.
 		SafeERC20.safeTransfer(tokenAddress_, _msgSender(), donatedTokenCopy_.amount);
 	}
 
@@ -291,15 +307,15 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `getDonatedTokenAmount`
 
-	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override returns(uint256) {
-		uint256 donatedTokenIndex_ = _calculateDonatedTokenIndex(roundNum_, tokenAddress_);
-		return donatedTokens[donatedTokenIndex_].amount;
+	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override returns (uint256) {
+		uint256 donatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
+		return _donatedTokens[donatedTokenIndex_].amount;
 	}
 
 	// #endregion
-	// #region `_calculateDonatedTokenIndex`
+	// #region `_getDonatedTokenIndex`
 
-	function _calculateDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns(uint256) {
+	function _getDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns (uint256) {
 		// Comment-202409215 applies.
 		// [Comment-202411283]
 		// But in some cases the caller must validate this.
@@ -314,7 +330,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external override
 		// nonReentrant
-		onlyGame {
+		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 		uint256 numDonatedNftsCopy_ = numDonatedNfts;
 		DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
@@ -325,8 +341,12 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		++ numDonatedNftsCopy_;
 		numDonatedNfts = numDonatedNftsCopy_;
 
-		// This would fail if `nftAddress_` is zero.
+		// [Comment-202502245]
+		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
 		// todo-1 Test the above.
+		// [/Comment-202502245]
+		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this NFT.
+		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
 	}
 
@@ -338,13 +358,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
 
 		if (address(donatedNftCopy_.nftAddress) == address(0)) {
-			if (index_ >= numDonatedNfts) {
-				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index_);
-			} else {
+			if (index_ < numDonatedNfts) {
 				revert CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", index_);
+			} else {
+				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index_);
 			}
 		} else {
-			// There is no chance that we need to throw `CosmicSignatureErrors.InvalidDonatedNftIndex`.
+			// It's impossible that we need to throw `CosmicSignatureErrors.InvalidDonatedNftIndex`.
 			// #enable_asserts assert(index_ < numDonatedNfts);
 		}
 

@@ -40,7 +40,7 @@ abstract contract MainPrize is
 	IMainPrize {
 	// #region `claimMainPrize`
 
-	/// @dev We don't need `onlyRoundIsActive` here, which we `assert` near Comment-202411169.
+	/// @dev We don't need `_onlyRoundIsActive` here, which we `assert` near Comment-202411169.
 	/// todo-1 For all contracts and all methods, think what modifiers it might need,
 	/// todo-1 who and under what conditions is permitted to call it.
 	/// todo-1 It could be possible to not require `nonReentrant` if we transferred main prize ETH
@@ -48,7 +48,7 @@ abstract contract MainPrize is
 	/// todo-1 although we could execute that transfer at the very end as well.
 	/// todo-1 But let's leave it alone.
 	/// todo-1 Comment and reference Comment-202411078.
-	function claimMainPrize() external override nonReentrant /*onlyRoundIsActive*/ {
+	function claimMainPrize() external override nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
 
 		if (_msgSender() == lastBidderAddress) {
@@ -528,7 +528,7 @@ abstract contract MainPrize is
 
 		// [Comment-202501183]
 		// Main ETH prize for main prize beneficiary.
-		// Making this transfer at the end. Otherwise a hacker could attempt to exploit the 63/64 rule
+		// Making this transfer at the end. Otherwise hackers could attempt to exploit the 63/64 rule
 		// by crafting an amount of gas that would result is the last external call, possibly a fund transfer, failing,
 		// which would result in incorrect behavior if we ignore that error.
 		// If this fails, we could transfer the funds to `prizesWallet`.
@@ -589,7 +589,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getMainEthPrizeAmount`
 
-	function getMainEthPrizeAmount() public view override returns(uint256) {
+	function getMainEthPrizeAmount() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -601,7 +601,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getCharityEthDonationAmount`
 
-	function getCharityEthDonationAmount() public view override returns(uint256) {
+	function getCharityEthDonationAmount() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -613,7 +613,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region // `tryGetMainPrizeWinnerAddress`
 
-	// function tryGetMainPrizeWinnerAddress(uint256 roundNum_) external view override returns(address) {
+	// function tryGetMainPrizeWinnerAddress(uint256 roundNum_) external view override returns (address) {
 	// 	return winners[roundNum_];
 	// }
 

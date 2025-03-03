@@ -6,21 +6,19 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBiddingBase } from "./interfaces/IBiddingBase.sol";
 
 abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
-	modifier onlyRoundIsInactive() {
+	modifier _onlyRoundIsInactive() {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
-		require(
-			block.timestamp < roundActivationTimeCopy_,
-			CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp)
-		);
+		if ( ! (block.timestamp < roundActivationTimeCopy_) ) {
+			revert CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp);
+		}
 		_;
 	}
 
-	modifier onlyRoundIsActive() {
+	modifier _onlyRoundIsActive() {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
-		require(
-			block.timestamp >= roundActivationTimeCopy_,
-			CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp)
-		);
+		if ( ! (block.timestamp >= roundActivationTimeCopy_) ) {
+			revert CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp);
+		}
 		_;
 	}
 
@@ -37,7 +35,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		emit RoundActivationTimeChanged(newValue_);
 	}
 
-	function getDurationUntilRoundActivation() public view override returns(int256) {
+	function getDurationUntilRoundActivation() public view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -47,7 +45,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		}
 	}
 
-	function getDurationElapsedSinceRoundActivation() public view override returns(int256) {
+	function getDurationElapsedSinceRoundActivation() public view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

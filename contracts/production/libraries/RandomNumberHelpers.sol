@@ -28,18 +28,20 @@ library RandomNumberHelpers {
 	}
 
 	/// @dev Comment-202502075 applies to the return value.
+	/// An important assumption is that we call this method no more than once per block.
+	/// It's because all calls witin a particular block would return the same value.
 	/// Comment-202502077 applies to the return value.
-	function generateRandomNumberSeed() internal view returns(uint256) {
+	function generateRandomNumberSeed() internal view returns (uint256) {
 		return block.prevrandao ^ block.basefee;
 	}
 
 	/// @dev todo-1 +++ Test that `seedWrapper_.value` changes after this call.
-	function generateRandomNumber(RandomNumberSeedWrapper memory seedWrapper_) internal pure returns(uint256) {
+	function generateRandomNumber(RandomNumberSeedWrapper memory seedWrapper_) internal pure returns (uint256) {
 		unchecked { ++ seedWrapper_.value; }
 		return generateRandomNumber(seedWrapper_.value);
 	}
 
-	function generateRandomNumber(uint256 seed_) internal pure returns(uint256) {
+	function generateRandomNumber(uint256 seed_) internal pure returns (uint256) {
 		return CryptographyHelpers.calculateHashSumOf(seed_);
 	}
 }

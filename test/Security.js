@@ -67,14 +67,14 @@ describe("Security", function () {
 	//
 	// 	// todo-1 Why do we need this donation here? Comment it out?
 	// 	const donationAmount_ = hre.ethers.parseEther("10");
-	// 	await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });
+	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_})).not.reverted;
 	//
 	// 	const maliciousNftFactory = await hre.ethers.getContractFactory("MaliciousNft1", deployerAcct);
 	// 	const maliciousNft = await maliciousNftFactory.deploy("Bad NFT", "BAD");
 	// 	await maliciousNft.waitForDeployment();
 	// 	const maliciousNftAddr = await maliciousNft.getAddress();
 	//
-	// 	// todo-1 This will probably now revert due to `onlyGame`.
+	// 	// todo-1 This will probably now revert due to `_onlyGame`.
 	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
@@ -86,14 +86,14 @@ describe("Security", function () {
 	
 		const bidAmount_ = hre.ethers.parseEther("1");
 		const donationAmount_ = bidAmount_ * 10n;
-		// await cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_});
+		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_})).not.reverted;
 	
 		const maliciousNftFactory = await hre.ethers.getContractFactory("MaliciousNft2", deployerAcct);
 		const maliciousNft = await maliciousNftFactory.deploy(cosmicSignatureGameProxyAddr, "Bad NFT", "BAD");
 		await maliciousNft.waitForDeployment();
 		const maliciousNftAddr = await maliciousNft.getAddress();
 
-		await signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_});
+		await expect(signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_,})).not.reverted;
 		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0, {value: bidAmount_})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });

@@ -15,7 +15,7 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #region `getTotalNumBids`
 
-	function getTotalNumBids(uint256 roundNum_) external view override returns(uint256) {
+	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
 		uint256 numBids_ = bidderAddressesReference_.numItems;
 		return numBids_;
@@ -24,7 +24,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `getBidderAddressAt`
 
-	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns(address) {
+	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (address) {
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
 		return bidderAddressesReference_.items[bidIndex_];
 	}
@@ -32,7 +32,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `getBidderTotalSpentAmounts`
 
-	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns(uint256, uint256) {
+	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
 		BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
 		return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
 	}
@@ -89,7 +89,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region // `tryGetCurrentEnduranceChampion`
 
-	// function tryGetCurrentEnduranceChampion() external view override returns(address, uint256) {
+	// function tryGetCurrentEnduranceChampion() external view override returns (address, uint256) {
 	// 	if (lastBidderAddress == address(0)) {
 	// 		return (address(0), 0);
 	// 	}
@@ -107,7 +107,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #region `tryGetCurrentChampions`
 
 	function tryGetCurrentChampions() external view
-		returns(
+		returns (
 			address enduranceChampionAddress_,
 			uint256 enduranceChampionDuration_,
 			address chronoWarriorAddress_,

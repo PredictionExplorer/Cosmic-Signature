@@ -229,11 +229,8 @@ describe("Events", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(cosmicSignatureGameProxy.connect(bidder1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		await expect(
-			bidder2.sendTransaction({
-				to: cosmicSignatureGameProxyAddr,
-				value: nextEthBidPrice_,
-			}),
-		).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
+			bidder2.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})
+		).revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 
 		// await hre.ethers.provider.send("evm_increaseTime", [100]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -254,7 +251,7 @@ describe("Events", function () {
 		expect((await cosmicSignatureGameProxy.getNextEthBidPrice(1n)) > nextEthBidPrice_);
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidder2.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,});
+		await expect(bidder2.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).not.reverted;
 		expect((await cosmicSignatureGameProxy.getNextEthBidPrice(1n)) > nextEthBidPrice_);
 	});
 	// todo-1 Move this to "SystemManagement.js"?

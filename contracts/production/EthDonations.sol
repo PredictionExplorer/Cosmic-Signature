@@ -11,11 +11,11 @@ abstract contract EthDonations is
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
 	IEthDonations {
-	function donateEth() external payable override /*onlyRoundIsActive*/ {
+	function donateEth() external payable override /*_onlyRoundIsActive*/ {
 		emit EthDonated(roundNum, _msgSender(), msg.value);
 	}
 
-	function donateEthWithInfo(string calldata data_) external payable override /*onlyRoundIsActive*/ {
+	function donateEthWithInfo(string calldata data_) external payable override /*_onlyRoundIsActive*/ {
 		uint256 ethDonationWithInfoRecordIndex_ = ethDonationWithInfoRecords.length;
 		EthDonationWithInfoRecord storage ethDonationWithInfoRecordReference_ = ethDonationWithInfoRecords.push();
 		ethDonationWithInfoRecordReference_.roundNum = roundNum;
@@ -25,7 +25,7 @@ abstract contract EthDonations is
 		emit EthDonatedWithInfo(roundNum, _msgSender(), msg.value, ethDonationWithInfoRecordIndex_);
 	}
 
-	function numEthDonationWithInfoRecords() external view returns(uint256) {
+	function numEthDonationWithInfoRecords() external view returns (uint256) {
 		return ethDonationWithInfoRecords.length;
 	}
 }

@@ -74,11 +74,11 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	);
 
 	/// @return The current Chrono-Warrior ETH prize amount, in Wei.
-	function getChronoWarriorEthPrizeAmount() external view returns(uint256);
+	function getChronoWarriorEthPrizeAmount() external view returns (uint256);
 
 	/// @return The current raffle total ETH prize amount for bidders, in Wei.
-	function getRaffleTotalEthPrizeAmountForBidders() external view returns(uint256);
+	function getRaffleTotalEthPrizeAmountForBidders() external view returns (uint256);
 
 	/// @return The current Cosmic Signature NFT staking total ETH reward amount, in Wei.
-	function getCosmicSignatureNftStakingTotalEthRewardAmount() external view returns(uint256);
+	function getCosmicSignatureNftStakingTotalEthRewardAmount() external view returns (uint256);
 }

@@ -10,22 +10,21 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// for the Cosmic Signature ecosystem, in particular, custom minting and metadata management.
 /// @dev Issue. It could make sense to derive this contract from `ERC721Permit`,
 /// but OpenZeppelin doesn't include such a contract.
-///
+/// Issue. See https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md .
+/// 
 /// todo-1 +++ Review https://wizard.openzeppelin.com/#erc721
-///
+/// 
 /// todo-1 +++ Research modern features that we might need to implement.
-///
+/// 
 /// todo-1 +++ Ask ChatGPT:
 /// todo-1 +++ How to make an ERC-721 contract compatible with NFT marketplaces?
 /// todo-1 Test manually that we can trade this on OpenSea and the others.
-///
-/// todo-1 Take a look at https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md
-/// todo-1 At least write a comment here and near `RandomWalkNFT` and/or near respective interfaces.
 interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Details about a Cosmic Signature NFT.
 	struct NftInfo {
 		/// @notice The custom name set for the NFT.
 		/// It's not required to provide one.
+		/// If the user doesn't provide a name for the NFT, this value will stay empty.
 		string name;
 
 		/// @notice A unique seed generated for the NFT.
@@ -69,17 +68,18 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Emitted when an NFT name is set for the first time or changed.
 	/// @param nftId NFT ID.
 	/// @param nftName The custom name set for the NFT.
+	/// It may be empty.
 	event NftNameChanged(uint256 indexed nftId, string nftName);
 
 	/// @notice Sets `nftBaseUri`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setNftBaseUri(string memory newValue_) external;
+	function setNftBaseUri(string calldata newValue_) external;
 
 	/// @notice Sets `nftGenerationScriptUri`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setNftGenerationScriptUri(string memory newValue_) external;
+	function setNftGenerationScriptUri(string calldata newValue_) external;
 
 	/// @notice Mints a new CosmicSignature NFT.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
@@ -91,33 +91,36 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// [/Comment-202501148]
 	/// Assuming that the caller hasn't used this particular value.
 	/// @return The newly minted NFT ID.
-	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external returns(uint256);
+	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external returns (uint256);
 
 	/// @notice Mints zero or more new CosmicSignature NFTs.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param nftOwnerAddresses_ The addresses that will receive the NFTs.
+	/// It's OK if it contains duplicates.
 	/// @param randomNumberSeed_ A value to be used to generate unique seeds for the NFTs.
 	/// Comment-202501148 applies.
 	/// Assuming that the caller hasn't used this particular value or subsequent values.
 	/// @return The first newly minted NFT ID. Further minted NFT IDs are sequential.
 	/// If `nftOwnerAddresses_` is empty the return value is indeterminate.
-	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns(uint256);
+	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns (uint256);
 
 	/// @param nftId_ NFT ID.
-	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.
-	function getNftInfo(uint256 nftId_) external view returns(NftInfo memory);
+	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
+	function getNftInfo(uint256 nftId_) external view returns (NftInfo memory);
 
-	/// @notice Allows an NFT owner or authorized caller to set a custom name for an NFT.
+	/// @notice Allows the given NFT owner or authorized caller to set a custom name for an NFT.
 	/// @param nftId_ NFT ID.
+	/// It shall be less than `totalSupply()`. Otherwise the transaction would revert.
 	/// @param nftName_ The custom name to set for the NFT.
-	function setNftName(uint256 nftId_, string memory nftName_) external;
+	/// It may be empty.
+	function setNftName(uint256 nftId_, string calldata nftName_) external;
 
 	/// @param nftId_ NFT ID.
-	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.
-	function getNftName(uint256 nftId_) external view returns(string memory);
+	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
+	function getNftName(uint256 nftId_) external view returns (string memory);
 
 	/// @param nftId_ NFT ID.
-	/// It shall be less than `totalSupply()`. Otherwise the behavior is undefined.
-	function getNftSeed(uint256 nftId_) external view returns(uint256);
+	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
+	function getNftSeed(uint256 nftId_) external view returns (uint256);
 }

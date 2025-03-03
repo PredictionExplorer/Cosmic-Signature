@@ -6,13 +6,14 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 // import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import { IERC20Permit, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+// import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
@@ -20,7 +21,10 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #endregion
 // #region
 
-/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
+/// @dev
+/// todo-1 +++ Review again what can possibly fail here and cause a transaction reversal.
+/// todo-1 +++ Assuming it's OK, but there is a lot of code there that is hard to comprehend.
+/// todo-1 Let's see what SMTChecker says.
 contract CosmicSignatureToken is
 	// Ownable,
 	ERC20,
@@ -40,9 +44,8 @@ contract CosmicSignatureToken is
 
 	// /// @notice This address holds some CST amount.
 	// /// The held amount is replenished when someone bids with CST.
-	// /// todo-9 The above comment is incorrect. We now mint at the end of a round.
 	// /// Comment-202412201 relates and/or applies.
-	// /// todo-9 Declare this `immutable`?
+	// /// todo-9 Declare this `immutable`? Maybe don't, because this can be an EOA.
 	// address public marketingWalletAddress;
 
 	// /// @notice
@@ -50,17 +53,16 @@ contract CosmicSignatureToken is
 	// /// If `marketingWalletAddress` already holds at least this token amount, any new received funds will be burned.
 	// /// This limit can be exceeded by a little.
 	// /// [/Comment-202412201]
-	// uint256 public marketingWalletBalanceAmountMaxLimit;
+	// uint256 public marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 
 	// #endregion
-	// #region `onlyGame`
+	// #region `_onlyGame`
 
 	/// @dev Comment-202411253 applies.
-	modifier onlyGame() {
-		require(
-			_msgSender() == game,
-			CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender())
-		);
+	modifier _onlyGame() {
+		if (_msgSender() != game) {
+			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
+		}
 		_;
 	}
 
@@ -70,20 +72,19 @@ contract CosmicSignatureToken is
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	constructor(address game_ /* , address marketingWalletAddress_ */)
+		_providedAddressIsNonZero(game_)
+		// _providedAddressIsNonZero(marketingWalletAddress_)
 		// Ownable(_msgSender())
 		ERC20("CosmicSignatureToken", "CST")
-		ERC20Permit("CosmicSignatureToken")
-		providedAddressIsNonZero(game_) {
-		// providedAddressIsNonZero(marketingWalletAddress_) {
+		ERC20Permit("CosmicSignatureToken") {
 		game = game_;
 		// marketingWalletAddress = marketingWalletAddress_;
-		// marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 	}
 
 	// #endregion
 	// #region // `setMarketingWalletAddress`
 
-	// function setMarketingWalletAddress(address newValue_) external override onlyOwner providedAddressIsNonZero(newValue_) {
+	// function setMarketingWalletAddress(address newValue_) external override onlyOwner _providedAddressIsNonZero(newValue_) {
 	// 	marketingWalletAddress = newValue_;
 	// 	emit MarketingWalletAddressChanged(newValue_);
 	// }
@@ -99,7 +100,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region // `transferToMarketingWalletOrBurn`
 
-	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override onlyGame {
+	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override _onlyGame {
 	// 	if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {
 	// 		_transfer(fromAddress_, marketingWalletAddress, amount_);
 	// 	} else {
@@ -110,28 +111,28 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region // `mintToMarketingWallet`
 
-	// function mintToMarketingWallet(uint256 amount_) external override onlyGame {
+	// function mintToMarketingWallet(uint256 amount_) external override _onlyGame {
 	// 	_mint(marketingWalletAddress, amount_);
 	// }
 
 	// #endregion
 	// #region `mint`
 
-	function mint(address account_, uint256 value_) external override onlyGame {
+	function mint(address account_, uint256 value_) external override _onlyGame {
 		_mint(account_, value_);
 	}
 
 	// #endregion
 	// #region `burn`
 
-	function burn(address account_, uint256 value_) external override onlyGame {
+	function burn(address account_, uint256 value_) external override _onlyGame {
 		_burn(account_, value_);
 	}
 
 	// #endregion
 	// #region `mintMany`
 
-	function mintMany(MintSpec[] calldata specs_) external override onlyGame {
+	function mintMany(MintSpec[] calldata specs_) external override _onlyGame {
 		for (uint256 index_ = specs_.length; index_ > 0; ) {
 			-- index_;
 			MintSpec calldata specReference_ = specs_[index_];
@@ -142,7 +143,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `burnMany`
 
-	function burnMany(MintSpec[] calldata specs_) external override onlyGame {
+	function burnMany(MintSpec[] calldata specs_) external override _onlyGame {
 		for (uint256 index_ = specs_.length; index_ > 0; ) {
 			-- index_;
 			MintSpec calldata specReference_ = specs_[index_];
@@ -153,7 +154,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `mintAndBurnMany`
 
-	function mintAndBurnMany(MintOrBurnSpec[] calldata specs_) external override onlyGame {
+	function mintAndBurnMany(MintOrBurnSpec[] calldata specs_) external override _onlyGame {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -206,7 +207,7 @@ contract CosmicSignatureToken is
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
 	// /// todo-9 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
 	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) external /*override*/ {
-	// 	// Comment-202409215 applies.
+	// 	// todo-9 Is it really necessary to validate this? Does Comment-202409215 apply? Better `require` this?
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
 	//
 	// 	uint256 allowance_ = allowance(_msgSender(), spender_);
@@ -226,7 +227,7 @@ contract CosmicSignatureToken is
 
 	/// @notice Comment-202501123 relates and/or applies.
 	/// solhint-disable-next-line func-name-mixedcase
-	function CLOCK_MODE() public pure override returns(string memory) {
+	function CLOCK_MODE() public pure override returns (string memory) {
 		return "mode=timestamp";
 	}
 
@@ -234,18 +235,28 @@ contract CosmicSignatureToken is
 	// #region `clock`
 
 	/// @notice Comment-202501123 relates and/or applies.
-	function clock() public view override returns(uint48) {
+	function clock() public view override returns (uint48) {
 		return uint48(block.timestamp);
 	}
 
 	// #endregion
 	// #region Overrides Required By Solidity
 
-	function _update(address from_, address to_, uint256 value_) internal override(ERC20, ERC20Votes) {
+	function _update(address from_, address to_, uint256 value_) internal override (ERC20, ERC20Votes) {
+		// // #enable_asserts // #disable_smtchecker console.log("_update entered.");
 		super._update(from_, to_, value_);
+		// // #enable_asserts // #disable_smtchecker console.log("_update exiting.");
 	}
 
-	function nonces(address owner_) public view override(ERC20Permit, Nonces) returns(uint256) {
+	// // @dev I have tested that `super._update` calls this.
+	// // So I have confirmed that by calling `super._update` we call `ERC20Votes._update`, rather than `ERC20._update`.
+	// function _transferVotingUnits(address from_, address to_, uint256 amount_) internal override {
+	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits entered.");
+	// 	super._transferVotingUnits(from_, to_, amount_);
+	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits exiting.");
+	// }
+
+	function nonces(address owner_) public view override (IERC20Permit, Nonces, ERC20Permit) returns (uint256) {
 		return super.nonces(owner_);
 	}
 

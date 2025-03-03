@@ -13,7 +13,7 @@ describe("CharityWallet", function () {
 		
 		let amountSent = hre.ethers.parseEther("9");
 		let receiverAddress_ = await charityWallet.charityAddress();
-		await signer2.sendTransaction({ to: charityWalletAddr, value: amountSent });
+		await expect(signer2.sendTransaction({to: charityWalletAddr, value: amountSent,})).not.reverted;
 		let balanceAmountBefore = await hre.ethers.provider.getBalance(receiverAddress_);
 		await charityWallet.send();
 		let balanceAmountAfter = await hre.ethers.provider.getBalance(receiverAddress_);
@@ -28,7 +28,7 @@ describe("CharityWallet", function () {
 		await brokenCharity.waitForDeployment();
 		const brokenCharityAddr = await brokenCharity.getAddress();
 
-		await signer0.sendTransaction({ to: charityWalletAddr, value: hre.ethers.parseEther("3")});
+		await expect(signer0.sendTransaction({to: charityWalletAddr, value: hre.ethers.parseEther("3"),})).not.reverted;
 		await charityWallet.connect(ownerAcct).setCharityAddress(brokenCharityAddr);
 		await expect(charityWallet.connect(signer1).send()).to.be.revertedWithCustomError(charityWallet, "FundTransferFailed");
 		await charityWallet.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress);

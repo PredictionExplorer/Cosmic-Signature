@@ -12,25 +12,15 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // #endregion
 // #region
 
-/// @title Data types and constants.
+/// @title Constants.
 /// @author The Cosmic Signature Development Team.
 /// @notice Most of these constants are used to initialize state variables.
 /// @dev If a state variable will be automatically updated during the normal operation
 /// the constant to initialize it from is named `INITIAL_...`; otherwise: `DEFAULT_...`.
-/// todo-1 +++ Replace some `INITIAL_` with `DEFAULT_`.
+/// todo-1 +++ Rename some `INITIAL_` to `DEFAULT_`.
 /// todo-1 +++ Where a constant is not used to init a variable, don't name it `INITIAL_` or `DEFAULT_`.
 /// todo-1 +++ Done on Jan 24 2025.
 library CosmicSignatureConstants {
-	// #region // Data Types
-
-	// /// @dev It appears that this was a bad idea.
-	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
-	// struct BooleanWithPadding {
-	// 	bool value;
-	// 	uint248 padding;
-	// }
-
-	// #endregion
 	// #region System Management
 
 	// Empty.
@@ -96,6 +86,9 @@ library CosmicSignatureConstants {
 	/// The former appears to always be 21000, while the latter varies and tends to be bigger than the former.
 	/// We don't know what the L1 gas fee is going to be, so this value is approximate.
 	/// todo-2 It will liikely need tweaking over time, especially after Arbitrum decentralizes their blockchain.
+	/// todo-1 Nick is saying that it costs 9000 gas to call the `call` function.
+	/// todo-1 Do a better review of things on ArbiScan and test on Arbitrum Sepolia if this value makes sense
+	/// todo-1 and possibly correct it.
 	/// [/Comment-202502054]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = 21000 * 29 / 10;
 
@@ -159,7 +152,7 @@ library CosmicSignatureConstants {
 
 	// /// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
 	// /// @dev todo-9 Is this amount OK?
-	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 2_000 ether;
+	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 1_000 ether;
 
 	// #endregion
 	// #region RandomWalk NFT
@@ -187,7 +180,12 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region NFT Staking
 
-	// Empty.
+	// todo-0 Empty.
+
+	/// @notice A max limit on another max limit.
+	/// This value is quite big, and, at the same time, it's nowhere close to the point of overflow.
+	/// @dev todo-0 Eliminate this.
+	uint256 internal constant STAKING_WALLET_COSMIC_SIGNATURE_NFT_NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max >> 8;
 
 	// #endregion
 	// #region Marketing

@@ -74,15 +74,13 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
 
-	if(rawValue_ === undefined)
-	{
+	if (rawValue_ === undefined) {
 		return defaultValue_;
 	}
 
 	const value_ = parseInt(rawValue_);
 
-	if(isNaN(value_))
-	{
+	if (isNaN(value_)) {
 		throw new Error(`Invalid value for environment variable ${environmentVariableName_}: "${rawValue_}". Expected an integer.`);
 	}
 	

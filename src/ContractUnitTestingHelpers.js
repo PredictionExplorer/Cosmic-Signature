@@ -36,8 +36,8 @@ async function deployContractsForUnitTestingAdvanced(
 	const signer18 = signers[18];
 	const signer19 = signers[19];
 	const ethAmount = 10n ** 18n;
-	await signer18.sendTransaction({to: deployerAcct.address, value: ethAmount,});
-	await signer19.sendTransaction({to: ownerAcct.address, value: ethAmount,});
+	await (await signer18.sendTransaction({to: deployerAcct.address, value: ethAmount,})).wait();
+	await (await signer19.sendTransaction({to: ownerAcct.address, value: ethAmount,})).wait();
 	const contracts =
 		await deployContractsAdvanced(
 			deployerAcct,

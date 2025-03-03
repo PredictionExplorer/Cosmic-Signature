@@ -177,7 +177,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 	});
 	// todo-1 Doesn't this test belong to "Bidding.js"?
-	it("When the current bidding round is inactive, onlyRoundIsActive methods are not available", async function () {
+	it("When the current bidding round is inactive, _onlyRoundIsActive methods are not available", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -195,7 +195,7 @@ describe("SystemManagement", function () {
 		// await expect(cosmicSignatureGameProxy.connect(signer0).claimDonatedNft(0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		// // todo-1 I have moved NFT donations to `PrizesWallet`.
 		// await expect(cosmicSignatureGameProxy.connect(signer0).claimManyDonatedNfts([0])).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
-		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
+		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: nextEthBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEthWithInfo("{}", {value: nextEthBidPrice_})).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 
@@ -212,8 +212,8 @@ describe("SystemManagement", function () {
 		const [signer0, signer1, signer2,] = signers;
 		// let ownableErr = cosmicSignatureGameProxy.interface.getError("OwnableUnauthorizedAccount");
 
-		// // Comment-202501192 applies.
-		// await hre.ethers.provider.send("evm_mine");
+		// Comment-202501192 applies.
+		await hre.ethers.provider.send("evm_mine");
 
 		let durationUntilRoundActivation_ = await cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 		expect(durationUntilRoundActivation_).within((-24n) * 60n * 60n, 0n);

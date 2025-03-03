@@ -9,13 +9,8 @@ import { ICharityWallet } from "./interfaces/ICharityWallet.sol";
 contract CharityWallet is Ownable, ICharityWallet {
 	/// @notice The current designated charity address.
 	/// It can be zero.
-	address public charityAddress;
+	address public charityAddress = address(0);
 
-	/// todo-1 +++ Review where we use `_msgSender` and `_msgData` from `Context`.
-	/// todo-1 +++ Is it really a good idea to use them?
-	/// todo-1 +++ >>> It probably is.
-	/// todo-1 +++ Find (case sens, whle word): msg
-	/// todo-1 Done. Later review this again.
 	constructor() Ownable(_msgSender()) {
 	}
 
@@ -28,12 +23,14 @@ contract CharityWallet is Ownable, ICharityWallet {
 		emit CharityAddressChanged(newValue_);
 	}
 
-	function send() external override {
+	function send() external override /*onlyOwner*/ {
+		// It's OK if this is zero.
 		uint256 amount_ = address(this).balance;
+
 		send(amount_);
 	}
 
-	function send(uint256 amount_) public override {
+	function send(uint256 amount_) public override /*onlyOwner*/ {
 		address charityAddressCopy_ = charityAddress;
 		require(charityAddressCopy_ != address(0), CosmicSignatureErrors.ZeroAddress("Charity address not set."));
 		// emit DonationSent(charityAddressCopy_, amount_);

@@ -85,7 +85,7 @@ describe("CosmicSignatureGame", function () {
 		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
 
 		// [Comment-202502164]
-		// It's possible that a hacker will make this call before we get a chance to, which would not inflict a lot of damage,
+		// It's possible that hackers will make this call before we get a chance to, which would not inflict a lot of damage,
 		// except when we make this call, the call will revert.
 		// But if this method had parameters the hacker would be able to pass malicious values.
 		// To prevent that possibility, we could require `initialize2` to be `onlyOwner`.
@@ -118,7 +118,7 @@ describe("CosmicSignatureGame", function () {
 
 		// If we upgraded to `CosmicSignatureGameOpenBid`, we would call `cosmicSignatureGame2Proxy.initialize2` at this point.
 
-		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: 10n ** 18n})).revertedWith("Test deposit failed.");
+		await expect(signer0.sendTransaction({to: cosmicSignatureGameProxyAddr, value: 10n ** 18n,})).revertedWith("Test deposit failed.");
 	});
 
 	// Comment-202412129 relates.
@@ -180,7 +180,7 @@ describe("CosmicSignatureGame", function () {
 		const [signer0, signer1,] = signers;
 
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,});
+		await expect(signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).not.reverted;
 		const nextEthBidPriceAfter_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		expect(nextEthBidPriceAfter_).greaterThan(nextEthBidPrice_);
 	});

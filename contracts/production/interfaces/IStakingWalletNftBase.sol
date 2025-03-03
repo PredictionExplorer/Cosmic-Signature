@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-// import { CosmicSignatureConstants } from "../libraries/CosmicSignatureConstants.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
 interface IStakingWalletNftBase is IAddressValidator {
@@ -36,16 +35,6 @@ interface IStakingWalletNftBase is IAddressValidator {
 
 	/// @notice Similarly to `stake`, stakes zero or more NFTs.
 	/// @param nftIds_ NFT to stake IDs.
+	/// It's OK if it's empty.
 	function stakeMany(uint256[] calldata nftIds_) external;
-
-	/// @return The current staked NFT count.
-	/// @dev Comment-202412025 applies.
-	/// Comment-202410274 relates.
-	function numStakedNfts() external view returns(uint256);
-
-	/// @notice Checks if an NFT has ever been used for staking.
-	/// @param nftId_ NFT ID.
-	/// @return A nonzero if the given NFT has been used; zero otherwise.
-	/// @dev Comment-202410274 relates.
-	function wasNftUsed(uint256 nftId_) external view returns(/*bool*/ uint256);
 }

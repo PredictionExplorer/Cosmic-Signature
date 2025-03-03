@@ -284,17 +284,17 @@ describe("Bidding", function () {
 		const [signer0,] = signers;
 		
 		// let donationAmount_ = hre.ethers.parseEther("10");
-		// await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });
+		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ })).not.reverted;
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 
 		let tokenPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(signer0).mint({ value: tokenPrice }); // nftId=0
+		await expect(randomWalkNft.connect(signer0).mint({ value: tokenPrice })).not.reverted; // nftId=0
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await cosmicSignatureGameProxy.connect(signer0).bidWithEth(0n, "rwalk bid", { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEth(0n, "rwalk bid", { value: nextEthPlusRandomWalkNftBidPrice_ })).not.reverted;
 
 		// let lastBidType = await cosmicSignatureGameProxy.lastBidType();
 		// expect(lastBidType).to.equal(1);
@@ -303,8 +303,8 @@ describe("Bidding", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 1]); // make CST price drop to almost 0
 		// await hre.ethers.provider.send("evm_mine");
 
-		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
-		await cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid");
+		await expect(expect(cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")).not.reverted;
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid")).not.reverted;
 
 		// lastBidType = await cosmicSignatureGameProxy.lastBidType();
 		// expect(lastBidType).to.equal(2);
@@ -446,8 +446,7 @@ describe("Bidding", function () {
 			// let ownr = await cosmicSignatureNft.ownerOf(rlog.args.prizeCosmicSignatureNftId);
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(rlog.args.prizeCosmicSignatureNftId);
 			// expect(stakerAddr).to.equal("0x0000000000000000000000000000000000000000");
-			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.wasNftUsed(rlog.args.prizeCosmicSignatureNftId);
-			// expect(nftWasUsed_).to.equal(false);
+			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.usedNfts(rlog.args.prizeCosmicSignatureNftId);
 			expect(nftWasUsed_).to.equal(0n);
 		}
 
@@ -457,8 +456,7 @@ describe("Bidding", function () {
 		for (let i = 0; i < Number(ts); i++) {
 			// let stakerAddr = await stakingWalletCosmicSignatureNft.stakerByTokenId(i);
 			// if (stakerAddr == "0x0000000000000000000000000000000000000000") {
-			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.wasNftUsed(i);
-			// if ( ! nftWasUsed_ ) {
+			const nftWasUsed_ = await stakingWalletCosmicSignatureNft.usedNfts(i);
 			if (nftWasUsed_ == 0n) {
 				let ownr = await cosmicSignatureNft.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
@@ -543,32 +541,32 @@ describe("Bidding", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
-		// // Comment-202501192 applies.
-		// await hre.ethers.provider.send("evm_mine");
+		// Comment-202501192 applies.
+		await hre.ethers.provider.send("evm_mine");
 
 		const delayDurationBeforeRoundActivation_ = await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
 		await hre.ethers.provider.send("evm_mine");
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).to.equal(1n);
-		await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
+		await expect(cosmicSignatureGameProxy.connect(signer1).claimMainPrize()).not.reverted;
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
 		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeRoundActivation_) - 1]);
 		await hre.ethers.provider.send("evm_mine");
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).not.reverted;
 
 		// Making CST bid price cheaper.
 		await hre.ethers.provider.send("evm_increaseTime", [20000]);
@@ -586,7 +584,7 @@ describe("Bidding", function () {
 		let nextCstBidExpectedPrice_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
 		let nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice(1n);
 		expect(nextCstBidPrice_).to.equal(nextCstBidExpectedPrice_);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithCst(nextCstBidPrice_, "cst bid");
+		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(nextCstBidPrice_, "cst bid")).not.reverted;
 		cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(nextCstBidPrice_ * 2n);
 
@@ -716,7 +714,7 @@ describe("Bidding", function () {
 		const [signer0, signer1,] = signers;
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth(-1n, "eth bid", {value: nextEthBidPrice_,});
+		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth(-1n, "eth bid", {value: nextEthBidPrice_,})).not.reverted;
 		// await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InsufficientBalance");
 	});
@@ -784,6 +782,8 @@ describe("Bidding", function () {
 
 	// This is a stress test that executes multiple transactions per block.
 	//
+	// Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1739909248214549
+	//
 	// todo-1 It would be nice to validate that the behavior is correct.
 	//
 	// todo-1 Add `claimMainPrize` calls.
@@ -792,8 +792,19 @@ describe("Bidding", function () {
 	// todo-1 There is the `allowBlocksWithSameTimestamp` parameter, but setting it would make all blocks having the same timestamp,
 	// todo-1 which would break all tests and other scripts. It appears to be impossible to change it temporarily at runtime.
 	// 
+	// todo-1 Maybe refactor this to mine 1 transaction per block. Then Chai matchers will work to correctly show
+	// todo-1 what caused transaction reversal. They re-execute the transaction in simulation to find out what went wrong.
+	// todo-1 Then just review then Solidity code to make sure that
+	// todo-1 regardless if `block.timestamp` or `block.number` change or don't change, the behavior will be correct.
+	//
 	// todo-1 Develop a separate test and/or refactor this one to test `bidWithEth` reentrancy. They can bid by reentering.
 	// todo-1 But see ToDo-202502186-0.
+	//
+	// todo-1 Nick wrote:
+	// todo-1 As this is not really a unit test anymore, but an integration test, it should be done as standalone script
+	// todo-1 (and maybe go in "scripts" directory, and probably in its own folder) .
+	// todo-1 So you could run it over local-chain geth instance
+	// todo-1 with its own genesis.json and account balances for this particular test.
 	it("Long-term aggressive bidding doesn't produce irregularities", async function () {
 		if (SKIP_LONG_TESTS) return;
 
@@ -867,7 +878,7 @@ describe("Bidding", function () {
 						// 	console.error("Error data not found.");
 						// }
 
-						if(error2Details.message.endsWith(", but it didn't revert")) {
+						if (error2Details.message.endsWith(", but it didn't revert")) {
 							// console.log("Success 2.", transactions.length);
 						} else if ( errorDetails === undefined ||
 										errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") &&
