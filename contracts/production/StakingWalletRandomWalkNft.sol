@@ -97,7 +97,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		newStakeActionReference_.nftId = nftId_;
 		// #enable_asserts assert(newStakeActionReference_.nftOwnerAddress == address(0));
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
-		uint256 newStakeActionIndex_ = numStakedNfts;
+		uint256 newNumStakedNfts_ = numStakedNfts;
+		uint256 newStakeActionIndex_ = newNumStakedNfts_;
 		// #enable_asserts assert(newStakeActionReference_.index == 0);
 		newStakeActionReference_.index = newStakeActionIndex_;
 
@@ -105,12 +106,13 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// We are now overwriting it.
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 
-		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
+		++ newNumStakedNfts_;
 		numStakedNfts = newNumStakedNfts_;
 		emit NftStaked(newStakeActionId_, NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
 
 		// [Comment-202501145]
-		// Somewhere around here, it could make sense to use the feature Comment-202501144 is talking about.
+		// Somewhere around here or in the caller method
+		// it could make sense to use the feature Comment-202501144 is talking about.
 		// [/Comment-202501145]
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
 	}

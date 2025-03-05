@@ -214,7 +214,7 @@ describe("Bidding", function () {
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), longMsg, { value: nextEthBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "TooLongBidMessage");
 	});
 
-	it("getCstDutchAuctionDurations() method works", async function () {
+	it("The getCstDutchAuctionDurations method behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -366,7 +366,7 @@ describe("Bidding", function () {
 		expect(bidderContractBalanceAmountAfter).to.equal(bidderContractExpectedBalanceAmountAfter);
 	});
 
-	it("Bidding a lot & staking a lot works correctly", async function () {
+	it("Bidding a lot and staking a lot behaves correctly", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, stakingWalletCosmicSignatureNft, stakingWalletCosmicSignatureNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3, signer4, signer5,] = signers;
@@ -383,13 +383,13 @@ describe("Bidding", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [counter_ * 60 * 60]);
 			await hre.ethers.provider.send("evm_mine");
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 			nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await cosmicSignatureGameProxy.connect(signer4).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+			await cosmicSignatureGameProxy.connect(signer4).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 			durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 			// await hre.ethers.provider.send("evm_mine");
@@ -419,13 +419,13 @@ describe("Bidding", function () {
 			stakeActionIds_.push(log.args.stakeActionId);
 		}
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer4).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer4).bidWithEth((-1n), "", { value: nextEthBidPrice_ });
 		durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 
 		// We need another time increase to claim as `signer5` (it has no bids, won't get raffle NFTs).
@@ -500,7 +500,7 @@ describe("Bidding", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [100]);
 			// await hre.ethers.provider.send("evm_mine");
 			// await stakingWalletCosmicSignatureNft.connect(owner_signer).unstake(i);
-			await stakingWalletCosmicSignatureNft.connect(owner_signer).unstake(stakeActionIds_[i], 1000);
+			await stakingWalletCosmicSignatureNft.connect(owner_signer).unstake(stakeActionIds_[i]);
 		}
 
 		// at this point, all NFTs were unstaked
@@ -537,7 +537,7 @@ describe("Bidding", function () {
 		}
 	});
 
-	it("Bidding with CST works", async function () {
+	it("Bidding with CST behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
@@ -737,7 +737,7 @@ describe("Bidding", function () {
 		// await expect(cosmicSignatureGameProxy.getBidderAddressAtPosition(0, 2)).to.be.revertedWith("Position out of bounds");
 	});
 
-	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails", async function () {
+	it("It's impossible to bid if minting of Cosmic Signature Tokens fails", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -757,7 +757,7 @@ describe("Bidding", function () {
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ })).to.be.revertedWith("Test mint() failed.");
 	});
 
-	it("Shouldn't be possible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
+	it("It's impossible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -805,7 +805,7 @@ describe("Bidding", function () {
 	// todo-1 (and maybe go in "scripts" directory, and probably in its own folder) .
 	// todo-1 So you could run it over local-chain geth instance
 	// todo-1 with its own genesis.json and account balances for this particular test.
-	it("Long-term aggressive bidding doesn't produce irregularities", async function () {
+	it("Long-term aggressive bidding behaves correctly", async function () {
 		if (SKIP_LONG_TESTS) return;
 
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
