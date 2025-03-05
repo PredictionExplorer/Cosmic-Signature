@@ -40,7 +40,6 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// Issue. This is not used.
 	/// Something like this can be used to implement the transfer of multiple NFTs in a single transaction.
 	/// A method offering such a functionality could be named `transferFromMany`.
-	/// `StakingWalletCosmicSignatureNft` would benefit from it.
 	/// But, I feel, such a feature is not a high priority, so I have no plans to implement it.
 	/// Comment-202501145 relates.
 	/// [/Comment-202501144]

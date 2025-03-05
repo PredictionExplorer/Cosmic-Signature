@@ -19,7 +19,7 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 // todo-1 Move each contract to a separate file.
 
-// /// @notice used to test revert() statements in token transfers in claimMainPrize() function
+// /// @notice Used to test `revert` statements in token transfers in `claimMainPrize`.
 // contract BrokenCosmicSignatureToken1 {
 // 	uint256 private _counter;
 // 
@@ -34,7 +34,7 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 // 	}
 // }
 
-/// @notice used to test revert() statements in CosmicSignatureGame contract
+/// @notice Used to test `revert` statements in `CosmicSignatureGame`.
 contract BrokenCosmicSignatureToken2 {
 	uint256 private _counter;
 
@@ -79,7 +79,7 @@ contract BrokenCharity {
 	}
 }
 
-/// @notice Used to test `revert` statements in `StakingWalletCosmicSignatureNft`
+/// @notice Used to test `revert` statements in `StakingWalletCosmicSignatureNft`.
 contract BrokenStakingWalletCosmicSignatureNft {
 	StakingWalletCosmicSignatureNft private _stakingWalletCosmicSignatureNft;
 	bool private _blockDeposits = false;
@@ -106,8 +106,8 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		_stakingWalletCosmicSignatureNft.stake(nftId);
 	}
 
-	function doUnstake(uint256 stakeActionId_, uint256 numEthDepositsToEvaluateMaxLimit_) external {
-		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_, numEthDepositsToEvaluateMaxLimit_);
+	function doUnstake(uint256 stakeActionId_/*, uint256 numEthDepositsToEvaluateMaxLimit_*/) external {
+		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_/*, numEthDepositsToEvaluateMaxLimit_*/);
 	}
 
 	// I have commented this method out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.

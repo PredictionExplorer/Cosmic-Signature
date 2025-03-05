@@ -235,7 +235,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// Comment-202502248 applies.
 	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external;
 
-	/// @notice Similarly to `claimDonatedToken`, claims zero or more ERC-20 token donations in a single transaction.
+	/// @notice Similarly to `claimDonatedToken`, claims zero or more ERC-20 token donations.
 	function claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) external;
 
 	/// @return The ERC-20 token amount donated during the given bidding round.
@@ -261,7 +261,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param index_ `donatedNfts` item index.
 	function claimDonatedNft(uint256 index_) external;
 
-	/// @notice Similarly to `claimDonatedNft`, claims zero or more donated NFTs in a single transaction.
+	/// @notice Similarly to `claimDonatedNft`, claims zero or more donated NFTs.
 	/// @param indices_ `donatedNfts` item indices.
 	function claimManyDonatedNfts(uint256[] calldata indices_) external;
 }

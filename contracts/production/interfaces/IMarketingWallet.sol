@@ -26,7 +26,7 @@ interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
 	/// @param amount Amount paid.
-	/// It can be zero.
+	/// It can potentially be zero.
 	event RewardPaid(address indexed marketerAddress, uint256 amount);
 
 	// /// @notice Sets `token`.

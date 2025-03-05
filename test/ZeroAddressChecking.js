@@ -35,11 +35,11 @@ describe("ZeroAddressChecking", function () {
 		await expect(stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletRandomWalkNftFactory, "ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
-		const {signers, stakingWalletCosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
-		const [signer0,] = signers;
+		const {/*signers,*/ stakingWalletCosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
+		// const [signer0,] = signers;
 
-		await expect(stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, signer0.address, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
-		await expect(stakingWalletCosmicSignatureNftFactory.deploy(signer0.address, hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+		await expect(stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, /*signer0.address,*/ {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+		// await expect(stakingWalletCosmicSignatureNftFactory.deploy(signer0.address, hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
 	});
 	it("Shouldn't be possible to deploy CosmicSignatureNft with zero-address-ed parameters", async function () {
 		const {cosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);

@@ -21,7 +21,7 @@ interface IStakingWalletNftBase is IAddressValidator {
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftStaked(
 		uint256 indexed stakeActionId,
-		NftTypeCode nftTypeCode,
+		NftTypeCode /*indexed*/ nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts
@@ -29,8 +29,8 @@ interface IStakingWalletNftBase is IAddressValidator {
 
 	/// @notice Stakes an NFT.
 	/// Transfers the NFT to this contract and records a stake action.
+	/// This method would revert if it already staked the given NFT in the past.
 	/// @param nftId_ NFT to stake ID.
-	/// Comment-202411023 relates and/or applies.
 	function stake(uint256 nftId_) external;
 
 	/// @notice Similarly to `stake`, stakes zero or more NFTs.

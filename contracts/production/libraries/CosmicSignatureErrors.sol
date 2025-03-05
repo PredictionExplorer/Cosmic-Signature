@@ -147,9 +147,10 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region NFT Staking
 
-	/// @notice Thrown when there are no staked NFTs.
-	/// @param errStr Description of the error.
-	error NoStakedNfts(string errStr);
+	// /// @notice Thrown when there are no staked NFTs.
+	// /// @param errStr Description of the error.
+	// /// @dev I have eliminated this and we now simply divide by the staked NFT count and handle the division by zero error.
+	// error NoStakedNfts(string errStr);
 
 	/// @notice Thrown when attempting to stake an NFT that has already been staked in the past.
 	/// See also: `UsedRandomWalkNft`.
@@ -157,15 +158,17 @@ library CosmicSignatureErrors {
 	/// @param nftId NFT ID.
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
-	/// @notice Thrown when attempting to unstake an already unstaked NFT.
-	/// @param errStr Description of the error.
-	/// @param stakeActionId NFT stake action ID.
-	error NftAlreadyUnstaked(string errStr, uint256 stakeActionId);
+	// todo-1 +++ Keep commented.
+	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
+	// /// @param errStr Description of the error.
+	// /// @param stakeActionId NFT stake action ID.
+	// error NftAlreadyUnstaked(string errStr, uint256 stakeActionId);
 
-	/// @notice Thrown when attempting to claim a reward for an NFT that hasn't been unstaked.
-	/// @param errStr Description of the error.
-	/// @param stakeActionId NFT stake action ID.
-	error NftNotUnstaked(string errStr, uint256 stakeActionId);
+	// todo-1 +++ Keep commented.
+	// /// @notice Thrown when attempting to claim a staking reward for an NFT that hasn't been unstaked.
+	// /// @param errStr Description of the error.
+	// /// @param stakeActionId NFT stake action ID.
+	// error NftNotUnstaked(string errStr, uint256 stakeActionId);
 
 	/// @notice Thrown when an invalid NFT stake action ID is provided.
 	/// @param errStr Description of the error.
@@ -177,8 +180,6 @@ library CosmicSignatureErrors {
 	/// @param stakeActionId NFT stake action ID.
 	/// @param callerAddress Caller address.
 	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address callerAddress);
-
-	error NumEthDepositsToEvaluateMaxLimitIsOutOfAllowedRange(string errStr, uint256 numEthDepositsToEvaluateMaxLimit);
 
 	// #endregion
 	// #region Security

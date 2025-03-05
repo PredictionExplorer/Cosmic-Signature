@@ -86,7 +86,7 @@ abstract contract Bidding is
 		int256 overpaidEthBidPrice_ = int256(msg.value) - int256(paidEthBidPrice_);
 
 		// [Comment-202412045]
-		// Performing this validatin as early as possible to minimize gas fee in case the validation fails.
+		// Performing this validatin before most other actions -- to minimize transaction fee in case the validation fails.
 		// [/Comment-202412045]
 		require(
 			overpaidEthBidPrice_ >= int256(0),
@@ -364,7 +364,7 @@ abstract contract Bidding is
 		// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
 		// [/Comment-202409177]
 		// [Comment-202501125]
-		// Minting a CST reward to the bidder.
+		// Minting a CST reward to the bidder for placing this bid.
 		// [/Comment-202501125]
 		// token.burn(_msgSender(), paidPrice_);
 		// token.transferToMarketingWalletOrBurn(_msgSender(), paidPrice_);
@@ -477,7 +477,6 @@ abstract contract Bidding is
 	// #region `_bidCommon`
 
 	/// @notice Internal function to handle common bid logic.
-	/// @dev This function updates game state and distributes rewards.
 	/// @param message_ The bidder's message.
 	/// --- param bidType_ Bid type code.
 	function _bidCommon(string memory message_ /* , BidType bidType_ */) internal /*nonReentrant*/ _onlyRoundIsActive {

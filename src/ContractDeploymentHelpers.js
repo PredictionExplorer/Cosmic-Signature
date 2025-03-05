@@ -128,7 +128,7 @@ const deployContractsAdvanced = async function (
 
 	const stakingWalletCosmicSignatureNftFactory = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft", deployerAcct);
 	const stakingWalletCosmicSignatureNft =
-		await stakingWalletCosmicSignatureNftFactory.deploy(cosmicSignatureNftAddr, cosmicSignatureGameProxyAddr);
+		await stakingWalletCosmicSignatureNftFactory.deploy(cosmicSignatureNftAddr /* , cosmicSignatureGameProxyAddr */);
 	await stakingWalletCosmicSignatureNft.waitForDeployment();
 	const stakingWalletCosmicSignatureNftAddr = await stakingWalletCosmicSignatureNft.getAddress();
 
