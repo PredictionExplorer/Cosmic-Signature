@@ -175,17 +175,14 @@ library CosmicSignatureConstants {
 	// #region Prizes Wallet
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 2 weeks;
+	/// @dev This should be longer -- to increase the chance that people will have enough time,
+	/// even if an asteroid hits the Earth.
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5 weeks;
 
 	// #endregion
 	// #region NFT Staking
 
-	// todo-0 Empty.
-
-	/// @notice A max limit on another max limit.
-	/// This value is quite big, and, at the same time, it's nowhere close to the point of overflow.
-	/// @dev todo-0 Eliminate this.
-	uint256 internal constant STAKING_WALLET_COSMIC_SIGNATURE_NFT_NUM_ETH_DEPOSITS_TO_EVALUATE_HARD_MAX_LIMIT = type(uint256).max >> 8;
+	// Empty.
 
 	// #endregion
 	// #region Marketing

@@ -33,6 +33,7 @@ describe("EthDonations", function () {
 		// await expect(cosmicSignatureGameProxy.connect(signer1).donateEthWithInfo(dataStr, {value: 0n})).revertedWithCustomError(cosmicSignatureGameProxy, "ZeroValue");
 		await cosmicSignatureGameProxy.connect(signer1).donateEthWithInfo(dataStr, {value: 0n});
 	});
+	
 	// it("Should not be possible to donate 0 value", async function () {
 	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1,] = signers;

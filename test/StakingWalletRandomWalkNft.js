@@ -10,7 +10,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 const SKIP_LONG_TESTS = false;
 
 describe("StakingWalletRandomWalkNft", function () {
-	it("Shouldn't be possible to unstake() twice", async function () {
+	it("It's impossible to unstake an NFT twice", async function () {
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;

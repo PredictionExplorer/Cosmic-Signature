@@ -14,6 +14,7 @@ describe("MarketingWallet", function () {
 	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
 	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(signer2.address)).to.emit(marketingWallet, "CosmicSignatureTokenAddressChanged").withArgs(signer2.address);
 	// });
+	
 	it("MarketingWallet.payReward behaves correctly", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureToken, marketingWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -31,13 +32,13 @@ describe("MarketingWallet", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await bidderContract.connect(signer0).doClaim();
 
-		const marketingReward = hre.ethers.parseEther("15");
-		// await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
-		await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingReward)).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InvalidReceiver");
+		const marketingRewardAmount = hre.ethers.parseEther("15");
+		// await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingRewardAmount)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
+		await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingRewardAmount)).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InvalidReceiver");
 		// await expect(marketingWallet.connect(ownerAcct).payReward(signer1.address, 0n)).to.be.revertedWithCustomError(marketingWallet, "ZeroValue");
 		await marketingWallet.connect(ownerAcct).payReward(signer1, 0n);
 		await expect(marketingWallet.connect(signer1).payReward(bidderContractAddr, 0n)).to.be.revertedWithCustomError(marketingWallet, "OwnableUnauthorizedAccount");
-		await marketingWallet.connect(ownerAcct).payReward(signer1, marketingReward);
+		await marketingWallet.connect(ownerAcct).payReward(signer1, marketingRewardAmount);
 
 		// // Issue. Because I eliminated `MarketingWallet.setCosmicSignatureToken`,
 		// // this part of the test no longer works.
@@ -48,10 +49,10 @@ describe("MarketingWallet", function () {
 		// 	// note : following call reverts because of unknown selector, not because of require() in the fallback function of BidderContract
 		// 	// so no need to use startBlockingDeposits() function in this case
 		// 	// todo-9 `revertedWithoutReason`?
-		// 	await expect(marketingWallet.connect(ownerAcct).payReward(bidderContractAddr, marketingReward)).to.be.reverted;
+		// 	await expect(marketingWallet.connect(ownerAcct).payReward(bidderContractAddr, marketingRewardAmount)).to.be.reverted;
 		// }
 
 		let balanceAmountAfter = await cosmicSignatureToken.balanceOf(signer1);
-		expect(balanceAmountAfter).to.equal(marketingReward);
+		expect(balanceAmountAfter).to.equal(marketingRewardAmount);
 	});
 });

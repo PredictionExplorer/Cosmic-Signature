@@ -127,6 +127,7 @@ describe("MainPrize", function () {
 			}
 		}
 	});
+
 	it("Distribution of prize amounts matches specified business logic", async function () {
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNft, charityWalletAddr, prizesWallet, stakingWalletCosmicSignatureNft, stakingWalletCosmicSignatureNftAddr,} =
 			await deployContractsForUnitTestingAdvanced("SpecialCosmicSignatureGame");
@@ -204,6 +205,7 @@ describe("MainPrize", function () {
 		let stakingWalletCosmicSignatureNftExpectedBalanceAmountAfter = stakingWalletCosmicSignatureNftBalanceAmountBefore + cosmicSignatureNftStakingTotalEthRewardAmount_;
 		expect(stakingWalletCosmicSignatureNftBalanceAmountAfter).equal(stakingWalletCosmicSignatureNftExpectedBalanceAmountAfter);
 	});
+	
 	it("The _msgSender() will get the prize if the lastBidderAddress won't claim it", async function () {
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);

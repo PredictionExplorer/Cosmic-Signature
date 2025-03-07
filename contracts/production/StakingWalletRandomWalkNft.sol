@@ -20,16 +20,16 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @notice Stores details about an NFT stake action.
 	struct StakeAction {
-		/// @notice
-		/// [Comment-202502271]
-		/// Index of this stake action in `StakingWalletRandomWalkNft.stakeActionIds`.
-		/// [/Comment-202502271]
-		/// @dev It can change zero or more times during the lifetime of the `StakeAction` instance.
-		uint256 index;
-
 		uint256 nftId;
 		/// todo-1 ??? Reorder this to before `nftId`.
 		address nftOwnerAddress;
+
+		/// @notice
+		/// [Comment-202502271]
+		/// Index of this `StakeAction` instance in `StakingWalletRandomWalkNft.stakeActionIds`.
+		/// [/Comment-202502271]
+		/// @dev It can change zero or more times over the `StakeAction` instance lifetime.
+		uint256 index;
 	}
 
 	// #endregion
@@ -42,13 +42,11 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// Item index corresponds to stake action ID.
 	/// Comment-202502266 relates.
 	/// Unlike `stakeActionIds`, this array is sparse (can contain gaps).
-	/// `numStakedNfts` counts only populated items.
-	/// @dev Comment-202410117 applies to item index.
 	StakeAction[1 << 64] public stakeActions;
 
 	/// @notice An item contains a stake action ID.
-	/// Comment-202502266 relates.
 	/// Comment-202502271 relates.
+	/// Comment-202502266 relates.
 	/// Unlike `stakeActions`, this array is not sparse (contains no gaps).
 	/// [Comment-202502261]
 	/// This array can contain undeleted garbage beyond `numStakedNfts` items.
@@ -62,47 +60,29 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @param randomWalkNft_ The `RandomWalkNFT` contract address.
 	/// @dev
 	/// Observable universe entities accessed here:
+	///    Inherited `constructor`s.
 	///    `_providedAddressIsNonZero`.
-	///    `StakingWalletNftBase.constructor`.
 	///    `randomWalkNft`.
 	constructor(RandomWalkNFT randomWalkNft_) _providedAddressIsNonZero(address(randomWalkNft_)) {
 		randomWalkNft = randomWalkNft_;
-		// #enable_asserts assert(randomWalkNft == randomWalkNft_);
 	}
 
 	// #endregion
 	// #region `stake`
 
-	/// @dev Comment-202411023 applies.
+	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
-	///    `NftTypeCode`.
-	///    `NftStaked`.
 	///    `numStakedNfts`.
-	///    `usedNfts`.
 	///    `actionCounter`.
+	///    `super.stake`.
+	///    `NftStaked`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
-		// #region
-
-		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
-
-		// #endregion
-		// #region
-
-		require(
-			usedNfts[nftId_] == 0,
-			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
-		);
-
-		// #endregion
-		// #region
-
-		usedNfts[nftId_] = 1;
+		super.stake(nftId_);
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
@@ -111,7 +91,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		newStakeActionReference_.nftId = nftId_;
 		// #enable_asserts assert(newStakeActionReference_.nftOwnerAddress == address(0));
 		newStakeActionReference_.nftOwnerAddress = msg.sender;
-		uint256 newStakeActionIndex_ = numStakedNfts;
+		uint256 newNumStakedNfts_ = numStakedNfts;
+		uint256 newStakeActionIndex_ = newNumStakedNfts_;
 		// #enable_asserts assert(newStakeActionReference_.index == 0);
 		newStakeActionReference_.index = newStakeActionIndex_;
 
@@ -119,24 +100,15 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// We are now overwriting it.
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
 
-		uint256 newNumStakedNfts_ = newStakeActionIndex_ + 1;
+		++ newNumStakedNfts_;
 		numStakedNfts = newNumStakedNfts_;
-		emit NftStaked(newStakeActionId_, NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
+		emit NftStaked(newStakeActionId_, nftId_, msg.sender, newNumStakedNfts_);
+
+		// [Comment-202501145]
+		// Somewhere around here or in the caller method
+		// it could make sense to use the feature Comment-202501144 is talking about.
+		// [/Comment-202501145]
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
-
-		// #endregion
-		// #region
-
-		// #enable_asserts assert(numStakedNfts == initialNumStakedNfts_ + 1);
-		// #enable_asserts assert(usedNfts[nftId_] == 1);
-		// #enable_asserts assert(actionCounter > 0);
-		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
-		// #enable_asserts assert(stakeActions[newStakeActionId_].index == numStakedNfts - 1);
-		// #enable_asserts assert(stakeActions[newStakeActionId_].nftId == nftId_);
-		// #enable_asserts assert(stakeActions[newStakeActionId_].nftOwnerAddress == msg.sender);
-		// #enable_asserts assert(stakeActionIds[numStakedNfts - 1] == newStakeActionId_);
-
-		// #endregion
 	}
 
 	// #endregion
@@ -148,17 +120,13 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
 	///    `numStakedNfts`.
+	///    `actionCounter`.
 	///    `NftUnstaked`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	function unstake(uint256 stakeActionId_) public override {
-		// #region
-
-		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
-
-		// #endregion
 		// #region
 
 		StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
@@ -169,23 +137,19 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress == address(0)) {
-				// [Comment-202410182]
-				// One might want to implement logic that investigates whether this stake action existed and then was deleted
-				// or never existed, and then provide a more accurate error type and description.
-				// But it's really either impossible or unnecessary to implement that kind of logic.
-				// [/Comment-202410182]
 				revert CosmicSignatureErrors.NftStakeActionInvalidId("Invalid NFT stake action ID.", stakeActionId_);
 			} else {
 				// #enable_asserts assert(stakeActionIds[stakeActions[stakeActionId_].index] == stakeActionId_);
 				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, msg.sender);
 			}
 		}
-
 		// #enable_asserts assert(stakeActionIds[stakeActions[stakeActionId_].index] == stakeActionId_);
 
 		// #endregion
 		// #region
 
+		delete stakeActionReference_.nftId;
+		delete stakeActionReference_.nftOwnerAddress;
 		uint256 newNumStakedNfts_ = numStakedNfts - 1;
 		numStakedNfts = newNumStakedNfts_;
 
@@ -195,8 +159,6 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		stakeActions[lastStakeActionId_].index = stakeActionCopy_.index;
 		delete stakeActionReference_.index;
-		delete stakeActionReference_.nftId;
-		delete stakeActionReference_.nftOwnerAddress;
 		stakeActionIds[stakeActionCopy_.index] = lastStakeActionId_;
 
 		// // [Comment-202502263]
@@ -204,20 +166,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// // [/Comment-202502263]
 		// delete stakeActionIds[newNumStakedNfts_];
 
-		emit NftUnstaked(stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_);
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
+		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_);
+
+		// Comment-202501145 applies.
 		randomWalkNft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);
-
-		// #endregion
-		// #region
-
-		// #enable_asserts assert(numStakedNfts == initialNumStakedNfts_ - 1);
-		// #enable_asserts assert(randomWalkNft.ownerOf(stakeActionCopy_.nftId) == msg.sender);
-		// #enable_asserts assert(stakeActions[stakeActionId_].index == 0);
-		// #enable_asserts assert(stakeActions[stakeActionId_].nftId == 0);
-		// #enable_asserts assert(stakeActions[stakeActionId_].nftOwnerAddress == address(0));
-
-		// // This is no longer the case because I eliminated this item deletion near Comment-202502263.
-		// // #enable_asserts assert(stakeActionIds[numStakedNfts] == 0);
 
 		// #endregion
 	}
@@ -227,18 +181,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `numStakedNfts`.
 	///    `unstake`.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external override {
-		// #enable_asserts uint256 initialNumStakedNfts_ = numStakedNfts;
-
-		// Comment-202502265 applies.
-		for ( uint256 stakeActionIdIndex_ = 0; stakeActionIdIndex_ < stakeActionIds_.length; ++ stakeActionIdIndex_ ) {
-
+		for (uint256 stakeActionIdIndex_ = stakeActionIds_.length; stakeActionIdIndex_ > 0; ) {
+			-- stakeActionIdIndex_;
 			unstake(stakeActionIds_[stakeActionIdIndex_]);
 		}
-
-		// #enable_asserts assert(numStakedNfts == initialNumStakedNfts_ - stakeActionIds_.length);
 	}
 
 	// #endregion

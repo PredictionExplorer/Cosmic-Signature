@@ -28,6 +28,7 @@ describe("CosmicSignatureNft", function () {
 		).to.be.revertedWithCustomError(newCosmicSignatureNft, /*"ZeroAddress"*/ "ERC721InvalidReceiver");
 		await newCosmicSignatureNft.connect(signer0).mint(0n, signer2.address, generateRandomUInt256());
 	});
+
 	it("setNftGenerationScriptUri() works as expected", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -36,6 +37,7 @@ describe("CosmicSignatureNft", function () {
 		expect(await cosmicSignatureNft.nftGenerationScriptUri()).to.equal("url://");
 		await expect(cosmicSignatureNft.connect(signer1).setNftGenerationScriptUri("none")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 	});
+
 	it("setNftName behaves correctly", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
@@ -72,6 +74,7 @@ describe("CosmicSignatureNft", function () {
 		await cosmicSignatureNft.connect(signer2).setNftName(token_id, "name 2");
 		expect(await cosmicSignatureNft.getNftName(token_id)).equal("name 2");
 	});
+	
 	it("BaseURI/TokenURI works", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

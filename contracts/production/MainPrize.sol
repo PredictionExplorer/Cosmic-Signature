@@ -6,7 +6,8 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
-// #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 // import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
@@ -448,36 +449,48 @@ abstract contract MainPrize is
 					// #endregion
 					// #region ETH for CosmicSignature NFT stakers.
 
-					try stakingWalletCosmicSignatureNft.depositIfPossible{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
-					} catch (bytes memory errorDetails_) {
-						// [ToDo-202409226-1]
-						// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred_` to `true` or `false`.
-						// Then remove this ToDo and all mentionings of it elsewhere in the codebase.
-						// [/ToDo-202409226-1]
-						bool unexpectedErrorOccurred_;
-						
-						// [Comment-202410149/]
-						if (errorDetails_.length == 100) {
+					try stakingWalletCosmicSignatureNft.deposit{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
+					// } catch (bytes memory errorDetails_) {
+					// 	// [ToDo-202409226-1]
+					// 	// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred_` to `true` or `false`.
+					// 	// Then remove this ToDo and all mentionings of it elsewhere in the codebase.
+					// 	// [/ToDo-202409226-1]
+					// 	bool unexpectedErrorOccurred_;
+					//
+					// 	// todo-0 Delete>>>// [Comment-202410149/]
+					// 	if (errorDetails_.length == 100) {
+					//
+					// 		bytes4 errorSelector_;
+					// 		assembly { errorSelector_ := mload(add(errorDetails_, 0x20)) }
+					// 		unexpectedErrorOccurred_ = errorSelector_ != CosmicSignatureErrors.NoStakedNfts.selector;
+					// 	} else {
+					// 		// todo-0 Delete>>>// [Comment-202410299/]
+					// 		// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails_.length);
+					//
+					// 		unexpectedErrorOccurred_ = true;
+					// 	}
+					// 	if (unexpectedErrorOccurred_) {
+					// 		// todo-1 Investigate under what conditions we can possibly reach this point.
+					// 		// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
+					// 		// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
+					// 		revert
+					// 			CosmicSignatureErrors.FundTransferFailed(
+					// 				"ETH deposit to StakingWalletCosmicSignatureNft failed.",
+					// 				address(stakingWalletCosmicSignatureNft),
+					// 				cosmicSignatureNftStakingTotalEthRewardAmount_
+					// 			);
+					// 	}
+					// 	charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
+					//
+					// 	// One might want to reset `cosmicSignatureNftStakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
+					// }
+					} catch Panic(uint256 errorCode_) {
+						// Comment-202410161 relates.
+						if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
 
-							bytes4 errorSelector_;
-							assembly { errorSelector_ := mload(add(errorDetails_, 0x20)) }
-							unexpectedErrorOccurred_ = errorSelector_ != CosmicSignatureErrors.NoStakedNfts.selector;
-						} else {
-							// [Comment-202410299/]
-							// #enable_asserts // #disable_smtchecker console.log("Error 202410303.", errorDetails_.length);
-
-							unexpectedErrorOccurred_ = true;
-						}
-						if (unexpectedErrorOccurred_) {
-							// todo-1 Investigate under what conditions we can possibly reach this point.
-							// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
-							// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
-							revert
-								CosmicSignatureErrors.FundTransferFailed(
-									"ETH deposit to StakingWalletCosmicSignatureNft failed.",
-									address(stakingWalletCosmicSignatureNft),
-									cosmicSignatureNftStakingTotalEthRewardAmount_
-								);
+							// todo-1 Test that this correctly rethrows other panic codes
+							// todo-1 by setting fake ETH balance to a huge value to cause the sum of ETH deposits to overflow.
+							OpenZeppelinPanic.panic(errorCode_);
 						}
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
 

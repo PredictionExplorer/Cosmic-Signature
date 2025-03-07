@@ -535,7 +535,6 @@ abstract contract BiddingOpenBid is
 	// #region `_bidCommon`
 
 	/// @notice Internal function to handle common bid logic.
-	/// @dev This function updates game state and distributes rewards.
 	/// @param message_ The bidder's message.
 	/// --- param bidType_ Bid type code.
 	function _bidCommon(string memory message_ /* , BidType bidType_ */) internal /*nonReentrant*/ _onlyRoundIsActive {

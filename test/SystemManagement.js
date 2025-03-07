@@ -138,6 +138,7 @@ describe("SystemManagement", function () {
 		expect(await cosmicSignatureGameProxy.roundActivationTime()).to.equal(123n);
 		expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).lessThan(-1e9);
 	});
+
 	it("When the current bidding round is active, setters are not available", async function () {
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
@@ -176,6 +177,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleCosmicSignatureNftsForBidders(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 	});
+
 	// todo-1 Doesn't this test belong to "Bidding.js"?
 	it("When the current bidding round is inactive, _onlyRoundIsActive methods are not available", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
@@ -206,6 +208,7 @@ describe("SystemManagement", function () {
 		// // todo-1 and NFT donation without making a bid is now prohibited.
 		// await expect(cosmicSignatureGameProxy.connect(signer1).donateNft(randomWalkNftAddr, 0n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsInactive");
 	});
+
 	// todo-1 Doesn't this test belong to "Bidding.js"?
 	it("Regardless if the current bidding round is active or not, the behavior is correct", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
@@ -253,6 +256,7 @@ describe("SystemManagement", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 	});
+	
 	it("Unauthorized access to restricted methods is denied", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
