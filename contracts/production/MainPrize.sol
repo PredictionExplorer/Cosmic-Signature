@@ -449,7 +449,7 @@ abstract contract MainPrize is
 					// #endregion
 					// #region ETH for CosmicSignature NFT stakers.
 
-					try stakingWalletCosmicSignatureNft.depositIfPossible{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
+					try stakingWalletCosmicSignatureNft.deposit{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
 					// } catch (bytes memory errorDetails_) {
 					// 	// [ToDo-202409226-1]
 					// 	// Nick, you might want to develop tests for all possible cases that set `unexpectedErrorOccurred_` to `true` or `false`.
@@ -488,6 +488,8 @@ abstract contract MainPrize is
 						// Comment-202410161 relates.
 						if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
 
+							// todo-1 Test that this correctly rethrows other panic codes
+							// todo-1 by setting fake ETH balance to a huge value to cause the sum of ETH deposits to overflow.
 							OpenZeppelinPanic.panic(errorCode_);
 						}
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;

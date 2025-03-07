@@ -90,24 +90,18 @@ contract BrokenStakingWalletCosmicSignatureNft {
 		require(!_blockDeposits, "I am not accepting deposits");
 	}
 
-	// /// @dev we don't call it doDeposit() because this method is called from CosmicSignatureGame.sol
-	// function deposit() external payable {
-	// 	require(!_blockDeposits, "I am not accepting deposits");
-	// 	_stakingWalletCosmicSignatureNft.deposit();
-	// }
-
-	/// @dev we don't call it doDepositIfPossible() because this method is called from CosmicSignatureGame.sol
-	function depositIfPossible(uint256 roundNum_) external payable {
+	/// @dev We don't call it doDeposit() because this method is called from CosmicSignatureGame.sol
+	function deposit(uint256 roundNum_) external payable {
 		require(!_blockDeposits, "I am not accepting deposits");
-		_stakingWalletCosmicSignatureNft.depositIfPossible(roundNum_);
+		_stakingWalletCosmicSignatureNft.deposit(roundNum_);
 	}
 
 	function doStake(uint256 nftId) external {
 		_stakingWalletCosmicSignatureNft.stake(nftId);
 	}
 
-	function doUnstake(uint256 stakeActionId_/*, uint256 numEthDepositsToEvaluateMaxLimit_*/) external {
-		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_/*, numEthDepositsToEvaluateMaxLimit_*/);
+	function doUnstake(uint256 stakeActionId_) external {
+		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_);
 	}
 
 	// I have commented this method out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
@@ -237,23 +231,28 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		}
 	}
 
-	// function depositStakingCST() external payable {
-	//		// todo-9 Should we make a high level call here? Comment-202502043 relates.
-	// 	(bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
-	// 		abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
-	// 	);
-	// 	if ( ! isSuccess_ ) {
-	// 		assembly {
-	// 			let ptr := mload(0x40)
-	// 			let size := returndatasize()
-	// 			returndatacopy(ptr, 0, size)
-	// 			revert(ptr, size)
-	// 		}
-	// 	}
-	// }
+	function depositToStakingWalletCosmicSignatureNft() external payable {
+		// #region // Old Version
 
-	function depositToStakingWalletCosmicSignatureNftIfPossible() external payable {
-		stakingWalletCosmicSignatureNft.depositIfPossible{ value: msg.value }(roundNum);
+		// 	// todo-9 Should we make a high level call here? Comment-202502043 relates.
+		// (bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
+		// 	abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
+		// );
+		// if ( ! isSuccess_ ) {
+		// 	assembly {
+		// 		let ptr := mload(0x40)
+		// 		let size := returndatasize()
+		// 		returndatacopy(ptr, 0, size)
+		// 		revert(ptr, size)
+		// 	}
+		// }
+
+		// #endregion 
+		// #region New Version
+
+		stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum);
+
+		// #endregion 
 	}
 }
 

@@ -3,11 +3,26 @@ pragma solidity 0.8.28;
 
 import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
-/// @title Staking wallet for CosmicSignature NFTs.
+/// @title Staking wallet for Cosmic Signature NFTs.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface allows users to stake their Cosmic Signature NFTs and earn rewards.
-/// Supports CosmicSignature NFT staking and unstaking, as well as staking reward deposits and distribution.
+/// Supports Cosmic Signature NFT staking and unstaking, as well as staking reward deposits and distribution.
 interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
+	/// @notice Emitted when an NFT is staked.
+	/// @param stakeActionId Stake action ID.
+	/// @param nftId Staked NFT ID.
+	/// @param stakerAddress Staker (NFT owner) address.
+	/// todo-1 ??? Reorder the above param to before `nftId`.
+	/// @param numStakedNfts Staked NFT count after this action.
+	/// @param rewardAmountPerStakedNft The current all-time cumulative staking ETH reward amount per staked NFT.
+	event NftStaked(
+		uint256 indexed stakeActionId,
+		uint256 indexed nftId,
+		address indexed stakerAddress,
+		uint256 numStakedNfts,
+		uint256 rewardAmountPerStakedNft
+	);
+
 	/// @notice Emitted when an NFT is unstaked and a staking reward is paid to the staker.
 	/// @param actionCounter An always increasing by at least 1 unique ID of this action.
 	/// @param stakeActionId Stake action ID.
@@ -15,15 +30,17 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param stakerAddress Staker (NFT owner) address.
 	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param numStakedNfts Staked NFT count after this action.
+	/// @param rewardAmountPerStakedNft The current all-time cumulative staking ETH reward amount per staked NFT.
 	/// @param rewardAmount Staking ETH reward amount paid to the staker.
-	/// It can potentially be zero.
+	/// It equals the difference of `rewardAmountPerStakedNft` provided in the `NftUnstaked` and `NftStaked` events
+	/// with the same `stakeActionId`.
 	event NftUnstaked(
 		uint256 /*indexed*/ actionCounter,
 		uint256 indexed stakeActionId,
-		// NftTypeCode /*indexed*/ nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts,
+		uint256 rewardAmountPerStakedNft,
 		uint256 rewardAmount
 	);
 
@@ -32,12 +49,15 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param actionCounter An always increasing by at least 1 unique ID of this action.
 	/// @param depositAmount The deposited ETH amount.
 	/// It can potentially be zero.
+	/// @param rewardAmountPerStakedNft The all-time cumulative staking ETH reward amount per staked NFT after this action.
+	/// It can potentially be zero.
 	/// @param numStakedNfts The current staked NFT count.
 	/// It cannot be zero because the transaction would revert near Comment-202410161.
 	event EthDepositReceived(
 		uint256 indexed roundNum,
 		uint256 /*indexed*/ actionCounter,
 		uint256 depositAmount,
+		uint256 rewardAmountPerStakedNft,
 		uint256 numStakedNfts
 	);
 
@@ -53,13 +73,13 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	function unstakeMany(uint256[] calldata stakeActionIds_) external;
 
 	/// @notice Receives an ETH deposit to be distributed to stakers.
-	/// This method is not designed to handle the case when there are no staked NFTs, which is why it's named "if possible",
+	/// This method is not designed to handle the case when there are no staked NFTs,
 	/// so in that case, near Comment-202410161, it will revert the transaction with the division-by-zero panic.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// It's because otherwise the backend would have to support the processing of any unexpected deposits.
 	/// `msg.value` can potentially be zero.
 	/// @param roundNum_ The ended bidding round number.
-	function depositIfPossible(uint256 roundNum_) external payable;
+	function deposit(uint256 roundNum_) external payable;
 
 	/// @notice If eventually all stakers unstake their NFTs, the owner of this contract has an option to call this method
 	/// to transfer a small remaining balance to charity (or to the owner themselves -- to recoup the transaction fees).

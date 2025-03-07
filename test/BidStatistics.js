@@ -18,6 +18,7 @@ describe("BidStatistics", function () {
 	// 		{ name:	"currentRoundNum", type: "uint256"},
 	// 	],
 	// };
+
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
@@ -59,6 +60,7 @@ describe("BidStatistics", function () {
 		expect(maxbtime).to.equal(5000);
 		expect(maxbaddr).to.equal(signer2.address);
 	});
+
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
@@ -145,6 +147,7 @@ describe("BidStatistics", function () {
 		expect(maxbtime).to.equal(1000);
 		expect(maxbaddr).to.equal(signer1.address);
 	});
+	
 	// todo-1 We now also have chrono-warrior.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);

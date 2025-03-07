@@ -126,16 +126,16 @@ const deployContractsAdvanced = async function (
 		randomWalkNft = randomWalkNftFactory.attach(randomWalkNftAddr);
 	}
 
+	const stakingWalletRandomWalkNftFactory = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft", deployerAcct);
+	const stakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
+	await stakingWalletRandomWalkNft.waitForDeployment();
+	const stakingWalletRandomWalkNftAddr = await stakingWalletRandomWalkNft.getAddress();
+
 	const stakingWalletCosmicSignatureNftFactory = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft", deployerAcct);
 	const stakingWalletCosmicSignatureNft =
 		await stakingWalletCosmicSignatureNftFactory.deploy(cosmicSignatureNftAddr, cosmicSignatureGameProxyAddr);
 	await stakingWalletCosmicSignatureNft.waitForDeployment();
 	const stakingWalletCosmicSignatureNftAddr = await stakingWalletCosmicSignatureNft.getAddress();
-
-	const stakingWalletRandomWalkNftFactory = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft", deployerAcct);
-	const stakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
-	await stakingWalletRandomWalkNft.waitForDeployment();
-	const stakingWalletRandomWalkNftAddr = await stakingWalletRandomWalkNft.getAddress();
 
 	const marketingWalletFactory = await hre.ethers.getContractFactory("MarketingWallet", deployerAcct);
 	const marketingWallet = await marketingWalletFactory.deploy(cosmicSignatureTokenAddr);

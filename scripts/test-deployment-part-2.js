@@ -23,6 +23,7 @@ async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let mainEthPrizeAmount_ = await cosmicSignatureGame.getMainEthPrizeAmount();
 	let charityEthDonationAmount_ = await cosmicSignatureGame.getCharityEthDonationAmount();
+	// todo-1 Think about `gasLimit`. Maybe add it in some other places. Is there a default value when sending to a testnet or mainnet?
 	let tx = await cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");

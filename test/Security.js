@@ -41,6 +41,7 @@ describe("Security", function () {
 		// Make sure there is no re-entrancy
 		await expect(reClaim.connect(signer3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
 	});
+	
 	it("It's impossible to claim the main prize before someone bids", async function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

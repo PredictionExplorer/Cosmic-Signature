@@ -6,6 +6,7 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 
@@ -28,11 +29,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	uint256[1 << 64] public usedNfts;
 
 	/// @notice This variable is used to generate monotonic unique IDs.
-	/// @dev Issue. Yuriy would prefer to declare this variable `internal` (and name it `_...`),
-	/// but Nick is saying that he needs it to monitor contract activities.
-	/// A problem is that the suitability of this variable for any purpose other than what the @notice says is purely accidential.
-	/// Any refactoring can easily break things.
-	/// todo-1 ??? Talk to Nick again.
+	/// @dev One might want to declare this variable `internal` (and name it `_...`), but Nick needs it to be `public`.
 	uint256 public actionCounter = 0;
 
 	// #endregion
@@ -48,7 +45,17 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #endregion
 	// #region `stake`
 
-	function stake(uint256 nftId_) public override virtual;
+	/// @dev
+	/// Observable universe entities accessed here:
+	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
+	///    `usedNfts`.
+	function stake(uint256 nftId_) public override virtual {
+		require(
+			usedNfts[nftId_] == 0,
+			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
+		);
+		usedNfts[nftId_] = 1;
+	}
 
 	// #endregion
 	// #region `stakeMany`

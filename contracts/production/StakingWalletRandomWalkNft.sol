@@ -73,22 +73,16 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
-	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
-	///    `NftTypeCode`.
-	///    `NftStaked`.
 	///    `numStakedNfts`.
-	///    `usedNfts`.
 	///    `actionCounter`.
+	///    `super.stake`.
+	///    `NftStaked`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
-		require(
-			usedNfts[nftId_] == 0,
-			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
-		);
-		usedNfts[nftId_] = 1;
+		super.stake(nftId_);
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
@@ -108,7 +102,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		++ newNumStakedNfts_;
 		numStakedNfts = newNumStakedNfts_;
-		emit NftStaked(newStakeActionId_, NftTypeCode.RandomWalk, nftId_, msg.sender, newNumStakedNfts_);
+		emit NftStaked(newStakeActionId_, nftId_, msg.sender, newNumStakedNfts_);
 
 		// [Comment-202501145]
 		// Somewhere around here or in the caller method
@@ -126,6 +120,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
 	///    `numStakedNfts`.
+	///    `actionCounter`.
 	///    `NftUnstaked`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
@@ -153,6 +148,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #endregion
 		// #region
 
+		delete stakeActionReference_.nftId;
+		delete stakeActionReference_.nftOwnerAddress;
 		uint256 newNumStakedNfts_ = numStakedNfts - 1;
 		numStakedNfts = newNumStakedNfts_;
 
@@ -161,8 +158,6 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		uint256 lastStakeActionId_ = stakeActionIds[newNumStakedNfts_];
 
 		stakeActions[lastStakeActionId_].index = stakeActionCopy_.index;
-		delete stakeActionReference_.nftId;
-		delete stakeActionReference_.nftOwnerAddress;
 		delete stakeActionReference_.index;
 		stakeActionIds[stakeActionCopy_.index] = lastStakeActionId_;
 
@@ -171,7 +166,9 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// // [/Comment-202502263]
 		// delete stakeActionIds[newNumStakedNfts_];
 
-		emit NftUnstaked(stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_);
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
+		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, msg.sender, newNumStakedNfts_);
 
 		// Comment-202501145 applies.
 		randomWalkNft.transferFrom(address(this), msg.sender, stakeActionCopy_.nftId);

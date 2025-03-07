@@ -48,7 +48,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// This array is sparse (can contain gaps).
 	StakeAction[1 << 64] public stakeActions;
 
-	/// @notice All-time cumulative staking ETH reward amount per staked NFT.
+	/// @notice The all-time cumulative staking ETH reward amount per staked NFT.
 	uint256 public rewardAmountPerStakedNft = 0;
 
 	// #endregion
@@ -88,23 +88,17 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    `_msgSender`.
-	///    `NftTypeCode`.
-	///    `NftStaked`.
 	///    `numStakedNfts`.
-	///    `usedNfts`.
 	///    `actionCounter`.
+	///    `super.stake`.
+	///    `NftStaked`.
 	///    `StakeAction`.
 	///    `nft`.
 	///    `stakeActions`.
 	///    `rewardAmountPerStakedNft`.
 	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
-		require(
-			usedNfts[nftId_] == 0,
-			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
-		);
-		usedNfts[nftId_] = 1;
+		super.stake(nftId_);
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
@@ -113,11 +107,12 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		newStakeActionReference_.nftId = nftId_;
 		// #enable_asserts assert(newStakeActionReference_.nftOwnerAddress == address(0));
 		newStakeActionReference_.nftOwnerAddress = _msgSender();
+		uint256 rewardAmountPerStakedNftCopy_ = rewardAmountPerStakedNft;
 		// #enable_asserts assert(newStakeActionReference_.initialRewardAmountPerStakedNft == 0);
-		newStakeActionReference_.initialRewardAmountPerStakedNft = rewardAmountPerStakedNft;
+		newStakeActionReference_.initialRewardAmountPerStakedNft = rewardAmountPerStakedNftCopy_;
 		uint256 newNumStakedNfts_ = numStakedNfts + 1;
 		numStakedNfts = newNumStakedNfts_;
-		emit NftStaked(newStakeActionId_, NftTypeCode.CosmicSignature, nftId_, _msgSender(), newNumStakedNfts_);
+		emit NftStaked(newStakeActionId_, nftId_, _msgSender(), newNumStakedNfts_, rewardAmountPerStakedNftCopy_);
 
 		// Comment-202501145 applies.
 		nft.transferFrom(_msgSender(), address(this), nftId_);
@@ -158,7 +153,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	}
 
 	// #endregion
-	// #region `depositIfPossible`
+	// #region `deposit`
 
 	/// @dev
 	/// Observable universe entities accessed here:
@@ -168,24 +163,25 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `EthDepositReceived`.
 	///    `rewardAmountPerStakedNft`.
 	///    `_onlyGame`.
-	function depositIfPossible(uint256 roundNum_) external payable override _onlyGame {
+	function deposit(uint256 roundNum_) external payable override _onlyGame {
 		// This can be zero.
 		// Comment-202410161 relates.
 		uint256 numStakedNftsCopy_ = numStakedNfts;
 
 		// [Comment-202410161]
-		// The division can panic due to division by zero.
 		// This can potentially be zero.
+		// The division can panic due to division by zero.
 		// Comment-202503043 relates and/or applies.
 		// todo-1 Test that this doesn't burn all remaining gas. Remember that the caller sends only 63/64 of it to us.
 		// [/Comment-202410161]
 		// Comment-202412045 applies.
-		uint256 newRewardAmountPerStakedNft_ = msg.value / numStakedNftsCopy_;
+		uint256 rewardAmountPerStakedNftIncrement_ = msg.value / numStakedNftsCopy_;
 
-		rewardAmountPerStakedNft += newRewardAmountPerStakedNft_;
+		uint256 newRewardAmountPerStakedNft_ = rewardAmountPerStakedNft + rewardAmountPerStakedNftIncrement_;
+		rewardAmountPerStakedNft = newRewardAmountPerStakedNft_;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
-		emit EthDepositReceived(roundNum_, newActionCounter_, msg.value, numStakedNftsCopy_);
+		emit EthDepositReceived(roundNum_, newActionCounter_, msg.value, newRewardAmountPerStakedNft_, numStakedNftsCopy_);
 	}
 
 	// #endregion
@@ -255,8 +251,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `nft`.
 	///    `stakeActions`.
 	///    `rewardAmountPerStakedNft`.
-	function _unstake(uint256 stakeActionId_) private
-		returns (uint256) {
+	function _unstake(uint256 stakeActionId_) private returns (uint256) {
 		StakeAction storage stakeActionReference_ = stakeActions[stakeActionId_];
 		StakeAction memory stakeActionCopy_ = stakeActionReference_;
 		if (_msgSender() != stakeActionCopy_.nftOwnerAddress) {
@@ -266,18 +261,19 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 				revert CosmicSignatureErrors.NftStakeActionAccessDenied("Only NFT owner is permitted to unstake it.", stakeActionId_, _msgSender());
 			}
 		}
-
-		// This can potentially be zero.
-		uint256 rewardAmount_ = rewardAmountPerStakedNft - stakeActionCopy_.initialRewardAmountPerStakedNft;
-
 		delete stakeActionReference_.nftId;
 		delete stakeActionReference_.nftOwnerAddress;
 		delete stakeActionReference_.initialRewardAmountPerStakedNft;
+		uint256 rewardAmountPerStakedNftCopy_ = rewardAmountPerStakedNft;
+
+		// This can potentially be zero.
+		uint256 rewardAmount_ = rewardAmountPerStakedNftCopy_ - stakeActionCopy_.initialRewardAmountPerStakedNft;
+
 		uint256 newNumStakedNfts_ = numStakedNfts - 1;
 		numStakedNfts = newNumStakedNfts_;
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
-		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, _msgSender(), newNumStakedNfts_, rewardAmount_);
+		emit NftUnstaked(newActionCounter_, stakeActionId_, stakeActionCopy_.nftId, _msgSender(), newNumStakedNfts_, rewardAmountPerStakedNftCopy_, rewardAmount_);
 
 		// Comment-202501145 applies.
 		nft.transferFrom(address(this), _msgSender(), stakeActionCopy_.nftId);

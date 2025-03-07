@@ -14,8 +14,10 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
-	await cosmicSignatureGame.connect(testingAcct).bidWithCst(10n ** 30n, "cst bid", { gasLimit: 30000000 });
+	// todo-1 Think about `gasLimit`. Maybe add it in some other places. Is there a default value when sending to a testnet or mainnet?
+	await cosmicSignatureGame.connect(testingAcct).bidWithCst(10n ** 30n, "cst bid", {gasLimit: 30000000});
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

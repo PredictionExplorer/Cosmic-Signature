@@ -24,6 +24,7 @@ describe("PrizesWallet", function () {
 		// await expect(newPrizesWallet.connect(signer0).depositEth(0, signer1.address)).to.be.revertedWithCustomError(newPrizesWallet, "ZeroValue");
 		await newPrizesWallet.connect(signer0).depositEth(0, signer1.address);
 	});
+	
 	it("withdrawEth works correctly", async function () {
 		const {ownerAcct, signers, prizesWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;

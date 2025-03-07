@@ -4,29 +4,6 @@ pragma solidity 0.8.28;
 import { IAddressValidator } from "./IAddressValidator.sol";
 
 interface IStakingWalletNftBase is IAddressValidator {
-	enum NftTypeCode {
-		/// @notice This denotes an uninitialized or invalid value.
-		None,
-
-		CosmicSignature,
-		RandomWalk
-	}
-
-	/// @notice Emitted when an NFT is staked.
-	/// @param stakeActionId Stake action ID.
-	/// @param nftTypeCode NFT type code.
-	/// @param nftId Staked NFT ID.
-	/// @param stakerAddress Staker (NFT owner) address.
-	/// todo-1 ??? Reorder the above param to before `nftTypeCode`.
-	/// @param numStakedNfts Staked NFT count after this action.
-	event NftStaked(
-		uint256 indexed stakeActionId,
-		NftTypeCode /*indexed*/ nftTypeCode,
-		uint256 indexed nftId,
-		address indexed stakerAddress,
-		uint256 numStakedNfts
-	);
-
 	/// @notice Stakes an NFT.
 	/// Transfers the NFT to this contract and records a stake action.
 	/// This method would revert if it already staked the given NFT in the past.

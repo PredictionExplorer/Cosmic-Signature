@@ -20,6 +20,7 @@ describe("Events", function () {
 		let seed = await cosmicSignatureNft.getNftSeed(0);
 		expect(tx).to.emit(cosmicSignatureNft, "NftMinted").withArgs(0n, bidder1.address, seed, 0n);
 	});
+
 	it("Shall emit the correct events in the CharityWallet contract", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, charityWallet, charityWalletAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -53,6 +54,7 @@ describe("Events", function () {
 			.to.emit(charityWallet, "FundsTransferredToCharity")
 			.withArgs(bidder3.address, balance);
 	});
+
 	it("Shall emit EthDonated on successful donation", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -70,6 +72,7 @@ describe("Events", function () {
 		const contractBalance = await hre.ethers.provider.getBalance(cosmicSignatureGameProxyAddr);
 		expect(contractBalance).to.equal(donationAmount_ + INITIAL_AMOUNT);
 	});
+
 	it("Shall emit MainPrizeClaimed and update main prize beneficiary on successful main prize claim", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet, prizesWalletAddr, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -146,6 +149,7 @@ describe("Events", function () {
 
 		expect(await cosmicSignatureGameProxy.roundNum()).to.equal(2);
 	});
+
 	it("BidPlaced is correctly emitted", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -166,6 +170,7 @@ describe("Events", function () {
 			.to.emit(cosmicSignatureGameProxy, "BidPlaced")
 			.withArgs(0, signer1.address, 1020100000000000, -1, 0, "random walk", 2100003601);
 	});
+
 	// todo-1 Consifder moving this to Bidding tests.
 	it("ETH + RandomWalk NFT bid price is 50% lower", async function () {
 		// todo-1 For the complete code coverage, this test needs to make multiple bids, claim main prize, more bids.
@@ -185,6 +190,7 @@ describe("Events", function () {
 			.to.emit(cosmicSignatureGameProxy, "BidPlaced")
 			.withArgs(0, signer1.address, nextEthPlusRandomWalkNftBidPrice_, -1, 0, "random walk", 100_000_000_000n + initialDurationUntilMainPrize_);
 	});
+
 	it("DonatedNftClaimedEvent is correctly emitted", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, prizesWallet, prizesWalletAddr, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -212,6 +218,7 @@ describe("Events", function () {
 			.to.emit(prizesWallet, "DonatedNftClaimed")
 			.withArgs(0, bidder1.address, randomWalkNftAddr, 0, 0);
 	});
+
 	// todo-1 Consider moving this test to "Bidding.js".
 	it("It's not permitted to bid before round activation", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
@@ -240,6 +247,7 @@ describe("Events", function () {
 		await cosmicSignatureGameProxy.connect(bidder1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		expect((await cosmicSignatureGameProxy.getNextEthBidPrice(1n)) > nextEthBidPrice_);
 	});
+
 	// todo-1 Consider moving this test to "Bidding.js".
 	it("Should be possible to bid by sending to the contract", async function () {
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
@@ -254,6 +262,7 @@ describe("Events", function () {
 		await expect(bidder2.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).not.reverted;
 		expect((await cosmicSignatureGameProxy.getNextEthBidPrice(1n)) > nextEthBidPrice_);
 	});
+	
 	// todo-1 Move this to "SystemManagement.js"?
 	it("Admin events should work", async function () {
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);

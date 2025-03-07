@@ -23,37 +23,43 @@ describe("ZeroAddressChecking", function () {
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
 	});
-	// todo-1 Uncomment this test now?
+
+	// todo-1 We don't need this test any morfe, right?
 	// it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
 	// 	const {ownerAcct, marketingWallet,} = await loadFixture(deployContractsForUnitTesting);
 	//	
 	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
 	// });
+
 	it("Shouldn't be possible to deploy StakingWalletRandomWalkNft with zero-address-ed parameters", async function () {
 		const {stakingWalletRandomWalkNftFactory,} = await loadFixture(deployContractsForUnitTesting);
 
-		await expect(stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletRandomWalkNftFactory, "ZeroAddress");
+		await expect(stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(stakingWalletRandomWalkNftFactory, "ZeroAddress");
 	});
+
 	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
 		const {signers, stakingWalletCosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		await expect(stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, signer0.address, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
-		await expect(stakingWalletCosmicSignatureNftFactory.deploy(signer0.address, hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+		await expect(stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, signer0.address /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+		await expect(stakingWalletCosmicSignatureNftFactory.deploy(signer0.address, hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
 	});
+
 	it("Shouldn't be possible to deploy CosmicSignatureNft with zero-address-ed parameters", async function () {
 		const {cosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
 
-		await expect(cosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(cosmicSignatureNftFactory, "ZeroAddress");
+		await expect(cosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(cosmicSignatureNftFactory, "ZeroAddress");
 	});
+
 	it("Shouldn't be possible to deploy PrizesWallet with zero-address-ed parameters", async function () {
 		const {prizesWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 
-		await expect(prizesWalletFactory.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(prizesWalletFactory, "ZeroAddress");
+		await expect(prizesWalletFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(prizesWalletFactory, "ZeroAddress");
 	});
+
 	it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
 		const {marketingWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 
-		await expect(marketingWalletFactory.deploy(hre.ethers.ZeroAddress, {gasLimit: 3000000})).to.be.revertedWithCustomError(marketingWalletFactory, "ZeroAddress");
+		await expect(marketingWalletFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(marketingWalletFactory, "ZeroAddress");
 	});
 });

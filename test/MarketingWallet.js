@@ -14,6 +14,7 @@ describe("MarketingWallet", function () {
 	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
 	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(signer2.address)).to.emit(marketingWallet, "CosmicSignatureTokenAddressChanged").withArgs(signer2.address);
 	// });
+	
 	it("MarketingWallet.payReward behaves correctly", async function () {
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureToken, marketingWallet,} =
 			await loadFixture(deployContractsForUnitTesting);

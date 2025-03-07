@@ -19,6 +19,7 @@ describe("CharityWallet", function () {
 		let balanceAmountAfter = await hre.ethers.provider.getBalance(receiverAddress_);
 		expect(balanceAmountAfter).to.equal(balanceAmountBefore + amountSent);
 	});
+
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
 		const {deployerAcct, ownerAcct, charityAcct, signers, charityWallet, charityWalletAddr,} =
 			await loadFixture(deployContractsForUnitTesting);

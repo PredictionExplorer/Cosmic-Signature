@@ -8,15 +8,29 @@ import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 /// @notice A contract implementing this interface allows users to stake their RandomWalk NFTs and win prizes.
 /// Supports RandomWalk NFT staking and unstaking, as well as random staker selection.
 interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
+	/// @notice Emitted when an NFT is staked.
+	/// @param stakeActionId Stake action ID.
+	/// @param nftId Staked NFT ID.
+	/// @param stakerAddress Staker (NFT owner) address.
+	/// todo-1 ??? Reorder the above param to before `nftId`.
+	/// @param numStakedNfts Staked NFT count after this action.
+	event NftStaked(
+		uint256 indexed stakeActionId,
+		uint256 indexed nftId,
+		address indexed stakerAddress,
+		uint256 numStakedNfts
+	);
+
 	/// @notice Emitted when an NFT is unstaked.
+	/// @param actionCounter An always increasing by at least 1 unique ID of this action.
 	/// @param stakeActionId Stake action ID.
 	/// @param nftId Unstaked NFT ID.
 	/// @param stakerAddress Staker (NFT owner) address.
 	/// todo-1 ??? Reorder the above param to before `nftId`.
 	/// @param numStakedNfts Staked NFT count after this action.
 	event NftUnstaked(
+		uint256 /*indexed*/ actionCounter,
 		uint256 indexed stakeActionId,
-		// NftTypeCode /*indexed*/ nftTypeCode,
 		uint256 indexed nftId,
 		address indexed stakerAddress,
 		uint256 numStakedNfts

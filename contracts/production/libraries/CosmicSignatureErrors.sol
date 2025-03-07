@@ -149,7 +149,6 @@ library CosmicSignatureErrors {
 
 	// /// @notice Thrown when there are no staked NFTs.
 	// /// @param errStr Description of the error.
-	// /// @dev I have eliminated this and we now simply divide by the staked NFT count and handle the division by zero error.
 	// error NoStakedNfts(string errStr);
 
 	/// @notice Thrown when attempting to stake an NFT that has already been staked in the past.

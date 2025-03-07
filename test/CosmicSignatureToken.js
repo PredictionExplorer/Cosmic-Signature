@@ -13,6 +13,7 @@ describe("CosmicSignatureToken", function () {
 
 		expect(await cosmicSignatureToken.game()).equal(cosmicSignatureGameProxyAddr);
 	});
+	
 	it("ERC20 nonces() function exists", async function () {
 		const {signers, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
