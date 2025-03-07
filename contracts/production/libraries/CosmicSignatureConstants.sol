@@ -175,8 +175,9 @@ library CosmicSignatureConstants {
 	// #region Prizes Wallet
 
 	/// @notice See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	/// todo-0 Increase to 5 weeks, just in case a solar flare occurs or an asteroid hits the Earch. Tell the guys.
-	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 2 weeks;
+	/// @dev This should be longer -- to increase the chance that people will have enough time,
+	/// even if an asteroid hits the Earth.
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5 weeks;
 
 	// #endregion
 	// #region NFT Staking
