@@ -164,8 +164,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	///    `rewardAmountPerStakedNft`.
 	///    `_onlyGame`.
 	function deposit(uint256 roundNum_) external payable override _onlyGame {
-		// This can be zero.
-		// Comment-202410161 relates.
 		uint256 numStakedNftsCopy_ = numStakedNfts;
 
 		// [Comment-202410161]
