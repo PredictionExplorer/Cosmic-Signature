@@ -52,9 +52,9 @@ abstract contract SystemManagement is
 		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
-	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		nextEthBidPriceIncreaseDivisor = newValue_;
-		emit NextEthBidPriceIncreaseDivisorChanged(newValue_);
+	function setEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		ethBidPriceIncreaseDivisor = newValue_;
+		emit EthBidPriceIncreaseDivisorChanged(newValue_);
 	}
 
 	function setEthBidRefundAmountInGasMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

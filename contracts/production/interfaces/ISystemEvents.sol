@@ -27,9 +27,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event EthDutchAuctionEndingBidPriceDivisorChanged(uint256 newValue);
 
-	/// @notice Emitted when `nextEthBidPriceIncreaseDivisor` is changed.
+	/// @notice Emitted when `ethBidPriceIncreaseDivisor` is changed.
 	/// @param newValue The new value.
-	event NextEthBidPriceIncreaseDivisorChanged(uint256 newValue);
+	event EthBidPriceIncreaseDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `ethBidRefundAmountInGasMinLimit` is changed.
 	/// @param newValue The new value.

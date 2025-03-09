@@ -51,8 +51,8 @@ contract CosmicSignatureDao is
 		// [/Comment-202501123]
 		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		GovernorSettings(
-			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_DELAY,
-			CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTING_PERIOD,
+			CosmicSignatureConstants.DAO_DEFAULT_VOTING_DELAY,
+			CosmicSignatureConstants.DAO_DEFAULT_VOTING_PERIOD,
 			CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING
 		)
 
@@ -63,7 +63,7 @@ contract CosmicSignatureDao is
 		GovernorVotes(tokenAddress_)
 
 		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
-		GovernorVotesQuorumFraction(CosmicSignatureConstants.GOVERNOR_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
+		GovernorVotesQuorumFraction(CosmicSignatureConstants.DAO_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
 	}
 
 	// #endregion

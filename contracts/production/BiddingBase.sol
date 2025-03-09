@@ -29,6 +29,8 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		// // One might want to ensure that this is not in the past.
 		// // But `roundActivationTime` is really not supposed to be in the past.
 		// // So keeping it simple and effiicient.
+		// // But since we now require the first bid to be ETH, we no longer need to do this.
+		// // todo-1 Find all "cstDutchAuctionBeginningTimeStamp" and possibly comment in other similar places.
 		// // [/Comment-202411168]
 		// cstDutchAuctionBeginningTimeStamp = newValue_;
 

@@ -30,7 +30,7 @@ interface ICosmicSignatureGameStorage {
 	// 	CST
 	// }
 
-	/// @notice Stores each bid's bidder address.
+	/// @notice Contains each bid's bidder address.
 	struct BidderAddresses {
 		uint256 numItems;
 		mapping(uint256 bidNum => address bidderAddress) items;
@@ -40,8 +40,8 @@ interface ICosmicSignatureGameStorage {
 	struct BidderInfo {
 		/// @dev
 		/// [Comment-202502045]
-		/// Issue. It could make sense to eliminate this variable. It's not used in the logic, right?
-		/// But the project founders consider using the info for other purposes.
+		/// Issue. One might want to eliminate this variable.
+		/// But the project founders consider using this info for other purposes.
 		/// Comment-202411098 relates.
 		/// [/Comment-202502045]
 		uint256 totalSpentEthAmount;

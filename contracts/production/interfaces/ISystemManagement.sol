@@ -36,10 +36,10 @@ interface ISystemManagement is
 
 	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
+	/// @notice Sets `ethBidPriceIncreaseDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external;
+	function setEthBidPriceIncreaseDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `ethBidRefundAmountInGasMinLimit`.
 	/// Only the contract owner is permitted to call this method.

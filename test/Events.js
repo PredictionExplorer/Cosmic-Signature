@@ -339,11 +339,11 @@ describe("Events", function () {
 			.withArgs(ethDutchAuctionEndingBidPriceDivisor_);
 		expect((await cosmicSignatureGameProxy.ethDutchAuctionEndingBidPriceDivisor()).toString()).to.equal(ethDutchAuctionEndingBidPriceDivisor_.toString());
 
-		const nextEthBidPriceIncreaseDivisor_ = 1002n;
-		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNextEthBidPriceIncreaseDivisor(nextEthBidPriceIncreaseDivisor_))
-			.to.emit(cosmicSignatureGameProxy, "NextEthBidPriceIncreaseDivisorChanged")
-			.withArgs(nextEthBidPriceIncreaseDivisor_);
-		expect(await cosmicSignatureGameProxy.nextEthBidPriceIncreaseDivisor()).equal(nextEthBidPriceIncreaseDivisor_);
+		const ethBidPriceIncreaseDivisor_ = 1002n;
+		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setEthBidPriceIncreaseDivisor(ethBidPriceIncreaseDivisor_))
+			.to.emit(cosmicSignatureGameProxy, "EthBidPriceIncreaseDivisorChanged")
+			.withArgs(ethBidPriceIncreaseDivisor_);
+		expect(await cosmicSignatureGameProxy.ethBidPriceIncreaseDivisor()).equal(ethBidPriceIncreaseDivisor_);
 
 		const ethBidRefundAmountInGasMinLimit_ = 1007n;
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setEthBidRefundAmountInGasMinLimit(ethBidRefundAmountInGasMinLimit_))
