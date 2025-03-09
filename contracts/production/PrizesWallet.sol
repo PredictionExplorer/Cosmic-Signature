@@ -30,8 +30,8 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	/// @notice If a prize winner doesn't withdraw their prize within this timeout, anybody will be welcomed to withdraw it.
 	/// This timeout applies to all kinds of prizes, including ETH.
-	/// See also: `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
 	/// Comment-202411064 applies.
+	/// See also: `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
 	uint256 public timeoutDurationToWithdrawPrizes = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES;
 
 	/// @notice For each bidding round number, contains a timeout time

@@ -112,7 +112,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
-	/// todo-1 Review where this comment is referenced.
+	/// todo-1 +++ Review where this comment is referenced. Done on Mar 9.
 	/// [/Comment-202411064]
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
@@ -130,8 +130,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411168 relates.
 	uint256 public roundActivationTime;
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
+	/// @notice Comment-202501025 applies.
+	/// Comment-202411064 applies.
 	uint256 public ethDutchAuctionDurationDivisor;
 
 	/// @notice ETH Dutch auction beginning bid price.
@@ -168,12 +168,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411065]
 	uint256 public nextEthBidPrice;
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202411065 relates.
+	/// @notice Comment-202411065 relates.
+	/// Comment-202411064 applies.
 	uint256 public ethBidPriceIncreaseDivisor;
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202502052 applies.
+	/// @notice Comment-202502052 applies.
+	/// Comment-202411064 applies.
 	/// @dev Comment-202502054 applies.
 	uint256 public ethBidRefundAmountInGasMinLimit;
 
@@ -182,10 +182,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev Comment-202411168 relates.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
+	/// Comment-202411064 applies.
 	uint256 public cstDutchAuctionDurationDivisor;
 
 	/// @notice CST Dutch auction beginning bid price.
@@ -200,8 +201,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Next round first CST Dutch auction beginning bid price.
 	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202411066 relates.
+	/// @notice Comment-202411066 relates.
+	/// Comment-202411064 applies.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
 	/// @notice Each RandomWalk NFT is allowed to be used for bidding only once.
@@ -231,7 +232,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public cstRewardAmountMultiplier;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The percentage of ETH in the Game contract account to be paid to Crono-Warrior.
+	/// Comment-202411064 applies.
 	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
 	/// @notice Comment-202411064 applies.
@@ -255,8 +257,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Main Prize
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
+	/// @notice Comment-202501025 applies.
+	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
 	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
@@ -266,19 +268,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202412152]
 	uint256 public mainPrizeTime;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice Comment-202412152 relates.
+	/// Comment-202501025 relates.
+	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// [Comment-202411067]
 	/// We slightly exponentially increase this on every main prize claim, based on `mainPrizeTimeIncrementIncreaseDivisor`.
 	/// Comment-202412312 relates.
 	/// [/Comment-202411067]
-	/// Comment-202412152 relates.
-	/// Comment-202501025 relates.
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
-	/// @notice Comment-202411064 applies.
-	/// Comment-202501025 applies.
+	/// @notice Comment-202501025 applies.
 	/// Comment-202411067 relates.
+	/// Comment-202411064 applies.
 	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
 
 	/// @notice If the main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
@@ -301,13 +303,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region RandomWalk NFT
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The `RandomWalkNFT` contract address.
+	/// Comment-202411064 applies.
 	RandomWalkNFT public randomWalkNft;
 
 	// #endregion
 	// #region Cosmic Signature NFT
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The `CosmicSignatureNft` contract address.
+	/// Comment-202411064 applies.
 	CosmicSignatureNft public nft;
 
 	// #endregion

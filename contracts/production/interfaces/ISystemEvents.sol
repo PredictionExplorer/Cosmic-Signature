@@ -10,6 +10,9 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 
 /// @title Cosmic Signature Game Configuration Events.
 /// @author The Cosmic Signature Development Team.
+/// @notice For each parameter marked with Comment-202411064, provides an event to be emitted when the parameter changes.
+/// The logic also changes some of those variables. They are marked with Comment-202411172. And on that kind of change
+/// the respective event will not necessarily be emitted.
 interface ISystemEvents {
 	/// @notice Emitted when `delayDurationBeforeRoundActivation` is changed.
 	/// @param newValue The new value.
