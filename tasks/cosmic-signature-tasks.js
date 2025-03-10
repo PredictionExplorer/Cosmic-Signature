@@ -3,6 +3,7 @@
 "use strict";
 
 const nodeFsModule = require("node:fs");
+const { task } = require("hardhat/config.js");
 
 // Comment-202409255 relates.
 const { deployContracts } = require("../src/ContractDeploymentHelpers.js");
