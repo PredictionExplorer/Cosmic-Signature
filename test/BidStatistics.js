@@ -156,8 +156,8 @@ describe("BidStatistics", function () {
 		// test case description:
 		// first bid is made by signer0, to initialize all the variables, duration of 1000 seconds
 		// second bid is made by signer1 , duration of 2000 seconds
-		// bid 3 will be made by signer2, duration of 5000 seconds. 
-		// 5000 seconds is longer than 1000 seconds of signer0, and 2000 seconds of signer1, 
+		// bid 3 will be made by signer2, duration of 5000 seconds.
+		// 5000 seconds is longer than 1000 seconds of signer0, and 2000 seconds of signer1,
 		// therefore signer2 is the Endurance Champion
 		
 		// let donationAmount_ = hre.ethers.parseEther("10");

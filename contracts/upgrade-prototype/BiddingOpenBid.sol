@@ -69,14 +69,21 @@ abstract contract BiddingOpenBid is
 	// #region `receive`
 
 	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// Bidding with default parameters.
+		// #region // Old Version
+
 		// BidParams memory defaultParams;
 		// // defaultParams.message = "";
 		// defaultParams.randomWalkNftId = -1;
 		// // defaultParams.isOpenBid =
 		// bytes memory param_data = abi.encode(defaultParams);
 		// bidWithEth(param_data);
+
+		// #endregion
+		// #region New Version
+
 		_bidWithEth((-1), false, "");
+
+		// #endregion
 	}
 
 	// #endregion

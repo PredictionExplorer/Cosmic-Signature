@@ -30,8 +30,8 @@ abstract contract SystemManagement is
 	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
 		// [Comment-202411236]
 		// Imposing this requirement instead of `_onlyRoundIsInactive`.
-		// This design leaves the door open for the admin to change `roundActivationTime` to a point in the future
-		// and then change some parameters.
+		// This design leaves the door open for the admin, if the current bidding round is already active, but nobody placed a bid yet,
+		// to change `roundActivationTime` to a point in the future and then change some parameters.
 		// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
 		// [/Comment-202411236]
 		require(

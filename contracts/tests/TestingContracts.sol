@@ -247,12 +247,12 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		// 	}
 		// }
 
-		// #endregion 
+		// #endregion
 		// #region New Version
 
 		stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum);
 
-		// #endregion 
+		// #endregion
 	}
 }
 

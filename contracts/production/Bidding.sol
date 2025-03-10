@@ -36,7 +36,6 @@ abstract contract Bidding is
 	// #region `receive`
 
 	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// Bidding with default parameters.
 		_bidWithEth((-1), "");
 	}
 

@@ -28,7 +28,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		}
 	}
 
-	function getMainPrizeTimeIncrement() public view returns (uint256) {
+	function getMainPrizeTimeIncrement() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -46,8 +46,9 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		unchecked
 		// #enable_smtchecker */
 		{
+			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
-			mainPrizeTime = Math.max(mainPrizeTime, block.timestamp) + mainPrizeTimeIncrement_;
+			mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;
 		}
 	}
 }

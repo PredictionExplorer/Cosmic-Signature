@@ -107,6 +107,7 @@ contract CosmicSignatureGame is
 		// // [Comment-202411211]
 		// // If this condition is `true` it's likely that `setRoundActivationTime` will not be called,
 		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginningTimeStamp`.
+		// // todo-1 See todos in Comment-202411168.
 		// // [/Comment-202411211]
 		// if (CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
 		// 	// Comment-202411168 applies.

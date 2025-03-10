@@ -25,7 +25,7 @@ abstract contract EthDonations is
 		emit EthDonatedWithInfo(roundNum, _msgSender(), msg.value, ethDonationWithInfoRecordIndex_);
 	}
 
-	function numEthDonationWithInfoRecords() external view returns (uint256) {
+	function numEthDonationWithInfoRecords() external view override returns (uint256) {
 		return ethDonationWithInfoRecords.length;
 	}
 }

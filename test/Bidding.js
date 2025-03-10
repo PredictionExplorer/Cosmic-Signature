@@ -622,10 +622,10 @@ describe("Bidding", function () {
 	// 	let bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 0);
 	// 	expect(bAddr).to.equal(signer3.address);
 	//
-	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 1); 
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 1);
 	// 	expect(bAddr).to.equal(signer2.address);
 	//
-	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 2); 
+	// 	bAddr = await cosmicSignatureGameProxy.bidderAddress(0, 2);
 	// 	expect(bAddr).to.equal(signer1.address);
 	//
 	// 	bAddr = await expect(cosmicSignatureGameProxy.bidderAddress(1, 2)).to.be.revertedWithCustomError(

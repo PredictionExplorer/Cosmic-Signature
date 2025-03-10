@@ -29,6 +29,7 @@ interface ICharityWallet {
 	// event DonationSent(address indexed charityAddress, uint256 amount);
 
 	/// @notice Allows the contract to receive ETH donations.
+	/// It's OK if `msg.value` is zero.
 	receive() external payable;
 
 	/// @notice Sets `charityAddress`.

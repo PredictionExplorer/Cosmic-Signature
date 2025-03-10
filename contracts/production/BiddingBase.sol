@@ -30,14 +30,17 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		// // But `roundActivationTime` is really not supposed to be in the past.
 		// // So keeping it simple and effiicient.
 		// // But since we now require the first bid to be ETH, we no longer need to do this.
-		// // todo-1 Find all "cstDutchAuctionBeginningTimeStamp" and possibly comment in other similar places.
+		// // todo-1 Find all "cstDutchAuctionBeginningTimeStamp" (not whole word, case insensitive)
+		// // todo-1 and possibly write a note like the above in other similar places.
+		// // todo-1 Maybe write a comment near "cstDutchAuctionBeginningTimeStamp" and reference it.
+		// // todo-1 Or just delete all this garbage?
 		// // [/Comment-202411168]
 		// cstDutchAuctionBeginningTimeStamp = newValue_;
 
 		emit RoundActivationTimeChanged(newValue_);
 	}
 
-	function getDurationUntilRoundActivation() public view override returns (int256) {
+	function getDurationUntilRoundActivation() external view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

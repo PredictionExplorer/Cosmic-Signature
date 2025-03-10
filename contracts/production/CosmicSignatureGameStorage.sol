@@ -106,10 +106,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Bidding
 
 	/// @notice Bidding round counter.
-	/// For the first round, this equals zero.
+	/// Comment-202503092 applies.
 	uint256 public roundNum;
 
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
+	/// Comment-202503092 applies.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// todo-1 +++ Review where this comment is referenced. Done on Mar 9.
@@ -121,13 +122,22 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public delayDurationBeforeRoundActivation;
 
 	/// @notice The current bidding round activation time.
-	/// Starting at this point, people will be allowed to place bids.
+	/// Starting at this point in time, people will be allowed to place bids.
+	/// [Comment-202503092]
+	/// Conceptually, every point in time is within a bidding round, which number or index is specified by `roundNum`.
+	/// The first bidding round begins on the Game contract deployment, which is when `roundNum` is initialized with zero.
+	/// Another bidding round begins when main prize gets claimed, which is when `roundNum` is incremented.
+	/// However, each bidding round, including the first one, becomes active at some point after it begins,
+	/// as specified by `roundActivationTime`.
+	/// The delay duration from when another (not the first) bidding round begins and until it activates
+	/// is specified by `delayDurationBeforeRoundActivation`.
+	/// [/Comment-202503092]
 	/// Comment-202411064 applies.
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
 	/// [/Comment-202411172]
-	/// @dev Comment-202411236 relates.
-	/// Comment-202411168 relates.
+	/// @dev Comment-202411168 relates.
+	/// Comment-202411236 relates.
 	uint256 public roundActivationTime;
 
 	/// @notice Comment-202501025 applies.
@@ -161,7 +171,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Next ETH bid price.
 	/// [Comment-202501022]
-	/// This variable is valid only after the 1st ETH bid has been placed in the current bidding round.
+	/// This value is valid only after the 1st ETH bid has been placed in the current bidding round.
 	/// [/Comment-202501022]
 	/// [Comment-202411065]
 	/// We increase this based on `ethBidPriceIncreaseDivisor`.

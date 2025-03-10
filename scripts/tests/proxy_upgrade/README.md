@@ -12,7 +12,7 @@ This new business logic contract allows bidding with no upper limit. After bid i
         string message;
         int256 randomWalkNftId;
         bool isOpenBid; // true if the value sent with the TX is the amount of bid
-    }   
+    }
 
 The bidder now sends transaction for any amount in `msg.value`, that is multiple times bigger than `timesEthBidPrice` state variable which controls minimum value for open bids. For example if current bid price is 1 ETH and `timesEthBidPrice` = 3, then the `msg.value` must be minimum 3 ETH (or bigger). If it is lower, transaction will be reverted.
 
@@ -21,7 +21,7 @@ The call to the `bidWithEth` method must now be done in a new way:
     let bidParams = {message: "bid test", randomWalkNftId: -1, isOpenBid: true};
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
     let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
-    await cosmicSignatureGameProxy.connect(testingAcct).bidWithEth(params, {value: nextEthBidPrice_.mul(multiplier), gasLimit: 30000000}); 
+    await cosmicSignatureGameProxy.connect(testingAcct).bidWithEth(params, {value: nextEthBidPrice_.mul(multiplier), gasLimit: 30000000});
 
 In this example the `multiplier` variable is the `timesEthBidPrice` state variable (discussed above) which was read from the contract prior to execution of this code.
 
