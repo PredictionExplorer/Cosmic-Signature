@@ -35,6 +35,7 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
+	/// todo-0 write comment
 	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `ethBidPriceIncreaseDivisor`.
@@ -52,6 +53,7 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
 
+	/// todo-0 write comment
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
 	/// @notice Sets `bidMessageLengthMaxLimit`.
@@ -80,10 +82,13 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external;
 
+	/// todo-0 write comment
 	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
 
+	/// todo-0 write comment
 	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external;
 
+	/// todo-0 write comment
 	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
 
 	/// @notice Sets `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.

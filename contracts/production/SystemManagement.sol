@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-// import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
-import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 import { IRandomWalkNFT, RandomWalkNFT } from "./RandomWalkNFT.sol";
@@ -27,17 +24,22 @@ abstract contract SystemManagement is
 		emit DelayDurationBeforeRoundActivationChanged(newValue_);
 	}
 
-	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
-		// [Comment-202411236]
-		// Imposing this requirement instead of `_onlyRoundIsInactive`.
-		// This design leaves the door open for the admin, if the current bidding round is already active, but nobody placed a bid yet,
-		// to change `roundActivationTime` to a point in the future and then change some parameters.
-		// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
-		// [/Comment-202411236]
-		require(
-			lastBidderAddress == address(0),
-			CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
-		);
+	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ _noBidsPlacedInCurrentRound {
+		// // [Comment-202411236]
+		// // Imposing this requirement instead of `_onlyRoundIsInactive`.
+		// // This design leaves the door open for the admin, if the current bidding round is already active, but nobody placed a bid yet,
+		// // to change `roundActivationTime` to a point in the future and then change some parameters.
+		// // todo-1 The backend and frontend must expect that `roundActivationTime` changes.
+		// // todo-0 Move this comment to near `roundActivationTime`, under @notice.
+		// // todo-0 Similarly comment that `delayDurationBeforeRoundActivation` is allowed to be changed even while the current bidding round is active.
+		// // todo-0 Cross-ref that new comment with Comment-202411236.
+		// // todo-0 Maybe move Comment-202503092 under @dev.
+		// // todo-0 I have replaced this with `_noBidsPlacedInCurrentRound`. Move comments around and delete garbage.
+		// // [/Comment-202411236]
+		// require(
+		// 	lastBidderAddress == address(0),
+		// 	CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
+		// );
 
 		_setRoundActivationTime(newValue_);
 	}
