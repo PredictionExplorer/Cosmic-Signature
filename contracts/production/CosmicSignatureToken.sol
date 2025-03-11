@@ -251,8 +251,8 @@ contract CosmicSignatureToken is
 		// // #enable_asserts // #disable_smtchecker console.log("_update exiting.");
 	}
 
-	// // @dev I have tested that `super._update` calls this.
-	// // So I have confirmed that by calling `super._update` we call `ERC20Votes._update`, rather than `ERC20._update`.
+	// /// @dev I have tested that `super._update` calls this.
+	// /// So I have confirmed that by calling `super._update` we call `ERC20Votes._update`, rather than `ERC20._update`.
 	// function _transferVotingUnits(address from_, address to_, uint256 amount_) internal override {
 	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits entered.");
 	// 	super._transferVotingUnits(from_, to_, amount_);

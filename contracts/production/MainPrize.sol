@@ -254,7 +254,7 @@ abstract contract MainPrize is
 					// #endregion
 					// #region Processing CS NFTs.
 
-					{		
+					{
 						// #region
 
 						uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length;
@@ -337,7 +337,7 @@ abstract contract MainPrize is
 					// #endregion
 				}
 
-				// #endregion				
+				// #endregion
 				// #region CST for Marketing Wallet.
 
 				cosmicSignatureTokenMintSpecs_[0].account = marketingWallet;

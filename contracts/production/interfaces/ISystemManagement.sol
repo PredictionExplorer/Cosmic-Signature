@@ -20,13 +20,14 @@ interface ISystemManagement is
 	/// @notice Sets `delayDurationBeforeRoundActivation`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
+	/// @dev Comment-202503106 relates and/or applies.
 	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external;
 
 	/// @notice Sets `roundActivationTime`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev Comment-202411236 relates and/or applies.
-	/// Comment-202411168 relates and/or applies.
+	/// @dev Comment-202411168 relates and/or applies.
+	/// Comment-202411236 relates and/or applies.
 	function setRoundActivationTime(uint256 newValue_) external;
 
 	/// @notice Sets `ethDutchAuctionDurationDivisor`.
@@ -34,12 +35,15 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
-
-	/// @notice Sets `nextEthBidPriceIncreaseDivisor`.
+	/// @notice Sets `ethDutchAuctionEndingBidPriceDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external;
+	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
+
+	/// @notice Sets `ethBidPriceIncreaseDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setEthBidPriceIncreaseDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `ethBidRefundAmountInGasMinLimit`.
 	/// Only the contract owner is permitted to call this method.
@@ -51,6 +55,9 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
 
+	/// @notice Sets `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
 	/// @notice Sets `bidMessageLengthMaxLimit`.
@@ -79,10 +86,19 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external;
 
+	/// @notice Sets `numRaffleEthPrizesForBidders`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
 
+	/// @notice Sets `numRaffleCosmicSignatureNftsForBidders`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external;
 
+	/// @notice Sets `numRaffleCosmicSignatureNftsForRandomWalkNftStakers`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
 
 	/// @notice Sets `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.

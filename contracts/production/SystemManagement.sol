@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.28;
 
-// import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
-import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 import { IRandomWalkNFT, RandomWalkNFT } from "./RandomWalkNFT.sol";
@@ -27,18 +24,7 @@ abstract contract SystemManagement is
 		emit DelayDurationBeforeRoundActivationChanged(newValue_);
 	}
 
-	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
-		// [Comment-202411236]
-		// Imposing this requirement instead of `_onlyRoundIsInactive`.
-		// This design leaves the door open for the admin to change `roundActivationTime` to a point in the future
-		// and then change some parameters.
-		// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
-		// [/Comment-202411236]
-		require(
-			lastBidderAddress == address(0),
-			CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
-		);
-
+	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ _noBidsPlacedInCurrentRound {
 		_setRoundActivationTime(newValue_);
 	}
 
@@ -52,9 +38,9 @@ abstract contract SystemManagement is
 		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
-	function setNextEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		nextEthBidPriceIncreaseDivisor = newValue_;
-		emit NextEthBidPriceIncreaseDivisorChanged(newValue_);
+	function setEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		ethBidPriceIncreaseDivisor = newValue_;
+		emit EthBidPriceIncreaseDivisorChanged(newValue_);
 	}
 
 	function setEthBidRefundAmountInGasMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

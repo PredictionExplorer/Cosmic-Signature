@@ -106,7 +106,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `tryGetCurrentChampions`
 
-	function tryGetCurrentChampions() external view
+	function tryGetCurrentChampions() external view override
 		returns (
 			address enduranceChampionAddress_,
 			uint256 enduranceChampionDuration_,

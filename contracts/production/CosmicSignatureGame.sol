@@ -101,12 +101,13 @@ contract CosmicSignatureGame is
 		// ethDutchAuctionBeginningBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
 		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
-		nextEthBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_NEXT_ETH_BID_PRICE_INCREASE_DIVISOR;
+		ethBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR;
 		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
 
 		// // [Comment-202411211]
 		// // If this condition is `true` it's likely that `setRoundActivationTime` will not be called,
 		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginningTimeStamp`.
+		// // todo-1 See todos in Comment-202411168.
 		// // [/Comment-202411211]
 		// if (CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
 		// 	// Comment-202411168 applies.

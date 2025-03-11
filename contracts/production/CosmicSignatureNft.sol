@@ -27,10 +27,12 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	address public immutable game;
 
 	/// @notice The base URI for NFT metadata.
-	string public nftBaseUri = CosmicSignatureConstants.DEFAULT_COSMIC_SIGNATURE_NFT_BASE_URI;
+	/// Comment-202411064 applies.
+	string public nftBaseUri = CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI;
 
 	/// @notice An IPFS link to a script that generates NFT images and videos based on the given seed.
-	string public nftGenerationScriptUri = CosmicSignatureConstants.DEFAULT_COSMIC_SIGNATURE_NFT_GENERATION_SCRIPT_URI;
+	/// Comment-202411064 applies.
+	string public nftGenerationScriptUri = CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_DEFAULT_NFT_GENERATION_SCRIPT_URI;
 
 	/// @notice For each NFT index (which equals NFT ID), contains NFT details.
 	NftInfo[1 << 64] private _nftsInfo;
@@ -138,7 +140,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 		// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
 		// );
 		_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
-		if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NAME_LENGTH_MAX_LIMIT) {
+		if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT) {
 			revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);
 		}
 		_nftsInfo[nftId_].name = nftName_;

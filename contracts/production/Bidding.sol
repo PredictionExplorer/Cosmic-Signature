@@ -6,6 +6,7 @@ pragma solidity 0.8.28;
 // #endregion
 // #region
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
@@ -35,7 +36,6 @@ abstract contract Bidding is
 	// #region `receive`
 
 	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// Bidding with default parameters.
 		_bidWithEth((-1), "");
 	}
 
@@ -141,7 +141,7 @@ abstract contract Bidding is
 		// todo-1 Everywhere we use formulas that add 1, make sure the web site uses the same formulas.
 		// todo-1 For example, it offers to increase bid price by 1% or 2%.
 		// [/Comment-202501061]
-		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
+		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
 		// Updating bidding statistics.
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthBidPrice_;
@@ -177,6 +177,9 @@ abstract contract Bidding is
 			// Comment-202502054 relates and/or applies.
 			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
 			if (uint256(overpaidEthBidPrice_) >= ethBidRefundAmountMinLimit_) {
+				// // #enable_asserts // #disable_smtchecker uint256 gasSpent1_ = gasleft();
+				// // #enable_asserts // #disable_smtchecker uint256 gasSpent2_ = gasleft();
+
 				// A reentry can happen here.
 				// [ToDo-202502186-0]
 				// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
@@ -185,6 +188,9 @@ abstract contract Bidding is
 				// Comment-202502043 applies.
 				(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthBidPrice_)}("");
 
+				// // #enable_asserts // #disable_smtchecker gasSpent2_ -= gasleft();
+				// // #enable_asserts // #disable_smtchecker gasSpent1_ -= gasleft();
+				// // #enable_asserts // #disable_smtchecker console.log("Gas Spent =", gasSpent1_, gasSpent2_, gasSpent2_ - (gasSpent1_ - gasSpent2_));
 				if ( ! isSuccess_ ) {
 					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthBidPrice_));
 				}

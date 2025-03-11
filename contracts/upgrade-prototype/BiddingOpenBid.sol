@@ -45,7 +45,9 @@ abstract contract BiddingOpenBid is
 	// #region State
 
 	/// @notice Multiples of bid price that open bid has to be.
-	/// @dev This really belongs to a new version of `CosmicSignatureGameStorage`, but keeping it simple.
+	/// @dev Issue. This really belongs to a new version of `CosmicSignatureGameStorage`.
+	/// Furthermore this violates Comment-202412148.
+	/// But, given that this is not production code, keeping it simple.
 	uint256 public timesEthBidPrice;
 
 	// #endregion
@@ -67,14 +69,21 @@ abstract contract BiddingOpenBid is
 	// #region `receive`
 
 	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// Bidding with default parameters.
+		// #region // Old Version
+
 		// BidParams memory defaultParams;
 		// // defaultParams.message = "";
 		// defaultParams.randomWalkNftId = -1;
 		// // defaultParams.isOpenBid =
 		// bytes memory param_data = abi.encode(defaultParams);
 		// bidWithEth(param_data);
+
+		// #endregion
+		// #region New Version
+
 		_bidWithEth((-1), false, "");
+
+		// #endregion
 	}
 
 	// #endregion
@@ -178,7 +187,7 @@ abstract contract BiddingOpenBid is
 			}
 
 			// Comment-202501061 applies.
-			nextEthBidPrice = paidEthBidPrice_ + paidEthBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
+			nextEthBidPrice = paidEthBidPrice_ + paidEthBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
 			// // #enable_asserts assert(bidType_ == BidType.ETH);
 
@@ -202,7 +211,7 @@ abstract contract BiddingOpenBid is
 			}
 
 			// Comment-202501061 applies.
-			nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / nextEthBidPriceIncreaseDivisor + 1;
+			nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 			
 			// #endregion
 			// #region
