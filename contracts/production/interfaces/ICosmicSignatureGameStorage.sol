@@ -3,14 +3,17 @@ pragma solidity 0.8.28;
 
 interface ICosmicSignatureGameStorage {
 	/// @notice Details about an ETH donation with additional info made to the Game.
+	/// @dev Comment-202503111 relates and/or applies.
 	struct EthDonationWithInfoRecord {
 		uint256 roundNum;
 		address donorAddress;
 
-		/// @notice It's OK if this is zero.
+		/// @notice This can be zero.
+		/// Comment-202503113 applies.
 		uint256 amount;
 
 		/// @notice Additional info in JSON format.
+		/// This can be empty.
 		string data;
 	}
 

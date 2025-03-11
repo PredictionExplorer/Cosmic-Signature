@@ -35,6 +35,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region ETH Donations
 
 	/// @notice Details about ETH donations with additional info made to the Game.
+	/// @dev Comment-202503111 relates and/or applies.
 	EthDonationWithInfoRecord[] public ethDonationWithInfoRecords;
 
 	// #endregion
