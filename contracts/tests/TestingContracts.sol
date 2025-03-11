@@ -139,7 +139,6 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("4 initialize");
-
 		_initialize(ownerAddress_);
 	}
 
@@ -179,7 +178,6 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("3 initialize");
-
 		_initialize(ownerAddress_);
 	}
 
@@ -226,7 +224,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 				let ptr_ := mload(0x40)
 				let size_ := returndatasize()
 				returndatacopy(ptr_, 0, size_)
-				revert(ptr_, size_)
+				revert (ptr_, size_)
 			}
 		}
 	}
@@ -243,7 +241,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		// 		let ptr := mload(0x40)
 		// 		let size := returndatasize()
 		// 		returndatacopy(ptr, 0, size)
-		// 		revert(ptr, size)
+		// 		revert (ptr, size)
 		// 	}
 		// }
 
@@ -302,7 +300,7 @@ contract MaliciousNft1 is ERC721 {
 				let ptr := mload(0x40)
 				let size := returndatasize()
 				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
+				revert (ptr, size)
 			}
 		}
 	}
@@ -340,7 +338,7 @@ contract MaliciousNft2 is ERC721 {
 		// 		let ptr := mload(0x40)
 		// 		let size := returndatasize()
 		// 		returndatacopy(ptr, 0, size)
-		// 		revert(ptr, size)
+		// 		revert (ptr, size)
 		// 	}
 		// }
 

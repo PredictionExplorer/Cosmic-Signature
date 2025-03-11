@@ -11,7 +11,6 @@ import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
@@ -50,7 +49,9 @@ contract CosmicSignatureGame is
 	// #region `constructor`
 
 	/// @notice Constructor.
-	/// @dev This constructor is only used to disable initializers for the implementation contract.
+	/// [Comment-202503121]
+	/// This only disables initializers in the implementation contract.
+	/// [/Comment-202503121]
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 constructor");
@@ -62,7 +63,6 @@ contract CosmicSignatureGame is
 
 	function initialize(address ownerAddress_) external override virtual initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
-
 		_initialize(ownerAddress_);
 	}
 
@@ -71,9 +71,9 @@ contract CosmicSignatureGame is
 
 	function _initialize(address ownerAddress_) internal {
 		// [Comment-202501012]
-		// We are supposed to not be initialized yet.
+		// `initialize` is supposed to not be executed yet.
 		// [/Comment-202501012]
-		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds == 0);
+		// #enable_asserts assert(owner() == address(0));
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
@@ -81,7 +81,7 @@ contract CosmicSignatureGame is
 		__UUPSUpgradeable_init();
 
 		// ethDonationWithInfoRecords =
-		// // lastBidType = todo-9 Do we need to assert that this equals `ETH`?
+		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// bidderAddresses =
@@ -102,6 +102,7 @@ contract CosmicSignatureGame is
 		ethBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR;
 		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
 
+		// todo-0 Try to delete all this garbage. Leave only `// cstDutchAuctionBeginningTimeStamp =`.
 		// // [Comment-202411211]
 		// // If this condition is `true` it's likely that `setRoundActivationTime` will not be called,
 		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginningTimeStamp`.
@@ -159,19 +160,27 @@ contract CosmicSignatureGame is
 
 	/// @dev
 	/// [Comment-202412188]
-	/// One might want to not impose the `_onlyRoundIsInactive` requirement on this -- to leave the door open for the contract owner
-	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` failing.
+	/// One might want to not require `_onlyRoundIsInactive` -- to leave the door open for the contract owner
+	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` reverting.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override
+		onlyOwner
+		_onlyRoundIsInactive
+		_providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
+
+		// [Comment-202503119]
+		// `initialize` is supposed to be already executed.
+		// [/Comment-202503119]
+		// #enable_asserts assert(owner() != address(0));
 	}
 
 	// #endregion
 	// #region // `fallback`
 
 	// fallback() external payable override {
-	// 	revert("Method does not exist.");
+	// 	revert ("Method does not exist.");
 	// }
 
 	// #endregion

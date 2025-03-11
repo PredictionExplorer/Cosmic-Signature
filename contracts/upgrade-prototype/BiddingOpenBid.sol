@@ -90,7 +90,7 @@ abstract contract BiddingOpenBid is
 	// #region `bidWithEthAndDonateToken`
 
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		revert("This method is not implemented.");
+		revert ("This method is not implemented.");
 	}
 
 	// #endregion
@@ -107,7 +107,7 @@ abstract contract BiddingOpenBid is
 	// #region `bidWithEthAndDonateNft`
 
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		revert("This method is not implemented.");
+		revert ("This method is not implemented.");
 	}
 
 	// #endregion
@@ -125,7 +125,7 @@ abstract contract BiddingOpenBid is
 	// #region `bidWithEth`
 
 	function bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		revert("This method is not implemented.");
+		revert ("This method is not implemented.");
 	}
 
 	// #endregion

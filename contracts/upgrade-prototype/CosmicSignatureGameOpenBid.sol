@@ -50,7 +50,7 @@ contract CosmicSignatureGameOpenBid is
 	// #region `constructor`
 
 	/// @notice Constructor.
-	/// @dev This constructor is only used to disable initializers for the implementation contract.
+	/// Comment-202503121 applies.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
 		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
@@ -72,7 +72,7 @@ contract CosmicSignatureGameOpenBid is
 		__UUPSUpgradeable_init();
 
 		// ethDonationWithInfoRecords =
-		// // lastBidType = todo-9 Do we need to assert that this equals `ETH`?
+		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// bidderAddresses =
@@ -141,7 +141,7 @@ contract CosmicSignatureGameOpenBid is
 	function initialize2() reinitializer(2) /*onlyOwner*/ public {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
 
-		// `initialize` is supposed to be already executed.
+		// Comment-202503119 applies.
 		// `initialize2` is supposed to not be executed yet.
 		// Comment-202501012 relates.
 		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds > 0);
@@ -164,15 +164,23 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override
+		onlyOwner
+		_onlyRoundIsInactive
+		_providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
+
+		// Comment-202503119 applies.
+		// #enable_asserts assert(owner() != address(0));
+
+		// todo-0 Also assert that `initialize2` was executed.
 	}
 
 	// #endregion
 	// #region // `fallback`
 
 	// fallback() external payable override {
-	// 	revert("Method does not exist.");
+	// 	revert ("Method does not exist.");
 	// }
 
 	// #endregion
