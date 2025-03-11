@@ -25,22 +25,6 @@ abstract contract SystemManagement is
 	}
 
 	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ _noBidsPlacedInCurrentRound {
-		// // [Comment-202411236]
-		// // Imposing this requirement instead of `_onlyRoundIsInactive`.
-		// // This design leaves the door open for the admin, if the current bidding round is already active, but nobody placed a bid yet,
-		// // to change `roundActivationTime` to a point in the future and then change some parameters.
-		// // todo-1 The backend and frontend must expect that `roundActivationTime` changes.
-		// // todo-0 Move this comment to near `roundActivationTime`, under @notice.
-		// // todo-0 Similarly comment that `delayDurationBeforeRoundActivation` is allowed to be changed even while the current bidding round is active.
-		// // todo-0 Cross-ref that new comment with Comment-202411236.
-		// // todo-0 Maybe move Comment-202503092 under @dev.
-		// // todo-0 I have replaced this with `_noBidsPlacedInCurrentRound`. Move comments around and delete garbage.
-		// // [/Comment-202411236]
-		// require(
-		// 	lastBidderAddress == address(0),
-		// 	CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.")
-		// );
-
 		_setRoundActivationTime(newValue_);
 	}
 

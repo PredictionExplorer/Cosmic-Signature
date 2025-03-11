@@ -46,7 +46,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice The address of the account that placed the last bid.
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
+	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
 	/// But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
@@ -106,11 +106,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Bidding
 
 	/// @notice Bidding round counter.
-	/// Comment-202503092 applies.
+	/// @dev Comment-202503092 applies.
 	uint256 public roundNum;
 
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
-	/// Comment-202503092 applies.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// todo-1 +++ Review where this comment is referenced. Done on Mar 9.
@@ -119,10 +118,29 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We do not automatically increase this.
 	/// Comment-202411067 relates.
 	/// [/Comment-202412312]
+	/// @dev
+	/// [Comment-202503106]
+	/// We allow the contract owner to change this even if the current bidding round is active.
+	/// Comment-202411236 relates.
+	/// todo-1 The backend and frontend must expect that `delayDurationBeforeRoundActivation` changes.
+	/// [/Comment-202503106]
+	/// Comment-202503092 applies.
 	uint256 public delayDurationBeforeRoundActivation;
 
 	/// @notice The current bidding round activation time.
 	/// Starting at this point in time, people will be allowed to place bids.
+	/// Comment-202411064 applies.
+	/// [Comment-202411172]
+	/// At the same time, this is a variable that the logic changes.
+	/// [/Comment-202411172]
+	/// @dev Comment-202411168 relates.
+	/// [Comment-202411236]
+	/// We allow the contract owner to change this under the conditions described in Comment-202503108.
+	/// This design leaves the door open for the owner
+	/// to change this to a point in the future and then change some parameters.
+	/// Comment-202503106 relates.
+	/// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
+	/// [/Comment-202411236]
 	/// [Comment-202503092]
 	/// Conceptually, every point in time is within a bidding round, which number or index is specified by `roundNum`.
 	/// The first bidding round begins on the Game contract deployment, which is when `roundNum` is initialized with zero.
@@ -132,12 +150,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// The delay duration from when another (not the first) bidding round begins and until it activates
 	/// is specified by `delayDurationBeforeRoundActivation`.
 	/// [/Comment-202503092]
-	/// Comment-202411064 applies.
-	/// [Comment-202411172]
-	/// At the same time, this is a variable that the logic changes.
-	/// [/Comment-202411172]
-	/// @dev Comment-202411168 relates.
-	/// Comment-202411236 relates.
 	uint256 public roundActivationTime;
 
 	/// @notice Comment-202501025 applies.

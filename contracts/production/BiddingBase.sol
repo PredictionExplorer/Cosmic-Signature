@@ -22,8 +22,11 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		_;
 	}
 
-	/// @notice It doesn't matter whether the current bidding round is active or not.
-	/// This only requires that no bids have been placed in the current bidding round.
+	/// @notice
+	/// [Comment-202503108]
+	/// It doesn't matter whether the current bidding round is active or not.
+	/// This only requires that no bids have been placed in the current bidding round yet.
+	/// [/Comment-202503108]
 	modifier _noBidsPlacedInCurrentRound() {
 		if ( ! (lastBidderAddress == address(0)) ) {
 			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.");

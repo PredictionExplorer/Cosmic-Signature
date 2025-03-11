@@ -20,6 +20,7 @@ interface ISystemManagement is
 	/// @notice Sets `delayDurationBeforeRoundActivation`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
+	/// @dev Comment-202503106 relates and/or applies.
 	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external;
 
 	/// @notice Sets `roundActivationTime`.
@@ -27,7 +28,6 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	/// @dev Comment-202411168 relates and/or applies.
 	/// Comment-202411236 relates and/or applies.
-	/// todo-1 Maybe reference some comments seen near `roundActivationTime`.
 	function setRoundActivationTime(uint256 newValue_) external;
 
 	/// @notice Sets `ethDutchAuctionDurationDivisor`.
@@ -35,7 +35,9 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	/// todo-0 write comment
+	/// @notice Sets `ethDutchAuctionEndingBidPriceDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `ethBidPriceIncreaseDivisor`.
@@ -53,7 +55,9 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
 
-	/// todo-0 write comment
+	/// @notice Sets `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 
 	/// @notice Sets `bidMessageLengthMaxLimit`.
@@ -82,13 +86,19 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external;
 
-	/// todo-0 write comment
+	/// @notice Sets `numRaffleEthPrizesForBidders`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setNumRaffleEthPrizesForBidders(uint256 newValue_) external;
 
-	/// todo-0 write comment
+	/// @notice Sets `numRaffleCosmicSignatureNftsForBidders`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setNumRaffleCosmicSignatureNftsForBidders(uint256 newValue_) external;
 
-	/// todo-0 write comment
+	/// @notice Sets `numRaffleCosmicSignatureNftsForRandomWalkNftStakers`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
 	function setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(uint256 newValue_) external;
 
 	/// @notice Sets `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
