@@ -69,8 +69,9 @@ describe("CosmicSignatureGame", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using our minimalistic unsafe approach", async function () {
-		const {deployerAcct, ownerAcct, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
+		const [signer0,] = signers;
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 		const cosmicSignatureGameOpenBidFactory = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", deployerAcct);
@@ -84,15 +85,10 @@ describe("CosmicSignatureGame", function () {
 		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).to.equal(0n);
 		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
 
-		// [Comment-202502164]
-		// It's possible that hackers will make this call before we get a chance to, which would not inflict a lot of damage,
-		// except when we make this call, the call will revert.
-		// But if this method had parameters the hacker would be able to pass malicious values.
-		// To prevent that possibility, we could require `initialize2` to be `onlyOwner`.
-		// [/Comment-202502164]
-		await cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2();
+		// According to Comment-202502164, anybody is permitted to make this call.
+		await cosmicSignatureGame2Proxy.connect(signer0).initialize2();
+		await expect(cosmicSignatureGame2Proxy.connect(signer0).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
 
-		await expect(cosmicSignatureGame2Proxy.connect(ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy, "InvalidInitialization");
 		expect(await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddr)).equal(cosmicSignatureGame2ImplementationAddr);
 		expect(await cosmicSignatureGame2Proxy.timesEthBidPrice()).equal(3n);
 		await cosmicSignatureGame2Proxy.connect(ownerAcct).setTimesEthBidPrice(10n);

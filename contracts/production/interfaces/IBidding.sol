@@ -40,6 +40,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	
 	/// @notice Handles an incoming ETH transfer.
 	/// Calling this method is equivalent to calling `bidWithEth` with default parameters.
+	/// Comments there apply.
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
 	/// todo-1 +++ Do we have a test for this?
 	receive() external payable;

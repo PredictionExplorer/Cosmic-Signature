@@ -61,6 +61,10 @@ contract CosmicSignatureGame is
 	// #endregion
 	// #region `initialize`
 
+	/// @dev
+	/// [Comment-202503124]
+	/// The `virtual` keyword is not needed for the production, but derived testing contracts need it to `override` this method.
+	/// [/Comment-202503124]
 	function initialize(address ownerAddress_) external override virtual initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
 		_initialize(ownerAddress_);
