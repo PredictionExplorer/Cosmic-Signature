@@ -39,12 +39,16 @@ interface ICosmicSignatureGame is
 	/// This method is to be called on the proxy contract right after deployment of both the proxy and the implementation contracts.
 	/// @param ownerAddress_ Contract owner address.
 	/// It could make sense to eliminate this parameter and use `_msgSender()` instead, but let's leave it alone.
-	/// @dev Hackers can potentially call this method before the deployer gets a chance to.
+	/// @dev
+	/// [Comment-202503132]
+	/// Hackers can potentially call this method before the deployer gets a chance to.
 	/// But it's not too bad because the deployer's call transaction would then revert, which the deployer would notice,
 	/// and would then have to deploy both the proxy and the implementation contracts again.
 	/// It would be a bigger problem if we were deplpying the proxy contract via `CREATE2`.
 	/// A way to eliminate this vulnerability is to deploy and call `initialize` in a single transaction, which is what
 	/// `HardhatRuntimeEnvironment.upgrades.deployProxy` does.
+	/// Comment-202412129 relates.
+	/// [/Comment-202503132]
 	function initialize(address ownerAddress_) external;
 
 	/// @notice Registers a newly deployed new version of the implementation contract with the proxy contract.
@@ -65,6 +69,7 @@ interface ICosmicSignatureGame is
 	/// So if the new version happens to be incompatible with the old one nobody will tell us about that.
 	/// The good news is that you can validate upgradeable contracts for correctness
 	/// by executing "slither/slither-check-upgradeability-1.bash".
+	/// Comment-202503132 relates.
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
 

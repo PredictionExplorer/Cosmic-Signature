@@ -991,4 +991,15 @@ describe("Bidding", function () {
 			await hre.ethers.provider.send("evm_mine");
 		}
 	});
+
+	it("The receive method is executing a bid", async function () {
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
+
+		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await expect(signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).not.reverted;
+		const nextEthBidPriceAfter_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		expect(nextEthBidPriceAfter_).greaterThan(nextEthBidPrice_);
+	});
 });

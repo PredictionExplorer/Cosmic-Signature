@@ -69,7 +69,7 @@ const deployContractsAdvanced = async function (
 
 	const cosmicSignatureGameFactory = await hre.ethers.getContractFactory(cosmicSignatureGameContractName, deployerAcct);
 
-	// Comment-202412129 relates.
+	// Comment-202503132 relates.
 	const cosmicSignatureGameProxy =
 		await hre.upgrades.deployProxy(
 			cosmicSignatureGameFactory,
@@ -164,33 +164,33 @@ const deployContractsAdvanced = async function (
 		cosmicSignatureGameImplementationAddr,
 		cosmicSignatureGameProxy,
 		cosmicSignatureGameProxyAddr,
-		cosmicSignatureNftFactory,
-		cosmicSignatureNft,
-		cosmicSignatureNftAddr,
 		cosmicSignatureTokenFactory,
 		cosmicSignatureToken,
 		cosmicSignatureTokenAddr,
-		cosmicSignatureDaoFactory,
-		cosmicSignatureDao,
-		cosmicSignatureDaoAddr,
-		charityWalletFactory,
-		charityWallet,
-		charityWalletAddr,
-		prizesWalletFactory,
-		prizesWallet,
-		prizesWalletAddr,
 		randomWalkNftFactory,
 		randomWalkNft,
 		randomWalkNftAddr,
-		stakingWalletCosmicSignatureNftFactory,
-		stakingWalletCosmicSignatureNft,
-		stakingWalletCosmicSignatureNftAddr,
+		cosmicSignatureNftFactory,
+		cosmicSignatureNft,
+		cosmicSignatureNftAddr,
+		prizesWalletFactory,
+		prizesWallet,
+		prizesWalletAddr,
 		stakingWalletRandomWalkNftFactory,
 		stakingWalletRandomWalkNft,
 		stakingWalletRandomWalkNftAddr,
+		stakingWalletCosmicSignatureNftFactory,
+		stakingWalletCosmicSignatureNft,
+		stakingWalletCosmicSignatureNftAddr,
 		marketingWalletFactory,
 		marketingWallet,
 		marketingWalletAddr,
+		charityWalletFactory,
+		charityWallet,
+		charityWalletAddr,
+		cosmicSignatureDaoFactory,
+		cosmicSignatureDao,
+		cosmicSignatureDaoAddr,
 	};
 };
 
