@@ -16,7 +16,7 @@ describe("Security", function () {
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setMainEthPrizeAmountPercentage(10n);
 
-		// Issue. According to Comment-202411168, this is really not supposed to be in the past, let alone zero.
+		// Issue. According to Comment-202503135, this is really not supposed to be in the past, let alone zero.
 		// But, hopefully, it will work somehow.
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(0);
 

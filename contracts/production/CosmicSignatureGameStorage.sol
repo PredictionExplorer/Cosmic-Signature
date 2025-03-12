@@ -134,7 +134,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
 	/// [/Comment-202411172]
-	/// @dev Comment-202411168 relates.
+	/// @dev Comment-202503135 relates.
 	/// [Comment-202411236]
 	/// We allow the contract owner to change this under the conditions described in Comment-202503108.
 	/// This design leaves the door open for the owner
@@ -202,7 +202,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice When the current CST Dutch auction began.
 	/// Comment-202501022 applies.
-	/// @dev Comment-202411168 relates.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
 	/// @notice

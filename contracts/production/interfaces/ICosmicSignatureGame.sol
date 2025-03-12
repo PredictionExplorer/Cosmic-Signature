@@ -48,6 +48,7 @@ interface ICosmicSignatureGame is
 	/// A way to eliminate this vulnerability is to deploy and call `initialize` in a single transaction, which is what
 	/// `HardhatRuntimeEnvironment.upgrades.deployProxy` does.
 	/// Comment-202412129 relates.
+	/// Comment-202502164 relates.
 	/// [/Comment-202503132]
 	function initialize(address ownerAddress_) external;
 
@@ -70,6 +71,7 @@ interface ICosmicSignatureGame is
 	/// The good news is that you can validate upgradeable contracts for correctness
 	/// by executing "slither/slither-check-upgradeability-1.bash".
 	/// Comment-202503132 relates.
+	/// Comment-202502164 relates.
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
 

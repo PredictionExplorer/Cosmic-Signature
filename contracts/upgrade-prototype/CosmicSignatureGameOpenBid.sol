@@ -91,13 +91,7 @@ contract CosmicSignatureGameOpenBid is
 		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		ethBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR;
 		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
-
-		// // Comment-202411211 applies.
-		// if (CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-		// 	// Comment-202411168 applies.
-		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME;
-		// }
-
+		// cstDutchAuctionBeginningTimeStamp =
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 		// cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		nextRoundFirstCstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
@@ -140,6 +134,8 @@ contract CosmicSignatureGameOpenBid is
 	/// which would not inflict a lot of damage.
 	/// But if this method had parameters we would need `onlyOwner` here --
 	/// to make it impossible for hackers to pass malicious values.
+	/// Comment-202503132 relates.
+	/// Comment-202412129 relates.
 	/// [/Comment-202502164]
 	/// [ToDo-202412164-2]
 	/// This method should be declared in an inherited interface.

@@ -26,8 +26,7 @@ interface ISystemManagement is
 	/// @notice Sets `roundActivationTime`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	/// @dev Comment-202411168 relates and/or applies.
-	/// Comment-202411236 relates and/or applies.
+	/// @dev Comment-202411236 relates and/or applies.
 	function setRoundActivationTime(uint256 newValue_) external;
 
 	/// @notice Sets `ethDutchAuctionDurationDivisor`.

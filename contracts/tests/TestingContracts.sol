@@ -189,9 +189,6 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	// function setRoundActivationTimeRaw(uint256 newValue_) external {
 	// 	roundActivationTime = newValue_;
-	//
-	// 	// // Comment-202411168 applies.
-	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
 	// }
 
 	// function setCosmicSignatureTokenRaw(ICosmicSignatureToken newValue_) external {

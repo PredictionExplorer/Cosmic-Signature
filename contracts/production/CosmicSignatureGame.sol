@@ -105,18 +105,7 @@ contract CosmicSignatureGame is
 		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		ethBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR;
 		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
-
-		// todo-0 Try to delete all this garbage. Leave only `// cstDutchAuctionBeginningTimeStamp =`.
-		// // [Comment-202411211]
-		// // If this condition is `true` it's likely that `setRoundActivationTime` will not be called,
-		// // which implies that this is likely our last chance to initialize `cstDutchAuctionBeginningTimeStamp`.
-		// // todo-1 See todos in Comment-202411168.
-		// // [/Comment-202411211]
-		// if (CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-		// 	// Comment-202411168 applies.
-		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME;
-		// }
-
+		// cstDutchAuctionBeginningTimeStamp =
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 		// cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		nextRoundFirstCstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
