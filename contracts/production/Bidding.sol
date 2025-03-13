@@ -326,7 +326,9 @@ abstract contract Bidding is
 		// [/Comment-202501045]
 
 		// [Comment-202409179]
-		// This can be zero.
+		// todo-1 Can I move this comment to near `getNextCstBidPrice` declaration?
+		// todo-1 It's already referenced there under `@dev`, but it should appear there under `@notice`.
+		// This can potentially be zero.
 		// When this is zero, we will burn zero CST tokens near Comment-202409177, so someone can bid with zero CST tokens.
 		// We are OK with that.
 		// todo-1 +++ Confirm with them again that this is OK.

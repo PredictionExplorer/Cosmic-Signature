@@ -17,16 +17,16 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 
 	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
-		uint256 numBids_ = bidderAddressesReference_.numItems;
-		return numBids_;
+		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
+		return totalNumBids_;
 	}
 
 	// #endregion
 	// #region `getBidderAddressAt`
 
 	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (address) {
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
-		return bidderAddressesReference_.items[bidIndex_];
+		address bidderAddress_ = bidderAddresses[roundNum_].items[bidIndex_];
+		return bidderAddress_;
 	}
 
 	// #endregion

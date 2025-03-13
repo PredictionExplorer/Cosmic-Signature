@@ -49,6 +49,11 @@ interface ICosmicSignatureGameStorage {
 		/// [/Comment-202502045]
 		uint256 totalSpentEthAmount;
 
+		/// @notice
+		/// [Comment-202503139]
+		/// Given Comment-202409179, this can potentially be zero, even if the given bidder did place CST bids.
+		/// Given that `BidStatistics.getBidderTotalSpentAmounts` returns this, its return value can potentially be zero.
+		/// [/Comment-202503139]
 		/// @dev Comment-202502045 applies.
 		uint256 totalSpentCstAmount;
 
