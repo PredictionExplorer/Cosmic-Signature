@@ -122,8 +122,8 @@ describe("SystemManagement", function () {
 		await cosmicSignatureGameProxy.connect(ownerAcct).setTimeoutDurationToClaimMainPrize(99n);
 		expect(await cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize()).to.equal(99n);
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setCstRewardAmountMultiplier(99n);
-		expect(await cosmicSignatureGameProxy.cstRewardAmountMultiplier()).to.equal(99n);
+		await cosmicSignatureGameProxy.connect(ownerAcct).setCstPrizeAmountMultiplier(99n);
+		expect(await cosmicSignatureGameProxy.cstPrizeAmountMultiplier()).to.equal(99n);
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleEthPrizesForBidders(99n);
 		expect(await cosmicSignatureGameProxy.numRaffleEthPrizesForBidders()).to.equal(99n);
@@ -172,7 +172,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(6n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCharityEthDonationAmountPercentage(11n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setTimeoutDurationToClaimMainPrize(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
-		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCstRewardAmountMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
+		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCstPrizeAmountMultiplier(11n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleEthPrizesForBidders(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleCosmicSignatureNftsForBidders(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleCosmicSignatureNftsForRandomWalkNftStakers(99n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "RoundIsActive");
@@ -316,7 +316,7 @@ describe("SystemManagement", function () {
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(signer1).setTimeoutDurationToClaimMainPrize(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxy.connect(signer1).setCstRewardAmountMultiplier(12n))
+		await expect(cosmicSignatureGameProxy.connect(signer1).setCstPrizeAmountMultiplier(12n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxy.connect(signer1).setNumRaffleEthPrizesForBidders(1n))
 			.to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");

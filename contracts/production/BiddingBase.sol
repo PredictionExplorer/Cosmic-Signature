@@ -15,11 +15,15 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 	}
 
 	modifier _onlyRoundIsActive() {
+		_checkRoundIsActive();
+		_;
+	}
+
+	function _checkRoundIsActive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp >= roundActivationTimeCopy_) ) {
 			revert CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp);
 		}
-		_;
 	}
 
 	/// @notice
@@ -27,7 +31,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 	/// It doesn't matter whether the current bidding round is active or not.
 	/// This only requires that no bids have been placed in the current bidding round yet.
 	/// [/Comment-202503108]
-	modifier _noBidsPlacedInCurrentRound() {
+	modifier _onlyBeforeBidPlacedInRound() {
 		if ( ! (lastBidderAddress == address(0)) ) {
 			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.");
 		}

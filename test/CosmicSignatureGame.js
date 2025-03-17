@@ -15,7 +15,7 @@ describe("CosmicSignatureGame", function () {
 		const cosmicSignatureGameImplementationByteCodeSize =
 			// cosmicSignatureGameFactory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(cosmicSignatureGameImplementationAddr)).length / 2 - 1;
-		expect(cosmicSignatureGameImplementationByteCodeSize).greaterThanOrEqual(22 * 1024);
+		expect(cosmicSignatureGameImplementationByteCodeSize).greaterThanOrEqual(21 * 1024);
 		console.log(
 			"CosmicSignatureGame implementation bytecode size is " +
 			cosmicSignatureGameImplementationByteCodeSize.toString() +

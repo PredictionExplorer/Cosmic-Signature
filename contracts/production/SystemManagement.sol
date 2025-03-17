@@ -24,7 +24,7 @@ abstract contract SystemManagement is
 		emit DelayDurationBeforeRoundActivationChanged(newValue_);
 	}
 
-	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ _noBidsPlacedInCurrentRound {
+	function setRoundActivationTime(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ _onlyBeforeBidPlacedInRound {
 		_setRoundActivationTime(newValue_);
 	}
 
@@ -68,9 +68,9 @@ abstract contract SystemManagement is
 		emit CstRewardAmountForBiddingChanged(newValue_);
 	}
 
-	function setCstRewardAmountMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstRewardAmountMultiplier = newValue_;
-		emit CstRewardAmountMultiplierChanged(newValue_);
+	function setCstPrizeAmountMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		cstPrizeAmountMultiplier = newValue_;
+		emit CstPrizeAmountMultiplierChanged(newValue_);
 	}
 
 	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

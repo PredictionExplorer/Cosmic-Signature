@@ -15,8 +15,8 @@ interface IBidStatistics is ICosmicSignatureGameStorage {
 	/// @return A tuple containing the total ETH and CST amounts spent by the given bidder in the given bidding round, in Wei.
 	/// If the given bider didn't bid in the given bidding round both return values will be zeros.
 	/// todo-1 Add a test for the above.
-	/// Comment-202503139 relates and/or applies.
 	/// If an argument is invalid the return value is indeterminate.
+	/// @dev Comment-202503162 relates and/or applies.
 	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view returns (uint256, uint256);
 
 	// /// @return The current Endurance Champion address and duration.

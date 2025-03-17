@@ -17,7 +17,7 @@ async function bid_simple(testingAcct, cosmicSignatureGame) {
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.ethBidPrice).oneOf([nextEthBidPrice0_, nextEthBidPrice1_]);
+	expect(parsed_log.args.paidEthPrice).oneOf([nextEthBidPrice0_, nextEthBidPrice1_]);
 	expect(parsed_log.args.message).to.equal("test bid");
 }
 
@@ -35,7 +35,7 @@ async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.ethBidPrice).to.equal(nextEthPlusRandomWalkNftBidPrice_);
+	expect(parsed_log.args.paidEthPrice).to.equal(nextEthPlusRandomWalkNftBidPrice_);
 	expect(parsed_log.args.randomWalkNftId).to.equal(nftId);
 	expect(parsed_log.args.message).to.equal("rwalk bid");
 }
@@ -57,7 +57,7 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.ethBidPrice).to.equal(nextEthBidPrice_);
+	expect(parsed_log.args.paidEthPrice).to.equal(nextEthBidPrice_);
 	expect(parsed_log.args.message).to.equal("donate bid");
 
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("NftDonationEvent");
@@ -86,7 +86,7 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.ethBidPrice).to.equal(nextEthPlusRandomWalkNftBidPrice_);
+	expect(parsed_log.args.paidEthPrice).to.equal(nextEthPlusRandomWalkNftBidPrice_);
 	expect(parsed_log.args.randomWalkNftId).to.equal(tokenIdBidding);
 	expect(parsed_log.args.message).to.equal("donate nft rwalk bid");
 

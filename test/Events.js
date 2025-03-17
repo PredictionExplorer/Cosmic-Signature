@@ -391,7 +391,7 @@ describe("Events", function () {
 			.withArgs(timeoutDurationToClaimMainPrize_);
 		expect(await cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize()).to.equal(timeoutDurationToClaimMainPrize_);
 
-		// todo-1 setCstRewardAmountMultiplier
+		// todo-1 setCstPrizeAmountMultiplier
 
 		let numPrizes_ = 11n;
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setNumRaffleEthPrizesForBidders(numPrizes_))

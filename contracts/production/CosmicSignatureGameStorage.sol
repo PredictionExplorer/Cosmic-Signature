@@ -137,8 +137,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev Comment-202503135 relates.
 	/// [Comment-202411236]
 	/// We allow the contract owner to change this under the conditions described in Comment-202503108.
-	/// This design leaves the door open for the owner
-	/// to change this to a point in the future and then change some parameters.
+	/// This design leaves the door open for the owner to change this to a point in the future and then change some parameters.
 	/// Comment-202503106 relates.
 	/// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
 	/// [/Comment-202411236]
@@ -250,9 +249,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Secondary Prizes
 
-	/// @notice The last CST bidder and Endurance Champion CST reward amount multiplier.
+	/// @notice The last CST bidder and Endurance Champion CST prize amount multiplier.
 	/// Comment-202411064 applies.
-	uint256 public cstRewardAmountMultiplier;
+	uint256 public cstPrizeAmountMultiplier;
 
 	/// @notice The percentage of ETH in the Game contract account to be paid to Crono-Warrior.
 	/// Comment-202411064 applies.

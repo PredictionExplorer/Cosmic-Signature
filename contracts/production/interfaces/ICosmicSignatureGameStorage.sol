@@ -41,7 +41,7 @@ interface ICosmicSignatureGameStorage {
 
 	/// @notice Details about a bidder.
 	struct BidderInfo {
-		/// @dev
+		/// @dev Comment-202503162 relates and/or applies.
 		/// [Comment-202502045]
 		/// Issue. One might want to eliminate this variable.
 		/// But the project founders consider using this info for other purposes.
@@ -49,12 +49,8 @@ interface ICosmicSignatureGameStorage {
 		/// [/Comment-202502045]
 		uint256 totalSpentEthAmount;
 
-		/// @notice
-		/// [Comment-202503139]
-		/// Given Comment-202409179, this can potentially be zero, even if the given bidder did place CST bids.
-		/// Given that `BidStatistics.getBidderTotalSpentAmounts` returns this, its return value can potentially be zero.
-		/// [/Comment-202503139]
-		/// @dev Comment-202502045 applies.
+		/// @dev Comment-202503162 relates and/or applies.
+		/// Comment-202502045 applies.
 		uint256 totalSpentCstAmount;
 
 		uint256 lastBidTimeStamp;

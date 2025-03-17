@@ -128,8 +128,8 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Secondary Prizes
 
-	/// @notice Default `cstRewardAmountMultiplier`.
-	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
+	/// @notice Default `cstPrizeAmountMultiplier`.
+	uint256 internal constant DEFAULT_CST_PRIZE_AMOUNT_MULTIPLIER = 10 ether;
 
 	/// @notice Default `chronoWarriorEthPrizeAmountPercentage`.
 	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
