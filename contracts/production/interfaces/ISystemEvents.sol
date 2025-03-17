@@ -54,9 +54,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event CstRewardAmountForBiddingChanged(uint256 newValue);
 
-	/// @notice Emitted when `cstRewardAmountMultiplier` is changed.
+	/// @notice Emitted when `cstPrizeAmountMultiplier` is changed.
 	/// @param newValue The new value.
-	event CstRewardAmountMultiplierChanged(uint256 newValue);
+	event CstPrizeAmountMultiplierChanged(uint256 newValue);
 
 	/// @notice Emitted when `chronoWarriorEthPrizeAmountPercentage` is changed.
 	/// @param newValue The new value.

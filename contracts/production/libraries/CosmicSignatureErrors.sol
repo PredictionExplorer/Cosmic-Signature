@@ -62,6 +62,7 @@ library CosmicSignatureErrors {
 	/// See also: `CallerIsNotAuthorizedToManageNft`.
 	/// @param errStr Description of the error.
 	/// @param nftAddress NFT contract address.
+	/// Issue. Should its type be `IERC721`? But what if we need to support other NFT contarct types?
 	/// @param nftId NFT ID.
 	/// @param callerAddress Caller address.
 	error CallerIsNotNftOwner(string errStr, address nftAddress, uint256 nftId, address callerAddress);

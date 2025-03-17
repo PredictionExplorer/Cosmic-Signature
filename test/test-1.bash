@@ -10,7 +10,7 @@
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
-			# 'npx' 'hardhat' 'test' '--grep' 'Bidding a lot and staking a lot behaves correctly$'
+			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGame\b'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!The bidWithEthAndDonateNft method is confirmed to be non-reentrant)$'
 			'npx' 'hardhat' 'test'
 

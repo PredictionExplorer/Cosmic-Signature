@@ -46,6 +46,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// In addition, it allows the caller to provide additional information.
 	/// @param data_ Additional info in JSON format.
 	/// It's OK if it's empty.
+	/// We do not limit this string length, but the frontend will truncate a too long message.
 	function donateEthWithInfo(string calldata data_) external payable;
 
 	/// @return `ethDonationWithInfoRecords.length`.

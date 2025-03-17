@@ -137,9 +137,9 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	constructor() CosmicSignatureGame() {
 	}
 
+	/// @dev Comment-202503124 relates and/or applies.
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("4 initialize");
-
 		_initialize(ownerAddress_);
 	}
 
@@ -165,8 +165,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);
 	// 	}
 	//
-	// 	// todo-2 Isn't this supposed to `selfdestruct` both the game implementation and its proxy?
-	// 	// todo-2 But `selfdestruct` does nothing besides transferring ETH, so maybe just transfer ETH.
+	// 	// This `selfdestruct`s only the proxy, right?
+	// 	// But `selfdestruct` does nothing besides transferring ETH, so maybe this is OK.
 	// 	selfdestruct(payable(owner()));
 	// }
 }
@@ -177,17 +177,18 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// Comment-202412104 relates.
 	RandomNumberHelpers.RandomNumberSeedWrapper private _entropy;
 
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() CosmicSignatureGame() {
+	}
+
+	/// @dev Comment-202503124 relates and/or applies.
 	function initialize(address ownerAddress_) external override initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("3 initialize");
-
 		_initialize(ownerAddress_);
 	}
 
 	// function setRoundActivationTimeRaw(uint256 newValue_) external {
 	// 	roundActivationTime = newValue_;
-	//
-	// 	// // Comment-202411168 applies.
-	// 	// cstDutchAuctionBeginningTimeStamp = newValue_;
 	// }
 
 	// function setCosmicSignatureTokenRaw(ICosmicSignatureToken newValue_) external {
@@ -210,12 +211,6 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	// 	charityAddress = newValue_;
 	// }
 
-	function _initializeEntropyOnce() private {
-		if (_entropy.value == 0) {
-			_entropy.value = RandomNumberHelpers.generateRandomNumberSeed();
-		}
-	}
-
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
 		_initializeEntropyOnce();
 		unchecked { ++ _entropy.value; }
@@ -226,7 +221,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 				let ptr_ := mload(0x40)
 				let size_ := returndatasize()
 				returndatacopy(ptr_, 0, size_)
-				revert(ptr_, size_)
+				revert (ptr_, size_)
 			}
 		}
 	}
@@ -243,7 +238,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		// 		let ptr := mload(0x40)
 		// 		let size := returndatasize()
 		// 		returndatacopy(ptr, 0, size)
-		// 		revert(ptr, size)
+		// 		revert (ptr, size)
 		// 	}
 		// }
 
@@ -253,6 +248,12 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum);
 
 		// #endregion
+	}
+
+	function _initializeEntropyOnce() private {
+		if (_entropy.value == 0) {
+			_entropy.value = RandomNumberHelpers.generateRandomNumberSeed();
+		}
 	}
 }
 
@@ -302,7 +303,7 @@ contract MaliciousNft1 is ERC721 {
 				let ptr := mload(0x40)
 				let size := returndatasize()
 				returndatacopy(ptr, 0, size)
-				revert(ptr, size)
+				revert (ptr, size)
 			}
 		}
 	}
@@ -340,7 +341,7 @@ contract MaliciousNft2 is ERC721 {
 		// 		let ptr := mload(0x40)
 		// 		let size := returndatasize()
 		// 		returndatacopy(ptr, 0, size)
-		// 		revert(ptr, size)
+		// 		revert (ptr, size)
 		// 	}
 		// }
 

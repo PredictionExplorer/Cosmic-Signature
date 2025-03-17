@@ -39,10 +39,12 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION = (1 hours) / 2;
 
 	/// @notice Initial `roundActivationTime`.
-	/// @dev This must be in the future -- to configure our contract after the deployment
+	/// @dev
+	/// [Comment-202503135]
+	/// This must be in the future -- to configure our contract after the deployment
 	/// without calling `setRoundActivationTime` and to ensure that hackers won't attempt to bid
 	/// before the deployment script is done configuring the contract.
-	/// Comment-202411168 relates.
+	/// [/Comment-202503135]
 	uint256 internal constant INITIAL_ROUND_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `ethDutchAuctionDurationDivisor`.
@@ -126,8 +128,8 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Secondary Prizes
 
-	/// @notice Default `cstRewardAmountMultiplier`.
-	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER = 10 ether;
+	/// @notice Default `cstPrizeAmountMultiplier`.
+	uint256 internal constant DEFAULT_CST_PRIZE_AMOUNT_MULTIPLIER = 10 ether;
 
 	/// @notice Default `chronoWarriorEthPrizeAmountPercentage`.
 	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;

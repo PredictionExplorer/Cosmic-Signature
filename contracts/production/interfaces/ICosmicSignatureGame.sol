@@ -17,9 +17,11 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// @title The Cosmic Signature Game.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the main functionality of the Cosmic Signature Game.
-/// @dev Issue. This contract is upgradeable. So it could make sense for it to support a `selfdestruct` after a successful upgrade.
-/// Note that `SelfDestructibleCosmicSignatureGame` supports a `selfdestruct`.
-/// But I have no time to get such an unsafe feature right in the production code.
+/// @dev Issue. This contract is upgradeable. So it could make sense for it to support a self-destruction after a successful upgrade.
+/// Note that `SelfDestructibleCosmicSignatureGame`, which is to be used only for testing, supports a `selfdestruct`.
+/// I have also implemented a self-destructability in a non-upgradeable contract prototype
+/// at "https://github.com/PredictionExplorer/big-contract-prototype".
+/// But I have no plans to implement the self-destruction feature in the production code.
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
@@ -34,11 +36,25 @@ interface ICosmicSignatureGame is
 	ISecondaryPrizes,
 	IMainPrize {
 	/// @notice Initializes this upgradeable contract.
-	/// This method is to be called right after deployment.
+	/// This method is to be called on the proxy contract right after deployment of both the proxy and the implementation contracts.
 	/// @param ownerAddress_ Contract owner address.
 	/// It could make sense to eliminate this parameter and use `_msgSender()` instead, but let's leave it alone.
+	/// @dev
+	/// [Comment-202503132]
+	/// Hackers can potentially call this method before the deployer gets a chance to.
+	/// But it's not too bad because the deployer's call transaction would then revert, which the deployer would notice,
+	/// and would then have to deploy both the proxy and the implementation contracts again.
+	/// It would be a bigger problem if we were deplpying the proxy contract via `CREATE2`.
+	/// A way to eliminate this vulnerability is to deploy and call `initialize` in a single transaction, which is what
+	/// `HardhatRuntimeEnvironment.upgrades.deployProxy` does.
+	/// Comment-202412129 relates.
+	/// Comment-202502164 relates.
+	/// [/Comment-202503132]
 	function initialize(address ownerAddress_) external;
 
+	/// @notice Registers a newly deployed new version of the implementation contract with the proxy contract.
+	/// This method is to be called on the proxy contract.
+	/// Only the proxy contract owner is permitted to call this method.
 	/// @dev
 	/// [Comment-202412129]
 	/// To upgrade a contract, OpenZeppelin recommends calling `HardhatRuntimeEnvironment.upgrades.upgradeProxy`,
@@ -48,14 +64,14 @@ interface ICosmicSignatureGame is
 	/// A little problem is that `upgradeToAndCall` does a bunch of thngs that not necessarily benefit us, while costing some gas.
 	/// So this minimalistic `upgradeTo` method performs only the actions that we do need.
 	/// To use it, instead of calling `HardhatRuntimeEnvironment.upgrades.upgradeProxy`,
-	/// we simply need to deploy a new version of the contract like we do a non-upgradeable contract and then call `upgradeTo`.
-	/// A little problem is that this minimalistic approach skips a bunch of checks.
-	/// If the new version happens to be incompatible with the old one nobody will tell us about that.
-	/// Issue. This solution is a little bit hackable. Someone can call this method before the deployer gets a chance to.
-	/// But it's not too bad because the deployer's call transaction would then fail, so the deployer would notice it
-	/// and would have to deploy the contract again. It would be a bigger problem if we were deplpying via `CREATE2`.
-	/// One way to eliminate this vulnerability is to deploy and call `upgradeTo` in a single transaction, which is what
-	/// `HardhatRuntimeEnvironment.upgrades.deployProxy` and `HardhatRuntimeEnvironment.upgrades.upgradeProxy` do.
+	/// simply deploy a new version of the implementation contract, like you would any non-upgradeable contract,
+	/// and then call `upgradeTo` on the proxy contract.
+	/// A little problem, as mentioned above, is that this minimalistic approach skips a bunch of checks.
+	/// So if the new version happens to be incompatible with the old one nobody will tell us about that.
+	/// The good news is that you can validate upgradeable contracts for correctness
+	/// by executing "slither/slither-check-upgradeability-1.bash".
+	/// Comment-202503132 relates.
+	/// Comment-202502164 relates.
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
 

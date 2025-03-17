@@ -303,7 +303,7 @@ describe("Bidding", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 1]); // make CST price drop to almost 0
 		// await hre.ethers.provider.send("evm_mine");
 
-		await expect(expect(cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")).not.reverted;
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
 		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithCst(0n, "cst bid")).not.reverted;
 
 		// lastBidType = await cosmicSignatureGameProxy.lastBidType();
@@ -597,8 +597,8 @@ describe("Bidding", function () {
 		let parsed_log = cosmicSignatureGameProxy.interface.parseLog(log);
 		let args = parsed_log.args.toObject();
 		expect(args.lastBidderAddress).to.equal(signer1.address);
-		expect(args.ethBidPrice).to.equal(-1n);
-		expect(args.cstBidPrice).to.equal(nextCstBidExpectedPrice_);
+		expect(args.paidEthPrice).to.equal(-1n);
+		expect(args.paidCstPrice).to.equal(nextCstBidExpectedPrice_);
 		expect(args.message).to.equal("cst bid");
 		cstDutchAuctionBeginningBidPrice_ = await cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).to.equal(nextCstBidExpectedPrice_ * 2n);
@@ -681,10 +681,10 @@ describe("Bidding", function () {
 	// 	receipt = await tx.wait();
 	// 	log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	evt = log.args.toObject();
-	// 	let cstBidPrice = evt.cstBidPrice;
+	// 	let paidCstPrice = evt.paidCstPrice;
 	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ signer1.address);
 	// 	spentCst = spent[1];
-	// 	expect(spentCst).to.equal(cstBidPrice);
+	// 	expect(spentCst).to.equal(paidCstPrice);
 	//
 	// 	// check that CST and ETH are accumulated in statistics
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -698,8 +698,8 @@ describe("Bidding", function () {
 	// 	receipt = await tx.wait();
 	// 	log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 	evt = log.args.toObject();
-	// 	cstBidPrice = evt.cstBidPrice;
-	// 	let totalSpentCst_ = cstBidPrice + spentCst;
+	// 	paidCstPrice = evt.paidCstPrice;
+	// 	let totalSpentCst_ = paidCstPrice + spentCst;
 	// 	spent = await cosmicSignatureGameProxy.getBidderTotalSpentAmounts(/* todo-9 roundNum_, */ signer1.address);
 	// 	spentCst = spent[1];
 	// 	expect(spentCst).to.equal(totalSpentCst_);
@@ -717,7 +717,6 @@ describe("Bidding", function () {
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithEth(-1n, "eth bid", {value: nextEthBidPrice_,})).not.reverted;
-		// await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientCSTBalance");
 		await expect(cosmicSignatureGameProxy.connect(signer1).bidWithCst(10n ** 30n, "cst bid")).to.be.revertedWithCustomError(cosmicSignatureToken, "ERC20InsufficientBalance");
 	});
 
@@ -800,7 +799,7 @@ describe("Bidding", function () {
 	// todo-1 regardless if `block.timestamp` or `block.number` change or don't change, the behavior will be correct.
 	//
 	// todo-1 Develop a separate test and/or refactor this one to test `bidWithEth` reentrancy. They can bid by reentering.
-	// todo-1 But see ToDo-202502186-0.
+	// todo-1 But see ToDo-202502186-1.
 	//
 	// todo-1 Nick wrote:
 	// todo-1 As this is not really a unit test anymore, but an integration test, it should be done as standalone script
@@ -990,5 +989,16 @@ describe("Bidding", function () {
 			expect(durationElapsedSinceRoundActivation_).equal(counter_);
 			await hre.ethers.provider.send("evm_mine");
 		}
+	});
+
+	it("The receive method is executing a bid", async function () {
+		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
+
+		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await expect(signer1.sendTransaction({to: cosmicSignatureGameProxyAddr, value: nextEthBidPrice_,})).not.reverted;
+		const nextEthBidPriceAfter_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		expect(nextEthBidPriceAfter_).greaterThan(nextEthBidPrice_);
 	});
 });

@@ -211,6 +211,7 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice This method allows anybody to make an ERC-20 token donation.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
+	/// Comment-202503151 relates.
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param tokenAddress_ The ERC-20 contract address.
@@ -248,6 +249,7 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice This method allows anybody to donate an NFT.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
+	/// Comment-202503153 relates.
 	/// @param roundNum_ The current bidding round number.
 	/// @param donorAddress_ Donor address.
 	/// @param nftAddress_ NFT contract address.

@@ -11,7 +11,6 @@ import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-// import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
@@ -50,7 +49,7 @@ contract CosmicSignatureGameOpenBid is
 	// #region `constructor`
 
 	/// @notice Constructor.
-	/// @dev This constructor is only used to disable initializers for the implementation contract.
+	/// Comment-202503121 applies.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
 		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
@@ -64,7 +63,7 @@ contract CosmicSignatureGameOpenBid is
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize");
 
 		// Comment-202501012 applies.
-		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds == 0);
+		// #enable_asserts assert(owner() == address(0));
 
 		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
@@ -72,7 +71,7 @@ contract CosmicSignatureGameOpenBid is
 		__UUPSUpgradeable_init();
 
 		// ethDonationWithInfoRecords =
-		// // lastBidType = todo-9 Do we need to assert that this equals `ETH`?
+		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// bidderAddresses =
@@ -92,13 +91,7 @@ contract CosmicSignatureGameOpenBid is
 		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		ethBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR;
 		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
-
-		// // Comment-202411211 applies.
-		// if (CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME < CosmicSignatureConstants.TIMESTAMP_9000_01_01) {
-		// 	// Comment-202411168 applies.
-		// 	cstDutchAuctionBeginningTimeStamp = CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME;
-		// }
-
+		// cstDutchAuctionBeginningTimeStamp =
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 		// cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		nextRoundFirstCstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
@@ -106,7 +99,7 @@ contract CosmicSignatureGameOpenBid is
 		// usedRandomWalkNfts =
 		bidMessageLengthMaxLimit = CosmicSignatureConstants.DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT;
 		cstRewardAmountForBidding = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING;
-		cstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_MULTIPLIER;
+		cstPrizeAmountMultiplier = CosmicSignatureConstants.DEFAULT_CST_PRIZE_AMOUNT_MULTIPLIER;
 		chronoWarriorEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE;
 		raffleTotalEthPrizeAmountForBiddersPercentage = CosmicSignatureConstants.DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE;
 		numRaffleEthPrizesForBidders = CosmicSignatureConstants.DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS;
@@ -134,17 +127,26 @@ contract CosmicSignatureGameOpenBid is
 	// #endregion
 	// #region `initialize2`
 
-	/// @dev Comment-202502164 relates.
+	/// @dev
+	/// [Comment-202502164]
+	/// We don't really need `onlyOwner` here.
+	/// So hackers can potentially call this method before the contract owner gets a chance to,
+	/// which would not inflict a lot of damage.
+	/// But if this method had parameters we would need `onlyOwner` here --
+	/// to make it impossible for hackers to pass malicious values.
+	/// Comment-202503132 relates.
+	/// Comment-202412129 relates.
+	/// [/Comment-202502164]
 	/// [ToDo-202412164-2]
-	/// This method should be declared in an inherited interface.
+	/// This should be declared in an inherited interface.
 	/// [/ToDo-202412164-2]
-	function initialize2() reinitializer(2) /*onlyOwner*/ public {
+	function initialize2() reinitializer(2) /*onlyOwner*/ external {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
 
-		// `initialize` is supposed to be already executed.
+		// Comment-202503119 applies.
+		// #enable_asserts assert(owner() != address(0));
+
 		// `initialize2` is supposed to not be executed yet.
-		// Comment-202501012 relates.
-		// #enable_asserts assert(mainPrizeTimeIncrementInMicroSeconds > 0);
 		// #enable_asserts assert(timesEthBidPrice == 0);
 
 		timesEthBidPrice = 3;
@@ -164,15 +166,24 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override
+		onlyOwner
+		_onlyRoundIsInactive
+		_providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
+
+		// Comment-202503119 applies.
+		// #enable_asserts assert(owner() != address(0));
+
+		// `initialize2` is supposed to be already executed.
+		// #enable_asserts assert(timesEthBidPrice > 0);
 	}
 
 	// #endregion
 	// #region // `fallback`
 
 	// fallback() external payable override {
-	// 	revert("Method does not exist.");
+	// 	revert ("Method does not exist.");
 	// }
 
 	// #endregion

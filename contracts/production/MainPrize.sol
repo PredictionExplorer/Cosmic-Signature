@@ -41,9 +41,8 @@ abstract contract MainPrize is
 	IMainPrize {
 	// #region `claimMainPrize`
 
-	/// @dev We don't need `_onlyRoundIsActive` here, which we `assert` near Comment-202411169.
-	/// todo-1 For all contracts and all methods, think what modifiers it might need,
-	/// todo-1 who and under what conditions is permitted to call it.
+	/// @dev Comment-202411169 relates and/or applies.
+	///
 	/// todo-1 It could be possible to not require `nonReentrant` if we transferred main prize ETH
 	/// todo-1 to `_msgSender()` after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us,
 	/// todo-1 although we could execute that transfer at the very end as well.
@@ -76,10 +75,7 @@ abstract contract MainPrize is
 			);
 		}
 
-		// [Comment-202411169]
-		// We `assert`ed or `require`d that `lastBidderAddress` is a nonzero.
-		// Therefore we know that the current bidding round is active.
-		// [/Comment-202411169]
+		// Comment-202411169 applies.
 		// #enable_asserts assert(block.timestamp >= roundActivationTime);
 
 		// #endregion
@@ -145,7 +141,7 @@ abstract contract MainPrize is
 				{
 					// #region
 
-					uint256 cstRewardAmount_ = bidderAddressesReference_.numItems * cstRewardAmountMultiplier;
+					uint256 cstPrizeAmount_ = bidderAddressesReference_.numItems * cstPrizeAmountMultiplier;
 
 					// Addresses for which to mint CS NFTs.
 					// Items:
@@ -203,7 +199,7 @@ abstract contract MainPrize is
 						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerLastCstBidderAddressIndex_] = lastCstBidderAddress;
 						cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](3);
 						cosmicSignatureTokenMintSpecs_[2].account = lastCstBidderAddress;
-						cosmicSignatureTokenMintSpecs_[2].value = cstRewardAmount_;
+						cosmicSignatureTokenMintSpecs_[2].value = cstPrizeAmount_;
 					} else {
 						cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](2);
 					}
@@ -219,7 +215,7 @@ abstract contract MainPrize is
 					// #enable_asserts assert(enduranceChampionAddress != address(0));
 					cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerEnduranceChampionAddressIndex_] = enduranceChampionAddress;
 					cosmicSignatureTokenMintSpecs_[1].account = enduranceChampionAddress;
-					cosmicSignatureTokenMintSpecs_[1].value = cstRewardAmount_;
+					cosmicSignatureTokenMintSpecs_[1].value = cstPrizeAmount_;
 
 					// #endregion
 					// #region CS NFTs for random bidders.
@@ -284,9 +280,9 @@ abstract contract MainPrize is
 						-- cosmicSignatureNftIndex_;
 						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == enduranceChampionAddress);
 						// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[1].account == enduranceChampionAddress);
-						// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[1].value == cstRewardAmount_);
+						// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[1].value == cstPrizeAmount_);
 						-- cosmicSignatureNftId_;
-						emit EnduranceChampionPrizePaid(roundNum, cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_], cstRewardAmount_, cosmicSignatureNftId_);
+						emit EnduranceChampionPrizePaid(roundNum, cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_], cstPrizeAmount_, cosmicSignatureNftId_);
 
 						// #endregion
 						// #region ETH and CS NFT for the Main Prize Beneficiary.
@@ -304,9 +300,9 @@ abstract contract MainPrize is
 							-- cosmicSignatureNftIndex_;
 							// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == lastCstBidderAddress);
 							// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[2].account == lastCstBidderAddress);
-							// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[2].value == cstRewardAmount_);
+							// #enable_asserts assert(cosmicSignatureTokenMintSpecs_[2].value == cstPrizeAmount_);
 							-- cosmicSignatureNftId_;
-							emit LastCstBidderPrizePaid(roundNum, cosmicSignatureTokenMintSpecs_[2].account, cstRewardAmount_, cosmicSignatureNftId_);
+							emit LastCstBidderPrizePaid(roundNum, cosmicSignatureTokenMintSpecs_[2].account, cstPrizeAmount_, cosmicSignatureNftId_);
 						} else {
 							// #enable_asserts assert(lastCstBidderAddress == address(0));
 						}
@@ -589,7 +585,7 @@ abstract contract MainPrize is
 
 		// // [Comment-202501307]
 		// // Instead of making this assignment, it appears to be more efficient
-		// // to use `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the 1st CST Dutch auction in each bidding round.
+		// // to use `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the 1st CST Dutch auction in the next bidding round.
 		// // [/Comment-202501307]
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 

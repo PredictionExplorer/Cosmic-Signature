@@ -15,11 +15,15 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 	}
 
 	modifier _onlyRoundIsActive() {
+		_checkRoundIsActive();
+		_;
+	}
+
+	function _checkRoundIsActive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp >= roundActivationTimeCopy_) ) {
 			revert CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp);
 		}
-		_;
 	}
 
 	/// @notice
@@ -27,7 +31,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 	/// It doesn't matter whether the current bidding round is active or not.
 	/// This only requires that no bids have been placed in the current bidding round yet.
 	/// [/Comment-202503108]
-	modifier _noBidsPlacedInCurrentRound() {
+	modifier _onlyBeforeBidPlacedInRound() {
 		if ( ! (lastBidderAddress == address(0)) ) {
 			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.");
 		}
@@ -36,19 +40,6 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 
 	function _setRoundActivationTime(uint256 newValue_) internal {
 		roundActivationTime = newValue_;
-
-		// // [Comment-202411168]
-		// // One might want to ensure that this is not in the past.
-		// // But `roundActivationTime` is really not supposed to be in the past.
-		// // So keeping it simple and effiicient.
-		// // But since we now require the first bid to be ETH, we no longer need to do this.
-		// // todo-1 Find all "cstDutchAuctionBeginningTimeStamp" (not whole word, case insensitive)
-		// // todo-1 and possibly write a note like the above in other similar places.
-		// // todo-1 Maybe write a comment near "cstDutchAuctionBeginningTimeStamp" and reference it.
-		// // todo-1 Or just delete all this garbage?
-		// // [/Comment-202411168]
-		// cstDutchAuctionBeginningTimeStamp = newValue_;
-
 		emit RoundActivationTimeChanged(newValue_);
 	}
 
