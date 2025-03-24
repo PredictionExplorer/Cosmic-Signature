@@ -68,7 +68,7 @@ library CosmicSignatureConstants {
 
 	/// @notice
 	/// [Comment-202412036]
-	/// An ETH + RandomWalk NFT bid gets a 50% discount on the bid price.
+	/// An ETH + Random Walk NFT bid gets a 50% discount on the bid price.
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
@@ -176,7 +176,7 @@ library CosmicSignatureConstants {
 	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 1_000 ether;
 
 	// #endregion
-	// #region RandomWalk NFT
+	// #region Random Walk NFT
 
 	// Empty.
 

@@ -132,7 +132,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	expect(numStakedNfts_).to.equal(0);
 	// });
 	
-	it("User stakes his 10 RandomWalk NFTs and gets all of them back after unstake", async function () {
+	it("User stakes his 10 Random Walk NFTs and gets all of them back after unstake", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -180,14 +180,20 @@ describe("StakingWalletRandomWalkNft", function () {
 		const numSigners = 20;
 		const numLoops = 50;
 
-		for (let i = 0; i < numSigners; i++) {
-			const signer = signers[i];
-			await randomWalkNft.connect(signer).setApprovalForAll(stakingWalletRandomWalkNftAddr, true);
-			for (let j = 0; j < numLoops; j++) {
-				const mintPrice = await randomWalkNft.getMintPrice();
-				await randomWalkNft.connect(signer).mint({ value: mintPrice });
-				const nftId_ = i * numLoops + j;
-				await stakingWalletRandomWalkNft.connect(signer).stake(nftId_);
+		{
+			let nftId = 0n;
+			const nftIds = [];
+			for (let i = 0; i < numSigners; i++) {
+				nftIds.length = 0;
+				const signer = signers[i];
+				for (let j = 0; j < numLoops; j++) {
+					const mintPrice = await randomWalkNft.getMintPrice();
+					await expect(randomWalkNft.connect(signer).mint({value: mintPrice})).not.reverted;
+					nftIds.push(nftId);
+					++ nftId;
+				}
+				await expect(randomWalkNft.connect(signer).setApprovalForAll(stakingWalletRandomWalkNftAddr, true)).not.reverted;
+				await expect(stakingWalletRandomWalkNft.connect(signer).stakeMany(nftIds)).not.reverted;
 			}
 		}
 

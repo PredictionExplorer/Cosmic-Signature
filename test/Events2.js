@@ -14,7 +14,7 @@ describe("Events2", function () {
 		// ToDo-202411202-1 applies.
 		await cosmicSignatureGameProxy.connect(ownerAcct).setDelayDurationBeforeRoundActivation(0n);
 
-		// we need to mint RandomWalk NFTs for all bidders that participate to avoid missing events
+		// we need to mint Random Walk NFTs for all bidders that participate to avoid missing events
 		let tokenPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer1).mint({ value: tokenPrice });
 		tokenPrice = await randomWalkNft.getMintPrice();

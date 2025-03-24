@@ -2,7 +2,7 @@
 
 // Helps building transaction to get back donated Random Walk NFTs used in bid+donate calls
 // Two run modes:
-// 	- without PRIVKEY environment variable set -> only lists donated NFTs per round
+// 	- without PRIVKEY environment variable set -> only lists donated NFTs per bidding round
 // 	- with PRIVKEY environment variable set -> generates claimManyDonatedNfts() calls per prize
 // (note: only for unclaimed NFTs)
 
@@ -40,7 +40,7 @@ async function list_donated_nfts(nfts) {
 	const numNfts_ = nfts.length;
 	for (let i = 0; i < numNfts_; i++) {
 		const roundNfts_ = nfts[i];
-		console.log("Round " + i);
+		console.log("Bidding round " + i.toString());
 		if (typeof roundNfts_ === "undefined" || roundNfts_.length == 0) {
 			console.log("\t(no claimable NFTs)");
 			continue;

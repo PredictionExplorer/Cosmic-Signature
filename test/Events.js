@@ -172,7 +172,7 @@ describe("Events", function () {
 	});
 
 	// todo-1 Consifder moving this to Bidding tests.
-	it("ETH + RandomWalk NFT bid price is 50% lower", async function () {
+	it("ETH + Random Walk NFT bid price is 50% lower", async function () {
 		// todo-1 For the complete code coverage, this test needs to make multiple bids, claim main prize, more bids.
 
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
@@ -220,7 +220,7 @@ describe("Events", function () {
 	});
 
 	// todo-1 Consider moving this test to "Bidding.js".
-	it("It's not permitted to bid before round activation", async function () {
+	it("It's not permitted to bid before bidding round activation", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;

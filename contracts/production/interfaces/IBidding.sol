@@ -26,8 +26,8 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param paidCstPrice Paid CST price.
 	/// Equals -1 if this is an ETH bid.
 	/// Comment-202503162 relates and/or applies.
-	/// @param randomWalkNftId Provided RandomWalk NFT ID.
-	/// A negative value indicates that no RandomWalk NFT was used.
+	/// @param randomWalkNftId Provided Random Walk NFT ID.
+	/// A negative value indicates that no Random Walk NFT was used.
 	/// @param message Comment-202503155 applies.
 	/// @param mainPrizeTime The time when the last bidder will be granted the premission to claim the main prize.
 	event BidPlaced(
@@ -49,7 +49,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// todo-1 +++ Do we have a test for this?
 	receive() external payable;
 
-	/// @notice Places an ETH plus an optional RandomWalk NFT bid and donates an ERC-20 token amount in a single transaction.
+	/// @notice Places an ETH plus an optional Random Walk NFT bid and donates an ERC-20 token amount in a single transaction.
 	/// [Comment-202503149]
 	/// Comments near `bidWithEth` apply.
 	/// [/Comment-202503149]
@@ -58,19 +58,19 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [/Comment-202503151]
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable;
 
-	/// @notice Places an ETH plus an optional RandomWalk NFT bid and donates an NFT in a single transaction.
+	/// @notice Places an ETH plus an optional Random Walk NFT bid and donates an NFT in a single transaction.
 	/// Comment-202503149 applies.
 	/// [Comment-202503153]
 	/// Comments near `IPrizesWallet.donateNft` apply.
 	/// [/Comment-202503153]
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable;
 
-	/// @notice Places an ETH plus an optional RandomWalk NFT bid.
+	/// @notice Places an ETH plus an optional Random Walk NFT bid.
 	/// This method would revert if the current bidding round is not active yet.
 	/// Comment-202503147 relates.
 	/// Comment-202503149 relates.
-	/// @param randomWalkNftId_ The ID of the RandomWalk NFT to be used for bidding.
-	/// Pass a negative value to not use a RandomWalk NFT.
+	/// @param randomWalkNftId_ The ID of the Random Walk NFT to be used for bidding.
+	/// Pass a negative value to not use a Random Walk NFT.
 	/// Comment-202412036 applies.
 	/// @param message_ .
 	/// [Comment-202503155]
@@ -85,14 +85,14 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @return The next ETH bid price, in Wei.
 	/// @dev
 	/// [Comment-202503162]
-	/// An ETH bid with or without a RandomWalk NFT price is guaranteed to be a nonzero.
+	/// An ETH bid with or without a Random Walk NFT price is guaranteed to be a nonzero.
 	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
 	/// A CST bid price can potentially be zero.
 	/// That said, given that we mint a nonzero CST reward for each bid, it's unlikely that the CST bid price will fall below that.
 	/// [/Comment-202503162]
 	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns (uint256);
 
-	/// @notice Calculates and returns an ETH + RandomWalk NFT bid price, given an ETH only bid price.
+	/// @notice Calculates and returns an ETH + Random Walk NFT bid price, given an ETH only bid price.
 	/// @dev Comment-202503162 applies.
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns (uint256);
 

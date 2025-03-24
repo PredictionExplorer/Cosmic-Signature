@@ -93,7 +93,7 @@ describe("MainPrize", function () {
 		expect(curTotalSupply).to.equal(expected_total_supply);
 		// let last_cosmic_signature_supply = sum_winners + numMainPrizeBeneficiaries_;
 
-		// let's begin a new round
+		// let's begin a new bidding round
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);

@@ -3,10 +3,10 @@ pragma solidity 0.8.28;
 
 import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
-/// @title Staking wallet for RandomWalk NFTs.
+/// @title Staking wallet for Random Walk NFTs.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface allows users to stake their RandomWalk NFTs and win prizes.
-/// Supports RandomWalk NFT staking and unstaking, as well as random staker selection.
+/// @notice A contract implementing this interface allows users to stake their Random Walk NFTs and win prizes.
+/// Supports Random Walk NFT staking and unstaking, as well as random staker selection.
 interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.
@@ -52,7 +52,7 @@ interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// It's OK if it's zero.
 	/// @param randomNumberSeed_ Random number seed.
 	/// @return Selected NFT staker addresses, or an empty array if there are no staked NFTs.
-	/// The result can contain duplicates.
+	/// The returned array can contain duplicates.
 	/// @dev This method is named "if possible" because it does nothing when there are no staked NFTs.
 	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view returns (address[] memory);
 }

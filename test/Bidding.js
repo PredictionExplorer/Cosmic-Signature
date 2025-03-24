@@ -115,7 +115,6 @@ describe("Bidding", function () {
 		let balance = await hre.ethers.provider.getBalance(cosmicSignatureGameProxyAddr);
 		let mainEthPrizeExpectedAmount_ = (balance * 25n) / 100n;
 		expect(mainEthPrizeAmount2_).to.equal(mainEthPrizeExpectedAmount_);
-		// let w = await cosmicSignatureGameProxy.tryGetMainPrizeWinnerAddress(0);
 		let w = await prizesWallet.mainPrizeBeneficiaryAddresses(0);
 		expect(w).to.equal(signer3.address);
 
@@ -159,7 +158,7 @@ describe("Bidding", function () {
 		expect(await cosmicSignatureGameProxy.lastBidderAddress()).to.equal(hre.ethers.ZeroAddress);
 	});
 
-	it("Should be possible to bid with RandomWalk NFT", async function () {
+	it("Should be possible to bid with Random Walk NFT", async function () {
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -232,7 +231,7 @@ describe("Bidding", function () {
 		expect(cstDutchAuctionElapsedDuration_).to.equal(0n);
 	});
 
-	it("There is an execution path for all bidders being RandomWalk NFT bidders", async function () {
+	it("There is an execution path for all bidders being Random Walk NFT bidders", async function () {
 		// todo-1 Move this function to a separate file and use it everywhere.
 		async function mint_rwalk(a) {
 			const tokenPrice = await randomWalkNft.getMintPrice();
@@ -276,7 +275,7 @@ describe("Bidding", function () {
 		// todo-1 This is really not supposed to fail. It appears that this tests a no longer existing bug.
 		await expect(cosmicSignatureGameProxy.connect(signer5).claimMainPrize()).not.revertedWith("panic code 0x12"); // divide by zero
 		// todo-1 Maybe check that now it will revert with "NoLastBidder".
-		// todo-1 Actually it will probably revert because the round is not active yet.
+		// todo-1 Actually it will probably revert because the bidding round is not active yet.
 	});
 
 	it("After bidWithEth, bid-related counters have correct values", async function () {
@@ -334,7 +333,7 @@ describe("Bidding", function () {
 		expect(bidderContractBalanceAmountAfter).to.equal(bidderContractExpectedBalanceAmountAfter);
 	});
 
-	it("On ETH + RandomWalk NFT bid, we refund the correct amount when msg.value is greater than required", async function () {
+	it("On ETH + Random Walk NFT bid, we refund the correct amount when msg.value is greater than required", async function () {
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -972,6 +971,7 @@ describe("Bidding", function () {
 		// todo-1 But getting latest block timestamp before executing a non-`view` function still doesn't work correct.
 		// todo-1 It can return a block like a minute ago.
 		// todo-1 Maybe that's the timestamp after the initil call to `loadFixture`.
+		// todo-1 >>> A huge number is a bit better?
 		// So this hack appears to make block timestamps more deterministic.
 		// [/Comment-202501192]
 		await hre.ethers.provider.send("evm_mine");

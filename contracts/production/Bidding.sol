@@ -109,7 +109,7 @@ abstract contract Bidding is
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
-					"This RandomWalk NFT has already been used for bidding.",
+					"This Random Walk NFT has already been used for bidding.",
 					uint256(randomWalkNftId_)
 				)
 			);
@@ -122,7 +122,7 @@ abstract contract Bidding is
 				_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
-					"You are not the owner of this RandomWalk NFT.",
+					"You are not the owner of this Random Walk NFT.",
 					address(randomWalkNft),
 					uint256(randomWalkNftId_),
 					_msgSender()

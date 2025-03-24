@@ -52,10 +52,10 @@ library CosmicSignatureErrors {
 	/// @param receivedAmount The amount the bidder transferred to us.
 	error InsufficientReceivedBidAmount(string errStr, uint256 bidPrice, uint256 receivedAmount);
 
-	/// @notice Thrown when attempting to use an already used RandomWalk NFT.
+	/// @notice Thrown when attempting to use an already used Random Walk NFT.
 	/// See also: `NftHasAlreadyBeenStaked`.
 	/// @param errStr Description of the error.
-	/// @param randomWalkNftId RandomWalk NFT ID.
+	/// @param randomWalkNftId Random Walk NFT ID.
 	error UsedRandomWalkNft(string errStr, uint256 randomWalkNftId);
 
 	/// @notice Thrown when the caller is not the given NFT owner.
