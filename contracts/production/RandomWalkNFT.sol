@@ -1,34 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity ^0.8.26;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ERC721Enumerable, ERC721 } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
 /// @dev
 /// [Comment-202409149]
 /// This contract has already been deployed, so it makes little sense to refactor it.
 /// But I did refactor it a little.
-/// todo-1 Compare this to an old version to make sure I didn't mess anything up.
-/// todo-1 Where I refactored code, explain things and reference this comment.
+/// Some refactorings accommodate breaking changes in OpenZeppelin.
+/// Comment-202503251 relates.
+/// Comment-202502063 relates.
 /// [/Comment-202409149]
 ///
-/// OpenZeppelin of the latest version is not compatible with the already deployed contract.
-/// Comment-202502063 relates.
+/// Issue. There is a little vulnerability here, described in Comment-202503253.
+/// todo-1 It's unnecessary to audit this.
 ///
-/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
+/// todo-1 +++ Review again what can possibly fail here and cause a transaction reversal.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 
 	/// @notice November 11 2021 19:00 New York Time
-	/// @dev Issue. Should this be a `constant`? But see Comment-202409149.
+	/// @dev Issue. Should this be a `constant`?
 	uint256 public saleTime = 1_636_675_200;
 
 	/// @notice Price starts at 0.001 ETH
 	uint256 public price = 0.001 ether;
 
-	/// @notice How long to wait until the last minter can withdraw (30 days)
-	uint256 public constant withdrawalWaitSeconds = 30 days;
+	/// @notice How long to wait until the last minter can withdraw
+	/// @dev Issue. Should this be a `constant`?
+	uint256 public withdrawalWaitSeconds = 30 days;
 
 	/// @notice Seeds
 	mapping(uint256 => bytes32) public seeds;
@@ -41,6 +44,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 	/// @notice Entropy
 	/// @dev Issue. Random number generation could have been implemented better here.
+	/// But keep in mind that the assumption described in Comment-202503254 is not valid here.
 	/// Comment-202412104 relates.
 	bytes32 public entropy;
 
@@ -52,17 +56,19 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	/// @dev Issue. We don't need this variable. We can use `totalSupply` instead.
 	uint256 public nextTokenId = 0;
 
-	/// @notice The base URI for token metadata
 	string private _baseTokenURI;
 
 	/// @notice IPFS link to the Python script that generates images and videos for each NFT based on seed.
-	/// @dev Issue. Should this be a `constant`? But see Comment-202409149.
+	/// @dev Issue. Should this be a `constant`?
 	string public tokenGenerationScript = "ipfs://QmP7Z8VbQLpytzXnceeAAc4D5tX39XVzoEeUZwEK8aPk8W";
 
 	// #endregion
 
-	/// @dev `Ownable.constructor` now requires a nonzero `initialOwner`.
-	/// So I had to provide one, despite Comment-202409149.
+	/// @dev
+	/// [Comment-202503251]
+	/// In OpenZeppelin 5+,`Ownable.constructor` requires a nonzero `initialOwner`.
+	/// Comment-202409149 relates and/or applies.
+	/// [/Comment-202503251]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
 		// Issue. It would be more efficient and not any less random to initialize this with a hardcoded number.
 		// Comment-202412104 relates.
@@ -77,15 +83,16 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		);
 	}
 
-	function setBaseURI(string memory value) external override onlyOwner {
-		_baseTokenURI = value;
+	function setBaseURI(string memory baseURI) public override onlyOwner {
+		_baseTokenURI = baseURI;
 	}
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
 		// [Comment-202502063]
-		// Issue. `_isAuthorized` doesn't exist in the already deployed contract.
-		// In OpenZeppelin 4.x there was a similar method, named `_isApprovedOrOwner`.
+		// Issue. In OpenZeppelin 5, `_isApprovedOrOwner` has been replaced with `_isAuthorized`.
+		// Comment-202409149 relates and/or applies.
 		// [/Comment-202502063]
+		// require(_isApprovedOrOwner(_msgSender(), tokenId), "setTokenName caller is not owner nor approved");
 		require(_isAuthorized(_ownerOf(tokenId), _msgSender(), tokenId), "setTokenName caller is not owner nor approved");
 
 		require(bytes(name).length <= 32, "Token name is too long.");
@@ -93,8 +100,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		emit TokenNameEvent(tokenId, name);
 	}
 
-	/// @return The base URI for token metadata
-	function _baseURI() internal view override returns (string memory) {
+	/// @dev Issue. `virtual` is not needd here.
+	function _baseURI() internal view virtual override returns (string memory) {
 		return _baseTokenURI;
 	}
 
@@ -117,13 +124,14 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		return address(this).balance / 2;
 	}
 
-	// If there was no mint for withdrawalWaitSeconds, then the last minter can withdraw
-	// half of the balance in the smart contract.
+	/// @notice If there was no mint for withdrawalWaitSeconds, then the last minter can withdraw
+	/// half of the balance in the smart contract.
 	function withdraw() public override {
 		require(_msgSender() == lastMinter, "Only last minter can withdraw.");
 		require(timeUntilWithdrawal() == 0, "Not enough time has elapsed.");
 
 		address destination = lastMinter;
+		
 		// Someone will need to mint again to become the last minter.
 		lastMinter = address(0);
 
@@ -131,28 +139,29 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		uint256 tokenId = nextTokenId - 1;
 
 		uint256 amount = withdrawalAmount();
-		++ numWithdrawals;
+
+		numWithdrawals += 1;
 		withdrawalNums[tokenId] = numWithdrawals;
 		withdrawalAmounts[tokenId] = amount;
 
 		// Transfer half of the balance to the last minter.
-		(bool isSuccess_, ) = destination.call{value: amount}("");
-		require(isSuccess_, "Transfer failed.");
+		(bool success, ) = destination.call{ value: amount }("");
+		require(success, "Transfer failed.");
 		
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 
 	function mint() public payable override {
 		uint256 newPrice = getMintPrice();
-		
 		require(msg.value >= newPrice, "The value submitted with this transaction is too low.");
 		require(block.timestamp >= saleTime, "The sale is not open yet.");
 
 		lastMinter = _msgSender();
 		lastMintTime = block.timestamp;
+
 		price = newPrice;
 		uint256 tokenId = nextTokenId;
-		++ nextTokenId;
+		nextTokenId += 1;
 
 		// [Comment-202412103]
 		// Issue. `blockhash(block.number)` is always zero.
@@ -164,11 +173,14 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 		if (msg.value > price) {
 			// Return the extra money to the minter.
-			(bool isSuccess_, ) = lastMinter.call{value: msg.value - price}("");
-			require(isSuccess_, "Transfer failed.");
+			(bool success, ) = lastMinter.call{ value: msg.value - price }("");
+			require(success, "Transfer failed.");
 		}
 
-		// Issue. Possible reentrancy vulnerability. During the call to `lastMinter.call`, `lastMinter` could have changed.
+		// [Comment-202503253]
+		// Issue. Reentrancy vulnerability. During the call to `lastMinter.call`, `lastMinter`, `entropy`, and `price` could have changed.
+		// But given Comment-202409149, it's too late to fix it.
+		// [/Comment-202503253]
 		emit MintEvent(tokenId, lastMinter, entropy, price);
 	}
 
