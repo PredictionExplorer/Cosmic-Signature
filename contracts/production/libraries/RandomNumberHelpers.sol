@@ -16,7 +16,7 @@ library RandomNumberHelpers {
 		/// We generate a random number by incrementing its seed and calculating a hash sum of the result.
 		/// It's important that calculations involving this variable ignored overflows.
 		/// That includes cases when we pass it to a method by value and then the method makes calculations involving the passed value.
-		/// todo-1 Make sure the above is the case.
+		/// todo-1 +++ Make sure the above is the case.
 		/// [/Comment-202502075]
 		/// [Comment-202502077]
 		/// Optimization idea.

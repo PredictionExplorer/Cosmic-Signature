@@ -535,9 +535,9 @@ abstract contract MainPrize is
 						// Comment-202410161 relates.
 						if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
 
-							// todo-1 Investigate under what conditions we can possibly reach this point.
-							// todo-1 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
-							// todo-1 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
+							// todo-0 Investigate under what conditions we can possibly reach this point.
+							// todo-0 The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
+							// todo-0 Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
 
 							// todo-1 Test that this correctly rethrows other panic codes
 							// todo-1 by setting fake ETH balance to a huge value to cause the sum of ETH deposits to overflow.

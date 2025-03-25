@@ -24,7 +24,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 /// @dev
 /// todo-1 +++ Review again what can possibly fail here and cause a transaction reversal.
 /// todo-1 +++ Assuming it's OK, but there is a lot of code there that is hard to comprehend.
-/// todo-1 Let's see what SMTChecker says.
+/// todo-0 Let's see what SMTChecker says.
 contract CosmicSignatureToken is
 	// Ownable,
 	ERC20,
