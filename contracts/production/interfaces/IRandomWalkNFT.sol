@@ -1,8 +1,7 @@
-// todo-1 Make sure license is the same in all files, except in "*RandomWalkNFT.sol".
-// todo-1 SPDX-License-Identifier(?!: CC0-1\.0$)
-// todo-1 Done, but recheck this.
+// todo-1 +++ Make sure license is the same in all files, except in "*RandomWalkNFT.sol".
+// todo-1 +++ SPDX-License-Identifier(?!: CC0-1\.0$)
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity ^0.8.26;
 
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
@@ -12,9 +11,7 @@ interface IRandomWalkNFT is IERC721Enumerable {
 	event MintEvent(uint256 indexed tokenId, address indexed owner, bytes32 seed, uint256 price);
 	event WithdrawalEvent(uint256 indexed tokenId, address destination, uint256 amount);
 
-	/// @notice Sets the base URI for token metadata
-	/// @param value The new value to set
-	function setBaseURI(string memory value) external;
+	function setBaseURI(string memory baseURI) external;
 
 	function setTokenName(uint256 tokenId, string memory name) external;
 

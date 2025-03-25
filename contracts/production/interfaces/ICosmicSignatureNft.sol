@@ -6,7 +6,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title The Cosmic Signature ecosystem NFT.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interaface implements the CosmicSignature NFT with unique features
+/// @notice A contract implementing this interaface implements the Cosmic Signature NFT with unique features
 /// for the Cosmic Signature ecosystem, in particular, custom minting and metadata management.
 /// @dev Issue. It could make sense to derive this contract from `ERC721Permit`,
 /// but OpenZeppelin doesn't include such a contract.
@@ -80,7 +80,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @param newValue_ The new value.
 	function setNftGenerationScriptUri(string calldata newValue_) external;
 
-	/// @notice Mints a new CosmicSignature NFT.
+	/// @notice Mints a new Cosmic Signature NFT.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param nftOwnerAddress_ The address that will receive the NFT.
@@ -92,7 +92,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @return The newly minted NFT ID.
 	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external returns (uint256);
 
-	/// @notice Mints zero or more new CosmicSignature NFTs.
+	/// @notice Mints zero or more new Cosmic Signature NFTs.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
 	/// @param nftOwnerAddresses_ The addresses that will receive the NFTs.

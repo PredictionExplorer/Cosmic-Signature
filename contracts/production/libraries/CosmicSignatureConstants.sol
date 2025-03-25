@@ -68,13 +68,12 @@ library CosmicSignatureConstants {
 
 	/// @notice
 	/// [Comment-202412036]
-	/// An ETH + RandomWalk NFT bid gets a 50% discount on the bid price.
+	/// An ETH + Random Walk NFT bid gets a 50% discount on the bid price.
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
 	/// @notice Default `ethBidRefundAmountInGasMinLimit`.
 	/// [Comment-202502052]
-	/// todo-1 I am yet to review this comment.
 	/// This drives the logic that prevents refunding excess ETH that a bidder transferred to us if the refund is too small
 	/// to justify the transfer transaction fee.
 	/// This is expressed in gas.
@@ -83,7 +82,8 @@ library CosmicSignatureConstants {
 	/// [/Comment-202502052]
 	/// @dev
 	/// [Comment-202502054]
-	/// todo-1 I am yet to review this comment.
+	/// todo-0 Revisit this.
+	///
 	/// If we ran on the Ethereum mainnet, we would probably set this to something like 21100,
 	/// because there a simple ETH transfer costs 21000 plus an incentive fee.
 	/// However on Arbitrum, which is an L2 network, there are both L2 and L1 gas fees.
@@ -91,22 +91,19 @@ library CosmicSignatureConstants {
 	/// We don't know what the L1 gas fee is going to be, so this value is approximate.
 	/// todo-2 It will liikely need tweaking over time, especially after Arbitrum decentralizes their blockchain.
 	///
-	/// todo-1 Nick is saying that it costs 9000 gas to call the `address.call` function.
-	/// todo-1 Do a better review of things on ArbiScan and test on Arbitrum Sepolia if this value makes sense
-	/// todo-1 and possibly correct it.
-	/// todo-1 I have tested that on Hardhat network it costs 6813 gas to call the `address.call` function.
-	/// todo-1 So maybe the value should be like 6813 * 29 / 10.
+	/// todo-0 I have tested that on Hardhat network it costs 6813 gas to call the `address.call` method.
+	/// todo-0 Do a better review of things on ArbiScan and test on Arbitrum Sepolia if this value makes sense
+	/// todo-0 and possibly correct it.
 	/// 
-	/// todo-1 Arbitrum posts blobs to the mainet.
-	/// todo-1 Can I get any relevant info from that blob?
+	/// todo-0 Arbitrum posts blobs to the mainet.
+	/// todo-0 Can I get any relevant info from that blob?
 	/// [/Comment-202502054]
-	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = 21000 * 29 / 10;
+	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = (6813 + 7) * 29 / 10;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
 	/// @dev
 	/// todo-1 +++ Rename any "Auction" to "Dutch Auction".
 	/// todo-1 +++ (?<!dutch)(?<!dutch[\-_ ])Auction
-	/// todo-1 Done, but re-check it again.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
 	/// @notice Comment-202411066 relates.
@@ -176,7 +173,7 @@ library CosmicSignatureConstants {
 	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 1_000 ether;
 
 	// #endregion
-	// #region RandomWalk NFT
+	// #region Random Walk NFT
 
 	// Empty.
 

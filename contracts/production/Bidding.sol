@@ -109,7 +109,7 @@ abstract contract Bidding is
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
-					"This RandomWalk NFT has already been used for bidding.",
+					"This Random Walk NFT has already been used for bidding.",
 					uint256(randomWalkNftId_)
 				)
 			);
@@ -122,8 +122,8 @@ abstract contract Bidding is
 				_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
-					"You are not the owner of this RandomWalk NFT.",
-					address(randomWalkNft),
+					"You are not the owner of this Random Walk NFT.",
+					randomWalkNft,
 					uint256(randomWalkNftId_),
 					_msgSender()
 				)
@@ -178,6 +178,7 @@ abstract contract Bidding is
 
 				// A reentry can happen here.
 				// [ToDo-202502186-1]
+				// todo-0
 				// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
 				// Mar 16: There appears to be no vulnerability here, but give it another thought.
 				// [/ToDo-202502186-1]

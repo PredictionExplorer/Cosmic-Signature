@@ -64,7 +64,6 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // Comment-202409011 applies.
 // [ToDo-202409098-1]
 // When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
-// >>> Also ToDo-202502065-1 and ToDo-202502067-1.
 // [/ToDo-202409098-1]
 const solidityVersion = "0.8.28";
 
@@ -265,7 +264,7 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-				runs: 20000,
+				runs: 20_000,
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
@@ -367,12 +366,15 @@ const hardhatUserConfig = {
 			// [Comment-202501193]
 			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` function.
 			// Block timestamp increment is actually 1 second, despite of the `interval` parameter being zero.
+			// todo-1 But now I made it huge. Is it a bit better?
+			// todo-1 See todos in Comment-202501192.
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,
 				auto: true,
 				// interval: 1000,
-				interval: 0,
+				// interval: 0,
+				interval: 999_999_999,
 				mempool: {
 					order: "fifo"
 				},
@@ -488,7 +490,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 		extCalls: "trusted",
 
 		// By default, these won't be reported.
-		// todo-1 Do we really need these?
+		// todo-0 Do we really need these?
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
 		invariants: ["contract", "reentrancy",],
 
@@ -508,7 +510,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 
 		// By default, SMTChecker won't discover integer overflow and underflow.
 		// To enable discovering those, list them explicitly, together with whatever others.
-		// todo-1 Do we really need to discover them?
+		// todo-0 Do we really need to discover them?
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verification-targets
 		targets: [
 			"assert",

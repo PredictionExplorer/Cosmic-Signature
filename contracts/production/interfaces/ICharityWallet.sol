@@ -16,7 +16,7 @@ interface ICharityWallet {
 	/// @notice Emitted after a donation was received.
 	/// @param donorAddress Donor address.
 	/// @param amount The amount of ETH donated.
-	/// It can be zero.
+	/// It can potentially be zero.
 	event DonationReceived(address indexed donorAddress, uint256 amount);
 
 	// todo-1 +++ I posted a message that I had eliminated this: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1738629443108849
@@ -24,7 +24,7 @@ interface ICharityWallet {
 	// /// @notice Emitted after accumulated donations were transferred to the charity.
 	// /// @param charityAddress Charity address.
 	// /// @param amount The amount of ETH transferred to the charity.
-	// /// It can be zero.
+	// /// It can potentially be zero.
 	// /// @dev I have eliminated this event and instead using `CosmicSignatureEvents.FundsTransferredToCharity`.
 	// event DonationSent(address indexed charityAddress, uint256 amount);
 

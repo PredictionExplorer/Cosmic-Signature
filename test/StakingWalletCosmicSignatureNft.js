@@ -540,9 +540,8 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 	// // [Comment-202409209]
 	// // This test no longer makes sense due to refactorings described in Comment-202409208.
-	// // todo-1 I have now removed that comment. It was about the elimination of `modulo` and `charityAddress`. So revisit this comment or (eventually) remove it.
-	// // todo-1 Nick, you might want to develop similar tests (possibly uncomment and modify those I commented out)
-	// // todo-1 for the cases listed in ToDo-202409226-1.
+	// // todo-1 I have now removed that comment. It was about the elimination of `modulo` and `charityAddress`.
+	// // todo-1 So revisit this comment or (eventually) remove it.
 	// // [/Comment-202409209]
 	// it("A failure to deposit to StakingWalletCosmicSignatureNft shouldn't abort the process of claiming main prize", async function () {
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
@@ -697,7 +696,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	// expect(m).to.equal(contractBalance);
 	// });
 
-	it("User stakes his 10 CosmicSignature NFTs and gets all of them back after unstake", async function () {
+	it("User stakes his 10 Cosmic Signature NFTs and gets all of them back after unstake", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;

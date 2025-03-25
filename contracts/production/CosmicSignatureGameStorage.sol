@@ -17,12 +17,12 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #endregion
 // #region
 
-/// todo-1 Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
-/// todo-1 But where we do so, consider validating that a big array item index passed to a method,
-/// todo-1 such as `roundNum_`,  is not too big.
-/// todo-1 Otherwise a collision can create a vulnerability.
-/// todo-1 Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
-/// todo-1 Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
+/// todo-1 +++ Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
+/// todo-1 +++ But where we do so, consider validating that a big array item index passed to a method,
+/// todo-1 +++ such as `roundNum_`,  is not too big.
+/// todo-1 +++ Otherwise a collision can create a vulnerability.
+/// todo-1 +++ Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
+/// todo-1 --- Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 ///
 /// todo-1 +++ Think of what params are currently not configurable, but might need to be configurable, such as `nextEthBidPrice`.
 /// todo-1 +++ Consider making some params non-configurable.
@@ -219,14 +219,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev This value is based on an actual price someone pays, therefore Comment-202412033 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
-	/// @notice Next round first CST Dutch auction beginning bid price.
+	/// @notice Next bidding round first CST Dutch auction beginning bid price.
 	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411066 relates.
 	/// Comment-202411064 applies.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
-	/// @notice Each RandomWalk NFT is allowed to be used for bidding only once.
+	/// @notice Each Random Walk NFT is allowed to be used for bidding only once.
 	/// If an item of this array at a particular index is a nonzero it means the NFT with that ID has already been used for bidding.
 	/// See also: `StakingWalletNftBase.usedNfts`.
 	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
@@ -250,6 +250,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Secondary Prizes
 
 	/// @notice The last CST bidder and Endurance Champion CST prize amount multiplier.
+	/// It multiplies the number of bids in the current bidding round.
 	/// Comment-202411064 applies.
 	uint256 public cstPrizeAmountMultiplier;
 
@@ -257,22 +258,24 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The percentage of ETH in the Game contract account to be used for raffle ETH prizes to be distributed to bidders.
+	/// Comment-202411064 applies.
 	uint256 public raffleTotalEthPrizeAmountForBiddersPercentage;
 
 	/// @notice The number of raffle ETH prizes to be distributed to bidders.
 	/// Comment-202411064 applies.
 	uint256 public numRaffleEthPrizesForBidders;
 
-	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to bidders.
+	/// @notice The number of raffle Cosmic Signature NFTs to be minted and distributed to bidders.
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForBidders;
 
-	/// @notice The number of raffle CosmicSignature NFTs to be minted and distributed to RandomWalk NFT stakers.
+	/// @notice The number of raffle Cosmic Signature NFTs to be minted and distributed to random Random Walk NFT stakers.
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The percentage of ETH in the Game contract account to reward Cosmic Signature NFT stakers.
+	/// Comment-202411064 applies.
 	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
 
 	// #endregion
@@ -322,7 +325,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	CosmicSignatureToken public token;
 
 	// #endregion
-	// #region RandomWalk NFT
+	// #region Random Walk NFT
 
 	/// @notice The `RandomWalkNFT` contract address.
 	/// Comment-202411064 applies.
@@ -383,7 +386,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411078]
 	address public charityAddress;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The percentage of ETH in the Game contract account to be donated to charity.
+	/// Comment-202411064 applies.
 	uint256 public charityEthDonationAmountPercentage;
 
 	// #endregion

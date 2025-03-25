@@ -7,16 +7,15 @@ import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 
-/// @notice Functionality that handles claiming and paying bidding round main prize,
-/// as well as distributing other (secondary) prizes.
+/// @notice Supports claiming and paying bidding round main prize, as well as distributing other (secondary) prizes.
 interface IMainPrize is
 	ICosmicSignatureGameStorage,
 	IBiddingBase,
 	IMainPrizeBase,
 	IBidStatistics,
 	ISecondaryPrizes {
-	/// @notice Emitted when a main prize is claimed.
-	/// This event indicates that the round has ended.
+	/// @notice Emitted when the main prize is claimed.
+	/// This event indicates that the bidding round has ended.
 	/// @param roundNum The current bidding round number.
 	/// @param beneficiaryAddress The address receiving the prize.
 	/// [Comment-202411254]
@@ -26,8 +25,9 @@ interface IMainPrize is
 	/// Comment-202411285 relates.
 	/// Comment-202501249 relates.
 	/// [/Comment-202411254]
-	/// @param ethPrizeAmount ETH prize amount.
-	/// @param prizeCosmicSignatureNftId The ID of the CosmicSignature NFT minted and awarded.
+	/// @param ethPrizeAmount Main ETH prize amount.
+	/// It can potentially be zero.
+	/// @param prizeCosmicSignatureNftId The ID of the Cosmic Signature NFT minted and awarded.
 	event MainPrizeClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
@@ -36,13 +36,17 @@ interface IMainPrize is
 	);
 
 	/// @notice Claims the current bidding round main prize.
-	/// This method distributes main and secondary prizes, updates game state, and prepares to start a new bidding round.
+	/// This method distributes main and secondary prizes and updates the Game contract state to start another bidding round.
+	/// Only the last bidder is permitted to call this method when the main prize time comes,
+	/// but after a timeout expires anybody is welcomed to.
 	function claimMainPrize() external;
 
 	/// @return The current main ETH prize amount, in Wei.
+	/// It can potentially be zero.
 	function getMainEthPrizeAmount() external view returns (uint256);
 
 	/// @return The current charity ETH donation amount, in Wei.
+	/// It can potentially be zero.
 	/// @dev This probably doesn't belong to `ISecondaryPrizes`.
 	/// One might want to move this to a yet another separate interface and respective contract, but let's keep it simple.
 	function getCharityEthDonationAmount() external view returns (uint256);

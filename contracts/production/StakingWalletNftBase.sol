@@ -23,7 +23,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	/// [/Comment-202502266]
 	uint256 public numStakedNfts = 0;
 
-	/// @notice Each RandomWalk or Cosmic Signature NFT is allowed to be used for staking only once.
+	/// @notice Each Random Walk or Cosmic Signature NFT is allowed to be used for staking only once.
 	/// If an item of this array at a particular index is a nonzero it means the NFT with that ID has already been used for staking.
 	/// It doesn't specify whether the given NFT is still staked or has already been unstaked.
 	/// See also: `CosmicSignatureGameStorage.usedRandomWalkNfts`.
