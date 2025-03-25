@@ -191,13 +191,10 @@ describe("Events", function () {
 			.withArgs(0, signer1.address, nextEthPlusRandomWalkNftBidPrice_, -1, 0, "random walk", 100_000_000_000n + initialDurationUntilMainPrize_);
 	});
 
-	it("DonatedNftClaimedEvent is correctly emitted", async function () {
+	it("The DonatedNftClaimed event is correctly emitted", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, prizesWallet, prizesWalletAddr, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
-
-		// ToDo-202411202-1 applies.
-		await cosmicSignatureGameProxy.connect(ownerAcct).setDelayDurationBeforeRoundActivation(0n);
 
 		let mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(bidder1).mint({ value: mintPrice });

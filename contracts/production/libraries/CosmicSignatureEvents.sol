@@ -8,7 +8,7 @@ pragma solidity 0.8.28;
 
 /// @title Events.
 /// @author The Cosmic Signature Development Team.
-/// @notice This library contains events used throughout the Cosmic Signature contracts.
+/// @notice This library contains events used by the Cosmic Signature contracts.
 /// See also: `CosmicSignatureErrors`.
 library CosmicSignatureEvents {
 	// #region Charity
@@ -17,7 +17,7 @@ library CosmicSignatureEvents {
 	/// This is used only for ETH.
 	/// @param charityAddress Charity address.
 	/// @param amount Amount transferred to charity.
-	/// It can be zero.
+	/// It can potentially be zero.
 	event FundsTransferredToCharity(address indexed charityAddress, uint256 amount);
 
 	// #endregion

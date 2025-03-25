@@ -93,7 +93,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param donorAddress Donor address.
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
-	/// It can be zero.
+	/// It can potentially be zero.
 	event TokenDonated(
 		uint256 indexed roundNum,
 		address indexed donorAddress,

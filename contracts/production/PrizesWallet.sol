@@ -268,7 +268,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 				require(
 					block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 					CosmicSignatureErrors.DonatedTokenClaimDenied(
-						"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation until a timeout expires.",
+						"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
 						roundNum_,
 						_msgSender(),
 						tokenAddress_
@@ -374,7 +374,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 				CosmicSignatureErrors.DonatedNftClaimDenied(
-					"Only the bidding round main prize beneficiary is permitted to claim this NFT until a timeout expires.",
+					"Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 					_msgSender(),
 					index_
 				)

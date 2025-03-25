@@ -233,7 +233,7 @@ abstract contract BiddingOpenBid is
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
 					"You are not the owner of this Random Walk NFT.",
-					address(randomWalkNft),
+					randomWalkNft,
 					uint256(/*params_.randomWalkNftId*/ randomWalkNftId_),
 					_msgSender()
 				)

@@ -139,7 +139,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	///    1 for testing on the Hardhat Network.
 	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.
-	/// It can be zero.
+	/// It can potentially be zero.
 	/// Comment-202501022 applies.
 	/// @dev Comment-202503162 applies.
 	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns (uint256);

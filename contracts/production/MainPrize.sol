@@ -131,7 +131,7 @@ abstract contract MainPrize is
 			require(
 				durationUntilOperationIsPermitted_ <= int256(0),
 				CosmicSignatureErrors.MainPrizeClaimDenied(
-					"Only the last bidder is permitted to claim the bidding round main prize until a timeout expires.",
+					"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
 					lastBidderAddress,
 					_msgSender(),
 					uint256(durationUntilOperationIsPermitted_)

@@ -7,13 +7,14 @@ pragma solidity 0.8.28;
 // #region
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 // #endregion
 // #region
 
 /// @title Custom errors.
 /// @author The Cosmic Signature Development Team.
-/// @notice This library contains custom errors used throughout the Cosmic Signature contracts.
+/// @notice This library contains custom errors used by the Cosmic Signature contracts.
 /// See also: `CosmicSignatureEvents`.
 /// @dev Using these custom errors to implement more detailed and gas-efficient error reporting.
 library CosmicSignatureErrors {
@@ -50,7 +51,15 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	/// @param bidPrice The current bid price.
 	/// @param receivedAmount The amount the bidder transferred to us.
+	/// It can potentially be zero.
 	error InsufficientReceivedBidAmount(string errStr, uint256 bidPrice, uint256 receivedAmount);
+
+	/// @notice Thrown when the provided bid message length exceeds the maximum allowed.
+	/// See also: `TooLongNftName`.
+	/// @param errStr Description of the error.
+	/// @param messageLength The provided message length.
+	/// Comment-202409143 relates.
+	error TooLongBidMessage(string errStr, uint256 messageLength);
 
 	/// @notice Thrown when attempting to use an already used Random Walk NFT.
 	/// See also: `NftHasAlreadyBeenStaked`.
@@ -62,35 +71,27 @@ library CosmicSignatureErrors {
 	/// See also: `CallerIsNotAuthorizedToManageNft`.
 	/// @param errStr Description of the error.
 	/// @param nftAddress NFT contract address.
-	/// Issue. Should its type be `IERC721`? But what if we need to support other NFT contarct types?
 	/// @param nftId NFT ID.
 	/// @param callerAddress Caller address.
-	error CallerIsNotNftOwner(string errStr, address nftAddress, uint256 nftId, address callerAddress);
-
-	/// @notice Thrown when the provided bid message length exceeds the maximum allowed.
-	/// See also: `TooLongNftName`.
-	/// @param errStr Description of the error.
-	/// @param messageLength The provided message length.
-	/// Comment-202409143 relates.
-	error TooLongBidMessage(string errStr, uint256 messageLength);
+	error CallerIsNotNftOwner(string errStr, IERC721 nftAddress, uint256 nftId, address callerAddress);
 
 	// #endregion
 	// #region Main Prize
 
-	/// @notice Thrown when someone other than the last bidder attempts to claim the main prize until a timeout expires.
+	/// @notice Thrown when attempting to claim the main prize too early.
+	/// See also: `EarlyWithdrawal`.
+	/// @param errStr Description of the error.
+	/// @param mainPrizeTime The time when this operation will be permitted.
+	/// @param blockTimeStamp The current block timestamp.
+	error MainPrizeEarlyClaim(string errStr, uint256 mainPrizeTime, uint256 blockTimeStamp);
+
+	/// @notice Thrown when someone other than the last bidder attempts to claim the main prize before a timeout expires.
 	/// See also: `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
 	/// @param lastBidderAddress The last bidder address.
 	/// @param beneficiaryAddress The address that attempted to claim the prize.
 	/// @param durationUntilOperationIsPermitted The duration until this operation will be permitted.
 	error MainPrizeClaimDenied(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 durationUntilOperationIsPermitted);
-
-	/// @notice Thrown when attempting to claim main prize too early.
-	/// See also: `EarlyWithdrawal`.
-	/// @param errStr Description of the error.
-	/// @param mainPrizeTime The time when this operation will be permitted.
-	/// @param blockTimeStamp The current block timestamp.
-	error MainPrizeEarlyClaim(string errStr, uint256 mainPrizeTime, uint256 blockTimeStamp);
 
 	// #endregion
 	// #region Cosmic Signature NFT
@@ -137,7 +138,7 @@ library CosmicSignatureErrors {
 	/// See also: `MainPrizeClaimDenied`, `DonatedTokenClaimDenied`.
 	/// @param errStr Description of the error.
 	/// @param beneficiaryAddress The address that attempted to claim the donation.
-	/// @param index Donated NFT index in an array.
+	/// @param index `donatedNfts` item index.
 	error DonatedNftClaimDenied(string errStr, address beneficiaryAddress, uint256 index);
 
 	/// @notice Thrown when attempting to claim an already claimed donated NFT.
@@ -148,9 +149,14 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region NFT Staking
 
+	// todo-1 +++ Keep commented.
 	// /// @notice Thrown when there are no staked NFTs.
 	// /// @param errStr Description of the error.
 	// error NoStakedNfts(string errStr);
+
+	/// @notice Thrown when there are still staked NFTs.
+	/// @param errStr Description of the error.
+	error ThereAreStakedNfts(string errStr);
 
 	/// @notice Thrown when attempting to stake an NFT that has already been staked in the past.
 	/// See also: `UsedRandomWalkNft`.
@@ -159,16 +165,16 @@ library CosmicSignatureErrors {
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
 	// todo-1 +++ Keep commented.
-	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
-	// /// @param errStr Description of the error.
-	// /// @param stakeActionId NFT stake action ID.
-	// error NftAlreadyUnstaked(string errStr, uint256 stakeActionId);
-
-	// todo-1 +++ Keep commented.
 	// /// @notice Thrown when attempting to claim a staking reward for an NFT that hasn't been unstaked.
 	// /// @param errStr Description of the error.
 	// /// @param stakeActionId NFT stake action ID.
 	// error NftNotUnstaked(string errStr, uint256 stakeActionId);
+
+	// todo-1 +++ Keep commented.
+	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
+	// /// @param errStr Description of the error.
+	// /// @param stakeActionId NFT stake action ID.
+	// error NftAlreadyUnstaked(string errStr, uint256 stakeActionId);
 
 	/// @notice Thrown when an invalid NFT stake action ID is provided.
 	/// @param errStr Description of the error.
@@ -199,6 +205,7 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	/// @param destinationAddress The intended destination of the funds.
 	/// @param amount The amount to transfer.
+	/// It can potentially be zero.
 	error FundTransferFailed(string errStr, address destinationAddress, uint256 amount);
 
 	// #endregion
@@ -222,10 +229,10 @@ library CosmicSignatureErrors {
 
 	// error UnknownError(string errStr);
 
-	/// @notice Thrown when an operation is not possible in the current contract state.
-	/// @param errStr Description of the error.
-	/// @dev In .NET, `InvalidOperationException` serves the same purpose.
-	error InvalidOperationInCurrentState(string errStr);
+	// /// @notice Thrown when an operation is not possible in the current contract state.
+	// /// @param errStr Description of the error.
+	// /// @dev In .NET, `InvalidOperationException` serves the same purpose.
+	// error InvalidOperationInCurrentState(string errStr);
 
 	// #endregion
 }

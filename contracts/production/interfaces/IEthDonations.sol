@@ -11,7 +11,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.
 	/// @param amount The amount donated.
-	/// It can be zero.
+	/// It can potentially be zero.
 	/// Comment-202503113 applies.
 	event EthDonated(uint256 indexed roundNum, address indexed donorAddress, uint256 amount);
 
@@ -19,7 +19,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.
 	/// @param amount The amount donated.
-	/// It can be zero.
+	/// It can potentially be zero.
 	/// Comment-202503113 applies.
 	/// @param ethDonationWithInfoRecordIndex The newly created `ethDonationWithInfoRecords` item index.
 	/// @dev

@@ -171,10 +171,9 @@ describe("StakingWalletRandomWalkNft", function () {
 		const {signers, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 
-		// await expect(stakingWalletRandomWalkNft.pickRandomStakerAddress(hre.ethers.hashMessage("0xffff"))).to.be.revertedWithCustomError(stakingWalletRandomWalkNft, "NoStakedNfts");
 		{
-			const luckyStakerAddresses_ = await stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(12n, /*hre.ethers.hashMessage("0xffff")*/ 0xe1027c1afb832e7bd4ac3301523cf66aed14912422b036d444e0c2d4adc0afa2n);
-			expect(luckyStakerAddresses_.length).equal(0);
+			const luckyStakerAddresses = await stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(12n, /*hre.ethers.hashMessage("0xffff")*/ 0xe1027c1afb832e7bd4ac3301523cf66aed14912422b036d444e0c2d4adc0afa2n);
+			expect(luckyStakerAddresses.length).equal(0);
 		}
 
 		const numSigners = 20;

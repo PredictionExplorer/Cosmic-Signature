@@ -189,7 +189,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// Observable universe entities accessed here:
 	///    `address.balance`.
 	///    `address.call`.
-	///    `CosmicSignatureErrors.InvalidOperationInCurrentState`.
+	///    `CosmicSignatureErrors.ThereAreStakedNfts`.
 	///    `CosmicSignatureEvents.FundsTransferredToCharity`.
 	///    `CosmicSignatureEvents.FundTransferFailed`.
 	///    `numStakedNfts`.
@@ -197,7 +197,7 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	function tryPerformMaintenance(address charityAddress_) external override onlyOwner returns (bool) {
 		// #region
 
-		require(numStakedNfts == 0, CosmicSignatureErrors.InvalidOperationInCurrentState("There are still staked NFTs."));
+		require(numStakedNfts == 0, CosmicSignatureErrors.ThereAreStakedNfts("There are still staked NFTs."));
 
 		// #endregion
 		// #region

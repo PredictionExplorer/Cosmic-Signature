@@ -10,7 +10,7 @@
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
-			# 'npx' 'hardhat' 'test' '--grep' 'Should be possible to bid$'
+			# 'npx' 'hardhat' 'test' '--grep' ' is correctly emitted$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!The bidWithEthAndDonateNft method is confirmed to be non-reentrant)$'
 			'npx' 'hardhat' 'test'
 
