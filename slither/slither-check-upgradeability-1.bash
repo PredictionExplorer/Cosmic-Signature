@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+# todo-1 Refactor this to wait for a key press after an error.
+
 # Comment-202412129 relates.
 
 'clear'

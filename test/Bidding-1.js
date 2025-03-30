@@ -9,7 +9,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 const SKIP_LONG_TESTS = false;
 
-describe("Bidding-2", function () {
+describe("Bidding-1", function () {
 	// This is a stress test that executes multiple transactions per block.
 	//
 	// Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1739909248214549

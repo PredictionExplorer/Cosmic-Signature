@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 /// @title Charitable donations management.
 /// @author The Cosmic Signature Development Team.

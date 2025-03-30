@@ -11,37 +11,46 @@ const helpersModule = require("./src/Helpers.js");
 // #endregion
 // #region
 
-// Disable this when running any Hardhat task against a mainnet.
-// Doing so will eliminate the risk of Hardhat Preprocessor bugs breaking things.
+// Disable Hardhat Preprocessor by not setting or setting to "false" this environment variable
+// when running any Hardhat task against a mainnet.
+// It's to eliminate the risk of Hardhat Preprocessor bugs breaking things.
 // If you forget to, we will throw an error near Comment-202408261.
 // Comment-202408155 relates.
 // Comment-202410099 relates.
 const ENABLE_HARDHAT_PREPROCESSOR = helpersModule.parseBooleanEnvironmentVariable("ENABLE_HARDHAT_PREPROCESSOR", false);
 
-// Comment-202408156 relates.
 // [Comment-202408155]
-// This is ignored and treated as `false` when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// This environment variable is ignored and assumed to be `false` when `! ENABLE_HARDHAT_PREPROCESSOR`.
 // [/Comment-202408155]
+// Comment-202408156 relates and/or applies.
 const ENABLE_ASSERTS = ENABLE_HARDHAT_PREPROCESSOR && helpersModule.parseBooleanEnvironmentVariable("ENABLE_ASSERTS", false);
 
 // Allowed values:
 //    0 = disabled.
 //    1 = only preprocess the code for SMTChecker.
 //    2 = fully enabled, meaning also run SMTChecker.
+// [Comment-202410099]
+// This environment variable is ignored and assumed to be zero when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// [/Comment-202410099]
 // [Comment-202408156]
 // When enabling SMTChecker, you typically need to enable asserts as well.
 // [/Comment-202408156]
-// [Comment-202410099]
-// This is ignored and treated as zero when `! ENABLE_HARDHAT_PREPROCESSOR`.
-// [/Comment-202410099]
-// Comment-202408173 relates.
 const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseIntegerEnvironmentVariable("ENABLE_SMTCHECKER", 0) : 0;
 
 // #endregion
 // #region
 
+// [Comment-202503272]
+// The use of different folders prevents a recompile of some Solidity sources
+// when using a different combination of environment variables.
+// [/Comment-202503272]
+const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + ENABLE_ASSERTS.toString() + "-" + (ENABLE_SMTCHECKER > 0).toString()) : "production";
+
+// #endregion
+// #region
+
 // [Comment-202409011]
-// Issue. Hardhat would automatically install solcjs, but solcjs fails to execute SMTChecker.
+// Issue. Hardhat would automatically install solcjs, but solcjs terminates with an error when SMTChecker is enabled.
 // It could be a solcjs bug.
 // So we must tell Hardhat to use the native solc of the given version.
 // Remember to manually install it.
@@ -50,22 +59,32 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 //    sudo apt install solc
 // Another, arguably better option is to use the "solc-select" tool.
 // It's documented at https://github.com/crytic/solc-select .
-// Install it.
-// To switch to a particular solc version, use this command:
-//    solc-select use 0.8.28 --always-install
-// It's OK if then you switch to a different version. As long as the given version remains installed,
-// we should be able to find and use it.
+// After you install it, to switch to a particular solc version, use this command:
+//    solc-select use 0.8.29 --always-install
+// It's OK if afterwards you switch to a different version. As long as the given version remains installed, we will find and use it.
+//
+// Update 1. It turns out that just like solcjs, solc installed with solc-select also fails when SMTChecker is enabled.
+// So you must install solc globally.
+// You can still use solc installed with solc-select when you don't need SMTChecker.
+//
+// Update 2. On the cosmic2 server, even the globally installed solc didn't work.
+// Installing the z3 package fixed that:
+//    sudo apt install z3
+// Now even solc installed with solc-select works. So it's actually unnecessary to install solc globally.
+// todo-0 The above is yet to be confirmed.
+// todo-3 Test if solcjs works.
+//
 // Note that Hardhat will not necessarily validate solc of what version it's executing,
 // so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
-// Remember that depending on how your system upates are configured and how you installed the solc package,
+// Note that if your system is configured to install updates automatically and you installed the solc package globally,
 // the package can be updated at any moment, so you might want to disable quiet automatic updates.
 // [/Comment-202409011]
 
 // Comment-202409011 applies.
 // [ToDo-202409098-1]
-// When changing this, remember to revisit the configuration near Comment-202408026 and Comment-202408025.
+// When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
 // [/ToDo-202409098-1]
-const solidityVersion = "0.8.28";
+const solidityVersion = "0.8.29";
 
 // Comment-202409011 applies.
 // [Comment-202411136]
@@ -75,17 +94,23 @@ const solidityVersion = "0.8.28";
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
 // We print it near Comment-202411143.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.7893614a.Linux.g++";
+const solidityCompilerLongVersion = solidityVersion + "+commit.ab55807c.Linux.g++";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
-let solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
-	solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
+let solidityCompilerPath;
+const solidityCompilerPathGlobal = "/usr/bin/solc";
+// if (ENABLE_SMTCHECKER < 2) {
+	solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
 	if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
-		solidityCompilerPath = "/usr/bin/solc";
+		solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
+		if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
+			solidityCompilerPath = solidityCompilerPathGlobal;
+		}
 	}
-}
+// } else {
+// 	solidityCompilerPath = solidityCompilerPathGlobal;
+// }
 
 // #endregion
 // #region
@@ -94,10 +119,13 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
 	if (ENABLE_SMTCHECKER <= 0 && ( ! ENABLE_ASSERTS )) {
 		// [Comment-202409025/]
-		console.warn("Warning. Neither SMTChecker nor asserts are enabled. Assuming it's intentional.");
+		console.warn("Warning. Neither the preprocessing for SMTChecker nor asserts are enabled. Assuming it's intentional.");
 	}
 	if (ENABLE_SMTCHECKER > 0 && ( ! ENABLE_ASSERTS )) {
-		console.warn("Warning. SMTChecker is enabled, but asserts are disabled. Is it intentional?");
+		console.warn("Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
+	}
+	if (ENABLE_SMTCHECKER >= 2) {
+		console.log("SMTChecker execution is enabled.");
 	}
 } else {
 	console.warn("Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
@@ -228,7 +256,7 @@ function preProcessSolidityLine(hre, line) {
 	populateNetworkIsMainNetOnce(hre);
 	if (networkIsMainNet) {
 		// [Comment-202408261/]
-		throw new Error("The network is a mainnet, but you forgot to disable Hardhat Preprocessor.");
+		throw new Error("The network appears to be a mainnet, but you forgot to disable Hardhat Preprocessor.");
 	}
 
 	// @ts-ignore No overload matches this call.
@@ -244,12 +272,21 @@ function preProcessSolidityLine(hre, line) {
 const hardhatUserConfig = {
 	// #region
 
+	paths: {
+		// Comment-202503272 relates.
+		cache: "./cache/" + solidityCompilationCacheSubFolderName,
+		artifacts: "./artifacts/" + solidityCompilationCacheSubFolderName,
+	},
+
+	// #endregion
+	// #region
+
 	solidity: {
 		version: solidityVersion,
 		settings: {
 			// [Comment-202408026]
 			// By default, this is "paris".
-			// See https://hardhat.org/hardhat-runner/docs/config
+			// See https://hardhat.org/hardhat-runner/docs/config#default-evm-version
 			// But we want this to be the latest with which Arbitrum is compatible.
 			// [/Comment-202408026]
 			evmVersion: "cancun",
@@ -258,7 +295,7 @@ const hardhatUserConfig = {
 			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.28, this is `false` by default.
+			// As of the 0.8.29, this is `false` by default.
 			viaIR: true,
 
 			// Comment-202408025 applies.
@@ -299,17 +336,21 @@ const hardhatUserConfig = {
 			(hre) =>
 			(
 				{
-					// In case the preprocessor is disabled, it doesn't matter whether this object exists or changed.
-					// In that case, Hardhat will recompile only modified contracts, which is the normal behavior of Hardhat.
+					// In case Hardhat Preprocessor is disabled, it doesn't matter whether this object exists or changed.
+					// In that case, Hardhat will recompile only the modified contracts, which is the normal behavior of Hardhat.
 					// Further comments apply if the preprocesor is enabled.
 					// Regardless if this object exists or changed, Hardhat will unconditionally execute the preprocesor.
 					// As a result, the logic that can lead to an error being thrown near Comment-202408261 is guaranteed to run.
 					// If this object doesn't exist or if it changed, Hardhat will recompile all contracts.
-					// Otherwise, if the preprocessor generats a different output, Hardhat will recompile the changed contracts.
-					settings:
-					{
-						enableAsserts: ENABLE_ASSERTS,
-						enableSMTChecker: ENABLE_SMTCHECKER > 0,
+					// Otherwise, if the preprocessor generats a different output, Hardhat will recompile only the modified contracts.
+					// Note that this configuration is not designed to address the issue described in Comment-202409012.
+					settings: {
+						// // We don't need these variables here for 2 separate reasons, each of which is sufficient:
+						// //    1. We need to recompile only changed preprocessor output.
+						// //    2. We use a different `solidityCompilationCacheSubFolderName` for each combination of these variables.
+						// //       Comment-202503272 relates.
+						// enableAsserts: ENABLE_ASSERTS,
+						// enableSmtChecker: ENABLE_SMTCHECKER > 0,
 					},
 
 					// // This undocumented parameter appears to make it possible to specify what files to preprocess.
@@ -337,13 +378,13 @@ const hardhatUserConfig = {
 
 		// Issue. This list is incomplete.
 		only: [
+			"CosmicSignatureToken",
+			"RandomWalkNFT",
+			"CosmicSignatureNft",
+			"PrizesWallet",
 			"CharityWallet",
 			"CosmicSignatureDao",
 			// "CosmicSignatureGameProxy",
-			"CosmicSignatureNft",
-			"CosmicSignatureToken",
-			"PrizesWallet",
-			"RandomWalkNFT",
 		],
 
 		spacing: 2,
@@ -354,6 +395,7 @@ const hardhatUserConfig = {
 	// #region
 
 	// When you make changes to the networks, remember to refactor the logic near Comment-202408313.
+	// todo-1 If I add add Arbitrum Sepolia do the above.
 	networks: {
 		hardhat: {
 			allowUnlimitedContractSize: true,
@@ -364,41 +406,41 @@ const hardhatUserConfig = {
 			// gas: "auto",
 
 			// [Comment-202501193]
-			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` function.
-			// Block timestamp increment is actually 1 second, despite of the `interval` parameter being zero.
-			// todo-1 But now I made it huge. Is it a bit better?
+			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` method.
+			// Block timestamp increment is always 1 second and is not configurable.
+			// todo-1 I tried making `interval` huge. Is it a bit better?
 			// todo-1 See todos in Comment-202501192.
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,
 				auto: true,
 				// interval: 1000,
-				// interval: 0,
-				interval: 999_999_999,
+				interval: 0,
+				// interval: 999_999_999,
 				mempool: {
 					order: "fifo"
 				},
 			},
 		},
 		localhost: {
-			url: `http://localhost:8545/`,
-			gasMultiplier: 4,
+			url: "http://localhost:8545/",
+			// gasMultiplier: 4,
 		},
 		rinkeby: {
-			url: `https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161`,
+			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
-			url: `http://170.187.142.12:22545/`,
+			url: "http://170.187.142.12:22545/",
 			accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
-			gasMultiplier: 2,
+			// gasMultiplier: 2,
 		},
 		arbigoerli: {
-			url: `https://goerli-rollup.arbitrum.io/rpc`,
+			url: "https://goerli-rollup.arbitrum.io/rpc",
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		arbitrum: {
-			url: `https://arb1.arbitrum.io/rpc`,
+			url: "https://arb1.arbitrum.io/rpc",
 			accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
 	},
@@ -444,27 +486,25 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [Comment-202409013]
 		// If you don't list any contracts here, all contracts under the "contracts" folder tree, except abstract ones, will be analyzed.
 		// [Comment-202408173]
-		// Issue. The preprocessor always preprocesses all Solidity sources, regardless of what you select here, if anything.
+		// Hardhat preprocessor always preprocesses all Solidity sources, regardless of what you list here, if anything.
 		// [/Comment-202408173]
 		// [Comment-202409012]
 		// Issue. Previously compiled contracts that don't need a recompile won't be analyzed.
-		// Therefore remember to force-compile them.
+		// Therefore we must force-compile them.
 		// [/Comment-202409012]
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verified-contracts
 		// [/Comment-202409013]
 		contracts: {
-			// "contracts/production/AddressValidator.sol": ["AddressValidator"],
-			// "contracts/production/CharityWallet.sol": ["CharityWallet"],
+			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
+			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
+			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
+			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
+			// "contracts/production/StakingWalletRandomWalkNft.sol": ["StakingWalletRandomWalkNft"],
+			// "contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],
+			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
+			"contracts/production/CharityWallet.sol": ["CharityWallet"],
 			// "contracts/production/CosmicSignatureDao.sol": ["CosmicSignatureDao"],
 			// "contracts/production/CosmicSignatureGame.sol": ["CosmicSignatureGame"],
-			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
-			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
-			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
-			// "contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol": ["OwnableUpgradeableWithReservedStorageGaps"],
-			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
-			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
-			"contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],
-			"contracts/production/StakingWalletRandomWalkNft.sol": ["StakingWalletRandomWalkNft"],
 		},
 
 		// // It appears to be unnecessary to configure this.
@@ -489,10 +529,10 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [/Comment-202502057]
 		extCalls: "trusted",
 
-		// By default, these won't be reported.
-		// todo-0 Do we really need these?
-		// See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
-		invariants: ["contract", "reentrancy",],
+		// // By default, these won't be reported.
+		// // It appears that we don't need these.
+		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
+		// invariants: ["contract", "reentrancy",],
 
 		// // We probably rarely need this.
 		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#proved-targets
@@ -509,8 +549,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// solvers: ["z3"],
 
 		// By default, SMTChecker won't discover integer overflow and underflow.
-		// To enable discovering those, list them explicitly, together with whatever others.
-		// todo-0 Do we really need to discover them?
+		// To enable the discovery of those, list them explicitly, together with whatever others.
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verification-targets
 		targets: [
 			"assert",
@@ -525,7 +564,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 		],
 
 		// Milliseconds.
-		timeout: 20 * 60 * 60 * 1000,
+		timeout: 24 * 60 * 60 * 1000,
 	};
 }
 

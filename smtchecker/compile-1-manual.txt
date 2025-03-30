@@ -1,7 +1,7 @@
     How to execute SMTChecker.
 
 @ Review https://github.com/PredictionExplorer/hardhat-preprocessor-integration-prototype/blob/main/contracts/Lock.sol
-  for what you can possibly do. Althoug that prototype goes beyond of what makes sense to do in the production code,
+  for what you can possibly do in the code. Althoug that prototype goes beyond of what makes sense to do in the production code,
   and it's not necessarily OK to deploy as is, without preprocessing.
 
 @ In the code, add asserts and whatever other relevant logic.
@@ -17,14 +17,14 @@
 
 @ Try to find the folowing case sensitive regular experssion patterns in source files. The findings might indicate mistakes.
 
-(?<!\t\t// #enable)_asserts
+(?<!// #enable)_asserts
 
-(?<!\t\t// #enable_asserts )\bassert\s*\(
+(?<!// #enable_asserts )\bassert\s*\(
 
 @ Review Comment-202409013.
   Specify there what contracts to analyze, or leave all commented.
 
-@ Execute `./compile-1.bash`.
+@ Execute './compile-1.bash'.
 
 @ While it's running, you might want to review "hardhat.config.js" to get an idea what's under the hood.
 

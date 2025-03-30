@@ -7,7 +7,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 // const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("Bidding-1", function () {
+describe("Bidding-2", function () {
 	it("Should be possible to bid", async function () {
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
