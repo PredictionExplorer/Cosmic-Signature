@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 // #endregion
 // #region
@@ -531,6 +531,7 @@ abstract contract MainPrize is
 					// #region ETH for Cosmic Signature NFT stakers.
 
 					try stakingWalletCosmicSignatureNft.deposit{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
+						// Doing nothing.
 					} catch Panic(uint256 errorCode_) {
 						// Comment-202410161 relates.
 						if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {

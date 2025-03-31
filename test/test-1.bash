@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+# Comment-202503282 relates.
+
 'clear'
 
 (
@@ -10,12 +12,14 @@
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
+
 			# 'npx' 'hardhat' 'test' '--grep' ' is correctly emitted$'
-			# 'npx' 'hardhat' 'test' '--grep' '(?<!The bidWithEthAndDonateNft method is confirmed to be non-reentrant)$'
+			# 'npx' 'hardhat' 'test' '--grep' 'Smoke test$'
+			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
 			'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
-				echo 'Error. Hardhat Test failed. We will skip any remaining tests.'
+				read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
 				OutcomeCode=2
 			fi
 		fi
@@ -23,9 +27,8 @@
 
 	if [ ${OutcomeCode} -lt 2 ]; then
 		'cd' '--' '..'
-
 		if [ $? -ne 0 ]; then
-			echo 'Error 202409026.'
+			read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
 			OutcomeCode=2
 		fi
 	fi

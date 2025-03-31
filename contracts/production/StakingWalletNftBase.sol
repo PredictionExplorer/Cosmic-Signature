@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 // #endregion
 // #region
@@ -41,6 +41,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	/// Observable universe entities accessed here:
 	///    Inherited `constructor`s.
 	constructor() {
+		// Doing nothing.
 	}
 
 	// #endregion

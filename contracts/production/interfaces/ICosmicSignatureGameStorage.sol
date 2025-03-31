@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 interface ICosmicSignatureGameStorage {
 	/// @notice Details about an ETH donation with additional info made to the Game.
