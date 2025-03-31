@@ -4,4 +4,5 @@ pragma solidity 0.8.29;
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
 interface INftDonations is ICosmicSignatureGameStorage {
+   // Empty.
 }

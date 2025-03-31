@@ -140,7 +140,7 @@ contract CosmicSignatureGameOpenBid is
 	/// [ToDo-202412164-2]
 	/// This should be declared in an inherited interface.
 	/// [/ToDo-202412164-2]
-	function initialize2() reinitializer(2) /*onlyOwner*/ external {
+	function initialize2() external reinitializer(2) /*onlyOwner*/ {
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
 
 		// Comment-202503119 applies.

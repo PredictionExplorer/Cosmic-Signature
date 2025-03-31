@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-# todo-1 Refactor this to wait for a key press after an error.
-
 # 'clear'
 
 (
@@ -10,7 +8,7 @@
 	if [ ${OutcomeCode} -lt 2 ]; then
 		'cd' '--' '..'
 		if [ $? -ne 0 ]; then
-			echo 'Error 202409123.'
+			read '-r' '-n' '1' '-s' '-p' 'Error 202409123. Press any key to finish.'
 			OutcomeCode=2
 		fi
 	fi
@@ -23,7 +21,7 @@
 
 		'gio' 'trash' '--force' "${SolHintOutputFileName}"
 		if [ $? -ne 0 ]; then
-			echo 'Error 202409125.'
+			read '-r' '-n' '1' '-s' '-p' 'Error 202409125. Press any key to finish.'
 			OutcomeCode=2
 		fi
 	fi
@@ -31,7 +29,7 @@
 	if [ ${OutcomeCode} -lt 2 ]; then
 		'npx' 'hardhat' 'check' >> "${SolHintOutputFileName}"
 		if [ $? -ne 0 ]; then
-			echo 'Error. Hardhat Check failed.'
+			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Check failed. Press any key to finish.'
 			OutcomeCode=2
 		fi
 	fi

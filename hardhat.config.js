@@ -44,6 +44,9 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // The use of different folders prevents a recompile of some Solidity sources
 // when using a different combination of environment variables.
 // [/Comment-202503272]
+// [Comment-202503302]
+// A similar folder name exists in multiple places.
+// [/Comment-202503302]
 const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + ENABLE_ASSERTS.toString() + "-" + (ENABLE_SMTCHECKER > 0).toString()) : "production";
 
 // #endregion

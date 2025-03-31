@@ -148,6 +148,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		(bool success, ) = destination.call{ value: amount }("");
 		require(success, "Transfer failed.");
 		
+		// Issue. This is in part similar to Comment-202503253.
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 
@@ -179,7 +180,8 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 		// [Comment-202503253]
 		// Issue. Reentrancy vulnerability. During the call to `lastMinter.call`, `lastMinter`, `entropy`, and `price` could have changed.
-		// But given Comment-202409149, it's too late to fix it.
+		// Also, the order of events can be messed up.
+		// But given Comment-202409149, it's too late to fix this.
 		// [/Comment-202503253]
 		emit MintEvent(tokenId, lastMinter, entropy, price);
 	}

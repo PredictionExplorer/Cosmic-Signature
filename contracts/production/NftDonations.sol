@@ -5,4 +5,5 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { INftDonations } from "./interfaces/INftDonations.sol";
 
 abstract contract NftDonations is CosmicSignatureGameStorage, INftDonations {
+   // Empty.
 }

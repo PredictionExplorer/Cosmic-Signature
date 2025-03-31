@@ -6,12 +6,6 @@ pragma solidity 0.8.29;
 // #endregion
 // #region
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
-// #endregion
-// #region
-
 /// @title Constants.
 /// @author The Cosmic Signature Development Team.
 /// @notice Most of these constants are used to initialize state variables.

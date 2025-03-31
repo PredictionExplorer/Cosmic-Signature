@@ -41,6 +41,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	/// Observable universe entities accessed here:
 	///    Inherited `constructor`s.
 	constructor() {
+		// Doing nothing.
 	}
 
 	// #endregion
