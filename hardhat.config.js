@@ -74,8 +74,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // Installing the z3 package fixed that:
 //    sudo apt install z3
 // Now even solc installed with solc-select works. So it's actually unnecessary to install solc globally.
-// todo-0 The above is yet to be confirmed.
-// todo-3 Test if solcjs works.
+// todo-3 Test if solcjs works too.
 //
 // Note that Hardhat will not necessarily validate solc of what version it's executing,
 // so it's your responsibility to correctly configure all the relevant parameters that reference this comment.

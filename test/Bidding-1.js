@@ -38,7 +38,11 @@ describe("Bidding-1", function () {
 	it("Long-term aggressive bidding behaves correctly", async function () {
 		if (SKIP_LONG_TESTS) return;
 
-		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
+		const {
+			signers,
+			cosmicSignatureToken,
+			cosmicSignatureGameProxy,
+		} = await loadFixture(deployContractsForUnitTesting);
 		
 		// Comment-202501192 applies.
 		await hre.ethers.provider.send("evm_mine");

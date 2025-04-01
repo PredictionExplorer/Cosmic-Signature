@@ -21,7 +21,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @notice Stores details about an NFT stake action.
 	struct StakeAction {
 		uint256 nftId;
-		/// todo-1 ??? Reorder this to before `nftId`.
+
+		/// @dev Comment-202504011 applies.
 		address nftOwnerAddress;
 
 		/// @notice
@@ -200,10 +201,10 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	///    `stakeActions`.
 	///    `stakeActionIds`.
 	///
-	/// todo-0 Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
-	/// todo-0 function\b.+?IfPossible
-	/// todo-0 function\b.+?IfNeeded
-	/// todo-0 Jan 26: I am happy, but take another look.
+	/// todo-1 +++ Review all `IfPossible` and `IfNeeded` methods and maybe rename some to `try`.
+	/// todo-1 +++ function\b.+?IfPossible
+	/// todo-1 +++ function\b.+?IfNeeded
+	/// todo-1 +++ Jan 26: I am happy.
 	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view override returns (address[] memory) {
 		address[] memory luckyStakerAddresses_;
 		uint256 numStakedNftsCopy_ = numStakedNfts;

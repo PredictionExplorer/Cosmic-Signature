@@ -11,7 +11,7 @@ import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-// todo-1 Move each contract to a separate file.
+// todo-0 Move each contract to a separate file.
 
 contract BidderContract {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
@@ -174,7 +174,9 @@ contract BidCNonRecv {
 		// creator = msg.sender;
 	}
 
-	receive() external payable {}
+	receive() external payable {
+		// Doing nothing.	
+	}
 
 	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));

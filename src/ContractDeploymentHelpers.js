@@ -85,36 +85,10 @@ const deployContractsAdvanced = async function (
 	const cosmicSignatureGameImplementationAddr = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddr);
 	const cosmicSignatureGameImplementation = cosmicSignatureGameFactory.attach(cosmicSignatureGameImplementationAddr);
 
-	const cosmicSignatureNftFactory = await hre.ethers.getContractFactory("CosmicSignatureNft", deployerAcct);
-	const cosmicSignatureNft = await cosmicSignatureNftFactory.deploy(cosmicSignatureGameProxyAddr);
-	await cosmicSignatureNft.waitForDeployment();
-	const cosmicSignatureNftAddr = await cosmicSignatureNft.getAddress();
-
 	const cosmicSignatureTokenFactory = await hre.ethers.getContractFactory("CosmicSignatureToken", deployerAcct);
 	const cosmicSignatureToken = await cosmicSignatureTokenFactory.deploy(cosmicSignatureGameProxyAddr);
 	await cosmicSignatureToken.waitForDeployment();
 	const cosmicSignatureTokenAddr = await cosmicSignatureToken.getAddress();
-	// await (await cosmicSignatureToken.transferOwnership(cosmicSignatureGameProxyAddr)).wait();
-
-	const cosmicSignatureDaoFactory = await hre.ethers.getContractFactory("CosmicSignatureDao", deployerAcct);
-	const cosmicSignatureDao = await cosmicSignatureDaoFactory.deploy(cosmicSignatureTokenAddr);
-	await cosmicSignatureDao.waitForDeployment();
-	const cosmicSignatureDaoAddr = await cosmicSignatureDao.getAddress();
-
-	const charityWalletFactory = await hre.ethers.getContractFactory("CharityWallet", deployerAcct);
-	const charityWallet = await charityWalletFactory.deploy();
-	await charityWallet.waitForDeployment();
-	const charityWalletAddr = await charityWallet.getAddress();
-	await (await charityWallet.setCharityAddress(charityAddr)).wait();
-	if (transferOwnershipToCosmicSignatureDao) {
-		// It appears that it makes no sense to perform this kind of ownership transfer for any other contracts.
-		await (await charityWallet.transferOwnership(cosmicSignatureDaoAddr)).wait();
-	}
-
-	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerAcct);
-	const prizesWallet = await prizesWalletFactory.deploy(cosmicSignatureGameProxyAddr);
-	await prizesWallet.waitForDeployment();
-	const prizesWalletAddr = await prizesWallet.getAddress();
 
 	const randomWalkNftFactory = await hre.ethers.getContractFactory("RandomWalkNFT", deployerAcct);
 	let randomWalkNft;
@@ -125,6 +99,16 @@ const deployContractsAdvanced = async function (
 	} else {
 		randomWalkNft = randomWalkNftFactory.attach(randomWalkNftAddr);
 	}
+
+	const cosmicSignatureNftFactory = await hre.ethers.getContractFactory("CosmicSignatureNft", deployerAcct);
+	const cosmicSignatureNft = await cosmicSignatureNftFactory.deploy(cosmicSignatureGameProxyAddr);
+	await cosmicSignatureNft.waitForDeployment();
+	const cosmicSignatureNftAddr = await cosmicSignatureNft.getAddress();
+
+	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerAcct);
+	const prizesWallet = await prizesWalletFactory.deploy(cosmicSignatureGameProxyAddr);
+	await prizesWallet.waitForDeployment();
+	const prizesWalletAddr = await prizesWallet.getAddress();
 
 	const stakingWalletRandomWalkNftFactory = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft", deployerAcct);
 	const stakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
@@ -141,6 +125,21 @@ const deployContractsAdvanced = async function (
 	const marketingWallet = await marketingWalletFactory.deploy(cosmicSignatureTokenAddr);
 	await marketingWallet.waitForDeployment();
 	const marketingWalletAddr = await marketingWallet.getAddress();
+
+	const cosmicSignatureDaoFactory = await hre.ethers.getContractFactory("CosmicSignatureDao", deployerAcct);
+	const cosmicSignatureDao = await cosmicSignatureDaoFactory.deploy(cosmicSignatureTokenAddr);
+	await cosmicSignatureDao.waitForDeployment();
+	const cosmicSignatureDaoAddr = await cosmicSignatureDao.getAddress();
+
+	const charityWalletFactory = await hre.ethers.getContractFactory("CharityWallet", deployerAcct);
+	const charityWallet = await charityWalletFactory.deploy();
+	await charityWallet.waitForDeployment();
+	const charityWalletAddr = await charityWallet.getAddress();
+	await (await charityWallet.setCharityAddress(charityAddr)).wait();
+	if (transferOwnershipToCosmicSignatureDao) {
+		// It appears that it makes no sense to perform this kind of ownership transfer for any other contracts.
+		await (await charityWallet.transferOwnership(cosmicSignatureDaoAddr)).wait();
+	}
 
 	await (await cosmicSignatureGameProxy.setCosmicSignatureToken(cosmicSignatureTokenAddr)).wait();
 	await (await cosmicSignatureGameProxy.setRandomWalkNft(randomWalkNftAddr)).wait();
@@ -159,11 +158,6 @@ const deployContractsAdvanced = async function (
 	}
 
 	return {
-		cosmicSignatureGameFactory,
-		cosmicSignatureGameImplementation,
-		cosmicSignatureGameImplementationAddr,
-		cosmicSignatureGameProxy,
-		cosmicSignatureGameProxyAddr,
 		cosmicSignatureTokenFactory,
 		cosmicSignatureToken,
 		cosmicSignatureTokenAddr,
@@ -191,12 +185,20 @@ const deployContractsAdvanced = async function (
 		cosmicSignatureDaoFactory,
 		cosmicSignatureDao,
 		cosmicSignatureDaoAddr,
+		cosmicSignatureGameFactory,
+		cosmicSignatureGameImplementation,
+		cosmicSignatureGameImplementationAddr,
+		cosmicSignatureGameProxy,
+		cosmicSignatureGameProxyAddr,
 	};
 };
 
 // #endregion
 // #region
 
-module.exports = { deployContracts, deployContractsAdvanced };
+module.exports = {
+	deployContracts,
+	deployContractsAdvanced,
+};
 
 // #endregion

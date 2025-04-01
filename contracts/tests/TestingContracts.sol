@@ -17,7 +17,7 @@ import { CharityWallet } from "../production/CharityWallet.sol";
 // import { NftDonations } from "../production/NftDonations.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-// todo-1 Move each contract to a separate file.
+// todo-0 Move each contract to a separate file.
 
 // /// @notice Used to test `revert` statements in token transfers in `claimMainPrize`.
 // contract BrokenCosmicSignatureToken1 {
@@ -67,6 +67,7 @@ contract BrokenCosmicSignatureToken2 {
 	}
 
 	function burn(address, uint256) external {
+		// Doing nothing.	
 	}
 }
 
@@ -84,7 +85,9 @@ contract BrokenStakingWalletCosmicSignatureNft {
 	StakingWalletCosmicSignatureNft private _stakingWalletCosmicSignatureNft;
 	bool private _blockDeposits = false;
 
-	constructor() {}
+	constructor() {
+		// Doing nothing.	
+	}
 
 	receive() external payable {
 		require(!_blockDeposits, "I am not accepting deposits");
@@ -135,6 +138,7 @@ contract BrokenStakingWalletCosmicSignatureNft {
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {
+		// Doing nothing.	
 	}
 
 	/// @dev Comment-202503124 relates and/or applies.
@@ -179,6 +183,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {
+		// Doing nothing.	
 	}
 
 	/// @dev Comment-202503124 relates and/or applies.
@@ -288,6 +293,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 /// @dev todo-1 Do I need to refactor this similarly to `MaliciousNft2`?
 contract MaliciousNft1 is ERC721 {
 	constructor(string memory name_, string memory symbol_) ERC721(name_,symbol_) {
+		// Doing nothing.
 	}
 
 	/// @notice sends donateNft() inside a call to transfer an NFT, generating reentrant function call
@@ -318,6 +324,7 @@ contract MaliciousNft2 is ERC721 {
 	}
 
 	receive() external payable {
+		// Doing nothing.	
 	}
 
 	/// @notice sends bidWithEthAndDonateNft() inside a call to transfer an NFT, generating reentrant function call

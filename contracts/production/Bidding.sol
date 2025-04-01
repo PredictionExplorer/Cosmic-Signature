@@ -178,9 +178,8 @@ abstract contract Bidding is
 
 				// A reentry can happen here.
 				// [ToDo-202502186-1]
-				// todo-0
 				// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
-				// Mar 16: There appears to be no vulnerability here, but give it another thought.
+				// There appears to be no vulnerability here, but ask the auditors to take a look.
 				// [/ToDo-202502186-1]
 				// Comment-202502051 relates.
 				// Comment-202502043 applies.
