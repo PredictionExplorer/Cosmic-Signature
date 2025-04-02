@@ -2,7 +2,7 @@
 
 # Execute this script for the solc process.
 # Pass its process ID as an argument.
-# But before you execute this script, make sure the value of `RamMaxLimit` is OK.
+# But before you execute this script, make sure the value of the `RamMaxLimit` variable is OK.
 
 (
    OutcomeCodeBitMask=0
