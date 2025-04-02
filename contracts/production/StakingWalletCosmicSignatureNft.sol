@@ -22,10 +22,12 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	/// @notice Stores details about an NFT stake action.
 	struct StakeAction {
 		uint256 nftId;
-		/// todo-1 ??? Reorder this to before `nftId`.
-		/// todo-1 Maybe comment everywhere near `nftOwnerAddress` and `stakerAddress`:
-		/// todo-1 Would it make sense to reorder `nftOwnerAddress` and `stakerAddress` to before `NftId`?
-		/// todo-1 Regardless, let's leave it alone.
+
+		/// @dev
+		/// [Comment-202504011]
+		/// Would it make sense to reorder variables like `nftOwnerAddress` and `stakerAddress` to before `NftId`?
+		/// Regardless, let's leave it alone.
+		/// [/Comment-202504011]
 		address nftOwnerAddress;
 
 		/// @notice A copy of `StakingWalletCosmicSignatureNft.rewardAmountPerStakedNft`

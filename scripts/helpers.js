@@ -1,5 +1,7 @@
 // See also: "../src/Helpers.js".
 
+// todo-1 Review this. See todos below.
+
 "use strict";
 
 const hre = require("hardhat");
@@ -42,4 +44,7 @@ async function getBidderContract() {
 	return bidderContract;
 }
 
-module.exports = { getCosmicSignatureGameContract, getBidderContract };
+module.exports = {
+	getCosmicSignatureGameContract,
+	getBidderContract,
+};

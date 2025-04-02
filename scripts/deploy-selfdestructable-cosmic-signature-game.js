@@ -25,17 +25,17 @@ async function main() {
 			true,
 			1
 		);
-	console.log("CosmicSignatureGame proxy address:", contracts.cosmicSignatureGameProxyAddr);
-	console.log("CosmicSignatureNft address:", contracts.cosmicSignatureNftAddr);
 	console.log("CosmicSignatureToken address:", contracts.cosmicSignatureTokenAddr);
-	console.log("CosmicSignatureDao address:", contracts.cosmicSignatureDaoAddr);
-	console.log("CharityWallet address:", contracts.charityWalletAddr);
-	console.log("PrizesWallet address:", contracts.prizesWalletAddr);
 	console.log("RandomWalkNFT address:", contracts.randomWalkNftAddr);
-	console.log("StakingWalletCosmicSignatureNft address:", contracts.stakingWalletCosmicSignatureNftAddr);
+	console.log("CosmicSignatureNft address:", contracts.cosmicSignatureNftAddr);
+	console.log("PrizesWallet address:", contracts.prizesWalletAddr);
 	console.log("StakingWalletRandomWalkNft address:", contracts.stakingWalletRandomWalkNftAddr);
+	console.log("StakingWalletCosmicSignatureNft address:", contracts.stakingWalletCosmicSignatureNftAddr);
 	console.log("MarketingWallet address:", contracts.marketingWalletAddr);
+	console.log("CharityWallet address:", contracts.charityWalletAddr);
+	console.log("CosmicSignatureDao address:", contracts.cosmicSignatureDaoAddr);
 	console.log("CosmicSignatureGame implementation address:", contracts.cosmicSignatureGameImplementationAddr);
+	console.log("CosmicSignatureGame proxy address:", contracts.cosmicSignatureGameProxyAddr);
 }
 
 main()

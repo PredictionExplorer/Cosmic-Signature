@@ -89,6 +89,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
 	/// A CST bid price can potentially be zero.
 	/// That said, given that we mint a nonzero CST reward for each bid, it's unlikely that the CST bid price will fall below that.
+	/// todo-1 Develop a test that makes ETH prices minimal.
 	/// [/Comment-202503162]
 	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns (uint256);
 

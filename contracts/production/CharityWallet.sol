@@ -12,6 +12,7 @@ contract CharityWallet is Ownable, ICharityWallet {
 	address public charityAddress = address(0);
 
 	constructor() Ownable(_msgSender()) {
+		// Doing nothing.
 	}
 
 	receive() external payable override {

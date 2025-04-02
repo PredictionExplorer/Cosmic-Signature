@@ -64,6 +64,7 @@ contract CosmicSignatureDao is
 
 		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		GovernorVotesQuorumFraction(CosmicSignatureConstants.DAO_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
+		// Doing nothing.	
 	}
 
 	// #endregion

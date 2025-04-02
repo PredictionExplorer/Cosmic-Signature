@@ -243,6 +243,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// todo-1 Test the above.
 		// [/Comment-202502242]
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this token amount.
+		// todo-1 Our web site really should provide an easy way to authorize that.
 		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(this), amount_);
 	}
@@ -346,6 +347,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// todo-1 Test the above.
 		// [/Comment-202502245]
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this NFT.
+		// todo-1 Our web site really should provide an easy way to authorize that.
 		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
 	}
