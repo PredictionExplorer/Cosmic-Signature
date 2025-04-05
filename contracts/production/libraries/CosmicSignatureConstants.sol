@@ -42,7 +42,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant INITIAL_ROUND_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `ethDutchAuctionDurationDivisor`.
-	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (HOURS_PER_DAY * 2) - 0;
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (2 * HOURS_PER_DAY) - 0;
 
 	/// @notice First bidding round initial (first bid) ETH bid price.
 	/// It's impossible to reconfigure it after the contract has been deployed.
