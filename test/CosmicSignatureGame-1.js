@@ -1,5 +1,3 @@
-// todo-0 Rename this file to "CosmicSignatureGame-1".
-
 // #region
 
 "use strict";
@@ -23,7 +21,7 @@ const SKIP_LONG_TESTS = false;
 // #endregion
 // #region `describe`
 
-describe("Bidding-1", function () {
+describe("CosmicSignatureGame-1", function () {
 	// #region
 
 	it("Multiple bidding rounds", async function () {
