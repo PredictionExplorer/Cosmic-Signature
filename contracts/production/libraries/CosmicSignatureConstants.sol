@@ -91,6 +91,11 @@ library CosmicSignatureConstants {
 	/// 
 	/// todo-0 Arbitrum posts blobs to the mainet.
 	/// todo-0 Can I get any relevant info from that blob?
+	///
+	/// todo-0 Can I fork Arbitrum blockchain? Then I would have all the actual numbers in my code.
+	/// todo-0 But don't configure initialBaseFeePerGas
+	///
+	/// todo-0 See Comment-202504071.
 	/// [/Comment-202502054]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = (6813 + 7) * 29 / 10;
 
@@ -105,8 +110,8 @@ library CosmicSignatureConstants {
 	/// todo-1 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
-	/// @notice Default `cstDutchAuctionBeginningBidPriceMinLimit`.
-	/// Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
+	/// @notice Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
+	/// Default `cstDutchAuctionBeginningBidPriceMinLimit`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
 	/// @notice Default `bidMessageLengthMaxLimit`.

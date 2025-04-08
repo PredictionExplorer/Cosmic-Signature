@@ -27,6 +27,10 @@ library RandomNumberHelpers {
 		uint256 value;
 	}
 
+	/// @notice
+	/// [Comment-202504067]
+	/// Similar logic exists in multiple places.
+	/// [/Comment-202504067]
 	/// @dev Comment-202502075 applies to the return value.
 	/// Comment-202502077 applies to the return value.
 	/// [Comment-202503254]
@@ -38,12 +42,20 @@ library RandomNumberHelpers {
 		return block.prevrandao ^ block.basefee;
 	}
 
+	/// @notice
+	/// [Comment-202504065]
+	/// Similar logic exists in multiple places.
+	/// [/Comment-202504065]
 	/// @dev todo-1 +++ Test that `seedWrapper_.value` changes after this call.
 	function generateRandomNumber(RandomNumberSeedWrapper memory seedWrapper_) internal pure returns (uint256) {
 		unchecked { ++ seedWrapper_.value; }
 		return generateRandomNumber(seedWrapper_.value);
 	}
 
+	/// @notice
+	/// [Comment-202504063]
+	/// Similar logic exists in multiple places.
+	/// [/Comment-202504063]
 	function generateRandomNumber(uint256 seed_) internal pure returns (uint256) {
 		return CryptographyHelpers.calculateHashSumOf(seed_);
 	}

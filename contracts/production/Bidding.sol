@@ -171,6 +171,7 @@ abstract contract Bidding is
 			// But first checking if the refund is big enough to justify the refund transfer transaction fee.
 			// Comment-202502052 relates and/or applies.
 			// Comment-202502054 relates and/or applies.
+			// todo-0 See Comment-202504071.
 			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
 			if (uint256(overpaidEthPrice_) >= ethBidRefundAmountMinLimit_) {
 				// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();

@@ -9,8 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-// todo-1 Do we still need both of these?
-const { generateRandomUInt32, generateRandomUInt256 } = require("../src/Helpers.js");
+const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 // #endregion
@@ -32,19 +31,19 @@ describe("CosmicSignatureGame-1", function () {
 		// #endregion
 		// #region
 		
-		const roundCountMinLimit = 10;
-		const bidAverageCountPerRoundMinLimit = 15.0;
-
-		// Comment-202504045 relates and/or applies.
-		const timeIncrementParam1 = 2_000_000n;
+		// todo-0 Revisit these.
+		const numRoundsToRun = 20;
+		const bidAverageCountPerRoundMinLimit = 6.0;
 
 		// #endregion
 		// #region
 
+		// todo-0 Do not query contract for numbers. Instead, calculate them in JavaScript code.
 		const {
 			signers,
 			cosmicSignatureToken,
 			cosmicSignatureGameProxy,
+			cosmicSignatureGameProxyAddr,
 		} = await loadFixture(deployContractsForUnitTesting);
 
 		// Comment-202501192 applies.
@@ -53,61 +52,72 @@ describe("CosmicSignatureGame-1", function () {
 		// #endregion
 		// #region
 
-		const cosmicSignatureGameState = await createCosmicSignatureGameState(cosmicSignatureGameProxy);
-		await assertCosmicSignatureGameState(cosmicSignatureGameProxy, cosmicSignatureGameState);
-		const cosmicSignatureTokenState = await createCosmicSignatureTokenState(signers.length);
+		const cosmicSignatureGameProxyState = await createCosmicSignatureGameProxyState(cosmicSignatureGameProxy);
+		await assertCosmicSignatureGameProxyState(cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureGameProxyState);
+		const cosmicSignatureTokenState = /*await*/ createCosmicSignatureTokenState();
 		await assertCosmicSignatureTokenState(cosmicSignatureToken, cosmicSignatureTokenState);
+		const randomNumberSeed = generateRandomUInt256();
+		// console.log(randomNumberSeed);
+		// console.log((await hre.ethers.provider.getBlock("latest")).baseFeePerGas.toString())
 
 		// #endregion
 		// #region
 
-		for (;;) {
+		try {
 			// #region
 
+			const randomNumberSeedWrapper = {value: randomNumberSeed,}
 			let randomNumber;
 
 			// #endregion
 			// #region
 
-			{
-				// [Comment-202504045]
-				// Issue. This simple logic seems to work for now, but this is really not precise science.
-				// What we need is that the condition near Comment-202504043 was `true` and
-				// this test took not too long to complete.
-				// During an ETH Dutch auction, the time increment affects the initial ETH bid price,
-				// which affects how long it will take a signer to run out of ETH.
-				// [/Comment-202504045]
-				const timeIncrementMaxLimit =
-					cosmicSignatureGameState.mainPrizeTimeIncrementInMicroSeconds /
-					( (cosmicSignatureGameState.lastBidderAddress == hre.ethers.ZeroAddress) ?
-					  cosmicSignatureGameState.ethDutchAuctionDurationDivisor :
-					  timeIncrementParam1
-					);
+			do {
+				// #region
 
-				randomNumber = BigInt(generateRandomUInt32());
-				const timeIncrement = Number(randomNumber % timeIncrementMaxLimit);
-				if (timeIncrement > 0) {
-					if (timeIncrement > 1) {
-						await hre.ethers.provider.send("evm_increaseTime", [timeIncrement]);
+				// Issue. This logic is a bit of a hack. It seems to work more or less OK for now, but this is really not precise science.
+				// What we need is that the logic near Comment-202504043 succeeded
+				// and the behavior was generally close to what will be happening in the production.
+				// During an ETH Dutch auction, the time increment affects the initial ETH bid price.
+				{
+					let timeIncrementMaxLimit =
+						cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds /
+						// ( (cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) ?
+						// 	cosmicSignatureGameProxyState.ethDutchAuctionDurationDivisor :
+							BigInt(Math.max(Number(3_000_000n - 5000n * cosmicSignatureGameProxyState.bidderAddresses[Number(cosmicSignatureGameProxyState.roundNum)]), 1))
+						// );
+
+					//if (cosmicSignatureGameProxyState.bidderAddresses[Number(cosmicSignatureGameProxyState.roundNum)] > 0n) {
+						randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
+
+						// We want to sometimes let the first bidder or a non-last bidder to claim main prize.
+						if ((randomNumber & 0xFn) == 0n) {
+							timeIncrementMaxLimit *= 1000n;
+						}
+					//}
+
+					randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
+					const timeIncrement = randomNumber % timeIncrementMaxLimit;
+					if (timeIncrement > 0n) {
+						if (timeIncrement > 1n) {
+							await hre.ethers.provider.send("evm_increaseTime", [Number(timeIncrement)]);
+						}
+						await hre.ethers.provider.send("evm_mine",);
 					}
-					await hre.ethers.provider.send("evm_mine",);
 				}
-			}
 
-			// #endregion
-			// #region
+				// #endregion
+				// #region
 
-			randomNumber = BigInt(generateRandomUInt32());
-			const signerIndex = Number(randomNumber % BigInt(signers.length));
-			const signer = signers[signerIndex];
-			const cosmicSignatureTokenForSigner = cosmicSignatureToken.connect(signer);
-			const cosmicSignatureGameProxyForSigner = cosmicSignatureGameProxy.connect(signer);
-			randomNumber = BigInt(generateRandomUInt32());
+				randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
+				const signerIndex = Number(randomNumber % BigInt(signers.length));
+				const signer = signers[signerIndex];
+				const cosmicSignatureTokenForSigner = cosmicSignatureToken.connect(signer);
+				const cosmicSignatureGameProxyForSigner = cosmicSignatureGameProxy.connect(signer);
+				let transactionSucceeded = false;
+				randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
 
-			// #endregion
-			// #region
-
-			try {
+				// #endregion
 				// #region
 
 				// todo-0 Calling only some contract methods for now. We need to call some others as well.
@@ -115,17 +125,19 @@ describe("CosmicSignatureGame-1", function () {
 					// #region
 
 					case 0n: {
-						randomNumber = generateRandomUInt256();
-						const donationAmount = ((randomNumber & (0x7n << 128n)) == 0n) ? 0n : (randomNumber & ((1n << 40n) - 1n));
-						const transaction = await cosmicSignatureGameProxyForSigner.donateEth({value: donationAmount});
+						randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
+						const ethDonationAmount = ((randomNumber & (0xFn << 128n)) == 0n) ? 0n : (randomNumber & ((1n << 40n) - 1n));
+						const transactionResponseFuture = cosmicSignatureGameProxyForSigner.donateEth({value: ethDonationAmount,});
 						// await expect(transaction).not.reverted;
-						await expect(transaction)
+						await expect(transactionResponseFuture)
 							.emit(cosmicSignatureGameProxyForSigner, "EthDonated")
-							.withArgs(cosmicSignatureGameState.roundNum, signer.address, donationAmount);
-
-						// todo-0 Update game and token state. For now, nothing to update.
-						// cosmicSignatureGameState.balance += donationAmount;
-
+							.withArgs(cosmicSignatureGameProxyState.roundNum, signer.address, ethDonationAmount);
+						const transactionResponse = await transactionResponseFuture;
+						const transactionReceipt = await transactionResponse.wait();
+						// console.log(transactionReceipt.logs);
+						// console.log("");
+						expect(transactionReceipt.logs.length).equal(1);
+						cosmicSignatureGameProxyState.balanceAmount += ethDonationAmount;
 						break;
 					}
 
@@ -133,60 +145,124 @@ describe("CosmicSignatureGame-1", function () {
 					// #region
 
 					case 1n: {
+						// todo-0 query block before and after transaction.
 						const latestBlock = await hre.ethers.provider.getBlock("latest");
-						// todo-0 We really should calculate this bid price here, not query it from the contract.
-						const nextEthBidPrice = await cosmicSignatureGameProxyForSigner.getNextEthBidPrice(1n);
-						randomNumber = generateRandomUInt256();
-						const ethPriceToPayMaxLimit = randomNumber % (nextEthBidPrice * 2n + 1n);
-						let isSuccess = false;
-						const transaction = await cosmicSignatureGameProxyForSigner.bidWithEth((-1n), "", {value: ethPriceToPayMaxLimit});
-						if (ethPriceToPayMaxLimit <  nextEthBidPrice) {
-							await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "InsufficientReceivedBidAmount");
-						} else if(cosmicSignatureGameState.lastBidderAddress == hre.ethers.ZeroAddress) {
-							if (latestBlock.timestamp + 1 < cosmicSignatureGameState.roundActivationTime) {
-								await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "RoundIsInactive");
+						const ethBidPrice = getNextEthBidPrice(latestBlock, 1n);
+						const paidEthPrice = ethBidPrice;
+						randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
+						const ethPriceToPayMaxLimit = randomNumber % (paidEthPrice * 3n + 1n);
+						// todo-0 Sometimes bid with RWalk and/or donate an NFT.
+						const transactionResponseFuture = /*await*/ cosmicSignatureGameProxyForSigner.bidWithEth((-1n), "", {value: ethPriceToPayMaxLimit,});
+						const overpaidEthPrice = ethPriceToPayMaxLimit - paidEthPrice;
+						if (overpaidEthPrice < 0) {
+							await expect(transactionResponseFuture)
+								.revertedWithCustomError(cosmicSignatureGameProxyForSigner, "InsufficientReceivedBidAmount")
+								.withArgs("The current ETH bid price is greater than the amount you transferred.", paidEthPrice, ethPriceToPayMaxLimit);
+						} else if(cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) {
+							if (BigInt(latestBlock.timestamp + 1) < cosmicSignatureGameProxyState.roundActivationTime) {
+								await expect(transactionResponseFuture)
+									.revertedWithCustomError(cosmicSignatureGameProxyForSigner, "RoundIsInactive")
+									.withArgs("The current bidding round is not active yet.", cosmicSignatureGameProxyState.roundActivationTime, latestBlock.timestamp + 1);
 							} else {
-								isSuccess = true;
+								transactionSucceeded = true;
 							}
 						} else {
-							isSuccess = true;
+							transactionSucceeded = true;
 						}
-						if (isSuccess) {
-							// todo-0 Check events instead of checking not reverted.
-							await expect(transaction).not.reverted;
-							// todo-0 update game and token state
+						if (transactionSucceeded) {
+							// await expect(transactionResponseFuture).not.reverted;
+							const transactionResponse = await transactionResponseFuture;
+							const transactionReceipt = await transactionResponse.wait();
+
+							// todo-0 update balance.
+
+							if (cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) {
+								cosmicSignatureGameProxyState.ethDutchAuctionBeginningBidPrice = ethBidPrice * cosmicSignatureGameProxyState.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+							}
+							cosmicSignatureGameProxyState.nextEthBidPrice = ethBidPrice + ethBidPrice / cosmicSignatureGameProxyState.ethBidPriceIncreaseDivisor + 1n;
+							// todo-1 This is incorrect because this can be `undefined`. Add functions to mint and burn.
+							cosmicSignatureTokenState.accountBalanceAmounts[signer.address] += cosmicSignatureGameProxyState.cstRewardAmountForBidding;
+							await expect(transactionResponseFuture)
+								.emit(cosmicSignatureTokenForSigner, "Transfer")
+								.withArgs(hre.ethers.ZeroAddress, signer.address, cosmicSignatureGameProxyState.cstRewardAmountForBidding);
+							if (cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) {
+								cosmicSignatureGameProxyState.cstDutchAuctionBeginningTimeStamp = BigInt(latestBlock.timestamp + 1);
+								cosmicSignatureGameProxyState.mainPrizeTime =
+									BigInt(latestBlock.timestamp + 1) +
+									(cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds / cosmicSignatureGameProxyState.initialDurationUntilMainPrizeDivisor);
+								await expect(transactionResponseFuture)
+									.emit(cosmicSignatureGameProxyForSigner, "FirstBidPlacedInRound")
+									.withArgs(cosmicSignatureGameProxyState.roundNum, BigInt(latestBlock.timestamp + 1));
+							} else {
+								_updateChampionsIfNeeded(cosmicSignatureGameProxyState);
+								const mainPrizeCorrectedTime = BigInt(Math.max(Number(cosmicSignatureGameProxyState.mainPrizeTime), latestBlock.timestamp + 1));
+								cosmicSignatureGameProxyState.mainPrizeTime =
+									mainPrizeCorrectedTime +
+									(cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds / 1_000_000n);
+							}
+							cosmicSignatureGameProxyState.lastBidderAddress = signer.address;
+							++ cosmicSignatureGameProxyState.bidderAddresses[Number(cosmicSignatureGameProxyState.roundNum)];
+							updateBidderInfo(cosmicSignatureGameProxyState, latestBlock, signer.address);
+							await expect(transactionResponseFuture)
+								.emit(cosmicSignatureGameProxyForSigner, "BidPlaced")
+								.withArgs(
+									cosmicSignatureGameProxyState.roundNum,
+									BigInt(latestBlock.timestamp + 1),
+									signer.address,
+									paidEthPrice,
+									(-1n),
+									(-1n),
+									"",
+									cosmicSignatureGameProxyState.mainPrizeTime
+								);
+
+							// todo-0 if (overpaidEthPrice_ > int256(0)) {
+							// todo-0 . . .
+
+							// todo-0 assert the number of events
 						}
 						break;
 					}
 
 					// #endregion
 					// #region
-						
+
 					case 2n: {
 						const latestBlock = await hre.ethers.provider.getBlock("latest");
-						// todo-0 We really should calculate this bid price here, not query it from the contract.
-						const nextCstBidPrice = await cosmicSignatureGameProxyForSigner.getNextCstBidPrice(1n);
-						randomNumber = generateRandomUInt256();
-						const cstPriceToPayMaxLimit = randomNumber % (nextCstBidPrice * 2n + 1n);
-						let isSuccess = false;
-						const transaction = await cosmicSignatureGameProxyForSigner.bidWithCst(cstPriceToPayMaxLimit, "");
-						if (cstPriceToPayMaxLimit < nextCstBidPrice) {
-							await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "InsufficientReceivedBidAmount");
-						} else if (cstPriceToPayMaxLimit > signerCstBalance) {
-							await expect(transaction).revertedWithCustomError(cosmicSignatureTokenForSigner, "ERC20InsufficientBalance");
-						} else if(cosmicSignatureGameState.lastBidderAddress == hre.ethers.ZeroAddress) {
-							if (latestBlock.timestamp + 1 < cosmicSignatureGameState.roundActivationTime) {
-								await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "RoundIsInactive");
+						const nextCstBidPrice = getNextCstBidPrice(latestBlock, 1n);
+						randomNumber = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper);
+						const cstPriceToPayMaxLimit = randomNumber % (nextCstBidPrice * 3n + 1n);
+						const signerCstBalance = tokenBalanceOf(cosmicSignatureTokenState, signer.address);
+						// todo-0 Sometimes bid with donating an NFT.
+						const transactionResponseFuture = /*await*/ cosmicSignatureGameProxyForSigner.bidWithCst(cstPriceToPayMaxLimit, "");
+						if (nextCstBidPrice > cstPriceToPayMaxLimit) {
+							await expect(transactionResponseFuture).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "InsufficientReceivedBidAmount");
+						} else if (nextCstBidPrice > signerCstBalance) {
+							await expect(transactionResponseFuture).revertedWithCustomError(cosmicSignatureTokenForSigner, "ERC20InsufficientBalance");
+						} else if(cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) {
+							if (latestBlock.timestamp + 1 < cosmicSignatureGameProxyState.roundActivationTime) {
+								await expect(transactionResponseFuture).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "RoundIsInactive");
 							} else {
-								await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "WrongBidType");
+								await expect(transactionResponseFuture).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "WrongBidType");
 							}
 						} else {
-							isSuccess = true;
+							transactionSucceeded = true;
 						}
-						if (isSuccess) {
+						if (transactionSucceeded) {
 							// todo-0 Check events instead of checking not reverted.
-							await expect(transaction).not.reverted;
-							// todo-0 update game and token state
+							await expect(transactionResponseFuture).not.reverted;
+							if(cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) {
+								cosmicSignatureGameProxyState.mainPrizeTime =
+									BigInt(latestBlock.timestamp + 1) +
+									(cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds / cosmicSignatureGameProxyState.initialDurationUntilMainPrizeDivisor);
+							} else {
+								const mainPrizeCorrectedTime = BigInt(Math.max(Number(cosmicSignatureGameProxyState.mainPrizeTime), latestBlock.timestamp + 1));
+								cosmicSignatureGameProxyState.mainPrizeTime =
+									mainPrizeCorrectedTime +
+									(cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds / 1_000_000n);
+							}
+							cosmicSignatureGameProxyState.lastBidderAddress = signer.address;
+							++ cosmicSignatureGameProxyState.bidderAddresses[Number(cosmicSignatureGameProxyState.roundNum)];
 						}
 						break;
 					}
@@ -195,28 +271,38 @@ describe("CosmicSignatureGame-1", function () {
 					// #region
 
 					case 3n: {
-						let isSuccess = false;
 						const latestBlock = await hre.ethers.provider.getBlock("latest");
-						const transaction = await cosmicSignatureGameProxyForSigner.claimMainPrize();
-						if (signer.address == cosmicSignatureGameState.lastBidderAddress) {
-							if (latestBlock.timestamp + 1 < cosmicSignatureGameState.mainPrizeTime) {
+						// todo-0 Rename this and similar variables to `transactionResponse`.
+						const transaction = /*await*/ cosmicSignatureGameProxyForSigner.claimMainPrize();
+						if (signer.address == cosmicSignatureGameProxyState.lastBidderAddress) {
+							if (latestBlock.timestamp + 1 < cosmicSignatureGameProxyState.mainPrizeTime) {
 								await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "MainPrizeEarlyClaim");
 							} else {
-								isSuccess = true;
+								transactionSucceeded = true;
 							}
 						} else {
-							if (cosmicSignatureGameState.lastBidderAddress == hre.ethers.ZeroAddress) {
+							if (cosmicSignatureGameProxyState.lastBidderAddress == hre.ethers.ZeroAddress) {
 								await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "NoBidsPlacedInCurrentRound");
-							} else if (latestBlock.timestamp + 1 < cosmicSignatureGameState.mainPrizeTime + cosmicSignatureGameState.timeoutDurationToClaimMainPrize) {
+							} else if (latestBlock.timestamp + 1 < cosmicSignatureGameProxyState.mainPrizeTime + cosmicSignatureGameProxyState.timeoutDurationToClaimMainPrize) {
 								await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxyForSigner, "MainPrizeClaimDenied");
 							} else {
-								isSuccess = true;
+								transactionSucceeded = true;
 							}
 						}
-						if (isSuccess) {
+						if (transactionSucceeded) {
 							// todo-0 Check events instead of checking not reverted.
 							await expect(transaction).not.reverted;
-							// todo-0 update game and token state
+							console.log(
+								cosmicSignatureGameProxyState.roundNum.toString(),
+								cosmicSignatureGameProxyState.bidderAddresses[Number(cosmicSignatureGameProxyState.roundNum)].toString(),
+								// (await hre.ethers.provider.getBalance(signer.address) + 10n ** 18n / 2n) / 10n ** 18n
+								hre.ethers.formatEther(await cosmicSignatureGameProxyForSigner.getNextEthBidPrice(0n))
+							);
+							cosmicSignatureGameProxyState.lastBidderAddress = hre.ethers.ZeroAddress;
+							cosmicSignatureGameProxyState.bidderAddresses.push(0n);
+							++ cosmicSignatureGameProxyState.roundNum;
+							cosmicSignatureGameProxyState.roundActivationTime = BigInt(latestBlock.timestamp + 1) + cosmicSignatureGameProxyState.delayDurationBeforeRoundActivation;
+							cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds += cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds / cosmicSignatureGameProxyState.mainPrizeTimeIncrementIncreaseDivisor;
 						}
 						break;
 					}
@@ -235,33 +321,40 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region
 
-				// todo-0 Don't do this if transaction reverted.
-				await assertCosmicSignatureGameState(cosmicSignatureGameProxy, cosmicSignatureGameState);
-				await assertCosmicSignatureTokenState(cosmicSignatureToken, cosmicSignatureTokenState);
-		
-				// #endregion
-			} catch (errorDetails) {
-				// #region
-
-				if (errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.")) {
-					// Doing nothing.
-				} else {
-					throw errorDetails;
-				}
-
-				// [Comment-202504043/]
-				// todo-0 Validate bidAverageCountPerRoundMinLimit
-				// todo-0 Don't count failed round bids
-				// todo-0 Remember that all numbers are float
-				if (cosmicSignatureGameState.roundNum >= roundCountMinLimit) {
-
-					// Doing nothing.
-				} else {
-					// todo-0 Throw cosmicSignatureGameState.roundNum and the number of bids per round
+				if (transactionSucceeded) {
+					await assertCosmicSignatureGameProxyState(cosmicSignatureGameProxyForSigner, cosmicSignatureGameProxyAddr, cosmicSignatureGameProxyState);
+					await assertCosmicSignatureTokenState(cosmicSignatureTokenForSigner, cosmicSignatureTokenState);
 				}
 
 				// #endregion
+			} while (cosmicSignatureGameProxyState.roundNum < numRoundsToRun);
+
+			// #endregion
+			// #region
+
+			// [Comment-202504043/]
+			{
+				// We are really supposed to skip the last item in this array, but it's always zero.
+				const totalBidCount = cosmicSignatureGameProxyState.bidderAddresses.reduce((sum, item) => (sum + item), 0n);
+
+				const bidAverageCountPerRound = Number(totalBidCount) / Number(cosmicSignatureGameProxyState.roundNum);
+				const isSuccess = bidAverageCountPerRound >= bidAverageCountPerRoundMinLimit;
+				if ( ! isSuccess ) {
+					const errorDetails = {bidAverageCountPerRound,};
+					throw new Error("Error 202504052. " + JSON.stringify(errorDetails));
+				}
 			}
+
+			// #endregion
+		} catch (errorDetails) {
+			// #region
+
+			{
+				const errorDetails2 = {randomNumberSeed: "0x" + randomNumberSeed.toString(16),};
+				console.log("Error 202504055. " + JSON.stringify(errorDetails2));
+			}
+
+			throw errorDetails;
 
 			// #endregion
 		}
@@ -270,249 +363,95 @@ describe("CosmicSignatureGame-1", function () {
 	});
 
 	// #endregion
-	// #region
-
-	// todo-1 Eventually delete this test.
-	//
-	// This is a stress test that executes multiple transactions per block.
-	//
-	// Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1739909248214549
-	//
-	// todo-1 It would be nice to validate that the behavior is correct.
-	//
-	// todo-1 Add `claimMainPrize` calls.
-	//
-	// todo-1 Arbitrum mines 4 blocks per second with equal timestamps. Try to test that.
-	// todo-1 There is the `allowBlocksWithSameTimestamp` parameter, but setting it would make all blocks having the same timestamp,
-	// todo-1 which would break all tests and other scripts. It appears to be impossible to change it temporarily at runtime.
-	// 
-	// todo-1 Maybe refactor this to mine 1 transaction per block. Then Chai matchers will work to correctly show
-	// todo-1 what caused transaction reversal. They re-execute the transaction in simulation to find out what went wrong.
-	// todo-1 Then just review then Solidity code to make sure that
-	// todo-1 regardless if `block.timestamp` or `block.number` change or don't change, the behavior will be correct.
-	//
-	// todo-1 Develop a separate test and/or refactor this one to test `bidWithEth` reentrancy. They can bid by reentering.
-	// todo-1 But see ToDo-202502186-1.
-	//
-	// todo-1 Nick wrote:
-	// todo-1 As this is not really a unit test anymore, but an integration test, it should be done as standalone script
-	// todo-1 (and maybe go in "scripts" directory, and probably in its own folder) .
-	// todo-1 So you could run it over local-chain geth instance
-	// todo-1 with its own genesis.json and account balances for this particular test.
-	it("Long-term aggressive bidding behaves correctly", async function () {
-		if (SKIP_LONG_TESTS) return;
-
-		const {
-			signers,
-			cosmicSignatureToken,
-			cosmicSignatureGameProxy,
-		} = await loadFixture(deployContractsForUnitTesting);
-		
-		// Comment-202501192 applies.
-		await hre.ethers.provider.send("evm_mine");
-
-		// {
-		// 	let latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
-		// 	console.log(latestBlockTimeStamp);
-		// 	// await hre.ethers.provider.send("evm_increaseTime", [0]);
-		// 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [latestBlockTimeStamp]);
-		// 	await hre.ethers.provider.send("evm_mine");
-		// 	latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
-		// 	console.log(latestBlockTimeStamp);
-		// 	// await hre.ethers.provider.send("evm_mine");
-		// 	latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
-		// 	console.log(latestBlockTimeStamp);
-		// 	console.log();
-		// }
-
-		const transactions = [];
-		let randomNumber;
-
-		const mineBlockIfNeeded = async (force) => {
-			let timeIncrease = force ? 1 : ((randomNumber & 0xFF) - 0xB0);
-			if (timeIncrease > 0) {
-				if (timeIncrease >= 10) {
-					timeIncrease *= 40;
-				}
-				if (timeIncrease > 1) {
-					await hre.ethers.provider.send("evm_increaseTime", [timeIncrease]);
-				}
-
-				// todo-1 Bug. Even if `timeIncrease` is zero the next block timestamp will still be incremented.
-				// todo-1 Sending "evm_increaseTime" of zero won't help.
-				await hre.ethers.provider.send("evm_mine");
-
-				let errorDetails;
-				for (const transaction of transactions) {
-					try {
-						// console.log(transaction);
-
-						// // todo-1 This can throw an error, but the error doesn't appear to contain usable info on what caused the error.
-						// await transaction.wait();
-
-						// await expect(transaction).not.reverted;
-						// await expect(transaction).fulfilled;
-
-						// We are going to also be OK with the transaction not reverting.
-						// todo-1 This fails to detect the actual error, if any, and always throws that the transaction didn't revert,
-						// todo-1 probably for the same reason `transaction.wait` doesn't throw a usable error.
-						await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
-
-						// console.log("Success 1.", transactions.length);
-					} catch (error2Details) {
-						// console.log("Error.", transactions.length);
-
-						// console.log();
-						// console.log(error2Details.message);
-						// console.log(error2Details);
-
-						// // ChatGPT recommended this approach, but it doesn't work.
-						// const revertData = error2Details.data;
-						// // const revertData = error2Details;
-						// if (revertData) {
-						// 	const decodedError = cosmicSignatureGameProxy.interface.parseError(revertData);
-						// 	console.log("Custom Error Name:", decodedError.name);
-						// } else {
-						// 	console.error("Error data not found.");
-						// }
-
-						if (error2Details.message.endsWith(", but it didn't revert")) {
-							// console.log("Success 2.", transactions.length);
-						} else if ( errorDetails === undefined ||
-										errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") &&
-										( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )
-									) {
-							errorDetails = error2Details;
-						}
-					}
-				}
-				transactions.length = 0;
-				if (errorDetails !== undefined) {
-					// console.log(errorDetails.message);
-					throw errorDetails;
-				}
-			}
-		};
-
-		await hre.ethers.provider.send("evm_setAutomine", [false]);
-		try {
-			// This loop will keep spinning until an error is thrown due to a signer running out of ETH,
-			// or any other error.
-			for ( let counter = 0; /*counter < 300*/; ++ counter ) {
-				randomNumber = generateRandomUInt32();
-				const signer = signers[(randomNumber & 0xFFFF) % signers.length];
-				// if ((counter & 0xFF) == 0) {
-				// 	console.log((
-				// 		await hre.ethers.provider.getBlock("latest")).timestamp,
-				// 		((await hre.ethers.provider.getBalance(signer.address)) + 10n ** 18n / 2n) / (10n ** 18n),
-				// 		Number(await cosmicSignatureGameProxy.getNextEthBidPrice(1n)) / (10 ** 18)
-				// 	);
-				// }
-				let transactionQueued = false;
-				if (await cosmicSignatureGameProxy.lastBidderAddress() != hre.ethers.ZeroAddress) {
-					const cstBalanceAmount_ = await cosmicSignatureToken.balanceOf(signer.address);
-					const nextCstBidPrice_ = await cosmicSignatureGameProxy.getNextCstBidPrice(1n);
-
-					// [Comment-202502193]
-					// This is (likely) going to be enough for each of up to 2 CST bids. Further bids within the same block will (likely) fail.
-					// [/Comment-202502193]
-					// todo-0 Magic numbe hardcoded.
-					const nextCstBidPrice2_ = nextCstBidPrice_ * 2n;
-
-					if (cstBalanceAmount_ >= nextCstBidPrice2_) {
-						transactions.push(await cosmicSignatureGameProxy.connect(signer).bidWithCst(nextCstBidPrice2_, "", {gasLimit: 450_000}));
-						transactionQueued = true;
-					}
-				}
-				if ( ! transactionQueued ) {
-					const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-					// const nextEthBidPrice2_ = 11n;
-
-					// [Comment-202502191]
-					// This is going to be enough for each of up to 4 ETH bids. Further bids within the same block will fail.
-					// [/Comment-202502191]
-					const nextEthBidPrice2_ = nextEthBidPrice_ * 1041n / 1000n;
-
-					transactions.push(await cosmicSignatureGameProxy.connect(signer).bidWithEth((-1n), "", {value: nextEthBidPrice2_, gasLimit: 450_000}));
-				}
-				randomNumber >>= 16;
-				await mineBlockIfNeeded(false);
-			}
-		} catch (errorDetails) {
-			// console.log(errorDetails.message);
-			let error2Details;
-			try {
-				// Mining whatever was queued.
-				await mineBlockIfNeeded(true);
-			} catch (error2Details2) {
-				error2Details = error2Details2;
-			}
-			await hre.ethers.provider.send("evm_setAutomine", [true]);
-			if ( ! errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") ) {
-				throw errorDetails;
-			}
-			if (error2Details !== undefined && ( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )) {
-				throw error2Details;
-			}
-		}
-	});
-
-	// #endregion
 });
 
 // #endregion
-// #region `createCosmicSignatureGameState`
+// #region `createCosmicSignatureGameProxyState`
 
-/// todo-1 Add similar states for other contracts.
-///
-/// todo-1 For ERC-20 and ERC-721 tokens, we need to store and assert balances.
-/// todo-1 Although maybe it's OK to only check if respective events have been emitted.
-async function createCosmicSignatureGameState(cosmicSignatureGameProxy) {
-	const cosmicSignatureGameState = {
-		// todo-0 balance: 0n,
-
+/// todo-0 Add similar states for some other contracts.
+/// todo-0 Another test would be to populate this with some random values.
+async function createCosmicSignatureGameProxyState(cosmicSignatureGameProxy) {
+	const cosmicSignatureGameProxyState = {
+		balanceAmount: 0n,
 		lastBidderAddress: hre.ethers.ZeroAddress,
+		lastCstBidderAddress: hre.ethers.ZeroAddress,
 
-		// todo-0 For now, this contains the number of bids in each round. To be revisited.
+		// todo-0 For now, this only contains the number of bids in each round. Add more data to this, like in the contract.
 		bidderAddresses: [0n],
 
+		// todo-0 For now, we do not store spent amounts here.
+		biddersInfo: {},
+
+		enduranceChampionAddress: hre.ethers.ZeroAddress,
+		enduranceChampionStartTimeStamp: 0n,
+		enduranceChampionDuration: 0n,
+		prevEnduranceChampionDuration: 0n,
+		chronoWarriorAddress: hre.ethers.ZeroAddress,
+		chronoWarriorDuration: (-1n),
 		roundNum: 0n,
-		delayDurationBeforeRoundActivation: 30 * 60,
+		delayDurationBeforeRoundActivation: 30n * 60n,
 		roundActivationTime: await cosmicSignatureGameProxy.roundActivationTime(),
 		ethDutchAuctionDurationDivisor: (1_000_000n + 24n) / (2n * 24n) - 0n,
+		ethDutchAuctionBeginningBidPrice: 0n,
+		ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER: 2n,
+		ethDutchAuctionEndingBidPriceDivisor: 10n * 2n,
+		nextEthBidPrice: 0n,
+		ethBidPriceIncreaseDivisor: 100n,
+		ethBidRefundAmountInGasMinLimit: (6813n + 7n) * 29n / 10n,
+		cstDutchAuctionBeginningTimeStamp: 0n,
+		cstDutchAuctionDurationDivisor: (1_000_000n + 24n / 4n) / (24n / 2n) - 1n,
+		cstDutchAuctionBeginningBidPrice: 0n,
+		CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER: 2n,
+		nextRoundFirstCstDutchAuctionBeginningBidPrice: 200n * 10n ** 18n,
+		cstDutchAuctionBeginningBidPriceMinLimit: 200n * 10n ** 18n,
+		cstRewardAmountForBidding: 100n * 10n ** 18n,
+		cstPrizeAmountMultiplier: 10n * 10n ** 18n,
+		chronoWarriorEthPrizeAmountPercentage: 7n,
+		raffleTotalEthPrizeAmountForBiddersPercentage: 5n,
+		numRaffleEthPrizesForBidders: 3n,
+		numRaffleCosmicSignatureNftsForBidders: 5n,
+		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: 4n,
+		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: 10n,
+		initialDurationUntilMainPrizeDivisor: (1_000_000n + 24n / 2n) / 24n - 1n,
 		mainPrizeTime: 0n,
 		mainPrizeTimeIncrementInMicroSeconds: 60n * 60n * 1_000_000n,
 		mainPrizeTimeIncrementIncreaseDivisor: 100n,
 		timeoutDurationToClaimMainPrize: 24n * 60n * 60n,
+		mainEthPrizeAmountPercentage: 25n,
+		marketingWalletCstContributionAmount: 300n * 10n ** 18n,
+		charityEthDonationAmountPercentage: 10n,
 	};
-	return cosmicSignatureGameState;
+	return cosmicSignatureGameProxyState;
 }
 
 // #endregion
-// #region `assertCosmicSignatureGameState`
+// #region `assertCosmicSignatureGameProxyState`
 
-async function assertCosmicSignatureGameState(cosmicSignatureGameProxy, cosmicSignatureGameState) {
-	expect(await cosmicSignatureGameProxy.lastBidderAddress()).equal(cosmicSignatureGameState.lastBidderAddress);
-	expect(cosmicSignatureGameState.bidderAddresses.length).equal(cosmicSignatureGameState.roundNum + 1);
-	expect((await cosmicSignatureGameProxy.bidderAddresses(cosmicSignatureGameState.roundNum))[0]).equal(cosmicSignatureGameState.bidderAddresses[cosmicSignatureGameState.roundNum]);
-	expect(await cosmicSignatureGameProxy.roundNum()).equal(cosmicSignatureGameState.roundNum);
-	expect(await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation()).equal(cosmicSignatureGameState.delayDurationBeforeRoundActivation);
-	expect(await cosmicSignatureGameProxy.roundActivationTime()).equal(cosmicSignatureGameState.roundActivationTime);
-	expect(await cosmicSignatureGameProxy.ethDutchAuctionDurationDivisor()).equal(cosmicSignatureGameState.ethDutchAuctionDurationDivisor);
-	expect(await cosmicSignatureGameProxy.mainPrizeTime()).equal(cosmicSignatureGameState.mainPrizeTime);
-	expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(cosmicSignatureGameState.mainPrizeTimeIncrementInMicroSeconds);
-	expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementIncreaseDivisor()).equal(cosmicSignatureGameState.mainPrizeTimeIncrementIncreaseDivisor);
-	expect(await cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize()).equal(cosmicSignatureGameState.timeoutDurationToClaimMainPrize);
+async function assertCosmicSignatureGameProxyState(cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureGameProxyState) {
+	// todo-0 Assert more variables
+
+	expect(await hre.ethers.provider.getBalance(cosmicSignatureGameProxyAddr)).equal(cosmicSignatureGameProxyState.balanceAmount);
+	expect(await cosmicSignatureGameProxy.lastBidderAddress()).equal(cosmicSignatureGameProxyState.lastBidderAddress);
+	expect(cosmicSignatureGameProxyState.bidderAddresses.length).equal(Number(cosmicSignatureGameProxyState.roundNum + 1n));
+	expect((await cosmicSignatureGameProxy.bidderAddresses(cosmicSignatureGameProxyState.roundNum))/*[0]*/).equal(cosmicSignatureGameProxyState.bidderAddresses[Number(cosmicSignatureGameProxyState.roundNum)]);
+	expect(await cosmicSignatureGameProxy.roundNum()).equal(cosmicSignatureGameProxyState.roundNum);
+	expect(await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation()).equal(cosmicSignatureGameProxyState.delayDurationBeforeRoundActivation);
+	expect(await cosmicSignatureGameProxy.roundActivationTime()).equal(cosmicSignatureGameProxyState.roundActivationTime);
+	expect(await cosmicSignatureGameProxy.ethDutchAuctionDurationDivisor()).equal(cosmicSignatureGameProxyState.ethDutchAuctionDurationDivisor);
+	expect(await cosmicSignatureGameProxy.mainPrizeTime()).equal(cosmicSignatureGameProxyState.mainPrizeTime);
+	expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(cosmicSignatureGameProxyState.mainPrizeTimeIncrementInMicroSeconds);
+	expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementIncreaseDivisor()).equal(cosmicSignatureGameProxyState.mainPrizeTimeIncrementIncreaseDivisor);
+	expect(await cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize()).equal(cosmicSignatureGameProxyState.timeoutDurationToClaimMainPrize);
 }
 
 // #endregion
 // #region `createCosmicSignatureTokenState`
 
-async function createCosmicSignatureTokenState(signerCount) {
+/*async*/ function createCosmicSignatureTokenState() {
 	const cosmicSignatureTokenState = {
-		// todo-0 Add properties.
+		accountBalanceAmounts: {},
 
-		// todo-0 array: signerBalances. its length is signerCount
+		// todo-0 Add more properties as needed.
 	};
 	return cosmicSignatureTokenState;
 }
@@ -521,7 +460,66 @@ async function createCosmicSignatureTokenState(signerCount) {
 // #region `assertCosmicSignatureTokenState`
 
 async function assertCosmicSignatureTokenState(cosmicSignatureToken, cosmicSignatureTokenState) {
+	// todo-0 Assert one signer balance.
+	// todo-0 Remember to assert marketing wallet balance.
+}
+
+// #endregion
+// #region `getNextEthBidPrice`
+
+/// todo-0
+/*async*/ function getNextEthBidPrice(latestBlock, currentTimeOffset) {
+	return 123n;
+}
+
+// #endregion
+// #region `getNextCstBidPrice`
+
+/// todo-0
+/*async*/ function getNextCstBidPrice(latestBlock, currentTimeOffset) {
+	return 123n;
+}
+
+// #endregion
+// #region `_updateChampionsIfNeeded`
+
+/*async*/ function _updateChampionsIfNeeded(cosmicSignatureGameProxyState) {
 	// todo-0
+}
+
+// #endregion
+// #region `updateBidderInfo`
+
+/*async*/ function updateBidderInfo(cosmicSignatureGameProxyState, latestBlock, signerAddress) {
+	cosmicSignatureGameProxyState.biddersInfo[signerAddress] = BigInt(latestBlock.timestamp + 1);
+}
+
+// #endregion
+// #region `tokenBalanceOf`
+
+function tokenBalanceOf(tokenState, account) {
+	return tokenState.accountBalanceAmounts[account] ?? 0n;
+}
+
+// #endregion
+// #region `xxx`
+
+/// todo-0
+/*async*/ function xxx(cosmicSignatureGameProxyState) {
+}
+
+// #endregion
+// #region `generateRandomUInt256Seed`
+
+/**
+ * Issue. This is a workaround for Comment-202504071.
+ * Comment-202504067 applies.
+ * @returns {bigint}
+ */
+async function generateRandomUInt256Seed(cosmicSignatureGameProxy) {
+	const blockPrevRandao = await cosmicSignatureGameProxy.getBlockPrevRandao();
+	const blockBaseFee = await cosmicSignatureGameProxy.getBlockBaseFee();
+	return blockPrevRandao ^ blockBaseFee;
 }
 
 // #endregion
