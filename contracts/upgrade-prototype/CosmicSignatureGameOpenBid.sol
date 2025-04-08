@@ -57,6 +57,13 @@ contract CosmicSignatureGameOpenBid is
 	}
 
 	// #endregion
+	// #region // `fallback`
+
+	// fallback() external payable override {
+	// 	revert ("Method does not exist.");
+	// }
+
+	// #endregion
 	// #region `initialize`
 
 	function initialize(address ownerAddress_) external override initializer() {
@@ -180,11 +187,18 @@ contract CosmicSignatureGameOpenBid is
 	}
 
 	// #endregion
-	// #region // `fallback`
+	// #region `getBlockPrevRandao`
 
-	// fallback() external payable override {
-	// 	revert ("Method does not exist.");
-	// }
+	function getBlockPrevRandao() external view override returns (uint256) {
+		return block.prevrandao;
+	}
+
+	// #endregion
+	// #region `getBlockBaseFee`
+
+	function getBlockBaseFee() external view override returns (uint256) {
+		return block.basefee;
+	}
 
 	// #endregion
 }

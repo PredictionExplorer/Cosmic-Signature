@@ -35,6 +35,10 @@ interface ICosmicSignatureGame is
 	IBidding,
 	ISecondaryPrizes,
 	IMainPrize {
+	// /// @notice See also: `IBidding.receive`.
+	// /// @dev It appears that we don't need this.
+	// fallback() external payable;
+
 	/// @notice Initializes this upgradeable contract.
 	/// This method is to be called on the proxy contract right after deployment of both the proxy and the implementation contracts.
 	/// @param ownerAddress_ Contract owner address.
@@ -75,7 +79,12 @@ interface ICosmicSignatureGame is
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
 
-	// /// @notice See also: `IBidding.receive`.
-	// /// @dev It appears that we don't need this.
-	// fallback() external payable;
+	/// @dev
+	/// [Comment-202504082]
+	/// Issue. We need this for testing, because of Comment-202504071.
+	/// [/Comment-202504082]
+	function getBlockPrevRandao() external view returns (uint256);
+
+	/// @dev Comment-202504082 applies.
+	function getBlockBaseFee() external view returns (uint256);
 }

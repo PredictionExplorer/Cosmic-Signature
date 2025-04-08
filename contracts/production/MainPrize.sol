@@ -115,7 +115,7 @@ abstract contract MainPrize is
 		if (_msgSender() == lastBidderAddress) {
 			// Comment-202411169 relates.
 			// #enable_asserts assert(lastBidderAddress != address(0));
-		
+
 			require(
 				block.timestamp >= mainPrizeTime,
 				CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp)
