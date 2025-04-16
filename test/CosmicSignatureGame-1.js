@@ -134,6 +134,7 @@ describe("CosmicSignatureGame-1", function () {
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const signerIndex_ = Number(randomNumber_ % BigInt(contracts_.signers.length));
 				const signer_ = contracts_.signers[signerIndex_];
+				// todo-0 Do we really need this?
 				const cosmicSignatureTokenForSigner_ = contracts_.cosmicSignatureToken.connect(signer_);
 				let signer2Index_ = signerIndex_;
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
