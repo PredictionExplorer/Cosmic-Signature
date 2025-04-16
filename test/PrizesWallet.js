@@ -7,6 +7,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("PrizesWallet", function () {
 	it("depositEth works correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, prizesWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -26,6 +27,7 @@ describe("PrizesWallet", function () {
 	});
 	
 	it("withdrawEth works correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, prizesWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 
@@ -43,6 +45,7 @@ describe("PrizesWallet", function () {
 	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`
 	// // todo-1 and NFT donation without making a bid is now prohibited.
 	// it("donateNft() without making a bid works", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft, randomWalkNftAddr,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0,] = signers;
@@ -58,6 +61,7 @@ describe("PrizesWallet", function () {
 	// });
 
 	it("claimManyDonatedNfts() works properly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, prizesWallet, prizesWalletAddr, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

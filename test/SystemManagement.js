@@ -8,9 +8,10 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("SystemManagement", function () {
 	it("When the current bidding round is inactive, setters behave correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 		expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setDelayDurationBeforeRoundActivation(99n * 60n);
@@ -140,8 +141,10 @@ describe("SystemManagement", function () {
 	});
 
 	it("When the current bidding round is active, setters are not available", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
+		// todo-1 Is this still correct?
 		expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).within((-24n) * 60n * 60n, 0n);
 
 		const testAcct_ = hre.ethers.Wallet.createRandom();
@@ -180,11 +183,12 @@ describe("SystemManagement", function () {
 
 	// todo-1 Doesn't this test belong to "Bidding.js"?
 	it("When the current bidding round is inactive, _onlyRoundIsActive methods are not available", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 		expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
 
 		const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -211,6 +215,7 @@ describe("SystemManagement", function () {
 
 	// todo-1 Doesn't this test belong to "Bidding.js"?
 	it("Regardless if the current bidding round is active or not, the behavior is correct", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 		// let ownableErr = cosmicSignatureGameProxy.interface.getError("OwnableUnauthorizedAccount");
@@ -219,6 +224,7 @@ describe("SystemManagement", function () {
 		await hre.ethers.provider.send("evm_mine");
 
 		let durationUntilRoundActivation_ = await cosmicSignatureGameProxy.getDurationUntilRoundActivation();
+		// todo-1 Is this still correct?
 		expect(durationUntilRoundActivation_).within((-24n) * 60n * 60n, 0n);
 		const roundActivationTime_ = await cosmicSignatureGameProxy.roundActivationTime();
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -258,6 +264,7 @@ describe("SystemManagement", function () {
 	});
 	
 	it("Unauthorized access to restricted methods is denied", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

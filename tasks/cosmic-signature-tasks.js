@@ -48,7 +48,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 			configObject.randomWalkNftAddr,
 			configObject.charityAddr,
 			configObject.transferOwnershipToCosmicSignatureDao,
-			configObject.roundActivationTime
+			BigInt(configObject.roundActivationTime)
 		);
 	console.log("Contracts deployed.");
 	if (configObject.donateEthToGameContract) {

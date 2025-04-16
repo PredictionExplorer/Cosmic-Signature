@@ -18,6 +18,7 @@ describe("CosmicSignatureDao", function () {
 			// await hre.ethers.provider.send("evm_mine");
 		};
 
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureToken, charityWallet, charityWalletAddr, cosmicSignatureDao, cosmicSignatureDaoAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3, signer4, signer5,] = signers;

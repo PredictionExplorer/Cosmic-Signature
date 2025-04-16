@@ -362,3 +362,18 @@ contract MaliciousNft2 is ERC721 {
 		}
 	}
 }
+
+contract BlockchainPropertyGetter {
+	/// @dev
+	/// [Comment-202504082]
+	/// Issue. We need this for testing, because of Comment-202504071.
+	/// [/Comment-202504082]
+	function getBlockPrevRandao() external view returns (uint256) {
+		return block.prevrandao;
+	}
+
+	/// @dev Comment-202504082 applies.
+	function getBlockBaseFee() external view returns (uint256) {
+		return block.basefee;
+	}
+}

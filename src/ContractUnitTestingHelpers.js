@@ -6,7 +6,46 @@
 // #region
 
 const hre = require("hardhat");
-const { deployContractsAdvanced } = require("./ContractDeploymentHelpers.js");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
+
+// #endregion
+// #region `loadFixtureDeployContractsForUnitTesting`
+
+/**
+ * @param {bigint} roundActivationTime 
+ */
+async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
+	const contracts = await loadFixture(deployContractsForUnitTesting);
+
+	// [Comment-202501192]
+	// todo-0 Call `loadFixtureDeployContractsForUnitTesting` everywhere.
+	// todo-0 After calling it, don't force "evm_mine".
+	// todo-0 This comment is currently referenced where we force "evm_mine". Don't reference it any more.
+	// todo-0 Then this comment will not need to be numbered.
+	//
+	// todo-1 Improve this comment. See todos.
+	// Issue. `loadFixture` doesn't remove blocks generated after it was called for the first time
+	// and/or has some other similar issues.
+	// Additionally, near Comment-202501193, HardHat is configured for deterministic mined block timing,
+	// but that behavior appears to not work stably.
+	// todo-1 Or `interval: 0` has fixed it? (No, it got better, but some tests still fail sometimes.)
+	// todo-1 But getting latest block timestamp before executing a non-`view` function still doesn't work correct.
+	// todo-1 It can return a block like a minute ago.
+	// todo-1 Maybe that's the timestamp after the initil call to `loadFixture`.
+	// todo-1 >>> A huge number is a bit better?
+	// So this hack appears to make block timestamps more deterministic.
+	// [/Comment-202501192]
+	await hre.ethers.provider.send("evm_mine");
+
+	// todo-1 Comment better and maybe reference Comment-202501192.
+	// todo-1 It would be a bad idea to do this in `deployContractsForUnitTesting` because
+	// todo-1 `loadFixture` doesn't restore the current time, so unexpected behavior can ocuur
+	// todo-1 if a function called by `loadFixture` uses the latest block timestamp.
+	setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
+
+	return contracts;
+}
 
 // #endregion
 // #region `deployContractsForUnitTesting`
@@ -16,6 +55,7 @@ const { deployContractsAdvanced } = require("./ContractDeploymentHelpers.js");
  * It's OK to pass ths function to `loadFixture`.
  * todo-1 Find this function name (not whole word) and make sure the order of desrtructured contracts
  * todo-1 matched their order in the returned object.
+ * todo-1 Or better do not destructure.
  */
 async function deployContractsForUnitTesting() {
 	return deployContractsForUnitTestingAdvanced("CosmicSignatureGame");
@@ -47,7 +87,7 @@ async function deployContractsForUnitTestingAdvanced(
 			"",
 			charityAcct.address,
 			false,
-			1
+			0n
 		);
 	contracts.signers = signers;
 	contracts.charityAcct = charityAcct;
@@ -71,6 +111,7 @@ async function deployContractsForUnitTestingAdvanced(
 // #region
 
 module.exports = {
+	loadFixtureDeployContractsForUnitTesting,
 	deployContractsForUnitTesting,
 	deployContractsForUnitTestingAdvanced,
 };

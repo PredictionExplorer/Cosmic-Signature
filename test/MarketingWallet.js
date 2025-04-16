@@ -7,6 +7,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("MarketingWallet", function () {
 	// it("MarketingWallet.setCosmicSignatureToken behaves correctly", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {ownerAcct, signers, marketingWallet,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1, signer2,] = signers;
 	//
@@ -16,6 +17,7 @@ describe("MarketingWallet", function () {
 	// });
 	
 	it("MarketingWallet.payReward behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureToken, marketingWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

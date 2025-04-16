@@ -8,6 +8,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("BidderContract", function () {
 	it("A contract can win main prize", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNft, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
@@ -79,6 +80,7 @@ describe("BidderContract", function () {
 	// So both `BidCNonRecv` and this test should be removed.
 	// [/ToDo-202412176-1]
 	it("Non-IERC721Receiver contract can bid", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;

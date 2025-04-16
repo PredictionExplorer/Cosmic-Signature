@@ -11,6 +11,7 @@ const SKIP_LONG_TESTS = false;
 
 describe("StakingWalletRandomWalkNft", function () {
 	it("It's impossible to unstake an NFT twice", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -43,6 +44,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 	
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -67,11 +69,12 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 	
 	// it("Internal staker state variables for checking uniquness are correctly set", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, randomWalkNft, randomWalkNftAddr,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0,] = signers;
 	//
-	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+	// 	// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 	//
 	// 	// todo-9 This contract no longer exists.
 	// 	const testStakingWalletRandomWalkNftFactory = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft", deployerAcct);
@@ -133,6 +136,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// });
 	
 	it("User stakes his 10 Random Walk NFTs and gets all of them back after unstake", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -168,6 +172,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("The random picking of a staker is really random", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 
@@ -228,6 +233,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 	
 	it("Shouldn't be possible to use an NFT twice for stake/unstake", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;

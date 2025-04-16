@@ -9,6 +9,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("Bidding", function () {
 	it("Should be possible to bid", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
@@ -157,6 +158,7 @@ describe("Bidding", function () {
 	});
 
 	it("Should be possible to bid with Random Walk NFT", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -188,6 +190,7 @@ describe("Bidding", function () {
 	});
 
 	it("Shouldn't be possible to bid if bidder doesn't accept refunds on oversized bidWithEth calls", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -201,6 +204,7 @@ describe("Bidding", function () {
 	});
 
 	it("Shouldn't be possible to bid using very long message", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -212,6 +216,7 @@ describe("Bidding", function () {
 	});
 
 	it("The getCstDutchAuctionDurations method behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -242,6 +247,7 @@ describe("Bidding", function () {
 			return token_id;
 		}
 
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3, signer4, signer5,] = signers;
 
@@ -277,6 +283,7 @@ describe("Bidding", function () {
 	});
 
 	it("After bidWithEth, bid-related counters have correct values", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 		
@@ -308,6 +315,7 @@ describe("Bidding", function () {
 	});
 
 	it("On ETH bid, we refund the correct amount when msg.value is greater than required", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -332,6 +340,7 @@ describe("Bidding", function () {
 	});
 
 	it("On ETH + Random Walk NFT bid, we refund the correct amount when msg.value is greater than required", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -364,6 +373,7 @@ describe("Bidding", function () {
 	});
 
 	it("Bidding a lot and staking a lot behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, stakingWalletCosmicSignatureNft, stakingWalletCosmicSignatureNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3, signer4, signer5,] = signers;
@@ -535,6 +545,7 @@ describe("Bidding", function () {
 	});
 
 	it("Bidding with CST behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
@@ -603,6 +614,7 @@ describe("Bidding", function () {
 
 	// todo-1 This method no longer exists. Use `getBidderAddressAt` instead. But parts of this test could still be relevant.
 	// it("Function bidderAddress() works as expected", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1, signer2, signer3,] = signers;
 	//
@@ -660,6 +672,7 @@ describe("Bidding", function () {
 	// });
 
 	// it("Bid statistics are generating correct values and StellarSpender addr is assigned correctly", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1,] = signers;
 	//
@@ -709,6 +722,7 @@ describe("Bidding", function () {
 	// });
 	
 	it("It is not possible to bid with CST if balance is not enough", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -718,6 +732,7 @@ describe("Bidding", function () {
 	});
 
 	it("The getBidderAddressAt method behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 		
@@ -736,10 +751,11 @@ describe("Bidding", function () {
 	});
 
 	it("It's impossible to bid if minting of Cosmic Signature Tokens fails", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		const brokenCosmicSignatureTokenFactory = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken2", deployerAcct);
 		const brokenCosmicSignatureToken = await brokenCosmicSignatureTokenFactory.deploy(0);
@@ -756,10 +772,11 @@ describe("Bidding", function () {
 	});
 
 	it("It's impossible to bid if minting of Cosmic Signature Tokens fails (second mint)", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		const numTokenMintsPerBid_ = 1;
 		const brokenCosmicSignatureTokenFactory = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken2", deployerAcct);
@@ -779,21 +796,10 @@ describe("Bidding", function () {
 	});
 
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods behave correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
-		// [Comment-202501192]
-		// todo-1 Improve this comment. See todos.
-		// Issue. `loadFixture` doesn't remove blocks generated after it was called for the first time
-		// and/or has some other similar issues.
-		// Additionally, near Comment-202501193, HardHat is configured for deterministic mined block timing,
-		// but that behavior appears to not work stably.
-		// todo-1 Or `interval: 0` has fixed it? (No, it got better, but some tests still fail sometimes.)
-		// todo-1 But getting latest block timestamp before executing a non-`view` function still doesn't work correct.
-		// todo-1 It can return a block like a minute ago.
-		// todo-1 Maybe that's the timestamp after the initil call to `loadFixture`.
-		// todo-1 >>> A huge number is a bit better?
-		// So this hack appears to make block timestamps more deterministic.
-		// [/Comment-202501192]
+		// Comment-202501192 applies.
 		await hre.ethers.provider.send("evm_mine");
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -812,6 +818,7 @@ describe("Bidding", function () {
 	});
 
 	it("The receive method is executing a bid", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -853,6 +860,7 @@ describe("Bidding", function () {
 	it("Long-term aggressive bidding behaves correctly", async function () {
 		if (SKIP_LONG_TESTS) return;
 
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {
 			signers,
 			cosmicSignatureToken,

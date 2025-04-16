@@ -10,6 +10,7 @@ const SKIP_LONG_TESTS = false;
 
 describe("EthDonations", function () {
 	it("donateEthWithInfo() works as expected", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 		
@@ -35,6 +36,7 @@ describe("EthDonations", function () {
 	});
 	
 	// it("Should not be possible to donate 0 value", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1,] = signers;
 	//

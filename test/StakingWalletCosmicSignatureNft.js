@@ -11,6 +11,7 @@ const SKIP_LONG_TESTS = false;
 
 describe("StakingWalletCosmicSignatureNft", function () {
 	it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft from arbitrary address", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, stakingWalletCosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
@@ -22,6 +23,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 	// // Comment-202409209 applies.
 	// it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft if the transfer to CharityWallet fails", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, stakingWalletCosmicSignatureNftFactory,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0,] = signers;
@@ -47,6 +49,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// });
 
 	it("It's impossible to unstake an NFT twice", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -93,6 +96,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
@@ -137,7 +141,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0
+	// 			0n
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -184,7 +188,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0
+	// 			0n
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -235,7 +239,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0
+	// 			0n
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -281,7 +285,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0
+	// 			0n
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -333,7 +337,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0
+	// 			0n
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -388,7 +392,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			await deployContractsForUnitTestingAdvanced("SpecialCosmicSignatureGame");
 		const [signer0, signer1,] = signers;
 	
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
 		await newCosmicSignatureNft.waitForDeployment();
@@ -461,7 +465,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			await deployContractsForUnitTestingAdvanced("SpecialCosmicSignatureGame");
 		const [signer0, signer1,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
 		await newCosmicSignatureNft.waitForDeployment();
@@ -544,11 +548,12 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// // todo-1 So revisit this comment or (eventually) remove it.
 	// // [/Comment-202409209]
 	// it("A failure to deposit to StakingWalletCosmicSignatureNft shouldn't abort the process of claiming main prize", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1,] = signers;
 	//
-	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+	// 	// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 	// 
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
 	// 	await newCosmicSignatureNft.waitForDeployment();
@@ -600,6 +605,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 	// // Comment-202409209 applies.
 	// it("Changing charity address works", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {signers, stakingWalletCosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1, signer2, signer3,] = signers;
 	//
@@ -615,10 +621,11 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// });
 
 	// it("Internal staker state variables for checking uniquness are correctly set", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, ownerAcct, cosmicSignatureGameProxy, cosmicSignatureNft,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
 	//
-	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+	// 	// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 	//
 	// 	// todo-1 Is this still true, given that the test passes?
 	// 	// * THIS TEST IS BROKEN for unknown reasons (hardhat trace hangs, no way to know, pending for deep debugging)
@@ -697,11 +704,12 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// });
 
 	it("User stakes his 10 Cosmic Signature NFTs and gets all of them back after unstake", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
 		await newCosmicSignatureNft.waitForDeployment();
@@ -775,6 +783,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 
 	// // Comment-202409209 applies.
 	// it("StakingWalletCosmicSignatureNft is properly distributing prize amount() (modulo check)", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, stakingWalletCosmicSignatureNft,} =
 	// 		await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0, signer1, signer2, signer3,] = signers;
@@ -848,6 +857,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// });
 
 	it("Shouldn't be possible to use an NFT twice for stake/unstake", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxyAddr, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
@@ -884,11 +894,12 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Deposits with value=0 do not create irregularities in StakingWalletCosmicSignatureNft", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
 		await newCosmicSignatureNft.waitForDeployment();
@@ -944,7 +955,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0
+	// 			0n
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);

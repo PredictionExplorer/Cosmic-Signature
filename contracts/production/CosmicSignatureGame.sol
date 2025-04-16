@@ -177,20 +177,6 @@ contract CosmicSignatureGame is
 	}
 
 	// #endregion
-	// #region `getBlockPrevRandao`
-
-	function getBlockPrevRandao() external view override returns (uint256) {
-		return block.prevrandao;
-	}
-
-	// #endregion
-	// #region `getBlockBaseFee`
-
-	function getBlockBaseFee() external view override returns (uint256) {
-		return block.basefee;
-	}
-
-	// #endregion
 }
 
 // #endregion

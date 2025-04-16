@@ -60,7 +60,7 @@ function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
-	const newSeed_ = (seedWrapper_.value + 1n) & ((1n << 256n) - 1n);
+	const newSeed_ = BigInt.asUintN(256, seedWrapper_.value + 1n);
 	seedWrapper_.value = newSeed_;
 	const randomNumber_ = generateRandomUInt256FromSeed(newSeed_);
 	return randomNumber_;

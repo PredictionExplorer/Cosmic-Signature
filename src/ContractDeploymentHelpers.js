@@ -20,8 +20,7 @@ const { HardhatContext } = require("hardhat/internal/context");
  * @param {string} randomWalkNftAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
- * @param {number} roundActivationTime 
- * @returns 
+ * @param {bigint} roundActivationTime 
  */
 const deployContracts = async function (
 	deployerAcct,
@@ -49,12 +48,7 @@ const deployContracts = async function (
  * @param {string} randomWalkNftAddr May be empty.
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
- * @param {number} roundActivationTime 
- * Possible values:
- *    0: leave the default value hardcoded in the contract.
- *    1: use the latest block timestamp.
- *    Any other value: use the given value as is.
- * @returns 
+ * @param {bigint} roundActivationTime 
  */
 const deployContractsAdvanced = async function (
 	deployerAcct,
@@ -149,13 +143,7 @@ const deployContractsAdvanced = async function (
 	await (await cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr)).wait();
 	await (await cosmicSignatureGameProxy.setMarketingWallet(marketingWalletAddr)).wait();
 	await (await cosmicSignatureGameProxy.setCharityAddress(charityWalletAddr)).wait();
-	if (roundActivationTime != 0) {
-		if (roundActivationTime == 1) {
-			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			roundActivationTime = latestBlock.timestamp + 1;
-		}
-		await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
-	}
+	setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime);
 
 	return {
 		cosmicSignatureTokenFactory,
@@ -194,11 +182,40 @@ const deployContractsAdvanced = async function (
 };
 
 // #endregion
+// #region `setRoundActivationTimeIfNeeded`
+
+/**
+ * @param {bigint} roundActivationTime 
+ * Possible values:
+ *    0: do nothing (by default, the value hardcoded in the contract will stay unchanged).
+ *    Negative: use the latest block timestamp minus the given value.
+ *    Positive: use the given value as is.
+ * @returns 
+ */
+async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
+	if (roundActivationTime != 0n) {
+		if (roundActivationTime < 0n) {
+			// Comment-202409255 applies.
+			const hre = HardhatContext.getHardhatContext().environment;
+
+			const latestBlock = await hre.ethers.provider.getBlock("latest");
+			roundActivationTime = BigInt(latestBlock.timestamp) - roundActivationTime;
+		}
+		//try {
+			await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
+		// } catch (e) {
+		// 	console.log(e);
+		// }
+	}
+}
+
+// #endregion
 // #region
 
 module.exports = {
 	deployContracts,
 	deployContractsAdvanced,
+	setRoundActivationTimeIfNeeded,
 };
 
 // #endregion

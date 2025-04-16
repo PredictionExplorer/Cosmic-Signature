@@ -96,6 +96,9 @@ library CosmicSignatureConstants {
 	/// todo-0 But don't configure initialBaseFeePerGas
 	///
 	/// todo-0 See Comment-202504071.
+	///
+	/// todo-0 Remember to change this in the tests.
+	/// todo-0 We have `ethBidRefundAmountInGasMinLimit` there too.
 	/// [/Comment-202502054]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = (6813 + 7) * 29 / 10;
 

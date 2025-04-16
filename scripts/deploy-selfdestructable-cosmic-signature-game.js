@@ -23,7 +23,7 @@ async function main() {
 			// "0x1b2E85De21C7CF4bD1787c6Ac4bd505e83b62Ba5",
 			"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
 			true,
-			1
+			-1n
 		);
 	console.log("CosmicSignatureToken address:", contracts.cosmicSignatureTokenAddr);
 	console.log("RandomWalkNFT address:", contracts.randomWalkNftAddr);

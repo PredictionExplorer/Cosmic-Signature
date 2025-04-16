@@ -8,6 +8,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("CosmicSignatureToken", function () {
 	it("Smoke test", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {cosmicSignatureGameProxyAddr, cosmicSignatureToken,} =
 			await loadFixture(deployContractsForUnitTesting);
 
@@ -15,6 +16,7 @@ describe("CosmicSignatureToken", function () {
 	});
 	
 	it("ERC20 nonces() function exists", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
