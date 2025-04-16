@@ -5,7 +5,7 @@
 // #endregion
 // #region
 
-const nodeFsModule = require("node:fs");
+//const nodeFsModule = require("node:fs");
 const helpersModule = require("./src/Helpers.js");
 
 // #endregion
@@ -96,23 +96,7 @@ const solidityVersion = "0.8.29";
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
 // We print it near Comment-202411143.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.ab55807c.Linux.g++";
-
-// Comment-202409011 applies.
-// Comment-202411136 relates.
-let solidityCompilerPath;
-const solidityCompilerPathGlobal = "/usr/bin/solc";
-// if (ENABLE_SMTCHECKER < 2) {
-	solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-	if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
-		solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
-		if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
-			solidityCompilerPath = solidityCompilerPathGlobal;
-		}
-	}
-// } else {
-// 	solidityCompilerPath = solidityCompilerPathGlobal;
-// }
+//const solidityCompilerLongVersion = solidityVersion + "+commit.ab55807c.Linux.g++";
 
 // #endregion
 // #region
@@ -136,7 +120,7 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 // [Comment-202411143/]
 // Comment-202409011 relates.
 // Comment-202411136 relates.
-console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
+//console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
 
 // #endregion
 // #region
@@ -160,8 +144,8 @@ require("hardhat-tracer");
 // // [/ToDo-202412098-1]
 // require("@nomiclabs/hardhat-etherscan");
 
-const { subtask, } = require("hardhat/config");
-const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
+//const { subtask, } = require("hardhat/config");
+//const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
 require("@openzeppelin/hardhat-upgrades");
 
 // Comment-202409255 relates.
@@ -203,32 +187,32 @@ function populateNetworkIsMainNetOnce(hre) {
 // #endregion
 // #region
 
-subtask(
-	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
-	async (args, hre, runSuper) => {
-		// todo-1 Review all `===` and `!==`. Maybe in some cases delete one `=`.
-		// @ts-ignore 'args' is of type 'unknown'.
-		if (args.solcVersion === solidityVersion) {
-
-			return {
-				compilerPath: solidityCompilerPath,
-				isSolcJs: false,
-				version: solidityVersion,
-
-				// Comment-202411136 applies.
-				longVersion: solidityCompilerLongVersion,
-			};
-		}
-	
-		// This point is supposed to be unreachable.
-		
-		// @ts-ignore 'args' is of type 'unknown'.
-		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: "${args.solcVersion}".`);
-
-		// // Calling the default implementation.
-		// return runSuper();
-	}
-);
+//subtask(
+//	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
+//	async (args, hre, runSuper) => {
+//		// todo-1 Review all `===` and `!==`. Maybe in some cases delete one `=`.
+//		// @ts-ignore 'args' is of type 'unknown'.
+//		if (args.solcVersion === solidityVersion) {
+//
+//			return {
+//				compilerPath: solidityCompilerPath,
+//				isSolcJs: false,
+//				version: solidityVersion,
+//
+//				// Comment-202411136 applies.
+//				longVersion: solidityCompilerLongVersion,
+//			};
+//		}
+//	
+//		// This point is supposed to be unreachable.
+//		
+//		// @ts-ignore 'args' is of type 'unknown'.
+//		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: "${args.solcVersion}".`);
+//
+//		// // Calling the default implementation.
+//		// return runSuper();
+//	}
+//);
 
 // #endregion
 // #region

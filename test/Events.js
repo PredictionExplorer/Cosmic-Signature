@@ -206,14 +206,20 @@ describe("Events", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize());
+		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize())
+			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed"); // Add event check
 
 		// await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0))
 		// 	.to.emit(cosmicSignatureGameProxy, "DonatedNftClaimedEvent")
 		// 	.withArgs(0, 0, bidder1.address, randomWalkNftAddr, 0);
+
+		// Now, attempt to claim the donated NFT (ID 0)
+		// const beneficiaryForRound0 = await prizesWallet.mainPrizeBeneficiaryAddresses(0);
+		// console.log("Beneficiary for round 0 BEFORE claim:", beneficiaryForRound0);
+		// console.log("Expected beneficiary (bidder1):", bidder1.address);
 		await expect(prizesWallet.connect(bidder1).claimDonatedNft(0))
 			.to.emit(prizesWallet, "DonatedNftClaimed")
-			.withArgs(0, bidder1.address, randomWalkNftAddr, 0, 0);
+			.withArgs(0, bidder1.address, randomWalkNftAddr, 0, 0); // Assuming args are (donatedNftId, claimant, nftContract, tokenId, roundNum)
 	});
 
 	// todo-1 Consider moving this test to "Bidding.js".
