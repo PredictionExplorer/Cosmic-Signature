@@ -3,9 +3,11 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-// const { generateRandomUInt32 } = require("../src/Helpers.js");
-const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixture, } = require("@nomicfoundation/hardhat-network-helpers");
+const { generateRandomUInt32 } = require("../src/Helpers.js");
+const { deployContractsForUnitTesting, } = require("../src/ContractUnitTestingHelpers.js");
+
+const SKIP_LONG_TESTS = false; // Define the flag here
 
 describe("Bidding", function () {
 	it("Should be possible to bid", async function () {
