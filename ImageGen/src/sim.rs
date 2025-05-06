@@ -90,6 +90,8 @@ pub struct FullSim {
 
 /// warmup + record
 pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
+    // Ensure the initial state is expressed in the centre-of-mass (COM) frame
+    shift_bodies_to_com(&mut bodies);
     let dt = 0.001;
     for _ in 0..steps { verlet_step(&mut bodies, dt); }
     let mut b2 = bodies.clone();
@@ -139,11 +141,55 @@ pub fn select_best_trajectory(
     th: f64,
 ) -> (Vec<Body>, TrajectoryResult) {
     println!("STAGE 1/7: Borda search over {num_sims} random orbits...");
-    let many: Vec<Vec<Body>> = (0..num_sims).map(|_| vec![
-        Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()), Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity())),
-        Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()), Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity())),
-        Body::new(rng.random_mass(), Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()), Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity())),
-    ]).collect();
+    // Generate random triples and immediately transform them to the COM frame so
+    // the total linear momentum and the COM position are exactly zero.
+    let many: Vec<Vec<Body>> = (0..num_sims)
+        .map(|_| {
+            let mut v = vec![
+                Body::new(
+                    rng.random_mass(),
+                    Vector3::new(
+                        rng.random_location(),
+                        rng.random_location(),
+                        rng.random_location(),
+                    ),
+                    Vector3::new(
+                        rng.random_velocity(),
+                        rng.random_velocity(),
+                        rng.random_velocity(),
+                    ),
+                ),
+                Body::new(
+                    rng.random_mass(),
+                    Vector3::new(
+                        rng.random_location(),
+                        rng.random_location(),
+                        rng.random_location(),
+                    ),
+                    Vector3::new(
+                        rng.random_velocity(),
+                        rng.random_velocity(),
+                        rng.random_velocity(),
+                    ),
+                ),
+                Body::new(
+                    rng.random_mass(),
+                    Vector3::new(
+                        rng.random_location(),
+                        rng.random_location(),
+                        rng.random_location(),
+                    ),
+                    Vector3::new(
+                        rng.random_velocity(),
+                        rng.random_velocity(),
+                        rng.random_velocity(),
+                    ),
+                ),
+            ];
+            shift_bodies_to_com(&mut v);
+            v
+        })
+        .collect();
     let pc = AtomicUsize::new(0);
     let cs = (num_sims/10).max(1);
     let dc = AtomicUsize::new(0);
