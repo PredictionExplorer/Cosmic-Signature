@@ -1,7 +1,32 @@
-use rustfft::num_complex::Complex;
-use rustfft::FftPlanner;
+use crate::render::constants;
 use nalgebra::Vector3;
+use rustfft::FftPlanner;
+use rustfft::num_complex::Complex;
+use smallvec::SmallVec;
 use std::f64::{INFINITY, NEG_INFINITY};
+use tracing::info;
+
+/// Performance metrics for rendering
+#[allow(dead_code)]
+pub struct RenderMetrics {
+    pub frame_time_ms: f64,
+    pub blur_time_ms: f64,
+    pub peak_memory_mb: f64,
+}
+
+#[allow(dead_code)]
+impl RenderMetrics {
+    pub fn new() -> Self {
+        Self { frame_time_ms: 0.0, blur_time_ms: 0.0, peak_memory_mb: 0.0 }
+    }
+
+    pub fn log(&self) {
+        info!(
+            "Performance: frame={:.1}ms blur={:.1}ms peak_mem={:.1}MB",
+            self.frame_time_ms, self.blur_time_ms, self.peak_memory_mb
+        );
+    }
+}
 
 /// Compute Fourier transform of a real-valued signal
 pub fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
@@ -33,12 +58,12 @@ pub fn bounding_box_2d(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) 
 pub fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     let (mut min_x, mut max_x, mut min_y, mut max_y) = bounding_box_2d(positions);
     if (max_x - min_x).abs() < 1e-12 {
-        min_x -= 0.5;
-        max_x += 0.5;
+        min_x -= constants::BOUNDING_BOX_PADDING;
+        max_x += constants::BOUNDING_BOX_PADDING;
     }
     if (max_y - min_y).abs() < 1e-12 {
-        min_y -= 0.5;
-        max_y += 0.5;
+        min_y -= constants::BOUNDING_BOX_PADDING;
+        max_y += constants::BOUNDING_BOX_PADDING;
     }
     let wx = max_x - min_x;
     let wy = max_y - min_y;
@@ -50,15 +75,17 @@ pub fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
 }
 
 /// Build a simple 1D Gaussian kernel
-pub fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
+pub fn build_gaussian_kernel(radius: usize) -> SmallVec<[f64; 32]> {
     if radius == 0 {
-        return Vec::new();
+        return SmallVec::new();
     }
-    let sigma = (radius as f64 / 3.0).max(1.0);
-    let mut kernel = Vec::with_capacity(2 * radius + 1);
-    let two_sigma2 = 2.0 * sigma * sigma;
+    let sigma =
+        (radius as f64 / constants::GAUSSIAN_SIGMA_FACTOR).max(constants::GAUSSIAN_SIGMA_MIN);
+    let kernel_size = 2 * radius + 1;
+    let mut kernel = SmallVec::with_capacity(kernel_size);
+    let two_sigma2 = constants::GAUSSIAN_TWO_FACTOR * sigma * sigma;
     let mut sum = 0.0;
-    for i in 0..(2 * radius + 1) {
+    for i in 0..kernel_size {
         let x = i as f64 - radius as f64;
         let val = (-x * x / two_sigma2).exp();
         kernel.push(val);

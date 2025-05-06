@@ -1,6 +1,6 @@
-use nalgebra::Vector3;
 use crate::sim::{Body, G};
 use crate::utils::fourier_transform;
+use nalgebra::Vector3;
 use statrs::statistics::Statistics;
 
 /// Total energy: kinetic + potential
@@ -8,10 +8,11 @@ pub fn calculate_total_energy(bodies: &[Body]) -> f64 {
     let mut kin = 0.0;
     let mut pot = 0.0;
     for b in bodies {
-        kin += 0.5 * b.mass * b.velocity.norm_squared();
+        kin += crate::render::constants::KINETIC_ENERGY_FACTOR * b.mass * b.velocity.norm_squared();
     }
-    for i in 0..bodies.len() {
-        for j in (i + 1)..bodies.len() {
+    let n = bodies.len(); // Cache length to avoid repeated calls
+    for i in 0..n {
+        for j in (i + 1)..n {
             let r = (bodies[i].position - bodies[j].position).norm();
             if r > 1e-10 {
                 pot += -G * bodies[i].mass * bodies[j].mass / r;
@@ -30,13 +31,8 @@ pub fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
     total_l
 }
 
-/// A measure of “regularity” vs “chaos”, smaller => more chaotic
-pub fn non_chaoticness(
-    m1: f64,
-    m2: f64,
-    m3: f64,
-    positions: &[Vec<Vector3<f64>>],
-) -> f64 {
+/// A measure of "regularity" vs "chaos", smaller => more chaotic
+pub fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     if len == 0 {
         return 0.0;
@@ -64,7 +60,7 @@ pub fn non_chaoticness(
     (sd1 + sd2 + sd3) / 3.0
 }
 
-/// Score how “equilateral” the 3-body triangle is over time
+/// Score how "equilateral" the 3-body triangle is over time
 pub fn equilateralness_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let n = positions[0].len();
     if n < 1 {
