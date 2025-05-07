@@ -5,7 +5,7 @@ use std::io::Write;
 use image::{DynamicImage, ImageBuffer, Rgb};
 use nalgebra::Vector3;
 use rayon::prelude::*;
-use crate::spectrum::{NUM_BINS, rgb_to_bin, spd_to_rgba};
+use crate::spectrum::{NUM_BINS, BIN_SHIFT, rgb_to_bin, spd_to_rgba};
 use palette::{FromColor, Hsl, Srgb};
 use crate::sim;
 use crate::utils::{build_gaussian_kernel, bounding_box};
@@ -612,19 +612,53 @@ fn plot_spec(
     w_right: f64,    // weight for right bin (0..1)
     base_alpha: f64, // base opacity for the line segment
 ) {
+    // Helper to deposit energy with prismatic sub-pixel shift
+    #[inline]
+    fn deposit(
+        accum: &mut [[f64; NUM_BINS]],
+        width: u32,
+        height: u32,
+        xi: i32,
+        yi: i32,
+        energy: f64,
+        bin: usize,
+    ) {
+        if energy == 0.0 { return; }
+        let (sx, sy) = BIN_SHIFT[bin];
+        let xf = xi as f32 + 0.5 + sx;
+        let yf = yi as f32 + 0.5 + sy;
+        let x0 = xf.floor();
+        let y0 = yf.floor();
+        let wx = xf - x0;
+        let wy = yf - y0;
+
+        let x0i = x0 as i32;
+        let y0i = y0 as i32;
+        let contrib = [
+            (x0i,     y0i,     (1.0 - wx) * (1.0 - wy)),
+            (x0i + 1, y0i,     wx * (1.0 - wy)),
+            (x0i,     y0i + 1, (1.0 - wx) * wy),
+            (x0i + 1, y0i + 1, wx * wy),
+        ];
+
+        for &(cx, cy, w) in &contrib {
+            if w == 0.0 { continue; }
+            if cx < 0 || cy < 0 || cx >= width as i32 || cy >= height as i32 { continue; }
+            let idx = (cy as usize) * (width as usize) + (cx as usize);
+            accum[idx][bin] += energy * (w as f64);
+        }
+    }
+
     if x < 0 || x >= width as i32 || y < 0 || y >= height as i32 {
         return;
     }
-    let idx = (y as usize) * (width as usize) + x as usize;
+
     let energy = coverage as f64 * base_alpha;
     let left_energy = energy * (1.0 - w_right);
     let right_energy = energy * w_right;
-    accum[idx][bin_left] += left_energy;
-    if bin_right != bin_left {
-        accum[idx][bin_right] += right_energy;
-    } else {
-        accum[idx][bin_left] += right_energy; // same bin: add all
-    }
+
+    deposit(accum, width, height, x, y, left_energy, bin_left);
+    deposit(accum, width, height, x, y, right_energy, bin_right);
 }
 
 /// Draw anti-aliased line segment into spectral accumulator.
