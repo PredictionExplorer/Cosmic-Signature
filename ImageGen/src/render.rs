@@ -5,10 +5,10 @@ use std::io::Write;
 use image::{DynamicImage, ImageBuffer, Rgb};
 use nalgebra::Vector3;
 use rayon::prelude::*;
-// Assuming bounding_box includes padding like in the example
-use crate::utils::{build_gaussian_kernel, bounding_box}; // Changed bounding_box_2d to bounding_box
+use crate::spectrum::{NUM_BINS, rgb_to_bin, spd_to_rgba};
 use palette::{FromColor, Hsl, Srgb};
 use crate::sim;
+use crate::utils::{build_gaussian_kernel, bounding_box};
 
 /// Save single image as PNG
 pub fn save_image_as_png(
@@ -22,6 +22,7 @@ pub fn save_image_as_png(
 }
 
 /// Pass 1: gather global histogram for final color leveling
+#[allow(dead_code)]
 pub fn pass_1_build_histogram(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<Rgb<u8>>],
@@ -150,6 +151,7 @@ pub fn compute_black_white_gamma(
 }
 
 /// Pass 2: final frames => color mapping => write frames
+#[allow(dead_code)]
 pub fn pass_2_write_frames(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<Rgb<u8>>],
@@ -434,6 +436,7 @@ fn rfpart(x: f32) -> f32 { 1.0 - x.fract() }
 
 // Function to plot a pixel with alpha blending
 #[inline]
+#[allow(dead_code)]
 fn plot(
     accum: &mut [(f64,f64,f64,f64)], width: u32, height: u32,
     x: i32, y: i32, alpha: f32, // alpha here is the anti-aliasing coverage (0..1)
@@ -468,6 +471,7 @@ fn plot(
 
 /// Line drawing with Xiaolin Wu anti-aliasing and alpha compositing (additive)
 // Replaces draw_line_segment_crisp_alpha
+#[allow(dead_code)]
 pub fn draw_line_segment_aa_alpha(
     accum: &mut [(f64,f64,f64,f64)],
     width: u32, height: u32,
@@ -591,4 +595,354 @@ pub fn create_video_from_frames_singlepass(
 #[inline]
 fn lerp(a: f64, b: f64, t: f32) -> f64 {
     a + (b - a) * (t as f64)
+}
+
+// ====================== SPECTRAL DRAWING =============================
+/// Plot a pixel into a spectral accumulator (SPD) with antialias coverage.
+#[inline]
+fn plot_spec(
+    accum: &mut [[f64; NUM_BINS]],
+    width: u32,
+    height: u32,
+    x: i32,
+    y: i32,
+    coverage: f32,   // AA coverage 0..1
+    bin_left: usize, // first wavelength bin
+    bin_right: usize, // second bin (may equal left)
+    w_right: f64,    // weight for right bin (0..1)
+    base_alpha: f64, // base opacity for the line segment
+) {
+    if x < 0 || x >= width as i32 || y < 0 || y >= height as i32 {
+        return;
+    }
+    let idx = (y as usize) * (width as usize) + x as usize;
+    let energy = coverage as f64 * base_alpha;
+    let left_energy = energy * (1.0 - w_right);
+    let right_energy = energy * w_right;
+    accum[idx][bin_left] += left_energy;
+    if bin_right != bin_left {
+        accum[idx][bin_right] += right_energy;
+    } else {
+        accum[idx][bin_left] += right_energy; // same bin: add all
+    }
+}
+
+/// Draw anti-aliased line segment into spectral accumulator.
+pub fn draw_line_segment_aa_spectral(
+    accum: &mut [[f64; NUM_BINS]],
+    width: u32,
+    height: u32,
+    mut x0: f32,
+    mut y0: f32,
+    mut x1: f32,
+    mut y1: f32,
+    col0: Rgb<u8>,
+    col1: Rgb<u8>,
+    alpha0: f64,
+    alpha1: f64,
+) {
+    let bin0 = rgb_to_bin(&col0);
+    let bin1 = rgb_to_bin(&col1);
+
+    let steep = (y1 - y0).abs() > (x1 - x0).abs();
+    if steep {
+        std::mem::swap(&mut x0, &mut y0);
+        std::mem::swap(&mut x1, &mut y1);
+    }
+    if x0 > x1 {
+        std::mem::swap(&mut x0, &mut x1);
+        std::mem::swap(&mut y0, &mut y1);
+    }
+
+    let dx = x1 - x0;
+    let dy = y1 - y0;
+    let gradient = if dx.abs() < 1e-9 { 0.0 } else { dy / dx };
+
+    // first endpoint
+    let xend0 = x0.round();
+    let yend0 = y0 + gradient * (xend0 - x0);
+    let xgap0 = rfpart(x0 + 0.5);
+    let px0 = xend0 as i32;
+    let py0 = ipart(yend0);
+
+    if steep {
+        plot_spec(accum, width, height, py0, px0, rfpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0);
+        plot_spec(accum, width, height, py0 + 1, px0, fpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0);
+    } else {
+        plot_spec(accum, width, height, px0, py0, rfpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0);
+        plot_spec(accum, width, height, px0, py0 + 1, fpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0);
+    }
+    let mut intery = yend0 + gradient;
+
+    // second endpoint
+    let xend1 = x1.round();
+    let yend1 = y1 + gradient * (xend1 - x1);
+    let xgap1 = fpart(x1 + 0.5);
+    let px1 = xend1 as i32;
+    let py1 = ipart(yend1);
+
+    if steep {
+        plot_spec(accum, width, height, py1, px1, rfpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1);
+        plot_spec(accum, width, height, py1 + 1, px1, fpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1);
+    } else {
+        plot_spec(accum, width, height, px1, py1, rfpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1);
+        plot_spec(accum, width, height, px1, py1 + 1, fpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1);
+    }
+
+    // main loop
+    if steep {
+        for x in (px0 + 1)..px1 {
+            let t = (x as f32 - x0) / dx.max(1e-9);
+            let alpha_t = lerp(alpha0, alpha1, t);
+            let binf = (bin0 as f64) * (1.0 - t as f64) + (bin1 as f64) * t as f64;
+            let bin_left = binf.floor().clamp(0.0, (NUM_BINS - 1) as f64) as usize;
+            let bin_right = binf.ceil().clamp(0.0, (NUM_BINS - 1) as f64) as usize;
+            let w_right = binf - bin_left as f64;
+            plot_spec(accum, width, height, ipart(intery), x, rfpart(intery), bin_left, bin_right, w_right, alpha_t);
+            plot_spec(accum, width, height, ipart(intery) + 1, x, fpart(intery), bin_left, bin_right, w_right, alpha_t);
+            intery += gradient;
+        }
+    } else {
+        for x in (px0 + 1)..px1 {
+            let t = (x as f32 - x0) / dx.max(1e-9);
+            let alpha_t = lerp(alpha0, alpha1, t);
+            let binf = (bin0 as f64) * (1.0 - t as f64) + (bin1 as f64) * t as f64;
+            let bin_left = binf.floor().clamp(0.0, (NUM_BINS - 1) as f64) as usize;
+            let bin_right = binf.ceil().clamp(0.0, (NUM_BINS - 1) as f64) as usize;
+            let w_right = binf - bin_left as f64;
+            plot_spec(accum, width, height, x, ipart(intery), rfpart(intery), bin_left, bin_right, w_right, alpha_t);
+            plot_spec(accum, width, height, x, ipart(intery) + 1, fpart(intery), bin_left, bin_right, w_right, alpha_t);
+            intery += gradient;
+        }
+    }
+}
+
+// ====================== SPD -> RGBA CONVERSION ======================
+/// Convert whole SPD buffer into RGBA buffer (premultiplied linear sRGB).
+fn convert_spd_buffer_to_rgba(src: &[[f64; NUM_BINS]], dest: &mut [(f64, f64, f64, f64)]) {
+    dest.par_iter_mut()
+        .zip(src.par_iter())
+        .for_each(|(out, spd)| {
+            *out = spd_to_rgba(spd);
+        });
+}
+
+// ====================== PASS 1 (SPECTRAL) ===========================
+/// Pass 1: gather global histogram for final color leveling (spectral)
+pub fn pass_1_build_histogram_spectral(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<Rgb<u8>>],
+    body_alphas: &[f64],
+    width: u32,
+    height: u32,
+    blur_radius_px: usize,
+    blur_strength: f64,
+    blur_core_brightness: f64,
+    frame_interval: usize,
+    all_r: &mut Vec<f64>,
+    all_g: &mut Vec<f64>,
+    all_b: &mut Vec<f64>,
+) {
+    let npix = (width as usize) * (height as usize);
+    let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
+
+    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); npix];
+
+    let total_steps = positions[0].len();
+    let chunk_line = (total_steps / 10).max(1);
+
+    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
+    let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
+        let ww = (max_x - min_x).max(1e-12);
+        let hh = (max_y - min_y).max(1e-12);
+        let px = ((xx - min_x) / ww) * (width as f64);
+        let py = ((yy - min_y) / hh) * (height as f64);
+        (px as f32, py as f32)
+    };
+
+    for step in 0..total_steps {
+        if step % chunk_line == 0 {}
+        let p0 = positions[0][step];
+        let p1 = positions[1][step];
+        let p2 = positions[2][step];
+
+        let c0 = colors[0][step];
+        let c1 = colors[1][step];
+        let c2 = colors[2][step];
+
+        let a0 = body_alphas[0];
+        let a1 = body_alphas[1];
+        let a2 = body_alphas[2];
+
+        let (x0, y0) = to_pixel(p0[0], p0[1]);
+        let (x1, y1) = to_pixel(p1[0], p1[1]);
+        let (x2, y2) = to_pixel(p2[0], p2[1]);
+
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0);
+
+        let is_final = step == total_steps - 1;
+        if (step > 0 && step % frame_interval == 0) || is_final {
+            // convert SPD -> RGBA
+            convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+
+            // blur
+            let mut temp_blur = accum_rgba.clone();
+            if blur_radius_px > 0 {
+                parallel_blur_2d_rgba(&mut temp_blur, width as usize, height as usize, blur_radius_px);
+            }
+
+            // composite crisp + blur
+            let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
+            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
+                let (cr, cg, cb, ca) = accum_rgba[i];
+                let (br, bg, bb, ba) = temp_blur[i];
+                let out_r = cr * blur_core_brightness + br * blur_strength;
+                let out_g = cg * blur_core_brightness + bg * blur_strength;
+                let out_b = cb * blur_core_brightness + bb * blur_strength;
+                let out_a = ca * blur_core_brightness + ba * blur_strength;
+                *pix = (out_r, out_g, out_b, out_a);
+            });
+
+            // collect histogram
+            all_r.reserve(npix);
+            all_g.reserve(npix);
+            all_b.reserve(npix);
+            for &(r, g, b, a) in &final_frame_pixels {
+                let dr = r * a;
+                let dg = g * a;
+                let db = b * a;
+                all_r.push(dr);
+                all_g.push(dg);
+                all_b.push(db);
+            }
+        }
+    }
+    println!("   pass 1 (spectral histogram): 100% done");
+}
+
+// ====================== PASS 2 (SPECTRAL) ===========================
+/// Pass 2: final frames => color mapping => write frames (spectral)
+pub fn pass_2_write_frames_spectral(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<Rgb<u8>>],
+    body_alphas: &[f64],
+    width: u32,
+    height: u32,
+    blur_radius_px: usize,
+    blur_strength: f64,
+    blur_core_brightness: f64,
+    frame_interval: usize,
+    black_r: f64,
+    white_r: f64,
+    black_g: f64,
+    white_g: f64,
+    black_b: f64,
+    white_b: f64,
+    mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
+    last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+) -> Result<(), Box<dyn Error>> {
+    let npix = (width as usize) * (height as usize);
+    let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
+    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); npix];
+
+    let total_steps = positions[0].len();
+    let chunk_line = (total_steps / 10).max(1);
+
+    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
+    let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
+        let ww = (max_x - min_x).max(1e-12);
+        let hh = (max_y - min_y).max(1e-12);
+        let px = ((xx - min_x) / ww) * (width as f64);
+        let py = ((yy - min_y) / hh) * (height as f64);
+        (px as f32, py as f32)
+    };
+
+    // level ranges
+    let range_r = (white_r - black_r).max(1e-14);
+    let range_g = (white_g - black_g).max(1e-14);
+    let range_b = (white_b - black_b).max(1e-14);
+
+    for step in 0..total_steps {
+        if step % chunk_line == 0 {}
+        let p0 = positions[0][step];
+        let p1 = positions[1][step];
+        let p2 = positions[2][step];
+
+        let c0 = colors[0][step];
+        let c1 = colors[1][step];
+        let c2 = colors[2][step];
+
+        let a0 = body_alphas[0];
+        let a1 = body_alphas[1];
+        let a2 = body_alphas[2];
+
+        let (x0, y0) = to_pixel(p0[0], p0[1]);
+        let (x1, y1) = to_pixel(p1[0], p1[1]);
+        let (x2, y2) = to_pixel(p2[0], p2[1]);
+
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0);
+
+        let is_final = step == total_steps - 1;
+        if (step > 0 && step % frame_interval == 0) || is_final {
+            // convert SPD -> RGBA
+            convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+
+            // blur processing identical to original
+            let mut temp_blur = accum_rgba.clone();
+            if blur_radius_px > 0 {
+                parallel_blur_2d_rgba(&mut temp_blur, width as usize, height as usize, blur_radius_px);
+            }
+
+            let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
+            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
+                let (cr, cg, cb, ca) = accum_rgba[i];
+                let (br, bg, bb, ba) = temp_blur[i];
+                let base_r = cr * blur_core_brightness;
+                let base_g = cg * blur_core_brightness;
+                let base_b = cb * blur_core_brightness;
+                let base_a = ca * blur_core_brightness;
+                let bloom_r = br * blur_strength;
+                let bloom_g = bg * blur_strength;
+                let bloom_b = bb * blur_strength;
+                let bloom_a = ba * blur_strength;
+                let out_r = base_r + bloom_r - base_r * bloom_r;
+                let out_g = base_g + bloom_g - base_g * bloom_g;
+                let out_b = base_b + bloom_b - base_b * bloom_b;
+                let out_a = base_a + bloom_a;
+                *pix = (out_r, out_g, out_b, out_a);
+            });
+
+            // exposure + levels + ACES same as original
+            let mut buf_8bit = vec![0u8; npix * 3];
+            let exposure = 1.15;
+            buf_8bit
+                .par_chunks_mut(3)
+                .zip(final_frame_pixels.par_iter())
+                .for_each(|(chunk, &(mut fr, mut fg, mut fb, fa))| {
+                    fr *= exposure;
+                    fg *= exposure;
+                    fb *= exposure;
+
+                    let mut rr = fr * fa;
+                    let mut gg = fg * fa;
+                    let mut bb = fb * fa;
+                    rr = (rr - black_r) / range_r; gg = (gg - black_g) / range_g; bb = (bb - black_b) / range_b;
+                    rr = aces_film(rr); gg = aces_film(gg); bb = aces_film(bb);
+                    chunk[0] = (rr * 255.0).round().clamp(0.0, 255.0) as u8;
+                    chunk[1] = (gg * 255.0).round().clamp(0.0, 255.0) as u8;
+                    chunk[2] = (bb * 255.0).round().clamp(0.0, 255.0) as u8;
+                });
+
+            frame_sink(&buf_8bit)?;
+            if is_final {
+                *last_frame_out = ImageBuffer::from_raw(width, height, buf_8bit);
+            }
+        }
+    }
+    println!("   pass 2 (spectral render): 100% done");
+    Ok(())
 }

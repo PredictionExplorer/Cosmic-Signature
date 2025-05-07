@@ -1253,6 +1253,7 @@ dependencies = [
  "hex",
  "image",
  "nalgebra",
+ "once_cell",
  "palette",
  "rayon",
  "rustfft",

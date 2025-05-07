@@ -8,6 +8,7 @@ mod utils;
 mod analysis;
 mod sim;
 mod render;
+mod spectrum;
 
 use utils::*;
 use sim::*;
@@ -175,7 +176,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut all_g = Vec::new();
     let mut all_b = Vec::new();
 
-    pass_1_build_histogram(
+    pass_1_build_histogram_spectral(
         &positions,
         &colors,
         &body_alphas,
@@ -219,7 +220,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         height,
         frame_rate,
         |out| {
-            pass_2_write_frames(
+            pass_2_write_frames_spectral(
                 &positions,
                 &colors,
                 &body_alphas,
