@@ -84,15 +84,40 @@ abstract contract Bidding is
 			ethBidPrice_ :
 			getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
 
-		int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
+		// #endregion
+		// #region
 
-		// [Comment-202412045]
-		// Performing this validatin sooner -- to minimize transaction fee in case the validation fails.
-		// [/Comment-202412045]
-		require(
-			overpaidEthPrice_ >= int256(0),
-			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value)
-		);
+		int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
+		if (overpaidEthPrice_ == int256(0)) {
+			// This is the most common case. Doing nothing. Not spending any gas.
+		} else if(overpaidEthPrice_ > int256(0)) {
+			// If the bidder sent more ETH than required, but we are not going to refund the excess,
+			// treating the whole received amount as what they were supposed to send.
+			// Comment-202502052 relates and/or applies.
+			// Comment-202502054 relates and/or applies.
+			// todo-0 See Comment-202504071.
+			// #enable_asserts assert(block.basefee > 0);
+			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
+			if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
+				overpaidEthPrice_ = int256(0);
+				paidEthPrice_ = msg.value;
+				// ethBidPrice_ = msg.value;
+				// if (randomWalkNftId_ >= int256(0)) {
+				// 	// [Comment-202505074]
+				// 	// It could make sense to subtract something like `CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1` from this
+				// 	// to make this formula closer to the opposite of `getEthPlusRandomWalkNftBidPrice`,
+				// 	// but it's unnecessary to spend gas on that.
+				// 	// Comment-202503162 relates and/or applies.
+				// 	// [/Comment-202505074]
+				// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+				// }
+			}
+		} else {
+			// [Comment-202412045]
+			// Performing this validatin sooner -- to minimize transaction fee in case the validation fails.
+			// [/Comment-202412045]
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value);
+		}
 
 		// #endregion
 		// #region
@@ -166,32 +191,28 @@ abstract contract Bidding is
 		// #endregion
 		// #region
 
+		// [Comment-202505096]
+		// Refunding excess ETH if the bidder sent significantly more than required.
+		// [/Comment-202505096]
 		if (overpaidEthPrice_ > int256(0)) {
-			// Refunding excess ETH if the bidder sent more than required.
-			// But first checking if the refund is big enough to justify the refund transfer transaction fee.
-			// Comment-202502052 relates and/or applies.
-			// Comment-202502054 relates and/or applies.
-			// todo-0 See Comment-202504071.
-			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
-			if (uint256(overpaidEthPrice_) >= ethBidRefundAmountMinLimit_) {
-				// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
-				// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
+			// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
+			// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
 
-				// A reentry can happen here.
-				// [ToDo-202502186-1]
-				// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
-				// There appears to be no vulnerability here, but ask the auditors to take a look.
-				// [/ToDo-202502186-1]
-				// Comment-202502051 relates.
-				// Comment-202502043 applies.
-				(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
+			// A reentry can happen here.
+			// [ToDo-202502186-1]
+			// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
+			// There appears to be no vulnerability here, but ask the auditors to take a look.
+			// Ask the auditor.
+			// [/ToDo-202502186-1]
+			// Comment-202502051 relates.
+			// Comment-202502043 applies.
+			(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
 
-				// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
-				// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
-				// // #enable_asserts // #disable_smtchecker console.log("Gas Spent =", gasUsed1_, gasUsed2_, gasUsed2_ - (gasUsed1_ - gasUsed2_));
-				if ( ! isSuccess_ ) {
-					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
-				}
+			// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
+			// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
+			// // #enable_asserts // #disable_smtchecker console.log("Gas Spent =", gasUsed1_, gasUsed2_, gasUsed2_ - (gasUsed1_ - gasUsed2_));
+			if ( ! isSuccess_ ) {
+				revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
 			}
 		}
 
@@ -252,9 +273,11 @@ abstract contract Bidding is
 		unchecked
 		// #enable_smtchecker */
 		{
+			// Comment-202505074 relates.
 			uint256 ethPlusRandomWalkNftBidPrice_ =
 				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
 				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+
 			// #enable_asserts assert(
 			// #enable_asserts 	( ! ( ethBidPrice_ > 0 &&
 			// #enable_asserts 	      ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)
@@ -377,6 +400,10 @@ abstract contract Bidding is
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
 
+			// [Comment-202504212]
+			// Issue. If the admin increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
+			// it's possible that this value will not respect that setting.
+			// [/Comment-202504212]
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
@@ -502,7 +529,6 @@ abstract contract Bidding is
 			_updateChampionsIfNeeded();
 			_extendMainPrizeTime();
 		}
-
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];

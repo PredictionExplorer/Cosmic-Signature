@@ -11,6 +11,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 describe("ZeroAddressChecking", function () {
 	// todo-1 We now allow a zero address in this case.
 	it("Shouldn't be possible to set a zero-address for CharityWallet", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, charityWallet,} = await loadFixture(deployContractsForUnitTesting);
 
 		// await expect(charityWallet.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(charityWallet, "ZeroAddress");
@@ -18,26 +19,30 @@ describe("ZeroAddressChecking", function () {
 	});
 
 	it("Shouldn't be possible to set a zero charity address in CosmicSignatureGame", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
 	});
 
 	// todo-1 We don't need this test any morfe, right?
 	// it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {ownerAcct, marketingWallet,} = await loadFixture(deployContractsForUnitTesting);
 	//	
 	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");
 	// });
 
 	it("Shouldn't be possible to deploy StakingWalletRandomWalkNft with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {stakingWalletRandomWalkNftFactory,} = await loadFixture(deployContractsForUnitTesting);
 
 		await expect(stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(stakingWalletRandomWalkNftFactory, "ZeroAddress");
 	});
 
 	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, stakingWalletCosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
@@ -46,18 +51,21 @@ describe("ZeroAddressChecking", function () {
 	});
 
 	it("Shouldn't be possible to deploy CosmicSignatureNft with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {cosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
 
 		await expect(cosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(cosmicSignatureNftFactory, "ZeroAddress");
 	});
 
 	it("Shouldn't be possible to deploy PrizesWallet with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {prizesWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 
 		await expect(prizesWalletFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(prizesWalletFactory, "ZeroAddress");
 	});
 
 	it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {marketingWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
 
 		await expect(marketingWalletFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).to.be.revertedWithCustomError(marketingWalletFactory, "ZeroAddress");

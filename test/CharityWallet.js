@@ -8,6 +8,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("CharityWallet", function () {
 	it("CharityWallet is sending the right amount", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, charityWallet, charityWalletAddr,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 		
@@ -21,6 +22,7 @@ describe("CharityWallet", function () {
 	});
 
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, charityAcct, signers, charityWallet, charityWalletAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;

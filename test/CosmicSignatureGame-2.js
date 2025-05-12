@@ -4,11 +4,12 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { generateRandomUInt32 } = require("../src/Helpers.js");
+const { generateRandomUInt32, uint32ToPaddedHexString } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("CosmicSignatureGame-2", function () {
 	it("Smoke test", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, /*cosmicSignatureGameFactory,*/ cosmicSignatureGameImplementation, cosmicSignatureGameImplementationAddr, cosmicSignatureGameProxy,} =
 			await loadFixture(deployContractsForUnitTesting);
 
@@ -30,6 +31,7 @@ describe("CosmicSignatureGame-2", function () {
 	});
 
 	it("The initialize method is disabled", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameImplementation, cosmicSignatureGameProxy,} =
 			await loadFixture(deployContractsForUnitTesting);
 
@@ -41,10 +43,11 @@ describe("CosmicSignatureGame-2", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using the recommended approach", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameImplementationAddr, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 
-		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
+		// await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
 		const cosmicSignatureGameOpenBidFactory =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", ownerAcct);
 		const cosmicSignatureGame2Proxy =
@@ -73,11 +76,12 @@ describe("CosmicSignatureGame-2", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using our minimalistic unsafe approach", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
+		// await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
 		const cosmicSignatureGameOpenBidFactory =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", deployerAcct);
 		const cosmicSignatureGame2Implementation = await cosmicSignatureGameOpenBidFactory.deploy();
@@ -104,11 +108,12 @@ describe("CosmicSignatureGame-2", function () {
 	// `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would not allow doing this.
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade to a completely different contract using our minimalistic unsafe approach", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
+		// await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
 
 		const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
 		const brokenCharity = await brokenCharityFactory.deploy();
@@ -124,6 +129,7 @@ describe("CosmicSignatureGame-2", function () {
 
 	// Comment-202412129 relates.
 	it("Only the owner is permitted to upgrade CosmicSignatureGame", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 
@@ -151,6 +157,7 @@ describe("CosmicSignatureGame-2", function () {
 	});
 
 	it("The transferOwnership method", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameImplementation, cosmicSignatureGameProxy,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
@@ -160,7 +167,7 @@ describe("CosmicSignatureGame-2", function () {
 		expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct.address);
 		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
 			// Ownership transfer will succeed regardless if the current bidding round is active or not.
-			await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n);
+			await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n)).not.reverted;
 
 			if (counter_ <= 0) {
 				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
@@ -177,6 +184,7 @@ describe("CosmicSignatureGame-2", function () {
 
 	// Issue. I have eliminated the `fallback` method.
 	it("The fallback method", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {cosmicSignatureGameProxyAddr,} = await loadFixture(deployContractsForUnitTesting);
 
 		await expect(
@@ -184,7 +192,7 @@ describe("CosmicSignatureGame-2", function () {
 				to: cosmicSignatureGameProxyAddr,
 
 				// non-existent selector
-				data: /*"0xffffffff"*/ "0x" + generateRandomUInt32().toString(16).padStart(8, "0"),
+				data: /*"0xffffffff"*/ uint32ToPaddedHexString(generateRandomUInt32()),
 			})
 		// ).revertedWith("Method does not exist.");
 		).revertedWithoutReason();

@@ -78,13 +78,4 @@ interface ICosmicSignatureGame is
 	/// Comment-202502164 relates.
 	/// [/Comment-202412129]
 	function upgradeTo(address newImplementationAddress_) external;
-
-	/// @dev
-	/// [Comment-202504082]
-	/// Issue. We need this for testing, because of Comment-202504071.
-	/// [/Comment-202504082]
-	function getBlockPrevRandao() external view returns (uint256);
-
-	/// @dev Comment-202504082 applies.
-	function getBlockBaseFee() external view returns (uint256);
 }

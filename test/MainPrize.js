@@ -4,10 +4,12 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
 const { deployContractsForUnitTesting, deployContractsForUnitTestingAdvanced, } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("MainPrize", function () {
 	it("The number of distributed prizes is correct", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, prizesWallet, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
@@ -129,9 +131,11 @@ describe("MainPrize", function () {
 	});
 
 	it("Distribution of prize amounts matches specified business logic", async function () {
-		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNft, charityWalletAddr, prizesWallet, stakingWalletCosmicSignatureNft, stakingWalletCosmicSignatureNftAddr,} =
+		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNft, charityWalletAddr, prizesWallet, stakingWalletCosmicSignatureNft, stakingWalletCosmicSignatureNftAddr,} =
 			await deployContractsForUnitTestingAdvanced("SpecialCosmicSignatureGame");
 		const [signer0, signer1, signer2, signer3,] = signers;
+		
+		setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy.connect(ownerAcct), 0n);
 
 		let donationAmount_ = hre.ethers.parseEther("1");
 		await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });
@@ -207,6 +211,7 @@ describe("MainPrize", function () {
 	});
 	
 	it("The _msgSender() will get the prize if the lastBidderAddress won't claim it", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;

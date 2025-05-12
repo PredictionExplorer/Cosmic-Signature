@@ -157,7 +157,6 @@ abstract contract MainPrize is
 	// #region `_distributePrizes`
 
 	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
-	/// @dev todo-1 Develop a test that checks that after a few rounds there are no NFTs with duplicate seeds.
 	function _distributePrizes() private {
 		// #region
 
@@ -213,7 +212,7 @@ abstract contract MainPrize is
 					// #endregion
 					// #region
 
-					randomNumberSeedWrapper_ = RandomNumberHelpers.RandomNumberSeedWrapper(RandomNumberHelpers.generateRandomNumberSeed());
+					randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
 					// #endregion
 					// #region CS NFTs for random Random Walk NFT stakers.
@@ -548,7 +547,9 @@ abstract contract MainPrize is
 						}
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
 
+						// [Comment-202504262]
 						// One might want to reset `cosmicSignatureNftStakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
+						// [/Comment-202504262]
 					}
 
 					// #endregion
@@ -564,7 +565,7 @@ abstract contract MainPrize is
 				// [/Comment-202411077]
 				{
 					// I don't want to spend gas to `require` this.
-					// But if I did, this would be a wrong place for that validation.
+					// But if I did, this would be a wrong place for this validation.
 					// #enable_asserts assert(charityAddress != address(0));
 
 					// [Comment-202502043]

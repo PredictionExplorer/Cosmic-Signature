@@ -9,6 +9,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("CosmicSignatureNft", function () {
 	it("The mint method behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureNftFactory, cosmicSignatureNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
@@ -30,6 +31,7 @@ describe("CosmicSignatureNft", function () {
 	});
 
 	it("setNftGenerationScriptUri() works as expected", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -39,6 +41,7 @@ describe("CosmicSignatureNft", function () {
 	});
 
 	it("setNftName behaves correctly", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 
@@ -76,6 +79,7 @@ describe("CosmicSignatureNft", function () {
 	});
 	
 	it("BaseURI/TokenURI works", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 		

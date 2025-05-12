@@ -7,6 +7,7 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("Events", function () {
 	it("Shall emit the correct events in the CosmicSignatureNft contract", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -22,6 +23,7 @@ describe("Events", function () {
 	});
 
 	it("Shall emit the correct events in the CharityWallet contract", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, charityWallet, charityWalletAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -56,6 +58,7 @@ describe("Events", function () {
 	});
 
 	it("Shall emit EthDonated on successful donation", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -74,6 +77,7 @@ describe("Events", function () {
 	});
 
 	it("Shall emit MainPrizeClaimed and update main prize beneficiary on successful main prize claim", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet, prizesWalletAddr, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -151,6 +155,7 @@ describe("Events", function () {
 	});
 
 	it("BidPlaced is correctly emitted", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -175,6 +180,7 @@ describe("Events", function () {
 	it("ETH + Random Walk NFT bid price is 50% lower", async function () {
 		// todo-1 For the complete code coverage, this test needs to make multiple bids, claim main prize, more bids.
 
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -192,6 +198,7 @@ describe("Events", function () {
 	});
 
 	it("The DonatedNftClaimed event is correctly emitted", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, prizesWallet, prizesWalletAddr, randomWalkNft, randomWalkNftAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -206,18 +213,25 @@ describe("Events", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize());
+		await expect(cosmicSignatureGameProxy.connect(bidder1).claimMainPrize())
+			.to.emit(cosmicSignatureGameProxy, "MainPrizeClaimed");
 
 		// await expect(cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0))
 		// 	.to.emit(cosmicSignatureGameProxy, "DonatedNftClaimedEvent")
 		// 	.withArgs(0, 0, bidder1.address, randomWalkNftAddr, 0);
+
+		// Now, attempt to claim the donated NFT (ID 0)
+		// const beneficiaryForRound0 = await prizesWallet.mainPrizeBeneficiaryAddresses(0);
+		// console.log("Beneficiary for round 0 BEFORE claim:", beneficiaryForRound0);
+		// console.log("Expected beneficiary (bidder1):", bidder1.address);
 		await expect(prizesWallet.connect(bidder1).claimDonatedNft(0))
 			.to.emit(prizesWallet, "DonatedNftClaimed")
-			.withArgs(0, bidder1.address, randomWalkNftAddr, 0, 0);
+			.withArgs(0, bidder1.address, randomWalkNftAddr, 0, 0); // Assuming args are (donatedNftId, claimant, nftContract, tokenId, roundNum)
 	});
 
 	// todo-1 Consider moving this test to "Bidding.js".
 	it("It's not permitted to bid before bidding round activation", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -247,6 +261,7 @@ describe("Events", function () {
 
 	// todo-1 Consider moving this test to "Bidding.js".
 	it("Should be possible to bid by sending to the contract", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
@@ -262,6 +277,7 @@ describe("Events", function () {
 	
 	// todo-1 Move this to "SystemManagement.js"?
 	it("Admin events should work", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
 		const roundActivationTime_ = 123_456_789_012n;

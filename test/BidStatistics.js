@@ -20,6 +20,7 @@ describe("BidStatistics", function () {
 	// };
 
 	it("Bid time accounting: two bidders bid against each other, accounting correct", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 
@@ -62,6 +63,7 @@ describe("BidStatistics", function () {
 	});
 
 	it("Bid time accounting: all bidders have bids of same duration, accounting correct", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
@@ -150,6 +152,7 @@ describe("BidStatistics", function () {
 	
 	// todo-1 We now also have chrono-warrior.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 

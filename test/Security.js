@@ -8,11 +8,12 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("Security", function () {
 	it("Vulnerability to claimMainPrize() multiple times", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
-		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
+		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 
 		await cosmicSignatureGameProxy.connect(ownerAcct).setMainEthPrizeAmountPercentage(10n);
 
@@ -43,6 +44,7 @@ describe("Security", function () {
 	});
 	
 	it("It's impossible to claim the main prize before someone bids", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
@@ -63,6 +65,7 @@ describe("Security", function () {
 	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	// // todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
 	// it("The donateNft method is confirmed to be non-reentrant", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0,] = signers;
 	//
@@ -81,6 +84,7 @@ describe("Security", function () {
 	
 	// todo-1 Do we need a similar test for `bidWithCstAndDonateNft`? Maybe not, but think.
 	it("The bidWithEthAndDonateNft method is confirmed to be non-reentrant", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
