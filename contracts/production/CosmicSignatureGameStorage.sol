@@ -220,10 +220,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
 	/// @notice Next bidding round first CST Dutch auction beginning bid price.
+	/// Comment-202504212 applies.
 	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411066 relates.
 	/// Comment-202411064 applies.
+	/// Comment-202504212 relates.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
 	/// @notice Each Random Walk NFT is allowed to be used for bidding only once.

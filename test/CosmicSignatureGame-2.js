@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { generateRandomUInt32 } = require("../src/Helpers.js");
+const { generateRandomUInt32, uint32ToPaddedHexString } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("CosmicSignatureGame-2", function () {
@@ -192,7 +192,7 @@ describe("CosmicSignatureGame-2", function () {
 				to: cosmicSignatureGameProxyAddr,
 
 				// non-existent selector
-				data: /*"0xffffffff"*/ "0x" + generateRandomUInt32().toString(16).padStart(8, "0"),
+				data: /*"0xffffffff"*/ uint32ToPaddedHexString(generateRandomUInt32()),
 			})
 		// ).revertedWith("Method does not exist.");
 		).revertedWithoutReason();

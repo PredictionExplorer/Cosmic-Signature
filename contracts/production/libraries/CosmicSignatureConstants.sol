@@ -68,7 +68,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `ethBidRefundAmountInGasMinLimit`.
 	/// [Comment-202502052]
-	/// This drives the logic that prevents refunding excess ETH that a bidder transferred to us if the refund is too small
+	/// This drives the logic that prevents refunding excess ETH that a bidder sent to us if the refund is too small
 	/// to justify the transfer transaction fee.
 	/// This is expressed in gas.
 	/// We multiply this by `block.basefee` and if the refund is at least as big as the result,
@@ -100,6 +100,8 @@ library CosmicSignatureConstants {
 	/// todo-0 Remember to change this in the tests.
 	/// todo-0 We have `ethBidRefundAmountInGasMinLimit` there too.
 	/// [/Comment-202502054]
+	/// 
+	/// todo-0 Reference relevat comments in Comment-202505117.
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = (6813 + 7) * 29 / 10;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.

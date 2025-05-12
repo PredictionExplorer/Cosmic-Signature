@@ -15,8 +15,8 @@
 	{
 		// "composite": true,
 		"target": /* "ES2023" */ "ES2022",
-		"module": /* "CommonJS" */ /* "ES2022" */ "NodeNext",
-		"moduleResolution": /* "Node16" */ /* "Bundler" */ "NodeNext",
+		"module": /* "CommonJS" */ "ES2022" /* "NodeNext" */,
+		"moduleResolution": /* "Node16" */ "Bundler" /* "NodeNext" */,
 
 		// "allowJs": true,
 		"checkJs": true,

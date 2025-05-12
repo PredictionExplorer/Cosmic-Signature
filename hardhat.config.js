@@ -410,7 +410,7 @@ const hardhatUserConfig = {
 			// [Comment-202501193]
 			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` method.
 			// Block timestamp increment is always 1 second and is not configurable.
-			// todo-1 I tried making `interval` huge. Is it a bit better?
+			// todo-1 I tried making `interval` huge. Is it a bit better? Maybe not.
 			// todo-1 See todos in Comment-202501192.
 			// [/Comment-202501193]
 			mining: {
@@ -471,7 +471,7 @@ const hardhatUserConfig = {
 	
 	mocha: {
 		parallel: true,
-		timeout: 10 * 60 * 1000,
+		timeout: 60 * 60 * 1000,
 	},
 
 	// #endregion

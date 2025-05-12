@@ -918,7 +918,7 @@ describe("Bidding", function () {
 						await expect(transaction).revertedWithCustomError(cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
 
 						// console.log("Success 1.", transactions.length);
-					} catch (error2Details) {
+					} catch (error2Details) { // todo-1 Rename `error2Details` to `error2Object`?
 						// console.log("Error.", transactions.length);
 
 						// console.log();
@@ -997,13 +997,13 @@ describe("Bidding", function () {
 				randomNumber >>= 16;
 				await mineBlockIfNeeded(false);
 			}
-		} catch (errorDetails) {
+		} catch (errorDetails) { // todo-1 Rename `errorDetails` to `errorObject`?
 			// console.log(errorDetails.message);
 			let error2Details;
 			try {
 				// Mining whatever was queued.
 				await mineBlockIfNeeded(true);
-			} catch (error2Details2) {
+			} catch (error2Details2) { // todo-1 Rename `error2Details2` to `error2Object2`?
 				error2Details = error2Details2;
 			}
 			await hre.ethers.provider.send("evm_setAutomine", [true]);

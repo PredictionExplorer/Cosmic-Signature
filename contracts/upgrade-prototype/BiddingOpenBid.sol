@@ -266,11 +266,13 @@ abstract contract BiddingOpenBid is
 		// #endregion
 		// #region
 
+		// Comment-202505096 applies.
 		if (overpaidEthPrice_ > int256(0)) {
-			// Refunding excess ETH if the bidder sent more than required.
-			// But first checking if the refund is big enough to justify the refund transfer transaction fee.
 			// Comment-202502052 relates and/or applies.
 			// Comment-202502054 relates and/or applies.
+			// Issue. To keep it simple, this logic is not necessarily as good as that in `Bidding._bidWithEth`.
+			// todo-0 See Comment-202504071.
+			// #enable_asserts assert(block.basefee > 0);
 			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
 			if (uint256(overpaidEthPrice_) >= ethBidRefundAmountMinLimit_) {
 				// A reentry can happen here.
@@ -446,6 +448,7 @@ abstract contract BiddingOpenBid is
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
 
+			// Comment-202504212 applies.
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
@@ -563,7 +566,6 @@ abstract contract BiddingOpenBid is
 			_updateChampionsIfNeeded();
 			_extendMainPrizeTime();
 		}
-
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];

@@ -45,10 +45,16 @@ function generateRandomUInt256() {
 // /// Issue. This doesn't work, at least on Hardhat Network, because:
 // /// In Solidity, `block.prevrandao` is a nonzero, while in JavaScript `block.prevRandao` is zero.
 // /// In Solidity, `block.basefee` is zero, while in JavaScript `block.baseFeePerGas` is a nonzero.
-// /// todo-0 Find all (case insensitive; not whole word; reg exp): basefee|prevrandao
+// /// todo-1 ??? Actually `block.basefee` is zero if we call it from a `view` method after the transaction has completed.
+// /// todo-1 +++ Find all (case insensitive; not whole word; reg exp): basefee|prevrandao
+// /// todo-1 +++ Add asserts in both Solidity and JavaScript to check that those are nonzeros.
 // /// [/Comment-202504071]
 // /// Comment-202504067 applies.
 // function generateRandomUInt256Seed(block) {
+// 	// todo-9 Don't call `expect` in this file.
+// 	expect(block.prevRandao > 0n);
+// 	expect(block.baseFeePerGas > 0n);
+//
 // 	return BigInt(block.prevRandao) ^ block.baseFeePerGas;
 // }
 
@@ -57,9 +63,6 @@ function generateRandomUInt256() {
 
 /// Comment-202504065 applies.
 function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
-	// Comment-202409255 applies.
-	const hre = HardhatContext.getHardhatContext().environment;
-
 	const newSeed_ = BigInt.asUintN(256, seedWrapper_.value + 1n);
 	seedWrapper_.value = newSeed_;
 	const randomNumber_ = generateRandomUInt256FromSeed(newSeed_);
@@ -143,6 +146,26 @@ function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_
 }
 
 // #endregion
+// #region `uint32ToPaddedHexString`
+
+/**
+ * @param {number} value_
+ */
+function uint32ToPaddedHexString(value_) {
+	return   "0x" + value_.toString(16).padStart(8, "0");
+}
+
+// #endregion
+// #region `uint256ToPaddedHexString`
+
+/**
+ * @param {bigint} value_
+ */
+function uint256ToPaddedHexString(value_) {
+	return   "0x" + value_.toString(16).padStart(64, "0");
+}
+
+// #endregion
 // #region
 
 module.exports = {
@@ -154,6 +177,8 @@ module.exports = {
 	calculateUInt256HashSumOf,
 	parseBooleanEnvironmentVariable,
 	parseIntegerEnvironmentVariable,
+	uint32ToPaddedHexString,
+	uint256ToPaddedHexString,
 };
 
 // #endregion

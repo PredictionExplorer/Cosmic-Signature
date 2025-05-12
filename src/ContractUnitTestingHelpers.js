@@ -5,9 +5,22 @@
 // #endregion
 // #region
 
+const { expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
+
+// #endregion
+// #region // `TransactionRevertedExpectedlyError`
+
+// // catch (errorObject) {
+// //   if (errorObject instanceof TransactionRevertedExpectedlyError) {} else {throw errorObject;}
+//
+// class TransactionRevertedExpectedlyError extends Error {
+// 	constructor (message_) {
+// 	  super(message_);
+// 	}
+//  }
 
 // #endregion
 // #region `loadFixtureDeployContractsForUnitTesting`
@@ -87,7 +100,7 @@ async function deployContractsForUnitTestingAdvanced(
 			"",
 			charityAcct.address,
 			false,
-			0n
+			-1_000_000_000n
 		);
 	contracts.signers = signers;
 	contracts.charityAcct = charityAcct;
@@ -108,12 +121,70 @@ async function deployContractsForUnitTestingAdvanced(
 }
 
 // #endregion
+// #region `assertAddressIsValid`
+
+/**
+ * @param {string} address 
+ */
+function assertAddressIsValid(address) {
+	expect(address !== hre.ethers.ZeroAddress);
+	expect(address).properAddress;
+}
+
+// #endregion
+// #region `checkTransactionErrorObject`
+
+function checkTransactionErrorObject(transactionErrorObject) {
+	const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
+	if ( ! weExpectThisError ) {
+		throw transactionErrorObject;
+	}
+	expect(transactionErrorObject.receipt === undefined);
+}
+
+// #endregion
+// #region `assertEvent`
+
+/**
+ * Asserts a `TransactionReceipt.logs` item.
+ * @param {import("ethers").Log} event
+ */
+function assertEvent(event, contract, eventName, eventArgs) {
+	const parsedEvent = contract.interface.parseLog(event);
+	expect(parsedEvent.name).equal(eventName);
+	expect(parsedEvent.args).deep.equal(eventArgs);
+}
+
+// #endregion
+// #region `generateRandomUInt256Seed`
+
+/**
+ * Issue. This is a workaround for Comment-202504071.
+ * Comment-202504067 applies.
+ * @returns {Promise<bigint>}
+ */
+async function generateRandomUInt256Seed(latestBlock, blockchainPropertyGetter) {
+	const blockPrevRandao = await blockchainPropertyGetter.getBlockPrevRandao();
+	// expect(blockPrevRandao > 0n);
+	// todo-0 Somehow `blockchainPropertyGetter.getBlockBaseFeePerGas` returns zero, but `latestBlock.baseFeePerGas` provides the correct value.
+	// const blockBaseFeePerGas = await blockchainPropertyGetter.getBlockBaseFeePerGas();
+	const blockBaseFeePerGas = latestBlock.baseFeePerGas;
+	expect(blockBaseFeePerGas > 0n);
+	return blockPrevRandao ^ blockBaseFeePerGas;
+}
+
+// #endregion
 // #region
 
 module.exports = {
+	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForUnitTesting,
 	deployContractsForUnitTesting,
 	deployContractsForUnitTestingAdvanced,
+	assertAddressIsValid,
+	checkTransactionErrorObject,
+	assertEvent,
+	generateRandomUInt256Seed,
 };
 
 // #endregion

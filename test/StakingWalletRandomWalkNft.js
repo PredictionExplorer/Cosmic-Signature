@@ -5,7 +5,7 @@ const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
-const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { deployContractsForUnitTesting, assertAddressIsValid } = require("../src/ContractUnitTestingHelpers.js");
 
 const SKIP_LONG_TESTS = false;
 
@@ -211,7 +211,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			const luckyStakerAddresses_ = await stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numSamples, generateRandomUInt256());
 			expect(luckyStakerAddresses_.length).equal(numSamples);
 			for (const luckyStakerAddress_ of luckyStakerAddresses_) {
-				expect(luckyStakerAddress_).not.equal(hre.ethers.ZeroAddress);
+				assertAddressIsValid(luckyStakerAddress_);
 				let numToks = luckyStakers[luckyStakerAddress_];
 				if (numToks === undefined) {
 					numToks = 1;

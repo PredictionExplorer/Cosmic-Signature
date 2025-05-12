@@ -141,7 +141,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0n
+	// 			-1_000_000_000n // todo-9 <<< Is this the correct value?
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -188,7 +188,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0n
+	// 			-1_000_000_000n // todo-9 <<< Is this the correct value?
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -239,7 +239,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0n
+	// 			-1_000_000_000n // todo-9 <<< Is this the correct value?
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -285,7 +285,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0n
+	// 			-1_000_000_000n // todo-9 <<< Is this the correct value?
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -337,7 +337,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0n
+	// 			-1_000_000_000n // todo-9 <<< Is this the correct value?
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
@@ -955,7 +955,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 			"",
 	// 			signer1.address,
 	// 			false,
-	// 			0n
+	// 			-1_000_000_000n // todo-9 <<< Is this the correct value?
 	// 		);
 	//
 	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
