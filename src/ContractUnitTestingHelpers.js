@@ -14,13 +14,13 @@ const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./C
 // #region // `TransactionRevertedExpectedlyError`
 
 // // catch (errorObject) {
-// //   if (errorObject instanceof TransactionRevertedExpectedlyError) {} else {throw errorObject;}
+// // 	if (errorObject instanceof TransactionRevertedExpectedlyError) {} else {throw errorObject;}
 //
 // class TransactionRevertedExpectedlyError extends Error {
 // 	constructor (message_) {
-// 	  super(message_);
+// 		super(message_);
 // 	}
-//  }
+// }
 
 // #endregion
 // #region `loadFixtureDeployContractsForUnitTesting`
