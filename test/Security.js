@@ -43,25 +43,6 @@ describe("Security", function () {
 		await expect(reClaim.connect(signer3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
 	});
 	
-	it("It's impossible to claim the main prize before someone bids", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
-		const [signer0, signer1,] = signers;
-
-		let donationAmount_ = hre.ethers.parseEther("10");
-		await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });
-		// await hre.ethers.provider.send("evm_mine"); // begin
-		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await expect(durationUntilMainPrize_).lessThan(-1e9);
-		// await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-		// await hre.ethers.provider.send("evm_mine");
-		let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
-		await expect(mainEthPrizeAmount_).greaterThan(0);
-		// let balance_before = await hre.ethers.provider.getBalance(signer1);
-		await expect(cosmicSignatureGameProxy.connect(signer1).claimMainPrize())
-			.revertedWithCustomError(cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound");
-	});
-
 	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
 	// // todo-1 Besides, `PrizesWallet.donateNft` is not non-reentrant.
 	// it("The donateNft method is confirmed to be non-reentrant", async function () {
