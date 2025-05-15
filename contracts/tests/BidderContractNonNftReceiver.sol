@@ -21,7 +21,7 @@ pragma solidity 0.8.29;
 // 
 // 	function doBidWithEth() external payable {
 // 		uint256 nextEthBidPrice_ = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-// 		cosmicSignatureGame.bidWithEth{value: nextEthBidPrice_}((-1), "non-IERC721Receiver bid");
+// 		cosmicSignatureGame.bidWithEth{value: nextEthBidPrice_}(-1, "non-IERC721Receiver bid");
 // 	}
 // 	
 // 	function doClaimMainPrize() external {

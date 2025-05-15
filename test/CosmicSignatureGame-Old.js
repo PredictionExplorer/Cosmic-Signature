@@ -1,3 +1,5 @@
+// todo-0 Move these tests to "CosmicSignatureGame-2.js".
+
 "use strict";
 
 const { expect } = require("chai");
@@ -7,7 +9,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt32, uint32ToPaddedHexString } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("CosmicSignatureGame-2", function () {
+describe("CosmicSignatureGame-Old", function () {
 	it("Smoke test", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, /*cosmicSignatureGameFactory,*/ cosmicSignatureGameImplementation, cosmicSignatureGameImplementationAddr, cosmicSignatureGameProxy,} =

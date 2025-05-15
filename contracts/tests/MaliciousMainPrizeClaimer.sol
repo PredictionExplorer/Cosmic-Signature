@@ -18,7 +18,11 @@ contract MaliciousMainPrizeClaimer {
 		-- numIterations;
 		cosmicSignatureGame.claimMainPrize();
 	}
-	
+
+	function doBidWithEth() external payable {
+		cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "");
+	}
+
 	function resetAndClaimMainPrize(uint256 numIterations_) public {
 		numIterations = numIterations_;
 		cosmicSignatureGame.claimMainPrize();
