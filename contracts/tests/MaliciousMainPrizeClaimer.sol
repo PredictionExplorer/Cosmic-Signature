@@ -3,9 +3,9 @@ pragma solidity 0.8.29;
 
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-contract ReClaim {
-	CosmicSignatureGame public cosmicSignatureGame;
-	uint public numIterations = 0;
+contract MaliciousMainPrizeClaimer {
+	CosmicSignatureGame public immutable cosmicSignatureGame;
+	uint256 public numIterations = 0;
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
@@ -15,12 +15,12 @@ contract ReClaim {
 		if (numIterations == 0) {
 			return;
 		}
-		numIterations--;
+		-- numIterations;
 		cosmicSignatureGame.claimMainPrize();
 	}
 	
-	function claimAndReset(uint256 pNumIterations) public {
-		numIterations = pNumIterations;
+	function resetAndClaimMainPrize(uint256 numIterations_) public {
+		numIterations = numIterations_;
 		cosmicSignatureGame.claimMainPrize();
 	}
 }

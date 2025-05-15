@@ -659,9 +659,13 @@ describe("CosmicSignatureGame-1", function () {
 					//    todo-1 I wrote a todo to reference this comment near `DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT`.
 					// [/Comment-202505117]
 					if (cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor < 10n ** 30n) {
-						cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor *= 10n;
-						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor)).not.reverted;
+						const newEthDutchAuctionEndingBidPriceDivisor_ = cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor * 10n;
+						const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
+						const transactionResponse_ = await transactionResponseFuture_;
+						transactionReceipt_ = await transactionResponse_.wait();
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						eventIndexWrapper_.value = 0;
+						cosmicSignatureGameProxySimulator_.setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_, contracts_, transactionReceipt_, eventIndexWrapper_);
 					}
 				}
 

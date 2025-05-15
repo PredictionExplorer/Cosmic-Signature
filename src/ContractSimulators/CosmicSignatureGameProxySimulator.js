@@ -159,12 +159,28 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		setRoundActivationTime: function(newValue_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			expect(typeof newValue_ === "bigint");
-			expect(newValue_ >= 0n);
+			expect(newValue_ > 0n);
 			this.roundActivationTime = newValue_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.cosmicSignatureGameProxy,
 				"RoundActivationTimeChanged",
+				[newValue_,]
+			);
+			++ eventIndexWrapper_.value;
+		},
+
+		// #endregion
+		// #region `setEthDutchAuctionEndingBidPriceDivisor`
+
+		setEthDutchAuctionEndingBidPriceDivisor: function(newValue_, contracts_, transactionReceipt_, eventIndexWrapper_) {
+			expect(typeof newValue_ === "bigint");
+			expect(newValue_ > 0n);
+			this.ethDutchAuctionEndingBidPriceDivisor = newValue_;
+			assertEvent(
+				transactionReceipt_.logs[eventIndexWrapper_.value],
+				contracts_.cosmicSignatureGameProxy,
+				"EthDutchAuctionEndingBidPriceDivisorChanged",
 				[newValue_,]
 			);
 			++ eventIndexWrapper_.value;

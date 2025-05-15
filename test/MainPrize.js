@@ -176,7 +176,7 @@ describe("MainPrize", function () {
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		let tx = await bidderContract.connect(signer0).doClaim();
+		let tx = await bidderContract.connect(signer0).doClaimMainPrize();
 		let receipt = await tx.wait();
 		let bidderContractBalanceAmountAfter = await hre.ethers.provider.getBalance(bidderContractAddr);
 		let charityWalletBalanceAmountAfter = await hre.ethers.provider.getBalance(charityWalletAddr);
@@ -235,7 +235,7 @@ describe("MainPrize", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + (2 * 24 * 60 * 60)]);
 		// await hre.ethers.provider.send("evm_mine");
 
-		let tx = await bidderContract.connect(signer2).doClaim();
+		let tx = await bidderContract.connect(signer2).doClaimMainPrize();
 		let receipt = await tx.wait();
 		let topic_sig = cosmicSignatureGameProxy.interface.getEvent("MainPrizeClaimed").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);

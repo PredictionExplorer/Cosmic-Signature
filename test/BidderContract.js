@@ -55,7 +55,7 @@ describe("BidderContract", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		tx = await bidderContract.connect(signer0).doClaim();
+		tx = await bidderContract.connect(signer0).doClaimMainPrize();
 		receipt = await tx.wait();
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
@@ -73,39 +73,5 @@ describe("BidderContract", function () {
 		
 		let donatedNftOwner_ = await randomWalkNft.ownerOf(donatedNftId_);
 		expect(donatedNftOwner_).to.equal(signer0.address);
-	});
-
-	// [ToDo-202412176-1]
-	// We no longer have any contracts that implement `IERC721Receiver'.
-	// So both `BidCNonRecv` and this test should be removed.
-	// [/ToDo-202412176-1]
-	it("Non-IERC721Receiver contract can bid", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, cosmicSignatureNft,} =
-			await loadFixture(deployContractsForUnitTesting);
-		const [signer0,] = signers;
-
-		const bidCNonRecvFactory = await hre.ethers.getContractFactory("BidCNonRecv", deployerAcct);
-		const bidCNonRecv = await bidCNonRecvFactory.deploy(cosmicSignatureGameProxyAddr);
-		await bidCNonRecv.waitForDeployment();
-		const bidCNonRecvAddr = await bidCNonRecv.getAddress();
-
-		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "signer0 bid", { value: nextEthBidPrice_ });
-		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidCNonRecv.connect(signer0).doBidWithEth({ value: nextEthBidPrice_ });
-
-		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-		// await hre.ethers.provider.send("evm_mine");
-		let tx = await bidCNonRecv.connect(signer0).doClaim();
-		let receipt = await tx.wait();
-		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
-		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-		let prizeWinnerNftIndex_ = 0;
-		let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[prizeWinnerNftIndex_]);
-		let args = parsed_log.args.toObject();
-		let o = await cosmicSignatureNft.ownerOf(args.nftId);
-		expect(o).to.equal(bidCNonRecvAddr);
 	});
 });

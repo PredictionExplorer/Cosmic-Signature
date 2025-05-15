@@ -7,7 +7,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("Security", function () {
-	it("Vulnerability to claimMainPrize() multiple times", async function () {
+	it("claimMainPrize is non-reentrant (so it's impossible to claim multiple times)", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -24,9 +24,9 @@ describe("Security", function () {
 		// const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 
-		const reClaimFactory = await hre.ethers.getContractFactory("ReClaim", deployerAcct);
-		const reClaim = await reClaimFactory.deploy(cosmicSignatureGameProxyAddr);
-		await reClaim.waitForDeployment();
+		const maliciousMainPrizeClaimerFactory = await hre.ethers.getContractFactory("MaliciousMainPrizeClaimer", deployerAcct);
+		const maliciousMainPrizeClaimer = await maliciousMainPrizeClaimerFactory.deploy(cosmicSignatureGameProxyAddr);
+		await maliciousMainPrizeClaimer.waitForDeployment();
 
 		let donationAmount_ = hre.ethers.parseEther("10");
 		await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });
@@ -38,9 +38,9 @@ describe("Security", function () {
 		// await hre.ethers.provider.send("evm_mine");
 
 		// let mainEthPrizeAmount_ = await cosmicSignatureGameProxy.getMainEthPrizeAmount();
-		// let reclaim_bal_before = await hre.ethers.provider.getBalance(reClaimAddr);
+		// let maliciousMainPrizeClaimer_bal_before = await hre.ethers.provider.getBalance(maliciousMainPrizeClaimerAddr);
 		// Make sure there is no re-entrancy
-		await expect(reClaim.connect(signer3).claimAndReset(1n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
+		await expect(maliciousMainPrizeClaimer.connect(signer3).resetAndClaimMainPrize(1n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
 	});
 	
 	// // todo-1 This test is now broken because I have moved NFT donations to `PrizesWallet`.
@@ -60,11 +60,11 @@ describe("Security", function () {
 	// 	const maliciousNftAddr = await maliciousNft.getAddress();
 	//
 	// 	// todo-1 This will probably now revert due to `_onlyGame`.
-	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
-	// todo-1 Do we need a similar test for `bidWithCstAndDonateNft`? Maybe not, but think.
-	it("The bidWithEthAndDonateNft method is confirmed to be non-reentrant", async function () {
+	// todo-0 Do we need a similar test for `bidWithCstAndDonateNft`? Maybe not, but think.
+	it("The bidWithEthAndDonateNft method is non-reentrant", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet,} =
 			await loadFixture(deployContractsForUnitTesting);
@@ -80,6 +80,6 @@ describe("Security", function () {
 		const maliciousNftAddr = await maliciousNft.getAddress();
 
 		await expect(signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_,})).not.reverted;
-		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0, {value: bidAmount_})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0n, {value: bidAmount_})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });
