@@ -19,6 +19,7 @@
 // To find parts of the code that are not covered, cd to "coverage/" and search in all files in the folder tree containing:
 //
 // title=
+
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
