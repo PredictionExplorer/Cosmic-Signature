@@ -5,7 +5,7 @@ pragma solidity 0.8.29;
 // pragma abicoder v2;
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
@@ -13,8 +13,7 @@ import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-// todo-0 Review this.
-
+/// todo-0 Review this.
 contract BidderContract {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	// address public immutable creator;
@@ -28,7 +27,7 @@ contract BidderContract {
 	}
 
 	receive() external payable {
-		require(!blockDeposits, "I am not accepting deposits");
+		require(( ! blockDeposits ), "I am not accepting deposits.");
 	}
 
 	function doBidWithEth() external payable {
