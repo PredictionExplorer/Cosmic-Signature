@@ -32,12 +32,12 @@ describe("MainPrize", function () {
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
 		// await hre.ethers.provider.send("evm_mine");
-		await expect(brokenStakingWalletCosmicSignatureNft_.setDepositBlockingModeCode(2)).not.reverted;
+		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(2)).not.reverted;
 
 		// Any `StakingWalletCosmicSignatureNft.deposit` panic except the division by zero will not be handled.
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithPanic(0x01n);
 
-		await expect(brokenStakingWalletCosmicSignatureNft_.setDepositBlockingModeCode(1)).not.reverted;
+		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(1)).not.reverted;
 
 		// Any `StakingWalletCosmicSignatureNft.deposit` non-panic reversal will not be handled.
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWith("I am not accepting deposits.");
@@ -47,7 +47,7 @@ describe("MainPrize", function () {
 		const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
 		expect(charityEthDonationAmount_ > 0n);
 		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(0n);
-		await expect(brokenStakingWalletCosmicSignatureNft_.setDepositBlockingModeCode(0)).not.reverted;
+		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(0)).not.reverted;
 
 		// `StakingWalletCosmicSignatureNft.deposit` panic due to division by zero will be handled.
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).not.reverted;
