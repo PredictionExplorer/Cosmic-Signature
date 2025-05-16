@@ -58,10 +58,18 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 	/// @dev Comment-202411253 applies.
 	modifier _onlyGame() {
+		_checkOnlyGame();
+		_;
+	}
+
+	// #endregion
+	// #region `_checkOnlyGame`
+
+	/// @dev Comment-202411253 applies.
+	function _checkOnlyGame() private view {
 		if (_msgSender() != game) {
 			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
 		}
-		_;
 	}
 
 	// #endregion
