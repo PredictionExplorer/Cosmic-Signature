@@ -540,9 +540,6 @@ abstract contract MainPrize is
 							// todo-1 +++ Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
 							// todo-1 +++ We are probably good.
 
-							// todo-1 Test that this correctly rethrows other panic codes
-							// todo-1 by setting fake ETH balance to a huge value to cause the sum of ETH deposits to overflow.
-							// todo-1 But ETH total supply probably can't exceed `uint256` max value.
 							OpenZeppelinPanic.panic(errorCode_);
 						}
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;

@@ -21,7 +21,11 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		);
 	});
 
-	// // Comment-202409209 applies.
+	// // [Comment-202409209]
+	// // This test no longer makes sense due to refactorings described in Comment-202409208.
+	// // todo-1 I have now removed that comment. It was about the elimination of `modulo` and `charityAddress`.
+	// // todo-1 So revisit this comment or (eventually) remove it.
+	// // [/Comment-202409209]
 	// it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft if the transfer to CharityWallet fails", async function () {
 	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, stakingWalletCosmicSignatureNftFactory,} =
@@ -541,67 +545,6 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			"NftStakeActionInvalidId"
 		);
 	});
-
-	// // [Comment-202409209]
-	// // This test no longer makes sense due to refactorings described in Comment-202409208.
-	// // todo-1 I have now removed that comment. It was about the elimination of `modulo` and `charityAddress`.
-	// // todo-1 So revisit this comment or (eventually) remove it.
-	// // [/Comment-202409209]
-	// it("A failure to deposit to StakingWalletCosmicSignatureNft shouldn't abort the process of claiming main prize", async function () {
-	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-	// 	const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNftFactory, stakingWalletCosmicSignatureNftFactory,} =
-	// 		await loadFixture(deployContractsForUnitTesting);
-	// 	const [signer0, signer1,] = signers;
-	//
-	// 	// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
-	// 
-	// 	const newCosmicSignatureNft = await cosmicSignatureNftFactory.deploy(signer0.address);
-	// 	await newCosmicSignatureNft.waitForDeployment();
-	// 	await newCosmicSignatureNft.transferOwnership(ownerAcct.address);
-	//
-	// 	const brokenStakingWalletCosmicSignatureNftFactory = await hre.ethers.getContractFactory("BrokenStakingWalletCosmicSignatureNft", deployerAcct);
-	// 	const brokenStakingWalletCosmicSignatureNft = await brokenStakingWalletCosmicSignatureNftFactory.deploy();
-	// 	await brokenStakingWalletCosmicSignatureNft.waitForDeployment();
-	// 	// await brokenStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
-	//
-	// 	const newStakingWalletCosmicSignatureNft = await stakingWalletCosmicSignatureNftFactory.deploy(
-	// 		newCosmicSignatureNftAddr,
-	// 		brokenStakingWalletCosmicSignatureNftAddr,
-	// 		// todo-9 The 3rd parameter no longer exists.
-	// 		signer1.address
-	// 	);
-	// 	await newStakingWalletCosmicSignatureNft.waitForDeployment();
-	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
-	// 	await brokenStakingWalletCosmicSignatureNft.setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
-	// 	await brokenStakingWalletCosmicSignatureNft.doSetApprovalForAll(newCosmicSignatureNftAddr);
-	// 	await brokenStakingWalletCosmicSignatureNft.startBlockingDeposits();
-	//
-	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
-	// 	await newCosmicSignatureNft.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
-	// 	await newCosmicSignatureNft.connect(signer1).setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
-	//
-	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(brokenStakingWalletCosmicSignatureNft);
-	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
-	//
-	// 	await newCosmicSignatureNft.setApprovalForAll(stakingWalletCosmicSignatureNftAddr, true);
-	// 	// todo-1 Mint multiple at once.
-	// 	await newCosmicSignatureNft.mint(0n, brokenStakingWalletCosmicSignatureNftAddr, 0xa9684c8267e017c1aaf795a813bdcf9aa217bb6633a3d575ce4d97a6092169bb);
-	// 	await newCosmicSignatureNft.mint(0n, signer1.address, 0x9bfdc616bcc9f6ec20eb5b52fc09d7b1dff1a058d457b8536e26c1b5fb211484n);
-	//
-	// 	await newStakingWalletCosmicSignatureNft.connect(signer1).stake(1); // we need to stake, otherwise the deposit would be rejected
-	// 	await hre.ethers.provider.send("evm_increaseTime", [6000]); // prepare for unstake
-	// 	// await hre.ethers.provider.send("evm_mine");
-	//
-	// 	const nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-	// 	await cosmicSignatureGameProxy.bidWithEth((-1), "", { value: nextEthBidPrice_ });
-	//
-	// 	const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-	// 	// await hre.ethers.provider.send("evm_mine");
-	//
-	// 	await cosmicSignatureGameProxy.claimMainPrize();
-	// });
 
 	// // Comment-202409209 applies.
 	// it("Changing charity address works", async function () {

@@ -1,3 +1,5 @@
+// todo-0 Move these tests to another file and delete this file.
+
 "use strict";
 
 const { expect } = require("chai");
@@ -7,7 +9,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
 const { deployContractsForUnitTesting, deployContractsForUnitTestingAdvanced, } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("MainPrize", function () {
+describe("MainPrize-Old", function () {
 	it("The number of distributed prizes is correct", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, prizesWallet, randomWalkNft, stakingWalletRandomWalkNft, stakingWalletRandomWalkNftAddr,} =

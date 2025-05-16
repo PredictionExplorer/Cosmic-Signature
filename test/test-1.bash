@@ -13,8 +13,8 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# 'npx' 'hardhat' 'test' '--grep' 'claimMainPrize is non-reentrant'
 			# 'npx' 'hardhat' 'test' '--grep' 'multiple bidding rounds$'
+			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGame-2 |^MainPrize '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
 			'npx' 'hardhat' 'test'
 
