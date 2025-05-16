@@ -6,32 +6,9 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { generateRandomUInt32, uint32ToPaddedHexString } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("CosmicSignatureGame-Old", function () {
-	it("Smoke test", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {ownerAcct, /*cosmicSignatureGameFactory,*/ cosmicSignatureGameImplementation, cosmicSignatureGameImplementationAddr, cosmicSignatureGameProxy,} =
-			await loadFixture(deployContractsForUnitTesting);
-
-		const cosmicSignatureGameImplementationByteCodeSize =
-			// cosmicSignatureGameFactory.bytecode.length / 2 - 1;
-			(await hre.ethers.provider.getCode(cosmicSignatureGameImplementationAddr)).length / 2 - 1;
-		expect(cosmicSignatureGameImplementationByteCodeSize).greaterThanOrEqual(21 * 1024);
-		console.log(
-			"CosmicSignatureGame implementation bytecode size is " +
-			cosmicSignatureGameImplementationByteCodeSize.toString() +
-			" bytes, which is less than the maximum allowed by " +
-			(24 * 1024 - cosmicSignatureGameImplementationByteCodeSize).toString() +
-			"."
-		);
-		expect(await cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
-		expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct);
-		expect(await cosmicSignatureGameImplementation.mainPrizeTimeIncrementInMicroSeconds()).equal(0n);
-		expect(await cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(60n * 60n * 10n ** 6n);
-	});
-
 	it("The initialize method is disabled", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameImplementation, cosmicSignatureGameProxy,} =
@@ -156,47 +133,5 @@ describe("CosmicSignatureGame-Old", function () {
 		{
 			await expect(cosmicSignatureGameProxy.connect(signer2).upgradeTo(signer1.address)).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		}
-	});
-
-	it("The transferOwnership method", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {ownerAcct, signers, cosmicSignatureGameImplementation, cosmicSignatureGameProxy,} =
-			await loadFixture(deployContractsForUnitTesting);
-		const [signer0, signer1, signer2,] = signers;
-
-		expect(await cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
-		await expect(cosmicSignatureGameImplementation.connect(ownerAcct).transferOwnership(ownerAcct.address)).revertedWithCustomError(cosmicSignatureGameImplementation, "OwnableUnauthorizedAccount");
-		expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct.address);
-		for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
-			// Ownership transfer will succeed regardless if the current bidding round is active or not.
-			await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime((counter_ <= 0) ? 123_456_789_012n : 123n)).not.reverted;
-
-			if (counter_ <= 0) {
-				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).greaterThan(+1e9);
-			} else {
-				expect(await cosmicSignatureGameProxy.getDurationUntilRoundActivation()).lessThan(-1e9);
-			}
-			// todo-1 Add a call that will fail.
-			await cosmicSignatureGameProxy.connect(ownerAcct).transferOwnership(signer2.address);
-			expect(await cosmicSignatureGameProxy.owner()).equal(signer2.address);
-			await cosmicSignatureGameProxy.connect(signer2).transferOwnership(ownerAcct.address);
-			expect(await cosmicSignatureGameProxy.owner()).equal(ownerAcct.address);
-		}
-	});
-
-	// Issue. I have eliminated the `fallback` method.
-	it("The fallback method", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {cosmicSignatureGameProxyAddr,} = await loadFixture(deployContractsForUnitTesting);
-
-		await expect(
-			hre.ethers.provider.call({
-				to: cosmicSignatureGameProxyAddr,
-
-				// non-existent selector
-				data: /*"0xffffffff"*/ uint32ToPaddedHexString(generateRandomUInt32()),
-			})
-		// ).revertedWith("Method does not exist.");
-		).revertedWithoutReason();
 	});
 });
