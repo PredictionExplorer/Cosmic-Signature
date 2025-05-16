@@ -12,23 +12,24 @@ import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
+import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
 /// todo-0 Review this.
-contract BidderContract {
+contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	// address public immutable creator;
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNfts;
-	bool public blockDeposits = false;
+	// bool public blockDeposits = false;
 	
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
 		// creator = msg.sender;
 	}
 
-	receive() external payable {
-		require(( ! blockDeposits ), "I am not accepting deposits.");
-	}
+	// receive() external payable {
+	// 	require(( ! blockDeposits ), "I am not accepting deposits.");
+	// }
 
 	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
@@ -147,19 +148,19 @@ contract BidderContract {
 		delete myDonatedNfts;
 	}
 
-	function doFailedBidWithEth() external payable {
-		uint256 price = msg.value;
-		bool blockDepositsCopy_ = blockDeposits;
-		blockDeposits = true;
-		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
-		blockDeposits = blockDepositsCopy_;
-	}
+	// function doFailedBidWithEth() external payable {
+	// 	uint256 price = msg.value;
+	// 	bool blockDepositsCopy_ = blockDeposits;
+	// 	blockDeposits = true;
+	// 	cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
+	// 	blockDeposits = blockDepositsCopy_;
+	// }
 
-	function startBlockingDeposits() external {
-		blockDeposits = true;
-	}
+	// function startBlockingDeposits() external {
+	// 	blockDeposits = true;
+	// }
 
-	function stopBlockingDeposits() external {
-		blockDeposits = false;
-	}
+	// function stopBlockingDeposits() external {
+	// 	blockDeposits = false;
+	// }
 }
