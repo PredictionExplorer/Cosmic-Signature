@@ -58,6 +58,36 @@ describe("MainPrize", function () {
 		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_);
 	});
 
+	// Comment-202411077 relates and/or applies.
+	it("ETH receive by charity reversal", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+
+		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
+		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
+		await brokenEthReceiver_.waitForDeployment();
+		const brokenEthReceiverAddr_ = await brokenEthReceiver_.getAddress();
+		// await expect(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setCharityAddress(brokenEthReceiverAddr_)).not.reverted;
+
+		for (let ethDepositAcceptanceModeCode_ = 2n; ethDepositAcceptanceModeCode_ >= 0n; -- ethDepositAcceptanceModeCode_ ) {
+			await expect(brokenEthReceiver_.setEthDepositAcceptanceModeCode(ethDepositAcceptanceModeCode_)).not.reverted;
+			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
+			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1]);
+			await hre.ethers.provider.send("evm_mine");
+			const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
+			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+			// await hre.ethers.provider.send("evm_mine");
+			const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
+			expect(charityEthDonationAmount_ > 0n);
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).not.reverted;
+			const brokenEthReceiverEthBalanceAmount_ = await hre.ethers.provider.getBalance(brokenEthReceiverAddr_);
+			expect(brokenEthReceiverEthBalanceAmount_ == ((ethDepositAcceptanceModeCode_ > 0n) ? 0n : charityEthDonationAmount_));
+		}
+	});
+
 	it("claimMainPrize is non-reentrant (so it's impossible to double-claim)", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
 		const maliciousMainPrizeClaimerFactory_ = await hre.ethers.getContractFactory("MaliciousMainPrizeClaimer", contracts_.deployerAcct);

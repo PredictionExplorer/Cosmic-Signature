@@ -3,7 +3,7 @@ pragma solidity 0.8.29;
 
 contract BrokenEthReceiver {
 	/// @notice 0, 1, 2.
-	uint256 internal _ethDepositAcceptanceModeCode = 0;
+	uint256 internal _ethDepositAcceptanceModeCode = 1;
 
 	constructor() {
 		// Doing nothing.
