@@ -195,12 +195,12 @@ describe("Bidding", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		const bidderContractFactory = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
-		const bidderContract = await bidderContractFactory.deploy(cosmicSignatureGameProxyAddr);
-		await bidderContract.waitForDeployment();
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
+		const bidderContract_ = await bidderContractFactory_.deploy(cosmicSignatureGameProxyAddr);
+		await bidderContract_.waitForDeployment();
 
-		let bidAmount = hre.ethers.parseEther("10");
-		await expect(bidderContract.connect(signer0).doFailedBidWithEth({ value: bidAmount })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
+		let bidAmount_ = hre.ethers.parseEther("10");
+		await expect(bidderContract_.connect(signer0).doFailedBidWithEth({value: bidAmount_,})).revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
 	});
 
 	it("Shouldn't be possible to bid using very long message", async function () {
