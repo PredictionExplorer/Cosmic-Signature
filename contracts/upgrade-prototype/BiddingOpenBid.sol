@@ -153,7 +153,7 @@ abstract contract BiddingOpenBid is
 	/// `nextEthBidPrice` will be calculated based on `msg.value`.
 	/// @dev Comment-202502051 applies.
 	/// Comment-202505201 applies.
-	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) internal nonReentrant /*_onlyRoundIsActive*/ {
+	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) private nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
 		
 		// BidParams memory params_ = abi.decode(data_, (BidParams));
@@ -380,7 +380,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_getEthDutchAuctionDuration`
 
-	function _getEthDutchAuctionDuration() internal view returns (uint256) {
+	function _getEthDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -420,7 +420,7 @@ abstract contract BiddingOpenBid is
 	// #region `_bidWithCst`
 
 	/// @dev Comment-202505201 applies.
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*_onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private nonReentrant /*_onlyRoundIsActive*/ {
 		// Comment-202501045 applies.
 
 		// Comment-202503162 relates and/or applies.
@@ -505,7 +505,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_getCstDutchAuctionDuration`
 
-	function _getCstDutchAuctionDuration() internal view returns (uint256) {
+	function _getCstDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -518,7 +518,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
-	function _getCstDutchAuctionElapsedDuration() internal view returns (int256) {
+	function _getCstDutchAuctionElapsedDuration() private view returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -531,7 +531,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_getCstDutchAuctionTotalAndRemainingDurations`
 
-	function _getCstDutchAuctionTotalAndRemainingDurations() internal view returns (uint256, int256) {
+	function _getCstDutchAuctionTotalAndRemainingDurations() private view returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -546,13 +546,13 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `_bidCommon`
 
-	/// @notice An internal method to handle common bid logic.
+	/// @notice Handles common bid logic.
 	/// --- param bidType_ Bid type code.
 	/// @param message_ Comment-202503155 applies.
 	/// @dev Comment-202502051 relates.
 	/// Comment-202505201 relates.
 	/// Comment-202411169 relates and/or applies.
-	function _bidCommon(/*BidType bidType_,*/ string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidCommon(/*BidType bidType_,*/ string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		require(
 			bytes(message_).length <= bidMessageLengthMaxLimit,
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
