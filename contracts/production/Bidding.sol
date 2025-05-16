@@ -511,8 +511,6 @@ abstract contract Bidding is
 		if (lastBidderAddress == address(0)) {
 
 			// Comment-202411169 relates.
-			// todo-1 If I comment out the call to `_checkRoundIsActive` and uncomment the call to `_onlyRoundIsActive`,
-			// todo-1 contract bytecode size will increase by about 1000. Maybe tell the guys.
 			_checkRoundIsActive();
 
 			// [Comment-202501044]

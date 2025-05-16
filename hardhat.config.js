@@ -303,7 +303,14 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-				runs: 20_000,
+				// // Issue. A big value here causes excessive inlining, which results in the game contract size
+				// // exceeding the max allowed limit, especially when modifiers are used.
+				// // I have observed that when I decorated a method with the `nonReentrant` modifier,
+				// // the contract bytecode size has increased by about 2200 bytes.
+				// // Converting modifiers into methods helps and therefore should be preferred, but in some cases it doesn't help that much.
+				// // So let's not configure this.
+				// runs: 20_000,
+
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
