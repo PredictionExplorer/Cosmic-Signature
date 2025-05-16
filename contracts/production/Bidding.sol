@@ -34,6 +34,8 @@ abstract contract Bidding is
 	IBidding {
 	// #region `receive`
 
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
 	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth((-1), "");
 	}
@@ -41,8 +43,9 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev Comment-202502051 applies.
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -50,8 +53,9 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev Comment-202502051 applies.
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
@@ -59,12 +63,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEth`
 
-	/// @dev
-	/// [Comment-202502051]
-	/// `bidWithEth`, `bidWithCstAndDonateToken`, `bidWithCstAndDonateNft` can get by without `nonReentrant`.
-	/// But `bidWithEthAndDonateToken` and `bidWithEthAndDonateNft` need it,
-	/// at least to pervent the possibility to mess up the order of bidding and donation events.
-	/// [/Comment-202502051]
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 	}
@@ -72,7 +72,15 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithEth`
 
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	/// @dev
+	/// [Comment-202502051]
+	/// A reason for this to be `nonReentrant` is to pervent the possibility to mess up
+	/// the order of bidding and token/NFT donation events.
+	/// [/Comment-202502051]
+	/// [Comment-202505201]
+	/// A reason for this to be `nonReentrant` is because a reentry from `_distributePrizes` could result in incorrect behavior.
+	/// [/Comment-202505201]
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
 
 		// BidType bidType_;
@@ -198,13 +206,6 @@ abstract contract Bidding is
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
 
-			// A reentry can happen here.
-			// [ToDo-202502186-1]
-			// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
-			// There appears to be no vulnerability here, but ask the auditors to take a look.
-			// Ask the auditor.
-			// [/ToDo-202502186-1]
-			// Comment-202502051 relates.
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
 
@@ -320,7 +321,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	/// @dev Comment-202502051 applies.
+	/// @dev Comment-202505201 relates.
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
@@ -329,7 +330,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	/// @dev Comment-202502051 applies.
+	/// @dev Comment-202505201 relates.
 	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -338,6 +339,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCst`
 
+	/// @dev Comment-202505201 relates.
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
@@ -345,7 +347,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202505201 applies.
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal nonReentrant /*_onlyRoundIsActive*/ {
 		// [Comment-202501045]
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
 		// But we are going to validate that near Comment-202501044.
@@ -495,7 +498,9 @@ abstract contract Bidding is
 	/// @notice An internal method to handle common bid logic.
 	/// --- param bidType_ Bid type code.
 	/// @param message_ Comment-202503155 applies.
-	/// @dev Comment-202411169 relates and/or applies.
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
+	/// Comment-202411169 relates and/or applies.
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		require(
 			bytes(message_).length <= bidMessageLengthMaxLimit,

@@ -531,10 +531,11 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [/Comment-202502057]
 		extCalls: "trusted",
 
-		// // By default, these won't be reported.
-		// // It appears that we don't need these.
-		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
-		// invariants: ["contract", "reentrancy",],
+		// See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
+		invariants: [
+			// "contract",
+			"reentrancy",
+		],
 
 		// // We probably rarely need this.
 		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#proved-targets

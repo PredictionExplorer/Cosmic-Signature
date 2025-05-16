@@ -849,9 +849,6 @@ describe("Bidding", function () {
 	// todo-1 Then just review then Solidity code to make sure that
 	// todo-1 regardless if `block.timestamp` or `block.number` change or don't change, the behavior will be correct.
 	//
-	// todo-1 Develop a separate test and/or refactor this one to test `bidWithEth` reentrancy. They can bid by reentering.
-	// todo-1 But see ToDo-202502186-1.
-	//
 	// todo-1 Nick wrote:
 	// todo-1 As this is not really a unit test anymore, but an integration test, it should be done as standalone script
 	// todo-1 (and maybe go in "scripts" directory, and probably in its own folder) .
