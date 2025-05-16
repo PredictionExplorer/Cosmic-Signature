@@ -557,7 +557,7 @@ abstract contract MainPrize is
 
 				// [Comment-202411077]
 				// ETH for charity.
-				// If ETH transfer to charity fails we won't revert the transaction. The funds would simply stay in the game.
+				// If somehow ETH receive by charity reverts we won't revert the transaction. The funds would simply stay in the game.
 				// Comment-202411078 relates.
 				// [/Comment-202411077]
 				{

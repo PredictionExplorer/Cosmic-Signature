@@ -379,7 +379,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202411064 applies.
 	/// @dev
 	/// [Comment-202411078]
-	/// We transfer ETH directly to this address.
+	/// On main prize claim, we transfer ETH directly to this address.
 	/// This is intended to be our own `CharityWallet`.
 	/// But even if this was a 3rd party address, it could be safe to assume that it doesn't host a malitios contract.
 	/// A malitios contract can inflict damage, such as use an excessive amount of gas.
