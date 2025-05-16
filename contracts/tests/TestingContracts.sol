@@ -71,14 +71,15 @@ contract BrokenCosmicSignatureToken2 {
 	}
 }
 
-/// @notice Used to test `revert` statements for charity deposits.
-contract BrokenCharity {
-	// uint256 private _counter;
-	
-	receive() external payable {
-		require(false, "Test deposit failed.");
-	}
-}
+// todo-0 Delete this. Use `BrokenEthReceiver` instead.
+// /// @notice Used to test `revert` statements for charity deposits.
+// contract BrokenCharity {
+// 	// uint256 private _counter;
+//
+// 	receive() external payable {
+// 		require(false, "Test deposit failed.");
+// 	}
+// }
 
 /// @notice This contract will return all the assets before selfdestruct transaction,
 /// required for testing on the MainNet (Arbitrum) (prior to launch).

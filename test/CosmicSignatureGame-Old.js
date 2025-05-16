@@ -94,6 +94,7 @@ describe("CosmicSignatureGame-Old", function () {
 
 		// await expect(cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n)).not.reverted;
 
+		// todo-0 This contract no longer exists.
 		const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
 		const brokenCharity = await brokenCharityFactory.deploy();
 		await brokenCharity.waitForDeployment();

@@ -37,6 +37,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	await bidderContract.waitForDeployment();
 	// 	await bidderContract.startBlockingDeposits();
 	//
+	// 	// todo-0 This contract no longer exists.
 	// 	const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
 	// 	const brokenCharity = await brokenCharityFactory.deploy();
 	// 	await brokenCharity.waitForDeployment();
@@ -787,6 +788,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	expect(parsed_log.args.amount).to.equal(prevCosmicSignatureNftStakingTotalEthRewardAmount_);
 	// 	expect(parsed_log.args.modulo).to.equal(moduloInRound);
 	//
+	// 	// todo-0 This contract no longer exists.
 	// 	const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
 	// 	const brokenCharity = await brokenCharityFactory.deploy();
 	// 	await brokenCharity.waitForDeployment();
