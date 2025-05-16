@@ -80,59 +80,6 @@ contract BrokenCharity {
 	}
 }
 
-/// @notice Used to test `revert` statements in `StakingWalletCosmicSignatureNft`.
-contract BrokenStakingWalletCosmicSignatureNft {
-	StakingWalletCosmicSignatureNft private _stakingWalletCosmicSignatureNft;
-	bool private _blockDeposits = false;
-
-	constructor() {
-		// Doing nothing.	
-	}
-
-	receive() external payable {
-		require(!_blockDeposits, "I am not accepting deposits");
-	}
-
-	/// @dev We don't call it doDeposit() because this method is called from CosmicSignatureGame.sol
-	function deposit(uint256 roundNum_) external payable {
-		require(!_blockDeposits, "I am not accepting deposits");
-		_stakingWalletCosmicSignatureNft.deposit(roundNum_);
-	}
-
-	function doStake(uint256 nftId) external {
-		_stakingWalletCosmicSignatureNft.stake(nftId);
-	}
-
-	function doUnstake(uint256 stakeActionId_) external {
-		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_);
-	}
-
-	// I have commented this method out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
-	// function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
-	// 	uint256[] memory actions = new uint256[](1);
-	// 	uint256[] memory deposits = new uint256[](1);
-	// 	actions[0] = stakeActionId;
-	// 	deposits[0] = depositId;
-	// 	_stakingWalletCosmicSignatureNft.claimManyRewards(actions, deposits);
-	// }
-
-	function startBlockingDeposits() external {
-		_blockDeposits = true;
-	}
-
-	function stopBlockingDeposits() external {
-		_blockDeposits = false;
-	}
-
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external {
-		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
-	}
-
-	function doSetApprovalForAll(IERC721 nft_) external {
-		nft_.setApprovalForAll(address(_stakingWalletCosmicSignatureNft), true);
-	}
-}
-
 /// @notice This contract will return all the assets before selfdestruct transaction,
 /// required for testing on the MainNet (Arbitrum) (prior to launch).
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
