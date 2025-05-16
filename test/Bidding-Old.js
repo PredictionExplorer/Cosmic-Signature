@@ -7,7 +7,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 // const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("Bidding", function () {
+describe("Bidding-Old", function () {
 	it("Should be possible to bid", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr, prizesWallet,} =
@@ -187,20 +187,6 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ })).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "UsedRandomWalkNft");
-	});
-
-	it("Shouldn't be possible to bid if bidder doesn't accept refunds on oversized bidWithEth calls", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {deployerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureGameProxyAddr,} =
-			await loadFixture(deployContractsForUnitTesting);
-		const [signer0,] = signers;
-
-		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
-		const bidderContract_ = await bidderContractFactory_.deploy(cosmicSignatureGameProxyAddr);
-		await bidderContract_.waitForDeployment();
-
-		let bidAmount_ = hre.ethers.parseEther("10");
-		await expect(bidderContract_.connect(signer0).doFailedBidWithEth({value: bidAmount_,})).revertedWithCustomError(cosmicSignatureGameProxy, "FundTransferFailed");
 	});
 
 	it("Shouldn't be possible to bid using very long message", async function () {
