@@ -20,7 +20,15 @@ const { createStakingWalletCosmicSignatureNftSimulator, assertStakingWalletCosmi
 // const { createMarketingWalletSimulator, assertMarketingWalletSimulator } = require("../src/ContractSimulators/MarketingWalletSimulator.js");
 const { createCharityWalletSimulator, assertCharityWalletSimulator } = require("../src/ContractSimulators/CharityWalletSimulator.js");
 // const { createCosmicSignatureDaoSimulator, assertCosmicSignatureDaoSimulator } = require("../src/ContractSimulators/CosmicSignatureDaoSimulator.js");
-const { createCosmicSignatureGameProxySimulator, assertCosmicSignatureGameProxySimulator } = require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
+const {
+	createCosmicSignatureGameProxySimulator,
+	assertCosmicSignatureGameProxySimulator,
+	assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts,
+	assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions,
+	assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations,
+	assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations,
+} =
+	require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
 
 // #endregion
 // #region
@@ -602,6 +610,27 @@ describe("CosmicSignatureGame-1", function () {
 					}
 
 					// #endregion
+				}
+
+				// #endregion
+				// #region
+
+				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+				if ((randomNumber_ & (0x0Fn << (0n * 8n))) == 0n) {
+					// console.log("202505265");
+					assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
+				}
+				if ((randomNumber_ & (0x0Fn << (1n * 8n))) == 0n) {
+					// console.log("202505266");
+					assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+				}
+				if ((randomNumber_ & (0x0Fn << (2n * 8n))) == 0n) {
+					// console.log("202505267");
+					assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+				}
+				if ((randomNumber_ & (0x0Fn << (3n * 8n))) == 0n) {
+					// console.log("202505268");
+					assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 
 				// #endregion

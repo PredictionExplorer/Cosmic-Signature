@@ -231,7 +231,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		// #endregion
 		// #region `numEthDonationWithInfoRecords`
-
+				
 		numEthDonationWithInfoRecords: function() {
 			return BigInt(this.ethDonationWithInfoRecords.length);
 		},
@@ -310,8 +310,99 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
+		// #region `tryGetCurrentChampions`
+
+		tryGetCurrentChampions: function(latestBlock_) {
+			// #region
+
+			const result_ = {
+				enduranceChampionAddress: hre.ethers.ZeroAddress,
+				enduranceChampionDuration: 0n,
+				chronoWarriorAddress: hre.ethers.ZeroAddress,
+				chronoWarriorDuration: 0n,
+			};
+
+			// #endregion
+			// #region
+
+			if (this.lastBidderAddress != hre.ethers.ZeroAddress) {
+				// #region
+
+				result_.enduranceChampionAddress = this.enduranceChampionAddress;
+				let enduranceChampionStartTimeStamp_ = this.enduranceChampionStartTimeStamp;
+				result_.enduranceChampionDuration = this.enduranceChampionDuration;
+				let prevEnduranceChampionDuration_ = this.prevEnduranceChampionDuration;
+				result_.chronoWarriorAddress = this.chronoWarriorAddress;
+				result_.chronoWarriorDuration = this.chronoWarriorDuration;
+
+				// #endregion
+				// #region
+
+				const lastBidTimeStampCopy_ = this.biddersInfo[this.lastBidderAddress].lastBidTimeStamp;
+				const lastBidDuration_ = BigInt(latestBlock_.timestamp) - lastBidTimeStampCopy_;
+
+				// #endregion
+				// #region
+
+				if (result_.enduranceChampionAddress == hre.ethers.ZeroAddress) {
+					// #region
+
+					result_.enduranceChampionAddress = this.lastBidderAddress;
+					enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
+					result_.enduranceChampionDuration = lastBidDuration_;
+
+					// #endregion
+				} else if (lastBidDuration_ > result_.enduranceChampionDuration) {
+					// #region
+
+					{
+						const chronoEndTimeStamp_ = lastBidTimeStampCopy_ + result_.enduranceChampionDuration;
+						const chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
+						const chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+						if (chronoDuration_ > result_.chronoWarriorDuration) {
+							result_.chronoWarriorAddress = result_.enduranceChampionAddress;
+							result_.chronoWarriorDuration = chronoDuration_;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					prevEnduranceChampionDuration_ = result_.enduranceChampionDuration;
+					result_.enduranceChampionAddress = this.lastBidderAddress;
+					enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
+					result_.enduranceChampionDuration = lastBidDuration_;
+
+					// #endregion
+				}
+
+				// #endregion
+				// #region
+
+				{
+					const chronoEndTimeStamp_ = BigInt(latestBlock_.timestamp);
+					const chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
+					const chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+					if (chronoDuration_ > result_.chronoWarriorDuration) {
+						result_.chronoWarriorAddress = result_.enduranceChampionAddress;
+						result_.chronoWarriorDuration = chronoDuration_;
+					}
+				}
+
+				// #endregion
+			}
+
+			// #endregion
+			// #region
+
+			return result_;
+
+			// #endregion
+		},
+
+		// #endregion
 		// todo-1 Do we need `bidWithEthAndDonateToken`?
-		// todo-1 Do we need  `bidWithEthAndDonateNft`?
+		// todo-1 Do we need `bidWithEthAndDonateNft`?
 		// #region `canBidWithEth`
 
 		/// Issue. To keep it simple, this method doesn't assert that the bidder has enough ETH.
@@ -522,7 +613,11 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `getEthDutchAuctionDurations`
 
-		// We don't need this.
+		getEthDutchAuctionDurations: function(latestBlock_) {
+			const ethDutchAuctionDuration_ = this._getEthDutchAuctionDuration();
+			const ethDutchAuctionElapsedDuration_ = this.getDurationElapsedSinceRoundActivation(latestBlock_);
+			return {ethDutchAuctionDuration: ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration: ethDutchAuctionElapsedDuration_,};
+		},
 
 		// #endregion
 		// #region `_getEthDutchAuctionDuration`
@@ -533,8 +628,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
-		// todo-1 Do we need  `bidWithCstAndDonateToken`?
-		// todo-1 Do we need  `bidWithCstAndDonateNft`?
+		// todo-1 Do we need `bidWithCstAndDonateToken`?
+		// todo-1 Do we need `bidWithCstAndDonateNft`?
 		// #region `canBidWithCst`
 
 		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponseFuture_) {
@@ -652,7 +747,11 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `getCstDutchAuctionDurations`
 
-		// We don't need this.
+		getCstDutchAuctionDurations: function(latestBlock_) {
+			const cstDutchAuctionDuration_ = this._getCstDutchAuctionDuration();
+			const cstDutchAuctionElapsedDuration_ = this._getCstDutchAuctionElapsedDuration(latestBlock_);
+			return {cstDutchAuctionDuration: cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration: cstDutchAuctionElapsedDuration_,};
+		},
 
 		// #endregion
 		// #region `_getCstDutchAuctionDuration`
@@ -1382,11 +1481,61 @@ async function assertCosmicSignatureGameProxySimulatorRandomWalkNft(cosmicSignat
 }
 
 // #endregion
+// #region `assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts`
+
+async function assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, bidderAddress_) {
+	const bidderTotalSpentAmountsFromContract_ = await contracts_.cosmicSignatureGameProxy.getBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_.roundNum, bidderAddress_);
+	// console.log(bidderTotalSpentAmountsFromContract_[0], bidderTotalSpentAmountsFromContract_[1]);
+	const bidderInfoFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getBidderInfo(bidderAddress_);
+	expect(bidderTotalSpentAmountsFromContract_[0]).equal(bidderInfoFromContractSimulator_.totalSpentEthAmount);
+	expect(bidderTotalSpentAmountsFromContract_[1]).equal(bidderInfoFromContractSimulator_.totalSpentCstAmount);
+}
+
+// #endregion
+// #region `assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions`
+
+async function assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
+	const currentChampionsFromContract_ = await contracts_.cosmicSignatureGameProxy.tryGetCurrentChampions();
+	// console.log(currentChampionsFromContract_[0], currentChampionsFromContract_[1].toString(), currentChampionsFromContract_[2], currentChampionsFromContract_[3].toString());
+	const currentChampionsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.tryGetCurrentChampions(latestBlock_);
+	expect(currentChampionsFromContract_[0]).equal(currentChampionsFromContractSimulator_.enduranceChampionAddress);
+	expect(currentChampionsFromContract_[1]).equal(currentChampionsFromContractSimulator_.enduranceChampionDuration);
+	expect(currentChampionsFromContract_[2]).equal(currentChampionsFromContractSimulator_.chronoWarriorAddress);
+	expect(currentChampionsFromContract_[3]).equal(currentChampionsFromContractSimulator_.chronoWarriorDuration);
+}
+
+// #endregion
+// #region `assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations`
+
+async function assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
+	const ethDutchAuctionDurationsFromContract_ = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
+	// console.log(ethDutchAuctionDurationsFromContract_[0].toString(), ethDutchAuctionDurationsFromContract_[1].toString());
+	const ethDutchAuctionDurationsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getEthDutchAuctionDurations(latestBlock_);
+	expect(ethDutchAuctionDurationsFromContract_[0]).equal(ethDutchAuctionDurationsFromContractSimulator_.ethDutchAuctionDuration);
+	expect(ethDutchAuctionDurationsFromContract_[1]).equal(ethDutchAuctionDurationsFromContractSimulator_.ethDutchAuctionElapsedDuration);
+}
+
+// #endregion
+// #region `assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations`
+
+async function assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
+	const cstDutchAuctionDurationsFromContract_ = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
+	// console.log(cstDutchAuctionDurationsFromContract_[0].toString(), cstDutchAuctionDurationsFromContract_[1].toString());
+	const cstDutchAuctionDurationsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getCstDutchAuctionDurations(latestBlock_);
+	expect(cstDutchAuctionDurationsFromContract_[0]).equal(cstDutchAuctionDurationsFromContractSimulator_.cstDutchAuctionDuration);
+	expect(cstDutchAuctionDurationsFromContract_[1]).equal(cstDutchAuctionDurationsFromContractSimulator_.cstDutchAuctionElapsedDuration);
+}
+
+// #endregion
 // #region
 
 module.exports = {
 	createCosmicSignatureGameProxySimulator,
 	assertCosmicSignatureGameProxySimulator,
+	assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts,
+	assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions,
+	assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations,
+	assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations,
 };
 
 // #endregion
