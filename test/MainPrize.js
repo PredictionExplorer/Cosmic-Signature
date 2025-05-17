@@ -110,19 +110,26 @@ describe("MainPrize", function () {
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
 		await bidderContract_.waitForDeployment();
-		// const bidderContractAddr_ = await bidderContract_.getAddress();
+		const bidderContractAddr_ = await bidderContract_.getAddress();
 
 		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth2({value: nextEthBidPrice_,})).not.reverted;
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
 		// await hre.ethers.provider.send("evm_mine");
+		const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed");
+		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize())
+			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
+			.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddr_, mainEthPrizeAmount_);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(1n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed");
+		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize())
+			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
+			.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddr_, mainEthPrizeAmount_);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize()).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize())
+			.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
+			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n);
 	});
 
 	it("claimMainPrize is non-reentrant (so it's impossible to double-claim)", async function () {
