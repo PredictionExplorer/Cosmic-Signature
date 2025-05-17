@@ -8,7 +8,7 @@ const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHel
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("MainPrize", function () {
-	it("StakingWalletCosmicSignatureNft.deposit reversal", async function () {
+	it("The StakingWalletCosmicSignatureNft.deposit method reversal", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
 		const brokenStakingWalletCosmicSignatureNftFactory_ = await hre.ethers.getContractFactory("BrokenStakingWalletCosmicSignatureNft", contracts_.deployerAcct);
@@ -132,7 +132,7 @@ describe("MainPrize", function () {
 			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n);
 	});
 
-	it("claimMainPrize is non-reentrant (so it's impossible to double-claim)", async function () {
+	it("The claimMainPrize method is non-reentrant (so it's impossible to double-claim)", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
 		const maliciousMainPrizeClaimerFactory_ = await hre.ethers.getContractFactory("MaliciousMainPrizeClaimer", contracts_.deployerAcct);
 		const maliciousMainPrizeClaimer_ = await maliciousMainPrizeClaimerFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
