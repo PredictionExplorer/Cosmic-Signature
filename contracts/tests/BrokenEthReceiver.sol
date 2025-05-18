@@ -3,7 +3,7 @@ pragma solidity 0.8.29;
 
 contract BrokenEthReceiver {
 	/// @notice 0, 1, 2.
-	uint256 internal _ethDepositAcceptanceModeCode = 0;
+	uint256 public ethDepositAcceptanceModeCode = 0;
 
 	constructor() {
 		// Doing nothing.
@@ -14,14 +14,14 @@ contract BrokenEthReceiver {
 	}
 
 	function setEthDepositAcceptanceModeCode(uint256 newValue_) external {
-		_ethDepositAcceptanceModeCode = newValue_;
+		ethDepositAcceptanceModeCode = newValue_;
 	}
 
 	function _checkIfEthDepositsAreAccepted() internal view {
-		if (_ethDepositAcceptanceModeCode == 1) {
+		if (ethDepositAcceptanceModeCode == 1) {
 			revert("I am not accepting deposits.");
 		} else {
-			assert(_ethDepositAcceptanceModeCode == 0);
+			assert(ethDepositAcceptanceModeCode == 0);
 		}
 	}
 }

@@ -57,7 +57,7 @@ describe("CosmicSignatureGame-1", function () {
 
 		// This must be relatively big, to increase the chance that the logic near Comment-202505117
 		// will reduce ETH bid price to 1 Wei.
-		const numRoundsToRunMinLimit_ = 20;
+		const numRoundsToRunMinLimit_ = 25;
 
 		const bidAverageCountPerRoundMinLimit_ = 10.0;
 

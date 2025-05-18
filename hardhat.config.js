@@ -479,7 +479,7 @@ const hardhatUserConfig = {
 	
 	mocha: {
 		parallel: true,
-		timeout: 60 * 60 * 1000,
+		timeout: 2 * 60 * 60 * 1000,
 	},
 
 	// #endregion

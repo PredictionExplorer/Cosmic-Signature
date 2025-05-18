@@ -28,19 +28,19 @@ describe("MainPrize", function () {
 		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct), 1n);
 
 		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
 
 		// Any `StakingWalletCosmicSignatureNft.deposit` panic except the division by zero will not be handled.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithPanic(0x01n);
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize()).revertedWithPanic(0x01n);
 
 		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(1n)).not.reverted;
 
 		// Any `StakingWalletCosmicSignatureNft.deposit` non-panic reversal will not be handled.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWith("I am not accepting deposits.");
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize()).revertedWith("I am not accepting deposits.");
 
 		const cosmicSignatureNftStakingTotalEthRewardAmount_ = await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
 		expect(cosmicSignatureNftStakingTotalEthRewardAmount_ > 0n);
@@ -50,7 +50,7 @@ describe("MainPrize", function () {
 		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
 
 		// `StakingWalletCosmicSignatureNft.deposit` panic due to division by zero will be handled.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize())
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize())
 			.emit(contracts_.cosmicSignatureGameProxy, "FundsTransferredToCharity")
 			.withArgs(contracts_.charityWalletAddr, cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_);
 
@@ -78,7 +78,7 @@ describe("MainPrize", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1]);
 			await hre.ethers.provider.send("evm_mine");
 			const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 			// await hre.ethers.provider.send("evm_mine");
@@ -89,7 +89,7 @@ describe("MainPrize", function () {
 			expect(cosmicSignatureNftStakingTotalEthRewardAmount_ > 0n);
 			const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
 			expect(charityEthDonationAmount_ > 0n);
-			const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
+			const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize();
 			if (ethDepositAcceptanceModeCode_ > 0n) {
 				await expect(transactionResponseFuture_)
 					.emit(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
@@ -113,21 +113,21 @@ describe("MainPrize", function () {
 		const bidderContractAddr_ = await bidderContract_.getAddress();
 
 		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth2({value: nextEthBidPrice_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[4]).doBidWithEth2({value: nextEthBidPrice_,})).not.reverted;
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
 		// await hre.ethers.provider.send("evm_mine");
 		const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize())
+		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
 			.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddr_, mainEthPrizeAmount_);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(1n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize())
+		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
 			.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddr_, mainEthPrizeAmount_);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doClaimMainPrize())
+		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
 			.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
 			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n);
 	});
@@ -144,18 +144,18 @@ describe("MainPrize", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1]);
 			await hre.ethers.provider.send("evm_mine");
 			const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await expect(maliciousMainPrizeClaimer_.connect(contracts_.signers[3]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
+			await expect(maliciousMainPrizeClaimer_.connect(contracts_.signers[4]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
 			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 			// await hre.ethers.provider.send("evm_mine");
 			const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 			const numIterations_ = counter_ & 1;
-			let transactionResponseFuture_ = maliciousMainPrizeClaimer_.connect(contracts_.signers[3]).resetAndClaimMainPrize(BigInt(numIterations_));
+			let transactionResponseFuture_ = maliciousMainPrizeClaimer_.connect(contracts_.signers[4]).resetAndClaimMainPrize(BigInt(numIterations_));
 			if (numIterations_ > 0) {
 				await expect(transactionResponseFuture_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
 					.withArgs("ETH transfer to bidding round main prize beneficiary failed.", maliciousMainPrizeClaimerAddr_, mainEthPrizeAmount_);
-				transactionResponseFuture_ = maliciousMainPrizeClaimer_.connect(contracts_.signers[3]).resetAndClaimMainPrize(0n);
+				transactionResponseFuture_ = maliciousMainPrizeClaimer_.connect(contracts_.signers[4]).resetAndClaimMainPrize(0n);
 			}
 			await expect(transactionResponseFuture_).not.reverted;
 		}

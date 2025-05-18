@@ -16,7 +16,7 @@
 // 
 // "coverage.json" isn't intended to be read by humans.
 //
-// To find parts of the code that are not covered, cd to "coverage/" and search in all files in the folder tree containing:
+// To find parts of the code that are not covered, cd to "coverage/" and search the following in all files in the folder tree:
 //
 // title=
 
