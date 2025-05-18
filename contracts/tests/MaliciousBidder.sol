@@ -3,28 +3,46 @@ pragma solidity 0.8.29;
 
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-contract MaliciousMainPrizeClaimer {
+contract MaliciousBidder {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
-	uint256 public numIterations = 0;
+
+	/// @notice
+	/// Possible values:
+	///    1: Reenter `bidWithEth`.
+	///    2: Reenter `bidWithCst`.
+	///    3: Reenter `claimMainPrize`.
+	///    Any other: don't reener.
+	uint256 public modeCode = 0;
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
 	}
 
 	receive() external payable {
-		if (numIterations == 0) {
-			return;
+		uint256 modeCodeCopy_ = modeCode;
+		modeCode = 0;
+		if (modeCodeCopy_ == 1) {
+			doBidWithEth();
+		} if (modeCodeCopy_ == 2) {
+			doBidWithCst(1);
+		} if (modeCodeCopy_ == 3) {
+			doClaimMainPrize();
 		}
-		-- numIterations;
-		cosmicSignatureGame.claimMainPrize();
 	}
 
-	function doBidWithEth() external payable {
+	function setModeCode(uint256 newValue_) external {
+		modeCode = newValue_;
+	}
+
+	function doBidWithEth() public payable {
 		cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "");
 	}
 
-	function resetAndClaimMainPrize(uint256 numIterations_) public {
-		numIterations = numIterations_;
+	function doBidWithCst(uint256 priceMaxLimit_) public {
+		cosmicSignatureGame.bidWithCst(priceMaxLimit_, "");
+	}
+
+	function doClaimMainPrize() public {
 		cosmicSignatureGame.claimMainPrize();
 	}
 }

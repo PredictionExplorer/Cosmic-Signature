@@ -132,32 +132,49 @@ describe("MainPrize", function () {
 			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n);
 	});
 
-	it("The claimMainPrize method is non-reentrant (so it's impossible to double-claim)", async function () {
+	it("Reentrancy and double-claim attempts", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
-		const maliciousMainPrizeClaimerFactory_ = await hre.ethers.getContractFactory("MaliciousMainPrizeClaimer", contracts_.deployerAcct);
-		const maliciousMainPrizeClaimer_ = await maliciousMainPrizeClaimerFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
-		await maliciousMainPrizeClaimer_.waitForDeployment();
-		const maliciousMainPrizeClaimerAddr_ = await maliciousMainPrizeClaimer_.getAddress();
+		const maliciousBidderFactory_ = await hre.ethers.getContractFactory("MaliciousBidder", contracts_.deployerAcct);
+		const maliciousBidder_ = await maliciousBidderFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
+		await maliciousBidder_.waitForDeployment();
+		const maliciousBidderAddr_ = await maliciousBidder_.getAddress();
 
-		for ( let counter_ = 0; counter_<= 3; ++ counter_ ) {
+		const ethPriceToPay_ = 10n ** 18n;
+		for ( let counter_ = 0; counter_ < 3; ++ counter_ ) {
 			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1]);
-			await hre.ethers.provider.send("evm_mine");
-			const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-			await expect(maliciousMainPrizeClaimer_.connect(contracts_.signers[4]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
-			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 			// await hre.ethers.provider.send("evm_mine");
-			const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
-			const numIterations_ = counter_ & 1;
-			let transactionResponseFuture_ = maliciousMainPrizeClaimer_.connect(contracts_.signers[4]).resetAndClaimMainPrize(BigInt(numIterations_));
-			if (numIterations_ > 0) {
-				await expect(transactionResponseFuture_)
-					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
-					.withArgs("ETH transfer to bidding round main prize beneficiary failed.", maliciousMainPrizeClaimerAddr_, mainEthPrizeAmount_);
-				transactionResponseFuture_ = maliciousMainPrizeClaimer_.connect(contracts_.signers[4]).resetAndClaimMainPrize(0n);
+			for ( let maliciousBidderModeCode_ = 3n; maliciousBidderModeCode_ >= 0n; -- maliciousBidderModeCode_ ) {
+				await expect(maliciousBidder_.setModeCode(maliciousBidderModeCode_)).not.reverted;
+				const paidEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+				const overpaidEthPrice_ = ethPriceToPay_ - paidEthPrice_;
+				expect(overpaidEthPrice_ > 0n);
+				const transactionResponseFuture_ = maliciousBidder_.connect(contracts_.signers[4]).doBidWithEth({value: ethPriceToPay_,});
+				if (maliciousBidderModeCode_ > 0n) {
+					await expect(transactionResponseFuture_)
+						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
+						.withArgs("ETH refund transfer failed.", maliciousBidderAddr_, overpaidEthPrice_);
+				} else {
+					await expect(transactionResponseFuture_)
+						.emit(contracts_.cosmicSignatureGameProxy, "BidPlaced");
+				}
 			}
-			await expect(transactionResponseFuture_).not.reverted;
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
+			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1]);
+			// await hre.ethers.provider.send("evm_mine");
+			for ( let maliciousBidderModeCode_ = 3n; maliciousBidderModeCode_ >= 0n; -- maliciousBidderModeCode_ ) {
+				await expect(maliciousBidder_.setModeCode(maliciousBidderModeCode_)).not.reverted;
+				const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
+				const transactionResponseFuture_ = maliciousBidder_.connect(contracts_.signers[4]).doClaimMainPrize();
+				if (maliciousBidderModeCode_ > 0n) {
+					await expect(transactionResponseFuture_)
+						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
+						.withArgs("ETH transfer to bidding round main prize beneficiary failed.", maliciousBidderAddr_, mainEthPrizeAmount_);
+				} else {
+					await expect(transactionResponseFuture_)
+						.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed");
+				}
+			}
 		}
 	});
 });
