@@ -22,7 +22,7 @@ describe("Bidding", function () {
 		const requiredEthBidAmount_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 
 		const ethRefundAmount_ = ethBidAmount_ - requiredEthBidAmount_;
-		expect(ethRefundAmount_ > 0n);
+		expect(ethRefundAmount_).greaterThan(0n);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
 		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth2({value: ethBidAmount_,}))
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")

@@ -38,9 +38,6 @@ describe("Bidding-Old", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).lessThan(-1e9);
 
-		// let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		// console.log(latestBlock_.baseFeePerGas);
-
 		// Testing that if we send too much, we will get a refund back.
 		// Keeping in mind that a too small refund won't be transferred back to the bidder.
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -181,7 +178,7 @@ describe("Bidding-Old", function () {
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		await cosmicSignatureGameProxy.connect(signer0).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		expect(await cosmicSignatureGameProxy.usedRandomWalkNfts(token_id)).to.equal(1);
+		expect(await cosmicSignatureGameProxy.usedRandomWalkNfts(token_id)).to.equal(1n);
 
 		// try to bid again using the same nftId
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -398,7 +395,7 @@ describe("Bidding-Old", function () {
 			let ownr = await cosmicSignatureNft.ownerOf(i);
 			let owner_signer = await hre.ethers.getSigner(ownr);
 			let userTokens = tokensByStaker[ownr];
-			if (userTokens === undefined) {
+			if (userTokens == undefined) {
 				await expect(cosmicSignatureNft.connect(owner_signer).setApprovalForAll(stakingWalletCosmicSignatureNftAddr, true)).not.reverted;
 				userTokens = [];
 			}
@@ -453,7 +450,7 @@ describe("Bidding-Old", function () {
 			if (nftWasUsed_ == 0n) {
 				let ownr = await cosmicSignatureNft.ownerOf(i);
 				let userTokens = tokensByStaker[ownr];
-				if (userTokens === undefined) {
+				if (userTokens == undefined) {
 					userTokens = [];
 				}
 				userTokens.push(i);
@@ -920,7 +917,7 @@ describe("Bidding-Old", function () {
 
 						if (error2Details.message.endsWith(", but it didn't revert")) {
 							// console.log("Success 2.", transactions.length);
-						} else if ( errorDetails === undefined ||
+						} else if ( errorDetails == undefined ||
 										errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") &&
 										( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )
 									) {
@@ -929,7 +926,7 @@ describe("Bidding-Old", function () {
 					}
 				}
 				transactions.length = 0;
-				if (errorDetails !== undefined) {
+				if (errorDetails != undefined) {
 					// console.log(errorDetails.message);
 					throw errorDetails;
 				}
@@ -993,7 +990,7 @@ describe("Bidding-Old", function () {
 			if ( ! errorDetails.message.startsWith("Sender doesn't have enough funds to send tx.") ) {
 				throw errorDetails;
 			}
-			if (error2Details !== undefined && ( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )) {
+			if (error2Details != undefined && ( ! error2Details.message.startsWith("Sender doesn't have enough funds to send tx.") )) {
 				throw error2Details;
 			}
 		}

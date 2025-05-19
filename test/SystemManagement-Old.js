@@ -79,7 +79,7 @@ describe("SystemManagement-Old", function () {
 			.revertedWithCustomError(cosmicSignatureToken, "UnauthorizedCaller");
 		await expect(cosmicSignatureToken.connect(ownerAcct)["burn(address,uint256)"](signer1.address, 10000n))
 			.revertedWithCustomError(cosmicSignatureToken, "UnauthorizedCaller");
-		await expect(cosmicSignatureToken.connect(signer1)["burn(uint256)"](10000n));
+		await expect(cosmicSignatureToken.connect(signer1)["burn(uint256)"](10000n)).not.reverted;
 
 		await expect(cosmicSignatureNft.connect(signer1).setNftBaseUri("://uri"))
 			.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");

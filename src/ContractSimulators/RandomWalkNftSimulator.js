@@ -28,14 +28,14 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `assertNftIdIsValid`
 
 		assertNftIdIsValid: function(nftId_) {
-			expect(this.isNftIdValid(nftId_));
+			expect(this.isNftIdValid(nftId_)).equal(true);
 		},
 
 		// #endregion
 		// #region `isNftIdValid`
 
 		isNftIdValid: function(nftId_) {
-			expect(typeof nftId_ === "bigint");
+			expect(typeof nftId_).equal("bigint");
 			return nftId_ >= 0n && nftId_ < this.totalSupply();
 		},
 
@@ -58,7 +58,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `transferFrom`
 
 		transferFrom: function(from_, to_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(from_ === this.ownerOf(nftId_));
+			expect(from_).equal(this.ownerOf(nftId_));
 			assertAddressIsValid(to_);
 			this.nftsInfo[Number(nftId_)].ownerAddress = to_;
 			assertEvent(
@@ -86,7 +86,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 			++ eventIndexWrapper_.value;
 
 			// To keep it simple, not asserting event arguments.
-			expect(transactionReceipt_.logs[eventIndexWrapper_.value].fragment.name === "MintEvent");
+			expect(transactionReceipt_.logs[eventIndexWrapper_.value].fragment.name).equal("MintEvent");
 
 			++ eventIndexWrapper_.value;
 			return nftId_;
@@ -116,7 +116,7 @@ async function assertRandomWalkNftSimulator(randomWalkNftSimulator_, contracts_,
 
 async function assertRandomRandomWalkNftInfoIfPossible(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
 	const nftTotalSupplyCopy_ = randomWalkNftSimulator_.totalSupply()
-	if (nftTotalSupplyCopy_ === 0n) {
+	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);

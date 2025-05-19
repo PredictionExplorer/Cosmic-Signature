@@ -9,7 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256FromSeedWrapper } = require("../Helpers.js");
-const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../ContractUnitTestingHelpers.js");
+const { IS_HARDHAT_COVERAGE, assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../ContractUnitTestingHelpers.js");
 
 // #endregion
 // #region `createCosmicSignatureGameProxySimulator`
@@ -158,8 +158,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `setRoundActivationTime`
 
 		setRoundActivationTime: function(newValue_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(typeof newValue_ === "bigint");
-			expect(newValue_ > 0n);
+			expect(typeof newValue_).equal("bigint");
+			expect(newValue_).greaterThan(0n);
 			this.roundActivationTime = newValue_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -174,8 +174,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `setEthDutchAuctionEndingBidPriceDivisor`
 
 		setEthDutchAuctionEndingBidPriceDivisor: function(newValue_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(typeof newValue_ === "bigint");
-			expect(newValue_ > 0n);
+			expect(typeof newValue_).equal("bigint");
+			expect(newValue_).greaterThan(0n);
 			this.ethDutchAuctionEndingBidPriceDivisor = newValue_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -191,8 +191,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		donateEth: function(donorAddress_, amount_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			assertAddressIsValid(donorAddress_);
-			expect(typeof amount_ === "bigint");
-			expect(amount_ >= 0n);
+			expect(typeof amount_).equal("bigint");
+			expect(amount_).greaterThanOrEqual(0n);
 			this.ethBalanceAmount += amount_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -208,9 +208,9 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		donateEthWithInfo: function(donorAddress_, amount_, data_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			assertAddressIsValid(donorAddress_);
-			expect(typeof amount_ === "bigint");
-			expect(amount_ >= 0n);
-			expect(typeof data_ === "string");
+			expect(typeof amount_).equal("bigint");
+			expect(amount_).greaterThanOrEqual(0n);
+			expect(typeof data_).equal("string");
 			this.ethBalanceAmount += amount_;
 			const newEthDonationWithInfoRecordIndex_ = this.numEthDonationWithInfoRecords();
 			this.ethDonationWithInfoRecords.push(
@@ -240,7 +240,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `getEthDonationWithInfoRecord`
 
 		getEthDonationWithInfoRecord: function(index_) {
-			expect(typeof index_ === "bigint");
+			expect(typeof index_).equal("bigint");
 			const ethDonationWithInfoRecord_ = this.ethDonationWithInfoRecords[Number(index_)];
 			return ethDonationWithInfoRecord_;
 		},
@@ -256,7 +256,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `getBidderAddressAt`
 
 		getBidderAddressAt: function(bidIndex_) {
-			expect(typeof bidIndex_ === "bigint");
+			expect(typeof bidIndex_).equal("bigint");
 			const bidderAddress_ = this.bidderAddresses[Number(bidIndex_)];
 			return bidderAddress_;
 		},
@@ -269,7 +269,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		getBidderInfo: function(bidderAddress_) {
 			// expect(bidderAddress_).properAddress;
 			const bidderInfo_ = this.biddersInfo[bidderAddress_];
-			expect(bidderInfo_ !== undefined);
+			expect(bidderInfo_).not.equal(undefined);
 			return bidderInfo_;
 		},
 
@@ -279,7 +279,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		_updateChampionsIfNeeded: function(transactionBlock_) {
 			const lastBidTimeStampCopy_ = this.biddersInfo[this.lastBidderAddress].lastBidTimeStamp;
 			const lastBidDuration_ = BigInt(transactionBlock_.timestamp) - lastBidTimeStampCopy_;
-			if (this.enduranceChampionAddress === hre.ethers.ZeroAddress) {
+			if (this.enduranceChampionAddress == hre.ethers.ZeroAddress) {
 				this.enduranceChampionAddress = this.lastBidderAddress;
 				this.enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
 				this.enduranceChampionDuration = lastBidDuration_;
@@ -299,8 +299,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `_updateChronoWarriorIfNeeded`
 
 		_updateChronoWarriorIfNeeded: function(chronoEndTimeStamp_) {
-			expect(typeof chronoEndTimeStamp_ === "bigint");
-			expect(chronoEndTimeStamp_ > 0n);
+			expect(typeof chronoEndTimeStamp_).equal("bigint");
+			expect(chronoEndTimeStamp_).greaterThan(0n);
 			const chronoStartTimeStamp_ = this.enduranceChampionStartTimeStamp + this.prevEnduranceChampionDuration;
 			const chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
 			if (chronoDuration_ > this.chronoWarriorDuration) {
@@ -409,12 +409,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		/// If they don't the test would fail.
 		canBidWithEth: async function(transactionBlock_, bidderAddress_, value_, randomWalkNftId_, message_, paidEthPrice_, contracts_, transactionResponseFuture_) {
 			assertAddressIsValid(bidderAddress_);
-			expect(typeof value_ === "bigint");
-			expect(value_ >= 0n);
-			expect(typeof randomWalkNftId_ === "bigint");
-			expect(typeof message_ === "string");
-			expect(typeof paidEthPrice_ === "bigint");
-			expect(paidEthPrice_ > 0n);
+			expect(typeof value_).equal("bigint");
+			expect(value_).greaterThanOrEqual(0n);
+			expect(typeof randomWalkNftId_).equal("bigint");
+			expect(typeof message_).equal("string");
+			expect(typeof paidEthPrice_).equal("bigint");
+			expect(paidEthPrice_).greaterThan(0n);
 			const overpaidEthPrice_ = value_ - paidEthPrice_;
 			if ( ! (overpaidEthPrice_ >= 0n) ) {
 				// console.info("202504151");
@@ -426,14 +426,14 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			if (randomWalkNftId_ < 0n) {
 				// console.info("202505125");
 			} else {
-				if (this.usedRandomWalkNfts[randomWalkNftId_]) {
+				if (this.wasRandomWalkNftUsed(randomWalkNftId_)) {
 					// console.info("202504152");
 					await expect(transactionResponseFuture_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "UsedRandomWalkNft")
 						.withArgs("This Random Walk NFT has already been used for bidding.", randomWalkNftId_);
 					return false;
 				}
-				if ( ! (bidderAddress_ === this.randomWalkNftSimulator.ownerOf(randomWalkNftId_)) ) {
+				if ( ! (bidderAddress_ == this.randomWalkNftSimulator.ownerOf(randomWalkNftId_)) ) {
 					// console.info("202504153");
 					await expect(transactionResponseFuture_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CallerIsNotNftOwner")
@@ -470,30 +470,37 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			// // [/Comment-202505093]
 			// assertAddressIsValid(bidderAddress_);
 
-			expect(typeof bidderEthBalanceAmountBeforeTransaction_ === "bigint");
+			expect(typeof bidderEthBalanceAmountBeforeTransaction_).equal("bigint");
 
 			// If this was zero the transaction would fail.
-			expect(bidderEthBalanceAmountBeforeTransaction_ > 0n);
+			expect(bidderEthBalanceAmountBeforeTransaction_).greaterThan(0n);
 
-			expect(typeof value_ === "bigint");
-			expect(value_ >= 0n);
-			expect(typeof randomWalkNftId_ === "bigint");
-			expect(typeof message_ === "string");
-			expect(typeof ethBidPrice_ === "bigint");
-			expect(ethBidPrice_ > 0n);
-			expect(typeof paidEthPrice_ === "bigint");
-			expect(paidEthPrice_ > 0n);
+			expect(typeof value_).equal("bigint");
+			expect(value_).greaterThanOrEqual(0n);
+			expect(typeof randomWalkNftId_).equal("bigint");
+			expect(typeof message_).equal("string");
+			expect(typeof ethBidPrice_).equal("bigint");
+			expect(ethBidPrice_).greaterThan(0n);
+			expect(typeof paidEthPrice_).equal("bigint");
+			expect(paidEthPrice_).greaterThan(0n);
 			let overpaidEthPrice_ = value_ - paidEthPrice_;
 			// console.info("bidWithEth succeeded.", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_), hre.ethers.formatEther(value_), hre.ethers.formatEther(overpaidEthPrice_));
 			if (overpaidEthPrice_ == 0n) {
 				// console.info("202505081");
 			} else if (overpaidEthPrice_ > 0n) {
 				// Comment-202505117 relates.
-				// const blockBaseFeePerGas_ = await blockchainPropertyGetter_.getBlockBaseFeePerGas();
 				const transactionBlockBaseFeePerGas_ = transactionBlock_.baseFeePerGas;
-				expect(transactionBlockBaseFeePerGas_ > 0n);
+				if ( ! IS_HARDHAT_COVERAGE ) {
+					expect(transactionBlockBaseFeePerGas_).greaterThan(0n);
+				} else {
+					expect(transactionBlockBaseFeePerGas_).equal(0n);
+				}
 				const ethBidRefundAmountMinLimit_ = this.ethBidRefundAmountInGasMinLimit * transactionBlockBaseFeePerGas_;
+
+				// Comment-202505296 applies.
 				if (overpaidEthPrice_ < ethBidRefundAmountMinLimit_) {
+
+					// console.info("202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountMinLimit_));
 					overpaidEthPrice_ = 0n;
 					paidEthPrice_ = value_;
 					// ethBidPrice_ = value_;
@@ -503,12 +510,11 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// 	ethBidPrice_ *= this.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 					// 	console.info("202505095", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_));
 					// }
-					// console.info("202505145");
 				} else {
-					// console.info("202505087");
+					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountMinLimit_));
 				}
 			} else {
-				expect(false);
+				expect(false).equal(true);
 			}
 			if (randomWalkNftId_ < 0n) {
 				// console.info("202505088");
@@ -558,7 +564,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			this.ethBalanceAmount += paidEthPrice_;
 			const transactionFeeInEth_ =
 				transactionReceipt_.gasUsed * (transactionReceipt_.effectiveGasPrice ?? transactionReceipt_.gasPrice);
-			expect(transactionFeeInEth_ > 0n);
+			expect(transactionFeeInEth_).greaterThan(0n);
 			const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(bidderAddress_);
 			expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - paidEthPrice_ - transactionFeeInEth_);
 		},
@@ -567,11 +573,11 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `getNextEthBidPrice`
 
 		getNextEthBidPrice: function(blockBeforeTransaction_, currentTimeOffset_) {
-			expect(typeof currentTimeOffset_ === "bigint");
+			expect(typeof currentTimeOffset_).equal("bigint");
 			let nextEthBidPrice_;
-			if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
+			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				nextEthBidPrice_ = this.ethDutchAuctionBeginningBidPrice;
-				if (nextEthBidPrice_ === 0n) {
+				if (nextEthBidPrice_ == 0n) {
 					// console.info("202505127");
 					nextEthBidPrice_ = this.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
@@ -628,18 +634,28 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
+		// #region `wasRandomWalkNftUsed`
+
+		wasRandomWalkNftUsed: function(randomWalkNftId_) {
+			expect(typeof randomWalkNftId_).equal("bigint");
+			expect(randomWalkNftId_).greaterThanOrEqual(0n);
+			const randomWalkNftWasUsed_ = Boolean(this.usedRandomWalkNfts[randomWalkNftId_]);
+			return randomWalkNftWasUsed_;
+		},
+
+		// #endregion
 		// todo-1 Do we need `bidWithCstAndDonateToken`?
 		// todo-1 Do we need `bidWithCstAndDonateNft`?
 		// #region `canBidWithCst`
 
 		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponseFuture_) {
 			// assertAddressIsValid(bidderAddress_);
-			expect(bidderAddress_ !== hre.ethers.ZeroAddress);
-			expect(typeof cstPriceToPayMaxLimit_ === "bigint");
-			expect(cstPriceToPayMaxLimit_ >= 0n);
-			expect(typeof message_ === "string");
-			expect(typeof paidCstPrice_ === "bigint");
-			expect(paidCstPrice_ >= 0n);
+			expect(bidderAddress_).not.equal(hre.ethers.ZeroAddress);
+			expect(typeof cstPriceToPayMaxLimit_).equal("bigint");
+			expect(cstPriceToPayMaxLimit_).greaterThanOrEqual(0n);
+			expect(typeof message_).equal("string");
+			expect(typeof paidCstPrice_).equal("bigint");
+			expect(paidCstPrice_).greaterThanOrEqual(0n);
 			if ( ! (paidCstPrice_ <= cstPriceToPayMaxLimit_) ) {
 				// console.info("202504166");
 				await expect(transactionResponseFuture_)
@@ -687,9 +703,9 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			// // Comment-202505093 applies..
 			// assertAddressIsValid(bidderAddress_);
 
-			expect(typeof message_ === "string");
-			expect(typeof paidCstPrice_ === "bigint");
-			expect(paidCstPrice_ >= 0n);
+			expect(typeof message_).equal("string");
+			expect(typeof paidCstPrice_).equal("bigint");
+			expect(paidCstPrice_).greaterThanOrEqual(0n);
 			// console.info("bidWithCst succeeded.", hre.ethers.formatEther(paidCstPrice_));
 
 			// Comment-202505086 applies.
@@ -708,7 +724,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 				this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 			}
 			this.lastCstBidderAddress = bidderAddress_;
-			expect(this.lastBidderAddress != hre.ethers.ZeroAddress);
+			expect(this.lastBidderAddress).not.equal(hre.ethers.ZeroAddress);
 			this._updateChampionsIfNeeded(transactionBlock_);
 			this._extendMainPrizeTime(transactionBlock_);
 			this.lastBidderAddress = bidderAddress_;
@@ -727,7 +743,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `getNextCstBidPrice`
 
 		getNextCstBidPrice: function(blockBeforeTransaction_, currentTimeOffset_) {
-			expect(typeof currentTimeOffset_ === "bigint");
+			expect(typeof currentTimeOffset_).equal("bigint");
 			/*const*/ let [cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_] = this._getCstDutchAuctionTotalAndRemainingDurations(blockBeforeTransaction_);
 			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;
 			if (cstDutchAuctionRemainingDuration_ <= 0n) {
@@ -738,7 +754,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 			// Comment-202501307 relates and/or applies.
 			const cstDutchAuctionBeginningBidPrice_ =
-				(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ? this.nextRoundFirstCstDutchAuctionBeginningBidPrice : this.cstDutchAuctionBeginningBidPrice;
+				(this.lastCstBidderAddress == hre.ethers.ZeroAddress) ? this.nextRoundFirstCstDutchAuctionBeginningBidPrice : this.cstDutchAuctionBeginningBidPrice;
 
 			const nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
 			return nextCstBidPrice_;
@@ -879,12 +895,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			// #region
 
 			// assertAddressIsValid(callerAddress_);
-			expect(callerAddress_ !== hre.ethers.ZeroAddress);
+			expect(callerAddress_).not.equal(hre.ethers.ZeroAddress);
 
-			expect(typeof bidderEthBalanceAmountBeforeTransaction_ === "bigint");
+			expect(typeof bidderEthBalanceAmountBeforeTransaction_).equal("bigint");
 
 			// If this was zero the transaction would fail.
-			expect(bidderEthBalanceAmountBeforeTransaction_ > 0n);
+			expect(bidderEthBalanceAmountBeforeTransaction_).greaterThan(0n);
 
 			// #endregion
 			// #region
@@ -1238,11 +1254,11 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			// #region Main ETH prize for main prize beneficiary.
 
 			this.ethBalanceAmount -= mainEthPrizeAmount_;
-			// expect(this.ethBalanceAmount >= 0n);
+			// expect(this.ethBalanceAmount).greaterThanOrEqual(0n);
 			const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(callerAddress_);
 			const transactionFeeInEth_ =
 				transactionReceipt_.gasUsed * (transactionReceipt_.effectiveGasPrice ?? transactionReceipt_.gasPrice);
-			expect(transactionFeeInEth_ > 0n);
+			expect(transactionFeeInEth_).greaterThan(0n);
 			expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + mainEthPrizeAmount_);
 
 			// #endregion
@@ -1284,7 +1300,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		depositEthToPrizesWalletMany: function(value_, ethDeposits_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			const newEthBalanceAmount_ = this.ethBalanceAmount - value_;
-			expect(newEthBalanceAmount_ >= 0n);
+			expect(newEthBalanceAmount_).greaterThanOrEqual(0n);
 			this.ethBalanceAmount = newEthBalanceAmount_;
 			this.prizesWalletSimulator.depositEthMany(value_, this.roundNum, ethDeposits_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
@@ -1296,7 +1312,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			const isSuccess_ = this.stakingWalletCosmicSignatureNftSimulator.tryDeposit(value_, this.roundNum, contracts_, transactionReceipt_, eventIndexWrapper_);
 			if (isSuccess_) {
 				const newEthBalanceAmount_ = this.ethBalanceAmount - value_;
-				expect(newEthBalanceAmount_ >= 0n);
+				expect(newEthBalanceAmount_).greaterThanOrEqual(0n);
 				this.ethBalanceAmount = newEthBalanceAmount_;
 			}
 			return isSuccess_;
@@ -1307,7 +1323,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		depositEthToCharityWallet: function(value_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			const newEthBalanceAmount_ = this.ethBalanceAmount - value_;
-			expect(newEthBalanceAmount_ >= 0n);
+			expect(newEthBalanceAmount_).greaterThanOrEqual(0n);
 			this.ethBalanceAmount = newEthBalanceAmount_;
 			this.charityWalletSimulator.receive(contracts_.cosmicSignatureGameProxyAddr, value_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
@@ -1396,7 +1412,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 
 async function assertCosmicSignatureGameProxySimulatorOfRandomEthDonationWithInfoRecordIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_) {
 	const numEthDonationWithInfoRecordsCopy_ = cosmicSignatureGameProxySimulator_.numEthDonationWithInfoRecords();
-	if (numEthDonationWithInfoRecordsCopy_ === 0n) {
+	if (numEthDonationWithInfoRecordsCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -1421,7 +1437,7 @@ async function assertCosmicSignatureGameProxySimulatorOfEthDonationWithInfoRecor
 
 async function assertCosmicSignatureGameProxySimulatorOfRandomBidIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_) {
 	const totalNumBidsCopy_ = cosmicSignatureGameProxySimulator_.getTotalNumBids();
-	if (totalNumBidsCopy_ === 0n) {
+	if (totalNumBidsCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -1464,7 +1480,7 @@ async function assertCosmicSignatureGameProxySimulatorOfBidder(cosmicSignatureGa
 
 async function assertCosmicSignatureGameProxySimulatorRandomRandomWalkNftIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_) {
 	const randomWalkNftTotalSupplyCopy_ = cosmicSignatureGameProxySimulator_.randomWalkNftSimulator.totalSupply();
-	if (randomWalkNftTotalSupplyCopy_ === 0n) {
+	if (randomWalkNftTotalSupplyCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -1476,8 +1492,8 @@ async function assertCosmicSignatureGameProxySimulatorRandomRandomWalkNftIfPossi
 // #region `assertCosmicSignatureGameProxySimulatorRandomWalkNft`
 
 async function assertCosmicSignatureGameProxySimulatorRandomWalkNft(cosmicSignatureGameProxySimulator_, contracts_, randomWalkNftId_) {
-	expect(typeof randomWalkNftId_ === "bigint");
-	expect(await contracts_.cosmicSignatureGameProxy.usedRandomWalkNfts(randomWalkNftId_) === cosmicSignatureGameProxySimulator_.usedRandomWalkNfts[Number(randomWalkNftId_)] ? 1n : 0n);
+	// expect(typeof randomWalkNftId_).equal("bigint");
+	expect(await contracts_.cosmicSignatureGameProxy.usedRandomWalkNfts(randomWalkNftId_)).equal(cosmicSignatureGameProxySimulator_.wasRandomWalkNftUsed(randomWalkNftId_) ? 1n : 0n);
 }
 
 // #endregion

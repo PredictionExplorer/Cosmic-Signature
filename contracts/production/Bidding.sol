@@ -103,22 +103,30 @@ abstract contract Bidding is
 			// treating the whole received amount as what they were supposed to send.
 			// Comment-202502052 relates and/or applies.
 			// Comment-202502054 relates and/or applies.
-			// todo-0 See Comment-202504071.
-			// #enable_asserts assert(block.basefee > 0);
-			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
-			if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
-				overpaidEthPrice_ = int256(0);
-				paidEthPrice_ = msg.value;
-				// ethBidPrice_ = msg.value;
-				// if (randomWalkNftId_ >= int256(0)) {
-				// 	// [Comment-202505074]
-				// 	// It could make sense to subtract something like `CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1` from this
-				// 	// to make this formula closer to the opposite of `getEthPlusRandomWalkNftBidPrice`,
-				// 	// but it's unnecessary to spend gas on that.
-				// 	// Comment-202503162 relates and/or applies.
-				// 	// [/Comment-202505074]
-				// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-				// }
+			{
+				// #enable_asserts assert(block.basefee > 0);
+				uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
+
+				// [Comment-202505296]
+				// todo-1 Tell the auditor about this.
+				// Issue. The Hardhat Coverage task results tell us that this condition never becomes `true`.
+				// That's because `block.basefee` is zero, as explained in Comment-202505294.
+				// [/Comment-202505296]
+				if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
+
+					overpaidEthPrice_ = int256(0);
+					paidEthPrice_ = msg.value;
+					// ethBidPrice_ = msg.value;
+					// if (randomWalkNftId_ >= int256(0)) {
+					// 	// [Comment-202505074]
+					// 	// It could make sense to subtract something like `CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1` from this
+					// 	// to make this formula closer to the opposite of `getEthPlusRandomWalkNftBidPrice`,
+					// 	// but it's unnecessary to spend gas on that.
+					// 	// Comment-202503162 relates and/or applies.
+					// 	// [/Comment-202505074]
+					// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+					// }
+				}
 			}
 		} else {
 			// [Comment-202412045]

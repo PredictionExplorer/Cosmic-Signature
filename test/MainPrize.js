@@ -43,9 +43,9 @@ describe("MainPrize", function () {
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize()).revertedWith("I am not accepting deposits.");
 
 		const cosmicSignatureNftStakingTotalEthRewardAmount_ = await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
-		expect(cosmicSignatureNftStakingTotalEthRewardAmount_ > 0n);
+		expect(cosmicSignatureNftStakingTotalEthRewardAmount_).greaterThan(0n);
 		const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
-		expect(charityEthDonationAmount_ > 0n);
+		expect(charityEthDonationAmount_).greaterThan(0n);
 		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(0n);
 		await expect(brokenStakingWalletCosmicSignatureNft_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
 
@@ -86,9 +86,9 @@ describe("MainPrize", function () {
 			// There are no staked CS NFTs, so on main prize claim we will transfer this to charity.
 			const cosmicSignatureNftStakingTotalEthRewardAmount_ = await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
 
-			expect(cosmicSignatureNftStakingTotalEthRewardAmount_ > 0n);
+			expect(cosmicSignatureNftStakingTotalEthRewardAmount_).greaterThan(0n);
 			const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
-			expect(charityEthDonationAmount_ > 0n);
+			expect(charityEthDonationAmount_).greaterThan(0n);
 			const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize();
 			if (ethDepositAcceptanceModeCode_ > 0n) {
 				await expect(transactionResponseFuture_)
@@ -100,7 +100,7 @@ describe("MainPrize", function () {
 					.withArgs(brokenEthReceiverAddr_, cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_);
 			}
 			const brokenEthReceiverEthBalanceAmount_ = await hre.ethers.provider.getBalance(brokenEthReceiverAddr_);
-			expect(brokenEthReceiverEthBalanceAmount_ == ((ethDepositAcceptanceModeCode_ > 0n) ? 0n : (cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_)));
+			expect(brokenEthReceiverEthBalanceAmount_).equal((ethDepositAcceptanceModeCode_ > 0n) ? 0n : (cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_));
 		}
 	});
 
@@ -148,7 +148,7 @@ describe("MainPrize", function () {
 				await expect(maliciousBidder_.setModeCode(maliciousBidderModeCode_)).not.reverted;
 				const paidEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 				const overpaidEthPrice_ = ethPriceToPay_ - paidEthPrice_;
-				expect(overpaidEthPrice_ > 0n);
+				expect(overpaidEthPrice_).greaterThan(0n);
 				const transactionResponseFuture_ = maliciousBidder_.connect(contracts_.signers[4]).doBidWithEth({value: ethPriceToPay_,});
 				if (maliciousBidderModeCode_ > 0n) {
 					await expect(transactionResponseFuture_)

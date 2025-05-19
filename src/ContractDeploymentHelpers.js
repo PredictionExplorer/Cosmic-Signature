@@ -86,7 +86,7 @@ const deployContractsAdvanced = async function (
 
 	const randomWalkNftFactory = await hre.ethers.getContractFactory("RandomWalkNFT", deployerAcct);
 	let randomWalkNft;
-	if (randomWalkNftAddr.length === 0) {
+	if (randomWalkNftAddr.length <= 0) {
 		randomWalkNft = await randomWalkNftFactory.deploy();
 		await randomWalkNft.waitForDeployment();
 		randomWalkNftAddr = await randomWalkNft.getAddress();

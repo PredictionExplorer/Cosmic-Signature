@@ -206,9 +206,8 @@ function populateNetworkIsMainNetOnce(hre) {
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
 	async (args, hre, runSuper) => {
-		// todo-1 Review all `===` and `!==`. Maybe in some cases delete one `=`.
 		// @ts-ignore 'args' is of type 'unknown'.
-		if (args.solcVersion === solidityVersion) {
+		if (args.solcVersion == solidityVersion) {
 
 			return {
 				compilerPath: solidityCompilerPath,
@@ -410,6 +409,7 @@ const hardhatUserConfig = {
 		hardhat: {
 			allowUnlimitedContractSize: true,
 			// allowBlocksWithSameTimestamp: true,
+			// initialBaseFeePerGas: 1000000000,
 
 			// // This is needed so that the minimg of multiple transactions per block worked.
 			// // Actually, this appears to be unnecessary if we specify `gasLimit` when making a contract metod call.
@@ -438,20 +438,20 @@ const hardhatUserConfig = {
 		},
 		rinkeby: {
 			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
 			url: "http://170.187.142.12:22545/",
-			accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+			accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 			// gasMultiplier: 2,
 		},
 		arbigoerli: {
 			url: "https://goerli-rollup.arbitrum.io/rpc",
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		arbitrum: {
 			url: "https://arb1.arbitrum.io/rpc",
-			accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
+			accounts: process.env.MAINNET_PRIVATE_KEY != undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
 	},
 

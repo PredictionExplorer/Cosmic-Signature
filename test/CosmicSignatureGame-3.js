@@ -148,7 +148,7 @@ describe("CosmicSignatureGame-3", function () {
 
 				try {
 					await transactionResponseFuture_;
-					expect(false);
+					expect(false).equal(true);
 				} catch (errorObject_) {
 					expect(errorObject_.message).equal("Contract at 0x0000000000000000000000000000000000000000 doesn't look like an ERC 1967 proxy with a logic contract address\n\n");
 				}

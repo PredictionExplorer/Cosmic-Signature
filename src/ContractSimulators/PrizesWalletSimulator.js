@@ -30,7 +30,7 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #region `depositEthMany`
 
 		depositEthMany: function(value_, roundNum_, ethDeposits_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(typeof value_ === "bigint");
+			expect(typeof value_).equal("bigint");
 			expect(value_).equal(ethDeposits_.reduce((amountSum_, ethDeposit_) => (amountSum_ + ethDeposit_.amount), 0n));
 			for (let ethDepositIndex_ = ethDeposits_.length; ( -- ethDepositIndex_ ) >= 0; ) {
 				const ethDeposit_ = ethDeposits_[ethDepositIndex_];
@@ -42,15 +42,15 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #region `depositEth`
 
 		depositEth: function(roundNum_, prizeWinnerAddress_, amount_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(typeof roundNum_ === "bigint");
-			expect(roundNum_ >= 0n);
+			expect(typeof roundNum_).equal("bigint");
+			expect(roundNum_).greaterThanOrEqual(0n);
 			// assertAddressIsValid(prizeWinnerAddress_);
-			expect(prizeWinnerAddress_ !== hre.ethers.ZeroAddress);
-			expect(typeof amount_ === "bigint");
-			expect(amount_ >= 0n);
+			expect(prizeWinnerAddress_).not.equal(hre.ethers.ZeroAddress);
+			expect(typeof amount_).equal("bigint");
+			expect(amount_).greaterThanOrEqual(0n);
 			{
 				const newEthBalanceAmount_ = this.ethBalanceAmount + amount_;
-				expect(newEthBalanceAmount_ <= (1n << 128n) - 1n);
+				expect(newEthBalanceAmount_).lessThanOrEqual((1n << 128n) - 1n);
 				this.ethBalanceAmount = newEthBalanceAmount_;
 			}
 			{

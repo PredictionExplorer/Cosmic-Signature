@@ -100,7 +100,7 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
-	if (typeof privKey === "undefined" || privKey.length == 0) {
+	if (privKey == undefined || privKey.length <= 0) {
 		console.log(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
@@ -108,7 +108,7 @@ async function main() {
 		process.exit(1);
 	}
 	let rwalkTokenList = process.env.RWALK_TOKENS;
-	if (typeof rwalkTokenList === "undefined" || rwalkTokenList.length == 0) {
+	if (rwalkTokenList == undefined || rwalkTokenList.length <= 0) {
 		console.log("Please provide Random Walk NFT list in RWALK_TOKENS environment variable");
 		process.exit(1);
 	}

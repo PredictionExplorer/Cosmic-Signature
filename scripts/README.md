@@ -9,7 +9,7 @@ for example:
 
     sepolia: {
         url: `http://[ip_address]:[port]/`,
-        accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+        accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
         gasMultiplier: 2,
     }
 

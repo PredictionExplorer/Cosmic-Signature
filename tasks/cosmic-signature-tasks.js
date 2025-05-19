@@ -10,7 +10,7 @@ const { deployContracts } = require("../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, hre) => {
 	const deployConfigFilePath = args.deployConfigFilePath;
-	if (deployConfigFilePath === undefined || deployConfigFilePath.length === 0) {
+	if (deployConfigFilePath == undefined || deployConfigFilePath.length <= 0) {
 		console.log("Please provide a config file: --deployConfigFilePath <file_path>");
 		return;
 	}
@@ -37,7 +37,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 
 	// // I dislike this charity address logic. So I have commented it out.
 	// // The charity address is really supposed to be provided in the config file. It should not be optional.
-	// if (configObject.charityAddr.length === 0) {
+	// if (configObject.charityAddr.length <= 0) {
 	// 	const signers = await hre.ethers.getSigners();
 	// 	configObject.charityAddr = signers[1].address;
 	// }

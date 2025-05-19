@@ -281,15 +281,21 @@ abstract contract BiddingOpenBid is
 			// Comment-202502052 relates and/or applies.
 			// Comment-202502054 relates and/or applies.
 			// Issue. To keep it simple, this logic is not necessarily as good as that in `Bidding._bidWithEth`.
-			// todo-0 See Comment-202504071.
-			// #enable_asserts assert(block.basefee > 0);
-			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
-			if (uint256(overpaidEthPrice_) >= ethBidRefundAmountMinLimit_) {
-				// Comment-202502043 applies.
-				(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
+			{
+				// #enable_asserts assert(block.basefee > 0);
+				uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
 
-				if ( ! isSuccess_ ) {
-					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
+				// Comment-202505296 applies.
+				if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
+					
+					// Doing nothing.
+				} else {
+					// Comment-202502043 applies.
+					(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
+
+					if ( ! isSuccess_ ) {
+						revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
+					}
 				}
 			}
 		}

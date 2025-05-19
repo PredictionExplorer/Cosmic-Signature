@@ -55,8 +55,8 @@ describe("CosmicSignatureGame-1", function () {
 		// #endregion
 		// #region
 
-		// This must be relatively big, to increase the chance that the logic near Comment-202505117
-		// will reduce ETH bid price to 1 Wei.
+		// The bigger this value the higher is the chance that that Solidity coverage will be 100%
+		// and the logic near Comment-202505117 will reduce ETH bid price to 1 Wei.
 		const numRoundsToRunMinLimit_ = 25;
 
 		const bidAverageCountPerRoundMinLimit_ = 10.0;
@@ -98,7 +98,7 @@ describe("CosmicSignatureGame-1", function () {
 						return signerIndex_;
 					}
 				}
-				expect(false);
+				expect(false).equal(true);
 			};
 
 			// #endregion
@@ -229,8 +229,8 @@ describe("CosmicSignatureGame-1", function () {
 
 						const nftWasUsed_ =
 							isForStaking_ ?
-							stakingWalletRandomWalkNftSimulator_.usedNfts[randomWalkNftId_] :
-							cosmicSignatureGameProxySimulator_.usedRandomWalkNfts[randomWalkNftId_];
+							stakingWalletRandomWalkNftSimulator_.wasNftUsed(randomWalkNftId_) :
+							cosmicSignatureGameProxySimulator_.wasRandomWalkNftUsed(randomWalkNftId_);
 						if (( ! nftWasUsed_ ) && randomWalkNftSimulator_.ownerOf(randomWalkNftId_) == signer_.address) {
 							return true;
 						}
@@ -252,7 +252,7 @@ describe("CosmicSignatureGame-1", function () {
 						// Comment-202504224 applies.
 						cosmicSignatureNftId_ = randomNumber_ % cosmicSignatureNftTotalSupply_;
 
-						if ( ( ! stakingWalletCosmicSignatureNftSimulator_.usedNfts[cosmicSignatureNftId_] ) &&
+						if ( ( ! stakingWalletCosmicSignatureNftSimulator_.wasNftUsed(cosmicSignatureNftId_) ) &&
 								cosmicSignatureNftSimulator_.ownerOf(cosmicSignatureNftId_) == signer_.address
 						) {
 							return true;
@@ -472,7 +472,7 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionShouldHaveSucceeded_ =
 							await cosmicSignatureGameProxySimulator_.canBidWithEth
 								(transactionBlock_, signer_.address, ethPriceToPayMaxLimit_, randomWalkNftId_, bidMessage_, paidEthPrice_, contracts_, transactionResponseFuture_);
-						expect(transactionShouldHaveSucceeded_ === (transactionReceipt_ !== undefined));
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505111", signerIndex_.toString());
 							await cosmicSignatureGameProxySimulator_.bidWithEth
@@ -524,7 +524,7 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionShouldHaveSucceeded_ =
 							await cosmicSignatureGameProxySimulator_.canBidWithCst
 								(transactionBlock_, signer_.address, cstPriceToPayMaxLimit_, bidMessage_, paidCstPrice_, contracts_, transactionResponseFuture_);
-						expect(transactionShouldHaveSucceeded_ === (transactionReceipt_ !== undefined));
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505112", signerIndex_.toString());
 							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst
@@ -577,7 +577,7 @@ describe("CosmicSignatureGame-1", function () {
 							await cosmicSignatureGameProxySimulator_.canClaimMainPrize
 								(transactionBlock_, signer_.address, contracts_, transactionResponseFuture_);
 						// const timeStamp2_ = Date.now();
-						expect(transactionShouldHaveSucceeded_ === (transactionReceipt_ !== undefined));
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505113", signerIndex_.toString());
 							// console.info("202505142", cosmicSignatureGameProxySimulator_.getTotalNumBids().toString());
@@ -636,7 +636,7 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region
 
-				if (blockBeforeTransaction_ !== undefined) {
+				if (blockBeforeTransaction_ != undefined) {
 					expect(transactionBlock_.number).equal(blockBeforeTransaction_.number + 1);
 					{
 						const adjacentBlockTimeStampDifference_ = transactionBlock_.timestamp - blockBeforeTransaction_.timestamp;
@@ -648,9 +648,9 @@ describe("CosmicSignatureGame-1", function () {
 							console.warn("Warning 202505017. Adjacent block timestamp difference is " + adjacentBlockTimeStampDifference_.toString() + ".");
 						}
 					}
-					if (transactionReceipt_ !== undefined) {
+					if (transactionReceipt_ != undefined) {
 						// console.info("202505075");
-						expect(transactionReceipt_.logs.length).equals(eventIndexWrapper_.value);
+						expect(transactionReceipt_.logs.length).equal(eventIndexWrapper_.value);
 						await assertContractSimulators_();
 					} else {
 						// console.info("202505076");

@@ -212,6 +212,7 @@ abstract contract MainPrize is
 					// #endregion
 					// #region
 
+					// Remember about Comment-202503254!
 					randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
 					// #endregion

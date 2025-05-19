@@ -95,8 +95,6 @@ library CosmicSignatureConstants {
 	/// todo-0 Can I fork Arbitrum blockchain? Then I would have all the actual numbers in my code.
 	/// todo-0 But don't configure initialBaseFeePerGas
 	///
-	/// todo-0 See Comment-202504071.
-	///
 	/// todo-0 Remember to change this in the tests.
 	/// todo-0 We have `ethBidRefundAmountInGasMinLimit` there too.
 	/// [/Comment-202502054]

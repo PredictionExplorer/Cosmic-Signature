@@ -5,7 +5,7 @@ const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 async function main() {
 	// let privKey = process.env.PRIVKEY;
-	// if (typeof privKey === "undefined" || privKey.length == 0) {
+	// if (privKey == undefined || privKey.length <= 0) {
 	// 	console.log(
 	// 		// todo-1 "scripts/deploy.js" no longer exists.
 	// 		"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",

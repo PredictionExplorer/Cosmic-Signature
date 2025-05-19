@@ -1,3 +1,7 @@
+// [Comment-202505289]
+//
+// "test/coverage-1.bash" does most of the following.
+// 
 // To test for Solidity Coverage, execute the following command:
 // 
 // 'npx' 'hardhat' 'coverage'
@@ -19,6 +23,8 @@
 // To find parts of the code that are not covered, cd to "coverage/" and search the following in all files in the folder tree:
 //
 // title=
+//
+// [/Comment-202505289]
 
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],

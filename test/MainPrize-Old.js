@@ -124,7 +124,7 @@ describe("MainPrize-Old", function () {
 			let wlog = prizesWallet.interface.parseLog(deposit_logs[i]);
 			let args = wlog.args.toObject();
 			let prizeWinnerAddress_ = args.prizeWinnerAddress;
-			if (typeof unique_winners[prizeWinnerAddress_] === "undefined") {
+			if (unique_winners[prizeWinnerAddress_] == undefined) {
 				let winner_signer = await hre.ethers.getSigner(prizeWinnerAddress_);
 				await prizesWallet.connect(winner_signer).withdrawEth();
 				unique_winners[prizeWinnerAddress_] = 1;
@@ -194,7 +194,7 @@ describe("MainPrize-Old", function () {
 			let args = wlog.args.toObject();
 			let winnerAddress_ = args.winnerAddress;
 			sumDeposits += args.ethPrizeAmount;
-			if (unique_winners[winnerAddress_] === undefined) {
+			if (unique_winners[winnerAddress_] == undefined) {
 				if (winnerAddress_ != bidderContractAddr) {
 					let winner_signer = await hre.ethers.getSigner(winnerAddress_);
 					await prizesWallet.connect(winner_signer).withdrawEth();

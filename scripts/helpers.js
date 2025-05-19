@@ -10,7 +10,7 @@ const hre = require("hardhat");
 async function getCosmicSignatureGameContract(cosmicSignatureGameContractName = "CosmicSignatureGame") {
 	const cosmicSignatureGameAddr = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
 	// todo-1 Unnecessary to validate length?
-	if (typeof cosmicSignatureGameAddr === "undefined" || cosmicSignatureGameAddr.length !== 42) {
+	if (cosmicSignatureGameAddr == undefined || cosmicSignatureGameAddr.length != 42) {
 		console.log("COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address.");
 		process.exit(1);
 	}
@@ -32,7 +32,7 @@ async function getCosmicSignatureGameContract(cosmicSignatureGameContractName = 
 async function getBidderContract() {
 	const bidderContractAddr = process.env.BIDDER_CONTRACT_ADDRESS;
 	// todo-1 Unnecessary to validate length?
-	if (typeof bidderContractAddr === "undefined" || bidderContractAddr.length !== 42) {
+	if (bidderContractAddr == undefined || bidderContractAddr.length != 42) {
 		console.log("BIDDER_CONTRACT_ADDRESS environment variable does not contain contract address.");
 		process.exit(1);
 	}
