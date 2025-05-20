@@ -26,6 +26,7 @@ describe("CharityWallet", function () {
 		const {deployerAcct, ownerAcct, charityAcct, signers, charityWallet, charityWalletAddr,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
+		// todo-0 This contract no longer exists.
 		const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
 		const brokenCharity = await brokenCharityFactory.deploy();
 		await brokenCharity.waitForDeployment();

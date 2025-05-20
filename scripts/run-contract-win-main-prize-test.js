@@ -53,7 +53,7 @@ async function main() {
 	let durationUntilMainPrize_ = await cosmicSignatureGame.getDurationUntilMainPrize();
 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize_.toNumber()]);
 	// await hre.ethers.provider.send("evm_mine");
-	await bidderContract.connect(signer0).doClaim();
+	await bidderContract.connect(signer0).doClaimMainPrize();
 }
 
 main()

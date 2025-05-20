@@ -27,8 +27,8 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 
 		receive: function(callerAddress_, value_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			assertAddressIsValid(callerAddress_);
-			expect(typeof value_ === "bigint");
-			expect(value_ >= 0n);
+			expect(typeof value_).equal("bigint");
+			expect(value_).greaterThanOrEqual(0n);
 			this.ethBalanceAmount += value_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],

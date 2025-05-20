@@ -54,15 +54,23 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `_onlyGame`
 
+	/// @dev Comment-202411253 applies.
+	modifier _onlyGame() {
+		_checkOnlyGame();
+		_;
+	}
+
+	// #endregion
+	// #region `_checkOnlyGame`
+
 	/// @dev
 	/// [Comment-202411253]
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202411253]
-	modifier _onlyGame() {
+	function _checkOnlyGame() private view {
 		if (_msgSender() != game) {
 			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
 		}
-		_;
 	}
 
 	// #endregion

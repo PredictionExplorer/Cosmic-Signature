@@ -40,11 +40,11 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 			expect(callerAddress_).not.equal(hre.ethers.ZeroAddress);
 			// assertAddressIsValid(to_);
 			expect(to_).not.equal(hre.ethers.ZeroAddress);
-			expect(typeof value_ === "bigint");
-			expect(value_ >= 0n);
+			expect(typeof value_).equal("bigint");
+			expect(value_).greaterThanOrEqual(0n);
 			{
 				const msgSenderNewBalanceAmount_ = this.balanceOf(callerAddress_) - value_;
-				expect(msgSenderNewBalanceAmount_ >= 0n);
+				expect(msgSenderNewBalanceAmount_).greaterThanOrEqual(0n);
 				this.accountBalanceAmounts[callerAddress_] = msgSenderNewBalanceAmount_;
 			}
 			{
@@ -66,15 +66,15 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		mint: function(account_, value_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			// assertAddressIsValid(account_);
 			expect(account_).not.equal(hre.ethers.ZeroAddress);
-			expect(typeof value_ === "bigint");
-			expect(value_ >= 0n);
+			expect(typeof value_).equal("bigint");
+			expect(value_).greaterThanOrEqual(0n);
 			{
 				const newTotalSupply_ = this.totalSupply + value_;
 
 				// We want the total supply to be far away from the point of overflow.
 				// It would be a concern if we observe it to be bigger than this.
 				// Comment-202412033 relates and/or applies.
-				expect(newTotalSupply_ <= (1n << 128n) - 1n);
+				expect(newTotalSupply_).lessThanOrEqual((1n << 128n) - 1n);
 
 				this.totalSupply = newTotalSupply_;
 			}
@@ -97,15 +97,15 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		burn: function(account_, value_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			// assertAddressIsValid(account_);
 			expect(account_).not.equal(hre.ethers.ZeroAddress);
-			expect(typeof value_ === "bigint");
-			expect(value_ >= 0n);
+			expect(typeof value_).equal("bigint");
+			expect(value_).greaterThanOrEqual(0n);
 			{
 				const newTotalSupply_ = this.totalSupply - value_;
 				this.totalSupply = newTotalSupply_;
 			}
 			{
 				const accountNewBalanceAmount_ = this.balanceOf(account_) - value_;
-				expect(accountNewBalanceAmount_ >= 0n);
+				expect(accountNewBalanceAmount_).greaterThanOrEqual(0n);
 				this.accountBalanceAmounts[account_] = accountNewBalanceAmount_;
 			}
 			assertEvent(

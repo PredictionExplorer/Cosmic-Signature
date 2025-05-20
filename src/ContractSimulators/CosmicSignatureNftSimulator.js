@@ -28,14 +28,14 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `assertNftIdIsValid`
 
 		assertNftIdIsValid: function(nftId_) {
-			expect(this.isNftIdValid(nftId_));
+			expect(this.isNftIdValid(nftId_)).equal(true);
 		},
 
 		// #endregion
 		// #region `isNftIdValid`
 
 		isNftIdValid: function(nftId_) {
-			expect(typeof nftId_ === "bigint");
+			expect(typeof nftId_).equal("bigint");
 			return nftId_ >= 0n && nftId_ < this.totalSupply();
 		},
 
@@ -67,7 +67,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 
 		setNftName: function(nftId_, nftName_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			this.assertNftIdIsValid(nftId_);
-			expect(typeof nftName_ === "string");
+			expect(typeof nftName_).equal("string");
 			this.nftsInfo[Number(nftId_)].name = nftName_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -90,7 +90,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `transferFrom`
 
 		transferFrom: function(from_, to_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(from_ === this.ownerOf(nftId_));
+			expect(from_).equal(this.ownerOf(nftId_));
 			assertAddressIsValid(to_);
 			this.nftsInfo[Number(nftId_)].ownerAddress = to_;
 			assertEvent(
@@ -106,8 +106,8 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `mint`
 
 		mint: function(roundNum_, nftOwnerAddress_, randomNumberSeed_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(typeof roundNum_ === "bigint");
-			expect(roundNum_ >= 0n);
+			expect(typeof roundNum_).equal("bigint");
+			expect(roundNum_).greaterThanOrEqual(0n);
 			assertAddressIsValid(nftOwnerAddress_);
 			const nftSeed_ = generateRandomUInt256FromSeed(randomNumberSeed_);
 			const nftId_ = this.totalSupply();
@@ -169,7 +169,7 @@ async function assertCosmicSignatureNftSimulator(cosmicSignatureNftSimulator_, c
 
 async function assertRandomCosmicSignatureNftInfoIfPossible(cosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_) {
 	const nftTotalSupplyCopy_ = cosmicSignatureNftSimulator_.totalSupply()
-	if (nftTotalSupplyCopy_ === 0n) {
+	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -198,10 +198,10 @@ async function assertCosmicSignatureNftInfo(cosmicSignatureNftSimulator_, contra
 	const nft1Id_ = randomNumber_ % nftTotalSupplyCopy_;
 	randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 	let nft2Id_ = randomNumber_ % nftTotalSupplyCopy_;
-	if (nft2Id_ === nft1Id_) {
+	if (nft2Id_ == nft1Id_) {
 		nft2Id_ = (randomNumber_ ^ 1n) % nftTotalSupplyCopy_;
 	}
-	expect(cosmicSignatureNftSimulator_.getNftSeed(nft1Id_) != cosmicSignatureNftSimulator_.getNftSeed(nft2Id_));
+	expect(cosmicSignatureNftSimulator_.getNftSeed(nft1Id_)).not.equal(cosmicSignatureNftSimulator_.getNftSeed(nft2Id_));
 }
 
 // #endregion

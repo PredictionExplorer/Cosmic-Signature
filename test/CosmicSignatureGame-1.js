@@ -20,7 +20,15 @@ const { createStakingWalletCosmicSignatureNftSimulator, assertStakingWalletCosmi
 // const { createMarketingWalletSimulator, assertMarketingWalletSimulator } = require("../src/ContractSimulators/MarketingWalletSimulator.js");
 const { createCharityWalletSimulator, assertCharityWalletSimulator } = require("../src/ContractSimulators/CharityWalletSimulator.js");
 // const { createCosmicSignatureDaoSimulator, assertCosmicSignatureDaoSimulator } = require("../src/ContractSimulators/CosmicSignatureDaoSimulator.js");
-const { createCosmicSignatureGameProxySimulator, assertCosmicSignatureGameProxySimulator } = require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
+const {
+	createCosmicSignatureGameProxySimulator,
+	assertCosmicSignatureGameProxySimulator,
+	assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts,
+	assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions,
+	assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations,
+	assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations,
+} =
+	require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
 
 // #endregion
 // #region
@@ -47,9 +55,9 @@ describe("CosmicSignatureGame-1", function () {
 		// #endregion
 		// #region
 
-		// This must be relatively big, to increase the chance that the logic near Comment-202505117
-		// will reduce ETH bid price to 1 Wei.
-		const numRoundsToRunMinLimit_ = 20;
+		// The bigger this value the higher is the chance that that Solidity coverage will be 100%
+		// and the logic near Comment-202505117 will reduce ETH bid price to 1 Wei.
+		const numRoundsToRunMinLimit_ = 25;
 
 		const bidAverageCountPerRoundMinLimit_ = 10.0;
 
@@ -90,7 +98,7 @@ describe("CosmicSignatureGame-1", function () {
 						return signerIndex_;
 					}
 				}
-				expect(false);
+				expect(false).equal(true);
 			};
 
 			// #endregion
@@ -221,8 +229,8 @@ describe("CosmicSignatureGame-1", function () {
 
 						const nftWasUsed_ =
 							isForStaking_ ?
-							stakingWalletRandomWalkNftSimulator_.usedNfts[randomWalkNftId_] :
-							cosmicSignatureGameProxySimulator_.usedRandomWalkNfts[randomWalkNftId_];
+							stakingWalletRandomWalkNftSimulator_.wasNftUsed(randomWalkNftId_) :
+							cosmicSignatureGameProxySimulator_.wasRandomWalkNftUsed(randomWalkNftId_);
 						if (( ! nftWasUsed_ ) && randomWalkNftSimulator_.ownerOf(randomWalkNftId_) == signer_.address) {
 							return true;
 						}
@@ -244,7 +252,7 @@ describe("CosmicSignatureGame-1", function () {
 						// Comment-202504224 applies.
 						cosmicSignatureNftId_ = randomNumber_ % cosmicSignatureNftTotalSupply_;
 
-						if ( ( ! stakingWalletCosmicSignatureNftSimulator_.usedNfts[cosmicSignatureNftId_] ) &&
+						if ( ( ! stakingWalletCosmicSignatureNftSimulator_.wasNftUsed(cosmicSignatureNftId_) ) &&
 								cosmicSignatureNftSimulator_.ownerOf(cosmicSignatureNftId_) == signer_.address
 						) {
 							return true;
@@ -464,7 +472,7 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionShouldHaveSucceeded_ =
 							await cosmicSignatureGameProxySimulator_.canBidWithEth
 								(transactionBlock_, signer_.address, ethPriceToPayMaxLimit_, randomWalkNftId_, bidMessage_, paidEthPrice_, contracts_, transactionResponseFuture_);
-						expect(transactionShouldHaveSucceeded_ === (transactionReceipt_ !== undefined));
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505111", signerIndex_.toString());
 							await cosmicSignatureGameProxySimulator_.bidWithEth
@@ -516,7 +524,7 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionShouldHaveSucceeded_ =
 							await cosmicSignatureGameProxySimulator_.canBidWithCst
 								(transactionBlock_, signer_.address, cstPriceToPayMaxLimit_, bidMessage_, paidCstPrice_, contracts_, transactionResponseFuture_);
-						expect(transactionShouldHaveSucceeded_ === (transactionReceipt_ !== undefined));
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505112", signerIndex_.toString());
 							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst
@@ -569,7 +577,7 @@ describe("CosmicSignatureGame-1", function () {
 							await cosmicSignatureGameProxySimulator_.canClaimMainPrize
 								(transactionBlock_, signer_.address, contracts_, transactionResponseFuture_);
 						// const timeStamp2_ = Date.now();
-						expect(transactionShouldHaveSucceeded_ === (transactionReceipt_ !== undefined));
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505113", signerIndex_.toString());
 							// console.info("202505142", cosmicSignatureGameProxySimulator_.getTotalNumBids().toString());
@@ -607,7 +615,28 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region
 
-				if (blockBeforeTransaction_ !== undefined) {
+				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+				if ((randomNumber_ & (0x0Fn << (0n * 8n))) == 0n) {
+					// console.log("202505265");
+					assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
+				}
+				if ((randomNumber_ & (0x0Fn << (1n * 8n))) == 0n) {
+					// console.log("202505266");
+					assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+				}
+				if ((randomNumber_ & (0x0Fn << (2n * 8n))) == 0n) {
+					// console.log("202505267");
+					assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+				}
+				if ((randomNumber_ & (0x0Fn << (3n * 8n))) == 0n) {
+					// console.log("202505268");
+					assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+				}
+
+				// #endregion
+				// #region
+
+				if (blockBeforeTransaction_ != undefined) {
 					expect(transactionBlock_.number).equal(blockBeforeTransaction_.number + 1);
 					{
 						const adjacentBlockTimeStampDifference_ = transactionBlock_.timestamp - blockBeforeTransaction_.timestamp;
@@ -619,9 +648,9 @@ describe("CosmicSignatureGame-1", function () {
 							console.warn("Warning 202505017. Adjacent block timestamp difference is " + adjacentBlockTimeStampDifference_.toString() + ".");
 						}
 					}
-					if (transactionReceipt_ !== undefined) {
+					if (transactionReceipt_ != undefined) {
 						// console.info("202505075");
-						expect(transactionReceipt_.logs.length).equals(eventIndexWrapper_.value);
+						expect(transactionReceipt_.logs.length).equal(eventIndexWrapper_.value);
 						await assertContractSimulators_();
 					} else {
 						// console.info("202505076");
@@ -659,9 +688,13 @@ describe("CosmicSignatureGame-1", function () {
 					//    todo-1 I wrote a todo to reference this comment near `DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT`.
 					// [/Comment-202505117]
 					if (cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor < 10n ** 30n) {
-						cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor *= 10n;
-						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor)).not.reverted;
+						const newEthDutchAuctionEndingBidPriceDivisor_ = cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor * 10n;
+						const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
+						const transactionResponse_ = await transactionResponseFuture_;
+						transactionReceipt_ = await transactionResponse_.wait();
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						eventIndexWrapper_.value = 0;
+						cosmicSignatureGameProxySimulator_.setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_, contracts_, transactionReceipt_, eventIndexWrapper_);
 					}
 				}
 

@@ -34,6 +34,8 @@ abstract contract Bidding is
 	IBidding {
 	// #region `receive`
 
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
 	receive() external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth((-1), "");
 	}
@@ -41,8 +43,9 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev Comment-202502051 applies.
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -50,8 +53,9 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev Comment-202502051 applies.
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
@@ -59,12 +63,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEth`
 
-	/// @dev
-	/// [Comment-202502051]
-	/// `bidWithEth`, `bidWithCstAndDonateToken`, `bidWithCstAndDonateNft` can get by without `nonReentrant`.
-	/// But `bidWithEthAndDonateToken` and `bidWithEthAndDonateNft` need it,
-	/// at least to pervent the possibility to mess up the order of bidding and donation events.
-	/// [/Comment-202502051]
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 	}
@@ -72,7 +72,15 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithEth`
 
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	/// @dev
+	/// [Comment-202502051]
+	/// A reason for this to be `nonReentrant` is to pervent the possibility to mess up
+	/// the order of bidding and token/NFT donation events.
+	/// [/Comment-202502051]
+	/// [Comment-202505201]
+	/// A reason for this to be `nonReentrant` is because a reentry from `_distributePrizes` could result in incorrect behavior.
+	/// [/Comment-202505201]
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_) private nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
 
 		// BidType bidType_;
@@ -95,22 +103,30 @@ abstract contract Bidding is
 			// treating the whole received amount as what they were supposed to send.
 			// Comment-202502052 relates and/or applies.
 			// Comment-202502054 relates and/or applies.
-			// todo-0 See Comment-202504071.
-			// #enable_asserts assert(block.basefee > 0);
-			uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
-			if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
-				overpaidEthPrice_ = int256(0);
-				paidEthPrice_ = msg.value;
-				// ethBidPrice_ = msg.value;
-				// if (randomWalkNftId_ >= int256(0)) {
-				// 	// [Comment-202505074]
-				// 	// It could make sense to subtract something like `CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1` from this
-				// 	// to make this formula closer to the opposite of `getEthPlusRandomWalkNftBidPrice`,
-				// 	// but it's unnecessary to spend gas on that.
-				// 	// Comment-202503162 relates and/or applies.
-				// 	// [/Comment-202505074]
-				// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-				// }
+			{
+				// #enable_asserts assert(block.basefee > 0);
+				uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
+
+				// [Comment-202505296]
+				// todo-1 Tell the auditor about this.
+				// Issue. The Hardhat Coverage task results tell us that this condition never becomes `true`.
+				// That's because `block.basefee` is zero, as explained in Comment-202505294.
+				// [/Comment-202505296]
+				if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
+
+					overpaidEthPrice_ = int256(0);
+					paidEthPrice_ = msg.value;
+					// ethBidPrice_ = msg.value;
+					// if (randomWalkNftId_ >= int256(0)) {
+					// 	// [Comment-202505074]
+					// 	// It could make sense to subtract something like `CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1` from this
+					// 	// to make this formula closer to the opposite of `getEthPlusRandomWalkNftBidPrice`,
+					// 	// but it's unnecessary to spend gas on that.
+					// 	// Comment-202503162 relates and/or applies.
+					// 	// [/Comment-202505074]
+					// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+					// }
+				}
 			}
 		} else {
 			// [Comment-202412045]
@@ -198,13 +214,6 @@ abstract contract Bidding is
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
 
-			// A reentry can happen here.
-			// [ToDo-202502186-1]
-			// Think if there is a vulnerability here. Can they reenter us and steal our ETH through refunds?
-			// There appears to be no vulnerability here, but ask the auditors to take a look.
-			// Ask the auditor.
-			// [/ToDo-202502186-1]
-			// Comment-202502051 relates.
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
 
@@ -307,7 +316,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getEthDutchAuctionDuration`
 
-	function _getEthDutchAuctionDuration() internal view returns (uint256) {
+	function _getEthDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -320,7 +329,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	/// @dev Comment-202502051 applies.
+	/// @dev Comment-202505201 relates.
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
@@ -329,7 +338,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	/// @dev Comment-202502051 applies.
+	/// @dev Comment-202505201 relates.
 	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -338,6 +347,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCst`
 
+	/// @dev Comment-202505201 relates.
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
@@ -345,7 +355,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202505201 applies.
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private nonReentrant /*_onlyRoundIsActive*/ {
 		// [Comment-202501045]
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
 		// But we are going to validate that near Comment-202501044.
@@ -451,7 +462,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionDuration`
 
-	function _getCstDutchAuctionDuration() internal view returns (uint256) {
+	function _getCstDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -464,7 +475,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
-	function _getCstDutchAuctionElapsedDuration() internal view returns (int256) {
+	function _getCstDutchAuctionElapsedDuration() private view returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -477,7 +488,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionTotalAndRemainingDurations`
 
-	function _getCstDutchAuctionTotalAndRemainingDurations() internal view returns (uint256, int256) {
+	function _getCstDutchAuctionTotalAndRemainingDurations() private view returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -492,11 +503,13 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidCommon`
 
-	/// @notice An internal method to handle common bid logic.
+	/// @notice Handles common bid logic.
 	/// --- param bidType_ Bid type code.
 	/// @param message_ Comment-202503155 applies.
-	/// @dev Comment-202411169 relates and/or applies.
-	function _bidCommon(/*BidType bidType_,*/ string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	/// @dev Comment-202502051 relates.
+	/// Comment-202505201 relates.
+	/// Comment-202411169 relates and/or applies.
+	function _bidCommon(/*BidType bidType_,*/ string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		require(
 			bytes(message_).length <= bidMessageLengthMaxLimit,
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
@@ -506,8 +519,6 @@ abstract contract Bidding is
 		if (lastBidderAddress == address(0)) {
 
 			// Comment-202411169 relates.
-			// todo-1 If I comment out the call to `_checkRoundIsActive` and uncomment the call to `_onlyRoundIsActive`,
-			// todo-1 contract bytecode size will increase by about 1000. Maybe tell the guys.
 			_checkRoundIsActive();
 
 			// [Comment-202501044]

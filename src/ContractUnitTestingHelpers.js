@@ -8,7 +8,14 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { parseBooleanEnvironmentVariable } = require("./Helpers.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
+
+// #endregion
+// #region
+
+// Comment-202505294 applies.
+const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE", false);
 
 // #endregion
 // #region // `TransactionRevertedExpectedlyError`
@@ -127,7 +134,7 @@ async function deployContractsForUnitTestingAdvanced(
  * @param {string} address 
  */
 function assertAddressIsValid(address) {
-	expect(address !== hre.ethers.ZeroAddress);
+	expect(address).not.equal(hre.ethers.ZeroAddress);
 	expect(address).properAddress;
 }
 
@@ -139,7 +146,7 @@ function checkTransactionErrorObject(transactionErrorObject) {
 	if ( ! weExpectThisError ) {
 		throw transactionErrorObject;
 	}
-	expect(transactionErrorObject.receipt === undefined);
+	expect(transactionErrorObject.receipt).equal(undefined);
 }
 
 // #endregion
@@ -159,24 +166,30 @@ function assertEvent(event, contract, eventName, eventArgs) {
 // #region `generateRandomUInt256Seed`
 
 /**
- * Issue. This is a workaround for Comment-202504071.
  * Comment-202504067 applies.
+ * Comment-202505293 applies.
  * @returns {Promise<bigint>}
  */
 async function generateRandomUInt256Seed(latestBlock, blockchainPropertyGetter) {
-	const blockPrevRandao = await blockchainPropertyGetter.getBlockPrevRandao();
-	// expect(blockPrevRandao > 0n);
-	// todo-0 Somehow `blockchainPropertyGetter.getBlockBaseFeePerGas` returns zero, but `latestBlock.baseFeePerGas` provides the correct value.
-	// const blockBaseFeePerGas = await blockchainPropertyGetter.getBlockBaseFeePerGas();
-	const blockBaseFeePerGas = latestBlock.baseFeePerGas;
-	expect(blockBaseFeePerGas > 0n);
-	return blockPrevRandao ^ blockBaseFeePerGas;
+	const latestBlockPrevRandao = await blockchainPropertyGetter.getBlockPrevRandao();
+
+	// // This has already been asserted in Solidity.
+	// expect(latestBlockPrevRandao).greaterThan(0n);
+
+	const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
+	if ( ! IS_HARDHAT_COVERAGE ) {
+		expect(latestBlockBaseFeePerGas).greaterThan(0n);
+	} else {
+		expect(latestBlockBaseFeePerGas).equal(0n);
+	}
+	return latestBlockPrevRandao ^ latestBlockBaseFeePerGas;
 }
 
 // #endregion
 // #region
 
 module.exports = {
+	IS_HARDHAT_COVERAGE,
 	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForUnitTesting,
 	deployContractsForUnitTesting,

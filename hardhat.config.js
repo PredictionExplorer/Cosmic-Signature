@@ -206,9 +206,8 @@ function populateNetworkIsMainNetOnce(hre) {
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
 	async (args, hre, runSuper) => {
-		// todo-1 Review all `===` and `!==`. Maybe in some cases delete one `=`.
 		// @ts-ignore 'args' is of type 'unknown'.
-		if (args.solcVersion === solidityVersion) {
+		if (args.solcVersion == solidityVersion) {
 
 			return {
 				compilerPath: solidityCompilerPath,
@@ -303,7 +302,15 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-				runs: 20_000,
+				
+				// // Issue. A big value here causes excessive inlining, which results in the game contract size
+				// // exceeding the max allowed limit, especially when modifiers are used.
+				// // I have observed that when I decorated a method with the `nonReentrant` modifier,
+				// // the contract bytecode size has increased by about 2200 bytes.
+				// // Converting modifiers into methods helps and therefore should be preferred, but in some cases it doesn't help that much.
+				// // So let's not configure this.
+				// runs: 20_000,
+
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
@@ -402,6 +409,7 @@ const hardhatUserConfig = {
 		hardhat: {
 			allowUnlimitedContractSize: true,
 			// allowBlocksWithSameTimestamp: true,
+			// initialBaseFeePerGas: 1000000000,
 
 			// // This is needed so that the minimg of multiple transactions per block worked.
 			// // Actually, this appears to be unnecessary if we specify `gasLimit` when making a contract metod call.
@@ -430,20 +438,20 @@ const hardhatUserConfig = {
 		},
 		rinkeby: {
 			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
 			url: "http://170.187.142.12:22545/",
-			accounts: process.env.SEPOLIA_PRIVATE_KEY !== undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+			accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 			// gasMultiplier: 2,
 		},
 		arbigoerli: {
 			url: "https://goerli-rollup.arbitrum.io/rpc",
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		arbitrum: {
 			url: "https://arb1.arbitrum.io/rpc",
-			accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
+			accounts: process.env.MAINNET_PRIVATE_KEY != undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
 	},
 
@@ -471,7 +479,7 @@ const hardhatUserConfig = {
 	
 	mocha: {
 		parallel: true,
-		timeout: 60 * 60 * 1000,
+		timeout: 2 * 60 * 60 * 1000,
 	},
 
 	// #endregion
@@ -531,10 +539,11 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [/Comment-202502057]
 		extCalls: "trusted",
 
-		// // By default, these won't be reported.
-		// // It appears that we don't need these.
-		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
-		// invariants: ["contract", "reentrancy",],
+		// See https://docs.soliditylang.org/en/latest/smtchecker.html#reported-inferred-inductive-invariants
+		invariants: [
+			// "contract",
+			"reentrancy",
+		],
 
 		// // We probably rarely need this.
 		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#proved-targets

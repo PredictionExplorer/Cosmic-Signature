@@ -213,7 +213,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			for (const luckyStakerAddress_ of luckyStakerAddresses_) {
 				assertAddressIsValid(luckyStakerAddress_);
 				let numToks = luckyStakers[luckyStakerAddress_];
-				if (numToks === undefined) {
+				if (numToks == undefined) {
 					numToks = 1;
 				} else {
 					++ numToks;
@@ -223,7 +223,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			for (let i = 0; i < numSigners; i++) {
 				const signer = signers[i];
 				const numToks = luckyStakers[signer.address];
-				if (numToks === undefined) {
+				if (numToks == undefined) {
 					const msg = "The random picking of a staker is not random. Staker " + signer.address;
 					throw msg;
 				}

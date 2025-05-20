@@ -5,7 +5,7 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
-	if (typeof privKey === "undefined" || privKey.length == 0) {
+	if (privKey == undefined || privKey.length <= 0) {
 		console.log(
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts...",
 		);
@@ -13,7 +13,7 @@ async function main() {
 	}
 	// todo-1 There is no such thing as the minimum staking period any more, right?
 	let period = process.env.STAKE_PERIOD;
-	if (typeof period === "undefined" || period.length == 0) {
+	if (period == undefined || period.length <= 0) {
 		console.log(
 			"Please provide minimum staking period (seconds) by setting STAKE_PERIOD environment variable on the commandline",
 		);

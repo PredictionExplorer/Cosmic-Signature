@@ -26,7 +26,7 @@ async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 		}
 		let prizeArr = prizeData[record.roundNum];
 		// todo-1 Why would it be `undefined`?
-		if (typeof prizeArr === "undefined") {
+		if (prizeArr == undefined) {
 			prizeArr = new Array();
 		}
 		prizeArr.push(record);
@@ -41,7 +41,7 @@ async function list_donated_nfts(nfts) {
 	for (let i = 0; i < numNfts_; i++) {
 		const roundNfts_ = nfts[i];
 		console.log("Bidding round " + i.toString());
-		if (typeof roundNfts_ === "undefined" || roundNfts_.length == 0) {
+		if (roundNfts_ == undefined || roundNfts_.length <= 0) {
 			console.log("\t(no claimable NFTs)");
 			continue;
 		}
@@ -76,11 +76,11 @@ async function main() {
 	let testingAcct;
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 	let nfts = await get_unclaimed_donated_nfts(cosmicSignatureGame);
-	if (nfts.length == 0) {
+	if (nfts.length <= 0) {
 		console.log("Map of donated unclaimed NFTs is empty, no claiming is possible");
 		return;
 	}
-	if (typeof privKey === "undefined" || privKey.length == 0) {
+	if (privKey == undefined || privKey.length <= 0) {
 		console.log("Fetching NFTs, please wait ...");
 		await list_donated_nfts(nfts);
 		return;
@@ -88,7 +88,7 @@ async function main() {
 		testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	}
 	let roundNumStr = process.env.ROUND_NUM;
-	if (typeof roundNumStr === "undefined" || roundNumStr.length == 0) {
+	if (roundNumStr == undefined || roundNumStr.length <= 0) {
 		console.log("Please provide ROUND_NUM environment variable to claim NFTs");
 		process.exit(1);
 	}

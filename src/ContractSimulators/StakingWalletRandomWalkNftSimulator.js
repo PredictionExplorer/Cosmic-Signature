@@ -35,9 +35,9 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #endregion
 		// #region `stake`
 
-		/// todo-1 Do we need `unstake`?
+		/// todo-1 Do we need `canStake` or `unstake`?
 		stake: function(nftOwnerAddress_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect( ! this.usedNfts[nftId_] );
+			expect(this.wasNftUsed(nftId_)).equal(false);
 			this.usedNfts[nftId_] = true;
 			const newActionCounter_ = this.actionCounter + 1n;
 			this.actionCounter = newActionCounter_;
@@ -57,6 +57,16 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		},
 
 		// #endregion
+		// #region `wasNftUsed`
+
+		wasNftUsed: function(nftId_) {
+			expect(typeof nftId_).equal("bigint");
+			expect(nftId_).greaterThanOrEqual(0n);
+			const nftWasUsed_ = Boolean(this.usedNfts[nftId_]);
+			return nftWasUsed_;
+		},
+
+		// #endregion
 		// #region `numStakedNfts`
 
 		numStakedNfts: function() {
@@ -67,12 +77,12 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #region `pickRandomStakerAddressesIfPossible`
 
 		pickRandomStakerAddressesIfPossible: function(numStakerAddresses_, randomNumberSeed_) {
-			expect(typeof numStakerAddresses_ === "bigint");
-			expect(numStakerAddresses_ >= 0n);
+			expect(typeof numStakerAddresses_).equal("bigint");
+			expect(numStakerAddresses_).greaterThanOrEqual(0n);
 			let luckyStakerAddresses_;
 			{
 				const numStakedNftsCopy_ = this.numStakedNfts();
-				if (numStakedNftsCopy_ !== 0n) {
+				if (numStakedNftsCopy_ != 0n) {
 					luckyStakerAddresses_ = new Array(Number(numStakerAddresses_));
 					for (let luckyStakerIndex_ = Number(numStakerAddresses_); ( -- luckyStakerIndex_ ) >= 0; ) {
 						randomNumberSeed_ = BigInt.asUintN(256, randomNumberSeed_ + 1n);
@@ -115,7 +125,7 @@ async function assertStakingWalletRandomWalkNftSimulator(stakingWalletRandomWalk
 
 async function assertIfRandomRandomWalkNftWasUsedForStakingIfPossible(stakingWalletRandomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
 	const nftTotalSupplyCopy_ = stakingWalletRandomWalkNftSimulator_.randomWalkNftSimulator.totalSupply()
-	if (nftTotalSupplyCopy_ === 0n) {
+	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -127,7 +137,7 @@ async function assertIfRandomRandomWalkNftWasUsedForStakingIfPossible(stakingWal
 // #region `assertIfRandomWalkNftWasUsedForStaking`
 
 async function assertIfRandomWalkNftWasUsedForStaking(stakingWalletRandomWalkNftSimulator_, contracts_, nftId_) {
-	expect(await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_) === stakingWalletRandomWalkNftSimulator_.usedNfts[nftId_] ? 1n : 0n);
+	expect(await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_)).equal(stakingWalletRandomWalkNftSimulator_.wasNftUsed(nftId_) ? 1n : 0n);
 }
 
 // #endregion
@@ -146,15 +156,15 @@ async function assertRandomRandomWalkNftStakeAction(stakingWalletRandomWalkNftSi
 async function assertRandomWalkNftStakeAction(stakingWalletRandomWalkNftSimulator_, contracts_, stakeActionId_) {
 	const stakeActionFromContract_ = await contracts_.stakingWalletRandomWalkNft.stakeActions(stakeActionId_);
 	const stakeActionFromContractSimulator_ = stakingWalletRandomWalkNftSimulator_.stakeActions[Number(stakeActionId_)];
-	if (stakeActionId_ === 0n) {
-		expect(stakeActionFromContract_[0] === 0n);
-		expect(stakeActionFromContract_[1] === hre.ethers.ZeroAddress);
-		expect(stakeActionFromContract_[2] === 0n);
-		expect(stakeActionFromContractSimulator_ === undefined);
+	if (stakeActionId_ == 0n) {
+		expect(stakeActionFromContract_[0]).equal(0n);
+		expect(stakeActionFromContract_[1]).equal(hre.ethers.ZeroAddress);
+		expect(stakeActionFromContract_[2]).equal(0n);
+		expect(stakeActionFromContractSimulator_).equal(undefined);
 	} else {
-		expect(stakeActionFromContract_[0] === stakeActionFromContractSimulator_.nftId);
-		expect(stakeActionFromContract_[1] === stakeActionFromContractSimulator_.nftOwnerAddress);
-		// todo-1 expect(stakeActionFromContract_[2] === stakeActionFromContractSimulator_.index);
+		expect(stakeActionFromContract_[0]).equal(stakeActionFromContractSimulator_.nftId);
+		expect(stakeActionFromContract_[1]).equal(stakeActionFromContractSimulator_.nftOwnerAddress);
+		// todo-1 expect(stakeActionFromContract_[2]).equal(stakeActionFromContractSimulator_.index);
 	}
 }
 

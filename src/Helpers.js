@@ -41,21 +41,17 @@ function generateRandomUInt256() {
 // #endregion
 // #region // `generateRandomUInt256Seed`
 
-// /// [Comment-202504071]
-// /// Issue. This doesn't work, at least on Hardhat Network, because:
-// /// In Solidity, `block.prevrandao` is a nonzero, while in JavaScript `block.prevRandao` is zero.
-// /// In Solidity, `block.basefee` is zero, while in JavaScript `block.baseFeePerGas` is a nonzero.
-// /// todo-1 ??? Actually `block.basefee` is zero if we call it from a `view` method after the transaction has completed.
-// /// todo-1 +++ Find all (case insensitive; not whole word; reg exp): basefee|prevrandao
-// /// todo-1 +++ Add asserts in both Solidity and JavaScript to check that those are nonzeros.
-// /// [/Comment-202504071]
 // /// Comment-202504067 applies.
+// /// [Comment-202504071]
+// /// Issue. This doesn't work, at least on Hardhat Network, because Ethers.js gives us zero `Block.prevRandao`.
+// /// So I implemented a similar function elsewhere.
+// /// [/Comment-202504071]
 // function generateRandomUInt256Seed(block) {
 // 	// todo-9 Don't call `expect` in this file.
-// 	expect(block.prevRandao > 0n);
-// 	expect(block.baseFeePerGas > 0n);
+// 	expect(block.prevRandao).greaterThan(0n);
+// 	expect(block.baseFeePerGas).greaterThan(0n);
 //
-// 	return BigInt(block.prevRandao) ^ block.baseFeePerGas;
+// 	return block.prevRandao ^ block.baseFeePerGas;
 // }
 
 // #endregion
@@ -132,7 +128,7 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
 
-	if (rawValue_ === undefined) {
+	if (rawValue_ == undefined) {
 		return defaultValue_;
 	}
 

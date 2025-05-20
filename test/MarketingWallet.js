@@ -32,7 +32,7 @@ describe("MarketingWallet", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		await bidderContract.connect(signer0).doClaim();
+		await bidderContract.connect(signer0).doClaimMainPrize();
 
 		const marketingRewardAmount = hre.ethers.parseEther("15");
 		// await expect(marketingWallet.connect(ownerAcct).payReward(hre.ethers.ZeroAddress, marketingRewardAmount)).to.be.revertedWithCustomError(marketingWallet, "ZeroAddress");

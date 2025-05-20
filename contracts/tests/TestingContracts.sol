@@ -71,67 +71,15 @@ contract BrokenCosmicSignatureToken2 {
 	}
 }
 
-/// @notice Used to test `revert` statements for charity deposits.
-contract BrokenCharity {
-	// uint256 private _counter;
-	
-	receive() external payable {
-		require(false, "Test deposit failed.");
-	}
-}
-
-/// @notice Used to test `revert` statements in `StakingWalletCosmicSignatureNft`.
-contract BrokenStakingWalletCosmicSignatureNft {
-	StakingWalletCosmicSignatureNft private _stakingWalletCosmicSignatureNft;
-	bool private _blockDeposits = false;
-
-	constructor() {
-		// Doing nothing.	
-	}
-
-	receive() external payable {
-		require(!_blockDeposits, "I am not accepting deposits");
-	}
-
-	/// @dev We don't call it doDeposit() because this method is called from CosmicSignatureGame.sol
-	function deposit(uint256 roundNum_) external payable {
-		require(!_blockDeposits, "I am not accepting deposits");
-		_stakingWalletCosmicSignatureNft.deposit(roundNum_);
-	}
-
-	function doStake(uint256 nftId) external {
-		_stakingWalletCosmicSignatureNft.stake(nftId);
-	}
-
-	function doUnstake(uint256 stakeActionId_) external {
-		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_);
-	}
-
-	// I have commented this method out because the `StakingWalletCosmicSignatureNft.claimManyRewards` function no longer exists.
-	// function doClaimReward(uint256 stakeActionId, uint256 depositId) external {
-	// 	uint256[] memory actions = new uint256[](1);
-	// 	uint256[] memory deposits = new uint256[](1);
-	// 	actions[0] = stakeActionId;
-	// 	deposits[0] = depositId;
-	// 	_stakingWalletCosmicSignatureNft.claimManyRewards(actions, deposits);
-	// }
-
-	function startBlockingDeposits() external {
-		_blockDeposits = true;
-	}
-
-	function stopBlockingDeposits() external {
-		_blockDeposits = false;
-	}
-
-	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external {
-		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
-	}
-
-	function doSetApprovalForAll(IERC721 nft_) external {
-		nft_.setApprovalForAll(address(_stakingWalletCosmicSignatureNft), true);
-	}
-}
+// todo-0 Delete this. Use `BrokenEthReceiver` instead.
+// /// @notice Used to test `revert` statements for charity deposits.
+// contract BrokenCharity {
+// 	// uint256 private _counter;
+//
+// 	receive() external payable {
+// 		require(false, "Test deposit failed.");
+// 	}
+// }
 
 /// @notice This contract will return all the assets before selfdestruct transaction,
 /// required for testing on the MainNet (Arbitrum) (prior to launch).
@@ -361,29 +309,4 @@ contract MaliciousNft2 is ERC721 {
 			-- _counter;
 		}
 	}
-}
-
-contract BlockchainPropertyGetter {
-	// function getBlockNumber() external view returns (uint256) {
-	// 	return block.number;
-	// }
-
-	// function getBlockTimeStamp() external view returns (uint256) {
-	// 	return block.timestamp;
-	// }
-
-	/// @dev
-	/// [Comment-202504082]
-	/// Issue. We need this for testing, because of Comment-202504071.
-	/// [/Comment-202504082]
-	function getBlockPrevRandao() external view returns (uint256) {
-		// #enable_asserts assert(block.prevrandao > 0);
-		return block.prevrandao;
-	}
-
-	// /// @dev Comment-202504082 applies.
-	// function getBlockBaseFeePerGas() external view returns (uint256) {
-	// 	// #enable_asserts assert(block.basefee > 0);
-	// 	return block.basefee;
-	// }
 }

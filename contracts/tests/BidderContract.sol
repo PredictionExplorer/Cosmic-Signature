@@ -1,33 +1,35 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.29;
-pragma abicoder v2;
+
+// // Issue. I have commented this out. What was this for?
+// pragma abicoder v2;
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
+import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
-// todo-0 Move each contract to a separate file.
-
-contract BidderContract {
+/// todo-0 Review this.
+contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	// address public immutable creator;
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNfts;
-	bool public blockDeposits = false;
+	// bool public blockDeposits = false;
 	
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
 		// creator = msg.sender;
 	}
 
-	receive() external payable {
-		require(!blockDeposits, "I am not accepting deposits");
-	}
+	// receive() external payable {
+	// 	require(( ! blockDeposits ), "I am not accepting deposits.");
+	// }
 
 	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
@@ -76,11 +78,11 @@ contract BidderContract {
 		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthAndDonateNft; CosmicSignatureGame.bidWithEthAndDonateNft gas used =", gasUsed_);
 	}
 
-	function doClaim() external {
+	function doClaimMainPrize() external {
 		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.claimMainPrize();
 		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
-		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaim; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
+		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaimMainPrize; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
 	}
 
 	// function withdrawEthPrize(address destination) external {
@@ -146,44 +148,19 @@ contract BidderContract {
 		delete myDonatedNfts;
 	}
 
-	function doFailedBidWithEth() external payable {
-		uint256 price = msg.value;
-		bool blockDepositsCopy_ = blockDeposits;
-		blockDeposits = true;
-		cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
-		blockDeposits = blockDepositsCopy_;
-	}
+	// function doFailedBidWithEth() external payable {
+	// 	uint256 price = msg.value;
+	// 	bool blockDepositsCopy_ = blockDeposits;
+	// 	blockDeposits = true;
+	// 	cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
+	// 	blockDeposits = blockDepositsCopy_;
+	// }
 
-	function startBlockingDeposits() external {
-		blockDeposits = true;
-	}
+	// function startBlockingDeposits() external {
+	// 	blockDeposits = true;
+	// }
 
-	function stopBlockingDeposits() external {
-		blockDeposits = false;
-	}
-}
-
-/// @notice Bidder Contract but not an `IERC721Receiver`.
-/// ToDo-202412176-1 relates and/or applies.
-contract BidCNonRecv {
-	CosmicSignatureGame public immutable cosmicSignatureGame;
-	// address public immutable creator;
-
-	constructor(CosmicSignatureGame cosmicSignatureGame_) {
-		cosmicSignatureGame = cosmicSignatureGame_;
-		// creator = msg.sender;
-	}
-
-	receive() external payable {
-		// Doing nothing.	
-	}
-
-	function doBidWithEth() external payable {
-		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
-		cosmicSignatureGame.bidWithEth{value: price}((-1), "non-IERC721Receiver bid");
-	}
-	
-	function doClaim() external {
-		cosmicSignatureGame.claimMainPrize();
-	}
+	// function stopBlockingDeposits() external {
+	// 	blockDeposits = false;
+	// }
 }

@@ -34,7 +34,7 @@ library RandomNumberHelpers {
 	/// @dev Comment-202502075 applies to the return value.
 	/// Comment-202502077 applies to the return value.
 	/// [Comment-202503254]
-	/// It's safe to call this method without any additional logic only if it's guaranteed
+	/// It's safe to call this function without any additional logic only if it's guaranteed
 	/// that we can call it no more than once per block.
 	/// It's because all calls witin a particular block would return the same value.
 	/// [/Comment-202503254]
