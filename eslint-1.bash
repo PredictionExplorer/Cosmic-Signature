@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+# todo-1 Remember to run this script.
+
 # 'npx' 'eslint' '**/*.js' '--ignore-pattern' 'node_modules/**'
 
 # [Comment-202505307]
