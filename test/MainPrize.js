@@ -132,7 +132,7 @@ describe("MainPrize", function () {
 			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n);
 	});
 
-	it("Reentrancy and double-claim attempts", async function () {
+	it("Reentry and double-claim attempts", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
 		const maliciousBidderFactory_ = await hre.ethers.getContractFactory("MaliciousBidder", contracts_.deployerAcct);
 		const maliciousBidder_ = await maliciousBidderFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
