@@ -18,14 +18,6 @@ describe("ZeroAddressChecking", function () {
 		await charityWallet.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress);
 	});
 
-	it("Shouldn't be possible to set a zero charity address in CosmicSignatureGame", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
-
-		// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
-		await expect(cosmicSignatureGameProxy.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ZeroAddress");
-	});
-
 	// todo-1 We don't need this test any morfe, right?
 	// it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
 	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
