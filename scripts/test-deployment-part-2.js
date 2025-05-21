@@ -53,7 +53,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
-	claim_raffle_eth(testingAcct, prizesWallet, event_logs);
+	await claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 
 	let charityWalletAddr = await cosmicSignatureGame.charityAddress();
 

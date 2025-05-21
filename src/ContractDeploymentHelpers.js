@@ -143,7 +143,7 @@ const deployContractsAdvanced = async function (
 	await (await cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr)).wait();
 	await (await cosmicSignatureGameProxy.setMarketingWallet(marketingWalletAddr)).wait();
 	await (await cosmicSignatureGameProxy.setCharityAddress(charityWalletAddr)).wait();
-	setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime);
+	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime);
 
 	return {
 		cosmicSignatureTokenFactory,
