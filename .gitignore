@@ -25,6 +25,9 @@ node_modules
 # Comment-202409014 applies.
 /smtchecker/compile-1-output
 
+# Comment-202505307 applies.
+/eslint-1-report.txt
+
 # Comment-202408024 applies.
 /abi
 
