@@ -6,31 +6,46 @@
 // @typescript-eslint/no-floating-promises
 // [/Comment-202506016]
 
+const globals = require("globals");
 const esLintJs = require("@eslint/js");
 const typeScriptEsLint = require("typescript-eslint");
 
-module.exports =
+const esLintConfigArray =
 	typeScriptEsLint.config(
-		esLintJs.configs.recommended,
-		typeScriptEsLint.configs.recommendedTypeChecked,
-		// typeScriptEsLint.configs.strictTypeChecked,
-		{
-			languageOptions: {
-				parserOptions: {
-					projectService: true,
-					tsconfigRootDir: __dirname,
-					// sourceType: "script",
+		[
+			{
+				ignores: [
+					"coverage/**",
+				],
+				plugins: {
+					"@typescript-eslint": typeScriptEsLint.plugin,
+				},
+				languageOptions: {
+					parser: typeScriptEsLint.parser,
+					parserOptions: {
+						projectService: true,
+						tsconfigRootDir: __dirname,
+						// sourceType: "script",
+					},
+					// globals: {
+					// 	...globals.node,
+					// },
+					globals: globals.node,
+				},
+				extends: [
+					esLintJs.configs.recommended,
+					typeScriptEsLint.configs.recommendedTypeChecked,
+				],
+				rules: {
+					"@typescript-eslint/no-require-imports": "off",
+					"@typescript-eslint/no-unsafe-assignment": "off",
+					"@typescript-eslint/no-unsafe-call": "off",
+					"@typescript-eslint/no-unsafe-member-access": "off",
+					"@typescript-eslint/no-unsafe-argument": "off",
+					"@typescript-eslint/no-unsafe-return": "off",
 				},
 			},
-		},
-		{
-			rules: {
-				"@typescript-eslint/no-require-imports": "off",
-				"@typescript-eslint/no-unsafe-assignment": "off",
-				"@typescript-eslint/no-unsafe-call": "off",
-				"@typescript-eslint/no-unsafe-member-access": "off",
-				"@typescript-eslint/no-unsafe-argument": "off",
-				"@typescript-eslint/no-unsafe-return": "off",
-			},
-		}
+		]
 	);
+
+module.exports = esLintConfigArray;
