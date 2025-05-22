@@ -16,8 +16,8 @@ describe("SystemManagement-Old", function () {
 		const [signer0, signer1, signer2,] = signers;
 		// let ownableErr = cosmicSignatureGameProxy.interface.getError("OwnableUnauthorizedAccount");
 
-		// Comment-202501192 applies.
-		await hre.ethers.provider.send("evm_mine");
+		// todo-0 delete>>>// Comment-202501192 applies.
+		// todo-0 delete>>>await hre.ethers.provider.send("evm_mine");
 
 		let durationUntilRoundActivation_ = await cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 		// todo-1 Is this still correct?

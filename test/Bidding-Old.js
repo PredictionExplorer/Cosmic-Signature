@@ -533,8 +533,8 @@ describe("Bidding-Old", function () {
 		const {signers, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2, signer3,] = signers;
 
-		// Comment-202501192 applies.
-		await hre.ethers.provider.send("evm_mine");
+		// todo-0 delete>>>// Comment-202501192 applies.
+		// todo-0 delete>>>await hre.ethers.provider.send("evm_mine");
 
 		const delayDurationBeforeRoundActivation_ = await cosmicSignatureGameProxy.delayDurationBeforeRoundActivation();
 
@@ -674,8 +674,8 @@ describe("Bidding-Old", function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
 
-		// Comment-202501192 applies.
-		await hre.ethers.provider.send("evm_mine");
+		// todo-0 delete>>>// Comment-202501192 applies.
+		// todo-0 delete>>>await hre.ethers.provider.send("evm_mine");
 
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		const newRoundActivationTime_ = latestBlock_.timestamp + 2;
@@ -739,8 +739,8 @@ describe("Bidding-Old", function () {
 			cosmicSignatureGameProxy,
 		} = await loadFixture(deployContractsForUnitTesting);
 		
-		// Comment-202501192 applies.
-		await hre.ethers.provider.send("evm_mine");
+		// todo-0 delete>>>// Comment-202501192 applies.
+		// todo-0 delete>>>await hre.ethers.provider.send("evm_mine");
 
 		// {
 		// 	let latestBlockTimeStamp = (await hre.ethers.provider.getBlock("latest")).timestamp;
