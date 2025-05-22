@@ -138,7 +138,7 @@ describe("MainPrize-Old", function () {
 			await deployContractsForUnitTestingAdvanced("SpecialCosmicSignatureGame");
 		const [signer0, signer1, signer2, signer3,] = signers;
 		
-		setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy.connect(ownerAcct), 0n);
+		await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy.connect(ownerAcct), 0n);
 
 		let donationAmount_ = hre.ethers.parseEther("1");
 		await cosmicSignatureGameProxy.connect(signer0).donateEth({ value: donationAmount_ });

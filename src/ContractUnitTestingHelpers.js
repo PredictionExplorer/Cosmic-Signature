@@ -62,7 +62,7 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	// todo-1 It would be a bad idea to do this in `deployContractsForUnitTesting` because
 	// todo-1 `loadFixture` doesn't restore the current time, so unexpected behavior can ocuur
 	// todo-1 if a function called by `loadFixture` uses the latest block timestamp.
-	setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
+	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
 
 	return contracts;
 }

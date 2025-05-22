@@ -44,6 +44,7 @@ const SKIP_LONG_TESTS = false;
 describe("CosmicSignatureGame-1", function () {
 	// #region
 
+	// [Comment-202505313/]
 	it("Integration test over multiple bidding rounds", async function () {
 		// #region
 
@@ -619,19 +620,19 @@ describe("CosmicSignatureGame-1", function () {
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				if ((randomNumber_ & (0x0Fn << (0n * 8n))) == 0n) {
 					// console.log("202505265");
-					assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
+					await assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
 				}
 				if ((randomNumber_ & (0x0Fn << (1n * 8n))) == 0n) {
 					// console.log("202505266");
-					assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+					await assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (2n * 8n))) == 0n) {
 					// console.log("202505267");
-					assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+					await assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (3n * 8n))) == 0n) {
 					// console.log("202505268");
-					assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+					await assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 
 				// #endregion
