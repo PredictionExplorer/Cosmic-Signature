@@ -411,10 +411,15 @@ const hardhatUserConfig = {
 			// gas: "auto",
 
 			// [Comment-202501193]
-			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` method.
+			// This configures to deterministically mine a block when we submit a transaction request
+			// to execute a non-`view` contract method.
 			// Block timestamp increment is always 1 second and is not configurable.
-			// todo-1 I tried making `interval` huge. Is it a bit better? Maybe not.
-			// todo-1 See todos in Comment-202501192.
+			// Issue. So we cannot easily test adjacent blocks with equal timestamps.
+			// Issue. But on a slow machine the timestamp increase can be more than 1 second,
+			// meaning the behavior is not guaranteed to be deterministic.
+			// In addition, after calling `loadFixture` the next block timestamp can leap by many seconds,
+			// so it's a good idea to forcibly mine one so that further block timestamps were (mostly) deterministic
+			// relatively to the mined one's.
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,
