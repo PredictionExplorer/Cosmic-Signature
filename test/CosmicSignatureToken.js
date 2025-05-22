@@ -23,4 +23,22 @@ describe("CosmicSignatureToken", function () {
 
 		await cosmicSignatureToken.nonces(signer0.address);
 	});
+
+	it("Unauthorized access attempts to restricted methods", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
+
+		// todo-1 Add `cosmicSignatureToken.transferToMarketingWalletOrBurn` to all tests. But I have eliminated it.
+		await expect(cosmicSignatureToken.connect(signer1).mint(signer1.address, 10000n))
+			.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "UnauthorizedCaller");
+		await expect(cosmicSignatureToken.connect(ownerAcct).mint(signer1.address, 10000n))
+			.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "UnauthorizedCaller");
+		await expect(cosmicSignatureToken.connect(signer1)["burn(address,uint256)"](signer1.address, 10000n))
+			.revertedWithCustomError(cosmicSignatureToken, "UnauthorizedCaller");
+		await expect(cosmicSignatureToken.connect(ownerAcct)["burn(address,uint256)"](signer1.address, 10000n))
+			.revertedWithCustomError(cosmicSignatureToken, "UnauthorizedCaller");
+		await expect(cosmicSignatureToken.connect(signer1)["burn(uint256)"](10000n)).not.reverted;
+	});
 });

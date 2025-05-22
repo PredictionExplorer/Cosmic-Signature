@@ -42,4 +42,14 @@ describe("CharityWallet", function () {
 		// await expect(charityWallet.connect(signer1).send()).to.be.revertedWithCustomError(charityWallet, "ZeroBalance");
 		await charityWallet.connect(signer1).send();
 	});
+
+	it("Unauthorized access attempts to restricted methods", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
+
+		await expect(charityWallet.connect(signer1).setCharityAddress(signer1.address))
+			.revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
+	});
 });

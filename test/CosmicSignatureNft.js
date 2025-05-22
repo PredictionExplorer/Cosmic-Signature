@@ -94,4 +94,14 @@ describe("CosmicSignatureNft", function () {
 		await cosmicSignatureNft.connect(ownerAcct).setNftBaseUri("somebase/");
 		expect(await cosmicSignatureNft.tokenURI(0n)).to.equal("somebase/0");
 	});
+
+	it("Unauthorized access attempts to restricted methods", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [signer0, signer1,] = signers;
+
+		await expect(cosmicSignatureNft.connect(signer1).setNftBaseUri("://uri"))
+			.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");
+	});
 });
