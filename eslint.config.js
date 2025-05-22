@@ -1,5 +1,9 @@
 "use strict";
 
+// [Comment-202506016]
+// Execute the "./eslint/eslint-1.bash" script.
+// [/Comment-202506016]
+
 
 // import js from "@eslint/js";
 // import globals from "globals";
