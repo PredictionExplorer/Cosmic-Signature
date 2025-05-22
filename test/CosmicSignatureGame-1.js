@@ -472,13 +472,32 @@ describe("CosmicSignatureGame-1", function () {
 						// #region
 
 						const transactionShouldHaveSucceeded_ =
-							await cosmicSignatureGameProxySimulator_.canBidWithEth
-								(transactionBlock_, signer_.address, ethPriceToPayMaxLimit_, randomWalkNftId_, bidMessage_, paidEthPrice_, contracts_, transactionResponseFuture_);
+							await cosmicSignatureGameProxySimulator_.canBidWithEth(
+								transactionBlock_,
+								signer_.address,
+								ethPriceToPayMaxLimit_,
+								randomWalkNftId_,
+								bidMessage_,
+								paidEthPrice_,
+								contracts_,
+								transactionResponseFuture_
+							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505111", signerIndex_.toString());
-							await cosmicSignatureGameProxySimulator_.bidWithEth
-								(transactionBlock_, signer_.address, signerEthBalanceAmountBeforeTransaction_, ethPriceToPayMaxLimit_, randomWalkNftId_, bidMessage_, ethBidPrice_, paidEthPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
+							await cosmicSignatureGameProxySimulator_.bidWithEth(
+								transactionBlock_,
+								signer_.address,
+								signerEthBalanceAmountBeforeTransaction_,
+								ethPriceToPayMaxLimit_,
+								randomWalkNftId_,
+								bidMessage_,
+								ethBidPrice_,
+								paidEthPrice_,
+								contracts_,
+								transactionReceipt_,
+								eventIndexWrapper_
+							);
 						}
 
 						// #endregion
@@ -524,13 +543,27 @@ describe("CosmicSignatureGame-1", function () {
 						// #region
 
 						const transactionShouldHaveSucceeded_ =
-							await cosmicSignatureGameProxySimulator_.canBidWithCst
-								(transactionBlock_, signer_.address, cstPriceToPayMaxLimit_, bidMessage_, paidCstPrice_, contracts_, transactionResponseFuture_);
+							await cosmicSignatureGameProxySimulator_.canBidWithCst(
+								transactionBlock_,
+								signer_.address,
+								cstPriceToPayMaxLimit_,
+								bidMessage_,
+								paidCstPrice_,
+								contracts_,
+								transactionResponseFuture_
+							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505112", signerIndex_.toString());
-							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst
-								(transactionBlock_, signer_.address, bidMessage_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
+							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst(
+								transactionBlock_,
+								signer_.address,
+								bidMessage_,
+								paidCstPrice_,
+								contracts_,
+								transactionReceipt_,
+								eventIndexWrapper_
+							);
 						}
 
 						// #endregion
@@ -576,8 +609,12 @@ describe("CosmicSignatureGame-1", function () {
 
 						// const timeStamp1_ = Date.now();
 						const transactionShouldHaveSucceeded_ =
-							await cosmicSignatureGameProxySimulator_.canClaimMainPrize
-								(transactionBlock_, signer_.address, contracts_, transactionResponseFuture_);
+							await cosmicSignatureGameProxySimulator_.canClaimMainPrize(
+								transactionBlock_,
+								signer_.address,
+								contracts_,
+								transactionResponseFuture_
+							);
 						// const timeStamp2_ = Date.now();
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
@@ -585,8 +622,15 @@ describe("CosmicSignatureGame-1", function () {
 							// console.info("202505142", cosmicSignatureGameProxySimulator_.getTotalNumBids().toString());
 							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
 							// const timeStamp3_ = Date.now();
-							await cosmicSignatureGameProxySimulator_.claimMainPrize
-								(transactionBlock_, signer_.address, signerEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_, blockchainPropertyGetter_);
+							await cosmicSignatureGameProxySimulator_.claimMainPrize(
+								transactionBlock_,
+								signer_.address,
+								signerEthBalanceAmountBeforeTransaction_,
+								contracts_,
+								transactionReceipt_,
+								eventIndexWrapper_,
+								blockchainPropertyGetter_
+							);
 							// const timeStamp4_ = Date.now();
 							// console.info(
 							// 	(timeStamp2_ - timeStamp1_).toString(),

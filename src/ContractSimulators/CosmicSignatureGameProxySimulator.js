@@ -952,8 +952,10 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 							const blockchainBasedRandomNumberSeed_ = BigInt.asUintN(256, blockchainBasedRandomNumberSeedWrapper_.value + 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4n);
 
 							const luckyStakerAddresses_ =
-								this.stakingWalletRandomWalkNftSimulator.pickRandomStakerAddressesIfPossible
-									(this.numRaffleCosmicSignatureNftsForRandomWalkNftStakers, blockchainBasedRandomNumberSeed_);
+								this.stakingWalletRandomWalkNftSimulator.pickRandomStakerAddressesIfPossible(
+									this.numRaffleCosmicSignatureNftsForRandomWalkNftStakers,
+									blockchainBasedRandomNumberSeed_
+								);
 							let cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ + luckyStakerAddresses_.length;
 							cosmicSignatureNftOwnerLastCstBidderAddressIndex_ = cosmicSignatureNftIndex_;
 							if (this.lastCstBidderAddress != hre.ethers.ZeroAddress) {

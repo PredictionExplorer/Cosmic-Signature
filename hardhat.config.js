@@ -205,10 +205,8 @@ function populateNetworkIsMainNetOnce(hre) {
 
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
-	async (args, hre, runSuper) => {
-		// @ts-ignore 'args' is of type 'unknown'.
+	async (args, /*hre*/, /*runSuper*/) => {
 		if (args.solcVersion == solidityVersion) {
-
 			return {
 				compilerPath: solidityCompilerPath,
 				isSolcJs: false,
@@ -221,7 +219,6 @@ subtask(
 	
 		// This point is supposed to be unreachable.
 		
-		// @ts-ignore 'args' is of type 'unknown'.
 		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: "${args.solcVersion}".`);
 
 		// // Calling the default implementation.
@@ -260,9 +257,7 @@ function preProcessSolidityLine(hre, line) {
 		throw new Error("The network appears to be a mainnet, but you forgot to disable Hardhat Preprocessor.");
 	}
 
-	// @ts-ignore No overload matches this call.
 	line = line.replace(solidityLinePreProcessingRegExp, "$1");
-
 	return line;
 }
 
@@ -491,7 +486,6 @@ const hardhatUserConfig = {
 if (ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
-	// @ts-ignore Property is possibly undefined. Property doesn't exist.
 	hardhatUserConfig.solidity.settings.modelChecker = {
 		// [Comment-202409013]
 		// If you don't list any contracts here, all contracts under the "contracts" folder tree, except abstract ones, will be analyzed.
