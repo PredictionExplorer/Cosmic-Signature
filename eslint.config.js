@@ -12,32 +12,36 @@
 // ]);
 
 
-const js = require("@eslint/js");
-// const pluginPromise = require("eslint-plugin-promise");
-const pluginNoFloatingPromise = require("eslint-plugin-no-floating-promise");
+const esLintJs = require("@eslint/js");
+const typeScriptEsLintParser = require("@typescript-eslint/parser");
+
+// // Issue. This misses missing `await`s.
+// const esLintPluginNoFloatingPromise = require("eslint-plugin-no-floating-promise");
+
+const typeScriptEsLintEsLintPlugin = require("@typescript-eslint/eslint-plugin");
 
 module.exports = [
 	{
+		// // This will anyway be ignored even if we don't list this here.
 		// ignores: ["node_modules/**"],
+
 		ignores: ["coverage/**"],
 	},
-
 	{
-		// load the promise plugin
 		plugins: {
-			// promise: pluginPromise,
-			noFloatingPromise: pluginNoFloatingPromise,
+			// noFloatingPromise: esLintPluginNoFloatingPromise,
+			esLintPlugin: typeScriptEsLintEsLintPlugin,
 		},
-
-		// extends: ["eslint:recommended", "plugin:promise/recommended"],
 
 		// parser / env settings
 		languageOptions: {
+			parser: typeScriptEsLintParser,
 			parserOptions: {
+				project: "./jsconfig.json",
+
 				// Comment-202505308 applies.
-				// ecmaVersion: 2021, // ES2021
 				ecmaVersion: 2022,
-				// sourceType: "module", // or "script" if you’re not using imports
+				// sourceType: "module", // or "script" if you're not using imports
 				sourceType: "script",
 			},
 			globals: {
@@ -58,16 +62,13 @@ module.exports = [
 
 		rules: {
 			// spread in all eslint:recommended rules
-			...js.configs.recommended.rules,
+			...esLintJs.configs.recommended.rules,
 	
-			// // spread in all promise/recommended rules
-			// ...pluginPromise.configs.recommended.rules,
-	
-			// // enforce no-floating-promises as an error
-			// "promise/no-floating-promises": "error",
+			// // Enable the no-floating-promise rule.
+			// "noFloatingPromise/no-floating-promise": "error",
 
-			// enable the no-floating-promise rule
-			"noFloatingPromise/no-floating-promise": "error",
+			// Enable the TS "no-floating-promises" rule.
+			"esLintPlugin/no-floating-promises": "error",
 		},
 	},
 ];
