@@ -14,8 +14,8 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-0 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGame-1 '
-			'npx' 'hardhat' 'test' '--grep' '^SystemManagement |^Bidding |^MainPrize |^CosmicSignatureGame-\d '
+			# 'npx' 'hardhat' 'test' '--grep' '^BidStatistics '
+			'npx' 'hardhat' 'test' '--grep' '^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test'
 
