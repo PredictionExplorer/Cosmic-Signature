@@ -17,8 +17,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		let tokenPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(signer0).mint({ value: tokenPrice });
+		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 
 		const newStakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
@@ -50,8 +50,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
-		let tokenPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(signer0).mint({ value: tokenPrice });
+		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 
 		const newStakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
 		await newStakingWalletRandomWalkNft.waitForDeployment();
@@ -100,8 +100,8 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(signer0.address)).revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyDeleted");
 	// 	await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 	// 	async function mint_rwalk(a) {
-	// 		let tokenPrice = await randomWalkNft.getMintPrice();
-	// 		let tx = await randomWalkNft.connect(a).mint({ value: tokenPrice });
+	// 		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
+	// 		let tx = await randomWalkNft.connect(a).mint({value: randomWalkNftMintPrice_,});
 	// 		let receipt = await tx.wait();
 	// 		let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
 	// 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
@@ -143,8 +143,8 @@ describe("StakingWalletRandomWalkNft", function () {
 		const [signer0,] = signers;
 
 		for ( let nftId_ = 0; nftId_ < 10; ++ nftId_ ) {
-			let tokenPrice = await randomWalkNft.getMintPrice();
-			await randomWalkNft.connect(signer0).mint({ value: tokenPrice });
+			let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
+			await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 		}
 		await randomWalkNft.connect(signer0).setApprovalForAll(stakingWalletRandomWalkNftAddr, true);
 		for ( let nftId_ = 0; nftId_ < 10; ++ nftId_ ) {
@@ -239,8 +239,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		let tokenPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(signer0).mint({ value: tokenPrice });
+		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
+		await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 
 		const newStakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
 		await newStakingWalletRandomWalkNft.waitForDeployment();

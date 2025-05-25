@@ -11,135 +11,23 @@ const hre = require("hardhat");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("Bidding-Old", function () {
-	
-	// todo-0 check for `.not.reverted`.
-	it("Should be possible to bid with Random Walk NFT", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, contracts_.cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
-		const [contracts_.signers[0], contracts_.signers[1],] = signers;
 
-		let tokenPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(contracts_.signers[1]).mint({ value: tokenPrice }); // nftId=0
-
-		// switch to another account and attempt to use nftId=0 which we don't own
-		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(2n);
-		let nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(0, "hello", { value: nextEthPlusRandomWalkNftBidPrice_ * 2n })).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CallerIsNotNftOwner");
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(0, "hello", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		tokenPrice = await randomWalkNft.getMintPrice();
-		let tx = await randomWalkNft.connect(contracts_.signers[0]).mint({ value: tokenPrice });
-		let receipt = await tx.wait();
-		let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
-		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
-		let parsed_log = randomWalkNft.interface.parseLog(log);
-		let token_id = parsed_log.args[0];
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(token_id, "", { value: 0 })).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		expect(await contracts_.cosmicSignatureGameProxy.usedRandomWalkNfts(token_id)).equal(1n);
-
-		// try to bid again using the same nftId
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(token_id, "", { value: nextEthPlusRandomWalkNftBidPrice_ })).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "UsedRandomWalkNft");
-	});
-
-	// todo-0 check for `.not.reverted`.
-	it("Shouldn't be possible to bid using very long message", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, contracts_.cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
-		const [contracts_.signers[0], contracts_.signers[1],] = signers;
-
-		const longMsg = "a".repeat(280 + 1);
-		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, longMsg, {value: nextEthBidPrice_,})).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage");
-	});
-
-	// todo-0 check for `.not.reverted`.
-	it("The getCstDutchAuctionDurations method behaves correctly", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, contracts_.cosmicSignatureGameProxy,} = await loadFixture(deployContractsForUnitTesting);
-		const [contracts_.signers[0], contracts_.signers[1],] = signers;
-
-		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,});
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,});
-
-		let nextCstBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice(1n);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(nextCstBidPrice_, "cst bid");
-
-		const cstDutchAuctionDurations_ = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
-		// const cstDutchAuctionDuration_ = cstDutchAuctionDurations_[0];
-		const cstDutchAuctionElapsedDuration_ = cstDutchAuctionDurations_[1];
-		expect(cstDutchAuctionElapsedDuration_).equal(0n);
-	});
-
-	// todo-0 check for `.not.reverted`.
-	it("There is an execution path for all bidders being Random Walk NFT bidders", async function () {
-		// todo-1 Move this function to a separate file and use it everywhere.
-		async function mint_rwalk(a) {
-			const tokenPrice = await randomWalkNft.getMintPrice();
-			let tx = await randomWalkNft.connect(a).mint({ value: tokenPrice });
-			let receipt = await tx.wait();
-			let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
-			let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
-			let parsed_log = randomWalkNft.interface.parseLog(log);
-			let token_id = parsed_log.args[0];
-			return token_id;
-		}
-
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, contracts_.cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
-		const [contracts_.signers[0], contracts_.signers[1], contracts_.signers[2], contracts_.signers[3], contracts_.signers[4], contracts_.signers[5],] = signers;
-
-		let token_id = await mint_rwalk(contracts_.signers[1]);
-		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		let nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		token_id = await mint_rwalk(contracts_.signers[2]);
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		token_id = await mint_rwalk(contracts_.signers[3]);
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		token_id = await mint_rwalk(contracts_.signers[4]);
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
-		token_id = await mint_rwalk(contracts_.signers[5]);
-		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[5]).bidWithEth(token_id, "bidWithRWalk", { value: nextEthPlusRandomWalkNftBidPrice_ });
-
-		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
-		// await hre.ethers.provider.send("evm_mine");
-		// todo-1 Take a closer look at this. What if it reverts with a different error?
-		// todo-1 This is really not supposed to fail. It appears that this tests a no longer existing bug.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[5]).claimMainPrize()).not.revertedWith("panic code 0x12"); // divide by zero
-		// todo-1 Maybe check that now it will revert with "NoLastBidder".
-		// todo-1 Actually it will probably revert because the bidding round is not active yet.
-	});
 
 	// todo-0 check for `.not.reverted`.
 	it("After bidWithEth, bid-related counters have correct values", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, contracts_.cosmicSignatureGameProxy, randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
+		const {signers, contracts_.cosmicSignatureGameProxy, contracts_.randomWalkNft,} = await loadFixture(deployContractsForUnitTesting);
 		const [contracts_.signers[0],] = signers;
 		
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 
-		let tokenPrice = await randomWalkNft.getMintPrice();
-		await expect(randomWalkNft.connect(contracts_.signers[0]).mint({ value: tokenPrice })).not.reverted; // nftId=0
+		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
+		await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,})).not.reverted; // nftId=0
 
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(0n, "rwalk bid", { value: nextEthPlusRandomWalkNftBidPrice_ })).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(0n, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice_,})).not.reverted;
 
 		// let lastBidType = await contracts_.cosmicSignatureGameProxy.lastBidType();
 		// expect(lastBidType).equal(1);
@@ -179,7 +67,7 @@ describe("Bidding-Old", function () {
 	// todo-0 check for `.not.reverted`.
 	it("On ETH + Random Walk NFT bid, we refund the correct amount when msg.value is greater than required", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {deployerAcct, signers, contracts_.cosmicSignatureGameProxy, contracts_.cosmicSignatureGameProxyAddr, randomWalkNft,} =
+		const {deployerAcct, signers, contracts_.cosmicSignatureGameProxy, contracts_.cosmicSignatureGameProxyAddr, contracts_.randomWalkNft,} =
 			await loadFixture(deployContractsForUnitTesting);
 		const [contracts_.signers[0],] = signers;
 
@@ -191,11 +79,11 @@ describe("Bidding-Old", function () {
 
 		let amountSent = hre.ethers.parseUnits("1", 15);
 
-		await randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.cosmicSignatureGameProxyAddr, true);
-		await randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr, true);
+		await contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.cosmicSignatureGameProxyAddr, true);
+		await contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr, true);
 
-		let tokenPrice = await randomWalkNft.getMintPrice();
-		await randomWalkNft.connect(contracts_.signers[0]).mint({ value: tokenPrice }); // nftId=0
+		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
+		await contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,}); // nftId=0
 		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await bidderContract.connect(contracts_.signers[0]).doBidWithEthRWalk2(0, { value: amountSent });
 		let bidderContractBalanceAmountAfter = await hre.ethers.provider.getBalance(bidderContractAddr);

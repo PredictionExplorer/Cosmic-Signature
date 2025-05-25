@@ -9,8 +9,8 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 const numRWalkToMint = 4;
 
 async function mint_random_walk_token(testingAcct, randomWalkNft_) {
-	let tokenPrice = await randomWalkNft_.getMintPrice();
-	let tx = await randomWalkNft_.connect(testingAcct).mint({ value: tokenPrice });
+	let randomWalkNftMintPrice_ = await randomWalkNft_.getMintPrice();
+	let tx = await randomWalkNft_.connect(testingAcct).mint({value: randomWalkNftMintPrice_,});
 	let receipt = await tx.wait();
 	let topic_sig = randomWalkNft_.interface.getEventTopic("MintEvent");
 	let event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));

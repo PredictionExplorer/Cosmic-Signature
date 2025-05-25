@@ -187,7 +187,7 @@ describe("PrizesWallet", function () {
 
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await contracts_.cosmicSignatureGameProxy.connect(donor).bidWithEthAndDonateNft(1, "hello", randomWalkNftAddr, 2, { value: nextEthPlusRandomWalkNftBidPrice_ });
+		await contracts_.cosmicSignatureGameProxy.connect(donor).bidWithEthAndDonateNft(1, "hello", randomWalkNftAddr, 2, {value: nextEthPlusRandomWalkNftBidPrice_,});
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");
