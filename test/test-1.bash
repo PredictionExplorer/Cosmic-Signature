@@ -2,7 +2,7 @@
 
 # Comment-202503282 relates.
 
-'clear'
+'/usr/bin/clear'
 
 (
 	OutcomeCode=0
@@ -14,7 +14,7 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-0 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^BidStatistics '
+			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize '
 			'npx' 'hardhat' 'test' '--grep' '^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test'
@@ -27,7 +27,7 @@
 	}
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		'cd' '--' '..'
+		cd '--' '..'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
 			OutcomeCode=2

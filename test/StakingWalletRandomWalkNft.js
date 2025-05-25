@@ -28,7 +28,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		let tx = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
 		let receipt = await tx.wait();
 		// let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-		// let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		// let receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 
 		expect(await newStakingWalletRandomWalkNft.usedNfts(0)).to.equal(1n);
@@ -61,7 +61,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const tx = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
 		const receipt = await tx.wait();
 		// const topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-		// const receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		// const receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// const log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -115,7 +115,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	let tx = await newStakingWalletRandomWalkNft.connect(signer0).stakeMany([r1, r2, r3]);
 	// 	let receipt = await tx.wait();
 	// 	let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-	// 	let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	// 	let receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	// 	for (let i=0; i<receipt_logs.length; i++) {
 	// 		let evt = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[i]);
 	// 	}
@@ -152,7 +152,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		}
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
@@ -250,7 +250,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		let tx = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
 		let receipt = await tx.wait();
 		// let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-		// let receipt_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		// let receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");

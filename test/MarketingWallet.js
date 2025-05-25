@@ -29,7 +29,7 @@ describe("MarketingWallet", function () {
 		const bidderContractAddr = await bidderContract.getAddress();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidderContract.connect(signer0).doBidWithEth({ value: nextEthBidPrice_ });
+		await bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");

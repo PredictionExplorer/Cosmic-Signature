@@ -5,7 +5,7 @@
 # Comments there apply.
 # [/Comment-202503282]
 
-'clear'
+'/usr/bin/clear'
 
 (
 	OutcomeCode=0
@@ -25,7 +25,7 @@
 	}
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		'cd' '--' '..'
+		cd '--' '..'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error 202503273. Press any key to finish.'
 			OutcomeCode=2

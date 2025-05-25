@@ -220,8 +220,7 @@ abstract contract MainPrize is
 
 					{
 						// #enable_asserts assert(numRaffleCosmicSignatureNftsForRandomWalkNftStakers > 0);
-						uint256 randomNumberSeed_;
-						unchecked { randomNumberSeed_ = randomNumberSeedWrapper_.value + 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4; }
+						uint256 randomNumberSeed_ = randomNumberSeedWrapper_.value ^ 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4;
 
 						// This can potentially be empty.
 						address[] memory luckyStakerAddresses_ =
@@ -307,8 +306,7 @@ abstract contract MainPrize is
 					// #region Minting CS NFTs.
 
 					{
-						uint256 randomNumberSeed_;
-						unchecked { randomNumberSeed_ = randomNumberSeedWrapper_.value + 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aeda; }
+						uint256 randomNumberSeed_ = randomNumberSeedWrapper_.value ^ 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aeda;
 						firstCosmicSignatureNftId_ = nft.mintMany(roundNum, cosmicSignatureNftOwnerAddresses_, randomNumberSeed_);
 					}
 

@@ -2,7 +2,7 @@
 
 # Comment-202412129 relates.
 
-'clear'
+'/usr/bin/clear'
 
 (
 	OutcomeCode=0

@@ -3,7 +3,7 @@
 # Comment-202506016 relates.
 # todo-1 Remember to run this script.
 
-# 'clear'
+# '/usr/bin/clear'
 
 (
 	OutcomeCode=0
@@ -20,7 +20,7 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		'cd' '--' '..'
+		cd '--' '..'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error 202506011. Press any key to finish.'
 			OutcomeCode=2

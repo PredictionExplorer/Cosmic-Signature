@@ -13,11 +13,11 @@ async function main() {
 	let cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
 
 	let nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await cosmicSignatureGame.connect(signer0).bidWithEth((-1), "signer0 bid", { value: nextEthBidPrice_ });
+	await cosmicSignatureGame.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice_,});
 	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await cosmicSignatureGame.connect(signer1).bidWithEth((-1), "signer1 bid", { value: nextEthBidPrice_ });
+	await cosmicSignatureGame.connect(signer1).bidWithEth((-1), "signer1 bid", {value: nextEthBidPrice_,});
 	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await cosmicSignatureGame.connect(signer2).bidWithEth((-1), "signer2 bid", { value: nextEthBidPrice_ });
+	await cosmicSignatureGame.connect(signer2).bidWithEth((-1), "signer2 bid", {value: nextEthBidPrice_,});
 	let randomWalkNftAddr_ = await cosmicSignatureGame.randomWalkNft();
 
 	// Comment-202502096 applies.
@@ -35,10 +35,10 @@ async function main() {
 	console.log("tokenid = " + nftId_);
 	await randomWalkNft_.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId_);
 	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr_, nftId_, { value: nextEthBidPrice_ });
+	await bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr_, nftId_, {value: nextEthBidPrice_,});
 
 	nextEthBidPrice_ = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	await bidderContract.connect(signer0).doBidWithEth({ value: nextEthBidPrice_ });
+	await bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 
 	rwalkPrice = await randomWalkNft_.getMintPrice();
 	tx = await randomWalkNft_.connect(signer0).mint({ value: rwalkPrice });

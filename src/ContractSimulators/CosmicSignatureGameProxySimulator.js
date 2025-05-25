@@ -949,7 +949,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 						{
 							// Comment-202504265 applies.
-							const blockchainBasedRandomNumberSeed_ = BigInt.asUintN(256, blockchainBasedRandomNumberSeedWrapper_.value + 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4n);
+							const blockchainBasedRandomNumberSeed_ = blockchainBasedRandomNumberSeedWrapper_.value ^ 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4n;
 
 							const luckyStakerAddresses_ =
 								this.stakingWalletRandomWalkNftSimulator.pickRandomStakerAddressesIfPossible(
@@ -1029,7 +1029,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 						{
 							// Comment-202504265 applies.
-							const blockchainBasedRandomNumberSeed_ = BigInt.asUintN(256, blockchainBasedRandomNumberSeedWrapper_.value + 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aedan);
+							const blockchainBasedRandomNumberSeed_ = blockchainBasedRandomNumberSeedWrapper_.value ^ 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aedan;
 
 							firstCosmicSignatureNftId_ = this.cosmicSignatureNftSimulator.mintMany(this.roundNum, cosmicSignatureNftOwnerAddresses_, blockchainBasedRandomNumberSeed_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						}

@@ -9,7 +9,7 @@ const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUni
 
 describe("Bidding", function () {
 	it("ETH refund receive by bidder reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(1n);
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);

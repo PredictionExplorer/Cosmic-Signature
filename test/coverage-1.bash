@@ -2,10 +2,10 @@
 
 # Comment-202505289 relates and/or applies.
 
-'clear'
+'/usr/bin/clear'
 
 (
-	'cd' '--' '..'
+	cd '--' '..'
 	if [ $? -ne 0 ]; then
 		read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
 	else

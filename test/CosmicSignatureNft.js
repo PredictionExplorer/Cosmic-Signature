@@ -47,7 +47,7 @@ describe("CosmicSignatureNft", function () {
 		const [signer0, signer1, signer2,] = signers;
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -56,6 +56,7 @@ describe("CosmicSignatureNft", function () {
 		let topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignatureNft.interface.parseLog(log);
+		// todo-1 It's probably unnecessary to call `toObject`.
 		let args = parsed_log.args.toObject();
 		let token_id = args.nftId;
 
@@ -64,6 +65,7 @@ describe("CosmicSignatureNft", function () {
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftNameChanged").topicHash;
 		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		parsed_log = cosmicSignatureNft.interface.parseLog(log);
+		// todo-1 It's probably unnecessary to call `toObject`.
 		args = parsed_log.args.toObject();
 		expect(args.nftName).equal("name 1");
 		expect(args.nftId).equal(token_id);
@@ -85,7 +87,7 @@ describe("CosmicSignatureNft", function () {
 		const [signer0, signer1,] = signers;
 		
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");

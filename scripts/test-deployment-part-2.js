@@ -7,7 +7,7 @@ const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
-	const unique_winners = [];
+	const unique_winners = {};
 	for (let i = 0; i < event_logs.length; i++) {
 		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
 		let prizeWinnerAddress_ = wlog.args.prizeWinnerAddress;
@@ -27,7 +27,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let tx = await cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
 	let receipt = await tx.wait();
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
-	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	let event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	// todo-1 Assert 2 more params passed to the event.
 	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
@@ -39,7 +39,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddr);
 
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerCosmicSignatureNftAwarded");
-	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	for (let i = 0; i < event_logs.length; i++) {
 		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);
 		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.prizeCosmicSignatureNftId);
@@ -52,7 +52,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
 
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
-	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	await claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 
 	let charityWalletAddr = await cosmicSignatureGame.charityAddress();
@@ -61,7 +61,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddr);
 	
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
-	event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
 	expect(parsed_log.args.amount).to.equal(charityEthDonationAmount_);
 }

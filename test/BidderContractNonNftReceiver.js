@@ -21,9 +21,9 @@
 // 		const bidderContractNonNftReceiverAddr = await bidderContractNonNftReceiver.getAddress();
 // 	
 // 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-// 		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "signer0 bid", { value: nextEthBidPrice_ });
+// 		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice_,});
 // 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-// 		await bidderContractNonNftReceiver.connect(signer0).doBidWithEth({ value: nextEthBidPrice_ });
+// 		await bidderContractNonNftReceiver.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 // 	
 // 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 // 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
@@ -31,9 +31,10 @@
 // 		let tx = await bidderContractNonNftReceiver.connect(signer0).doClaimMainPrize();
 // 		let receipt = await tx.wait();
 // 		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
-// 		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+// 		let mint_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 		let prizeWinnerNftIndex_ = 0;
 // 		let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[prizeWinnerNftIndex_]);
+//       // todo-1 It's probably unnecessary to call `toObject`.
 // 		let args = parsed_log.args.toObject();
 // 		let o = await cosmicSignatureNft.ownerOf(args.nftId);
 // 		expect(o).to.equal(bidderContractNonNftReceiverAddr);

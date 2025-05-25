@@ -40,12 +40,10 @@ const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE
 async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
 
-	// Comment-202501193 relates and/or applies.
+	// Issue. Given Comment-202501193, we must forcibly mine a block to avoid possible unexpected behavior.
 	await hre.ethers.provider.send("evm_mine");
 
-	// Issue. Given Comment-202501193, we must forcibly mine a block before using latest block timestamp.
 	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
-
 	return contracts;
 }
 

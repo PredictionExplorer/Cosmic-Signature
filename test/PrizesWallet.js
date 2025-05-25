@@ -77,7 +77,7 @@ describe("PrizesWallet", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let tx = await cosmicSignatureGameProxy
 			.connect(signer1)
-			.bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 0, { value: nextEthBidPrice_ });
+			.bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 0, {value: nextEthBidPrice_,});
 		let receipt = await tx.wait();
 		// let topic_sig = cosmicSignatureGameProxy.interface.getEvent("NftDonationEvent").topicHash;
 		let topic_sig = prizesWallet.interface.getEvent("NftDonated").topicHash;
@@ -90,7 +90,7 @@ describe("PrizesWallet", function () {
 		mintPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer1).mint({ value: mintPrice });
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 1, { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer1).bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 1, {value: nextEthBidPrice_,});
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
@@ -102,7 +102,7 @@ describe("PrizesWallet", function () {
 		receipt = await tx.wait();
 		// topic_sig = cosmicSignatureGameProxy.interface.getEvent("DonatedNftClaimedEvent").topicHash;
 		topic_sig = prizesWallet.interface.getEvent("DonatedNftClaimed").topicHash;
-		let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		expect(event_logs.length).to.equal(2);
 		// parsed_log = cosmicSignatureGameProxy.interface.parseLog(event_logs[0]);
 		parsed_log = prizesWallet.interface.parseLog(event_logs[0]);
@@ -119,5 +119,86 @@ describe("PrizesWallet", function () {
 		expect(parsed_log.args.nftAddress).to.equal(randomWalkNftAddr);
 		expect(parsed_log.args.nftId).to.equal(0);
 		expect(parsed_log.args.index).to.equal(0);
+	});
+
+	// todo-0 This test used to be in "MainPrize-Old.js" (which I deleted).
+	// todo-0 Think if I need to peserve parts of it.
+	// todo-0 check for `.not.reverted`.
+	it("Emits MainPrizeClaimed and updates main prize beneficiary on successful main prize claim", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {contracts_.ownerAcct, signers, contracts_.cosmicSignatureGameProxy, contracts_.cosmicSignatureGameProxyAddr, contracts_.prizesWallet, prizesWalletAddr, contracts_.randomWalkNft, randomWalkNftAddr,} =
+			await loadFixture(deployContractsForUnitTesting);
+		const [daoOwner, donor, bidder1, bidder2, bidder3,] = signers;
+
+		// ToDo-202411202-1 applies.
+		await contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setDelayDurationBeforeRoundActivation(0n);
+
+		let mintPrice = await contracts_.randomWalkNft.getMintPrice();
+		await contracts_.randomWalkNft.connect(donor).mint({ value: mintPrice });
+
+		// await randeomWalkNFT.connect(donor).setApprovalForAll(contracts_.cosmicSignatureGameProxyAddr, true);
+		await contracts_.randomWalkNft.connect(donor).setApprovalForAll(prizesWalletAddr, true);
+
+		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await contracts_.cosmicSignatureGameProxy.connect(donor).bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 0, {value: nextEthBidPrice_,});
+
+		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await contracts_.cosmicSignatureGameProxy.connect(bidder1).bidWithEth(-1n, "", {value: nextEthBidPrice_,});
+
+		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "DonatedNftClaimDenied");
+		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.prizesWallet, "DonatedNftClaimDenied");
+
+		await hre.ethers.provider.send("evm_increaseTime", [26 * 60 * 60]);
+		// await hre.ethers.provider.send("evm_mine");
+
+		let mainEthPrizeAmountBeforeClaim_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
+
+		await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimMainPrize())
+			.to.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
+			.withArgs(0, bidder1.address, mainEthPrizeAmountBeforeClaim_, 0);
+
+		// const mainPrizeBeneficiaryAddress_ = await contracts_.cosmicSignatureGameProxy.winners(0);
+		const mainPrizeBeneficiaryAddress_ = await contracts_.prizesWallet.mainPrizeBeneficiaryAddresses(0);
+		expect(mainPrizeBeneficiaryAddress_).to.equal(bidder1.address);
+
+		const mainEthPrizeAmountAfterClaim_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
+		const balance = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddr);
+		const mainEthPrizeExpectedAmount_ = balance * 25n / 100n;
+		expect(mainEthPrizeAmountAfterClaim_).to.equal(mainEthPrizeExpectedAmount_);
+
+		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidDonatedNftIndex");
+		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(contracts_.prizesWallet, "InvalidDonatedNftIndex");
+
+		// await contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0);
+		await contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0);
+		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "DonatedNftAlreadyClaimed");
+		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.prizesWallet, "DonatedNftAlreadyClaimed");
+
+		mintPrice = await contracts_.randomWalkNft.getMintPrice();
+		await contracts_.randomWalkNft.connect(donor).mint({ value: mintPrice });
+		mintPrice = await contracts_.randomWalkNft.getMintPrice();
+		await contracts_.randomWalkNft.connect(donor).mint({ value: mintPrice });
+
+		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		await contracts_.cosmicSignatureGameProxy.connect(bidder1).bidWithEth(-1n, "", {value: nextEthBidPrice_,});
+
+		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+		let nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
+		await contracts_.cosmicSignatureGameProxy.connect(donor).bidWithEthAndDonateNft(1, "hello", randomWalkNftAddr, 2, { value: nextEthPlusRandomWalkNftBidPrice_ });
+
+		await hre.ethers.provider.send("evm_increaseTime", [26 * 60 * 60]);
+		// await hre.ethers.provider.send("evm_mine");
+
+		mainEthPrizeAmountBeforeClaim_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
+		await expect(contracts_.cosmicSignatureGameProxy.connect(donor).claimMainPrize())
+			.to.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
+			.withArgs(1, donor.address, mainEthPrizeAmountBeforeClaim_, 7);
+
+		expect(await contracts_.randomWalkNft.balanceOf(donor.address)).to.equal(1);
+		// await contracts_.cosmicSignatureGameProxy.connect(donor).claimDonatedNft(1);
+		await contracts_.prizesWallet.connect(donor).claimDonatedNft(1);
+		expect(await contracts_.randomWalkNft.balanceOf(donor.address)).to.equal(2);
+
+		expect(await contracts_.cosmicSignatureGameProxy.roundNum()).to.equal(2);
 	});
 });

@@ -20,11 +20,11 @@ describe("BidderContract", function () {
 		const bidderContractAddr = await bidderContract.getAddress();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "signer0 bid", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice_,});
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "signer1 bid", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "signer1 bid", {value: nextEthBidPrice_,});
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "signer2 bid", { value: nextEthBidPrice_ });
+		await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "signer2 bid", {value: nextEthBidPrice_,});
 
 		let rwalkPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGameProxyAddr, true);
@@ -40,7 +40,7 @@ describe("BidderContract", function () {
 		await bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_});
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidderContract.connect(signer0).doBidWithEth({ value: nextEthBidPrice_ });
+		await bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 
 		rwalkPrice = await randomWalkNft.getMintPrice();
 		tx = await randomWalkNft.connect(signer0).mint({ value: rwalkPrice });
@@ -59,7 +59,7 @@ describe("BidderContract", function () {
 		tx = await bidderContract.connect(signer0).doClaimMainPrize();
 		receipt = await tx.wait();
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
-		let mint_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+		let mint_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		await bidderContract.connect(signer0).withdrawAll();
 
 		for (let i = 0; i < mint_logs.length; i++) {

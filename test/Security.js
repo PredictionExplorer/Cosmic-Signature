@@ -16,8 +16,8 @@ describe("Security", function () {
 	// 	const [signer0,] = signers;
 	//
 	// 	// todo-1 Why do we need this donation here? Comment it out?
-	// 	const donationAmount_ = hre.ethers.parseEther("10");
-	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_})).not.reverted;
+	// 	const ethDonationAmount_ = 10n * 10n ** 18n;
+	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: ethDonationAmount_})).not.reverted;
 	//
 	// 	const maliciousNftFactory = await hre.ethers.getContractFactory("MaliciousNft1", deployerAcct);
 	// 	const maliciousNft = await maliciousNftFactory.deploy("Bad NFT", "BAD");
@@ -35,16 +35,16 @@ describe("Security", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 	
-		const bidAmount_ = hre.ethers.parseEther("1");
-		const donationAmount_ = bidAmount_ * 10n;
-		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: donationAmount_})).not.reverted;
+		const ethBidAmount_ = 10n ** 18n;
+		const ethDonationAmount_ = ethBidAmount_ * 10n;
+		// await expect(cosmicSignatureGameProxy.connect(signer0).donateEth({value: ethDonationAmount_})).not.reverted;
 	
 		const maliciousNftFactory = await hre.ethers.getContractFactory("MaliciousNft2", deployerAcct);
 		const maliciousNft = await maliciousNftFactory.deploy(cosmicSignatureGameProxyAddr, "Bad NFT", "BAD");
 		await maliciousNft.waitForDeployment();
 		const maliciousNftAddr = await maliciousNft.getAddress();
 
-		await expect(signer0.sendTransaction({to: maliciousNftAddr, value: donationAmount_,})).not.reverted;
-		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0n, {value: bidAmount_})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+		await expect(signer0.sendTransaction({to: maliciousNftAddr, value: ethDonationAmount_,})).not.reverted;
+		await expect(cosmicSignatureGameProxy.connect(signer0).bidWithEthAndDonateNft((-1n), "", maliciousNftAddr, 0n, {value: ethBidAmount_,})).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	});
 });

@@ -13,7 +13,7 @@ async function mint_random_walk_token(testingAcct, randomWalkNft_) {
 	let tx = await randomWalkNft_.connect(testingAcct).mint({ value: tokenPrice });
 	let receipt = await tx.wait();
 	let topic_sig = randomWalkNft_.interface.getEventTopic("MintEvent");
-	let event_logs = receipt.logs.filter(x => x.topics.indexOf(topic_sig) >= 0);
+	let event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = randomWalkNft_.interface.parseLog(event_logs[0]);
 	let nftId = parsed_log.args.tokenId;
 	return nftId;

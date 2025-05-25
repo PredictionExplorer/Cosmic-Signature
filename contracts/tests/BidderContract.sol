@@ -1,3 +1,5 @@
+// todo-0 Review this.
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.29;
 
@@ -14,7 +16,6 @@ import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
-/// todo-0 Review this.
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	// address public immutable creator;
@@ -31,6 +32,7 @@ contract BidderContract is BrokenEthReceiver {
 	// 	require(( ! blockDeposits ), "I am not accepting deposits.");
 	// }
 
+	/// todo-1 Do we really need this method?
 	function doBidWithEth() external payable {
 		uint256 price = cosmicSignatureGame.getNextEthBidPrice(int256(0));
 		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
