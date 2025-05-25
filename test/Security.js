@@ -25,7 +25,7 @@ describe("Security", function () {
 	// 	const maliciousNftAddr = await maliciousNft.getAddress();
 	//
 	// 	// todo-1 This will probably now revert due to `_onlyGame`.
-	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0n)).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+	// 	await expect(cosmicSignatureGameProxy.connect(signer0).donateNft(maliciousNftAddr, 0n)).revertedWithCustomError(cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
 	// });
 	
 	// todo-0 Do we need a similar test for `bidWithCstAndDonateNft`? Maybe not, but think.

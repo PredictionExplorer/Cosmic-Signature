@@ -21,13 +21,13 @@ describe("CosmicSignatureNft", function () {
 
 		await expect(
 			cosmicSignatureNft.mint(0n, signer1.address, 0x167c41a5ddd8b94379899bacc638fe9a87929d7738bc7e1d080925709c34330en),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
+		).revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
 		await expect(
 			cosmicSignatureNft.connect(signer1).mint(0n, signer1.address, 0xf5df7ce30f2a4e696109a2a3d544e48dd0cda03367cfd816d53083edd06e5638n),
-		).to.be.revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
+		).revertedWithCustomError(cosmicSignatureNft, "UnauthorizedCaller");
 		await expect(
 			newCosmicSignatureNft.connect(signer0).mint(0n, hre.ethers.ZeroAddress, 0x3a61b868abd2e4597e6ed0bc53ec665f068523ad614e1affd22434e3edb8e523n),
-		).to.be.revertedWithCustomError(newCosmicSignatureNft, /*"ZeroAddress"*/ "ERC721InvalidReceiver");
+		).revertedWithCustomError(newCosmicSignatureNft, /*"ZeroAddress"*/ "ERC721InvalidReceiver");
 		await newCosmicSignatureNft.connect(signer0).mint(0n, signer2.address, generateRandomUInt256());
 	});
 
@@ -38,7 +38,7 @@ describe("CosmicSignatureNft", function () {
 
 		await cosmicSignatureNft.connect(ownerAcct).setNftGenerationScriptUri("url://");
 		expect(await cosmicSignatureNft.nftGenerationScriptUri()).to.equal("url://");
-		await expect(cosmicSignatureNft.connect(signer1).setNftGenerationScriptUri("none")).to.be.revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureNft.connect(signer1).setNftGenerationScriptUri("none")).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 	});
 
 	it("setNftName behaves correctly", async function () {

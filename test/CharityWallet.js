@@ -17,7 +17,7 @@ describe("CharityWallet", function () {
 		let receiverAddress_ = await charityWallet.charityAddress();
 		await expect(signer2.sendTransaction({to: charityWalletAddr, value: amountSent,})).not.reverted;
 		let balanceAmountBefore = await hre.ethers.provider.getBalance(receiverAddress_);
-		await charityWallet.send();
+		await charityWallet.>>>connect to a signer>>>.send();
 		let balanceAmountAfter = await hre.ethers.provider.getBalance(receiverAddress_);
 		expect(balanceAmountAfter).to.equal(balanceAmountBefore + amountSent);
 	});
@@ -35,11 +35,11 @@ describe("CharityWallet", function () {
 
 		await expect(signer0.sendTransaction({to: charityWalletAddr, value: hre.ethers.parseEther("3"),})).not.reverted;
 		await charityWallet.connect(ownerAcct).setCharityAddress(brokenCharityAddr);
-		await expect(charityWallet.connect(signer1).send()).to.be.revertedWithCustomError(charityWallet, "FundTransferFailed");
+		await expect(charityWallet.connect(signer1).send()).revertedWithCustomError(charityWallet, "FundTransferFailed");
 		await charityWallet.connect(ownerAcct).setCharityAddress(hre.ethers.ZeroAddress);
-		await expect(charityWallet.connect(signer1).send()).to.be.revertedWithCustomError(charityWallet, "ZeroAddress");
+		await expect(charityWallet.connect(signer1).send()).revertedWithCustomError(charityWallet, "ZeroAddress");
 		await charityWallet.connect(ownerAcct).setCharityAddress(charityAcct.address);
-		// await expect(charityWallet.connect(signer1).send()).to.be.revertedWithCustomError(charityWallet, "ZeroBalance");
+		// await expect(charityWallet.connect(signer1).send()).revertedWithCustomError(charityWallet, "ZeroBalance");
 		await charityWallet.connect(signer1).send();
 	});
 

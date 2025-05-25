@@ -30,7 +30,7 @@ describe("CosmicSignatureToken", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
-		// todo-1 Add `cosmicSignatureToken.transferToMarketingWalletOrBurn` to all tests. But I have eliminated it.
+		// todo-1 Add `cosmicSignatureToken.connect(...).transferToMarketingWalletOrBurn` to all tests. But I have eliminated it.
 		await expect(cosmicSignatureToken.connect(signer1).mint(signer1.address, 10000n))
 			.revertedWithCustomError(cosmicSignatureToken, /*"OwnableUnauthorizedAccount"*/ "UnauthorizedCaller");
 		await expect(cosmicSignatureToken.connect(ownerAcct).mint(signer1.address, 10000n))

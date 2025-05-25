@@ -41,7 +41,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.connect(signer0).unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.connect(signer0).unstake(1)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
+		await expect(newStakingWalletRandomWalkNft.connect(signer0).unstake(1)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
 	});
 	
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
@@ -66,7 +66,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
 
-		await expect(newStakingWalletRandomWalkNft.connect(signer1).unstake(1)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionAccessDenied");
+		await expect(newStakingWalletRandomWalkNft.connect(signer1).unstake(1)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionAccessDenied");
 	});
 	
 	// it("Internal staker state variables for checking uniquness are correctly set", async function () {
@@ -94,10 +94,10 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	expect(tokenIndexCheck).to.equal(1);
 	// 	let tokenIdCheck = await newStakingWalletRandomWalkNft.stakedTokens(Number(tokenIndexCheck)-1);
 	// 	expect(tokenIdCheck).to.equal(sampleTokenId);
-	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doInsertToken(sampleTokenId, 0)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyInserted");
+	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doInsertToken(sampleTokenId, 0)).revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyInserted");
 	//
 	// 	await newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(sampleTokenId);
-	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(signer0.address)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyDeleted");
+	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(signer0.address)).revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyDeleted");
 	// 	await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 	// 	async function mint_rwalk(a) {
 	// 		let tokenPrice = await randomWalkNft.getMintPrice();
@@ -256,6 +256,6 @@ describe("StakingWalletRandomWalkNft", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await newStakingWalletRandomWalkNft.connect(signer0).unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.connect(signer0).stake(0)).to.be.revertedWithCustomError(newStakingWalletRandomWalkNft, "NftHasAlreadyBeenStaked");
+		await expect(newStakingWalletRandomWalkNft.connect(signer0).stake(0)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftHasAlreadyBeenStaked");
 	});
 });

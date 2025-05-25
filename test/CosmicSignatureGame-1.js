@@ -382,15 +382,15 @@ describe("CosmicSignatureGame-1", function () {
 						// console.info("202505109");
 						blockBeforeTransaction_ = latestBlock_;
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-						const ethDonationAmount_ = ((randomNumber_ & (0xFn << 128n)) == 0n) ? 0n : (randomNumber_ & ((1n << 40n) - 1n));
-						if ((randomNumber_ & (1n << 136n)) == 0n) {
-							// console.info("Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
+						const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, randomNumber_)) - Number(1n << (53n - 4n)), 0));
+						if ((randomNumber_ & (1n << 128n)) == 0n) {
+							// console.info("202506038 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
 							const transactionResponseFuture_ = cosmicSignatureGameProxyForSigner_.donateEth({value: ethDonationAmount_,});
 							const transactionResponse_ = await transactionResponseFuture_;
 							transactionReceipt_ = await transactionResponse_.wait();
 							cosmicSignatureGameProxySimulator_.donateEth(signer_.address, ethDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
-							// console.info("Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH with info.");
+							// console.info("202506039 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH with info.");
 
 							// Comment-202505061 applies.
 							generateBidMessage_();

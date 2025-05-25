@@ -16,14 +16,14 @@ describe("PrizesWallet", function () {
 		await newPrizesWallet.waitForDeployment();
 		await newPrizesWallet.transferOwnership(ownerAcct.address);
 
-		await expect(newPrizesWallet.connect(signer1).depositEth(0, signer1.address, {value: 1000000n})).to.be.revertedWithCustomError(newPrizesWallet, "UnauthorizedCaller");
+		await expect(newPrizesWallet.connect(signer1).depositEth(0, signer1.address, {value: 1000000n})).revertedWithCustomError(newPrizesWallet, "UnauthorizedCaller");
 
 		// // I have replaced respective `require` with an `assert`.
 		// // I have observed the `assert` working. This now reverts with panic when asserts are enabled.
-		// await expect(newPrizesWallet.connect(signer0).depositEth(0, hre.ethers.ZeroAddress)).to.be.revertedWithCustomError(newPrizesWallet, "ZeroAddress");
+		// await expect(newPrizesWallet.connect(signer0).depositEth(0, hre.ethers.ZeroAddress)).revertedWithCustomError(newPrizesWallet, "ZeroAddress");
 
 		// Comment-202409215 relates.
-		// await expect(newPrizesWallet.connect(signer0).depositEth(0, signer1.address)).to.be.revertedWithCustomError(newPrizesWallet, "ZeroValue");
+		// await expect(newPrizesWallet.connect(signer0).depositEth(0, signer1.address)).revertedWithCustomError(newPrizesWallet, "ZeroValue");
 		await newPrizesWallet.connect(signer0).depositEth(0, signer1.address);
 	});
 	
@@ -39,7 +39,7 @@ describe("PrizesWallet", function () {
 		await newPrizesWallet.connect(signer0).depositEth(0, signer1.address, {value: 1000n});
 
 		// Comment-202409215 relates.
-		// await expect(newPrizesWallet.connect(signer2).withdrawEth()).to.be.revertedWithCustomError(newPrizesWallet, "ZeroBalance");
+		// await expect(newPrizesWallet.connect(signer2).withdrawEth()).revertedWithCustomError(newPrizesWallet, "ZeroBalance");
 		await expect(newPrizesWallet.connect(signer2).withdrawEth()).not.to.be.reverted;
 	});
 
@@ -67,7 +67,10 @@ describe("PrizesWallet", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1,] = signers;
 
-		// ToDo-202411202-1 applies.
+		// [ToDo-202411202-1]
+		// This is a quick hack.
+		// To be revisited.
+		// [/ToDo-202411202-1]
 		await cosmicSignatureGameProxy.connect(ownerAcct).setDelayDurationBeforeRoundActivation(0n);
 
 		let mintPrice = await randomWalkNft.getMintPrice();
@@ -145,8 +148,8 @@ describe("PrizesWallet", function () {
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await contracts_.cosmicSignatureGameProxy.connect(bidder1).bidWithEth(-1n, "", {value: nextEthBidPrice_,});
 
-		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "DonatedNftClaimDenied");
-		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.prizesWallet, "DonatedNftClaimDenied");
+		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "DonatedNftClaimDenied");
+		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0)).revertedWithCustomError(contracts_.prizesWallet, "DonatedNftClaimDenied");
 
 		await hre.ethers.provider.send("evm_increaseTime", [26 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -166,13 +169,13 @@ describe("PrizesWallet", function () {
 		const mainEthPrizeExpectedAmount_ = balance * 25n / 100n;
 		expect(mainEthPrizeAmountAfterClaim_).to.equal(mainEthPrizeExpectedAmount_);
 
-		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidDonatedNftIndex");
-		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(1)).to.be.revertedWithCustomError(contracts_.prizesWallet, "InvalidDonatedNftIndex");
+		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(1)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidDonatedNftIndex");
+		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(1)).revertedWithCustomError(contracts_.prizesWallet, "InvalidDonatedNftIndex");
 
 		// await contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0);
 		await contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0);
-		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "DonatedNftAlreadyClaimed");
-		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0)).to.be.revertedWithCustomError(contracts_.prizesWallet, "DonatedNftAlreadyClaimed");
+		// await expect(contracts_.cosmicSignatureGameProxy.connect(bidder1).claimDonatedNft(0)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "DonatedNftAlreadyClaimed");
+		await expect(contracts_.prizesWallet.connect(bidder1).claimDonatedNft(0)).revertedWithCustomError(contracts_.prizesWallet, "DonatedNftAlreadyClaimed");
 
 		mintPrice = await contracts_.randomWalkNft.getMintPrice();
 		await contracts_.randomWalkNft.connect(donor).mint({ value: mintPrice });
