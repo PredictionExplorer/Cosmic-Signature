@@ -78,13 +78,13 @@ describe("PrizesWallet", function () {
 		// await randomWalkNft.connect(signer1).setApprovalForAll(cosmicSignatureGameProxyAddr, true);
 		await randomWalkNft.connect(signer1).setApprovalForAll(prizesWalletAddr, true);
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		let tx = await cosmicSignatureGameProxy
+		let transactionResponse_ = await cosmicSignatureGameProxy
 			.connect(signer1)
 			.bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 0, {value: nextEthBidPrice_,});
-		let receipt = await tx.wait();
+		let transactionReceipt_ = await transactionResponse_.wait();
 		// let topic_sig = cosmicSignatureGameProxy.interface.getEvent("NftDonationEvent").topicHash;
 		let topic_sig = prizesWallet.interface.getEvent("NftDonated").topicHash;
-		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = transactionReceipt_.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignatureGameProxy.interface.parseLog(log);
 		// todo-1 These asserts fail because the code above needs to be refactored to get the event from `prizesWallet`.
 		// expect(parsed_log.args.donorAddress).to.equal(signer1.address);
@@ -100,12 +100,12 @@ describe("PrizesWallet", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicSignatureGameProxy.connect(signer1).claimMainPrize()).not.to.be.reverted;
 
-		// tx = await cosmicSignatureGameProxy.connect(signer1).claimManyDonatedNfts([0, 1]);
-		tx = await prizesWallet.connect(signer1).claimManyDonatedNfts([0, 1]);
-		receipt = await tx.wait();
+		// transactionResponse_ = await cosmicSignatureGameProxy.connect(signer1).claimManyDonatedNfts([0, 1]);
+		transactionResponse_ = await prizesWallet.connect(signer1).claimManyDonatedNfts([0, 1]);
+		transactionReceipt_ = await transactionResponse_.wait();
 		// topic_sig = cosmicSignatureGameProxy.interface.getEvent("DonatedNftClaimedEvent").topicHash;
 		topic_sig = prizesWallet.interface.getEvent("DonatedNftClaimed").topicHash;
-		let event_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+		let event_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		expect(event_logs.length).to.equal(2);
 		// parsed_log = cosmicSignatureGameProxy.interface.parseLog(event_logs[0]);
 		parsed_log = prizesWallet.interface.parseLog(event_logs[0]);

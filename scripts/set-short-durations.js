@@ -9,15 +9,15 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 async function set_parameters(testingAcct, cosmicSignatureGame) {
 	// todo-1 Do we need to also set duration until bidding round activation here.
 
-	const mainPrizeTimeIncrementInMicroSeconds_ = 3n * 60n * 1_000_000n;
-	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_);
-	const initialDurationUntilMainPrizeDivisor_ = mainPrizeTimeIncrementInMicroSeconds_ / 60n;
-	await cosmicSignatureGame.connect(testingAcct).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor_);
-	const timeoutDurationToClaimMainPrize_ = 60n * 3n / 2n;
-	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize_);
-	console.log("Main prize time increment in microseconds =", mainPrizeTimeIncrementInMicroSeconds_);
-	console.log("Initial duration until main prize divisor =", initialDurationUntilMainPrizeDivisor_);
-	console.log("Timeout duration to claim main prize =", timeoutDurationToClaimMainPrize_);
+	const mainPrizeTimeIncrementInMicroSeconds = 3n * 60n * 1_000_000n;
+	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds);
+	const initialDurationUntilMainPrizeDivisor = mainPrizeTimeIncrementInMicroSeconds / 60n;
+	await cosmicSignatureGame.connect(testingAcct).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor);
+	const timeoutDurationToClaimMainPrize = 60n * 3n / 2n;
+	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize);
+	console.log("Main prize time increment in microseconds =", mainPrizeTimeIncrementInMicroSeconds);
+	console.log("Initial duration until main prize divisor =", initialDurationUntilMainPrizeDivisor);
+	console.log("Timeout duration to claim main prize =", timeoutDurationToClaimMainPrize);
 }
 
 async function main() {

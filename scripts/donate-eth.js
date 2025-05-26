@@ -15,8 +15,8 @@ async function main() {
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
-	const ethDonationAmount_ = 2n * 10n ** 18n;
-	await cosmicSignatureGame.connect(testingAcct).donateEth({value: ethDonationAmount_,});
+	const ethDonationAmount = 2n * 10n ** 18n;
+	await cosmicSignatureGame.connect(testingAcct).donateEth({value: ethDonationAmount,});
 }
 
 main()

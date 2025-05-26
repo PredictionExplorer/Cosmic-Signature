@@ -56,14 +56,14 @@ contract BidderContract is BrokenEthReceiver {
 		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthRWalk; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 	}
 
-	function doBidWithEthRWalk2(int256 nftId) external payable {
-		RandomWalkNFT rwalk = cosmicSignatureGame.randomWalkNft();
-		rwalk.setApprovalForAll(address(cosmicSignatureGame), true);
-		rwalk.transferFrom(msg.sender, address(this), uint256(nftId));
+	function doBidWithEthRWalk2(uint256 nftId_) external payable {
+		RandomWalkNFT randomWalkNft_ = cosmicSignatureGame.randomWalkNft();
+		randomWalkNft_.transferFrom(msg.sender, address(this), nftId_);
 		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
-		cosmicSignatureGame.bidWithEth{value: msg.value}(nftId, "contract bid rwalk");
+		cosmicSignatureGame.bidWithEth{value: msg.value}(int256(nftId_), "contract bid rwalk");
 		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
 		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthRWalk2; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
+		randomWalkNft_.transferFrom(address(this), msg.sender, nftId_);
 	}
 
 	function doBidWithEthAndDonateNft(IERC721 nftAddress_, uint256 nftId_) external payable {

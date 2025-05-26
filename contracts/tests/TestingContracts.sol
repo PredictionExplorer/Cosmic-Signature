@@ -6,7 +6,6 @@ import { IERC721, ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { RandomNumberHelpers } from "../production/libraries/RandomNumberHelpers.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
-import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { ICosmicSignatureNft, CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { IPrizesWallet } from "../production/interfaces/IPrizesWallet.sol";
@@ -18,58 +17,6 @@ import { CharityWallet } from "../production/CharityWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 // todo-0 Move each contract to a separate file.
-
-// /// @notice Used to test `revert` statements in token transfers in `claimMainPrize`.
-// contract BrokenCosmicSignatureToken1 {
-// 	uint256 private _counter;
-// 
-// 	/// todo-9 Do we need `mintMany` and other similar methods here as well?
-// 	function mint(address, uint256 roundNum_) public {
-// 		_counter = roundNum_;
-// 		require(false, "Test mint() failed.");
-// 	}
-// 
-// 	function totalSupply() public pure returns (uint256) {
-// 		return 1;
-// 	}
-// }
-
-/// @notice Used to test `revert` statements in `CosmicSignatureGame`.
-contract BrokenCosmicSignatureToken2 {
-	uint256 private _counter;
-
-	constructor(uint256 counter_) {
-		_counter = counter_;
-	}
-
-	function mint(address, uint256) external {
-		_brokenMint();
-	}
-
-	function mintMany(ICosmicSignatureToken.MintSpec[] calldata) external {
-		_brokenMint();
-	}
-
-	function mintAndBurnMany(ICosmicSignatureToken.MintOrBurnSpec[] calldata specs_) external {
-		for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
-			ICosmicSignatureToken.MintOrBurnSpec calldata specReference_ = specs_[index_];
-			int256 value_ = specReference_.value;
-			if (value_ >= int256(0)) {
-				_brokenMint();
-				break;
-			}
-		}
-	}
-
-	function _brokenMint() private {
-		require(_counter > 0, "Test mint() failed.");
-		-- _counter;
-	}
-
-	function burn(address, uint256) external {
-		// Doing nothing.	
-	}
-}
 
 // todo-0 Delete this. Use `BrokenEthReceiver` instead.
 // /// @notice Used to test `revert` statements for charity deposits.

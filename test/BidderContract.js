@@ -14,10 +14,10 @@ describe("BidderContract", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, signer1, signer2,] = signers;
 
-		const bidderContractFactory = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
-		const bidderContract = await bidderContractFactory.deploy(cosmicSignatureGameProxyAddr);
-		await bidderContract.waitForDeployment();
-		const bidderContractAddr = await bidderContract.getAddress();
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", deployerAcct);
+		const bidderContract_ = await bidderContractFactory_.deploy(cosmicSignatureGameProxyAddr);
+		await bidderContract_.waitForDeployment();
+		const bidderContractAddr_ = await bidderContract_.getAddress();
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice_,});
@@ -28,43 +28,43 @@ describe("BidderContract", function () {
 
 		let rwalkPrice = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGameProxyAddr, true);
-		await randomWalkNft.connect(signer0).setApprovalForAll(bidderContractAddr, true);
-		let tx = await randomWalkNft.connect(signer0).mint({ value: rwalkPrice });
-		let receipt = await tx.wait();
+		await randomWalkNft.connect(signer0).setApprovalForAll(bidderContractAddr_, true);
+		let transactionResponse_ = await randomWalkNft.connect(signer0).mint({ value: rwalkPrice });
+		let transactionReceipt_ = await transactionResponse_.wait();
 		let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
-		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = transactionReceipt_.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = randomWalkNft.interface.parseLog(log);
 		let donatedNftId_ = parsed_log.args.tokenId;
-		await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContractAddr, donatedNftId_);
+		await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContractAddr_, donatedNftId_);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_});
+		await bidderContract_.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_});
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
+		await bidderContract_.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 
 		rwalkPrice = await randomWalkNft.getMintPrice();
-		tx = await randomWalkNft.connect(signer0).mint({ value: rwalkPrice });
-		receipt = await tx.wait();
+		transactionResponse_ = await randomWalkNft.connect(signer0).mint({ value: rwalkPrice });
+		transactionReceipt_ = await transactionResponse_.wait();
 		topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
-		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		log = transactionReceipt_.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		parsed_log = randomWalkNft.interface.parseLog(log);
 		let rwalk_token_id = parsed_log.args.tokenId;
-		await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContractAddr, rwalk_token_id);
+		await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContractAddr_, rwalk_token_id);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await bidderContract.connect(signer0).doBidWithEthRWalk(rwalk_token_id, {value: nextEthPlusRandomWalkNftBidPrice_,});
+		await bidderContract_.connect(signer0).doBidWithEthRWalk(rwalk_token_id, {value: nextEthPlusRandomWalkNftBidPrice_,});
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		tx = await bidderContract.connect(signer0).doClaimMainPrize();
-		receipt = await tx.wait();
+		transactionResponse_ = await bidderContract_.connect(signer0).doClaimMainPrize();
+		transactionReceipt_ = await transactionResponse_.wait();
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
-		let mint_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
-		await bidderContract.connect(signer0).withdrawAll();
+		let mint_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+		await bidderContract_.connect(signer0).withdrawAll();
 
 		for (let i = 0; i < mint_logs.length; i++) {
 			let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[i]);
-			if (parsed_log.args.nftOwnerAddress != bidderContractAddr) {
+			if (parsed_log.args.nftOwnerAddress != bidderContractAddr_) {
 				continue;
 			}
 			let tokId = parsed_log.args.nftId;

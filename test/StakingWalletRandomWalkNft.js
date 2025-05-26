@@ -25,10 +25,10 @@ describe("StakingWalletRandomWalkNft", function () {
 		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft.getAddress();
 		await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 
-		let tx = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
-		let receipt = await tx.wait();
+		let transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
+		let transactionReceipt_ = await transactionResponse_.wait();
 		// let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-		// let receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+		// let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 
 		expect(await newStakingWalletRandomWalkNft.usedNfts(0)).to.equal(1n);
@@ -58,10 +58,10 @@ describe("StakingWalletRandomWalkNft", function () {
 		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft.getAddress();
 		await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 
-		const tx = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
-		const receipt = await tx.wait();
+		const transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
+		const transactionReceipt_ = await transactionResponse_.wait();
 		// const topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-		// const receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+		// const receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// const log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -101,10 +101,10 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 	// 	async function mint_rwalk(a) {
 	// 		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
-	// 		let tx = await randomWalkNft.connect(a).mint({value: randomWalkNftMintPrice_,});
-	// 		let receipt = await tx.wait();
+	// 		let transactionResponse_ = await randomWalkNft.connect(a).mint({value: randomWalkNftMintPrice_,});
+	// 		let transactionReceipt_ = await transactionResponse_.wait();
 	// 		let topic_sig = randomWalkNft.interface.getEvent("MintEvent").topicHash;
-	// 		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+	// 		let log = transactionReceipt_.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	// 		let parsed_log = randomWalkNft.interface.parseLog(log);
 	// 		let token_id = parsed_log.args[0];
 	// 		return token_id;
@@ -112,10 +112,10 @@ describe("StakingWalletRandomWalkNft", function () {
 	// 	let r1 = await mint_rwalk(signer0);
 	// 	let r2 = await mint_rwalk(signer0);
 	// 	let r3 = await mint_rwalk(signer0);
-	// 	let tx = await newStakingWalletRandomWalkNft.connect(signer0).stakeMany([r1, r2, r3]);
-	// 	let receipt = await tx.wait();
+	// 	let transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stakeMany([r1, r2, r3]);
+	// 	let transactionReceipt_ = await transactionResponse_.wait();
 	// 	let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-	// 	let receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+	// 	let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	// 	for (let i=0; i<receipt_logs.length; i++) {
 	// 		let evt = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[i]);
 	// 	}
@@ -148,7 +148,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		}
 		await randomWalkNft.connect(signer0).setApprovalForAll(stakingWalletRandomWalkNftAddr, true);
 		for ( let nftId_ = 0; nftId_ < 10; ++ nftId_ ) {
-			let tx = await stakingWalletRandomWalkNft.connect(signer0).stake(nftId_);
+			await stakingWalletRandomWalkNft.connect(signer0).stake(nftId_);
 		}
 
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -247,10 +247,10 @@ describe("StakingWalletRandomWalkNft", function () {
 		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft.getAddress();
 		await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 
-		let tx = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
-		let receipt = await tx.wait();
+		let transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
+		let transactionReceipt_ = await transactionResponse_.wait();
 		// let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
-		// let receipt_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+		// let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");

@@ -51,19 +51,19 @@ describe("CosmicSignatureNft", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		let tx = await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
-		let receipt = await tx.wait();
+		let transactionResponse_ = await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
+		let transactionReceipt_ = await transactionResponse_.wait();
 		let topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
-		let log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		let log = transactionReceipt_.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		let parsed_log = cosmicSignatureNft.interface.parseLog(log);
 		// todo-1 It's probably unnecessary to call `toObject`.
 		let args = parsed_log.args.toObject();
 		let token_id = args.nftId;
 
-		tx = await cosmicSignatureNft.connect(signer1).setNftName(token_id, "name 1");
-		receipt = await tx.wait();
+		transactionResponse_ = await cosmicSignatureNft.connect(signer1).setNftName(token_id, "name 1");
+		transactionReceipt_ = await transactionResponse_.wait();
 		topic_sig = cosmicSignatureNft.interface.getEvent("NftNameChanged").topicHash;
-		log = receipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+		log = transactionReceipt_.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 		parsed_log = cosmicSignatureNft.interface.parseLog(log);
 		// todo-1 It's probably unnecessary to call `toObject`.
 		args = parsed_log.args.toObject();
@@ -91,8 +91,8 @@ describe("CosmicSignatureNft", function () {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		let tx = await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
-		let receipt = await tx.wait();
+		let transactionResponse_ = await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
+		let transactionReceipt_ = await transactionResponse_.wait();
 		await cosmicSignatureNft.connect(ownerAcct).setNftBaseUri("somebase/");
 		expect(await cosmicSignatureNft.tokenURI(0n)).to.equal("somebase/0");
 	});

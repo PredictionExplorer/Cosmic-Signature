@@ -14,9 +14,6 @@ describe("BidStatistics", function () {
 	// It doesn't explicitly compare the actual result to the specific expected one.
 	// Therefore this test still makes sense.
 	// [/Comment-202505315]
-	// [Comment-202506032]
-	// Issue. This test only deals with Endurance Champion. It's not aware of Chrono-Warrior.
-	// [/Comment-202506032]
 	it("Bid duration accounting: 2 bidders place bids of different durations", async function () {
 		// Test case description:
 		//    signer 1 longest bid is 1000 seconds long.
@@ -52,7 +49,6 @@ describe("BidStatistics", function () {
 	});
 
 	// Comment-202505315 applies.
-	// Comment-202506032 applies.
 	it("Bid duration accounting: 3 bidders place bids of equal durations", async function () {
 		// Test case description:
 		//    3 bidders place bids of equal durations of 1000 seconds.
@@ -120,7 +116,6 @@ describe("BidStatistics", function () {
 	});
 
 	// Comment-202505315 applies.
-	// Comment-202506032 applies.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		// Test case description:
 		//    Signer 0 places the 1st bid of 1000 seconds long.

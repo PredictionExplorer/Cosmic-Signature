@@ -28,10 +28,10 @@
 // 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 // 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
 // 		// await hre.ethers.provider.send("evm_mine");
-// 		let tx = await bidderContractNonNftReceiver.connect(signer0).doClaimMainPrize();
-// 		let receipt = await tx.wait();
+// 		let transactionResponse_ = await bidderContractNonNftReceiver.connect(signer0).doClaimMainPrize();
+// 		let transactionReceipt_ = await transactionResponse_.wait();
 // 		const topic_sig = cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
-// 		let mint_logs = receipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+// 		let mint_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 		let prizeWinnerNftIndex_ = 0;
 // 		let parsed_log = cosmicSignatureNft.interface.parseLog(mint_logs[prizeWinnerNftIndex_]);
 //       // todo-1 It's probably unnecessary to call `toObject`.

@@ -10,7 +10,6 @@ const { loadFixtureDeployContractsForUnitTesting, deployContractsForUnitTestingA
 
 describe("MainPrize", function () {
 	// Comment-202505315 applies.
-	// Comment-202506032 applies.
 	it("Test 1", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
@@ -136,6 +135,8 @@ describe("MainPrize", function () {
 	it("The number of prizes", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
+		const prizesWalletEthReceivedTopicHash_ = contracts_.prizesWallet.interface.getEvent("EthReceived").topicHash;
+
 		await expect(contracts_.randomWalkNft.connect(contracts_.signers[1]).setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true)).not.reverted;
 		await expect(contracts_.randomWalkNft.connect(contracts_.signers[2]).setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true)).not.reverted;
 
@@ -217,7 +218,6 @@ describe("MainPrize", function () {
 		expect(mainPrizeBeneficiaryAddress_).equal(contracts_.signers[3].address);
 
 		// Asserting the number of ETH deposits.
-		const prizesWalletEthReceivedTopicHash_ = contracts_.prizesWallet.interface.getEvent("EthReceived").topicHash;
 		let prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletEthReceivedTopicHash_) >= 0));
 		expect(prizesWalletEthReceivedLogs_.length).equal(numSecondaryEthPrizesToDistribute_);
 		expectedCosmicSignatureNftTotalSupply_ += numCosmicSignatureNftsToDistribute_;
@@ -270,6 +270,8 @@ describe("MainPrize", function () {
 		await bidderContract_.waitForDeployment();
 		const bidderContractAddr_ = await bidderContract_.getAddress();
 
+		const cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerBidderEthPrizeAllocated").topicHash;
+
 		await expect(contracts_.cosmicSignatureNft.connect(contracts_.signers[1]).setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddr, true)).not.reverted;
 
 		// Minting and staking a CS NFT.
@@ -320,7 +322,6 @@ describe("MainPrize", function () {
 		const stakingWalletCosmicSignatureNftExpectedBalanceAmountAfter_ = stakingWalletCosmicSignatureNftBalanceAmountBefore_ + cosmicSignatureNftStakingTotalEthRewardAmount_;
 		expect(stakingWalletCosmicSignatureNftBalanceAmountAfter_).equal(stakingWalletCosmicSignatureNftExpectedBalanceAmountAfter_);
 
-		const cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerBidderEthPrizeAllocated").topicHash;
 		let cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedTopicHash_) >= 0));
 		let sumRaffleWinnerBidderEthPrizes_ = 0n;
 		const uniqueRaffleWinnerBidderEthPrizeWinners_ = {};
