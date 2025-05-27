@@ -10,7 +10,7 @@ const { deployContractsForUnitTesting, deployContractsForUnitTestingAdvanced } =
 
 const SKIP_LONG_TESTS = false;
 
-describe("StakingWalletCosmicSignatureNft", function () {
+describe("StakingWalletCosmicSignatureNft-Old", function () {
 	it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft from arbitrary address", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, stakingWalletCosmicSignatureNft,} = await loadFixture(deployContractsForUnitTesting);
