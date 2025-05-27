@@ -8,8 +8,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting, assertAddressIsValid } = require("../src/ContractUnitTestingHelpers.js");
 
-// const SKIP_LONG_TESTS = false;
-
 describe("StakingWalletRandomWalkNft", function () {
 	it("It's impossible to unstake an NFT twice", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
@@ -257,5 +255,12 @@ describe("StakingWalletRandomWalkNft", function () {
 		await newStakingWalletRandomWalkNft.connect(signer0).unstake(1);
 
 		await expect(newStakingWalletRandomWalkNft.connect(signer0).stake(0)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftHasAlreadyBeenStaked");
+	});
+
+	it("Shouldn't be possible to deploy StakingWalletRandomWalkNft with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {stakingWalletRandomWalkNftFactory,} = await loadFixture(deployContractsForUnitTesting);
+
+		await expect(stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).revertedWithCustomError(stakingWalletRandomWalkNftFactory, "ZeroAddress");
 	});
 });

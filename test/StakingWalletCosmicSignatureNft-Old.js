@@ -8,8 +8,6 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting, deployContractsForUnitTestingAdvanced } = require("../src/ContractUnitTestingHelpers.js");
 
-// const SKIP_LONG_TESTS = false;
-
 describe("StakingWalletCosmicSignatureNft-Old", function () {
 	it("Shouldn't be possible to deposit to StakingWalletCosmicSignatureNft from arbitrary address", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
@@ -936,4 +934,13 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	let depositId = 1n;		// 1 because it is a new deposit, The staker wants to claim staking reward on their second deposit.
 	// 	await expect(newStakingWalletCosmicSignatureNft.claimManyRewards([3], [depositId])).not.to.be.reverted;
 	// });
+
+	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {signers, stakingWalletCosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
+		const [signer0,] = signers;
+
+		await expect(stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, signer0.address /* , {gasLimit: 3000000} */)).revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+		await expect(stakingWalletCosmicSignatureNftFactory.deploy(signer0.address, hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+	});
 });

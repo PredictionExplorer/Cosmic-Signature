@@ -261,4 +261,41 @@ describe("Bidding", function () {
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).revertedWith("Test mint failed.");
 	});
+
+	// When donating an NFT, it's also possible to reenter any other game method, such as `bidWithEth`,
+	// which should not create problems.
+	it("The bidWithEthAndDonateNft and bidWithCstAndDonateNft methods reentry", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+	
+		const maliciousNftFactory_ = await hre.ethers.getContractFactory("MaliciousNft", contracts_.deployerAcct);
+		const maliciousNft_ = await maliciousNftFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
+		await maliciousNft_.waitForDeployment();
+		const maliciousNftAddr_ = await maliciousNft_.getAddress();
+
+		const ethBidAmount_ = 10n ** (18n - 2n);
+		const cstBidAmount_ = 10000n * 10n ** 18n;
+		const ethDonationAmount_ = ethBidAmount_ * 100n;
+
+		await expect(contracts_.signers[0].sendTransaction({to: maliciousNftAddr_, value: ethDonationAmount_,})).not.reverted;
+
+		await expect(maliciousNft_.setModeCode(1n)).not.reverted;
+		for ( let counter_ = 1; counter_ <= 70; ++ counter_ ) {
+			// Placing this bid multiple times to get enough CSTs to be used for CST bids.
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEthAndDonateNft(-1n, "", maliciousNftAddr_, BigInt(counter_ * 10), {value: ethBidAmount_,}))
+				// .revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ReentrancyGuardReentrantCall");
+				.not.reverted;
+		}
+		expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(0n)).equal(70n * 3n);
+
+		await expect(maliciousNft_.setModeCode(2n)).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithCstAndDonateNft(cstBidAmount_, "", maliciousNftAddr_, 1000n)).not.reverted;
+		expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(0n)).equal(70n * 3n + 3n);
+
+		// One method reentering the other.
+		await expect(maliciousNft_.setModeCode(2n)).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEthAndDonateNft(-1n, "", maliciousNftAddr_, 1100n, {value: ethBidAmount_,})).not.reverted;
+		await expect(maliciousNft_.setModeCode(1n)).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithCstAndDonateNft(cstBidAmount_, "", maliciousNftAddr_, 1200n)).not.reverted;
+		expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(0n)).equal(70n * 3n + 3n + 2n * 3n);
+	});
 });

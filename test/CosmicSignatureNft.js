@@ -106,4 +106,11 @@ describe("CosmicSignatureNft", function () {
 		await expect(cosmicSignatureNft.connect(signer1).setNftBaseUri("://uri"))
 			.revertedWithCustomError(cosmicSignatureNft, "OwnableUnauthorizedAccount");
 	});
+
+	it("Shouldn't be possible to deploy CosmicSignatureNft with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {cosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
+
+		await expect(cosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).revertedWithCustomError(cosmicSignatureNftFactory, "ZeroAddress");
+	});
 });

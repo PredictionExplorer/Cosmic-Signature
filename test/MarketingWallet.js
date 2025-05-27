@@ -58,4 +58,19 @@ describe("MarketingWallet", function () {
 		let balanceAmountAfter = await cosmicSignatureToken.balanceOf(signer1);
 		expect(balanceAmountAfter).to.equal(marketingRewardAmount);
 	});
+
+	// todo-1 We don't need this test any morfe, right?
+	// it("Shouldn't be possible to set MarketingWallet.token to a zero-address", async function () {
+	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+	// 	const {ownerAcct, marketingWallet,} = await loadFixture(deployContractsForUnitTesting);
+	//	
+	// 	await expect(marketingWallet.connect(ownerAcct).setCosmicSignatureToken(hre.ethers.ZeroAddress)).revertedWithCustomError(marketingWallet, "ZeroAddress");
+	// });
+
+	it("Shouldn't be possible to deploy MarketingWallet with zero-address-ed parameters", async function () {
+		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
+		const {marketingWalletFactory,} = await loadFixture(deployContractsForUnitTesting);
+
+		await expect(marketingWalletFactory.deploy(hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).revertedWithCustomError(marketingWalletFactory, "ZeroAddress");
+	});
 });
