@@ -26,7 +26,7 @@
 // 		await bidderContractNonNftReceiver.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 // 	
 // 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-// 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+// 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 // 		// await hre.ethers.provider.send("evm_mine");
 // 		let transactionResponse_ = await bidderContractNonNftReceiver.connect(signer0).doClaimMainPrize();
 // 		let transactionReceipt_ = await transactionResponse_.wait();

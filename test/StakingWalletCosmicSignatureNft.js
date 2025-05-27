@@ -603,7 +603,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	//
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	// durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
 	// 	await cosmicSignatureGameProxy.>>>connect>>>.claimMainPrize();
@@ -696,7 +696,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		await cosmicSignatureGameProxy.connect(signer0).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 
 		const durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await cosmicSignatureGameProxy.connect(signer0).claimMainPrize();
 
@@ -730,20 +730,20 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(signer1).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 	// 	let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
 	//
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(signer2).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 	// 	durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	await cosmicSignatureGameProxy.connect(signer2).claimMainPrize();
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 	// 	durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	await cosmicSignatureGameProxy.connect(signer3).claimMainPrize();
 	//
@@ -765,7 +765,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	// 	nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 	// 	await cosmicSignatureGameProxy.connect(signer3).bidWithEth((-1), "", {value: nextEthBidPrice_,});
 	// 	durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+	// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 	// 	// await hre.ethers.provider.send("evm_mine");
 	//
 	// 	const previousModulo = await stakingWalletCosmicSignatureNft.modulo();

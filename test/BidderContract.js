@@ -37,7 +37,7 @@ describe("BidderContract", function () {
 		let donatedNftId_ = parsed_log.args.tokenId;
 		await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContractAddr_, donatedNftId_);
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await bidderContract_.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_});
+		await bidderContract_.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_,});
 
 		nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await bidderContract_.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
@@ -54,7 +54,7 @@ describe("BidderContract", function () {
 		let nextEthPlusRandomWalkNftBidPrice_ = await cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		await bidderContract_.connect(signer0).doBidWithEthRWalk(rwalk_token_id, {value: nextEthPlusRandomWalkNftBidPrice_,});
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
 		transactionResponse_ = await bidderContract_.connect(signer0).doClaimMainPrize();
 		transactionReceipt_ = await transactionResponse_.wait();

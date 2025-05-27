@@ -96,7 +96,7 @@ describe("PrizesWallet", function () {
 		await cosmicSignatureGameProxy.connect(signer1).bidWithEthAndDonateNft((-1), "", randomWalkNftAddr, 1, {value: nextEthBidPrice_,});
 
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(cosmicSignatureGameProxy.connect(signer1).claimMainPrize()).not.to.be.reverted;
 

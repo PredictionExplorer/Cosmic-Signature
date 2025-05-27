@@ -31,7 +31,7 @@ describe("MarketingWallet", function () {
 		let nextEthBidPrice_ = await cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await bidderContract_.connect(signer0).doBidWithEth({value: nextEthBidPrice_,});
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_)]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await bidderContract_.connect(signer0).doClaimMainPrize();
 
