@@ -263,7 +263,7 @@ describe("Bidding", function () {
 	});
 
 	// When donating an NFT, it's also possible to reenter any other game method, such as `bidWithEth`,
-	// which should not create problems.
+	// which should not cause problems.
 	it("The bidWithEthAndDonateNft and bidWithCstAndDonateNft methods reentry", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 	

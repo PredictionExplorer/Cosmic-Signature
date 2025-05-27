@@ -3,9 +3,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.29;
 
-// // Issue. I have commented this out. What was this for?
-// pragma abicoder v2;
-
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
@@ -16,21 +13,15 @@ import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
+/// @dev Issue. A real production contract like this must be `Ownable`.
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
-	// address public immutable creator;
 	uint256 public lastTokenIdChecked = 0;
 	uint256[] public myDonatedNfts;
-	// bool public blockDeposits = false;
 	
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
-		// creator = msg.sender;
 	}
-
-	// receive() external payable {
-	// 	require(( ! blockDeposits ), "I am not accepting deposits.");
-	// }
 
 	/// todo-1 Do we really need this method?
 	function doBidWithEth() external payable {
@@ -92,7 +83,7 @@ contract BidderContract is BrokenEthReceiver {
 	// 	prizesWallet_.withdrawEth();
 	// }
 
-	/// @dev Issue. Should this method now call `PrizesWallet.withdrawEverything`?
+	/// @dev Issue. Would it make sense for this method to call `PrizesWallet.withdrawEverything`?
 	function withdrawAll() external {
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
 	
@@ -107,19 +98,17 @@ contract BidderContract is BrokenEthReceiver {
 		CosmicSignatureNft nft_ = cosmicSignatureGame.nft();
 
 		// Comment-202502043 applies.
-		// (bool isSuccess_, ) = creator.call{value: address(this).balance}("");
 		(bool isSuccess_, ) = msg.sender.call{value: address(this).balance}("");
 
 		if ( ! isSuccess_ ) {
-			// revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to creator failed.", creator, address(this).balance);
 			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to msg.sender failed.", msg.sender, address(this).balance);
 		}
 		uint256 totalSupply = nft_.totalSupply();
 		for (uint256 i = lastTokenIdChecked; i < totalSupply; i++) {
+			// todo-0 Doesn't the NFT contract allow to enumerate all NFTs of a particular owner?
 			address tokenOwner = nft_.ownerOf(i);
 			if (tokenOwner == address(this)) {
 				// Comment-202501145 applies.
-				// nft_.transferFrom(address(this), creator, i);
 				nft_.transferFrom(address(this), msg.sender, i);
 			}
 		}
@@ -131,7 +120,6 @@ contract BidderContract is BrokenEthReceiver {
 		// Issue. Making multiple external calls to `token_`.
 		uint256 ctokenBalance = token_.balanceOf(address(this));
 		if (ctokenBalance > 0) {
-			// token_.transfer(creator, ctokenBalance);
 			token_.transfer(msg.sender, ctokenBalance);
 		}
 	
@@ -144,25 +132,8 @@ contract BidderContract is BrokenEthReceiver {
 			// Issue. Making multiple external calls to `prizesWallet_`.
 			prizesWallet_.claimDonatedNft(num);
 
-			// tokenAddr.transferFrom(address(this), creator, nftId);
 			tokenAddr.transferFrom(address(this), msg.sender, nftId);
 		}
 		delete myDonatedNfts;
 	}
-
-	// function doFailedBidWithEth() external payable {
-	// 	uint256 price = msg.value;
-	// 	bool blockDepositsCopy_ = blockDeposits;
-	// 	blockDeposits = true;
-	// 	cosmicSignatureGame.bidWithEth{value: price}((-1), "contract bid");
-	// 	blockDeposits = blockDepositsCopy_;
-	// }
-
-	// function startBlockingDeposits() external {
-	// 	blockDeposits = true;
-	// }
-
-	// function stopBlockingDeposits() external {
-	// 	blockDeposits = false;
-	// }
 }
