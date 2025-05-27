@@ -11,7 +11,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString } = require("../src/Helpers.js");
 const { createFairRandomNumberGenerator } = require("../src/FairRandomNumberGenerator.js");
-const { loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
 const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/ContractSimulators/CosmicSignatureTokenSimulator.js");
 const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/ContractSimulators/RandomWalkNftSimulator.js");
 const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/ContractSimulators/CosmicSignatureNftSimulator.js");
@@ -30,11 +30,6 @@ const {
 	assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations,
 } =
 	require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
-
-// #endregion
-// #region
-
-const SKIP_LONG_TESTS = false;
 
 // #endregion
 // #region `describe`

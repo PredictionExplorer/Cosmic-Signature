@@ -8,7 +8,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting, assertAddressIsValid } = require("../src/ContractUnitTestingHelpers.js");
 
-const SKIP_LONG_TESTS = false;
+// const SKIP_LONG_TESTS = false;
 
 describe("StakingWalletRandomWalkNft", function () {
 	it("It's impossible to unstake an NFT twice", async function () {

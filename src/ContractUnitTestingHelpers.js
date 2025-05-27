@@ -17,6 +17,8 @@ const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./C
 // Comment-202505294 applies.
 const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE", false);
 
+const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false);
+
 // #endregion
 // #region // `TransactionRevertedExpectedlyError`
 
@@ -173,6 +175,7 @@ async function generateRandomUInt256Seed(latestBlock, blockchainPropertyGetter) 
 
 module.exports = {
 	IS_HARDHAT_COVERAGE,
+	SKIP_LONG_TESTS,
 	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForUnitTesting,
 	deployContractsForUnitTesting,
