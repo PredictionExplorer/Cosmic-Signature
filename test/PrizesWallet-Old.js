@@ -125,7 +125,7 @@ describe("PrizesWallet-Old", function () {
 	});
 
 	// todo-0 This test used to be in "MainPrize-Old.js" (which I deleted).
-	// todo-0 Think if I need to peserve parts of it.
+	// todo-0 Think if I need to preserve parts of it.
 	// todo-0 check for `.not.reverted`.
 	it("Emits MainPrizeClaimed and updates main prize beneficiary on successful main prize claim", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
