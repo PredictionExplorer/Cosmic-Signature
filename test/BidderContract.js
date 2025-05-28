@@ -47,6 +47,13 @@ describe("BidderContract", function () {
 		await expect(bidderContract_.connect(contracts_.signers[0]).withdrawEverything()).not.reverted;
 
 		expect(await contracts_.randomWalkNft.balanceOf(contracts_.signers[0].address)).equal(await contracts_.randomWalkNft.totalSupply());
-		expect(await contracts_.cosmicSignatureNft.balanceOf(contracts_.signers[0].address)).equal(await contracts_.cosmicSignatureNft.totalSupply());
+
+		// It's possible that signers 1 and 2 won some CS NFTs.
+		const numCosmicSignatureNftsOwnedByExternalBidders_ =
+			await contracts_.cosmicSignatureNft.balanceOf(contracts_.signers[0].address) +
+			await contracts_.cosmicSignatureNft.balanceOf(contracts_.signers[1].address) +
+			await contracts_.cosmicSignatureNft.balanceOf(contracts_.signers[2].address);
+
+		expect(numCosmicSignatureNftsOwnedByExternalBidders_).equal(await contracts_.cosmicSignatureNft.totalSupply());
 	});
 });
