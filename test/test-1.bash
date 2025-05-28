@@ -2,10 +2,13 @@
 
 # Comment-202503282 relates.
 
-'clear'
+'/usr/bin/clear'
 
 (
 	OutcomeCode=0
+
+	# todo-0 Comment this out.
+	export SKIP_LONG_TESTS='true'
 
 	SafeTryHardhatTest() {
 		if [ ${OutcomeCode} -lt 2 ]; then
@@ -13,10 +16,11 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGame-1 '
-			# 'npx' 'hardhat' 'test' '--grep' '^SystemManagement |^Bidding |^MainPrize |^CosmicSignatureGame-\d '
+			# todo-0 Uncomment the command line with no arguments.
+			# 'npx' 'hardhat' 'test' '--grep' '^BidderContract '
+			'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
-			'npx' 'hardhat' 'test'
+			# 'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
 				read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
@@ -26,7 +30,7 @@
 	}
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		'cd' '--' '..'
+		cd '--' '..'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
 			OutcomeCode=2

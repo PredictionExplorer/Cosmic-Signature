@@ -5,12 +5,13 @@
 // #endregion
 // #region
 
+const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString } = require("../src/Helpers.js");
 const { createFairRandomNumberGenerator } = require("../src/FairRandomNumberGenerator.js");
-const { loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
 const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/ContractSimulators/CosmicSignatureTokenSimulator.js");
 const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/ContractSimulators/RandomWalkNftSimulator.js");
 const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/ContractSimulators/CosmicSignatureNftSimulator.js");
@@ -31,11 +32,6 @@ const {
 	require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
 
 // #endregion
-// #region
-
-const SKIP_LONG_TESTS = false;
-
-// #endregion
 // #region `describe`
 
 // todo-1 +++ Make sure we use `await` to call `async` functions.
@@ -43,6 +39,7 @@ const SKIP_LONG_TESTS = false;
 describe("CosmicSignatureGame-1", function () {
 	// #region
 
+	// [Comment-202505313/]
 	it("Integration test over multiple bidding rounds", async function () {
 		// #region
 
@@ -380,15 +377,15 @@ describe("CosmicSignatureGame-1", function () {
 						// console.info("202505109");
 						blockBeforeTransaction_ = latestBlock_;
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-						const ethDonationAmount_ = ((randomNumber_ & (0xFn << 128n)) == 0n) ? 0n : (randomNumber_ & ((1n << 40n) - 1n));
-						if ((randomNumber_ & (1n << 136n)) == 0n) {
-							// console.info("Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
+						const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, randomNumber_)) - Number(1n << (53n - 4n)), 0));
+						if ((randomNumber_ & (1n << 128n)) == 0n) {
+							// console.info("202506038 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
 							const transactionResponseFuture_ = cosmicSignatureGameProxyForSigner_.donateEth({value: ethDonationAmount_,});
 							const transactionResponse_ = await transactionResponseFuture_;
 							transactionReceipt_ = await transactionResponse_.wait();
 							cosmicSignatureGameProxySimulator_.donateEth(signer_.address, ethDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
-							// console.info("Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH with info.");
+							// console.info("202506039 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH with info.");
 
 							// Comment-202505061 applies.
 							generateBidMessage_();
@@ -470,13 +467,32 @@ describe("CosmicSignatureGame-1", function () {
 						// #region
 
 						const transactionShouldHaveSucceeded_ =
-							await cosmicSignatureGameProxySimulator_.canBidWithEth
-								(transactionBlock_, signer_.address, ethPriceToPayMaxLimit_, randomWalkNftId_, bidMessage_, paidEthPrice_, contracts_, transactionResponseFuture_);
+							await cosmicSignatureGameProxySimulator_.canBidWithEth(
+								transactionBlock_,
+								signer_.address,
+								ethPriceToPayMaxLimit_,
+								randomWalkNftId_,
+								bidMessage_,
+								paidEthPrice_,
+								contracts_,
+								transactionResponseFuture_
+							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505111", signerIndex_.toString());
-							await cosmicSignatureGameProxySimulator_.bidWithEth
-								(transactionBlock_, signer_.address, signerEthBalanceAmountBeforeTransaction_, ethPriceToPayMaxLimit_, randomWalkNftId_, bidMessage_, ethBidPrice_, paidEthPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
+							await cosmicSignatureGameProxySimulator_.bidWithEth(
+								transactionBlock_,
+								signer_.address,
+								signerEthBalanceAmountBeforeTransaction_,
+								ethPriceToPayMaxLimit_,
+								randomWalkNftId_,
+								bidMessage_,
+								ethBidPrice_,
+								paidEthPrice_,
+								contracts_,
+								transactionReceipt_,
+								eventIndexWrapper_
+							);
 						}
 
 						// #endregion
@@ -522,13 +538,27 @@ describe("CosmicSignatureGame-1", function () {
 						// #region
 
 						const transactionShouldHaveSucceeded_ =
-							await cosmicSignatureGameProxySimulator_.canBidWithCst
-								(transactionBlock_, signer_.address, cstPriceToPayMaxLimit_, bidMessage_, paidCstPrice_, contracts_, transactionResponseFuture_);
+							await cosmicSignatureGameProxySimulator_.canBidWithCst(
+								transactionBlock_,
+								signer_.address,
+								cstPriceToPayMaxLimit_,
+								bidMessage_,
+								paidCstPrice_,
+								contracts_,
+								transactionResponseFuture_
+							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505112", signerIndex_.toString());
-							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst
-								(transactionBlock_, signer_.address, bidMessage_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
+							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst(
+								transactionBlock_,
+								signer_.address,
+								bidMessage_,
+								paidCstPrice_,
+								contracts_,
+								transactionReceipt_,
+								eventIndexWrapper_
+							);
 						}
 
 						// #endregion
@@ -574,8 +604,12 @@ describe("CosmicSignatureGame-1", function () {
 
 						// const timeStamp1_ = Date.now();
 						const transactionShouldHaveSucceeded_ =
-							await cosmicSignatureGameProxySimulator_.canClaimMainPrize
-								(transactionBlock_, signer_.address, contracts_, transactionResponseFuture_);
+							await cosmicSignatureGameProxySimulator_.canClaimMainPrize(
+								transactionBlock_,
+								signer_.address,
+								contracts_,
+								transactionResponseFuture_
+							);
 						// const timeStamp2_ = Date.now();
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
@@ -583,8 +617,15 @@ describe("CosmicSignatureGame-1", function () {
 							// console.info("202505142", cosmicSignatureGameProxySimulator_.getTotalNumBids().toString());
 							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
 							// const timeStamp3_ = Date.now();
-							await cosmicSignatureGameProxySimulator_.claimMainPrize
-								(transactionBlock_, signer_.address, signerEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_, blockchainPropertyGetter_);
+							await cosmicSignatureGameProxySimulator_.claimMainPrize(
+								transactionBlock_,
+								signer_.address,
+								signerEthBalanceAmountBeforeTransaction_,
+								contracts_,
+								transactionReceipt_,
+								eventIndexWrapper_,
+								blockchainPropertyGetter_
+							);
 							// const timeStamp4_ = Date.now();
 							// console.info(
 							// 	(timeStamp2_ - timeStamp1_).toString(),
@@ -618,19 +659,19 @@ describe("CosmicSignatureGame-1", function () {
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				if ((randomNumber_ & (0x0Fn << (0n * 8n))) == 0n) {
 					// console.log("202505265");
-					assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
+					await assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
 				}
 				if ((randomNumber_ & (0x0Fn << (1n * 8n))) == 0n) {
 					// console.log("202505266");
-					assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+					await assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (2n * 8n))) == 0n) {
 					// console.log("202505267");
-					assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+					await assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (3n * 8n))) == 0n) {
 					// console.log("202505268");
-					assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
+					await assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 
 				// #endregion

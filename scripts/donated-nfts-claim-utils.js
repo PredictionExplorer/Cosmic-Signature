@@ -14,9 +14,9 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 	let numDonatedNfts = await cosmicSignatureGame.numDonatedNfts();
-	const numNfts_ = numDonatedNfts.toNumber();
+	const numNfts = numDonatedNfts.toNumber();
 	let prizeData = [];
-	for (let i = 0; i < numNfts_; i++) {
+	for (let i = 0; i < numNfts; i++) {
 		let record_orig = await cosmicSignatureGame.donatedNfts(i);
 		let record = Object.assign({}, record_orig);
 		Object.defineProperty(record, "index", { value: i, writable: true });
@@ -37,16 +37,16 @@ async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 
 async function list_donated_nfts(nfts) {
 	//console.log(nfts);
-	const numNfts_ = nfts.length;
-	for (let i = 0; i < numNfts_; i++) {
-		const roundNfts_ = nfts[i];
+	const numNfts = nfts.length;
+	for (let i = 0; i < numNfts; i++) {
+		const roundNfts = nfts[i];
 		console.log("Bidding round " + i.toString());
-		if (roundNfts_ == undefined || roundNfts_.length <= 0) {
+		if (roundNfts == undefined || roundNfts.length <= 0) {
 			console.log("\t(no claimable NFTs)");
 			continue;
 		}
-		for (let j = 0; j < roundNfts_.length; j++) {
-			let record = roundNfts_[j];
+		for (let j = 0; j < roundNfts.length; j++) {
+			let record = roundNfts[j];
 			console.log(
 				"\t" +
 					record.nftAddress.toString() +
@@ -95,9 +95,9 @@ async function main() {
 	let roundToClaim = parseInt(roundNumStr, 10);
 	let paramList = build_parameter_list(nfts[roundToClaim]);
 	// todo-1 This variable no longer exists. A similar variable exists in `PrizesWallet`.
-	let mainPrizeBeneficiaryAddress_ = await cosmicSignatureGame.winners(roundToClaim);
-	if (mainPrizeBeneficiaryAddress_.toString() != testingAcct.address.toString()) {
-		console.log("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress_.toString());
+	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim);
+	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
+		console.log("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress.toString());
 		process.exit(1);
 	}
 

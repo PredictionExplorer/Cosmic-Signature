@@ -2,10 +2,10 @@
 
 # Comment-202505289 relates and/or applies.
 
-'clear'
+'/usr/bin/clear'
 
 (
-	'cd' '--' '..'
+	cd '--' '..'
 	if [ $? -ne 0 ]; then
 		read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
 	else
@@ -24,7 +24,7 @@
 		export IS_HARDHAT_COVERAGE='true'
 
 		# todo-0 Uncomment the command line with no arguments.
-		'npx' 'hardhat' 'coverage' '--testfiles' 'test/{SystemManagement.js,Bidding.js,MainPrize.js,CosmicSignatureGame-2.js,CosmicSignatureGame-3.js,CosmicSignatureGame-1.js}'
+		'npx' 'hardhat' 'coverage' '--testfiles' 'test/{SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-2.js,CosmicSignatureGame-3.js,CosmicSignatureGame-1.js}'
 		# 'npx' 'hardhat' 'coverage'
 
 		if [ $? -ne 0 ]; then

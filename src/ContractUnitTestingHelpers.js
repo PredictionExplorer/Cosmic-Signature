@@ -17,6 +17,8 @@ const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./C
 // Comment-202505294 applies.
 const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE", false);
 
+const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false);
+
 // #endregion
 // #region // `TransactionRevertedExpectedlyError`
 
@@ -32,38 +34,18 @@ const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE
 // #endregion
 // #region `loadFixtureDeployContractsForUnitTesting`
 
+// todo-0 Call `loadFixtureDeployContractsForUnitTesting` everywhere.
+// todo-0 After calling it, don't force "evm_mine".
 /**
  * @param {bigint} roundActivationTime 
  */
 async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
 
-	// [Comment-202501192]
-	// todo-0 Call `loadFixtureDeployContractsForUnitTesting` everywhere.
-	// todo-0 After calling it, don't force "evm_mine".
-	// todo-0 This comment is currently referenced where we force "evm_mine". Don't reference it any more.
-	// todo-0 Then this comment will not need to be numbered.
-	//
-	// todo-1 Improve this comment. See todos.
-	// Issue. `loadFixture` doesn't remove blocks generated after it was called for the first time
-	// and/or has some other similar issues.
-	// Additionally, near Comment-202501193, HardHat is configured for deterministic mined block timing,
-	// but that behavior appears to not work stably.
-	// todo-1 Or `interval: 0` has fixed it? (No, it got better, but some tests still fail sometimes.)
-	// todo-1 But getting latest block timestamp before executing a non-`view` function still doesn't work correct.
-	// todo-1 It can return a block like a minute ago.
-	// todo-1 Maybe that's the timestamp after the initil call to `loadFixture`.
-	// todo-1 >>> A huge number is a bit better?
-	// So this hack appears to make block timestamps more deterministic.
-	// [/Comment-202501192]
+	// Issue. Given Comment-202501193, we must forcibly mine a block to avoid possible unexpected behavior.
 	await hre.ethers.provider.send("evm_mine");
 
-	// todo-1 Comment better and maybe reference Comment-202501192.
-	// todo-1 It would be a bad idea to do this in `deployContractsForUnitTesting` because
-	// todo-1 `loadFixture` doesn't restore the current time, so unexpected behavior can ocuur
-	// todo-1 if a function called by `loadFixture` uses the latest block timestamp.
-	setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
-
+	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
 	return contracts;
 }
 
@@ -157,7 +139,10 @@ function checkTransactionErrorObject(transactionErrorObject) {
  * @param {import("ethers").Log} event
  */
 function assertEvent(event, contract, eventName, eventArgs) {
+	// Issue. Is this parsing really necessary?
+	// Near Comment-202506051, we get by without it.
 	const parsedEvent = contract.interface.parseLog(event);
+
 	expect(parsedEvent.name).equal(eventName);
 	expect(parsedEvent.args).deep.equal(eventArgs);
 }
@@ -190,6 +175,7 @@ async function generateRandomUInt256Seed(latestBlock, blockchainPropertyGetter) 
 
 module.exports = {
 	IS_HARDHAT_COVERAGE,
+	SKIP_LONG_TESTS,
 	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForUnitTesting,
 	deployContractsForUnitTesting,

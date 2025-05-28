@@ -25,12 +25,12 @@ async function main() {
 		console.log(e);
 	}
 	// todo-1 This function no longer exists.
-	let systemModeCode_ = await cosmicSignatureGame.systemMode();
-	console.log("systemMode =", systemModeCode_);
-	if (systemModeCode_.toString() == "1") {
+	let systemModeCode = await cosmicSignatureGame.systemMode();
+	console.log("systemMode =", systemModeCode);
+	if (systemModeCode.toString() == "1") {
 		console.log("System is set for maintenance right after next claimMainPrize() call")
 	} else {
-		if (systemModeCode_.toString() == "2") {
+		if (systemModeCode.toString() == "2") {
 			console.log("System is in maintenance mode already");
 		} else {
 			console.log("Call failed");

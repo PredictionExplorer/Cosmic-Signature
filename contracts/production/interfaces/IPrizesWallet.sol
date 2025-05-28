@@ -17,7 +17,6 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// It would be incorrect to derive this contract from `ERC721Holder` (which implements `IERC721Receiver'),
 /// because if someone makes it an owner of an NFT by making a direct call to the NFT contract,
 /// there would be no way to change that NFT owner again.
-/// Comment-202412176 relates.
 interface IPrizesWallet is IAddressValidator {
 	struct EthDeposit {
 		address prizeWinnerAddress;

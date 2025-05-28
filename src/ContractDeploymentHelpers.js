@@ -143,7 +143,7 @@ const deployContractsAdvanced = async function (
 	await (await cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr)).wait();
 	await (await cosmicSignatureGameProxy.setMarketingWallet(marketingWalletAddr)).wait();
 	await (await cosmicSignatureGameProxy.setCharityAddress(charityWalletAddr)).wait();
-	setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime);
+	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime);
 
 	return {
 		cosmicSignatureTokenFactory,
@@ -187,9 +187,9 @@ const deployContractsAdvanced = async function (
 /**
  * @param {bigint} roundActivationTime 
  * Possible values:
- *    less than or equal negative 1 billion: do nothing (by default, the value hardcoded in the contract will stay unchanged).
+ *    less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
  *    greater than or equal 1 billion: use the given value as is.
- *    any other value: use the transaction block forecast timestamp plus the given value.
+ *    any other value: use the latest mined block timestamp plus the given value.
  * @returns 
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
@@ -199,7 +199,7 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 			const hre = HardhatContext.getHardhatContext().environment;
 
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			roundActivationTime += BigInt(latestBlock.timestamp + 1);
+			roundActivationTime += BigInt(latestBlock.timestamp);
 		}
 		//try {
 			await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();

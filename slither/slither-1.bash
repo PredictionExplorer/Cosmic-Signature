@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-'clear'
+'/usr/bin/clear'
 
 (
 	OutcomeCode=0

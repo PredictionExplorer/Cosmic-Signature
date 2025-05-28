@@ -11,7 +11,7 @@ contract MaliciousBidder {
 	///    1: Reenter `bidWithEth`.
 	///    2: Reenter `bidWithCst`.
 	///    3: Reenter `claimMainPrize`.
-	///    Any other: don't reener.
+	///    Any other: don't do any of the above.
 	uint256 public modeCode = 0;
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {

@@ -206,9 +206,7 @@ function populateNetworkIsMainNetOnce(hre) {
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
 	async (args, hre, runSuper) => {
-		// @ts-ignore 'args' is of type 'unknown'.
 		if (args.solcVersion == solidityVersion) {
-
 			return {
 				compilerPath: solidityCompilerPath,
 				isSolcJs: false,
@@ -221,7 +219,6 @@ subtask(
 	
 		// This point is supposed to be unreachable.
 		
-		// @ts-ignore 'args' is of type 'unknown'.
 		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: "${args.solcVersion}".`);
 
 		// // Calling the default implementation.
@@ -260,9 +257,7 @@ function preProcessSolidityLine(hre, line) {
 		throw new Error("The network appears to be a mainnet, but you forgot to disable Hardhat Preprocessor.");
 	}
 
-	// @ts-ignore No overload matches this call.
 	line = line.replace(solidityLinePreProcessingRegExp, "$1");
-
 	return line;
 }
 
@@ -416,10 +411,15 @@ const hardhatUserConfig = {
 			// gas: "auto",
 
 			// [Comment-202501193]
-			// This configures to deterministically mine a block when we submit a transaction request to execute a non-`view` method.
+			// This configures to deterministically mine a block when we submit a transaction request
+			// to execute a non-`view` contract method.
 			// Block timestamp increment is always 1 second and is not configurable.
-			// todo-1 I tried making `interval` huge. Is it a bit better? Maybe not.
-			// todo-1 See todos in Comment-202501192.
+			// Issue. So we cannot easily test adjacent blocks with equal timestamps.
+			// Issue. A problem is that on a slow machine the timestamp increase can be more than 1 second,
+			// meaning the behavior is not guaranteed to be deterministic.
+			// In addition, after calling `loadFixture` the next block timestamp can leap by many seconds,
+			// so it's a good idea to forcibly mine one so that further block timestamps were (mostly) deterministic
+			// relatively to the mined one's.
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,
@@ -491,7 +491,6 @@ const hardhatUserConfig = {
 if (ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
-	// @ts-ignore Property is possibly undefined. Property doesn't exist.
 	hardhatUserConfig.solidity.settings.modelChecker = {
 		// [Comment-202409013]
 		// If you don't list any contracts here, all contracts under the "contracts" folder tree, except abstract ones, will be analyzed.

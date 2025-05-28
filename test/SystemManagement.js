@@ -1,5 +1,6 @@
 "use strict";
 
+const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
@@ -296,7 +297,7 @@ describe("SystemManagement", function () {
 	});
 
 	it("Setters while the current bidding round is active", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(1n);
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		const cosmicSignatureGameProxyForOwner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct);
 		let randomNumber1_ = 9n + generateRandomUInt256() % 3n;
@@ -345,7 +346,7 @@ describe("SystemManagement", function () {
 	});
 
 	it("Unauthorized access attempts to setters", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		const cosmicSignatureGameProxyForSigner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]);
 		const randomNumber1_ = 9n + generateRandomUInt256() % 3n;
