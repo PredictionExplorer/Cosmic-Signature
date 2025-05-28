@@ -7,7 +7,7 @@ const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("CosmicSignatureDao", function () {
+describe("CosmicSignatureDao-Old", function () {
 	it("Changing CharityWallet.charityAddress via CosmicSignatureDao", async function () {
 		const forward_blocks = async n => {
 			// // todo-9 Use "hardhat_mine".

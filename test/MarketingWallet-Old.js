@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("MarketingWallet", function () {
+describe("MarketingWallet-Old", function () {
 	// it("MarketingWallet.setCosmicSignatureToken behaves correctly", async function () {
 	// 	// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 	// 	const {ownerAcct, signers, marketingWallet,} = await loadFixture(deployContractsForUnitTesting);

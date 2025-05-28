@@ -7,7 +7,7 @@ const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("CosmicSignatureToken", function () {
+describe("CosmicSignatureToken-Old", function () {
 	it("Smoke-test", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {cosmicSignatureGameProxyAddr, cosmicSignatureToken,} =

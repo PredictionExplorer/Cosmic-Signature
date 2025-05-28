@@ -8,7 +8,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting, assertAddressIsValid } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("StakingWalletRandomWalkNft", function () {
+describe("StakingWalletRandomWalkNft-Old", function () {
 	it("It's impossible to unstake an NFT twice", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, randomWalkNft, randomWalkNftAddr, stakingWalletRandomWalkNftFactory,} =

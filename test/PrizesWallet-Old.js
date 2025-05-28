@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("PrizesWallet", function () {
+describe("PrizesWallet-Old", function () {
 	it("depositEth works correctly", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, prizesWalletFactory,} = await loadFixture(deployContractsForUnitTesting);

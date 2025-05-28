@@ -8,7 +8,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
-describe("CosmicSignatureNft", function () {
+describe("CosmicSignatureNft-Old", function () {
 	it("The mint method behaves correctly", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureNftFactory, cosmicSignatureNft,} =
