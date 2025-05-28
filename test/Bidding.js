@@ -106,7 +106,7 @@ describe("Bidding", function () {
 
 		const ethAmountSent_ = 10n ** (18n - 2n);
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEth2({value: ethAmountSent_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEth({value: ethAmountSent_,})).not.reverted;
 		let bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
 		let bidderContractExpectedBalanceAmountAfter_ = ethAmountSent_ - nextEthBidPrice_;
 		expect(bidderContractBalanceAmountAfter_).equal(bidderContractExpectedBalanceAmountAfter_);
@@ -130,7 +130,7 @@ describe("Bidding", function () {
 		let randomWalkNftId_ = 0n;
 		const ethAmountSent_ = 10n ** (18n - 2n);
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEthRWalk2(randomWalkNftId_, {value: ethAmountSent_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEthPlusRandomWalkNft(randomWalkNftId_, {value: ethAmountSent_,})).not.reverted;
 		let bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
 		let discountedBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		expect(discountedBidPrice_).equal((nextEthBidPrice_ + 1n) / 2n);
@@ -155,15 +155,15 @@ describe("Bidding", function () {
 		const ethRefundAmount_ = ethBidAmount_ - requiredEthBidAmount_;
 		expect(ethRefundAmount_).greaterThan(0n);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth2({value: ethBidAmount_,}))
+		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth({value: ethBidAmount_,}))
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
 			.withArgs("ETH refund transfer failed.", bidderContractAddr_, ethRefundAmount_);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(1n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth2({value: ethBidAmount_,}))
+		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth({value: ethBidAmount_,}))
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
 			.withArgs("ETH refund transfer failed.", bidderContractAddr_, ethRefundAmount_);
 		await expect(bidderContract_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth2({value: ethBidAmount_,}))
+		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth({value: ethBidAmount_,}))
 			.emit(contracts_.cosmicSignatureGameProxy, "BidPlaced");
 		const bidderContractEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
 		expect(bidderContractEthBalanceAmountAfterTransaction_).equal(ethRefundAmount_);

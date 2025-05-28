@@ -7,10 +7,10 @@ const { /*getCosmicSignatureGameContract,*/ getBidderContract } = require("./hel
 async function main() {
 	const [signer0, signer1, signer2,] = await hre.ethers.getSigners();
 	const bidderContract = await getBidderContract();
-	let cosmicSignatureGameAddr = await bidderContract.cosmicSignatureGame();
+	const cosmicSignatureGameAddr = await bidderContract.cosmicSignatureGame();
 
 	// Comment-202502096 applies.
-	let cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
+	const cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	await cosmicSignatureGame.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice,});
@@ -35,6 +35,7 @@ async function main() {
 	console.log("tokenid = " + nftId);
 	await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId);
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	// todo-0 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
 	await bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, nftId, {value: nextEthBidPrice,});
 
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
@@ -48,7 +49,7 @@ async function main() {
 	parsed_log = randomWalkNft.interface.parseLog(log);
 	nftId = parsed_log.args.tokenId;
 	await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId);
-	await bidderContract.connect(signer0).doBidWithEthRWalk(nftId);
+	await bidderContract.connect(signer0).doBidWithEthPlusRandomWalkNft(nftId);
 
 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize();
 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize.toNumber()]);

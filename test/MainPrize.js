@@ -291,7 +291,7 @@ describe("MainPrize", function () {
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEth2({value: nextEthBidPrice_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
 
 		const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
@@ -444,7 +444,7 @@ describe("MainPrize", function () {
 		const bidderContractAddr_ = await bidderContract_.getAddress();
 
 		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect(bidderContract_.connect(contracts_.signers[4]).doBidWithEth2({value: nextEthBidPrice_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1,]);
 		// await hre.ethers.provider.send("evm_mine");
