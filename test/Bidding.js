@@ -262,7 +262,7 @@ describe("Bidding", function () {
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).revertedWith("Test mint failed.");
 	});
 
-	// When donating an NFT, it's also possible to reenter any other game method, such as `bidWithEth`,
+	// When bidding with donating an NFT, it's also possible to reenter any other game method, such as `bidWithEth`,
 	// which should not cause problems.
 	it("The bidWithEthAndDonateNft and bidWithCstAndDonateNft methods reentry", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
