@@ -48,7 +48,7 @@ describe("BidderContract", function () {
 
 		expect(await contracts_.randomWalkNft.balanceOf(contracts_.signers[0].address)).equal(await contracts_.randomWalkNft.totalSupply());
 
-		// It's possible that signers 1 and 2 won some CS NFTs.
+		// It's possible that signers 1 and 2 (besides signer 0) won some CS NFTs.
 		const numCosmicSignatureNftsOwnedByExternalBidders_ =
 			await contracts_.cosmicSignatureNft.balanceOf(contracts_.signers[0].address) +
 			await contracts_.cosmicSignatureNft.balanceOf(contracts_.signers[1].address) +
