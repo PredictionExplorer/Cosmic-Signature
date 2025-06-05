@@ -1,0 +1,8 @@
+{
+    "importFilesToOrigRelpaths": {},
+    "primary_contract": "CosmicSignatureGame",
+    "specfile": "certora/CosmicGameOwnablePattern.spec",
+    "specfileOrigRelpath": "certora/CosmicGameOwnablePattern.spec",
+    "specfilesToImportDecls": {},
+    "type": "spec"
+}

@@ -1,0 +1,8 @@
+{
+    "importFilesToOrigRelpaths": {},
+    "primary_contract": "CosmicSignatureGame",
+    "specfile": "certora/PrizeClaimRandomness.spec",
+    "specfileOrigRelpath": "certora/PrizeClaimRandomness.spec",
+    "specfilesToImportDecls": {},
+    "type": "spec"
+}

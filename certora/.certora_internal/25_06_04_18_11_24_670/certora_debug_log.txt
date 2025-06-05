@@ -1,0 +1,19 @@
+Saving last configuration file to .certora_internal/25_06_04_18_11_24_670/run.conf
+contract name CosmicSignatureGame is the same as the file name and can be omitted from ../contracts/production/CosmicSignatureGame.sol:CosmicSignatureGame
+There is no TAC file. Going to script CertoraProver/certoraBuild.py to main_with_args()
+Creating dir /home/niko/eth/dev/b/todays/cg_certora/Cosmic-Signature/certora/.certora_internal/25_06_04_18_11_24_670/.certora_config
+In /home/niko/eth/dev/b/todays/cg_certora/Cosmic-Signature/certora/BiddingMechanicsAllPass.spec, found the imports: []
+copying spec file /home/niko/eth/dev/b/todays/cg_certora/Cosmic-Signature/certora/BiddingMechanicsAllPass.spec to /home/niko/eth/dev/b/todays/cg_certora/Cosmic-Signature/certora/.certora_internal/25_06_04_18_11_24_670/.certora_sources/.0_BiddingMechanicsAllPass.spec.spec
+writing /home/niko/eth/dev/b/todays/cg_certora/Cosmic-Signature/certora/.certora_internal/25_06_04_18_11_24_670/.certora_verify.json
+
+building file ../contracts/production/CosmicSignatureGame.sol
+Running cmd solc8.29 --version
+stdout, stderr = .certora_internal/25_06_04_18_11_24_670/.certora_config/version_check_solc8.29.stdout, .certora_internal/25_06_04_18_11_24_670/.certora_config/version_check_solc8.29.stderr
+Exitcode 0
+Solc run solc8.29 --version time: 0.0294
+Running cmd solc8.29 -o ".certora_internal/25_06_04_18_11_24_670/.certora_config/CosmicSignatureGame.sol_0/" --overwrite --allow-paths ".",.,"../node_modules/@openzeppelin" --standard-json
+stdout, stderr = .certora_internal/25_06_04_18_11_24_670/.certora_config/CosmicSignatureGame.sol_0.standard.stdout.json, .certora_internal/25_06_04_18_11_24_670/.certora_config/CosmicSignatureGame.sol_0.standard.stderr.json
+Exitcode 0
+Solc run solc8.29 -o ".certora_internal/25_06_04_18_11_24_670/.certora_config/CosmicSignatureGame.sol_0/" --overwrite --allow-paths ".",.,"../node_modules/@openzeppelin" --standard-json time: 0.0048
+reading standard json data from .certora_internal/25_06_04_18_11_24_670/.certora_config/CosmicSignatureGame.sol_0.standard.stdout.json
+build failed

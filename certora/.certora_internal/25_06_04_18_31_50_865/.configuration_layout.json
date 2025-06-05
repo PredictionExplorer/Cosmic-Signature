@@ -1,0 +1,150 @@
+[
+    {
+        "card_title": "general",
+        "content_type": "COMPLEX",
+        "content": [
+            {
+                "inner_title": "Verify",
+                "content_type": "FLAG",
+                "content": "CosmicSignatureGame:BiddingMechanics.spec",
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            },
+            {
+                "inner_title": "flags",
+                "content_type": "COMPLEX",
+                "content": [
+                    {
+                        "inner_title": "loop_iter",
+                        "content_type": "FLAG",
+                        "content": "2",
+                        "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#loop-iter",
+                        "tooltip": "",
+                        "unsound": "false"
+                    },
+                    {
+                        "inner_title": "msg",
+                        "content_type": "FLAG",
+                        "content": "Verifying bidding mechanics in CosmicSignatureGame",
+                        "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#msg",
+                        "tooltip": "",
+                        "unsound": "false"
+                    },
+                    {
+                        "inner_title": "optimistic_loop",
+                        "content_type": "FLAG",
+                        "content": "true",
+                        "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#optimistic-loop",
+                        "tooltip": "",
+                        "unsound": "true"
+                    }
+                ],
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            }
+        ]
+    },
+    {
+        "card_title": "files",
+        "content_type": "SIMPLE",
+        "content": [
+            {
+                "inner_title": "files",
+                "content_type": "SIMPLE",
+                "content": [
+                    "../contracts/production/CosmicSignatureGame.sol:CosmicSignatureGame"
+                ],
+                "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#files",
+                "tooltip": "",
+                "unsound": "false"
+            }
+        ]
+    },
+    {
+        "card_title": "git",
+        "content_type": "COMPLEX",
+        "content": [
+            {
+                "inner_title": "branch",
+                "content_type": "FLAG",
+                "content": "main",
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            },
+            {
+                "inner_title": "dirty",
+                "content_type": "FLAG",
+                "content": "true",
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            },
+            {
+                "inner_title": "origin",
+                "content_type": "FLAG",
+                "content": "https://github.com/PredictionExplorer/Cosmic-Signature.git",
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            },
+            {
+                "inner_title": "revision",
+                "content_type": "FLAG",
+                "content": "c831db5ada582d4c4a4b8751f3e4097ff8dc182a",
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            }
+        ]
+    },
+    {
+        "card_title": "packages",
+        "content_type": "SIMPLE",
+        "content": [
+            {
+                "inner_title": "packages",
+                "content_type": "SIMPLE",
+                "content": [
+                    "@openzeppelin=../node_modules/@openzeppelin"
+                ],
+                "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#packages",
+                "tooltip": "",
+                "unsound": "false"
+            }
+        ]
+    },
+    {
+        "card_title": "solidity_compiler",
+        "content_type": "COMPLEX",
+        "content": [
+            {
+                "inner_title": "flags",
+                "content_type": "COMPLEX",
+                "content": [
+                    {
+                        "inner_title": "solc",
+                        "content_type": "FLAG",
+                        "content": "solc8.29",
+                        "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#solc",
+                        "tooltip": "",
+                        "unsound": "false"
+                    },
+                    {
+                        "inner_title": "solc_allow_path",
+                        "content_type": "FLAG",
+                        "content": "../contracts/production",
+                        "doc_link": "https://docs.certora.com/en/latest/docs/prover/cli/options.html#solc-allow-path",
+                        "tooltip": "",
+                        "unsound": "false"
+                    }
+                ],
+                "doc_link": "",
+                "tooltip": "",
+                "unsound": "false"
+            }
+        ]
+    }
+]

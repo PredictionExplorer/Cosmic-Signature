@@ -1,0 +1,8 @@
+{
+    "importFilesToOrigRelpaths": {},
+    "primary_contract": "CosmicSignatureGame",
+    "specfile": "certora/PrizeClaimEconomicInvariants.spec",
+    "specfileOrigRelpath": "certora/PrizeClaimEconomicInvariants.spec",
+    "specfilesToImportDecls": {},
+    "type": "spec"
+}

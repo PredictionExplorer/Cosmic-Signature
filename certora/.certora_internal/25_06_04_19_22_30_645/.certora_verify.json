@@ -1,0 +1,8 @@
+{
+    "importFilesToOrigRelpaths": {},
+    "primary_contract": "CosmicSignatureGame",
+    "specfile": "certora/PrizeClaimReentrancyFailure.spec",
+    "specfileOrigRelpath": "certora/PrizeClaimReentrancyFailure.spec",
+    "specfilesToImportDecls": {},
+    "type": "spec"
+}

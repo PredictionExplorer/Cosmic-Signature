@@ -1,0 +1,8 @@
+{
+    "importFilesToOrigRelpaths": {},
+    "primary_contract": "CosmicSignatureGame",
+    "specfile": "certora/PrizeClaimTokenNftMinting.spec",
+    "specfileOrigRelpath": "certora/PrizeClaimTokenNftMinting.spec",
+    "specfilesToImportDecls": {},
+    "type": "spec"
+}
