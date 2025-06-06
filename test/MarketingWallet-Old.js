@@ -56,7 +56,7 @@ describe("MarketingWallet-Old", function () {
 		// }
 
 		let balanceAmountAfter = await cosmicSignatureToken.balanceOf(signer1);
-		expect(balanceAmountAfter).to.equal(marketingRewardAmount);
+		expect(balanceAmountAfter).equal(marketingRewardAmount);
 	});
 
 	// todo-1 We don't need this test any morfe, right?

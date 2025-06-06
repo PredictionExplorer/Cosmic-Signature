@@ -1,8 +1,9 @@
 // [Comment-202505289]
 //
-// "test/coverage-1.bash" does most of the following.
+// To test for Solidity Coverage, it's recommended to execute "test/coverage-1.bash".
+// It does most of the following.
 // 
-// To test for Solidity Coverage, execute the following command:
+// Execute the following command:
 // 
 // 'npx' 'hardhat' 'coverage'
 // 
@@ -30,6 +31,7 @@ module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
 	// Issue. Do we really need this?
+	// todo-1 Think about the above again.
 	configureYulOptimizer: true,
 
 	istanbulReporter: ["html", /*"text",*/],

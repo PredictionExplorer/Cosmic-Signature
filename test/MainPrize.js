@@ -309,8 +309,8 @@ describe("MainPrize", function () {
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
-		let transactionRequest_ = await bidderContract_.connect(contracts_.signers[2]).doClaimMainPrize();
-		let transactionReceipt_ = await transactionRequest_.wait();
+		let transactionResponse_ = await bidderContract_.connect(contracts_.signers[2]).doClaimMainPrize();
+		let transactionReceipt_ = await transactionResponse_.wait();
 
 		const bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
 		const bidderContractExpectedBalanceAmountAfter_ = bidderContractBalanceAmountBefore_ + mainEthPrizeAmount_;
@@ -403,7 +403,7 @@ describe("MainPrize", function () {
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setCharityAddress(brokenEthReceiverAddr_)).not.reverted;
 
-		for (let ethDepositAcceptanceModeCode_ = 2n; ethDepositAcceptanceModeCode_ >= 0n; -- ethDepositAcceptanceModeCode_ ) {
+		for ( let ethDepositAcceptanceModeCode_ = 2n; ethDepositAcceptanceModeCode_ >= 0n; -- ethDepositAcceptanceModeCode_ ) {
 			await expect(brokenEthReceiver_.setEthDepositAcceptanceModeCode(ethDepositAcceptanceModeCode_)).not.reverted;
 			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);

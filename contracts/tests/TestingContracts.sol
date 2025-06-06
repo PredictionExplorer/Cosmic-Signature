@@ -58,7 +58,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	// 	uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
 	// 	token.transfer(owner(), myCstBalanceAmount_);
 	//
-	// 	for (uint256 i = 0; i < numDonatedNfts; i++) {
+	// 	for (uint256 i = 0; i < nextDonatedNftIndex; i++) {
 	// 		// todo-9 I moved `DonatedNft` to `IPrizesWallet`.
 	// 		CosmicSignatureConstants.DonatedNft memory dnft = donatedNfts[i];
 	// 		dnft.nftAddress.transferFrom(address(this), owner(), dnft.nftId);

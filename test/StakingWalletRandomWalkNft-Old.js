@@ -29,11 +29,11 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 		// let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
 
-		expect(await newStakingWalletRandomWalkNft.usedNfts(0)).to.equal(1n);
-		// expect(await newStakingWalletRandomWalkNft.stakerByTokenId(0)).to.equal(signer0.address);
-		// expect(await newStakingWalletRandomWalkNft.stakerByTokenId(99)).to.equal(hre.ethers.ZeroAddress);
-		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(0)).to.equal(0);
-		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(99)).to.equal(-2);
+		expect(await newStakingWalletRandomWalkNft.usedNfts(0n)).equal(1n);
+		// expect(await newStakingWalletRandomWalkNft.stakerByTokenId(0)).equal(signer0.address);
+		// expect(await newStakingWalletRandomWalkNft.stakerByTokenId(99)).equal(hre.ethers.ZeroAddress);
+		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(0)).equal(0);
+		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(99)).equal(-2);
 
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -86,12 +86,12 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	//
 	// 	let sampleTokenId = 33;
 	// 	let tokenStaked = await newStakingWalletRandomWalkNft.isTokenStaked(sampleTokenId);
-	// 	expect(tokenStaked).to.equal(false);
+	// 	expect(tokenStaked).equal(false);
 	// 	await newStakingWalletRandomWalkNft.connect(signer0).doInsertToken(sampleTokenId, 0);
-	// 	let tokenIndexCheck = await newStakingWalletRandomWalkNft.tokenIndices(sampleTokenId);
-	// 	expect(tokenIndexCheck).to.equal(1);
+	// 	let tokenIndexCheck = await newStakingWalletRandomWalkNft.tokenIndexes(sampleTokenId);
+	// 	expect(tokenIndexCheck).equal(1);
 	// 	let tokenIdCheck = await newStakingWalletRandomWalkNft.stakedTokens(Number(tokenIndexCheck)-1);
-	// 	expect(tokenIdCheck).to.equal(sampleTokenId);
+	// 	expect(tokenIdCheck).equal(sampleTokenId);
 	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doInsertToken(sampleTokenId, 0)).revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyInserted");
 	//
 	// 	await newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(sampleTokenId);
@@ -119,19 +119,19 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	// 	}
 	//
 	// 	let numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
-	// 	expect(numStakedNfts_).to.equal(3);
+	// 	expect(numStakedNfts_).equal(3);
 	// 	let isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r1);
-	// 	expect(isStaked).to.equal(true);
+	// 	expect(isStaked).equal(true);
 	// 	isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r2);
-	// 	expect(isStaked).to.equal(true);
+	// 	expect(isStaked).equal(true);
 	// 	isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r3);
-	// 	expect(isStaked).to.equal(true);
+	// 	expect(isStaked).equal(true);
 	//
 	// 	await hre.ethers.provider.send("evm_increaseTime", [600 + 1]);
 	// 	// await hre.ethers.provider.send("evm_mine");
 	// 	await newStakingWalletRandomWalkNft.connect(signer0).unstakeMany([r1, r2, r3]);
 	// 	numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
-	// 	expect(numStakedNfts_).to.equal(0);
+	// 	expect(numStakedNfts_).equal(0);
 	// });
 	
 	it("User stakes his 10 Random Walk NFTs and gets all of them back after unstake", async function () {
@@ -166,7 +166,7 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 			await stakingWalletRandomWalkNft.connect(signer0).unstake(stakeActionId_);
 			const nftId_ = stakeActionId_ - 1;
 			let o = await randomWalkNft.ownerOf(nftId_);
-			expect(o).to.equal(signer0.address);
+			expect(o).equal(signer0.address);
 		}
 	});
 

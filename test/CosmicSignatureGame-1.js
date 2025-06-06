@@ -46,17 +46,17 @@ describe("CosmicSignatureGame-1", function () {
 		if (SKIP_LONG_TESTS) {
 			// todo-1 Log this everywhere.
 			console.warn("Warning 202505015. Skipping a long test.");
-			return;
+			// return;
 		}
 
 		// #endregion
 		// #region
 
-		// The bigger this value the higher is the chance that that Solidity coverage will be 100%
-		// and the logic near Comment-202505117 will reduce ETH bid price to 1 Wei.
-		const numRoundsToRunMinLimit_ = 25;
+		// Comment-202506082 applies.
+		// The bigger this value the higher is the chance that the logic near Comment-202505117 will reduce ETH bid price to 1 Wei.
+		const numRoundsToRunMinLimit_ = ( ! SKIP_LONG_TESTS ) ? 25 : 1;
 
-		const bidAverageCountPerRoundMinLimit_ = 10.0;
+		const bidAverageCountPerRoundMinLimit_ = ( ! SKIP_LONG_TESTS ) ? 10.0 : 2.0;
 
 		// #endregion
 		// #region
@@ -706,7 +706,7 @@ describe("CosmicSignatureGame-1", function () {
 					// 	const averageNumBidsPerRound_ = totalNumBids_ / Number(cosmicSignatureGameProxySimulator_.roundNum);
 					// 	console.info("202505118 averageNumBidsPerRound_ = " + averageNumBidsPerRound_.toString());
 					// }
-					if (cosmicSignatureGameProxySimulator_.roundNum >= numRoundsToRunMinLimit_) {
+					if (Number(cosmicSignatureGameProxySimulator_.roundNum) >= numRoundsToRunMinLimit_) {
 						const averageNumBidsPerRound_ = totalNumBids_ / Number(cosmicSignatureGameProxySimulator_.roundNum);
 						{
 							// [Comment-202504043/]

@@ -24,7 +24,8 @@
 		export IS_HARDHAT_COVERAGE='true'
 
 		# todo-0 Uncomment the command line with no arguments.
-		'npx' 'hardhat' 'coverage' '--testfiles' 'test/{SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-2.js,CosmicSignatureGame-3.js,CosmicSignatureGame-1.js}'
+		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-2.js,CosmicSignatureGame-3.js,CosmicSignatureGame-1.js}'
+		'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-1.js,PrizesWallet-2.js}'
 		# 'npx' 'hardhat' 'coverage'
 
 		if [ $? -ne 0 ]; then

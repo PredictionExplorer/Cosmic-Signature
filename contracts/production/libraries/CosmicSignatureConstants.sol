@@ -198,9 +198,8 @@ library CosmicSignatureConstants {
 	// #region Prizes Wallet
 
 	/// @notice Default `PrizesWallet.timeoutDurationToWithdrawPrizes`.
+	/// Comment-202506139 applies.
 	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
-	/// @dev This should be longer -- to increase the chance that people will have enough time,
-	/// even if an asteroid hits the Earth.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5 weeks;
 
 	// #endregion

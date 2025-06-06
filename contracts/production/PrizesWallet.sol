@@ -31,6 +31,9 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// @notice If a prize winner doesn't withdraw their prize within this timeout, anybody will be welcomed to withdraw it.
 	/// This timeout applies to all kinds of prizes, including ETH.
 	/// Comment-202411064 applies.
+	/// [Comment-202506139]
+	/// This should be longer -- to increase the chance that people will have enough time, even if an asteroid hits the Earth.
+	/// [/Comment-202506139]
 	/// See also: `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
 	uint256 public timeoutDurationToWithdrawPrizes = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES;
 
@@ -47,8 +50,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	/// Call `_getDonatedTokenIndex` to calculate item index.
 	DonatedToken[(1 << 64) * (1 << 160)] private _donatedTokens;
 
-	/// @notice This includes deleted items.
-	uint256 public numDonatedNfts = 0;
+	uint256 public nextDonatedNftIndex = 0;
 
 	/// @notice Contains info about NFT donations.
 	DonatedNft[1 << 64] public donatedNfts;
@@ -132,13 +134,13 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	function withdrawEverything(
 		bool withdrawEth_,
 		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
-		uint256[] calldata donatedNftIndices_
+		uint256[] calldata donatedNftIndexes_
 	) external override /*nonReentrant*/ {
 		if (withdrawEth_) {
 			withdrawEth();
 		}
 		claimManyDonatedTokens(donatedTokensToClaim_);
-		claimManyDonatedNfts(donatedNftIndices_);
+		claimManyDonatedNfts(donatedNftIndexes_);
 	}
 
 	// #endregion
@@ -163,7 +165,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// #enable_asserts assert(roundNum_ >= ethBalanceInfoReference_.roundNum);
 		ethBalanceInfoReference_.roundNum = roundNum_;
 
-		// This will not overflow, given that this amount is in ETH.
+		// This will not overflow because ETH total supply is limited.
 		ethBalanceInfoReference_.amount += amount_;
 
 		emit EthReceived(roundNum_, prizeWinnerAddress_, amount_);
@@ -248,7 +250,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 
 		// [Comment-202502242]
 		// This would revert if `tokenAddress_` is zero or there is no ERC-20-compatible contract there.
-		// todo-1 Test the above.
+		// todo-1 +++ Test the above.
 		// [/Comment-202502242]
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this token amount.
 		// todo-1 Our web site really should provide an easy way to authorize that.
@@ -341,14 +343,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		// nonReentrant
 		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
-		uint256 numDonatedNftsCopy_ = numDonatedNfts;
-		DonatedNft storage newDonatedNftReference_ = donatedNfts[numDonatedNftsCopy_];
+		uint256 nextDonatedNftIndexCopy_ = nextDonatedNftIndex;
+		DonatedNft storage newDonatedNftReference_ = donatedNfts[nextDonatedNftIndexCopy_];
 		newDonatedNftReference_.roundNum = roundNum_;
 		newDonatedNftReference_.nftAddress = nftAddress_;
 		newDonatedNftReference_.nftId = nftId_;
-		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, numDonatedNftsCopy_);
-		++ numDonatedNftsCopy_;
-		numDonatedNfts = numDonatedNftsCopy_;
+		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, nextDonatedNftIndexCopy_);
+		++ nextDonatedNftIndexCopy_;
+		nextDonatedNftIndex = nextDonatedNftIndexCopy_;
 
 		// [Comment-202502245]
 		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
@@ -368,14 +370,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
 
 		if (address(donatedNftCopy_.nftAddress) == address(0)) {
-			if (index_ < numDonatedNfts) {
+			if (index_ < nextDonatedNftIndex) {
 				revert CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", index_);
 			} else {
 				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index_);
 			}
 		} else {
 			// It's impossible that we need to throw `CosmicSignatureErrors.InvalidDonatedNftIndex`.
-			// #enable_asserts assert(index_ < numDonatedNfts);
+			// #enable_asserts assert(index_ < nextDonatedNftIndex);
 		}
 
 		// Comment-202411286 applies.
@@ -401,10 +403,10 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `claimManyDonatedNfts`
 
-	function claimManyDonatedNfts(uint256[] calldata indices_) public override /*nonReentrant*/ {
-		for (uint256 indexIndex_ = indices_.length; indexIndex_ > 0; ) {
+	function claimManyDonatedNfts(uint256[] calldata indexes_) public override /*nonReentrant*/ {
+		for (uint256 indexIndex_ = indexes_.length; indexIndex_ > 0; ) {
 			-- indexIndex_;
-			claimDonatedNft(indices_[indexIndex_]);
+			claimDonatedNft(indexes_[indexIndex_]);
 		}
 	}
 

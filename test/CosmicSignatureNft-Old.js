@@ -37,7 +37,7 @@ describe("CosmicSignatureNft-Old", function () {
 		const [signer0, signer1,] = signers;
 
 		await cosmicSignatureNft.connect(ownerAcct).setNftGenerationScriptUri("url://");
-		expect(await cosmicSignatureNft.nftGenerationScriptUri()).to.equal("url://");
+		expect(await cosmicSignatureNft.nftGenerationScriptUri()).equal("url://");
 		await expect(cosmicSignatureNft.connect(signer1).setNftGenerationScriptUri("none")).revertedWithCustomError(cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 	});
 
@@ -94,7 +94,7 @@ describe("CosmicSignatureNft-Old", function () {
 		let transactionResponse_ = await cosmicSignatureGameProxy.connect(signer1).claimMainPrize();
 		let transactionReceipt_ = await transactionResponse_.wait();
 		await cosmicSignatureNft.connect(ownerAcct).setNftBaseUri("somebase/");
-		expect(await cosmicSignatureNft.tokenURI(0n)).to.equal("somebase/0");
+		expect(await cosmicSignatureNft.tokenURI(0n)).equal("somebase/0");
 	});
 
 	it("Unauthorized access attempts to restricted methods", async function () {

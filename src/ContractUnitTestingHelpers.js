@@ -141,6 +141,7 @@ function checkTransactionErrorObject(transactionErrorObject) {
 function assertEvent(event, contract, eventName, eventArgs) {
 	// Issue. Is this parsing really necessary?
 	// Near Comment-202506051, we get by without it.
+	// todo-0 Revisit the above.
 	const parsedEvent = contract.interface.parseLog(event);
 
 	expect(parsedEvent.name).equal(eventName);
