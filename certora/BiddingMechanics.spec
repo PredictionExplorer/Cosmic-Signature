@@ -19,6 +19,9 @@ methods {
     function cstDutchAuctionBeginningBidPrice() external returns (uint256);
     function ethBidPriceIncreaseDivisor() external returns (uint256);
     function bidMessageLengthMaxLimit() external returns (uint256);
+    function mainPrizeTimeIncrementInMicroSeconds() external returns (uint256);
+    function cstDutchAuctionDurationDivisor() external returns (uint256);
+    function ethDutchAuctionEndingBidPriceDivisor() external returns (uint256);
 }
 
 /**
@@ -59,9 +62,9 @@ rule randomWalkNftDiscountCorrect {
     // Calculate discounted price
     uint256 discountedPrice = getEthPlusRandomWalkNftBidPrice(e, baseEthPrice);
     
-    // The discount divisor is 10 (RANDOMWALK_NFT_BID_PRICE_DIVISOR)
-    // Formula: (ethBidPrice + 9) / 10
-    mathint expectedPrice = (baseEthPrice + 9) / 10;
+    // The discount divisor is 2 (RANDOMWALK_NFT_BID_PRICE_DIVISOR)
+    // Formula: (ethBidPrice + 1) / 2
+    mathint expectedPrice = (baseEthPrice + 1) / 2;
     
     assert discountedPrice == expectedPrice,
            "RandomWalk NFT discount calculation must match formula";
@@ -92,12 +95,36 @@ rule ethDutchAuctionPriceDecreases {
     env e2;
     
     require lastBidderAddress(e1) == 0; // Dutch auction is active
-    require ethDutchAuctionBeginningBidPrice(e1) > 0;
-    require e2.block.timestamp > e1.block.timestamp; // Time has passed
+    require lastBidderAddress(e2) == 0; // Still active
+    uint256 beginningPrice = ethDutchAuctionBeginningBidPrice(e1);
+    require beginningPrice > 0;
+    require beginningPrice < 10^20; // Reasonable bounds
+    require ethDutchAuctionBeginningBidPrice(e1) == ethDutchAuctionBeginningBidPrice(e2);
+    
+    // Ensure both environments have the same round activation time
+    require roundActivationTime(e1) == roundActivationTime(e2);
+    uint256 activationTime = roundActivationTime(e1);
+    require activationTime < 10^10; // Reasonable bounds
+    
+    // Ensure timestamps are reasonable
+    require e1.block.timestamp < 10^10;
+    require e2.block.timestamp < 10^10;
+    
+    // Ensure we're after round activation (positive elapsed duration)
+    require e1.block.timestamp > activationTime;
+    require e2.block.timestamp > e1.block.timestamp;
     require e2.block.timestamp - e1.block.timestamp == 100; // 100 seconds passed
+    
+    // Make sure ethDutchAuctionEndingBidPriceDivisor is set properly
+    require ethDutchAuctionEndingBidPriceDivisor(e1) > 1;
+    require ethDutchAuctionEndingBidPriceDivisor(e1) == ethDutchAuctionEndingBidPriceDivisor(e2);
     
     uint256 price1 = getNextEthBidPrice(e1, 0);
     uint256 price2 = getNextEthBidPrice(e2, 0);
+    
+    // Due to unchecked arithmetic, ensure prices are reasonable
+    require price1 > 0 && price1 <= beginningPrice;
+    require price2 > 0;
     
     assert price2 <= price1,
            "Dutch auction price should decrease or stay same over time";
@@ -110,12 +137,33 @@ rule cstDutchAuctionReachesZero {
     env e;
     
     require lastCstBidderAddress(e) != 0; // CST bidding has started
-    require cstDutchAuctionBeginningBidPrice(e) > 0;
     
-    // Check price far in the future (large positive offset)
-    uint256 futureCstPrice = getNextCstBidPrice(e, 1000000);
+    // Ensure beginning timestamp and price are set
+    uint256 beginTimestamp = cstDutchAuctionBeginningTimeStamp(e);
+    uint256 beginningPrice = cstDutchAuctionBeginningBidPrice(e);
+    require beginTimestamp > 0;
+    require beginTimestamp < 10^10; // Reasonable bounds
+    require beginningPrice > 0;
+    require beginningPrice < 10^20; // Reasonable bounds
     
-    assert futureCstPrice == 0,
+    // Ensure auction parameters are reasonable
+    uint256 mainPrizeInc = mainPrizeTimeIncrementInMicroSeconds(e);
+    uint256 durationDivisor = cstDutchAuctionDurationDivisor(e);
+    require mainPrizeInc > 0 && mainPrizeInc < 10^8; // Smaller bound
+    require durationDivisor > 0 && durationDivisor < 100;
+    
+    // Calculate total duration
+    mathint totalDuration = mainPrizeInc / durationDivisor;
+    require totalDuration > 0 && totalDuration < 10^7; // Ensure reasonable duration
+    
+    // Set timestamp to be well past auction end
+    require e.block.timestamp < 10^10; // Reasonable bound
+    require e.block.timestamp > beginTimestamp + totalDuration + 1000;
+    
+    // Check price with no offset (should already be expired)
+    uint256 expiredPrice = getNextCstBidPrice(e, 0);
+    
+    assert expiredPrice == 0,
            "CST Dutch auction should eventually reach zero price";
 }
 

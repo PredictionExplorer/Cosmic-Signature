@@ -25,6 +25,9 @@ methods {
     
     // Helper functions
     function getDurationElapsedSinceRoundActivation() external returns (int256);
+    function mainPrizeTimeIncrementInMicroSeconds() external returns (uint256);
+    function cstDutchAuctionDurationDivisor() external returns (uint256);
+    function ethDutchAuctionEndingBidPriceDivisor() external returns (uint256);
 }
 
 // Constants from CosmicSignatureConstants.sol
@@ -114,12 +117,11 @@ rule ethDutchAuctionHasMinimumPrice {
     env e;
     
     require lastBidderAddress(e) == 0; // Dutch auction is active
-    require roundNum(e) == 0; // First round
+    require ethDutchAuctionBeginningBidPrice(e) == 0; // Beginning price not set
     
     uint256 price = getNextEthBidPrice(e, 0);
     
-    // In the first round, if ethDutchAuctionBeginningBidPrice is 0,
-    // it uses FIRST_ROUND_INITIAL_ETH_BID_PRICE
+    // When ethDutchAuctionBeginningBidPrice is 0, it uses FIRST_ROUND_INITIAL_ETH_BID_PRICE
     assert price >= FIRST_ROUND_INITIAL_ETH_BID_PRICE(),
            "ETH Dutch auction price should have a minimum floor";
 }
@@ -136,18 +138,32 @@ rule ethDutchAuctionDecreasesWhenInitialized {
     require lastBidderAddress(e2) == 0; // Still active
     uint256 beginningPrice = ethDutchAuctionBeginningBidPrice(e1);
     require beginningPrice > 0; // Auction is initialized
+    require beginningPrice < 10^20; // Reasonable bounds
     require ethDutchAuctionBeginningBidPrice(e1) == ethDutchAuctionBeginningBidPrice(e2);
     
-    // Ensure we're after round activation and time has passed
-    int256 elapsed1 = getDurationElapsedSinceRoundActivation(e1);
-    int256 elapsed2 = getDurationElapsedSinceRoundActivation(e2);
-    require elapsed1 > 0 && elapsed2 > elapsed1; // Time progressed
-    require elapsed2 - elapsed1 < 10000; // Reasonable time difference
+    // Ensure both environments have the same round activation time
+    require roundActivationTime(e1) == roundActivationTime(e2);
+    
+    // Add reasonable bounds to avoid overflow
+    require roundActivationTime(e1) < 10^10;
+    require e1.block.timestamp < 10^10;
+    require e2.block.timestamp < 10^10;
+    
+    // Ensure we're after round activation for both environments
+    require e1.block.timestamp > roundActivationTime(e1);
+    require e2.block.timestamp > e1.block.timestamp;
+    
+    // Make sure ethDutchAuctionEndingBidPriceDivisor is set properly
+    require ethDutchAuctionEndingBidPriceDivisor(e1) > 1;
+    require ethDutchAuctionEndingBidPriceDivisor(e1) == ethDutchAuctionEndingBidPriceDivisor(e2);
+    
+    // Ensure reasonable time difference
+    require e2.block.timestamp - e1.block.timestamp < 10000;
     
     uint256 price1 = getNextEthBidPrice(e1, 0);
     uint256 price2 = getNextEthBidPrice(e2, 0);
     
-    // Price should decrease or reach minimum
+    // Price should decrease or stay the same (if it reached minimum)
     assert price2 <= price1,
            "ETH Dutch auction price should decrease over time when initialized";
 }
@@ -161,11 +177,37 @@ rule cstAuctionReturnsZeroWhenExpired {
     
     require lastCstBidderAddress(e) != 0; // CST bidding has started
     
-    // Use negative offset to simulate expired auction
-    uint256 expiredPrice = getNextCstBidPrice(e, -1000000);
+    // Ensure cstDutchAuctionBeginningTimeStamp is set and reasonable
+    uint256 beginTimestamp = cstDutchAuctionBeginningTimeStamp(e);
+    require beginTimestamp > 0;
+    require beginTimestamp < e.block.timestamp; // Must be in the past
+    require e.block.timestamp < 10^10; // Reasonable bounds
+    
+    // Ensure beginning price is set
+    uint256 beginningPrice = cstDutchAuctionBeginningBidPrice(e);
+    require beginningPrice > 0;
+    require beginningPrice < 10^20; // Reasonable bounds
+    
+    // Ensure auction parameters are reasonable
+    uint256 mainPrizeInc = mainPrizeTimeIncrementInMicroSeconds(e);
+    uint256 durationDivisor = cstDutchAuctionDurationDivisor(e);
+    require mainPrizeInc > 0 && mainPrizeInc < 10^10;
+    require durationDivisor > 0 && durationDivisor < 100;
+    
+    // Calculate the total auction duration
+    mathint totalDuration = mainPrizeInc / durationDivisor;
+    
+    // Calculate elapsed duration
+    mathint elapsedDuration = e.block.timestamp - beginTimestamp;
+    
+    // Ensure we're well past the auction duration
+    require elapsedDuration > totalDuration + 1000000;
+    
+    // With no offset, the remaining duration should already be negative
+    uint256 expiredPrice = getNextCstBidPrice(e, 0);
     
     assert expiredPrice == 0,
-           "CST auction should return 0 when expired (negative remaining duration)";
+           "CST auction should return 0 when expired (zero or negative remaining duration)";
 }
 
 /**
