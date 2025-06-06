@@ -19,7 +19,7 @@ describe("CharityWallet-Old", function () {
 		let balanceAmountBefore = await hre.ethers.provider.getBalance(receiverAddress_);
 		await charityWallet.>>>connect to a signer>>>.send();
 		let balanceAmountAfter = await hre.ethers.provider.getBalance(receiverAddress_);
-		expect(balanceAmountAfter).to.equal(balanceAmountBefore + amountSent);
+		expect(balanceAmountAfter).equal(balanceAmountBefore + amountSent);
 	});
 
 	it("It is not possible to withdraw from CharityWallet if transfer to the destination fails", async function () {
@@ -70,7 +70,7 @@ describe("CharityWallet-Old", function () {
 			.to.emit(charityWallet, "DonationReceived")
 			.withArgs(cosmicSignatureGameProxyAddr, charityEthDonationAmount_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
 		const balance = await hre.ethers.provider.getBalance(charityWalletAddr);
-		expect(balance).to.equal(charityEthDonationAmount_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
+		expect(balance).equal(charityEthDonationAmount_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
 
 		// CharityAddressChanged
 		await expect(charityWallet.connect(ownerAcct).setCharityAddress(bidder3.address))

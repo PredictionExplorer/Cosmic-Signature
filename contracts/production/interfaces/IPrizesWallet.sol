@@ -181,7 +181,7 @@ interface IPrizesWallet is IAddressValidator {
 	function withdrawEverything(
 		bool withdrawEth_,
 		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
-		uint256[] calldata donatedNftIndices_
+		uint256[] calldata donatedNftIndexes_
 	) external;
 
 	/// @notice Receives an ETH prize for a prize winner.
@@ -264,6 +264,6 @@ interface IPrizesWallet is IAddressValidator {
 	function claimDonatedNft(uint256 index_) external;
 
 	/// @notice Similarly to `claimDonatedNft`, claims zero or more donated NFTs.
-	/// @param indices_ `donatedNfts` item indices.
-	function claimManyDonatedNfts(uint256[] calldata indices_) external;
+	/// @param indexes_ `donatedNfts` item indexes.
+	function claimManyDonatedNfts(uint256[] calldata indexes_) external;
 }

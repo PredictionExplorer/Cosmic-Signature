@@ -47,8 +47,8 @@ contract BidderContract is BrokenEthReceiver {
 		randomWalkNft_.transferFrom(msg.sender, address(this), nftId_);
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
 		// nftAddress_.setApprovalForAll(address(prizesWallet_), true);
-		uint256 numDonatedNfts_ = prizesWallet_.numDonatedNfts();
-		donatedNftIndexes.push(numDonatedNfts_);
+		uint256 nextDonatedNftIndex_ = prizesWallet_.nextDonatedNftIndex();
+		donatedNftIndexes.push(nextDonatedNftIndex_);
 		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.bidWithEthAndDonateNft{value: msg.value}((-1), "contract ETH bid with NFT donation", nftAddress_, nftId_);
 		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
@@ -60,6 +60,16 @@ contract BidderContract is BrokenEthReceiver {
 		cosmicSignatureGame.claimMainPrize();
 		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
 		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaimMainPrize; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
+	}
+
+	function doWithdrawEth() external {
+		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
+		prizesWallet_.withdrawEth();
+	}
+
+	function doWithdrawEth(address prizeWinnerAddress_) external {
+		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
+		prizesWallet_.withdrawEth(prizeWinnerAddress_);
 	}
 
 	/// @dev Issue. There are `PrizesWallet` and/or other contract methods that do multiple things in a single transaction.

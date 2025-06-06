@@ -7,8 +7,11 @@
 (
 	OutcomeCode=0
 
+	# export FORCE_COLOR='0'
+	# export NO_COLOR=''
+
 	# todo-0 Comment this out.
-	export SKIP_LONG_TESTS='true'
+	# export SKIP_LONG_TESTS='true'
 
 	SafeTryHardhatTest() {
 		if [ ${OutcomeCode} -lt 2 ]; then
@@ -17,8 +20,9 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-0 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^BidderContract '
-			'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract '
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d '
+			'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract '
+			# 'npx' 'hardhat' 'test' '--grep' '^\w+(?!-Old) '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test'
 

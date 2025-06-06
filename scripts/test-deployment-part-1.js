@@ -16,9 +16,9 @@ async function bid_simple(testingAcct, cosmicSignatureGame) {
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
+	expect(parsed_log.args.lastBidderAddress).equal(testingAcct.address);
 	expect(parsed_log.args.paidEthPrice).oneOf([nextEthBidPrice0, nextEthBidPrice1]);
-	expect(parsed_log.args.message).to.equal("test bid");
+	expect(parsed_log.args.message).equal("test bid");
 }
 
 async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
@@ -34,10 +34,10 @@ async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.paidEthPrice).to.equal(nextEthPlusRandomWalkNftBidPrice);
-	expect(parsed_log.args.randomWalkNftId).to.equal(nftId);
-	expect(parsed_log.args.message).to.equal("rwalk bid");
+	expect(parsed_log.args.lastBidderAddress).equal(testingAcct.address);
+	expect(parsed_log.args.paidEthPrice).equal(nextEthPlusRandomWalkNftBidPrice);
+	expect(parsed_log.args.randomWalkNftId).equal(nftId);
+	expect(parsed_log.args.message).equal("rwalk bid");
 }
 
 async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) {
@@ -56,16 +56,16 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.paidEthPrice).to.equal(nextEthBidPrice);
-	expect(parsed_log.args.message).to.equal("donate bid");
+	expect(parsed_log.args.lastBidderAddress).equal(testingAcct.address);
+	expect(parsed_log.args.paidEthPrice).equal(nextEthBidPrice);
+	expect(parsed_log.args.message).equal("donate bid");
 
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("NftDonationEvent");
 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.donorAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.nftAddress).to.equal(randomWalkNft.address);
-	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
+	expect(parsed_log.args.donorAddress).equal(testingAcct.address);
+	expect(parsed_log.args.nftAddress).equal(randomWalkNft.address);
+	expect(parsed_log.args.nftId).equal(donatedTokenId);
 }
 
 async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId, tokenIdBidding) {
@@ -85,17 +85,17 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.lastBidderAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.paidEthPrice).to.equal(nextEthPlusRandomWalkNftBidPrice);
-	expect(parsed_log.args.randomWalkNftId).to.equal(tokenIdBidding);
-	expect(parsed_log.args.message).to.equal("donate nft rwalk bid");
+	expect(parsed_log.args.lastBidderAddress).equal(testingAcct.address);
+	expect(parsed_log.args.paidEthPrice).equal(nextEthPlusRandomWalkNftBidPrice);
+	expect(parsed_log.args.randomWalkNftId).equal(tokenIdBidding);
+	expect(parsed_log.args.message).equal("donate nft rwalk bid");
 
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("NftDonationEvent");
 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.donorAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.nftAddress).to.equal(randomWalkNft.address);
-	expect(parsed_log.args.nftId).to.equal(donatedTokenId);
+	expect(parsed_log.args.donorAddress).equal(testingAcct.address);
+	expect(parsed_log.args.nftAddress).equal(randomWalkNft.address);
+	expect(parsed_log.args.nftId).equal(donatedTokenId);
 }
 
 async function main() {

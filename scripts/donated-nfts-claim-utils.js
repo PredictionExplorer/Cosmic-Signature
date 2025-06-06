@@ -13,8 +13,8 @@ const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
-	let numDonatedNfts = await cosmicSignatureGame.numDonatedNfts();
-	const numNfts = numDonatedNfts.toNumber();
+	const nextDonatedNftIndex = await cosmicSignatureGame.nextDonatedNftIndex();
+	const numNfts = Number(nextDonatedNftIndex);
 	let prizeData = [];
 	for (let i = 0; i < numNfts; i++) {
 		let record_orig = await cosmicSignatureGame.donatedNfts(i);

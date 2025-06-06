@@ -30,8 +30,8 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 	// todo-1 Assert 2 more params passed to the event.
-	expect(parsed_log.args.beneficiaryAddress).to.equal(testingAcct.address);
-	expect(parsed_log.args.amount).to.equal(mainEthPrizeAmount);
+	expect(parsed_log.args.beneficiaryAddress).equal(testingAcct.address);
+	expect(parsed_log.args.amount).equal(mainEthPrizeAmount);
 
 	let cosmicSignatureNftAddr = await cosmicSignatureGame.nft();
 
@@ -43,7 +43,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	for (let i = 0; i < event_logs.length; i++) {
 		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);
 		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.prizeCosmicSignatureNftId);
-		expect(ownr).to.equal(parsed_log.args.winnerAddress);
+		expect(ownr).equal(parsed_log.args.winnerAddress);
 	}
 
 	let prizesWalletAddr = await cosmicSignatureGame.prizesWallet();
@@ -63,7 +63,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
-	expect(parsed_log.args.amount).to.equal(charityEthDonationAmount);
+	expect(parsed_log.args.amount).equal(charityEthDonationAmount);
 }
 
 async function main() {
