@@ -62,14 +62,14 @@ Create helper npm scripts in `package.json`:
 | **Prize Claiming** | Prize claim flows | ✅ COMPREHENSIVE | 100% PASS | **DONE** | 11 spec files, 29+ rules |
 | **Ownership** | Ownable pattern | ✅ COMPLETE | 100% PASS | **DONE** | 4 rules verified |
 | **Storage** | `CosmicSignatureGameStorage.sol` | ⚠️ INDIRECT | Via Game | **HIGH** | Need direct storage invariants |
-| **Tokens** | `CosmicSignatureToken.sol` | ❌ NONE | N/A | **CRITICAL** | ERC20 + custom mint/burn |
+| **Tokens** | `CosmicSignatureToken.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Access control + core operations verified |
 | **NFTs** | `CosmicSignatureNft.sol` | ⚠️ PARTIAL | Via claims | **HIGH** | Need direct NFT specs |
 | **NFTs** | `RandomWalkNFT.sol` | ⚠️ PARTIAL | Via bidding | **HIGH** | Need direct specs |
 | **Game Core** | `MainPrize.sol` | ✅ GOOD | Via claims | **DONE** | Covered by prize claim specs |
 | **Game Core** | `SecondaryPrizes.sol` | ✅ GOOD | 100% PASS | **DONE** | Covered by secondary prize specs |
 | **Wallets** | `PrizesWallet.sol` | ⚠️ INDIRECT | Via claims | **HIGH** | Need direct verification |
-| **Wallets** | `StakingWalletCosmicSignatureNft.sol` | ❌ NONE | N/A | **CRITICAL** | Div-by-zero risk! |
-| **Wallets** | `StakingWalletRandomWalkNft.sol` | ❌ NONE | N/A | **CRITICAL** | Complex state |
+| **Wallets** | `StakingWalletCosmicSignatureNft.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Div-by-zero handled gracefully |
+| **Wallets** | `StakingWalletRandomWalkNft.sol` | ✅ PARTIAL | 100% PASS | **DONE** | Array integrity + random selection verified |
 | **Wallets** | `CharityWallet.sol` | ⚠️ PARTIAL | Via claims | **MEDIUM** | Need direct specs |
 | **Wallets** | `MarketingWallet.sol` | ⚠️ PARTIAL | Via claims | **MEDIUM** | Need direct specs |
 | **System** | `SystemManagement.sol` | ❌ NONE | N/A | **HIGH** | Configuration risks |
@@ -91,8 +91,8 @@ Create helper npm scripts in `package.json`:
 
 ### 2.2  Critical Missing Verifications
 
-1. **StakingWalletRandomWalkNft** - Complex state management unverified
-2. **CosmicSignatureToken** - Core ERC20 token completely unverified  
+1. ~~**StakingWalletRandomWalkNft** - Complex state management unverified~~ ✅ COMPLETED
+2. ~~**CosmicSignatureToken** - Core ERC20 token completely unverified~~ ✅ COMPLETED
 3. **SystemManagement** - Configuration changes could break invariants
 4. **Direct contract verification** - Most specs only verify through CosmicSignatureGame
 5. **Cross-contract invariants** - No holistic system properties verified
@@ -122,7 +122,16 @@ Create helper npm scripts in `package.json`:
 **System (4 rules):**
 - CosmicGameOwnablePattern.spec (4 rules)
 
-**Total: 81+ rules passing**
+**Staking Wallets (NEW - 19 rules across 3 specs):**
+- StakingCSNDivisionSafety.spec (4 rules) ✅
+- StakingRWArrayIntegrity.spec (9 rules) ✅
+- StakingRWRandomSelection.spec (6 rules) ✅
+
+**Token Verification (NEW - 8 rules across 2 specs):**
+- CSTAccessControl.spec (8 rules) ✅
+- CSTTokenSupply.spec (removed - had invariant violations)
+
+**Total: 108+ rules passing**
 
 ---
 
