@@ -100,6 +100,8 @@ library CosmicSignatureConstants {
 	/// [/Comment-202502054]
 	/// 
 	/// todo-0 Reference relevat comments in Comment-202505117.
+	/// 
+	/// todo-0 Review https://docs.arbitrum.io/build-decentralized-apps/how-to-estimate-gas
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = (6813 + 7) * 29 / 10;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
