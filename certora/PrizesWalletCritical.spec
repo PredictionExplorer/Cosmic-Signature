@@ -6,34 +6,58 @@ methods {
     // Critical operations
     function registerRoundEnd(uint256, address) external;
     function depositEth(uint256, address) external;
+
+    // KEY INSIGHT: Summarize _msgSender ONLY for the current contract
+    // to avoid inheritance conflicts with Context and Ownable.
+    function _msgSender() internal returns(address) with (env e) => e.msg.sender;
 }
 
-/// @title Only game can deposit ETH
+/// @title Negative case: non-game address cannot deposit ETH
 rule onlyGameCanDepositEth {
     env e;
     uint256 roundNum;
     address winner;
     
-    address gameAddr = game();
-    require e.msg.sender != gameAddr;
+    // Ensure game is initialized and sender is NOT the game
+    require(game() != 0);
+    require(e.msg.sender != game());
     
     depositEth@withrevert(e, roundNum, winner);
     
     assert lastReverted;
 }
 
-/// @title Only game can register round end
+/// @title Negative case: non-game address cannot register round end
 rule onlyGameCanRegisterRound {
     env e;
     uint256 roundNum;
     address beneficiary;
     
-    address gameAddr = game();
-    require e.msg.sender != gameAddr;
+    // Ensure game is initialized and sender is NOT the game
+    require(game() != 0);
+    require(e.msg.sender != game());
     
     registerRoundEnd@withrevert(e, roundNum, beneficiary);
     
     assert lastReverted;
+}
+
+/// @title Positive case: The authorized game contract CAN deposit ETH
+rule gameCanDepositWhenAuthorized {
+    env e;
+    uint256 roundNum;
+    address winner;
+
+    // Constrain the environment to a valid, non-trivial state
+    require(game() != 0);
+    require(e.msg.sender == game());
+    require(winner != 0);
+    
+    // Call the function under these ideal conditions
+    depositEth@withrevert(e, roundNum, winner);
+    
+    // The function must not revert
+    assert !lastReverted;
 }
 
 /**
