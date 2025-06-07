@@ -82,12 +82,12 @@ Create helper npm scripts in `package.json`:
 | **Storage** | `CosmicSignatureGameStorage.sol` | ⚠️ INDIRECT | Via Game | **HIGH** | Need direct storage invariants |
 | **Tokens** | `CosmicSignatureToken.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Access control + core operations verified (CSTAccessControl.spec) |
 | **NFTs** | `CosmicSignatureNft.sol` | 🔴 MINIMAL | Via claims | **CRITICAL** | Need NFTMinting, NFTOwnership specs |
-| **NFTs** | `RandomWalkNFT.sol` | 🔴 MINIMAL | Via bidding | **CRITICAL** | Need direct minting/ownership specs |
+| **NFTs** | `RandomWalkNFT.sol` | ✅ VERIFIED | 100% PASS | **DONE** | NFTMinting.spec (10 rules) - comprehensive minting verification |
 | **Game Core** | `MainPrize.sol` | ✅ GOOD | Via claims | **DONE** | Covered by prize claim specs |
 | **Game Core** | `SecondaryPrizes.sol` | ✅ GOOD | 100% PASS | **DONE** | Covered by secondary prize specs |
 | **Wallets** | `PrizesWallet.sol` | ✅ VERIFIED | 11 rules PASS | **DONE** | Access control + comprehensive safety verified (PrizesWalletCritical.spec, PrizesWalletSafety.spec) |
 | **Wallets** | `StakingWalletCosmicSignatureNft.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Div-by-zero handled gracefully (StakingCSNDivisionSafety.spec) |
-| **Wallets** | `StakingWalletRandomWalkNft.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Random selection safety verified (StakingRWRandomSelection.spec) |
+| **Wallets** | `StakingWalletRandomWalkNft.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Full verification: Random selection (6 rules) + Rewards (9 rules) + State (7 rules) |
 | **Wallets** | `CharityWallet.sol` | 🔴 NONE | N/A | **HIGH** | 10% withdrawal limit needs verification |
 | **Wallets** | `MarketingWallet.sol` | 🔴 NONE | N/A | **HIGH** | Time-based limits need verification |
 | **System** | `SystemManagement.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Access control + configuration constraints verified (SystemConfigAccess.spec) |
@@ -109,11 +109,12 @@ Create helper npm scripts in `package.json`:
 
 ### 2.2  Critical Missing Verifications
 
-1. ~~**StakingWalletRandomWalkNft** - Complex state management unverified~~ ✅ COMPLETED
-2. ~~**CosmicSignatureToken** - Core ERC20 token completely unverified~~ ✅ COMPLETED
-3. ~~**SystemManagement** - Configuration changes could break invariants~~ ✅ COMPLETED
-4. **Direct contract verification** - Most specs only verify through CosmicSignatureGame
-5. **Cross-contract invariants** - No holistic system properties verified
+1. ~~**StakingWalletRandomWalkNft** - Complex state management unverified~~ ✅ COMPLETED (22 rules)
+2. ~~**CosmicSignatureToken** - Core ERC20 token completely unverified~~ ✅ COMPLETED (7 rules)
+3. ~~**SystemManagement** - Configuration changes could break invariants~~ ✅ COMPLETED (8 rules)
+4. ~~**RandomWalkNFT** - NFT minting and ownership unverified~~ ✅ COMPLETED (10 rules)
+5. **Direct contract verification** - Most specs only verify through CosmicSignatureGame
+6. **Cross-contract invariants** - No holistic system properties verified
 
 ### 2.3  Existing Spec Summary
 
@@ -140,9 +141,11 @@ Create helper npm scripts in `package.json`:
 **System (4 rules):**
 - CosmicGameOwnablePattern.spec (4 rules)
 
-**Staking Wallets (NEW - 10 rules across 2 specs):**
+**Staking Wallets (NEW - 26 rules across 4 specs):**
 - StakingCSNDivisionSafety.spec (4 rules) ✅
 - StakingRWRandomSelection.spec (6 rules) ✅
+- StakingRWRewards.spec (9 rules) ✅ - Reward calculations and state consistency
+- StakingRWState.spec (7 rules) ✅ - Stake action management and array integrity
 
 **Token Verification (NEW - 7 rules across 1 spec):**
 - CSTAccessControl.spec (7 rules) ✅
@@ -154,7 +157,10 @@ Create helper npm scripts in `package.json`:
 - PrizesWalletCritical.spec (3 rules) ✅ - Access control verified
 - PrizesWalletSafety.spec (8 rules) ✅ - Comprehensive safety properties
 
-**Total: 128 rules passing** (92 existing + 36 new)
+**NFT Verification (NEW - 10 rules across 1 spec):**
+- NFTMinting.spec (10 rules) ✅ - Comprehensive minting security for RandomWalkNFT
+
+**Total: 154 rules passing** (92 existing + 62 new)
 
 **Removed Specs (due to technical issues):**
 - StakingRWStateConsistency.spec - Fundamental misunderstanding of contract's dual-array system
