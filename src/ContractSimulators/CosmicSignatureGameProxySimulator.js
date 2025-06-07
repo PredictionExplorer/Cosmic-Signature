@@ -66,7 +66,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		nextEthBidPrice: 0n,
 		ethBidPriceIncreaseDivisor: 100n,
 		RANDOMWALK_NFT_BID_PRICE_DIVISOR,
-		ethBidRefundAmountInGasMinLimit: (6813n + 7n) * 29n / 10n,
+		ethBidRefundAmountInGasMinLimit: (6843n + 7n) * 29n / 10n,
 		cstDutchAuctionBeginningTimeStamp: 0n,
 		cstDutchAuctionDurationDivisor: (1_000_000n + 24n / 4n) / (24n / 2n) - 1n,
 		cstDutchAuctionBeginningBidPrice: 0n,

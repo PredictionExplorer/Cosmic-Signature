@@ -217,12 +217,14 @@ abstract contract Bidding is
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
 
-			// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
-			// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
-			// // #enable_asserts // #disable_smtchecker console.log("Gas Spent =", gasUsed1_, gasUsed2_, gasUsed2_ - (gasUsed1_ - gasUsed2_));
 			if ( ! isSuccess_ ) {
 				revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
 			}
+
+			// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
+			// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
+			// // #enable_asserts // #disable_smtchecker uint256 accurateGasUsed_ = gasUsed2_ - (gasUsed1_ - gasUsed2_);
+			// // #enable_asserts // #disable_smtchecker console.log("Gas Used =", gasUsed1_, gasUsed2_, accurateGasUsed_);
 		}
 
 		// #endregion
