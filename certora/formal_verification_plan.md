@@ -78,19 +78,19 @@ Create helper npm scripts in `package.json`:
 | **Ownership** | Ownable pattern | ✅ COMPLETE | 100% PASS | **DONE** | 4 rules verified |
 | **Storage** | `CosmicSignatureGameStorage.sol` | ⚠️ INDIRECT | Via Game | **HIGH** | Need direct storage invariants |
 | **Tokens** | `CosmicSignatureToken.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Access control + core operations verified (CSTAccessControl.spec) |
-| **NFTs** | `CosmicSignatureNft.sol` | ⚠️ PARTIAL | Via claims | **HIGH** | Need direct NFT specs |
-| **NFTs** | `RandomWalkNFT.sol` | ⚠️ PARTIAL | Via bidding | **HIGH** | Need direct specs |
+| **NFTs** | `CosmicSignatureNft.sol` | 🔴 MINIMAL | Via claims | **CRITICAL** | Need NFTMinting, NFTOwnership specs |
+| **NFTs** | `RandomWalkNFT.sol` | 🔴 MINIMAL | Via bidding | **CRITICAL** | Need direct minting/ownership specs |
 | **Game Core** | `MainPrize.sol` | ✅ GOOD | Via claims | **DONE** | Covered by prize claim specs |
 | **Game Core** | `SecondaryPrizes.sol` | ✅ GOOD | 100% PASS | **DONE** | Covered by secondary prize specs |
-| **Wallets** | `PrizesWallet.sol` | ⚠️ INDIRECT | Via claims | **HIGH** | Need direct verification |
+| **Wallets** | `PrizesWallet.sol` | 🔴 NONE | N/A | **CRITICAL** | ETH custody needs verification |
 | **Wallets** | `StakingWalletCosmicSignatureNft.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Div-by-zero handled gracefully (StakingCSNDivisionSafety.spec) |
 | **Wallets** | `StakingWalletRandomWalkNft.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Random selection safety verified (StakingRWRandomSelection.spec) |
-| **Wallets** | `CharityWallet.sol` | ⚠️ PARTIAL | Via claims | **MEDIUM** | Need direct specs |
-| **Wallets** | `MarketingWallet.sol` | ⚠️ PARTIAL | Via claims | **MEDIUM** | Need direct specs |
+| **Wallets** | `CharityWallet.sol` | 🔴 NONE | N/A | **HIGH** | 10% withdrawal limit needs verification |
+| **Wallets** | `MarketingWallet.sol` | 🔴 NONE | N/A | **HIGH** | Time-based limits need verification |
 | **System** | `SystemManagement.sol` | ✅ VERIFIED | 100% PASS | **DONE** | Access control + configuration constraints verified (SystemConfigAccess.spec) |
-| **Base** | `BiddingBase.sol` | ✅ GOOD | Via Game | **DONE** | Inherited by Bidding |
-| **Base** | `MainPrizeBase.sol` | ✅ GOOD | Via Game | **DONE** | Inherited by MainPrize |
-| **Base** | `StakingWalletNftBase.sol` | ❌ NONE | N/A | **HIGH** | Inherited by staking |
+| **Base** | `BiddingBase.sol` | 🟡 INDIRECT | Via children | **MEDIUM** | Need inheritance verification |
+| **Base** | `MainPrizeBase.sol` | 🟡 INDIRECT | Via children | **MEDIUM** | Need storage layout verification |
+| **Base** | `StakingWalletNftBase.sol` | 🔴 NONE | N/A | **HIGH** | Critical base functionality unverified |
 | **Utils** | `BidStatistics.sol` | ❌ NONE | N/A | **MEDIUM** | Statistics tracking |
 | **Utils** | `EthDonations.sol` | ❌ NONE | N/A | **MEDIUM** | Donation handling |
 | **Utils** | `NftDonations.sol` | ❌ NONE | N/A | **LOW** | NFT donations |
@@ -240,6 +240,61 @@ For every contract, verify:
 - `GameInitialization.spec` 
 - `GameEmergencyControls.spec`
 - `GameIntegration.spec`
+
+#### `PrizesWallet.sol` (NO COVERAGE) 🔴 CRITICAL
+
+**Properties to Verify:**
+1. Only authorized contracts can withdraw
+2. ETH cannot be locked permanently
+3. Withdrawal amounts match prize calculations
+4. No reentrancy in withdrawals
+5. Correct handling of failed transfers
+
+**New Spec Files Needed:**
+- `PrizesWalletAccess.spec`
+- `PrizesWalletEthFlow.spec`
+
+#### `CosmicSignatureNft.sol` & `RandomWalkNFT.sol` (MINIMAL COVERAGE) 🔴
+
+**Properties to Verify:**
+1. Token IDs are unique and sequential
+2. Minting respects max supply limits
+3. Only authorized minters can create NFTs
+4. Transfers maintain ownership integrity
+5. Burn operations (if any) work correctly
+6. Token URI management is secure
+
+**New Spec Files Needed:**
+- `NFTMinting.spec`
+- `NFTOwnership.spec`
+- `NFTMetadata.spec`
+
+#### `CharityWallet.sol` & `MarketingWallet.sol` (NO COVERAGE) 🟡
+
+**Properties to Verify:**
+1. Withdrawal limits enforced (10% per week)
+2. Only owner can withdraw
+3. Time-based restrictions work correctly
+4. ETH accounting is accurate
+5. No value can be lost
+
+**New Spec Files Needed:**
+- `CharityWalletLimits.spec`
+- `MarketingWalletLimits.spec`
+
+#### Base Contracts (NO DIRECT COVERAGE) 🟡
+
+**`StakingWalletNftBase.sol`, `BiddingBase.sol`, `MainPrizeBase.sol`**
+
+**Properties to Verify:**
+1. Virtual functions correctly overrideable
+2. Storage layout compatible with children
+3. Modifiers work in inheritance chain
+4. No storage collisions
+
+**New Spec Files Needed:**
+- `BaseContractInheritance.spec`
+- `BaseContractStorage.spec`
 
 
 
@@ -419,30 +474,56 @@ Verify sequences like:
 | CRITICAL | Verify CST token | CSTAccessControl.spec | ✅ DONE |
 | HIGH | Verify SystemManagement | SystemConfigAccess.spec | ✅ DONE |
 
-### Phase 2: Direct Contract Verification (Weeks 2-3)
+### Phase 1.5: Complete Critical Contract Coverage (Week 2) 🚀 NEW
 
-| Priority | Task | Deliverable |
-|----------|------|-------------|
-| HIGH | Direct NFT verification | NFTOwnership.spec, NFTMinting.spec |
-| HIGH | Direct wallet verification | WalletEthFlow.spec, WalletAccess.spec |
-| MEDIUM | Game contract direct verification | GameStateTransitions.spec, GameUpgradeability.spec |
+| Priority | Task | Deliverable | Specs Needed |
+|----------|------|-------------|--------------|
+| CRITICAL | Complete StakingWalletRW verification | StakingRWRewards.spec, StakingRWState.spec | Reward calculations, time tracking, state consistency |
+| CRITICAL | Complete StakingWalletCSN verification | StakingCSNRewards.spec, StakingCSNState.spec | Reward distribution, unstaking logic |
+| CRITICAL | Verify PrizesWallet | PrizesWalletSafety.spec | ETH custody, distribution safety |
+| CRITICAL | Verify NFT contracts | NFTMinting.spec, NFTOwnership.spec | Mint limits, ownership transfers |
+| CRITICAL | System-wide ETH conservation | SystemEthConservation.spec | Track all ETH flows across contracts |
 
-### Phase 3: Integration & Invariants (Weeks 4-5)
+### Phase 2: Comprehensive Contract Verification (Weeks 3-4)
 
-| Priority | Task | Deliverable |
-|----------|------|-------------|
-| HIGH | Cross-contract ETH flows | SystemEthConservation.spec |
-| HIGH | Token supply invariants | TokenSupplyInvariants.spec |
-| HIGH | Upgrade safety | UpgradeIntegration.spec |
+| Priority | Task | Deliverable | Key Properties |
+|----------|------|-------------|----------------|
+| HIGH | CharityWallet verification | CharityWalletEth.spec | Withdrawal limits, access control |
+| HIGH | MarketingWallet verification | MarketingWalletEth.spec | Distribution safety |
+| HIGH | Base contract verification | StakingWalletBase.spec, BiddingBase.spec | Inheritance correctness |
+| HIGH | Game state machine | GameStateTransitions.spec | Round lifecycle integrity |
+| MEDIUM | Upgrade safety | GameUpgradeability.spec | Storage layout preservation |
 
-### Phase 4: Comprehensive Coverage (Weeks 6-8)
+### Phase 3: System-Wide Invariants (Weeks 5-6)
 
-| Priority | Task | Deliverable |
-|----------|------|-------------|
-| MEDIUM | Utility contracts | BidStats.spec, Donations.spec |
-| MEDIUM | Library verification | CryptoHelpers.spec, RandomHelpers.spec |
-| LOW | DAO verification | DaoGovernance.spec |
-| LOW | Edge case sweep | EdgeCases.spec |
+| Priority | Task | Deliverable | Invariants to Verify |
+|----------|------|-------------|---------------------|
+| CRITICAL | ETH Conservation (4.1) | SystemEthConservation.spec | Σ(ETH in) = Σ(ETH contracts) + Σ(ETH out) |
+| CRITICAL | Token Supply (4.2) | TokenSupplyInvariants.spec | totalSupply = Σ(balances) |
+| CRITICAL | NFT Uniqueness (4.3) | NFTUniqueness.spec | Each NFT has exactly one owner |
+| CRITICAL | Round State Machine (4.4) | RoundStateInvariants.spec | Proper state transitions |
+| HIGH | Staking Consistency (4.5) | StakingInvariants.spec | numStaked = actual staked count |
+| HIGH | Time Monotonicity (4.6) | TimeInvariants.spec | Timestamps always increase |
+
+### Phase 4: Advanced Security & Edge Cases (Weeks 7-8)
+
+| Priority | Task | Deliverable | Focus Areas |
+|----------|------|-------------|-------------|
+| HIGH | Reentrancy protection | ReentrancyGuards.spec | All external calls protected |
+| HIGH | Arithmetic edge cases | ArithmeticSafety.spec | Overflow, underflow, div-by-zero |
+| HIGH | Random number safety | RandomnessSecurity.spec | No manipulation possible |
+| MEDIUM | Library verification | HelperLibraries.spec | All helper functions correct |
+| MEDIUM | Economic attacks | EconomicSecurity.spec | No profitable exploits |
+| LOW | DAO governance | DaoGovernance.spec | Voting mechanics |
+
+### Phase 5: Continuous Verification (Ongoing)
+
+| Task | Frequency | Action |
+|------|-----------|--------|
+| Run all specs | Every PR | CI/CD pipeline |
+| Review failures | Daily | Fix or update specs |
+| Add new rules | Per feature | Maintain coverage |
+| Performance tuning | Weekly | Optimize slow rules |
 
 ---
 
@@ -556,16 +637,78 @@ jobs:
 
 ---
 
-## 10  Summary of Immediate Actions
+## 10  Comprehensive Verification Requirements
 
-1. ✅ **COMPLETED**: Phase 1 - All critical security fixes verified
-2. **NEXT**: Begin Phase 2 - Direct contract verification
-3. **PRIORITY**: Focus on NFT and wallet contracts
-4. **ONGOING**: Update this plan as new risks discovered
+### 10.1  Minimum Coverage for "Rock Solid" Code
+
+Each production contract MUST have:
+1. **Access Control Spec** - Verify all restricted functions
+2. **State Consistency Spec** - Verify state transitions are valid
+3. **Economic Safety Spec** - Verify no value can be lost/stolen
+4. **Integration Spec** - Verify interactions with other contracts
+5. **Edge Case Spec** - Verify behavior at boundaries
+
+### 10.2  Critical Properties That MUST Hold
+
+1. **No ETH can be permanently locked** in any contract
+2. **No tokens can be created/destroyed** except by authorized game logic
+3. **No NFT can have multiple owners** or no owner
+4. **No user can extract more value** than they put in (except legitimate winnings)
+5. **No state can become inconsistent** across contracts
+
+### 10.3  Verification Completeness Checklist
+
+- [ ] All 30+ production contracts have direct specs
+- [ ] All 9 system-wide invariants implemented
+- [ ] All known edge cases have test rules
+- [ ] All arithmetic operations proven safe
+- [ ] All external calls protected against reentrancy
+- [ ] All access controls verified exhaustively
+- [ ] ETH flow tracking covers 100% of value transfers
+- [ ] Integration tests verify cross-contract calls
+- [ ] Upgrade safety verified for all upgradeable contracts
+
+## 11  Summary of Immediate Actions
+
+1. ✅ **COMPLETED**: Phase 1 - Critical security fixes (4 specs, 27 rules)
+2. **NOW**: Phase 1.5 - Complete critical contract coverage
+3. **PRIORITY**: StakingWallet full verification + PrizesWallet + NFTs
+4. **CRITICAL**: Implement ETH conservation invariant ASAP
+5. **ONGOING**: Add specs for every new contract/feature
 
 ---
 
-## 11  Key Findings from Comprehensive Review (June 2025)
+## 12  Definition of Comprehensive Verification
+
+### 12.1  What "Extremely Comprehensive" Means
+
+For the Cosmic Signature codebase to have extremely comprehensive formal verification:
+
+1. **100% Contract Coverage**: Every single production contract must have dedicated verification
+2. **100% Function Coverage**: Every public/external function must have at least one rule
+3. **100% Path Coverage**: Every possible execution path must be verified
+4. **100% Integration Coverage**: Every cross-contract interaction must be proven safe
+5. **100% Economic Coverage**: Every ETH/token flow must be tracked and verified
+
+### 12.2  Verification Depth Requirements
+
+For each contract, we need:
+- **Positive tests**: Verify correct behavior works
+- **Negative tests**: Verify incorrect usage fails safely  
+- **Edge case tests**: Verify boundary conditions handled
+- **Integration tests**: Verify interactions with other contracts
+- **Invariant tests**: Verify properties that must always hold
+
+### 12.3  Missing Coverage Analysis
+
+Based on current state, we need approximately:
+- **25+ new spec files** for uncovered contracts
+- **200+ new rules** for comprehensive coverage
+- **9 system invariants** to be implemented
+- **50+ edge case rules** for boundary testing
+- **30+ integration rules** for cross-contract verification
+
+## 13  Key Findings from Comprehensive Review (June 2025)
 
 ### 11.0  Important Verification Update
 
@@ -617,11 +760,62 @@ The initial assessment was misleading - most functionality IS verified, but thro
 ### 11.5  Success Criteria
 
 The codebase will be considered "ROCK SOLID" when:
-1. Zero division-by-zero possibilities
-2. All contracts have direct verification
-3. System invariants proven across all contracts
-4. 100% of economic flows verified
-5. Upgrade safety guaranteed
+1. Zero division-by-zero possibilities ✅ (Phase 1 complete)
+2. All contracts have direct verification ❌ (Only 4/30+ done)
+3. System invariants proven across all contracts ❌ (0/9 implemented)
+4. 100% of economic flows verified ❌ (Missing ETH conservation)
+5. Upgrade safety guaranteed ❌ (Not yet verified)
+
+## 14  Path to Comprehensive Verification
+
+### 14.1  Current Status Summary
+- **Verified**: 4 contracts (CST, SystemManagement, StakingCSN partial, StakingRW partial)
+- **Partially Verified**: ~10 contracts (via CosmicSignatureGame inheritance)
+- **Unverified**: ~20 contracts
+- **System Invariants**: 0/9 implemented
+- **Total Rules**: 108 passing (need ~300+ for comprehensive coverage)
+
+### 14.2  Required Effort Estimate
+To achieve truly comprehensive verification:
+- **Time**: 6-8 weeks of focused effort
+- **New Specs**: 25-30 spec files
+- **New Rules**: 200+ additional rules
+- **Invariants**: All 9 system-wide invariants
+- **Integration Tests**: 30+ cross-contract verifications
+
+### 14.3  Highest Priority Actions (Do These First!)
+1. **PrizesWallet.sol** - Critical ETH custody contract with zero coverage
+2. **NFT Contracts** - Both CosmicSignatureNft and RandomWalkNFT need direct verification
+3. **ETH Conservation Invariant** - Track all ETH flows across the system
+4. **Complete StakingWallet verification** - We only verified safety, not functionality
+5. **CharityWallet & MarketingWallet** - Withdrawal limits are critical
+
+## 15  Risks of Current Incomplete Verification
+
+### 15.1  Unverified Attack Vectors
+
+With current limited coverage, the following attacks remain possible:
+1. **ETH Drainage** - PrizesWallet has no verification, could have withdrawal bugs
+2. **NFT Exploits** - Minting limits not verified, could mint unlimited NFTs
+3. **Wallet Draining** - Charity/Marketing wallets lack withdrawal verification
+4. **State Corruption** - Base contracts could have storage collision bugs
+5. **Economic Attacks** - No system-wide economic invariants verified
+
+### 15.2  False Confidence Risk
+
+Current "108 rules passing" gives false confidence because:
+- Most rules only test through CosmicSignatureGame proxy
+- Direct contract bugs could be hidden by proxy layer
+- Integration bugs between contracts not tested
+- System-wide properties completely unverified
+
+### 15.3  Technical Debt Accumulation
+
+Without comprehensive verification:
+- New features add untested complexity
+- Bug fixes might introduce new bugs
+- Refactoring becomes risky
+- Upgrade safety cannot be guaranteed
 
 ---
 
