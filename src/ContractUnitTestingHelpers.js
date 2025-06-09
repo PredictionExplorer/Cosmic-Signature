@@ -160,7 +160,7 @@ async function generateRandomUInt256Seed(latestBlock, blockchainPropertyGetter) 
 	const latestBlockPrevRandao = await blockchainPropertyGetter.getBlockPrevRandao();
 
 	// // This has already been asserted in Solidity.
-	// expect(latestBlockPrevRandao).greaterThan(0n);
+	// expect(latestBlockPrevRandao).greaterThanOrEqual(2n);
 
 	const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
 	if ( ! IS_HARDHAT_COVERAGE ) {

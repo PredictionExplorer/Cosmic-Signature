@@ -44,10 +44,10 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setEthBidPriceIncreaseDivisor(uint256 newValue_) external;
 
-	/// @notice Sets `ethBidRefundAmountInGasMinLimit`.
+	/// @notice Sets `ethBidRefundAmountInGasToSwallowMaxLimit`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setEthBidRefundAmountInGasMinLimit(uint256 newValue_) external;
+	function setEthBidRefundAmountInGasToSwallowMaxLimit(uint256 newValue_) external;
 
 	/// @notice Sets `cstDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.

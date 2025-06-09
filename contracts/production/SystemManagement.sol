@@ -43,9 +43,9 @@ abstract contract SystemManagement is
 		emit EthBidPriceIncreaseDivisorChanged(newValue_);
 	}
 
-	function setEthBidRefundAmountInGasMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		ethBidRefundAmountInGasMinLimit = newValue_;
-		emit EthBidRefundAmountInGasMinLimitChanged(newValue_);
+	function setEthBidRefundAmountInGasToSwallowMaxLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		ethBidRefundAmountInGasToSwallowMaxLimit = newValue_;
+		emit EthBidRefundAmountInGasToSwallowMaxLimitChanged(newValue_);
 	}
 
 	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

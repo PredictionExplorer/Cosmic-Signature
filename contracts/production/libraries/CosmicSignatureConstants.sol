@@ -66,43 +66,17 @@ library CosmicSignatureConstants {
 	/// [/Comment-202412036]
 	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
 
-	/// @notice Default `ethBidRefundAmountInGasMinLimit`.
+	/// @notice Default `ethBidRefundAmountInGasToSwallowMaxLimit`.
 	/// [Comment-202502052]
-	/// This drives the logic that prevents refunding excess ETH that a bidder sent to us if the refund is too small
-	/// to justify the transfer transaction fee.
+	/// This configures the logic that prevents refunding excess ETH that a bidder sent to us if the refund is too small
+	/// to justify the ETH transfer transaction fee.
 	/// This is expressed in gas.
-	/// We multiply this by `block.basefee` (or better by `tx.gasprice`?) and if the refund is at least as big as the result,
+	/// We will multiply this by `tx.gasprice` and if the refund is greater than the result,
 	/// we will transfer the refund back to the bidder. Otherwise, the excess ETH will simply stay in the Game contract balance.
+	/// This value equals the amount of gas consumed by the logic in the block near Comment-202506219.
+	/// todo-2 This value might need tweaking after a blockchain upgrade.
 	/// [/Comment-202502052]
-	/// @dev
-	/// [Comment-202502054]
-	/// todo-0 Revisit this.
-	///
-	/// If we ran on the Ethereum mainnet, we would probably set this to something like 21100,
-	/// because there a simple ETH transfer costs 21000 plus an incentive fee.
-	/// However on Arbitrum, which is an L2 network, there are both L2 and L1 gas fees.
-	/// The former appears to always be 21000, while the latter varies and tends to be bigger than the former.
-	/// We don't know what the L1 gas fee is going to be, so this value is approximate.
-	/// todo-2 It will liikely need tweaking over time, especially after Arbitrum decentralizes their blockchain.
-	///
-	/// todo-0 I have tested that on Hardhat network it costs 6843 gas to call the `address.call` method.
-	/// todo-0 Do a better review of things on ArbiScan and test on Arbitrum Sepolia if this value makes sense
-	/// todo-0 and possibly correct it.
-	/// 
-	/// todo-0 Arbitrum posts blobs to the mainet.
-	/// todo-0 Can I get any relevant info from that blob?
-	///
-	/// todo-0 Can I fork Arbitrum blockchain? Then I would have all the actual numbers in my code.
-	/// todo-0 But don't configure initialBaseFeePerGas
-	///
-	/// todo-0 Remember to change this in the tests.
-	/// todo-0 We have `ethBidRefundAmountInGasMinLimit` there too.
-	/// [/Comment-202502054]
-	/// 
-	/// todo-0 Reference relevat comments in Comment-202505117.
-	/// 
-	/// todo-0 Review https://docs.arbitrum.io/build-decentralized-apps/how-to-estimate-gas
-	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT = (6843 + 7) * 29 / 10;
+	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
 	/// @dev

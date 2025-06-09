@@ -404,7 +404,7 @@ const hardhatUserConfig = {
 		hardhat: {
 			allowUnlimitedContractSize: true,
 			// allowBlocksWithSameTimestamp: true,
-			// initialBaseFeePerGas: 1000000000,
+			// initialBaseFeePerGas: 1e9,
 
 			// // This is needed so that the minimg of multiple transactions per block worked.
 			// // Actually, this appears to be unnecessary if we specify `gasLimit` when making a contract metod call.

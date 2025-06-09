@@ -48,7 +48,7 @@ function generateRandomUInt256() {
 // /// [/Comment-202504071]
 // function generateRandomUInt256Seed(block_) {
 // 	// todo-9 Don't call `expect` in this file.
-// 	expect(block_.prevRandao).greaterThan(0n);
+// 	expect(block_.prevRandao).greaterThanOrEqual(2n);
 // 	expect(block_.baseFeePerGas).greaterThan(0n);
 //
 // 	return block_.prevRandao ^ block_.baseFeePerGas;

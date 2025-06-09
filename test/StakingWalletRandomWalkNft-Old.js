@@ -81,6 +81,7 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	// 	await newStakingWalletRandomWalkNft.waitForDeployment();
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletRandomWalkNft(newStakingWalletRandomWalkNftAddr);
 	//
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//

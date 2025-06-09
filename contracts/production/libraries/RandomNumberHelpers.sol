@@ -39,8 +39,11 @@ library RandomNumberHelpers {
 	/// It's because all calls witin a particular block would return the same value.
 	/// [/Comment-202503254]
 	function generateRandomNumberSeed() internal view returns (uint256) {
-		// #enable_asserts assert(block.prevrandao > 0);
+		// #enable_asserts assert(block.prevrandao >= 2);
+
+		// Comment-202505294 relates.
 		// #enable_asserts assert(block.basefee > 0);
+
 		return block.prevrandao ^ block.basefee;
 	}
 

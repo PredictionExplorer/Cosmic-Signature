@@ -66,7 +66,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		nextEthBidPrice: 0n,
 		ethBidPriceIncreaseDivisor: 100n,
 		RANDOMWALK_NFT_BID_PRICE_DIVISOR,
-		ethBidRefundAmountInGasMinLimit: (6843n + 7n) * 29n / 10n,
+		ethBidRefundAmountInGasToSwallowMaxLimit: 6843n,
 		cstDutchAuctionBeginningTimeStamp: 0n,
 		cstDutchAuctionDurationDivisor: (1_000_000n + 24n / 4n) / (24n / 2n) - 1n,
 		cstDutchAuctionBeginningBidPrice: 0n,
@@ -489,18 +489,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 				// console.info("202505081");
 			} else if (overpaidEthPrice_ > 0n) {
 				// Comment-202505117 relates.
-				const transactionBlockBaseFeePerGas_ = transactionBlock_.baseFeePerGas;
-				if ( ! IS_HARDHAT_COVERAGE ) {
-					expect(transactionBlockBaseFeePerGas_).greaterThan(0n);
-				} else {
-					expect(transactionBlockBaseFeePerGas_).equal(0n);
-				}
-				const ethBidRefundAmountMinLimit_ = this.ethBidRefundAmountInGasMinLimit * transactionBlockBaseFeePerGas_;
+				const transactionGasPrice_ = transactionReceipt_.gasPrice;
+				expect(transactionGasPrice_).greaterThan(0n);
+				const ethBidRefundAmountToSwallowMaxLimit_ = this.ethBidRefundAmountInGasToSwallowMaxLimit * transactionGasPrice_;
 
-				// Comment-202505296 applies.
-				if (overpaidEthPrice_ < ethBidRefundAmountMinLimit_) {
-
-					// console.info("202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountMinLimit_));
+				if (overpaidEthPrice_ <= ethBidRefundAmountToSwallowMaxLimit_) {
+					// console.info("202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 					overpaidEthPrice_ = 0n;
 					paidEthPrice_ = value_;
 					// ethBidPrice_ = value_;
@@ -511,7 +505,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// 	console.info("202505095", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_));
 					// }
 				} else {
-					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountMinLimit_));
+					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 				}
 			} else {
 				expect(false).equal(true);
@@ -562,8 +556,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			// todo-1 Not testing refund transfer error.
 			// todo-1 Reference where we test it.
 			this.ethBalanceAmount += paidEthPrice_;
-			const transactionFeeInEth_ =
-				transactionReceipt_.gasUsed * (transactionReceipt_.effectiveGasPrice ?? transactionReceipt_.gasPrice);
+			const transactionFeeInEth_ = transactionReceipt_.fee;
 			expect(transactionFeeInEth_).greaterThan(0n);
 			const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(bidderAddress_);
 			expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - paidEthPrice_ - transactionFeeInEth_);
@@ -1258,8 +1251,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			this.ethBalanceAmount -= mainEthPrizeAmount_;
 			// expect(this.ethBalanceAmount).greaterThanOrEqual(0n);
 			const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(callerAddress_);
-			const transactionFeeInEth_ =
-				transactionReceipt_.gasUsed * (transactionReceipt_.effectiveGasPrice ?? transactionReceipt_.gasPrice);
+			const transactionFeeInEth_ = transactionReceipt_.fee;
 			expect(transactionFeeInEth_).greaterThan(0n);
 			expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + mainEthPrizeAmount_);
 
@@ -1375,7 +1367,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	expect(await contracts_.cosmicSignatureGameProxy.ethDutchAuctionEndingBidPriceDivisor()).equal(cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor);
 	expect(await contracts_.cosmicSignatureGameProxy.nextEthBidPrice()).equal(cosmicSignatureGameProxySimulator_.nextEthBidPrice);
 	expect(await contracts_.cosmicSignatureGameProxy.ethBidPriceIncreaseDivisor()).equal(cosmicSignatureGameProxySimulator_.ethBidPriceIncreaseDivisor);
-	expect(await contracts_.cosmicSignatureGameProxy.ethBidRefundAmountInGasMinLimit()).equal(cosmicSignatureGameProxySimulator_.ethBidRefundAmountInGasMinLimit);
+	expect(await contracts_.cosmicSignatureGameProxy.ethBidRefundAmountInGasToSwallowMaxLimit()).equal(cosmicSignatureGameProxySimulator_.ethBidRefundAmountInGasToSwallowMaxLimit);
 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningTimeStamp()).equal(cosmicSignatureGameProxySimulator_.cstDutchAuctionBeginningTimeStamp);
 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionDurationDivisor()).equal(cosmicSignatureGameProxySimulator_.cstDutchAuctionDurationDivisor);
 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice()).equal(cosmicSignatureGameProxySimulator_.cstDutchAuctionBeginningBidPrice);

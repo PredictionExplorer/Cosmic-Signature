@@ -111,7 +111,7 @@ contract CosmicSignatureGame is
 		ethDutchAuctionEndingBidPriceDivisor = CosmicSignatureConstants.DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR;
 		// nextEthBidPrice = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		ethBidPriceIncreaseDivisor = CosmicSignatureConstants.DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR;
-		ethBidRefundAmountInGasMinLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT;
+		ethBidRefundAmountInGasToSwallowMaxLimit = CosmicSignatureConstants.DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT;
 		// cstDutchAuctionBeginningTimeStamp =
 		cstDutchAuctionDurationDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR;
 		// cstDutchAuctionBeginningBidPrice = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
