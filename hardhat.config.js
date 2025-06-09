@@ -402,6 +402,7 @@ const hardhatUserConfig = {
 	// todo-1 If I add add Arbitrum Sepolia do the above.
 	networks: {
 		hardhat: {
+			// initialDate: "2002-01-01",
 			allowUnlimitedContractSize: true,
 			// allowBlocksWithSameTimestamp: true,
 			// initialBaseFeePerGas: 1e9,
