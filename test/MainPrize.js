@@ -6,12 +6,14 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting, deployContractsForUnitTestingAdvanced } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting, deployContractsForUnitTestingAdvanced, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("MainPrize", function () {
 	// Comment-202505315 applies.
 	it("Test 1", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+
+		// const timeStamp1_ = Date.now();
 
 		const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, generateRandomUInt256())) - Number(1n << (53n - 2n)), 0));
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).donateEth({value: ethDonationAmount_,})).not.reverted;
@@ -40,7 +42,7 @@ describe("MainPrize", function () {
 
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).equal(initialDurationUntilMainPrize_);
-		await hre.ethers.provider.send("evm_increaseTime", [100]);
+		await hre.ethers.provider.send("evm_increaseTime", [100 - await makeNextBlockTimeDeterministic(),]);
 		await hre.ethers.provider.send("evm_mine");
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).equal(initialDurationUntilMainPrize_ - 100n);
@@ -62,22 +64,22 @@ describe("MainPrize", function () {
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1,]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1 - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied");
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
-		await hre.ethers.provider.send("evm_increaseTime", [100]);
+		await hre.ethers.provider.send("evm_increaseTime", [100 - await makeNextBlockTimeDeterministic(),]);
 		await hre.ethers.provider.send("evm_mine");
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
-		await hre.ethers.provider.send("evm_increaseTime", [10]);
+		await hre.ethers.provider.send("evm_increaseTime", [10 - await makeNextBlockTimeDeterministic(),]);
 		await hre.ethers.provider.send("evm_mine");
 		currentChampions_ = await contracts_.cosmicSignatureGameProxy.tryGetCurrentChampions();
 		expect(currentChampions_[0]).equal(contracts_.signers[2].address);
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		// mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).claimMainPrize()).not.reverted;
@@ -90,14 +92,14 @@ describe("MainPrize", function () {
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound");
 		let durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_),]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound");
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim");
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1,]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1 - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		// mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim");
@@ -108,7 +110,7 @@ describe("MainPrize", function () {
 		expect(mainEthPrizeAmount2_).equal(mainEthPrizeExpectedAmount_);
 
 		durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1 - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,})).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive");
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
@@ -118,16 +120,19 @@ describe("MainPrize", function () {
 		expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_)).equal(1n);
 		expect(await contracts_.cosmicSignatureGameProxy.getBidderAddressAt(roundNum_, 0n)).equal(contracts_.signers[1].address);
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied");
 
 		// After the main prize claim timeout expires, anyone is allowed to claim the prize.
 		const timeoutDurationToClaimMainPrize_ = await contracts_.cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToClaimMainPrize_) - 1]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToClaimMainPrize_) - 1 - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).not.reverted;
+
+		// const timeStamp2_ = Date.now();
+		// console.info("202506249", (timeStamp2_ - timeStamp1_).toString());
 	});
 
 	// Comment-202505315 applies.

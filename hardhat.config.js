@@ -415,12 +415,18 @@ const hardhatUserConfig = {
 			// This configures to deterministically mine a block when we submit a transaction request
 			// to execute a non-`view` contract method.
 			// Block timestamp increment is always 1 second and is not configurable.
-			// Issue. So we cannot easily test adjacent blocks with equal timestamps.
-			// Issue. A problem is that on a slow machine the timestamp increase can be more than 1 second,
-			// meaning the behavior is not guaranteed to be deterministic.
-			// In addition, after calling `loadFixture` the next block timestamp can leap by many seconds,
-			// so it's a good idea to forcibly mine one so that further block timestamps were (mostly) deterministic
-			// relatively to the mined one's.
+			// Issue 1. So we cannot easily test adjacent blocks with equal timestamps.
+			//
+			// Issue 2.  Hardhat advances the next block timestamp to at least the current system time.
+			// As a result, if `loadFixture` was already called, after it's called again, the next block timestamp can leap by many seconds,
+			// so if we need to use the last mined block timestamp immediately after calling `loadFixture`,
+			// we typically must mine a dummy block beforehand.
+			//
+			// Issue 3. Even if the last mined block timestamp is ahead of the current system time,
+			// the "evm_increaseTime" JSON RPC method will add to the next block timestamp the number times
+			// the current system time reached a whole second boundary since the last mined block timestamp.
+			// So to increase the chance of deterministic behavior when the current system time is approaching a boundary of a second,
+			// we must wait until the next second and then subtract 1 or more from the value we are to pass to "evm_increaseTime".
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,

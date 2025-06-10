@@ -8,7 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { parseBooleanEnvironmentVariable } = require("./Helpers.js");
+const { parseBooleanEnvironmentVariable, sleepForMilliSeconds } = require("./Helpers.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
 
 // #endregion
@@ -41,8 +41,9 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
  */
 async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
+	await makeNextBlockTimeDeterministic();
 
-	// Issue. Given Comment-202501193, we must forcibly mine a block to avoid possible unexpected behavior.
+	// Issue. Given issue 2 in Comment-202501193, mining a dummy block.
 	await hre.ethers.provider.send("evm_mine");
 
 	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
@@ -149,6 +150,29 @@ function assertEvent(event, contract, eventName, eventArgs) {
 }
 
 // #endregion
+// #region `makeNextBlockTimeDeterministic`
+
+/**
+ * Issue. This function does what issue 3 in Comment-202501193 recommends.
+ * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
+ */
+async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 200) {
+	const currentDateTime = Date.now();
+	const currentSecondElapsedDurationInMilliSeconds = currentDateTime % 1000;
+	const currentSecondRemainingDurationInMilliSeconds = 1000 - currentSecondElapsedDurationInMilliSeconds;
+	if (currentSecondRemainingDurationInMilliSeconds >= currentSecondRemainingDurationMinLimitInMilliSeconds) {
+		return 0;
+	}
+
+	// Telling it to sleep for 1 ms longer because sometimes it sleeps for 1 ms less than requested,
+	// possibly due to rounding errors.
+	await sleepForMilliSeconds(currentSecondRemainingDurationInMilliSeconds + 1);
+
+	// console.info(Date.now().toString());
+	return 1;
+}
+
+// #endregion
 // #region `generateRandomUInt256Seed`
 
 /**
@@ -184,6 +208,7 @@ module.exports = {
 	assertAddressIsValid,
 	checkTransactionErrorObject,
 	assertEvent,
+	makeNextBlockTimeDeterministic,
 	generateRandomUInt256Seed,
 };
 

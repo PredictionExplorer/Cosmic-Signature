@@ -6,7 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 // const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;
@@ -54,7 +54,7 @@ describe("Bidding", function () {
 		let [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_] = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
 
 		// Making CST bid price almost zero.
-		await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 1]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 1 - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(0n, "cst bid")).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
@@ -201,7 +201,6 @@ describe("Bidding", function () {
 
 	// Comment-202505315 applies.
 	it("Bidding with CST", async function () {
-		// for ( let counter_ = 0; counter_ < 100; ++ counter_ ) {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		const cosmicSignatureGameProxyBidPlacedTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("BidPlaced").topicHash;
@@ -222,12 +221,13 @@ describe("Bidding", function () {
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		// await logLatestBlock("202506233");
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 		// await logLatestBlock("202506235");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).not.reverted;
 		// await logLatestBlock("202506237");
-		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeRoundActivation_) - 1]);
+
+		await hre.ethers.provider.send("evm_increaseTime", [Number(delayDurationBeforeRoundActivation_) - 1 - await makeNextBlockTimeDeterministic(),]);
 		// await logLatestBlock("202506239");
 		await hre.ethers.provider.send("evm_mine");
 		// await logLatestBlock("202506240");
@@ -236,7 +236,7 @@ describe("Bidding", function () {
 		// await logLatestBlock("202506241");
 
 		// Reducing CST bid price.
-		await hre.ethers.provider.send("evm_increaseTime", [20000]);
+		await hre.ethers.provider.send("evm_increaseTime", [20000 - await makeNextBlockTimeDeterministic(),]);
 		await hre.ethers.provider.send("evm_mine");
 
 		// await logLatestBlock("202506242");
@@ -269,7 +269,6 @@ describe("Bidding", function () {
 		expect(parsedLog_.args.message).equal("cst bid");
 		cstDutchAuctionBeginningBidPrice_ = await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).equal(nextCstBidExpectedPrice_ * 2n);
-		// }
 	});
 
 	it("Cosmic Signature Token first mint reversal", async function () {

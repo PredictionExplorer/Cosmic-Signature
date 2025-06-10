@@ -682,10 +682,13 @@ describe("CosmicSignatureGame-1", function () {
 					{
 						const adjacentBlockTimeStampDifference_ = transactionBlock_.timestamp - blockBeforeTransaction_.timestamp;
 
-						// Issue. Given Comment-202501193, this condition is supposed to always be `true`, but sometimes it's not.
+						// Issue. Given Comment-202501193, it appears that this condition is not guaranteed to be `true`.
 						// Therefore not asserting it.
-						if (adjacentBlockTimeStampDifference_ != 1) {
+						// But in the reality it's (almost?) guaranteed, right? But I still don't want to assert it.
+						if (adjacentBlockTimeStampDifference_ == 1) {
 
+							// Doing nothing.
+						} else {
 							console.warn("Warning 202505017. Adjacent block timestamp difference is " + adjacentBlockTimeStampDifference_.toString() + ".");
 						}
 					}
