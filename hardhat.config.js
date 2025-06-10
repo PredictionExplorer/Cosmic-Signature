@@ -423,8 +423,8 @@ const hardhatUserConfig = {
 			// we typically must mine a dummy block beforehand.
 			//
 			// Issue 3. Even if the last mined block timestamp is ahead of the current system time,
-			// the "evm_increaseTime" JSON RPC method will add to the next block timestamp the number times
-			// the current system time reached a whole second boundary since the last mined block timestamp.
+			// the "evm_increaseTime" JSON RPC method will add to the next block timestamp the number of times
+			// the system time reached a whole second boundary since the last mined block timestamp.
 			// So to increase the chance of deterministic behavior when the current system time is approaching a boundary of a second,
 			// we must wait until the next second and then subtract 1 or more from the value we are to pass to "evm_increaseTime".
 			// [/Comment-202501193]

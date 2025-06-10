@@ -41,6 +41,10 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
  */
 async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
+
+	// Since we call this here, a typical test doesn't need to call this
+	// immediately after `loadFixtureDeployContractsForUnitTesting` returns
+	// and a fast test doesn't need to call this at all.
 	await makeNextBlockTimeDeterministic();
 
 	// Issue. Given issue 2 in Comment-202501193, mining a dummy block.
@@ -153,7 +157,11 @@ function assertEvent(event, contract, eventName, eventArgs) {
 // #region `makeNextBlockTimeDeterministic`
 
 /**
- * Issue. This function does what issue 3 in Comment-202501193 recommends.
+ * This function does what issue 3 in Comment-202501193 recommends.
+ * A simple way to use this function is to subtract its return value
+ * from the value to be passed to the "evm_increaseTime" JSON RPC method.
+ * But it's correct to do so only if the last block was mined within the current, possibly ending second.
+ * To (almost) guaranteed that, call this function before mining the previous block.
  * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
  */
 async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 200) {

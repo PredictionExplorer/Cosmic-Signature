@@ -323,6 +323,7 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionResponseFuture_ = randomWalkNftForSigner_.mint({value: randomWalkNftMintPrice_,});
 						const transactionResponse_ = await transactionResponseFuture_;
 						transactionReceipt_ = await transactionResponse_.wait();
+						// console.info("202506257", String(transactionResponse_.timestamp));
 						latestBlock_ = await transactionReceipt_.getBlock();
 						transactionBlock_ = latestBlock_;
 						randomWalkNftId_ = randomWalkNftSimulator_.mint(signer_.address, contracts_, transactionReceipt_, eventIndexWrapper_);

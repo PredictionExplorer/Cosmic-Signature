@@ -42,7 +42,7 @@ describe("Bidding", function () {
 	// Comment-202505315 applies.
 	it("Bidding-related durations", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
-		
+
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
@@ -217,6 +217,7 @@ describe("Bidding", function () {
 		// console.info();
 		// latestTimeStamp = 0;
 		// await logLatestBlock("202506230");
+		await makeNextBlockTimeDeterministic();
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).not.reverted;
 		// await logLatestBlock("202506233");
