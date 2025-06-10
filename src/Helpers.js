@@ -162,6 +162,16 @@ function uint256ToPaddedHexString(value_) {
 }
 
 // #endregion
+// #region `sleepForMilliSeconds`
+
+/**
+ * @param {number} durationInMilliSeconds_
+ */
+function sleepForMilliSeconds(durationInMilliSeconds_) {
+	return new Promise((resolve_) => (setTimeout(resolve_, durationInMilliSeconds_)));
+}
+
+// #endregion
 // #region
 
 module.exports = {
@@ -175,6 +185,7 @@ module.exports = {
 	parseIntegerEnvironmentVariable,
 	uint32ToPaddedHexString,
 	uint256ToPaddedHexString,
+	sleepForMilliSeconds,
 };
 
 // #endregion
