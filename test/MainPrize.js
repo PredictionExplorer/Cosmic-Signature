@@ -465,6 +465,7 @@ describe("MainPrize", function () {
 
 	it("Reentry and double-claim attempts", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+
 		const maliciousBidderFactory_ = await hre.ethers.getContractFactory("MaliciousBidder", contracts_.deployerAcct);
 		const maliciousBidder_ = await maliciousBidderFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
 		await maliciousBidder_.waitForDeployment();
@@ -476,7 +477,7 @@ describe("MainPrize", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
 			// await hre.ethers.provider.send("evm_mine");
 			for ( let maliciousBidderModeCode_ = 3n; maliciousBidderModeCode_ >= 0n; -- maliciousBidderModeCode_ ) {
-				await expect(maliciousBidder_.setModeCode(maliciousBidderModeCode_)).not.reverted;
+				await expect(maliciousBidder_.connect(contracts_.signers[4]).setModeCode(maliciousBidderModeCode_)).not.reverted;
 				const paidEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 				const overpaidEthPrice_ = ethPriceToPay_ - paidEthPrice_;
 				expect(overpaidEthPrice_).greaterThan(0n);
@@ -494,7 +495,7 @@ describe("MainPrize", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1,]);
 			// await hre.ethers.provider.send("evm_mine");
 			for ( let maliciousBidderModeCode_ = 3n; maliciousBidderModeCode_ >= 0n; -- maliciousBidderModeCode_ ) {
-				await expect(maliciousBidder_.setModeCode(maliciousBidderModeCode_)).not.reverted;
+				await expect(maliciousBidder_.connect(contracts_.signers[4]).setModeCode(maliciousBidderModeCode_)).not.reverted;
 				const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 				const transactionResponseFuture_ = maliciousBidder_.connect(contracts_.signers[4]).doClaimMainPrize();
 				if (maliciousBidderModeCode_ > 0n) {

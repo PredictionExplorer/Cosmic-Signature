@@ -102,18 +102,10 @@ abstract contract Bidding is
 			// If the bidder sent more ETH than required, but we are not going to refund the excess,
 			// treating the whole received amount as what they were supposed to send.
 			// Comment-202502052 relates and/or applies.
-			// Comment-202502054 relates and/or applies.
 			{
-				// #enable_asserts assert(block.basefee > 0);
-				uint256 ethBidRefundAmountMinLimit_ = ethBidRefundAmountInGasMinLimit * block.basefee;
-
-				// [Comment-202505296]
-				// todo-1 Tell the auditor about this.
-				// Issue. The Hardhat Coverage task results tell us that this condition never becomes `true`.
-				// That's because `block.basefee` is zero, as explained in Comment-202505294.
-				// [/Comment-202505296]
-				if (uint256(overpaidEthPrice_) < ethBidRefundAmountMinLimit_) {
-
+				// #enable_asserts assert(tx.gasprice > 0);
+				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
 					paidEthPrice_ = msg.value;
 					// ethBidPrice_ = msg.value;
@@ -209,20 +201,26 @@ abstract contract Bidding is
 
 		// [Comment-202505096]
 		// Refunding excess ETH if the bidder sent significantly more than required.
+		// Comment-202502052 relates.
 		// [/Comment-202505096]
 		if (overpaidEthPrice_ > int256(0)) {
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
 
-			// Comment-202502043 applies.
-			(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
+			// [Comment-202506219/]
+			{
+				// Comment-202502043 applies.
+				(bool isSuccess_, ) = _msgSender().call{value: uint256(overpaidEthPrice_)}("");
+
+				if ( ! isSuccess_ ) {
+					revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
+				}
+			}
 
 			// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
 			// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
-			// // #enable_asserts // #disable_smtchecker console.log("Gas Spent =", gasUsed1_, gasUsed2_, gasUsed2_ - (gasUsed1_ - gasUsed2_));
-			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("ETH refund transfer failed.", _msgSender(), uint256(overpaidEthPrice_));
-			}
+			// // #enable_asserts // #disable_smtchecker uint256 accurateGasUsed_ = gasUsed2_ - (gasUsed1_ - gasUsed2_);
+			// // #enable_asserts // #disable_smtchecker console.log("Gas Used =", gasUsed1_, gasUsed2_, accurateGasUsed_);
 		}
 
 		// #endregion

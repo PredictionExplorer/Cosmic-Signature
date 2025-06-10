@@ -161,6 +161,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await newCosmicSignatureNft.>>>connect>>>.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//
@@ -208,6 +209,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await newCosmicSignatureNft.>>>connect>>>.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//
@@ -259,6 +261,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await newCosmicSignatureNft.>>>connect>>>.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//
@@ -306,6 +309,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.waitForDeployment();
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	// 	await newCosmicSignatureNft.>>>connect>>>.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
@@ -358,6 +362,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.waitForDeployment();
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	// 	await newCosmicSignatureNft.>>>connect>>>.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
@@ -413,6 +418,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 		await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 		await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
 
+		// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 		await newCosmicSignatureNft.connect(signer0).setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
@@ -482,6 +488,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 		await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 		await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
 
+		// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 		await newCosmicSignatureNft.connect(signer0).setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
@@ -574,6 +581,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
 	//
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//
@@ -661,6 +669,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 		const newStakingWalletCosmicSignatureNftAddr = await newStakingWalletCosmicSignatureNft.getAddress();
 		await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 		await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+		// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 		await newCosmicSignatureNft.connect(signer0).setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
@@ -855,6 +864,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 		await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 		await newCosmicSignatureNft.connect(signer0).setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
 		await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+		// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 
@@ -911,6 +921,7 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await newStakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address);
 	// 	await newCosmicSignatureNft.>>>connect>>>.setApprovalForAll(newStakingWalletCosmicSignatureNftAddr, true);
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddr);
+	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//

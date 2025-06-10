@@ -196,8 +196,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202502052 applies.
 	/// Comment-202411064 applies.
-	/// @dev Comment-202502054 applies.
-	uint256 public ethBidRefundAmountInGasMinLimit;
+	uint256 public ethBidRefundAmountInGasToSwallowMaxLimit;
 
 	/// @notice When the current CST Dutch auction began.
 	/// Comment-202501022 applies.

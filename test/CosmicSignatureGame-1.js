@@ -323,7 +323,7 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionResponseFuture_ = randomWalkNftForSigner_.mint({value: randomWalkNftMintPrice_,});
 						const transactionResponse_ = await transactionResponseFuture_;
 						transactionReceipt_ = await transactionResponse_.wait();
-						latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						latestBlock_ = await transactionReceipt_.getBlock();
 						transactionBlock_ = latestBlock_;
 						randomWalkNftId_ = randomWalkNftSimulator_.mint(signer_.address, contracts_, transactionReceipt_, eventIndexWrapper_);
 						// console.info("Minted RW NFT " + randomWalkNftId_.toString() + ".");
@@ -341,7 +341,7 @@ describe("CosmicSignatureGame-1", function () {
 							const transactionResponseFuture_ = stakingWalletRandomWalkNftForSigner_.stake(randomWalkNftId_);
 							const transactionResponse_ = await transactionResponseFuture_;
 							transactionReceipt_ = await transactionResponse_.wait();
-							latestBlock_ = await hre.ethers.provider.getBlock("latest");
+							latestBlock_ = await transactionReceipt_.getBlock();
 							transactionBlock_ = latestBlock_;
 							stakingWalletRandomWalkNftSimulator_.stake(signer_.address, randomWalkNftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
@@ -361,7 +361,7 @@ describe("CosmicSignatureGame-1", function () {
 							const transactionResponseFuture_ = stakingWalletCosmicSignatureNftForSigner_.stake(cosmicSignatureNftId_);
 							const transactionResponse_ = await transactionResponseFuture_;
 							transactionReceipt_ = await transactionResponse_.wait();
-							latestBlock_ = await hre.ethers.provider.getBlock("latest");
+							latestBlock_ = await transactionReceipt_.getBlock();
 							transactionBlock_ = latestBlock_;
 							stakingWalletCosmicSignatureNftSimulator_.stake(signer_.address, cosmicSignatureNftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
@@ -395,7 +395,7 @@ describe("CosmicSignatureGame-1", function () {
 							transactionReceipt_ = await transactionResponse_.wait();
 							cosmicSignatureGameProxySimulator_.donateEthWithInfo(signer_.address, ethDonationAmount_, bidMessage_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						}
-						latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						latestBlock_ = await transactionReceipt_.getBlock();
 						transactionBlock_ = latestBlock_;
 						break;
 					}
@@ -725,15 +725,14 @@ describe("CosmicSignatureGame-1", function () {
 					// 1. Increases the chance that ETH bid price becomes very small, possibly 1 Wei, which is a marginal case to test.
 					//    Comment-202503162 relates.
 					// 2. A consequence of a low ETH bid price is a higher chance that we will sometimes skip refunding a small ETH value.
-					//    todo-1 Reference relevant comments, such as those near `ethBidRefundAmountInGasMinLimit` in Solidity.
-					//    todo-1 I wrote a todo to reference this comment near `DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_MIN_LIMIT`.
+					//    Comment-202502052 relates.
 					// [/Comment-202505117]
 					if (cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor < 10n ** 30n) {
 						const newEthDutchAuctionEndingBidPriceDivisor_ = cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor * 10n;
 						const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 						const transactionResponse_ = await transactionResponseFuture_;
 						transactionReceipt_ = await transactionResponse_.wait();
-						latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						latestBlock_ = await transactionReceipt_.getBlock();
 						eventIndexWrapper_.value = 0;
 						cosmicSignatureGameProxySimulator_.setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_, contracts_, transactionReceipt_, eventIndexWrapper_);
 					}

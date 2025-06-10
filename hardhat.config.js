@@ -402,9 +402,10 @@ const hardhatUserConfig = {
 	// todo-1 If I add add Arbitrum Sepolia do the above.
 	networks: {
 		hardhat: {
+			// initialDate: "2002-01-01",
 			allowUnlimitedContractSize: true,
 			// allowBlocksWithSameTimestamp: true,
-			// initialBaseFeePerGas: 1000000000,
+			// initialBaseFeePerGas: 1e9,
 
 			// // This is needed so that the minimg of multiple transactions per block worked.
 			// // Actually, this appears to be unnecessary if we specify `gasLimit` when making a contract metod call.

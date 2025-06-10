@@ -318,7 +318,7 @@ describe("PrizesWallet-1", function () {
 				const transactionReceipt_ = await transactionResponse_.wait();
 				ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
 				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddr_)).equal(ethBalanceAmount_);
-				const transactionFeeInEth_ = transactionReceipt_.gasUsed * (transactionReceipt_.effectiveGasPrice ?? transactionReceipt_.gasPrice);
+				const transactionFeeInEth_ = transactionReceipt_.fee;
 				expect(transactionFeeInEth_).greaterThan(0n);
 				expect(await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address)).equal(prizeWinnerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalancesInfo_[prizeWinnerIndex_].amount);
 				ethBalancesInfo_[prizeWinnerIndex_].roundNum = 0n;
@@ -393,7 +393,7 @@ describe("PrizesWallet-1", function () {
 						.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
 					ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
 					expect(await hre.ethers.provider.getBalance(newPrizesWalletAddr_)).equal(ethBalanceAmount_);
-					const transactionFeeInEth_ = transactionReceipt_.gasUsed * (transactionReceipt_.effectiveGasPrice ?? transactionReceipt_.gasPrice);
+					const transactionFeeInEth_ = transactionReceipt_.fee;
 					expect(transactionFeeInEth_).greaterThan(0n);
 					expect(await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address)).equal(strangerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalancesInfo_[prizeWinnerIndex_].amount);
 					ethBalancesInfo_[prizeWinnerIndex_].roundNum = 0n;
