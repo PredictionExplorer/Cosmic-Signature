@@ -21,7 +21,7 @@
 
 			# todo-0 Uncomment the command line with no arguments.
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d '
-			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize '
+			# 'npx' 'hardhat' 'test' '--grep' '^BlockTimeStamps '
 			'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^\w+(?!-Old) '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'

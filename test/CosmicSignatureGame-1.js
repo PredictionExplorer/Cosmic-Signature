@@ -685,7 +685,6 @@ describe("CosmicSignatureGame-1", function () {
 
 						// Issue. Given Comment-202501193, it appears that this condition is not guaranteed to be `true`.
 						// Therefore not asserting it.
-						// But in the reality it's (almost?) guaranteed, right? But I still don't want to assert it.
 						if (adjacentBlockTimeStampDifference_ == 1) {
 
 							// Doing nothing.
