@@ -204,7 +204,9 @@ def main():
         ('certora/WalletsAndETH.conf', 'WalletsAndETH'),
         ('certora/TokensAndNFTs.conf', 'TokensAndNFTs'),
         ('certora/StakingWallets.conf', 'StakingWallets'),
-        ('certora/GameCore.conf', 'GameCore')
+        ('certora/GameCore.conf', 'GameCore'),
+        ('certora/CharityWallet.conf', 'CharityWallet'),
+        ('certora/MarketingWallet.conf', 'MarketingWallet')
     ]
     
     results = []
