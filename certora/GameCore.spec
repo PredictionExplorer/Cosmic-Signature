@@ -909,51 +909,55 @@ rule ethBidPriceIncreaseFormulaCorrect {
 rule ethBidPriceIncreasesAfterBid {
     env e;
     
-    // Store initial state
-    address lastBidderBefore = lastBidderAddress(e);
+    // Get initial state
     uint256 priceBefore = getNextEthBidPrice(e, 0);
+    address lastBidderBefore = lastBidderAddress(e);
     
-    // Basic requirements
-    require priceBefore > 0 && priceBefore < 100000000000000000000; // Reasonable bounds
-    require ethBidPriceIncreaseDivisor(e) > 0;
-    require ethBidPriceIncreaseDivisor(e) < 10000; // Reasonable upper bound
+    // We're checking the behavior when bidding with ETH
+    // The bid must have sufficient value
     require e.msg.value >= priceBefore;
+    require e.msg.sender != 0;
     
-    // Ensure round is active
+    // If there's already a last bidder, ensure different sender
+    if (lastBidderBefore != 0) {
+        require e.msg.sender != lastBidderBefore;
+    }
+    
+    // Ensure valid ETH bid price increase divisor
+    require ethBidPriceIncreaseDivisor(e) > 0;
+    require ethBidPriceIncreaseDivisor(e) < 10000;
+    
+    // For the round to accept bids, it must be active
     require roundActivationTime(e) > 0;
     require e.block.timestamp >= roundActivationTime(e);
     
-    // Additional constraints for different scenarios
-    if (lastBidderBefore == 0) {
-        // First bid scenario - ensure msg.value > 0 for first bid
-        require e.msg.value > 0;
-    } else {
-        // Subsequent bid scenario - ensure sender is different from last bidder
-        require e.msg.sender != lastBidderBefore;
-        require e.msg.sender != 0;
-    }
-    
     // Place a bid
     bidWithEth@withrevert(e, -1, "eth bid");
+    bool bidSucceeded = !lastReverted;
     
-    // Only check price increase if bid succeeded
-    if (!lastReverted) {
-        uint256 priceAfter = getNextEthBidPrice(e, 0);
-        
-        // Price should have increased
-        assert priceAfter > priceBefore,
-               "ETH bid price should increase after a successful bid";
-        
-        // The increase should match the formula: newPrice = oldPrice + oldPrice/divisor + 1
-        mathint expectedPrice = priceBefore + priceBefore / ethBidPriceIncreaseDivisor(e) + 1;
-        assert priceAfter == expectedPrice,
-               "ETH bid price increase should follow the correct formula";
-    } else {
-        // If bid failed, price should remain the same
-        uint256 priceAfterRevert = getNextEthBidPrice(e, 0);
-        assert priceAfterRevert == priceBefore,
-               "ETH bid price should not change if bid fails";
-    }
+    // Get state after bid
+    uint256 priceAfter = getNextEthBidPrice(e, 0);
+    
+    // Main assertion logic
+    assert (
+        // Case 1: If bid succeeded and price was already set (not first bid)
+        (bidSucceeded && lastBidderBefore != 0) => (
+            priceAfter > priceBefore &&
+            priceAfter == priceBefore + priceBefore / ethBidPriceIncreaseDivisor(e) + 1
+        )
+    ) && (
+        // Case 2: If bid succeeded as first bid (lastBidderBefore == 0)
+        // Price should be set according to the formula from the initial bid price
+        (bidSucceeded && lastBidderBefore == 0 && priceBefore > 0) => (
+            priceAfter > priceBefore &&
+            priceAfter == priceBefore + priceBefore / ethBidPriceIncreaseDivisor(e) + 1
+        )
+    ) && (
+        // Case 3: If bid failed, price should remain unchanged
+        (!bidSucceeded) => (
+            priceAfter == priceBefore
+        )
+    ), "ETH bid price should behave correctly based on bid success and initial state";
 }
 
 // ===== ETHDUTCH RULES =====
