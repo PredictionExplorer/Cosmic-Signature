@@ -200,14 +200,15 @@ def main():
     # List of test configurations
     tests = [
         ('certora/SystemConfig.conf', 'SystemConfig'),
-        ('certora/GameOwnership.conf', 'GameOwnership'),
+        ('certora/AccessControl.conf', 'AccessControl'),
         ('certora/PrizesWalletSafety_simple.conf', 'PrizesWalletSafety'),
         ('certora/WalletsAndETH.conf', 'WalletsAndETH'),
         ('certora/TokensAndNFTs_simple.conf', 'TokensAndNFTs'),
         ('certora/StakingWallets.conf', 'StakingWallets'),
         ('certora/GameCore.conf', 'GameCore'),
         ('certora/CharityWallet.conf', 'CharityWallet'),
-        ('certora/MarketingWallet.conf', 'MarketingWallet')
+        ('certora/MarketingWallet.conf', 'MarketingWallet'),
+        ('certora/EthConservation.conf', 'EthConservation')
     ]
     
     results = []

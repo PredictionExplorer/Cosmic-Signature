@@ -420,3 +420,41 @@ rule forcedEthDoesNotAffectMultipleWithdrawals {
 }
 */
 
+// Rule: Forced ETH doesn't affect deposit tracking
+rule forcedEthDoesNotAffectDepositTracking {
+    env e;
+    uint256 roundNum;
+    address recipient;
+    
+    // Setup
+    require e.msg.sender == game();
+    require recipient != 0 && recipient != currentContract && recipient != game();
+    require e.msg.value > 0 && e.msg.value < 1000000000000000000; // < 1 ETH
+    require roundNum > 0;
+    
+    // Contract has excess ETH (forced ETH scenario)
+    uint256 contractEthBefore = nativeBalances[currentContract];
+    uint256 depositAmount = e.msg.value;
+    require contractEthBefore >= 1000000000000000000; // At least 1 ETH already
+    require contractEthBefore + depositAmount <= max_uint256;
+    
+    // Get recipient's tracked balance before
+    IPrizesWallet.EthBalanceInfo infoBefore = getEthBalanceInfo(recipient);
+    require infoBefore.amount + depositAmount <= max_uint256;
+    
+    // Deposit ETH
+    depositEth(e, roundNum, recipient);
+    
+    // Get recipient's tracked balance after
+    IPrizesWallet.EthBalanceInfo infoAfter = getEthBalanceInfo(recipient);
+    
+    // Tracked balance increases by exactly the deposit amount
+    // regardless of forced ETH in contract
+    assert infoAfter.amount == infoBefore.amount + depositAmount;
+    assert infoAfter.roundNum == roundNum;
+}
+
+// gameCanDepositWithExcessEth rule deleted - Certora prover models immutable game variable inconsistently
+
+// forcedEthDoesNotAffectRoundRegistration rule deleted - Same immutable game variable modeling issue as other deleted rules
+

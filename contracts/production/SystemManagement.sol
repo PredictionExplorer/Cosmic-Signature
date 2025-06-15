@@ -12,6 +12,7 @@ import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } fro
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "./BiddingBase.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 
 abstract contract SystemManagement is
 	OwnableUpgradeableWithReservedStorageGaps,

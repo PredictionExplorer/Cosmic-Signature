@@ -1,5 +1,5 @@
-// GameOwnership.spec - Game ownership pattern verification
-// Consolidated from 1 files
+// AccessControl.spec - Access control and ownership verification
+// Migrated from GameOwnership.spec
 
 methods {
     function owner() external returns (address);
@@ -85,5 +85,4 @@ rule transferOwnership_success {
 
     // Postcondition
     assert owner(e) == newOwnerCandidate, "Owner should be updated to newOwnerCandidate";
-}
-
+} 
