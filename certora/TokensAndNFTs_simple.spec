@@ -73,7 +73,7 @@ rule cstMintIncreasesSupply {
     uint256 amount;
     
     require e.msg.sender == cst.game();
-    require amount > 0 && amount < 10^18;
+    require amount > 0 && amount < 1000000000000000000; // 10^18
     
     uint256 supplyBefore = cst.totalSupply();
     require supplyBefore + amount <= max_uint256;
@@ -91,7 +91,7 @@ rule cstBurnDecreasesSupply {
     uint256 amount;
     
     require e.msg.sender == cst.game();
-    require amount > 0 && amount < 10^18;
+    require amount > 0 && amount < 1000000000000000000; // 10^18
     
     uint256 balance = cst.balanceOf(account);
     require balance >= amount;
@@ -110,10 +110,10 @@ rule cstBurnDecreasesSupply {
 rule nftOwnershipConsistency {
     uint256 tokenId;
     
-    address owner = cosmicNft.ownerOf@withrevert(tokenId);
+    cosmicNft.ownerOf@withrevert(tokenId);
     
     // If ownerOf doesn't revert, owner must not be zero
-    assert !lastReverted => owner != 0;
+    assert !lastReverted => cosmicNft.ownerOf(tokenId) != 0;
 }
 
 rule nftBalanceConsistency {
@@ -121,10 +121,12 @@ rule nftBalanceConsistency {
     uint256 tokenId;
     
     // If an address owns a token, its balance must be > 0
-    address tokenOwner = cosmicNft.ownerOf@withrevert(tokenId);
+    cosmicNft.ownerOf@withrevert(tokenId);
     
-    // Only check if ownerOf didn't revert and the token is owned by our address
+    // Only check if ownerOf didn't revert
     require !lastReverted;
+    
+    address tokenOwner = cosmicNft.ownerOf(tokenId);
     require tokenOwner == owner;
     
     uint256 balance = cosmicNft.balanceOf(owner);
@@ -146,8 +148,9 @@ rule nftTotalSupplyNeverDecreases {
     address to;
     
     // Skip if conditions aren't met for a valid transfer
-    require cosmicNft.ownerOf@withrevert(tokenId) == from;
+    cosmicNft.ownerOf@withrevert(tokenId);
     require !lastReverted;
+    require cosmicNft.ownerOf(tokenId) == from;
     require to != 0;
     
     cosmicNft.transferFrom@withrevert(e, from, to, tokenId);
