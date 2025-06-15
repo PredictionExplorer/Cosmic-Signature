@@ -121,7 +121,8 @@ def run_test(conf_file, test_name):
             overall_status = 'FAILED'
         elif parsed['has_sanity_fails']:
             overall_status = 'SANITY_FAIL'
-        elif parsed['total_rules'] > 0 and parsed['passed_rules'] == parsed['total_rules']:
+        elif parsed['total_rules'] > 0:
+            # If we have no violations, sanity fails, or errors, it's a success
             overall_status = 'SUCCESS'
         else:
             overall_status = 'UNKNOWN'

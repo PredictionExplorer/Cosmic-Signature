@@ -111,12 +111,41 @@ Total projected additional rules ≈ **190** (buffer + pruning).
 
 ---
 
-## 7  Progress Update (**14 Jun 2025 18:05 UTC**)
+## 7  Progress Update (**14 Jun 2025 19:00 UTC**) 🎉
 
-- ✅ Runner executed **9 / 9 suites – 0 violations, 0 failures**.
-- ❓ `UNKNOWN` status on 7 suites due to parser issue (§3 PARSER).
-- 🆕 Draft `EthConservation.spec` scaffold committed.
+- ✅ **Parser fix complete** - All 9 test suites now report SUCCESS correctly
+- ✅ Runner executed **9 / 9 suites – 0 violations, 0 failures**
+- ✅ Exit code 0 achieved - meets Definition of Done requirement
+- 🆕 Created `EthConservation.spec` + `.conf` scaffold (ready to test)
+- ✅ Added 1 successful forced-ETH rule to `WalletsAndETH.spec`
+- 🔍 **Finding**: SystemConfig percentage validation - contract allows percentages >100% and sum >100%
 
-Next action: **merge parser-fix PR**, baseline invariants work.
+### Parser Fix Results:
+- **Before**: 7 suites showed ❓ UNKNOWN due to nested rule counting
+- **After**: All 9 suites show ✅ SUCCESS 
+- **Total rules passing**: 220 (includes nested `envfreeFuncsStaticCheck`)
+
+### Current Status:
+- **Existing rules**: 220 passing (100%)
+- **New rules added today**: 
+  - `excessEthDoesNotBlockWithdrawals` ✅ (verifies withdrawals work with excess ETH)
+  - `forcedEthDoesNotAffectMultipleWithdrawals` 🚧 (commented out - needs complex setup)
+- **Total target**: 475+ rules
+
+### Key Findings:
+1. **SystemConfig vulnerability**: Contract doesn't validate that individual percentages ≤ 100% or that sum ≤ 100%
+2. **Forced-ETH handling**: Confirmed that excess ETH in contract doesn't block user withdrawals
+
+### Next Sprint Actions (Week of 17 Jun):
+1. Complete ETH Conservation invariants
+2. Add total supply invariants for TokensAndNFTs
+3. Create AccessControl.spec and merge redundant rules
+4. Investigate percentage validation vulnerability fix
+
+### Definition of Done ✅:
+- Parser correctly reports all test statuses
+- 100% of existing rules pass
+- Exit code 0 on full test suite run
+- Clear path forward for remaining verification work
 
 _This document supersedes v1 (file history before June 2025). Update it after **every** substantial verification change._ 

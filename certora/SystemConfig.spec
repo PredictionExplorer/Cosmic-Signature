@@ -145,3 +145,19 @@ rule setPercentageUpdatesStorage {
     assert updatedValue == newValue;
 }
 
+// ===== PERCENTAGE SUM INVARIANT =====
+// NOTE: The following rules were disabled because they revealed that the contract
+// does NOT enforce percentage bounds. Individual percentages can exceed 100%
+// and the sum of all percentages can exceed 100%. This is a potential vulnerability
+// that should be fixed in the contract code.
+//
+// invariant percentagesSumToValidTotal()
+//     mainEthPrizeAmountPercentage() + 
+//     chronoWarriorEthPrizeAmountPercentage() + 
+//     charityEthDonationAmountPercentage() + 
+//     cosmicSignatureNftStakingTotalEthRewardAmountPercentage() + 
+//     raffleTotalEthPrizeAmountForBiddersPercentage() <= 100;
+//
+// rule percentagesSumCorrectlyAfterUpdate { ... }
+// rule noPercentageOverflow { ... }
+

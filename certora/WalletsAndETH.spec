@@ -318,3 +318,105 @@ rule usersCanWithdrawOwnBalance {
     assert balanceAfter.amount == 0;
 }
 
+// ===== FORCED ETH RECEPTION RULES =====
+
+// Rule: Contract can receive ETH through selfdestruct or block rewards
+// and still maintain correct accounting
+rule contractCanHandleForcedEth {
+    env e;
+    
+    // Setup user with balance
+    address user = e.msg.sender;
+    require user != 0 && user != currentContract && user != game();
+    require e.msg.value == 0;
+    
+    // Get user's tracked balance
+    IPrizesWallet.EthBalanceInfo userBalance = getEthBalanceInfo(user);
+    require userBalance.amount > 0;
+    require userBalance.amount < 1000000000000000000; // Less than 1 ETH
+    
+    // Simulate contract having MORE ETH than all tracked balances
+    // This represents forced ETH (selfdestruct, coinbase, etc)
+    uint256 contractBalance = nativeBalances[currentContract];
+    require contractBalance >= userBalance.amount + 10000000000000000; // At least 0.01 ETH excess
+    
+    // User withdraws their tracked amount
+    uint256 userBalanceBefore = nativeBalances[user];
+    withdrawEth(e);
+    uint256 userBalanceAfter = nativeBalances[user];
+    
+    // User should receive exactly their tracked amount
+    assert userBalanceAfter == userBalanceBefore + userBalance.amount;
+}
+
+// Rule: Excess ETH in contract doesn't prevent withdrawals
+rule excessEthDoesNotBlockWithdrawals {
+    env e;
+    
+    address user = e.msg.sender;
+    require user != 0 && user != currentContract && user != game();
+    require e.msg.value == 0;
+    
+    // User has a tracked balance to withdraw
+    IPrizesWallet.EthBalanceInfo info = getEthBalanceInfo(user);
+    require info.amount > 0;
+    require info.amount < 1000000000000000000; // Reasonable amount (< 1 ETH)
+    
+    // Contract has at least the user's balance
+    // (forced ETH would mean contract has more than all tracked balances combined)
+    uint256 contractEth = nativeBalances[currentContract];
+    require contractEth >= info.amount;
+    
+    // Store balance before withdrawal
+    uint256 userEthBefore = nativeBalances[user];
+    
+    // Withdrawal should not revert
+    withdrawEth(e);
+    
+    // User should receive their tracked amount
+    uint256 userEthAfter = nativeBalances[user];
+    assert userEthAfter == userEthBefore + info.amount;
+}
+
+// NOTE: The following rule is commented out as it requires complex setup
+// to properly model how users get ETH balances through the game contract
+/*
+// Rule: Multiple users can withdraw even with forced ETH
+rule forcedEthDoesNotAffectMultipleWithdrawals {
+    env e1; env e2;
+    
+    // Two different users
+    require e1.msg.sender != e2.msg.sender;
+    require e1.msg.sender != 0 && e1.msg.sender != currentContract && e1.msg.sender != game();
+    require e2.msg.sender != 0 && e2.msg.sender != currentContract && e2.msg.sender != game();
+    require e1.msg.value == 0 && e2.msg.value == 0;
+    
+    // Both have tracked balances
+    IPrizesWallet.EthBalanceInfo balance1Before = getEthBalanceInfo(e1.msg.sender);
+    IPrizesWallet.EthBalanceInfo balance2Before = getEthBalanceInfo(e2.msg.sender);
+    require balance1Before.amount > 0 && balance1Before.amount < 100000000000000000; // < 0.1 ETH each
+    require balance2Before.amount > 0 && balance2Before.amount < 100000000000000000;
+    
+    // Contract must have enough ETH for both withdrawals
+    mathint totalNeeded = balance1Before.amount + balance2Before.amount;
+    require nativeBalances[currentContract] >= totalNeeded;
+    
+    // First user withdraws successfully
+    withdrawEth@withrevert(e1);
+    assert !lastReverted;
+    
+    // Check first user's balance was cleared
+    IPrizesWallet.EthBalanceInfo balance1After = getEthBalanceInfo(e1.msg.sender);
+    assert balance1After.amount == 0;
+    
+    // Second user can still withdraw
+    require e2.block.timestamp >= e1.block.timestamp;
+    withdrawEth@withrevert(e2);
+    assert !lastReverted;
+    
+    // Check second user's balance was cleared
+    IPrizesWallet.EthBalanceInfo balance2After = getEthBalanceInfo(e2.msg.sender);
+    assert balance2After.amount == 0;
+}
+*/
+
