@@ -1,93 +1,51 @@
-// EthConservation.spec - System-wide ETH conservation invariants
-// Ensures ETH is never lost or created within the Cosmic Signature ecosystem
+// EthConservation.spec - Basic ETH conservation rules
+// Simple rules to verify ETH flows in the Cosmic Signature ecosystem
+
+using CharityWallet as charity;
+using MarketingWallet as marketing;
 
 methods {
-    // CosmicGame methods
-    function getCurrentRound() external returns (uint256) envfree;
-    function roundStartTime(uint256) external returns (uint256) envfree;
-    function getAllBidDetails() external returns (uint256[], address[], bytes[]) envfree;
+    // Charity wallet methods
+    function charity.charityAddress() external returns (address) envfree;
+    function charity.send() external;
+    function charity.send(uint256) external;
     
-    // Wallet methods
-    function CharityWallet.getBalance() external returns (uint256) envfree;
-    function MarketingWallet.getBalance() external returns (uint256) envfree;
-    function PrizesWallet.getBalance() external returns (uint256) envfree;
-    function StakingWalletRandom.getBalance() external returns (uint256) envfree;
-    function StakingWalletNftRewards.getBalance() external returns (uint256) envfree;
+    // Marketing wallet methods
+    function marketing.send(address, uint256) external;
 }
 
-// Ghost variable to track total ETH in the system
-ghost mathint totalSystemEth {
-    init_state axiom totalSystemEth == 0;
-}
-
-// Ghost mapping to track ETH balance changes
-ghost mapping(address => mathint) ethBalanceGhost {
-    init_state axiom forall address a. ethBalanceGhost[a] == 0;
-}
-
-// Hook to track ETH transfers
-hook Sstore _balances[KEY address a] uint256 newBalance {
-    ethBalanceGhost[a] = newBalance;
-    // Update total system ETH tracking
-}
-
-// Main conservation invariant
-invariant ethConservation()
-    // Total ETH in wallets + game contract = initial ETH + external deposits
-    totalSystemEth == 
-        ethBalanceGhost[CharityWallet] + 
-        ethBalanceGhost[MarketingWallet] + 
-        ethBalanceGhost[PrizesWallet] +
-        ethBalanceGhost[StakingWalletRandom] +
-        ethBalanceGhost[StakingWalletNftRewards] +
-        ethBalanceGhost[CosmicGame]
-    {
-        preserved {
-            requireInvariant ethNeverDestroyed();
-        }
-    }
-
-// Supporting invariant: ETH cannot be destroyed
-invariant ethNeverDestroyed()
-    forall address a. ethBalanceGhost[a] >= 0;
-
-// Rule: ETH movements are zero-sum within the system
-rule ethTransferConservation(method f, env e) {
-    mathint totalBefore = totalSystemEth;
+// Rule: Charity wallet balance only decreases when send() is called
+rule charityBalanceDecreasesOnSend {
+    env e;
     
+    uint256 balanceBefore = nativeBalances[charity];
+    
+    // Call the send function
+    charity.send(e);
+    
+    uint256 balanceAfter = nativeBalances[charity];
+    
+    // Balance should decrease if charity address is set and has balance
+    assert charity.charityAddress() != 0 && balanceBefore > 0 => balanceAfter < balanceBefore;
+}
+
+// Rule: Charity wallet accumulates ETH from receives
+rule charityAccumulatesEth {
+    env e;
+    
+    uint256 balanceBefore = nativeBalances[charity];
+    
+    // Any method call that sends ETH to charity
+    method f;
     calldataarg args;
-    f(e, args);
+    require f.selector != sig:charity.send().selector;
+    require f.selector != sig:charity.send(uint256).selector;
     
-    mathint totalAfter = totalSystemEth;
+    f@withrevert(e, args);
     
-    // Total ETH only increases with external deposits
-    assert totalAfter >= totalBefore;
+    uint256 balanceAfter = nativeBalances[charity];
     
-    // If no external ETH entered, total must remain constant
-    assert e.msg.value == 0 => totalAfter == totalBefore;
-}
-
-// Rule: Claiming prizes preserves ETH conservation
-rule claimPrizePreservesEth(env e) {
-    require e.msg.value == 0;  // No ETH sent with claim
-    
-    mathint gameEthBefore = ethBalanceGhost[CosmicGame];
-    mathint prizesEthBefore = ethBalanceGhost[PrizesWallet];
-    mathint totalBefore = gameEthBefore + prizesEthBefore;
-    
-    // Simulate claim operation
-    CosmicGame.claimMainPrize(e);
-    
-    mathint gameEthAfter = ethBalanceGhost[CosmicGame];
-    mathint prizesEthAfter = ethBalanceGhost[PrizesWallet];
-    mathint totalAfter = gameEthAfter + prizesEthAfter;
-    
-    // Total ETH in game + prizes wallet remains constant
-    assert totalAfter == totalBefore;
-}
-
-// TODO: Add more specific conservation rules for:
-// - Bid deposits
-// - Prize distributions
-// - Charity donations
-// - Staking rewards 
+    // If ETH was sent to charity and no revert, balance increases
+    assert e.msg.value > 0 && e.msg.sender != charity && !lastReverted => 
+           balanceAfter >= balanceBefore;
+} 

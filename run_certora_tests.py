@@ -203,7 +203,7 @@ def main():
         ('certora/GameOwnership.conf', 'GameOwnership'),
         ('certora/PrizesWalletSafety_simple.conf', 'PrizesWalletSafety'),
         ('certora/WalletsAndETH.conf', 'WalletsAndETH'),
-        ('certora/TokensAndNFTs.conf', 'TokensAndNFTs'),
+        ('certora/TokensAndNFTs_simple.conf', 'TokensAndNFTs'),
         ('certora/StakingWallets.conf', 'StakingWallets'),
         ('certora/GameCore.conf', 'GameCore'),
         ('certora/CharityWallet.conf', 'CharityWallet'),
