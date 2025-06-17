@@ -19,11 +19,10 @@ hook Sstore currentContract._donatedTokens[INDEX uint256 idx].amount uint256 new
 	mathint round = to_mathint(idx & 0xFFFFFFFFFFFFFFFF);
 	curRound = round;
 	curERC20Addr = addr;
-	if (newValue == 0) {
-		gDonatedERC20Withdrawn[round][addr] = to_mathint(oldValue);
-		assert oldValue > 0;
-		if (oldValue > 0) {
-			assert gDonatedERC20Unclaimed[round][addr] == gDonatedERC20Unclaimed[round][addr];
+	if (newValue != oldValue) {
+		if (newValue == 0) {
+			gDonatedERC20Withdrawn[round][addr] = to_mathint(oldValue);
+			assert gDonatedERC20Unclaimed[round][addr] == gDonatedERC20Withdrawn[round][addr];
 		}
 	} else {
 		if (newValue> oldValue) {
@@ -36,14 +35,10 @@ hook Sstore currentContract._donatedTokens[INDEX uint256 idx].amount uint256 new
 		}
 	}
 }
-hook CALL(uint g, address addr, uint value, uint argsOffset, uint argsLength, uint retOffset, uint retLength) uint rc {
-	if (selector == sig:CosmicSignatureToken.transfer(address, uint256).selector) {
-		assert gDonatedERC20Unclaimed[curRound][curERC20Addr] == gDonatedERC20Withdrawn[curRound][curERC20Addr];
-	}
-}
 hook LOG4(uint offset, uint length, bytes32 t1,bytes32 t2, bytes32 t3, bytes32 t4) {
 	// check for DonatedNftClaimed
-	// implementation pending for Certora's team, they have to explain (in corresponding HelpDesk ticket) how to fetch Log.Data field inside a hook '
+	// currently it is not possible to get Log.Data field (where amount goes in DonatedNFTClaimed event) but Certora said
+	// they are going to implement it in future relases
 }
 rule genericMethodMatcher() {
 
