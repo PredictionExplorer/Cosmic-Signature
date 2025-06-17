@@ -3,6 +3,10 @@
 ## Overview
 This guide distills industry experience and Certora recommendations into a concise play‑book for writing **CVL** specifications that *prove* the correctness of complex Ethereum contracts. It is intended for engineers and LLM agents who already know the basics of Certora's Verification Language.
 
+## 0 · It's all about Induction
+* Formal verification is all about induction. We need to assume that that the initial state is valid, then any transition that our solidity code could cause from that state would always lead to a resulting state that is also valid. (We also need a base case as well like in normal mathematical induction).
+* The whole point and the hard part of formal verification is coming up with good, useful and relevant invariants. It's important to focus on this and do this very carefully.
+
 ## 1 · Think Specifications, Not Tests
 * Describe what the contract **must always guarantee**, not how it currently behaves.  
 * Avoid mirroring implementation details or individual code paths.  
