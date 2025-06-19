@@ -14,11 +14,11 @@
 		# There appears to be no other way to make our logic informed about that.
 		# Why our logic needs to know that?
 		# It used to assert that block base fee per gas is positive.
-		# A problem is that when the Hardhat Coverage task is running, those are zeros in both Solidity and JavaScript.
+		# A problem is that when the Hardhat Coverage task is running, it's zero in both Solidity and JavaScript.
 		# So the asserions failed.
 		# So I have refactored the assertions to assert that in this special case the values are zeros.
 		# There are assertions like that in Solidity code as well. They unconditionally assert that the value is positive,
-		# which implies that we must compile Solidity code with assertions disabled.
+		# which implies that for the coverage task we must compile Solidity code with assertions disabled.
 		# [/Comment-202505294]
 		export IS_HARDHAT_COVERAGE='true'
 

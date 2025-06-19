@@ -39,6 +39,6 @@ contract BrokenCosmicSignatureToken {
 	}
 
 	function burn(address, uint256) external {
-		// Doing nothing.	
+		// Doing nothing.
 	}
 }

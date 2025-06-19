@@ -43,11 +43,11 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
 
 	// Since we call this here, a typical test doesn't need to call this
-	// immediately after `loadFixtureDeployContractsForUnitTesting` returns
-	// and a fast test doesn't need to call this at all.
+	// immediately after `loadFixtureDeployContractsForUnitTesting` returns,
+	// and a quick test doesn't need to call this at all.
 	await makeNextBlockTimeDeterministic();
 
-	// Issue. Given issue 2 in Comment-202501193, mining a dummy block.
+	// Given issue 2 in Comment-202501193, mining a dummy block.
 	await hre.ethers.provider.send("evm_mine");
 
 	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
@@ -78,6 +78,8 @@ async function deployContractsForUnitTesting() {
 async function deployContractsForUnitTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
+	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
+	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
 	const deployerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const ownerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const charityAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
@@ -112,6 +114,18 @@ async function deployContractsForUnitTestingAdvanced(
 	// await (await contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address)).wait();
 	await (await contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address)).wait();
 	return contracts;
+}
+
+// #endregion
+// #region `storeContractDeployedByteCodeAtAddress`
+
+/**
+ * @param {string} contractName 
+ * @param {string} address 
+ */
+async function storeContractDeployedByteCodeAtAddress(contractName, address) {
+	const artifact = await hre.artifacts.readArtifact(contractName);
+	await hre.ethers.provider.send("hardhat_setCode", [address, artifact.deployedBytecode,]);
 }
 
 // #endregion
@@ -161,23 +175,27 @@ function assertEvent(event, contract, eventName, eventArgs) {
  * A simple way to use this function is to subtract its return value
  * from the value to be passed to the "evm_increaseTime" JSON RPC method.
  * But it's correct to do so only if the last block was mined within the current, possibly ending second.
- * To (almost) guaranteed that, call this function before mining the previous block.
+ * To (almost) guaranteed that, call this function before mining the last block.
  * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
  */
 async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 200) {
 	const currentDateTime = Date.now();
 	const currentSecondElapsedDurationInMilliSeconds = currentDateTime % 1000;
 	const currentSecondRemainingDurationInMilliSeconds = 1000 - currentSecondElapsedDurationInMilliSeconds;
-	if (currentSecondRemainingDurationInMilliSeconds >= currentSecondRemainingDurationMinLimitInMilliSeconds) {
-		return 0;
+	let secondBeginningReachCount;
+	if (currentSecondRemainingDurationInMilliSeconds < currentSecondRemainingDurationMinLimitInMilliSeconds) {
+		// [Comment-202506264]
+		// Telling it to sleep for 1 ms longer because sometimes it sleeps for 1 ms less than requested,
+		// possibly due to rounding errors.
+		// [/Comment-202506264]
+		await sleepForMilliSeconds(currentSecondRemainingDurationInMilliSeconds + 1);
+
+		// console.info(Date.now().toString());
+		secondBeginningReachCount = 1;
+	} else {
+		secondBeginningReachCount = 0;
 	}
-
-	// Telling it to sleep for 1 ms longer because sometimes it sleeps for 1 ms less than requested,
-	// possibly due to rounding errors.
-	await sleepForMilliSeconds(currentSecondRemainingDurationInMilliSeconds + 1);
-
-	// console.info(Date.now().toString());
-	return 1;
+	return secondBeginningReachCount;
 }
 
 // #endregion
@@ -185,22 +203,38 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 
 /**
  * Comment-202504067 applies.
- * Comment-202505293 applies.
- * @returns {Promise<bigint>}
+ * This is the test function that Comment-202504071 mentions.
+ * Comment-202506282 applies.
+ * Comment-202506284 applies.
+ * @param {import("ethers").Block} prevBlock
+ * @param {import("ethers").Block} latestBlock
  */
-async function generateRandomUInt256Seed(latestBlock, blockchainPropertyGetter) {
-	const latestBlockPrevRandao = await blockchainPropertyGetter.getBlockPrevRandao();
-
-	// // This has already been asserted in Solidity.
-	// expect(latestBlockPrevRandao).greaterThanOrEqual(2n);
-
-	const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
-	if ( ! IS_HARDHAT_COVERAGE ) {
-		expect(latestBlockBaseFeePerGas).greaterThan(0n);
-	} else {
-		expect(latestBlockBaseFeePerGas).equal(0n);
+/*async*/ function generateRandomUInt256Seed(prevBlock, latestBlock/*, blockchainPropertyGetter*/) {
+	let randomNumberSeed = BigInt(prevBlock.hash) >> 1n;
+	{
+		const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
+		if ( ! IS_HARDHAT_COVERAGE ) {
+			expect(latestBlockBaseFeePerGas).greaterThan(0n);
+		} else {
+			expect(latestBlockBaseFeePerGas).equal(0n);
+		}
+		randomNumberSeed ^= latestBlockBaseFeePerGas << 64n;
 	}
-	return latestBlockPrevRandao ^ latestBlockBaseFeePerGas;
+	{
+		const arbBlockNumber = BigInt(latestBlock.number * 100 - 1);
+		const arbBlockHash = arbBlockNumber * 1_000_003n;
+		randomNumberSeed ^= arbBlockHash;
+	}
+	{
+		const gasBacklog = BigInt(latestBlock.number * 211);
+		randomNumberSeed ^= gasBacklog << (64n * 2n);
+	}
+	{
+		const l1PricingUnitsSinceUpdate = BigInt(latestBlock.number * 307);
+		randomNumberSeed ^= l1PricingUnitsSinceUpdate << (64n * 3n);
+	}
+	expect(randomNumberSeed).equal(BigInt.asUintN(256, randomNumberSeed));
+	return randomNumberSeed;
 }
 
 // #endregion
@@ -213,6 +247,7 @@ module.exports = {
 	loadFixtureDeployContractsForUnitTesting,
 	deployContractsForUnitTesting,
 	deployContractsForUnitTestingAdvanced,
+	storeContractDeployedByteCodeAtAddress,
 	assertAddressIsValid,
 	checkTransactionErrorObject,
 	assertEvent,

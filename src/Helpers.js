@@ -43,15 +43,12 @@ function generateRandomUInt256() {
 
 // /// Comment-202504067 applies.
 // /// [Comment-202504071]
-// /// Issue. This doesn't work, at least on Hardhat Network, because Ethers.js gives us zero `Block.prevRandao`.
-// /// So I implemented a similar function elsewhere.
+// /// This is a production function.
+// /// It's not implemented.
+// /// Only a similar test function is implemented.
 // /// [/Comment-202504071]
-// function generateRandomUInt256Seed(block_) {
-// 	// todo-9 Don't call `expect` in this file.
-// 	expect(block_.prevRandao).greaterThanOrEqual(2n);
-// 	expect(block_.baseFeePerGas).greaterThan(0n);
-//
-// 	return block_.prevRandao ^ block_.baseFeePerGas;
+// function generateRandomUInt256Seed(???) {
+// 	return ???;
 // }
 
 // #endregion

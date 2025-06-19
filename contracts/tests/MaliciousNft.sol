@@ -22,7 +22,7 @@ contract MaliciousNft is ERC721 {
 	}
 
 	receive() external payable {
-		// Doing nothing.	
+		// Doing nothing.
 	}
 
 	function setModeCode(uint256 newValue_) external {

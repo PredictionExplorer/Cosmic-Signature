@@ -6,6 +6,7 @@ pragma solidity 0.8.29;
 // #endregion
 // #region
 
+import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -18,7 +19,7 @@ import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 // #endregion
 // #region
 
-contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
+contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IPrizesWallet {
 	// #region State
 
 	/// @notice The `CosmicSignatureGame` contract address.
@@ -96,7 +97,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
 
-	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override _onlyGame {
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame {
 		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 		// #enable_asserts uint256 amountSum_ = 0;
 		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
@@ -111,7 +112,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `registerRoundEnd`
 
-	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override _onlyGame {
+	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override nonReentrant _onlyGame {
 		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 	}
 
@@ -135,18 +136,18 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 		bool withdrawEth_,
 		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndexes_
-	) external override /*nonReentrant*/ {
+	) external override nonReentrant {
 		if (withdrawEth_) {
-			withdrawEth();
+			_withdrawEth();
 		}
-		claimManyDonatedTokens(donatedTokensToClaim_);
-		claimManyDonatedNfts(donatedNftIndexes_);
+		_claimManyDonatedTokens(donatedTokensToClaim_);
+		_claimManyDonatedNfts(donatedNftIndexes_);
 	}
 
 	// #endregion
 	// #region `depositEth`
 
-	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override _onlyGame {
+	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override nonReentrant _onlyGame {
 		_depositEth(roundNum_, prizeWinnerAddress_, msg.value);
 	}
 
@@ -174,7 +175,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `withdrawEth`
 
-	function withdrawEth() public override /*nonReentrant*/ {
+	function withdrawEth() external override nonReentrant {
+		_withdrawEth();
+	}
+
+	// #endregion
+	// #region `_withdrawEth`
+
+	function _withdrawEth() private {
 		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(_msgSender())];
 
 		// It's OK if this is zero.
@@ -195,7 +203,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `withdrawEth`
 
-	function withdrawEth(address prizeWinnerAddress_) external override /*nonReentrant*/ {
+	function withdrawEth(address prizeWinnerAddress_) external override nonReentrant {
 		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(prizeWinnerAddress_)];
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[ethBalanceInfoReference_.roundNum];
 		require(
@@ -236,7 +244,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `donateToken`
 
 	function donateToken(uint256 roundNum_, address donorAddress_, IERC20 tokenAddress_, uint256 amount_) external override
-		// nonReentrant
+		nonReentrant
 		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 		uint256 newDonatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
@@ -261,7 +269,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `claimDonatedToken`
 
-	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) public override /*nonReentrant*/ {
+	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external override nonReentrant {
+		_claimDonatedToken(roundNum_, tokenAddress_);
+	}
+
+	// #endregion
+	// #region `_claimDonatedToken`
+
+	function _claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) private {
 		// [Comment-202502244]
 		// According to Comment-202411283, we must validate `roundNum_` here.
 		// But array bounds check near Comment-202411287 will implicitly validate it.
@@ -307,11 +322,18 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `claimManyDonatedTokens`
 
-	function claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) public override /*nonReentrant*/ {
+	function claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) external override nonReentrant {
+		_claimManyDonatedTokens(donatedTokensToClaim_);
+	}
+
+	// #endregion
+	// #region `_claimManyDonatedTokens`
+
+	function _claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) private {
 		for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
 			-- donatedTokenToClaimIndex_;
 			DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
-			claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress);
+			_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress);
 		}
 	}
 
@@ -340,7 +362,7 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #region `donateNft`
 
 	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external override
-		// nonReentrant
+		nonReentrant
 		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
 		uint256 nextDonatedNftIndexCopy_ = nextDonatedNftIndex;
@@ -365,7 +387,14 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `claimDonatedNft`
 
-	function claimDonatedNft(uint256 index_) public override /*nonReentrant*/ {
+	function claimDonatedNft(uint256 index_) external override nonReentrant {
+		_claimDonatedNft(index_);
+	}
+
+	// #endregion
+	// #region `_claimDonatedNft`
+
+	function _claimDonatedNft(uint256 index_) private {
 		DonatedNft storage donatedNftReference_ = donatedNfts[index_];
 		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
 
@@ -403,10 +432,17 @@ contract PrizesWallet is Ownable, AddressValidator, IPrizesWallet {
 	// #endregion
 	// #region `claimManyDonatedNfts`
 
-	function claimManyDonatedNfts(uint256[] calldata indexes_) public override /*nonReentrant*/ {
+	function claimManyDonatedNfts(uint256[] calldata indexes_) external override nonReentrant {
+		_claimManyDonatedNfts(indexes_);
+	}
+
+	// #endregion
+	// #region `_claimManyDonatedNfts`
+
+	function _claimManyDonatedNfts(uint256[] calldata indexes_) private {
 		for (uint256 indexIndex_ = indexes_.length; indexIndex_ > 0; ) {
 			-- indexIndex_;
-			claimDonatedNft(indexes_[indexIndex_]);
+			_claimDonatedNft(indexes_[indexIndex_]);
 		}
 	}
 

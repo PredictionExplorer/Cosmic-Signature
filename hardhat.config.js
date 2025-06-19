@@ -402,9 +402,14 @@ const hardhatUserConfig = {
 	// todo-1 If I add add Arbitrum Sepolia do the above.
 	networks: {
 		hardhat: {
+			// // Comment-202501193 relates and/or applies.
 			// initialDate: "2002-01-01",
+
 			allowUnlimitedContractSize: true,
+
+			// // Comment-202501193 relates and/or applies.
 			// allowBlocksWithSameTimestamp: true,
+
 			// initialBaseFeePerGas: 1e9,
 
 			// // This is needed so that the minimg of multiple transactions per block worked.
@@ -414,19 +419,25 @@ const hardhatUserConfig = {
 			// [Comment-202501193]
 			// This configures to deterministically mine a block when we submit a transaction request
 			// to execute a non-`view` contract method.
-			// Block timestamp increment is always 1 second and is not configurable.
+			// Block timestamp increment is always 1 second and is not configurable (see more on this in the issue 3).
 			// Issue 1. So we cannot easily test adjacent blocks with equal timestamps.
-			//
+			// 
 			// Issue 2.  Hardhat advances the next block timestamp to at least the current system time.
 			// As a result, if `loadFixture` was already called, after it's called again, the next block timestamp can leap by many seconds,
-			// so if we need to use the last mined block timestamp immediately after calling `loadFixture`,
+			// so if we need to use the last block timestamp immediately after calling `loadFixture`,
 			// we typically must mine a dummy block beforehand.
-			//
-			// Issue 3. Even if the last mined block timestamp is ahead of the current system time,
-			// the "evm_increaseTime" JSON RPC method will add to the next block timestamp the number of times
-			// the system time reached a whole second boundary since the last mined block timestamp.
-			// So to increase the chance of deterministic behavior when the current system time is approaching a boundary of a second,
+			// 
+			// Issue 3. Even if the last block timestamp is ahead of the current system time,
+			// the next block timestamp will be increased by the number of times the system time reached the beginning of a second
+			// since the last block was mined.
+			// Calling the "evm_increaseTime" JSON RPC method will add the passed value to the above value.
+			// Additionally, the next block timestamp will be forced to be bigger than the last one by at least 1,
+			// although that functionality can be disabled by the `allowBlocksWithSameTimestamp` parameter.
+			// So to increase the chance of deterministic behavior when the current system time is approaching the beginning of a second,
 			// we must wait until the next second and then subtract 1 or more from the value we are to pass to "evm_increaseTime".
+			//
+			// Note that the `initialDate` parameter does not change this behavior. It only changes the initial timestamp,
+			// but system time passage still drives timestamp increses.
 			// [/Comment-202501193]
 			mining: {
 				// auto: false,
@@ -445,20 +456,20 @@ const hardhatUserConfig = {
 		},
 		rinkeby: {
 			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: (process.env.PRIVATE_KEY != undefined) ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
 			url: "http://170.187.142.12:22545/",
-			accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+			accounts: (process.env.SEPOLIA_PRIVATE_KEY != undefined) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 			// gasMultiplier: 2,
 		},
 		arbigoerli: {
 			url: "https://goerli-rollup.arbitrum.io/rpc",
-			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: (process.env.PRIVATE_KEY != undefined) ? [process.env.PRIVATE_KEY] : [],
 		},
-		arbitrum: {
+		arbitrumOne: {
 			url: "https://arb1.arbitrum.io/rpc",
-			accounts: process.env.MAINNET_PRIVATE_KEY != undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
+			accounts: (process.env.MAINNET_PRIVATE_KEY != undefined) ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
 	},
 

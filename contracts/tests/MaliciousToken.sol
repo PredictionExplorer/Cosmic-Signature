@@ -26,7 +26,7 @@ contract MaliciousToken is ERC20 {
 	}
 
 	receive() external payable {
-		// Doing nothing.	
+		// Doing nothing.
 	}
 
 	function setModeCode(uint256 newValue_) external {

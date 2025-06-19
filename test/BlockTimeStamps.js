@@ -4,7 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { sleepForMilliSeconds } = require("../src/Helpers.js");
+const { sleepForMilliSeconds, generateRandomUInt32 } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
 
 // Comment-202501193 relates and/or applies.
@@ -12,50 +12,53 @@ describe("BlockTimeStamps", function () {
 	it("Test 1", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
-		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(contracts_.signers[2].address)).not.reverted;
-		await makeNextBlockTimeDeterministic(1000);
-		await hre.ethers.provider.send("evm_mine");
-		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		let blockExpectedTimeStamp_ = latestBlock_.timestamp;
-		const timeStamp1_ = Date.now();
-		for (;;) {
-			const timeStamp2_ = Date.now();
-			const slept_ = await makeNextBlockTimeDeterministic();
-			// blockExpectedTimeStamp_ += slept_ + 3;
-			blockExpectedTimeStamp_ += 3;
-			// console.log(slept_.toString());
-			await hre.ethers.provider.send("evm_mine");
-			await expect(contracts_.signers[0].sendTransaction({to: contracts_.signers[1].address, value: 1,})).not.reverted;
-			await expect(contracts_.charityWallet.connect(contracts_.signers[1]).send()).not.reverted;
-			latestBlock_ = await hre.ethers.provider.getBlock("latest");
-			expect(latestBlock_.timestamp).equal(blockExpectedTimeStamp_);
-			if (timeStamp2_ - timeStamp1_ >= 5000) {
-				break;
+		const mineBlock_ = async () => {
+			switch (generateRandomUInt32() % 3) {
+				case 0: {
+					await hre.ethers.provider.send("evm_mine");
+					break;
+				}
+				case 1: {
+					await expect(contracts_.signers[1].sendTransaction({to: contracts_.signers[2].address, value: 1,})).not.reverted;
+					break;
+				}
+				default: {
+					await expect(contracts_.charityWallet.connect(contracts_.signers[1]).send()).not.reverted;
+					break;
+				}
 			}
-			await sleepForMilliSeconds(50);
-		}
-	});
+		};
 
-	it("Test 2", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
-
-		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(contracts_.signers[2].address)).not.reverted;
 		await makeNextBlockTimeDeterministic(1000);
 		await hre.ethers.provider.send("evm_mine");
 		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		let blockExpectedTimeStamp_ = latestBlock_.timestamp;
-		for (let blockTimeStampIncrement_ = 1; blockTimeStampIncrement_ <= 3; ) {
-			const slept_ = await makeNextBlockTimeDeterministic();
-			blockExpectedTimeStamp_ += blockTimeStampIncrement_ + 2;
-			// console.log(slept_.toString(), blockTimeStampIncrement_.toString());
-			await hre.ethers.provider.send("evm_increaseTime", [blockTimeStampIncrement_ - slept_]);
-			await hre.ethers.provider.send("evm_mine");
-			await expect(contracts_.signers[0].sendTransaction({to: contracts_.signers[1].address, value: 1,})).not.reverted;
-			await expect(contracts_.charityWallet.connect(contracts_.signers[1]).send()).not.reverted;
+		let latestBlockExpectedTimeStamp_ = latestBlock_.timestamp;
+		for ( let counter_ = 0; counter_ < 10; ++ counter_ ) {
+			const numSecondsToSleepFor_ = generateRandomUInt32() % 4;
+
+			// This reaches the beginning of a seond `numSecondsToSleepFor_` times.
+			// Comment-202506264 applies.
+			await sleepForMilliSeconds(numSecondsToSleepFor_ * 1000 + 1);
+
+			if ((generateRandomUInt32() & 1) == 0) {
+				latestBlockExpectedTimeStamp_ += Math.max(numSecondsToSleepFor_, 1);
+			} else {
+				const nextBlockTimeIncrease_ = generateRandomUInt32() % 4;
+				await hre.ethers.provider.send("evm_increaseTime", [nextBlockTimeIncrease_]);
+				latestBlockExpectedTimeStamp_ += Math.max(numSecondsToSleepFor_ + nextBlockTimeIncrease_, 1);
+			}
+			await mineBlock_();
 			latestBlock_ = await hre.ethers.provider.getBlock("latest");
-			expect(latestBlock_.timestamp).equal(blockExpectedTimeStamp_);
-			blockTimeStampIncrement_ += slept_;
-			await sleepForMilliSeconds(50);
+			// console.info(Date.now().toString(), latestBlock_.timestamp.toString());
+
+			// Issue. There is an astronomically small chance that this assertion will fail after many iterations of this loop
+			// if the generated random numbers result in system time running fster than we increase block timestamps.
+			// But it will fail even sooner becuse the loop takes a few ms to execute (besides the sleeping),
+			// which will eventually add up to 1 second, at which point we will reach the beginning of another second,
+			// which will cause an incrase of the next block timestamp, which this logic is not prepared for.
+			// But given that we execute this loop few times, there is only a very small chance of a failure.
+			// That chance is higher when the system is under stress.
+			expect(latestBlock_.timestamp).equal(latestBlockExpectedTimeStamp_);
 		}
 	});
 });

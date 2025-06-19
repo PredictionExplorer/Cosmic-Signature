@@ -21,6 +21,13 @@ library CosmicSignatureEvents {
 	event FundsTransferredToCharity(address indexed charityAddress, uint256 amount);
 
 	// #endregion
+	// #region Arbitrum
+
+	/// @notice Emitted after a call to an Arbitrum precompiled contract fails.
+	/// @param errStr Description of the error.
+	event ArbitrumError(string errStr);
+
+	// #endregion
 	// #region Monetary Transfers
 
 	/// @notice This is similar to `CosmicSignatureErrors.FundTransferFailed`.

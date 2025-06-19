@@ -2,12 +2,8 @@
 pragma solidity 0.8.29;
 
 import { CryptographyHelpers } from "./CryptographyHelpers.sol";
+import { ArbitrumHelpers } from "./ArbitrumHelpers.sol";
 
-/// @dev
-/// [Comment-202412104]
-/// A random number generation prototype is located at
-/// https://github.com/PredictionExplorer/cosmic-signature-logic-prototyping/blob/main/contracts/RandomNumberGenerator.sol
-/// [/Comment-202412104]
 library RandomNumberHelpers {
 	struct RandomNumberSeedWrapper {
 		/// @dev
@@ -31,20 +27,64 @@ library RandomNumberHelpers {
 	/// [Comment-202504067]
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202504067]
-	/// @dev Comment-202502075 applies to the return value.
-	/// Comment-202502077 applies to the return value.
+	/// Comment-202502075 applies to the return value.
+	/// @dev
 	/// [Comment-202503254]
 	/// It's safe to call this function without any additional logic only if it's guaranteed
-	/// that we can call it no more than once per block.
-	/// It's because all calls witin a particular block would return the same value.
+	/// that we can call it no more than once per L2 block.
+	/// It's because multiple calls from different trasnactions within a particular L2 block would return correlated
+	/// and maybe even potentially equal values, while calls within the same transaction would return equal value.
+	/// That said, some correlation is OK because, according to Comment-202502075, we will not use this value as is.
+	/// Comment-202506298 relates.
 	/// [/Comment-202503254]
-	function generateRandomNumberSeed() internal view returns (uint256) {
-		// #enable_asserts assert(block.prevrandao >= 2);
+	/// Comment-202502077 applies to the return value.
+	function generateRandomNumberSeed() internal /*view*/ returns (uint256) {
+		// [Comment-202506276]
+		// I've seen L1 and L2 block hashes being equal.
+		// So it would be incorrect to bitwise xor them with each other.
+		// Therefore let's shift this.
+		// [/Comment-202506276]
+		uint256 randomNumberSeed_ = uint256(blockhash(block.number - 1)) >> 1;
 
 		// Comment-202505294 relates.
 		// #enable_asserts assert(block.basefee > 0);
 
-		return block.prevrandao ^ block.basefee;
+		randomNumberSeed_ ^= block.basefee << 64;
+
+		// Let's expect that calls to Arbitrum precompiles can fail.
+		{
+			{
+				(bool isSuccess_, uint256 arbBlockNumber_) = ArbitrumHelpers.tryGetArbBlockNumber();
+				if (isSuccess_) {
+					bytes32 arbBlockHash_;
+					(isSuccess_, arbBlockHash_) = ArbitrumHelpers.tryGetArbBlockHash(arbBlockNumber_ - 1);
+					if (isSuccess_) {
+						// Comment-202506276 relates and/or applies.
+						randomNumberSeed_ ^= uint256(arbBlockHash_);
+					}
+				}
+			}
+
+			{
+				// Comment-202506298 applies.
+				(bool isSuccess_, uint256 gasBacklog_) = ArbitrumHelpers.tryGetGasBacklog();
+				
+				if (isSuccess_) {
+					randomNumberSeed_ ^= gasBacklog_ << (64 * 2);
+				}
+			}
+
+			{
+				// Comment-202506298 applies.
+				(bool isSuccess_, uint256 l1PricingUnitsSinceUpdate_) = ArbitrumHelpers.tryGetL1PricingUnitsSinceUpdate();
+
+				if (isSuccess_) {
+					randomNumberSeed_ ^= l1PricingUnitsSinceUpdate_ << (64 * 3);
+				}
+			}
+		}
+
+		return randomNumberSeed_;
 	}
 
 	/// @notice
