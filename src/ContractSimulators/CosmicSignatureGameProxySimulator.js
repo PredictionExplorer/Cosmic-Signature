@@ -9,7 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256FromSeedWrapper } = require("../Helpers.js");
-const { IS_HARDHAT_COVERAGE, assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../ContractUnitTestingHelpers.js");
+const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../ContractUnitTestingHelpers.js");
 
 // #endregion
 // #region `createCosmicSignatureGameProxySimulator`
@@ -873,18 +873,18 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `claimMainPrize`
 		
 		/// Assuming that `canClaimMainPrize` returned `true`.
-		claimMainPrize: async function(transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_, blockchainPropertyGetter_) {
+		claimMainPrize: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_/*, blockchainPropertyGetter_*/) {
 			// console.info((callerAddress_ == this.lastBidderAddress) ? "202505138 The last bidder claims the main prize." : "202505139 Someone else claims the main prize.");
 			this._updateChampionsIfNeeded(transactionBlock_);
 			this._updateChronoWarriorIfNeeded(BigInt(transactionBlock_.timestamp));
-			await this._distributePrizes(transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_, blockchainPropertyGetter_);
+			await this._distributePrizes(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_/*, blockchainPropertyGetter_*/);
 			this._prepareNextRound(transactionBlock_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 
 		// #endregion
 		// #region `_distributePrizes`
 		
-		_distributePrizes: async function(transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_, blockchainPropertyGetter_) {
+		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_/*, blockchainPropertyGetter_*/) {
 			// #region
 
 			// assertAddressIsValid(callerAddress_);
@@ -935,7 +935,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 						// #endregion
 						// #region
 
-						blockchainBasedRandomNumberSeedWrapper_.value = await generateRandomUInt256Seed(transactionBlock_, blockchainPropertyGetter_);
+						blockchainBasedRandomNumberSeedWrapper_.value = /*await*/ generateRandomUInt256Seed(blockBeforeTransaction_, transactionBlock_/*, blockchainPropertyGetter_*/);
 
 						// #endregion
 						// #region CS NFTs for random Random Walk NFT stakers.

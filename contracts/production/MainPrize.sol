@@ -569,6 +569,7 @@ abstract contract MainPrize is
 					// to let SMTChecker know what exactly method on what contract we are calling.
 					// But we make a low level call like this to make a simple ETH transfer.
 					// Comment-202502057 relates.
+					// Comment-202506296 relates.
 					// [/Comment-202502043]
 					(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
 

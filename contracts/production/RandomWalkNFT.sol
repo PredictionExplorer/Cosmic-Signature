@@ -45,7 +45,6 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	/// @notice Entropy
 	/// @dev Issue. Random number generation could have been implemented better here.
 	/// But keep in mind that the assumption described in Comment-202503254 is not valid here.
-	/// Comment-202412104 relates.
 	bytes32 public entropy;
 
 	address public lastMinter = address(0);
@@ -71,7 +70,6 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	/// [/Comment-202503251]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
 		// Issue. It would be more efficient and not any less random to initialize this with a hardcoded number.
-		// Comment-202412104 relates.
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",

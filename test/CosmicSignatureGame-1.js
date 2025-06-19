@@ -81,10 +81,10 @@ describe("CosmicSignatureGame-1", function () {
 			randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 			const roundActivationTimeOffset_ = randomNumber_ % 4096n - 1024n;
 			const contracts_ = await loadFixtureDeployContractsForUnitTesting(roundActivationTimeOffset_);
-			const blockchainPropertyGetterFactory_ = await hre.ethers.getContractFactory("BlockchainPropertyGetter", contracts_.deployerAcct);
-			const blockchainPropertyGetter_ = await blockchainPropertyGetterFactory_.deploy();
-			await blockchainPropertyGetter_.waitForDeployment();
-			// const blockchainPropertyGetterAddr_ = await blockchainPropertyGetter_.getAddress();
+			// const blockchainPropertyGetterFactory_ = await hre.ethers.getContractFactory("BlockchainPropertyGetter", contracts_.deployerAcct);
+			// const blockchainPropertyGetter_ = await blockchainPropertyGetterFactory_.deploy();
+			// await blockchainPropertyGetter_.waitForDeployment();
+			// // const blockchainPropertyGetterAddr_ = await blockchainPropertyGetter_.getAddress();
 
 			// #endregion
 			// #region `findSignerIndex_`
@@ -619,13 +619,14 @@ describe("CosmicSignatureGame-1", function () {
 							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
 							// const timeStamp3_ = Date.now();
 							await cosmicSignatureGameProxySimulator_.claimMainPrize(
+								blockBeforeTransaction_,
 								transactionBlock_,
 								signer_.address,
 								signerEthBalanceAmountBeforeTransaction_,
 								contracts_,
 								transactionReceipt_,
-								eventIndexWrapper_,
-								blockchainPropertyGetter_
+								eventIndexWrapper_
+								// blockchainPropertyGetter_
 							);
 							// const timeStamp4_ = Date.now();
 							// console.info(

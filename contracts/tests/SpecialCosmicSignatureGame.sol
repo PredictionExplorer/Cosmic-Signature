@@ -8,8 +8,7 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 /// @notice This contract is used in tests to create special test setups.
 contract SpecialCosmicSignatureGame is CosmicSignatureGame {
-	/// @dev Issue. Entropy related logic in this test contract is lousy, but keeping it simple.
-	/// Comment-202412104 relates.
+	/// @dev Issue. Random number related logic in this test contract is kinda lousy, but keeping it simple.
 	RandomNumberHelpers.RandomNumberSeedWrapper private _entropy;
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
