@@ -13,7 +13,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {
-		// Doing nothing.	
+		// Doing nothing.
 	}
 
 	/// @dev Comment-202503124 relates and/or applies.
@@ -23,7 +23,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	}
 
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
-		_initializeEntropyOnce();
+		_prepareEntropyOnce();
 		unchecked { ++ _entropy.value; }
 		// todo-2 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
@@ -40,10 +40,11 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function depositToStakingWalletCosmicSignatureNft() external payable {
 		// #region // Old Version
 
-		// 	// todo-9 Should we make a high level call here? Comment-202502043 relates.
-		// (bool isSuccess_, ) = address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
-		// 	abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
-		// );
+		// // todo-9 Should we make a high level call here? Comment-202502043 relates.
+		// (bool isSuccess_, ) =
+		// 	address(stakingWalletCosmicSignatureNft).call{value: msg.value}(
+		// 		abi.encodeWithSelector(IStakingWalletCosmicSignatureNft.deposit.selector)
+		// 	);
 		// if ( ! isSuccess_ ) {
 		// 	assembly {
 		// 		let ptr := mload(0x40)
@@ -61,7 +62,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		// #endregion
 	}
 
-	function _initializeEntropyOnce() private {
+	function _prepareEntropyOnce() private {
 		if (_entropy.value == 0) {
 			// We need this to ensure that we won't generate the same random number elsewhere.
 			uint256 salt_ = 0x4ef43c4174b24de7af520348bd0510be800121470d0d4545817fc47614f3fe91;

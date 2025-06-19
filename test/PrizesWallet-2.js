@@ -291,6 +291,7 @@ describe("PrizesWallet-2", function () {
 	// #endregion
 	// #region
 
+	// todo-0 202506309 Add more to this test.
 	// Comment-202506192 applies.
 	// todo-1 +++ Recheck that the above comment applies.
 	it("Incorrect or forbidden operations", async function () {

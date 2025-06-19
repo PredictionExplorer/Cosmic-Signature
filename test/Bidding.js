@@ -307,7 +307,7 @@ describe("Bidding", function () {
 
 	// [Comment-202506234]
 	// Multiple similar tests exist.
-	// When bidding with donating an ERC-20 token or anNFT, it's also possible to reenter any other game method,
+	// When bidding with donating an ERC-20 token or an NFT, it's also possible to reenter any other game method,
 	// such as `bidWithEth`. We do not test all possible combinations, including reentries of various methods at various depths.
 	// But the logic is really designed to either be reenterable or block reentry attempts,
 	// so it's not possible for any malicious donated contracts to do any damage.

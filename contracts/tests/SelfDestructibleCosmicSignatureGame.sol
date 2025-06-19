@@ -4,12 +4,14 @@ pragma solidity 0.8.29;
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 /// todo-1 Revisit this.
+/// todo-1 Some other files in this folder still need revisiting too.
+
 /// @notice This contract will return all the assets before selfdestruct transaction,
 /// required for testing on the MainNet (Arbitrum) (prior to launch).
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {
-		// Doing nothing.	
+		// Doing nothing.
 	}
 
 	/// @dev Comment-202503124 relates and/or applies.
