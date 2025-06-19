@@ -12,7 +12,6 @@ import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } fro
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "./BiddingBase.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
-import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 
 abstract contract SystemManagement is
 	OwnableUpgradeableWithReservedStorageGaps,
@@ -75,24 +74,24 @@ abstract contract SystemManagement is
 	}
 
 	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		// Comment-202409215 applies.
-		uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + newValue_ + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
-		require(
-			prizePercentageSum_ <= 100,
-			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
-		);
+		// // Comment-202409215 applies.
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + newValue_ + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// require(
+		// 	prizePercentageSum_ <= 100,
+		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
+		// );
 
 		chronoWarriorEthPrizeAmountPercentage = newValue_;
 		emit ChronoWarriorEthPrizeAmountPercentageChanged(newValue_);
 	}
 
 	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		// Comment-202409215 applies.
-		uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + newValue_ + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
-		require(
-			prizePercentageSum_ <= 100,
-			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
-		);
+		// // Comment-202409215 applies.
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + newValue_ + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// require(
+		// 	prizePercentageSum_ <= 100,
+		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
+		// );
 
 		raffleTotalEthPrizeAmountForBiddersPercentage = newValue_;
 		emit RaffleTotalEthPrizeAmountForBiddersPercentageChanged(newValue_);
@@ -114,12 +113,12 @@ abstract contract SystemManagement is
 	}
 
 	function setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		// Comment-202409215 applies.
-		uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + newValue_ + charityEthDonationAmountPercentage;
-		require(
-			prizePercentageSum_ <= 100,
-			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
-		);
+		// // Comment-202409215 applies.
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + newValue_ + charityEthDonationAmountPercentage;
+		// require(
+		// 	prizePercentageSum_ <= 100,
+		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
+		// );
 
 		cosmicSignatureNftStakingTotalEthRewardAmountPercentage = newValue_;
 		emit CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(newValue_);
@@ -146,15 +145,15 @@ abstract contract SystemManagement is
 	}
 
 	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		// [Comment-202409215]
-		// It appears to be unnecessary to spend gas on this validation.
-		// todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
-		// [/Comment-202409215]
-		uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
-		require(
-			prizePercentageSum_ <= 100,
-			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
-		);
+		// // [Comment-202409215]
+		// // It appears to be unnecessary to spend gas on this validation.
+		// // todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
+		// // [/Comment-202409215]
+		// uint256 prizePercentageSum_ = newValue_ + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + charityEthDonationAmountPercentage;
+		// require(
+		// 	prizePercentageSum_ <= 100,
+		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
+		// );
 
 		mainEthPrizeAmountPercentage = newValue_;
 		emit MainEthPrizeAmountPercentageChanged(newValue_);
@@ -230,12 +229,12 @@ abstract contract SystemManagement is
 	}
 
 	function setCharityEthDonationAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		// Comment-202409215 applies.
-		uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + newValue_;
-		require(
-			prizePercentageSum_ <= 100,
-			CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
-		);
+		// // Comment-202409215 applies.
+		// uint256 prizePercentageSum_ = mainEthPrizeAmountPercentage + chronoWarriorEthPrizeAmountPercentage + raffleTotalEthPrizeAmountForBiddersPercentage + cosmicSignatureNftStakingTotalEthRewardAmountPercentage + newValue_;
+		// require(
+		// 	prizePercentageSum_ <= 100,
+		// 	CosmicSignatureErrors.PercentageValidation("Percentage value overflow, must not exceed 100.", prizePercentageSum_)
+		// );
 
 		charityEthDonationAmountPercentage = newValue_;
 		emit CharityEthDonationAmountPercentageChanged(newValue_);

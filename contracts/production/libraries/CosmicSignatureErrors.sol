@@ -234,11 +234,6 @@ library CosmicSignatureErrors {
 	// /// @dev In .NET, `InvalidOperationException` serves the same purpose.
 	// error InvalidOperationInCurrentState(string errStr);
 
-	/// @notice Thrown when percentage values exceed the maximum allowed.
-	/// @param errStr Description of the error.
-	/// @param percentageSum The sum of percentages that exceeds the limit.
-	error PercentageValidation(string errStr, uint256 percentageSum);
-
 	// #endregion
 }
 
