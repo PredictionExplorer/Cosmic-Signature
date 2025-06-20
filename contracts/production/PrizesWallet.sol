@@ -349,7 +349,10 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_getDonatedTokenIndex`
 
 	function _getDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns (uint256) {
-		// Comment-202409215 applies.
+		// [Comment-202409215]
+		// It appears to be unnecessary to spend gas on this validation.
+		// todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
+		// [/Comment-202409215]
 		// [Comment-202411283]
 		// But in some cases the caller must validate this.
 		// [/Comment-202411283]
