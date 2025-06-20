@@ -39,6 +39,7 @@ interface ICharityWallet {
 	function setCharityAddress(address newValue_) external;
 
 	/// @notice Sends all accumulated ETH donations to the designated charity.
+	/// It's OK if it's zero.
 	/// [Comment-202502035]
 	/// Expected to be called approximately once a month, but frequency may vary.
 	/// [/Comment-202502035]
