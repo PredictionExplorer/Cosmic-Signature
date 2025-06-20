@@ -6,6 +6,7 @@ pragma solidity 0.8.29;
 // #endregion
 // #region
 
+import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
@@ -16,7 +17,7 @@ import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCos
 // #endregion
 // #region
 
-contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStakingWalletCosmicSignatureNft {
+contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, StakingWalletNftBase, IStakingWalletCosmicSignatureNft {
 	// #region Data Types
 
 	/// @notice Stores details about an NFT stake action.
@@ -98,17 +99,28 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
+	///    `nonReentrant`.
+	///    `_stake`.
+	function stake(uint256 nftId_) external override (IStakingWalletNftBase, StakingWalletNftBase) nonReentrant {
+		_stake(nftId_);
+	}
+
+	// #endregion
+	// #region `_stake`
+
+	/// @dev
+	/// Observable universe entities accessed here:
 	///    `_msgSender`.
 	///    `numStakedNfts`.
 	///    `actionCounter`.
-	///    `super.stake`.
+	///    `super._stake`.
 	///    `NftStaked`.
 	///    `StakeAction`.
 	///    `nft`.
 	///    `stakeActions`.
 	///    `rewardAmountPerStakedNft`.
-	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
-		super.stake(nftId_);
+	function _stake(uint256 nftId_) internal override {
+		super._stake(nftId_);
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
@@ -129,13 +141,25 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 	}
 
 	// #endregion
+	// #region `stakeMany`
+
+	/// @dev
+	/// Observable universe entities accessed here:
+	///    `nonReentrant`.
+	///    `_stakeMany`.
+	function stakeMany(uint256[] calldata nftIds_) external override (IStakingWalletNftBase, StakingWalletNftBase) nonReentrant {
+		_stakeMany(nftIds_);
+	}
+
+	// #endregion
 	// #region `unstake`
 
 	/// @dev
 	/// Observable universe entities accessed here:
+	///    `nonReentrant`.
 	///    `_unstake`.
 	///    `_payReward`.
-	function unstake(uint256 stakeActionId_) external override {
+	function unstake(uint256 stakeActionId_) external override nonReentrant {
 		// This can potentially be zero.
 		uint256 rewardAmount_ = _unstake(stakeActionId_);
 
@@ -147,9 +171,10 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 
 	/// @dev
 	/// Observable universe entities accessed here:
+	///    `nonReentrant`.
 	///    `_unstake`.
 	///    `_payReward`.
-	function unstakeMany(uint256[] calldata stakeActionIds_) external override {
+	function unstakeMany(uint256[] calldata stakeActionIds_) external override nonReentrant {
 		uint256 rewardAmountsSum_ = 0;
 		for (uint256 stakeActionIdIndex_ = stakeActionIds_.length; stakeActionIdIndex_ > 0; ) {
 			-- stakeActionIdIndex_;
@@ -160,84 +185,6 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 			rewardAmountsSum_ += rewardAmount_;
 		}
 		_payReward(rewardAmountsSum_);
-	}
-
-	// #endregion
-	// #region `deposit`
-
-	/// @dev
-	/// Observable universe entities accessed here:
-	///    `msg.value`.
-	///    `numStakedNfts`.
-	///    `actionCounter`.
-	///    `EthDepositReceived`.
-	///    `rewardAmountPerStakedNft`.
-	///    `_onlyGame`.
-	function deposit(uint256 roundNum_) external payable override _onlyGame {
-		uint256 numStakedNftsCopy_ = numStakedNfts;
-
-		// [Comment-202410161]
-		// The division can panic due to division by zero.
-		// This can potentially be zero.
-		// Comment-202503043 relates and/or applies.
-		// todo-1 Test that this doesn't burn all remaining gas. Remember that the caller sends only 63/64 of it to us.
-		// [/Comment-202410161]
-		// Comment-202412045 applies.
-		uint256 rewardAmountPerStakedNftIncrement_ = msg.value / numStakedNftsCopy_;
-
-		uint256 newRewardAmountPerStakedNft_ = rewardAmountPerStakedNft + rewardAmountPerStakedNftIncrement_;
-		rewardAmountPerStakedNft = newRewardAmountPerStakedNft_;
-		uint256 newActionCounter_ = actionCounter + 1;
-		actionCounter = newActionCounter_;
-		emit EthDepositReceived(roundNum_, newActionCounter_, msg.value, newRewardAmountPerStakedNft_, numStakedNftsCopy_);
-	}
-
-	// #endregion
-	// #region `tryPerformMaintenance`
-
-	/// @dev
-	/// Observable universe entities accessed here:
-	///    `address.balance`.
-	///    `address.call`.
-	///    `CosmicSignatureErrors.ThereAreStakedNfts`.
-	///    `CosmicSignatureEvents.FundsTransferredToCharity`.
-	///    `CosmicSignatureEvents.FundTransferFailed`.
-	///    `numStakedNfts`.
-	///    `onlyOwner`.
-	function tryPerformMaintenance(address charityAddress_) external override onlyOwner returns (bool) {
-		// #region
-
-		require(numStakedNfts == 0, CosmicSignatureErrors.ThereAreStakedNfts("There are still staked NFTs."));
-
-		// #endregion
-		// #region
-
-		bool returnValue_ = true;
-
-		// #endregion
-		// #region
-
-		if (charityAddress_ != address(0)) {
-			// It's OK if this is zero.
-			uint256 amount_ = address(this).balance;
-
-			// Comment-202502043 applies.
-			(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
-
-			if (isSuccess_) {
-				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
-			} else {
-				emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_);
-				returnValue_ = false;
-			}
-		}
-
-		// #endregion
-		// #region
-
-		return returnValue_;
-
-		// #endregion
 	}
 
 	// #endregion
@@ -307,6 +254,85 @@ contract StakingWalletCosmicSignatureNft is Ownable, StakingWalletNftBase, IStak
 		if ( ! isSuccess_ ) {
 			revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", _msgSender(), rewardAmount_);
 		}
+	}
+
+	// #endregion
+	// #region `deposit`
+
+	/// @dev
+	/// Observable universe entities accessed here:
+	///    `msg.value`.
+	///    `nonReentrant`.
+	///    `numStakedNfts`.
+	///    `actionCounter`.
+	///    `EthDepositReceived`.
+	///    `rewardAmountPerStakedNft`.
+	///    `_onlyGame`.
+	function deposit(uint256 roundNum_) external payable override nonReentrant _onlyGame {
+		uint256 numStakedNftsCopy_ = numStakedNfts;
+
+		// [Comment-202410161]
+		// The division can panic due to division by zero.
+		// This can potentially be zero.
+		// Comment-202503043 relates and/or applies.
+		// todo-1 Test that this doesn't burn all remaining gas. Remember that the caller sends only 63/64 of it to us.
+		// [/Comment-202410161]
+		// Comment-202412045 applies.
+		uint256 rewardAmountPerStakedNftIncrement_ = msg.value / numStakedNftsCopy_;
+
+		uint256 newRewardAmountPerStakedNft_ = rewardAmountPerStakedNft + rewardAmountPerStakedNftIncrement_;
+		rewardAmountPerStakedNft = newRewardAmountPerStakedNft_;
+		uint256 newActionCounter_ = actionCounter + 1;
+		actionCounter = newActionCounter_;
+		emit EthDepositReceived(roundNum_, newActionCounter_, msg.value, newRewardAmountPerStakedNft_, numStakedNftsCopy_);
+	}
+
+	// #endregion
+	// #region `tryPerformMaintenance`
+
+	/// @dev
+	/// Observable universe entities accessed here:
+	///    `address.balance`.
+	///    `address.call`.
+	///    `CosmicSignatureErrors.ThereAreStakedNfts`.
+	///    `CosmicSignatureEvents.FundsTransferredToCharity`.
+	///    `CosmicSignatureEvents.FundTransferFailed`.
+	///    `numStakedNfts`.
+	///    `onlyOwner`.
+	function tryPerformMaintenance(address charityAddress_) external override onlyOwner returns (bool) {
+		// #region
+
+		require(numStakedNfts == 0, CosmicSignatureErrors.ThereAreStakedNfts("There are still staked NFTs."));
+
+		// #endregion
+		// #region
+
+		bool returnValue_ = true;
+
+		// #endregion
+		// #region
+
+		if (charityAddress_ != address(0)) {
+			// It's OK if this is zero.
+			uint256 amount_ = address(this).balance;
+
+			// Comment-202502043 applies.
+			(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
+
+			if (isSuccess_) {
+				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
+			} else {
+				emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_);
+				returnValue_ = false;
+			}
+		}
+
+		// #endregion
+		// #region
+
+		return returnValue_;
+
+		// #endregion
 	}
 
 	// #endregion

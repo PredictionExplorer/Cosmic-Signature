@@ -49,9 +49,19 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 
 	/// @dev
 	/// Observable universe entities accessed here:
+	///    `_stake`.
+	function stake(uint256 nftId_) external override virtual {
+		_stake(nftId_);
+	}
+
+	// #endregion
+	// #region `_stake`
+
+	/// @dev
+	/// Observable universe entities accessed here:
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    `usedNfts`.
-	function stake(uint256 nftId_) public override virtual {
+	function _stake(uint256 nftId_) internal virtual {
 		require(
 			usedNfts[nftId_] == 0,
 			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
@@ -64,11 +74,21 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 
 	/// @dev
 	/// Observable universe entities accessed here:
-	///    `stake`.
-	function stakeMany(uint256[] calldata nftIds_) external override {
+	///    `_stakeMany`.
+	function stakeMany(uint256[] calldata nftIds_) external override virtual {
+		_stakeMany(nftIds_);
+	}
+
+	// #endregion
+	// #region `_stakeMany`
+
+	/// @dev
+	/// Observable universe entities accessed here:
+	///    `_stake`.
+	function _stakeMany(uint256[] calldata nftIds_) internal {
 		for (uint256 nftIdIndex_ = nftIds_.length; nftIdIndex_ > 0; ) {
 			-- nftIdIndex_;
-			stake(nftIds_[nftIdIndex_]);
+			_stake(nftIds_[nftIdIndex_]);
 		}
 	}
 
