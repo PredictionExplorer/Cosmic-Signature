@@ -69,21 +69,21 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	}
 
 	// #endregion
-	// #region `stake`
+	// #region `_stake`
 
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `numStakedNfts`.
 	///    `actionCounter`.
-	///    `super.stake`.
+	///    `super._stake`.
 	///    `NftStaked`.
 	///    `StakeAction`.
 	///    `randomWalkNft`.
 	///    `stakeActions`.
 	///    `stakeActionIds`.
-	function stake(uint256 nftId_) public override (IStakingWalletNftBase, StakingWalletNftBase) {
-		super.stake(nftId_);
+	function _stake(uint256 nftId_) internal override {
+		super._stake(nftId_);
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
 		uint256 newStakeActionId_ = newActionCounter_;
