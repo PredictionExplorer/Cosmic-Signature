@@ -14,6 +14,7 @@ library ArbitrumHelpers {
 			bytes memory returnData_;
 
 			// [Comment-202506296]
+			// Issue. Making a low level call.
 			// I would instead prefer to make a high level call under `try`,
 			// but Solidity doesn't appear to guarantee that the transaction won't be reversed after certain errors.
 			// Comment-202502043 relates.

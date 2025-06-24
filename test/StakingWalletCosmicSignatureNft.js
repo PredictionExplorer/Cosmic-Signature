@@ -7,7 +7,6 @@ const hre = require("hardhat");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("StakingWalletCosmicSignatureNft", function () {
-	// Comment-202505315 applies.
 	it("Bidding and Cosmic Signature NFT staking", async function () {
 		let durationUntilRoundActivation_;
 		let nextEthBidPrice_;

@@ -7,13 +7,6 @@ const hre = require("hardhat");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("BidStatistics", function () {
-	// [Comment-202505315]
-	// This is an old test.
-	// The behavior this test tests is now tested by the test near Comment-202505313.
-	// Although that test only reproduces all the Solidity logic in JavaScript.
-	// It doesn't explicitly compare the actual result to the specific expected one.
-	// Therefore this test still makes sense.
-	// [/Comment-202505315]
 	it("Bid duration accounting: 2 bidders place bids of different durations", async function () {
 		// Test case description:
 		//    signer 1 longest bid is 1000 seconds long.
@@ -48,7 +41,6 @@ describe("BidStatistics", function () {
 		expect(enduranceChampionDuration_).equal(5000);
 	});
 
-	// Comment-202505315 applies.
 	it("Bid duration accounting: 3 bidders place bids of equal durations", async function () {
 		// Test case description:
 		//    3 bidders place bids of equal durations of 1000 seconds.
@@ -115,7 +107,6 @@ describe("BidStatistics", function () {
 		expect(enduranceChampionDuration_).equal(1000);
 	});
 
-	// Comment-202505315 applies.
 	it("Endurance Champion selection is correct for a specific use case", async function () {
 		// Test case description:
 		//    Signer 0 places the 1st bid of 1000 seconds long.

@@ -17,7 +17,6 @@ const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransact
 describe("PrizesWallet-1", function () {
 	// #region
 
-	// [Comment-202506189/]
 	it("Workflow", async function () {
 		// #region
 
