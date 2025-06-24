@@ -47,7 +47,7 @@ describe("PrizesWallet-2", function () {
 	it("The registerRoundEndAndDepositEthMany, withdrawEverything, donateToken, donateNft methods", async function () {
 		// #region
 
-		let transactionResponseFuture_;
+		let transactionResponsePromise_;
 		let transactionResponse_;
 		let transactionReceipt_;
 
@@ -69,27 +69,27 @@ describe("PrizesWallet-2", function () {
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.signers[10].address);
 		await newPrizesWallet_.waitForDeployment();
 		const newPrizesWalletAddr_ = await newPrizesWallet_.getAddress();
-		transactionResponseFuture_ = newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address);
-		await expect(transactionResponseFuture_).not.reverted;
+		transactionResponsePromise_ = newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address);
+		await expect(transactionResponsePromise_).not.reverted;
 
 		// #endregion
 		// #region
 		
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
-			transactionResponseFuture_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n);
-			await expect(transactionResponseFuture_).not.reverted;
-			transactionResponseFuture_ = tokens_[counter_].connect(contracts_.signers[10]).mint(contracts_.signers[counter_].address, 10n ** (18n + 1n));
-			await expect(transactionResponseFuture_).not.reverted;
-			transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[10]).donateToken(0n, contracts_.signers[counter_].address, tokensAddr_[counter_], BigInt(1 << counter_) * 10n ** 18n);
-			await expect(transactionResponseFuture_).not.reverted;
+			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n);
+			await expect(transactionResponsePromise_).not.reverted;
+			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[10]).mint(contracts_.signers[counter_].address, 10n ** (18n + 1n));
+			await expect(transactionResponsePromise_).not.reverted;
+			transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateToken(0n, contracts_.signers[counter_].address, tokensAddr_[counter_], BigInt(1 << counter_) * 10n ** 18n);
+			await expect(transactionResponsePromise_).not.reverted;
 
-			transactionResponseFuture_ = contracts_.randomWalkNft.connect(contracts_.signers[counter_]).setApprovalForAll(newPrizesWalletAddr_, true);
-			await expect(transactionResponseFuture_).not.reverted;
-			transactionResponseFuture_ = contracts_.randomWalkNft.connect(contracts_.signers[counter_]).mint({value: 10n ** (18n - 2n),});
-			await expect(transactionResponseFuture_).not.reverted;
+			transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[counter_]).setApprovalForAll(newPrizesWalletAddr_, true);
+			await expect(transactionResponsePromise_).not.reverted;
+			transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[counter_]).mint({value: 10n ** (18n - 2n),});
+			await expect(transactionResponsePromise_).not.reverted;
 			const nftId_ = BigInt(counter_);
-			transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[10]).donateNft(0n, contracts_.signers[counter_].address, contracts_.randomWalkNftAddr, nftId_);
-			await expect(transactionResponseFuture_).not.reverted;
+			transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateNft(0n, contracts_.signers[counter_].address, contracts_.randomWalkNftAddr, nftId_);
+			await expect(transactionResponsePromise_).not.reverted;
 		}
 
 		// #endregion
@@ -101,8 +101,8 @@ describe("PrizesWallet-2", function () {
 			[contracts_.signers[2].address, 4n * 10n ** (18n - 3n),],
 			[contracts_.signers[3].address, 8n * 10n ** (18n - 3n),],
 		];
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[10]).registerRoundEndAndDepositEthMany(0n, contracts_.signers[2].address, ethDeposits_, {value: (1n + 2n + 4n + 8n) * 10n ** (18n - 3n),});
-		transactionResponse_ = await transactionResponseFuture_;
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).registerRoundEndAndDepositEthMany(0n, contracts_.signers[2].address, ethDeposits_, {value: (1n + 2n + 4n + 8n) * 10n ** (18n - 3n),});
+		transactionResponse_ = await transactionResponsePromise_;
 		transactionReceipt_ = await transactionResponse_.wait();
 		expect(transactionReceipt_.logs.length).equal(4);
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
@@ -117,8 +117,8 @@ describe("PrizesWallet-2", function () {
 		// #endregion
 		// #region
 
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(false, [], []);
-		transactionResponse_ = await transactionResponseFuture_;
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(false, [], []);
+		transactionResponse_ = await transactionResponsePromise_;
 		transactionReceipt_ = await transactionResponse_.wait();
 		expect(transactionReceipt_.logs.length).equal(0);
 
@@ -130,8 +130,8 @@ describe("PrizesWallet-2", function () {
 			[0n, tokensAddr_[1],],
 		];
 		const donatedNftIndexes_ = [3n, 0n,];
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(true, donatedTokensToClaim_, donatedNftIndexes_);
-		transactionResponse_ = await transactionResponseFuture_;
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(true, donatedTokensToClaim_, donatedNftIndexes_);
+		transactionResponse_ = await transactionResponsePromise_;
 		transactionReceipt_ = await transactionResponse_.wait();
 		expect(transactionReceipt_.logs.length).equal(9);
 		assertEvent(
@@ -199,16 +199,16 @@ describe("PrizesWallet-2", function () {
 				const prizeWinnerAddress_ = (counter_ <= 0) ? bidderContractAddr_ : contracts_.signers[1].address;
 				const prizeWinnerEthBalanceAmount_ = (await contracts_.prizesWallet["getEthBalanceInfo(address)"](prizeWinnerAddress_))[1];
 				// console.info(hre.ethers.formatEther(prizeWinnerEthBalanceAmount_));
-				const transactionResponseFuture_ =
+				const transactionResponsePromise_ =
 					(counter_ <= 0) ?
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth"]() :
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth(address)"](contracts_.signers[1].address);
 				if (ethDepositAcceptanceModeCode_ > 0n) {
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.prizesWallet, "FundTransferFailed")
 						.withArgs("ETH withdrawal failed.", bidderContractAddr_, prizeWinnerEthBalanceAmount_);
 				} else {
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.emit(contracts_.prizesWallet, "EthWithdrawn")
 						.withArgs(prizeWinnerAddress_, bidderContractAddr_, prizeWinnerEthBalanceAmount_);
 				}
@@ -222,22 +222,22 @@ describe("PrizesWallet-2", function () {
 	it("The donateNft method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
-		let transactionResponseFuture_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).mint({value: 10n ** (18n - 2n),});
-		await expect(transactionResponseFuture_).not.reverted;
+		let transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).mint({value: 10n ** (18n - 2n),});
+		await expect(transactionResponsePromise_).not.reverted;
 		let nftId_ = 0n;
-		transactionResponseFuture_ = contracts_.prizesWallet.connect(contracts_.signers[1]).donateNft(0n, contracts_.signers[1].address, contracts_.randomWalkNftAddr, nftId_);
-		await expect(transactionResponseFuture_)
+		transactionResponsePromise_ = contracts_.prizesWallet.connect(contracts_.signers[1]).donateNft(0n, contracts_.signers[1].address, contracts_.randomWalkNftAddr, nftId_);
+		await expect(transactionResponsePromise_)
 			.revertedWithCustomError(contracts_.prizesWallet, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);
-		transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEthAndDonateNft(-1n, "", hre.ethers.ZeroAddress, nftId_, {value: 10n ** (18n - 2n),});
-		await expect(transactionResponseFuture_).revertedWithoutReason();
+		transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEthAndDonateNft(-1n, "", hre.ethers.ZeroAddress, nftId_, {value: 10n ** (18n - 2n),});
+		await expect(transactionResponsePromise_).revertedWithoutReason();
 		for ( let counter_ = 0; counter_ < 2; ++ counter_ ) {
-			transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEthAndDonateNft(-1n, "", contracts_.randomWalkNftAddr, nftId_, {value: 10n ** (18n - 2n),});
+			transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEthAndDonateNft(-1n, "", contracts_.randomWalkNftAddr, nftId_, {value: 10n ** (18n - 2n),});
 			if (counter_ <= 0) {
-				await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.randomWalkNft, "ERC721InsufficientApproval");
-				transactionResponseFuture_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).setApprovalForAll(contracts_.prizesWalletAddr, true);
+				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.randomWalkNft, "ERC721InsufficientApproval");
+				transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).setApprovalForAll(contracts_.prizesWalletAddr, true);
 			}
-			await expect(transactionResponseFuture_).not.reverted;
+			await expect(transactionResponsePromise_).not.reverted;
 		}
 	});
 
@@ -283,7 +283,7 @@ describe("PrizesWallet-2", function () {
 
 	it("Incorrect or forbidden operations", async function () {
 		// todo-0 Everywhere, rename "future" to "promise".
-		let transactionResponseFuture_;
+		let transactionResponsePromise_;
 		// let transactionResponse_;
 		// let transactionReceipt_;
 
@@ -292,30 +292,30 @@ describe("PrizesWallet-2", function () {
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.signers[10].address);
 		await newPrizesWallet_.waitForDeployment();
 		// const newPrizesWalletAddr_ = await newPrizesWallet_.getAddress();
-		transactionResponseFuture_ = newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address);
-		await expect(transactionResponseFuture_).not.reverted;
+		transactionResponsePromise_ = newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address);
+		await expect(transactionResponsePromise_).not.reverted;
 
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[1]).registerRoundEndAndDepositEthMany(0n, contracts_.signers[2].address, [], {value: 0n,});
-		await expect(transactionResponseFuture_)
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[1]).registerRoundEndAndDepositEthMany(0n, contracts_.signers[2].address, [], {value: 0n,});
+		await expect(transactionResponsePromise_)
 			.revertedWithCustomError(newPrizesWallet_, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);
 
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[1]).registerRoundEnd(0n, contracts_.signers[2].address);
-		await expect(transactionResponseFuture_)
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[1]).registerRoundEnd(0n, contracts_.signers[2].address);
+		await expect(transactionResponsePromise_)
 			.revertedWithCustomError(newPrizesWallet_, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);
 
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[1]).depositEth(0n, contracts_.signers[2].address, {value: 0n,});
-		await expect(transactionResponseFuture_)
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[1]).depositEth(0n, contracts_.signers[2].address, {value: 0n,});
+		await expect(transactionResponsePromise_)
 			.revertedWithCustomError(newPrizesWallet_, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);
 
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[1]).donateToken(0n, contracts_.signers[2].address, contracts_.cosmicSignatureTokenAddr, 0n);
-		await expect(transactionResponseFuture_)
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[1]).donateToken(0n, contracts_.signers[2].address, contracts_.cosmicSignatureTokenAddr, 0n);
+		await expect(transactionResponsePromise_)
 			.revertedWithCustomError(newPrizesWallet_, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);
-		transactionResponseFuture_ = newPrizesWallet_.connect(contracts_.signers[10]).donateToken(0n, contracts_.signers[2].address, hre.ethers.ZeroAddress, 0n);
-		await expect(transactionResponseFuture_).revertedWithCustomError(newPrizesWallet_, "SafeERC20FailedOperation");
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateToken(0n, contracts_.signers[2].address, hre.ethers.ZeroAddress, 0n);
+		await expect(transactionResponsePromise_).revertedWithCustomError(newPrizesWallet_, "SafeERC20FailedOperation");
 	});
 
 	// #endregion

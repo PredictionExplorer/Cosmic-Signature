@@ -407,7 +407,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		/// Issue. To keep it simple, this method doesn't assert that the bidder has enough ETH.
 		/// If they don't the test would fail.
-		canBidWithEth: async function(transactionBlock_, bidderAddress_, value_, randomWalkNftId_, message_, paidEthPrice_, contracts_, transactionResponseFuture_) {
+		canBidWithEth: async function(transactionBlock_, bidderAddress_, value_, randomWalkNftId_, message_, paidEthPrice_, contracts_, transactionResponsePromise_) {
 			assertAddressIsValid(bidderAddress_);
 			expect(typeof value_).equal("bigint");
 			expect(value_).greaterThanOrEqual(0n);
@@ -418,7 +418,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			const overpaidEthPrice_ = value_ - paidEthPrice_;
 			if ( ! (overpaidEthPrice_ >= 0n) ) {
 				// console.info("202504151");
-				await expect(transactionResponseFuture_)
+				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
 					.withArgs("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, value_);
 				return false;
@@ -428,14 +428,14 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			} else {
 				if (this.wasRandomWalkNftUsed(randomWalkNftId_)) {
 					// console.info("202504152");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "UsedRandomWalkNft")
 						.withArgs("This Random Walk NFT has already been used for bidding.", randomWalkNftId_);
 					return false;
 				}
 				if ( ! (bidderAddress_ == this.randomWalkNftSimulator.ownerOf(randomWalkNftId_)) ) {
 					// console.info("202504153");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CallerIsNotNftOwner")
 						.withArgs("You are not the owner of this Random Walk NFT.", contracts_.randomWalkNftAddr, randomWalkNftId_, bidderAddress_);
 					return false;
@@ -443,7 +443,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			}
 			if ( ! (message_.length <= this.bidMessageLengthMaxLimit) ) {
 				// console.info("202504154");
-				await expect(transactionResponseFuture_)
+				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage")
 					.withArgs("Message is too long.", message_.length);
 				return false;
@@ -451,7 +451,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
 					// console.info("202504155");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
 						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
 					return false;
@@ -641,7 +641,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// todo-1 Do we need `bidWithCstAndDonateNft`?
 		// #region `canBidWithCst`
 
-		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponseFuture_) {
+		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponsePromise_) {
 			// assertAddressIsValid(bidderAddress_);
 			expect(bidderAddress_).not.equal(hre.ethers.ZeroAddress);
 			expect(typeof cstPriceToPayMaxLimit_).equal("bigint");
@@ -651,7 +651,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			expect(paidCstPrice_).greaterThanOrEqual(0n);
 			if ( ! (paidCstPrice_ <= cstPriceToPayMaxLimit_) ) {
 				// console.info("202504166");
-				await expect(transactionResponseFuture_)
+				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
 					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceToPayMaxLimit_);
 				return false;
@@ -659,14 +659,14 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			const bidderCstBalanceBeforeTransaction_ = this.cosmicSignatureTokenSimulator.balanceOf(bidderAddress_);
 			if ( ! (paidCstPrice_ <= bidderCstBalanceBeforeTransaction_) ) {
 				// console.info("202504167");
-				await expect(transactionResponseFuture_)
+				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureToken, "ERC20InsufficientBalance")
 					.withArgs(bidderAddress_, bidderCstBalanceBeforeTransaction_, paidCstPrice_);
 				return false;
 			}
 			if ( ! (message_.length <= this.bidMessageLengthMaxLimit) ) {
 				// console.info("202504168");
-				await expect(transactionResponseFuture_)
+				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage")
 					.withArgs("Message is too long.", message_.length);
 				return false;
@@ -674,13 +674,13 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
 					// console.info("202504169");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
 						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
 					return false;
 				}
 				// console.info("202504171");
-				await expect(transactionResponseFuture_)
+				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "WrongBidType")
 					.withArgs("The first bid in a bidding round shall be ETH.");
 				return false;
@@ -833,12 +833,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `canClaimMainPrize`
 		
-		canClaimMainPrize: async function(transactionBlock_, callerAddress_, contracts_, transactionResponseFuture_) {
+		canClaimMainPrize: async function(transactionBlock_, callerAddress_, contracts_, transactionResponsePromise_) {
 			assertAddressIsValid(callerAddress_);
 			if (callerAddress_ == this.lastBidderAddress) {
 				if ( ! (BigInt(transactionBlock_.timestamp) >= this.mainPrizeTime) ) {
 					// console.info("202504252");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim")
 						.withArgs("Not enough time has elapsed.", this.mainPrizeTime, BigInt(transactionBlock_.timestamp));
 					return false;
@@ -846,7 +846,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			} else {
 				if ( ! (this.lastBidderAddress != hre.ethers.ZeroAddress) ) {
 					// console.info("202504253");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound")
 						.withArgs("There have been no bids in the current bidding round yet.");
 					return false;
@@ -855,7 +855,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					this.getDurationUntilMainPrize(transactionBlock_) + this.timeoutDurationToClaimMainPrize;
 				if ( ! (durationUntilOperationIsPermitted_ <= 0n) ) {
 					// console.info("202504254");
-					await expect(transactionResponseFuture_)
+					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied")
 						.withArgs(
 							"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
