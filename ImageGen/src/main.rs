@@ -79,6 +79,10 @@ struct Args {
     /// If body’s energy in COM frame is above this, treat as escaping
     #[arg(long, default_value_t = -0.3)]
     escape_threshold: f64,
+
+    /// Strength of density-aware alpha compression (0 = off)
+    #[arg(long, default_value_t = 6.0)]
+    alpha_compress: f64,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -141,6 +145,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let alpha_value = 1.0 / (args.alpha_denom as f64);
     let (colors, body_alphas) =
         generate_body_color_sequences(&mut rng, args.num_steps_sim, alpha_value);
+
+    render::set_alpha_compress(args.alpha_compress);
 
     // 4) bounding box info
     println!("STAGE 4/7: Determining bounding box...");

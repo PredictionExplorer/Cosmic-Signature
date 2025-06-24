@@ -9,6 +9,23 @@ use crate::spectrum::{NUM_BINS, BIN_SHIFT, rgb_to_bin, spd_to_rgba};
 use palette::{FromColor, Hsl, Srgb};
 use crate::sim;
 use crate::utils::{build_gaussian_kernel, bounding_box};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+// Global parameter: strength of density-aware alpha compression.
+// 0 => disabled (legacy behaviour).
+static ALPHA_COMPRESS_BITS: AtomicU64 = AtomicU64::new(0);
+
+/// Set the global alpha-compression coefficient.
+/// Should be called once from `main` after CLI parsing.
+/// Typical range: 0 (disabled) .. 10 (very strong).
+pub fn set_alpha_compress(k: f64) {
+    ALPHA_COMPRESS_BITS.store(k.to_bits(), Ordering::Relaxed);
+}
+
+#[inline]
+fn get_alpha_compress() -> f64 {
+    f64::from_bits(ALPHA_COMPRESS_BITS.load(Ordering::Relaxed))
+}
 
 /// Save single image as PNG
 pub fn save_image_as_png(
@@ -446,7 +463,15 @@ fn plot(
         let idx = (y as usize * width as usize) + x as usize;
 
         // Calculate effective alpha for the source (line segment + AA coverage)
-        let src_alpha = (alpha as f64 * base_alpha).clamp(0.0, 1.0);
+        let mut src_alpha = (alpha as f64 * base_alpha).clamp(0.0, 1.0);
+
+        // --- Density-aware compression -----------------------------------
+        let k = get_alpha_compress();
+        if k > 0.0 {
+            // Exponential soft-knee: approaches 1.0 asymptotically.
+            src_alpha = 1.0 - (-k * src_alpha).exp();
+        }
+        // -----------------------------------------------------------------
 
         // Get destination values
         let (dst_r, dst_g, dst_b, dst_alpha) = accum[idx];
@@ -649,11 +674,13 @@ fn plot_spec(
         }
     }
 
-    if x < 0 || x >= width as i32 || y < 0 || y >= height as i32 {
-        return;
+    let mut energy = coverage as f64 * base_alpha;
+    // Density-aware compression identical to RGBA path
+    let k = get_alpha_compress();
+    if k > 0.0 {
+        energy = 1.0 - (-k * energy).exp();
     }
 
-    let energy = coverage as f64 * base_alpha;
     let left_energy = energy * (1.0 - w_right);
     let right_energy = energy * w_right;
 
