@@ -15,30 +15,30 @@ describe("BidderContract", function () {
 		await bidderContract_.waitForDeployment();
 		const bidderContractAddr_ = await bidderContract_.getAddress();
 
-		// await expect( contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.prizesWalletAddr, true)).not.reverted;
-		await expect( contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr_, true)).not.reverted;
-		await expect( bidderContract_.doSetApprovalForAll(contracts_.randomWalkNft, contracts_.prizesWalletAddr)).not.reverted;
+		// await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.prizesWalletAddr, true)).not.reverted;
+		await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr_, true)).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doSetApprovalForAll(contracts_.randomWalkNftAddr, contracts_.prizesWalletAddr)).not.reverted;
 
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect( contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "signer 0 bid", {value: nextEthBidPrice_,})).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "signer 0 bid", {value: nextEthBidPrice_,})).not.reverted;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect( contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "signer 1 bid", {value: nextEthBidPrice_,})).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "signer 1 bid", {value: nextEthBidPrice_,})).not.reverted;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect( contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "signer 2 bid", {value: nextEthBidPrice_,})).not.reverted;
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "signer 2 bid", {value: nextEthBidPrice_,})).not.reverted;
 
 		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
 		await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,})).not.reverted;
 		const donatedNftId_ = 0n;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect( bidderContract_.connect(contracts_.signers[0]).doBidWithEthAndDonateNft(contracts_.randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEthAndDonateNft(contracts_.randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_,})).not.reverted;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await expect( bidderContract_.connect(contracts_.signers[0]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEth({value: nextEthBidPrice_,})).not.reverted;
 		randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
-		await expect( contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,})).not.reverted;
+		await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,})).not.reverted;
 		const randomWalkNftId_ = donatedNftId_ + 1n;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		let nextEthPlusRandomWalkNftBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
-		await expect( bidderContract_.connect(contracts_.signers[0]).doBidWithEthPlusRandomWalkNft(randomWalkNftId_, {value: nextEthPlusRandomWalkNftBidPrice_,})).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doBidWithEthPlusRandomWalkNft(randomWalkNftId_, {value: nextEthPlusRandomWalkNftBidPrice_,})).not.reverted;
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");

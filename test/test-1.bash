@@ -20,11 +20,11 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-0 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGame-1 '
-			# 'npx' 'hardhat' 'test' '--grep' '^BlockTimeStamps '
-			'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
-			# 'npx' 'hardhat' 'test' '--grep' '^\w+(?!-Old) '
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-2 Reentry attempts$'
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d '
+			# 'npx' 'hardhat' 'test' '--grep' '^\w+\b(?!-Old) '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
+			'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then

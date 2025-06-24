@@ -19,7 +19,7 @@ contract BrokenEthReceiver {
 
 	function _checkIfEthDepositsAreAccepted() internal view {
 		if (ethDepositAcceptanceModeCode == 1) {
-			revert("I am not accepting deposits.");
+			revert ("I am not accepting deposits.");
 		} else {
 			assert(ethDepositAcceptanceModeCode == 0);
 		}
