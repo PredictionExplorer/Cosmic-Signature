@@ -29,10 +29,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
 		if ( ! isSuccess_ ) {
 			assembly {
-				let ptr_ := mload(0x40)
-				let size_ := returndatasize()
-				returndatacopy(ptr_, 0, size_)
-				revert (ptr_, size_)
+				let returnDataSize_ := returndatasize()
+				let freeMemoryPointer_ := mload(0x40)
+				returndatacopy(freeMemoryPointer_, 0, returnDataSize_)
+				revert (freeMemoryPointer_, returnDataSize_)
 			}
 		}
 	}
@@ -47,10 +47,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		// 	);
 		// if ( ! isSuccess_ ) {
 		// 	assembly {
-		// 		let ptr := mload(0x40)
-		// 		let size := returndatasize()
-		// 		returndatacopy(ptr, 0, size)
-		// 		revert (ptr, size)
+		// 		let returnDataSize_ := returndatasize()
+		// 		let freeMemoryPointer_ := mload(0x40)
+		// 		returndatacopy(freeMemoryPointer_, 0, returnDataSize_)
+		// 		revert (freeMemoryPointer_, returnDataSize_)
 		// 	}
 		// }
 
