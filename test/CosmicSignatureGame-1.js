@@ -39,7 +39,6 @@ const {
 describe("CosmicSignatureGame-1", function () {
 	// #region
 
-	// [Comment-202505313/]
 	it("Integration test over multiple bidding rounds", async function () {
 		// #region
 
