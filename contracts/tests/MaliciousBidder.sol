@@ -5,13 +5,6 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 contract MaliciousBidder {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
-
-	/// @notice
-	/// Possible values:
-	///    1: Reenter `bidWithEth`.
-	///    2: Reenter `bidWithCst`.
-	///    3: Reenter `claimMainPrize`.
-	///    Any other: don't do any of the above.
 	uint256 public modeCode = 0;
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
@@ -21,11 +14,16 @@ contract MaliciousBidder {
 	receive() external payable {
 		uint256 modeCodeCopy_ = modeCode;
 		modeCode = 0;
+
+		// [Comment-202507059]
+		// This is not an exhaustive list of all non-reentrant methods.
+		// But we have another test near Comment-202507057 that attempts to reenter all of them.
+		// [/Comment-202507059]
 		if (modeCodeCopy_ == 1) {
 			doBidWithEth();
-		} if (modeCodeCopy_ == 2) {
+		} else if (modeCodeCopy_ == 2) {
 			doBidWithCst(1);
-		} if (modeCodeCopy_ == 3) {
+		} else if (modeCodeCopy_ == 3) {
 			doClaimMainPrize();
 		}
 	}

@@ -12,15 +12,15 @@ describe("CosmicSignatureGame-2", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
 
-		const cosmicSignatureGameImplementationByteCodeSize =
+		const cosmicSignatureGameImplementationByteCodeSize_ =
 			// cosmicSignatureGameFactory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(contracts_.cosmicSignatureGameImplementationAddr)).length / 2 - 1;
-		expect(cosmicSignatureGameImplementationByteCodeSize).greaterThanOrEqual(21 * 1024);
+		expect(cosmicSignatureGameImplementationByteCodeSize_).greaterThanOrEqual(20 * 1024);
 		console.log(
 			"CosmicSignatureGame implementation bytecode size is " +
-			cosmicSignatureGameImplementationByteCodeSize.toString() +
+			cosmicSignatureGameImplementationByteCodeSize_.toString() +
 			" bytes, which is less than the maximum allowed by " +
-			(24 * 1024 - cosmicSignatureGameImplementationByteCodeSize).toString() +
+			(24 * 1024 - cosmicSignatureGameImplementationByteCodeSize_).toString() +
 			"."
 		);
 		expect(await contracts_.cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);

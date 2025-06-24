@@ -18,28 +18,28 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 
-		const newStakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
-		await newStakingWalletRandomWalkNft.waitForDeployment();
-		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft.getAddress();
+		const newStakingWalletRandomWalkNft_ = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
+		await newStakingWalletRandomWalkNft_.waitForDeployment();
+		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft_.getAddress();
 		await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 
-		let transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
+		let transactionResponse_ = await newStakingWalletRandomWalkNft_.connect(signer0).stake(0);
 		let transactionReceipt_ = await transactionResponse_.wait();
-		// let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
+		// let topic_sig = newStakingWalletRandomWalkNft_.interface.getEvent("NftStaked").topicHash;
 		// let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
-		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
+		// let log = newStakingWalletRandomWalkNft_.interface.parseLog(receipt_logs[0]);
 
-		expect(await newStakingWalletRandomWalkNft.usedNfts(0n)).equal(1n);
-		// expect(await newStakingWalletRandomWalkNft.stakerByTokenId(0)).equal(signer0.address);
-		// expect(await newStakingWalletRandomWalkNft.stakerByTokenId(99)).equal(hre.ethers.ZeroAddress);
-		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(0)).equal(0);
-		// expect(await newStakingWalletRandomWalkNft.lastActionIdByTokenId(99)).equal(-2);
+		expect(await newStakingWalletRandomWalkNft_.usedNfts(0n)).equal(1n);
+		// expect(await newStakingWalletRandomWalkNft_.stakerByTokenId(0)).equal(signer0.address);
+		// expect(await newStakingWalletRandomWalkNft_.stakerByTokenId(99)).equal(hre.ethers.ZeroAddress);
+		// expect(await newStakingWalletRandomWalkNft_.lastActionIdByTokenId(0)).equal(0);
+		// expect(await newStakingWalletRandomWalkNft_.lastActionIdByTokenId(99)).equal(-2);
 
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
-		await newStakingWalletRandomWalkNft.connect(signer0).unstake(1);
+		await newStakingWalletRandomWalkNft_.connect(signer0).unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.connect(signer0).unstake(1)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionInvalidId");
+		await expect(newStakingWalletRandomWalkNft_.connect(signer0).unstake(1)).revertedWithCustomError(newStakingWalletRandomWalkNft_, "NftStakeActionInvalidId");
 	});
 	
 	it("Shouldn't be possible to unstake by a user different from the owner", async function () {
@@ -51,20 +51,20 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 
-		const newStakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
-		await newStakingWalletRandomWalkNft.waitForDeployment();
-		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft.getAddress();
+		const newStakingWalletRandomWalkNft_ = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
+		await newStakingWalletRandomWalkNft_.waitForDeployment();
+		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft_.getAddress();
 		await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 
-		const transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
+		const transactionResponse_ = await newStakingWalletRandomWalkNft_.connect(signer0).stake(0);
 		const transactionReceipt_ = await transactionResponse_.wait();
-		// const topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
+		// const topic_sig = newStakingWalletRandomWalkNft_.interface.getEvent("NftStaked").topicHash;
 		// const receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
-		// const log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
+		// const log = newStakingWalletRandomWalkNft_.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
 
-		await expect(newStakingWalletRandomWalkNft.connect(signer1).unstake(1)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftStakeActionAccessDenied");
+		await expect(newStakingWalletRandomWalkNft_.connect(signer1).unstake(1)).revertedWithCustomError(newStakingWalletRandomWalkNft_, "NftStakeActionAccessDenied");
 	});
 	
 	// it("Internal staker state variables for checking uniquness are correctly set", async function () {
@@ -77,8 +77,8 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	//
 	// 	// todo-9 This contract no longer exists.
 	// 	const testStakingWalletRandomWalkNftFactory = await hre.ethers.getContractFactory("TestStakingWalletRandomWalkNft", deployerAcct);
-	// 	const newStakingWalletRandomWalkNft = await testStakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
-	// 	await newStakingWalletRandomWalkNft.waitForDeployment();
+	// 	const newStakingWalletRandomWalkNft_ = await testStakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
+	// 	await newStakingWalletRandomWalkNft_.waitForDeployment();
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setStakingWalletRandomWalkNft(newStakingWalletRandomWalkNftAddr);
 	//
 	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
@@ -86,17 +86,17 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//
 	// 	let sampleTokenId = 33;
-	// 	let tokenStaked = await newStakingWalletRandomWalkNft.isTokenStaked(sampleTokenId);
+	// 	let tokenStaked = await newStakingWalletRandomWalkNft_.isTokenStaked(sampleTokenId);
 	// 	expect(tokenStaked).equal(false);
-	// 	await newStakingWalletRandomWalkNft.connect(signer0).doInsertToken(sampleTokenId, 0);
-	// 	let tokenIndexCheck = await newStakingWalletRandomWalkNft.tokenIndexes(sampleTokenId);
+	// 	await newStakingWalletRandomWalkNft_.connect(signer0).doInsertToken(sampleTokenId, 0);
+	// 	let tokenIndexCheck = await newStakingWalletRandomWalkNft_.tokenIndexes(sampleTokenId);
 	// 	expect(tokenIndexCheck).equal(1);
-	// 	let tokenIdCheck = await newStakingWalletRandomWalkNft.stakedTokens(Number(tokenIndexCheck)-1);
+	// 	let tokenIdCheck = await newStakingWalletRandomWalkNft_.stakedTokens(Number(tokenIndexCheck)-1);
 	// 	expect(tokenIdCheck).equal(sampleTokenId);
-	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doInsertToken(sampleTokenId, 0)).revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyInserted");
+	// 	await expect(newStakingWalletRandomWalkNft_.connect(signer0).doInsertToken(sampleTokenId, 0)).revertedWithCustomError(newStakingWalletRandomWalkNft_, "TokenAlreadyInserted");
 	//
-	// 	await newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(sampleTokenId);
-	// 	await expect(newStakingWalletRandomWalkNft.connect(signer0).doRemoveToken(signer0.address)).revertedWithCustomError(newStakingWalletRandomWalkNft, "TokenAlreadyDeleted");
+	// 	await newStakingWalletRandomWalkNft_.connect(signer0).doRemoveToken(sampleTokenId);
+	// 	await expect(newStakingWalletRandomWalkNft_.connect(signer0).doRemoveToken(signer0.address)).revertedWithCustomError(newStakingWalletRandomWalkNft_, "TokenAlreadyDeleted");
 	// 	await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 	// 	async function mint_rwalk(a) {
 	// 		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
@@ -111,27 +111,27 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	// 	let r1 = await mint_rwalk(signer0);
 	// 	let r2 = await mint_rwalk(signer0);
 	// 	let r3 = await mint_rwalk(signer0);
-	// 	let transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stakeMany([r1, r2, r3]);
+	// 	let transactionResponse_ = await newStakingWalletRandomWalkNft_.connect(signer0).stakeMany([r1, r2, r3]);
 	// 	let transactionReceipt_ = await transactionResponse_.wait();
-	// 	let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
+	// 	let topic_sig = newStakingWalletRandomWalkNft_.interface.getEvent("NftStaked").topicHash;
 	// 	let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	// 	for (let i=0; i<receipt_logs.length; i++) {
-	// 		let evt = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[i]);
+	// 		let evt = newStakingWalletRandomWalkNft_.interface.parseLog(receipt_logs[i]);
 	// 	}
 	//
-	// 	let numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
+	// 	let numStakedNfts_ = await newStakingWalletRandomWalkNft_.numStakedNfts();
 	// 	expect(numStakedNfts_).equal(3);
-	// 	let isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r1);
+	// 	let isStaked = await newStakingWalletRandomWalkNft_.isTokenStaked(r1);
 	// 	expect(isStaked).equal(true);
-	// 	isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r2);
+	// 	isStaked = await newStakingWalletRandomWalkNft_.isTokenStaked(r2);
 	// 	expect(isStaked).equal(true);
-	// 	isStaked = await newStakingWalletRandomWalkNft.isTokenStaked(r3);
+	// 	isStaked = await newStakingWalletRandomWalkNft_.isTokenStaked(r3);
 	// 	expect(isStaked).equal(true);
 	//
 	// 	await hre.ethers.provider.send("evm_increaseTime", [600 + 1]);
 	// 	// await hre.ethers.provider.send("evm_mine");
-	// 	await newStakingWalletRandomWalkNft.connect(signer0).unstakeMany([r1, r2, r3]);
-	// 	numStakedNfts_ = await newStakingWalletRandomWalkNft.numStakedNfts();
+	// 	await newStakingWalletRandomWalkNft_.connect(signer0).unstakeMany([r1, r2, r3]);
+	// 	numStakedNfts_ = await newStakingWalletRandomWalkNft_.numStakedNfts();
 	// 	expect(numStakedNfts_).equal(0);
 	// });
 	
@@ -241,21 +241,21 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 		let randomWalkNftMintPrice_ = await randomWalkNft.getMintPrice();
 		await randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice_,});
 
-		const newStakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
-		await newStakingWalletRandomWalkNft.waitForDeployment();
-		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft.getAddress();
+		const newStakingWalletRandomWalkNft_ = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddr);
+		await newStakingWalletRandomWalkNft_.waitForDeployment();
+		const newStakingWalletRandomWalkNftAddr = await newStakingWalletRandomWalkNft_.getAddress();
 		await randomWalkNft.connect(signer0).setApprovalForAll(newStakingWalletRandomWalkNftAddr, true);
 
-		let transactionResponse_ = await newStakingWalletRandomWalkNft.connect(signer0).stake(0);
+		let transactionResponse_ = await newStakingWalletRandomWalkNft_.connect(signer0).stake(0);
 		let transactionReceipt_ = await transactionResponse_.wait();
-		// let topic_sig = newStakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
+		// let topic_sig = newStakingWalletRandomWalkNft_.interface.getEvent("NftStaked").topicHash;
 		// let receipt_logs = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
-		// let log = newStakingWalletRandomWalkNft.interface.parseLog(receipt_logs[0]);
+		// let log = newStakingWalletRandomWalkNft_.interface.parseLog(receipt_logs[0]);
 		await hre.ethers.provider.send("evm_increaseTime", [6000]);
 		// await hre.ethers.provider.send("evm_mine");
-		await newStakingWalletRandomWalkNft.connect(signer0).unstake(1);
+		await newStakingWalletRandomWalkNft_.connect(signer0).unstake(1);
 
-		await expect(newStakingWalletRandomWalkNft.connect(signer0).stake(0)).revertedWithCustomError(newStakingWalletRandomWalkNft, "NftHasAlreadyBeenStaked");
+		await expect(newStakingWalletRandomWalkNft_.connect(signer0).stake(0)).revertedWithCustomError(newStakingWalletRandomWalkNft_, "NftHasAlreadyBeenStaked");
 	});
 
 	it("Shouldn't be possible to deploy StakingWalletRandomWalkNft with zero-address-ed parameters", async function () {

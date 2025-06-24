@@ -36,9 +36,11 @@ async function main() {
 	await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId);
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	// todo-0 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
+	// todo-0 await .wait()
 	await bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, nftId, {value: nextEthBidPrice,});
 
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	// todo-0 await .wait()
 	await bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice,});
 
 	rwalkPrice = await randomWalkNft.getMintPrice();
@@ -49,11 +51,13 @@ async function main() {
 	parsed_log = randomWalkNft.interface.parseLog(log);
 	nftId = parsed_log.args.tokenId;
 	await randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId);
+	// todo-0 await .wait()
 	await bidderContract.connect(signer0).doBidWithEthPlusRandomWalkNft(nftId);
 
 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize();
 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize.toNumber()]);
 	// await hre.ethers.provider.send("evm_mine");
+	// todo-0 await .wait()
 	await bidderContract.connect(signer0).doClaimMainPrize();
 }
 

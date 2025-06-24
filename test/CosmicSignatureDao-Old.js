@@ -41,8 +41,8 @@ describe("CosmicSignatureDao-Old", function () {
 
 		let proposal_func = charityWallet.interface.encodeFunctionData("setCharityAddress", [signer5.address]);
 		let proposal_desc = "set charityWallet to new addr";
-		let transactionResponseFuture_ = cosmicSignatureDao.connect(signer4).propose([charityWalletAddr], [0], [proposal_func], proposal_desc);
-		await expect(transactionResponseFuture_).revertedWithCustomError(cosmicSignatureDao, "GovernorInsufficientProposerVotes");
+		let transactionResponsePromise_ = cosmicSignatureDao.connect(signer4).propose([charityWalletAddr], [0], [proposal_func], proposal_desc);
+		await expect(transactionResponsePromise_).revertedWithCustomError(cosmicSignatureDao, "GovernorInsufficientProposerVotes");
 		let transactionResponse_ = await cosmicSignatureDao.connect(signer0).propose([charityWalletAddr], [0], [proposal_func], proposal_desc);
 		let transactionReceipt_ = await transactionResponse_.wait();
 		let parsed_log = cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
@@ -63,15 +63,15 @@ describe("CosmicSignatureDao-Old", function () {
 
 		await forward_blocks(Number(votingPeriod_) / 2);
 		let desc_hash = hre.ethers.id(proposal_desc);
-		transactionResponseFuture_ = cosmicSignatureDao.connect(signer0).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
-		await expect(transactionResponseFuture_).revertedWithCustomError(cosmicSignatureDao, "GovernorUnexpectedProposalState");
+		transactionResponsePromise_ = cosmicSignatureDao.connect(signer0).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
+		await expect(transactionResponsePromise_).revertedWithCustomError(cosmicSignatureDao, "GovernorUnexpectedProposalState");
 		await forward_blocks(Number(votingPeriod_) / 2);
 		expect(await charityWallet.charityAddress()).not.equal(signer5.address);
-		transactionResponseFuture_ = cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
-		await expect(transactionResponseFuture_).revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
+		transactionResponsePromise_ = cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
+		await expect(transactionResponsePromise_).revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
 		await charityWallet.connect(ownerAcct).transferOwnership(signer4.address);
-		transactionResponseFuture_ = cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
-		await expect(transactionResponseFuture_).revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
+		transactionResponsePromise_ = cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
+		await expect(transactionResponsePromise_).revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
 		await charityWallet.connect(signer4).transferOwnership(cosmicSignatureDaoAddr);
 		transactionResponse_ = await cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
 		transactionReceipt_ = await transactionResponse_.wait();

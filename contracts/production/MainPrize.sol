@@ -48,12 +48,7 @@ abstract contract MainPrize is
 	// #region `claimMainPrize`
 
 	/// @dev Comment-202411169 relates and/or applies.
-	///
-	/// It could be possible to not call `nonReentrant` if we transferred main prize ETH to `_msgSender()`
-	/// after all other logic, provided it's safe to assume that ETH transfer to charity can't reenter us.
-	/// Although we could execute that transfer at the very end as well.
-	/// But let's leave it alone.
-	/// Comment-202411078 relates.
+	/// Comment-202411078 relates and/or applies.
 	///
 	/// Observable universe entities accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`.
 	///    `Panic` (from OpenZeppelin).
@@ -557,20 +552,14 @@ abstract contract MainPrize is
 				// [Comment-202411077]
 				// ETH for charity.
 				// If somehow ETH receive by charity reverts we won't revert the transaction. The funds would simply stay in the game.
-				// Comment-202411078 relates.
+				// Comment-202411078 relates and/or applies.
 				// [/Comment-202411077]
 				{
 					// I don't want to spend gas to `require` this.
 					// But if I did, this would be a wrong place for this validation.
 					// #enable_asserts assert(charityAddress != address(0));
 
-					// [Comment-202502043]
-					// In most cases, we make high level calls to strongly typed addresses --
-					// to let SMTChecker know what exactly method on what contract we are calling.
-					// But we make a low level call like this to make a simple ETH transfer.
-					// Comment-202502057 relates.
-					// Comment-202506296 relates.
-					// [/Comment-202502043]
+					// Comment-202502043 applies.
 					(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
 
 					if (isSuccess_) {

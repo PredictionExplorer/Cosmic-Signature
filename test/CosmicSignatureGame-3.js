@@ -110,7 +110,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
-				const transactionResponseFuture_ =
+				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						contracts_.cosmicSignatureGameProxy/*.connect(contracts_.signers[5])*/,
 						cosmicSignatureGameOpenBidFactory_.connect(contracts_.signers[5]),
@@ -119,14 +119,14 @@ describe("CosmicSignatureGame-3", function () {
 							call: "initialize2",
 						}
 					);
-				// await transactionResponseFuture_;
-				await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+				// await transactionResponsePromise_;
+				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 			}
 
 			// Our minimalistic unsafe approach.
 			{
-				const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[5]).upgradeTo(contracts_.signers[0].address);
-				await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[5]).upgradeTo(contracts_.signers[0].address);
+				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 			}
 		}
 
@@ -134,7 +134,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
-				const transactionResponseFuture_ =
+				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						hre.ethers.ZeroAddress,
 						cosmicSignatureGameOpenBidFactory_,
@@ -145,10 +145,10 @@ describe("CosmicSignatureGame-3", function () {
 					);
 
 				// // It doesn't reach the point where it would revert with this error.
-				// await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
+				// await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
 
 				try {
-					await transactionResponseFuture_;
+					await transactionResponsePromise_;
 					expect(false).equal(true);
 				} catch (errorObject_) {
 					expect(errorObject_.message).equal("Contract at 0x0000000000000000000000000000000000000000 doesn't look like an ERC 1967 proxy with a logic contract address\n\n");
@@ -157,8 +157,8 @@ describe("CosmicSignatureGame-3", function () {
 
 			// Our minimalistic unsafe approach.
 			{
-				const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(hre.ethers.ZeroAddress);
-				await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
+				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(hre.ethers.ZeroAddress);
+				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
 			}
 		}
 
@@ -168,7 +168,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
-				const transactionResponseFuture_ =
+				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						contracts_.cosmicSignatureGameProxy,
 						cosmicSignatureGameOpenBidFactory_,
@@ -177,14 +177,14 @@ describe("CosmicSignatureGame-3", function () {
 							call: "initialize2",
 						}
 					);
-				// await transactionResponseFuture_;
-				await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
+				// await transactionResponsePromise_;
+				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 			}
 
 			// Our minimalistic unsafe approach.
 			{
-				const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(contracts_.signers[0].address);
-				await expect(transactionResponseFuture_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
+				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(contracts_.signers[0].address);
+				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 			}
 		}
 	});

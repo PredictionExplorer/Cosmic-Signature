@@ -29,9 +29,9 @@ describe("CharityWallet-Old", function () {
 		const [signer0, signer1,] = signers;
 		// todo-0 This contract no longer exists.
 		const brokenCharityFactory = await hre.ethers.getContractFactory("BrokenCharity", deployerAcct);
-		const brokenCharity = await brokenCharityFactory.deploy();
-		await brokenCharity.waitForDeployment();
-		const brokenCharityAddr = await brokenCharity.getAddress();
+		const brokenCharity_ = await brokenCharityFactory.deploy();
+		await brokenCharity_.waitForDeployment();
+		const brokenCharityAddr = await brokenCharity_.getAddress();
 
 		await expect(signer0.sendTransaction({to: charityWalletAddr, value: hre.ethers.parseEther("3"),})).not.reverted;
 		await charityWallet.connect(ownerAcct).setCharityAddress(brokenCharityAddr);

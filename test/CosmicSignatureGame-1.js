@@ -39,7 +39,6 @@ const {
 describe("CosmicSignatureGame-1", function () {
 	// #region
 
-	// [Comment-202505313/]
 	it("Integration test over multiple bidding rounds", async function () {
 		// #region
 
@@ -320,8 +319,8 @@ describe("CosmicSignatureGame-1", function () {
 						// It would be nice to implement this method in `createRandomWalkNftSimulator`, but keeping it simple.
 						const randomWalkNftMintPrice_ = await randomWalkNftForSigner_.getMintPrice();
 
-						const transactionResponseFuture_ = randomWalkNftForSigner_.mint({value: randomWalkNftMintPrice_,});
-						const transactionResponse_ = await transactionResponseFuture_;
+						const transactionResponsePromise_ = randomWalkNftForSigner_.mint({value: randomWalkNftMintPrice_,});
+						const transactionResponse_ = await transactionResponsePromise_;
 						transactionReceipt_ = await transactionResponse_.wait();
 						// console.info("202506257", String(transactionResponse_.timestamp));
 						latestBlock_ = await transactionReceipt_.getBlock();
@@ -339,8 +338,8 @@ describe("CosmicSignatureGame-1", function () {
 						if (found_) {
 							// console.info("202505107 Staking RW NFT " + randomWalkNftId_.toString() + ".");
 							blockBeforeTransaction_ = latestBlock_;
-							const transactionResponseFuture_ = stakingWalletRandomWalkNftForSigner_.stake(randomWalkNftId_);
-							const transactionResponse_ = await transactionResponseFuture_;
+							const transactionResponsePromise_ = stakingWalletRandomWalkNftForSigner_.stake(randomWalkNftId_);
+							const transactionResponse_ = await transactionResponsePromise_;
 							transactionReceipt_ = await transactionResponse_.wait();
 							latestBlock_ = await transactionReceipt_.getBlock();
 							transactionBlock_ = latestBlock_;
@@ -359,8 +358,8 @@ describe("CosmicSignatureGame-1", function () {
 						if (found_) {
 							// console.info("202505108 Staking CS NFT " + cosmicSignatureNftId_.toString() + ".");
 							blockBeforeTransaction_ = latestBlock_;
-							const transactionResponseFuture_ = stakingWalletCosmicSignatureNftForSigner_.stake(cosmicSignatureNftId_);
-							const transactionResponse_ = await transactionResponseFuture_;
+							const transactionResponsePromise_ = stakingWalletCosmicSignatureNftForSigner_.stake(cosmicSignatureNftId_);
+							const transactionResponse_ = await transactionResponsePromise_;
 							transactionReceipt_ = await transactionResponse_.wait();
 							latestBlock_ = await transactionReceipt_.getBlock();
 							transactionBlock_ = latestBlock_;
@@ -381,8 +380,8 @@ describe("CosmicSignatureGame-1", function () {
 						const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, randomNumber_)) - Number(1n << (53n - 4n)), 0));
 						if ((randomNumber_ & (1n << 128n)) == 0n) {
 							// console.info("202506038 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
-							const transactionResponseFuture_ = cosmicSignatureGameProxyForSigner_.donateEth({value: ethDonationAmount_,});
-							const transactionResponse_ = await transactionResponseFuture_;
+							const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.donateEth({value: ethDonationAmount_,});
+							const transactionResponse_ = await transactionResponsePromise_;
 							transactionReceipt_ = await transactionResponse_.wait();
 							cosmicSignatureGameProxySimulator_.donateEth(signer_.address, ethDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
@@ -391,8 +390,8 @@ describe("CosmicSignatureGame-1", function () {
 							// Comment-202505061 applies.
 							generateBidMessage_();
 
-							const transactionResponseFuture_ = cosmicSignatureGameProxyForSigner_.donateEthWithInfo(bidMessage_, {value: ethDonationAmount_,});
-							const transactionResponse_ = await transactionResponseFuture_;
+							const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.donateEthWithInfo(bidMessage_, {value: ethDonationAmount_,});
+							const transactionResponse_ = await transactionResponsePromise_;
 							transactionReceipt_ = await transactionResponse_.wait();
 							cosmicSignatureGameProxySimulator_.donateEthWithInfo(signer_.address, ethDonationAmount_, bidMessage_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						}
@@ -449,13 +448,13 @@ describe("CosmicSignatureGame-1", function () {
 							// console.info("202505162");
 						}
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
-						let transactionResponseFuture_;
+						let transactionResponsePromise_;
 						try {
-							transactionResponseFuture_ =
+							transactionResponsePromise_ =
 								sendEth_ ?
 								signer_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: ethPriceToPayMaxLimit_,}) :
 								cosmicSignatureGameProxyForSigner_.bidWithEth(randomWalkNftId_, bidMessage_, {value: ethPriceToPayMaxLimit_,});
-							const transactionResponse_ = await transactionResponseFuture_;
+							const transactionResponse_ = await transactionResponsePromise_;
 							transactionReceipt_ = await transactionResponse_.wait();
 						} catch (transactionErrorObject_) {
 							// console.warn(transactionErrorObject_.message);
@@ -476,7 +475,7 @@ describe("CosmicSignatureGame-1", function () {
 								bidMessage_,
 								paidEthPrice_,
 								contracts_,
-								transactionResponseFuture_
+								transactionResponsePromise_
 							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
@@ -523,10 +522,10 @@ describe("CosmicSignatureGame-1", function () {
 						// Comment-202503162 relates.
 						const cstPriceToPayMaxLimit_ = randomNumber_ % (paidCstPrice_ * 16n + 1n);
 
-						let transactionResponseFuture_;
+						let transactionResponsePromise_;
 						try {
-							transactionResponseFuture_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceToPayMaxLimit_, bidMessage_);
-							const transactionResponse_ = await transactionResponseFuture_;
+							transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceToPayMaxLimit_, bidMessage_);
+							const transactionResponse_ = await transactionResponsePromise_;
 							transactionReceipt_ = await transactionResponse_.wait();
 						} catch (transactionErrorObject_) {
 							// console.warn(transactionErrorObject_.message);
@@ -546,7 +545,7 @@ describe("CosmicSignatureGame-1", function () {
 								bidMessage_,
 								paidCstPrice_,
 								contracts_,
-								transactionResponseFuture_
+								transactionResponsePromise_
 							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
@@ -579,12 +578,12 @@ describe("CosmicSignatureGame-1", function () {
 						await advanceNextBlockTime_();
 						blockBeforeTransaction_ = latestBlock_;
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
-						let transactionResponseFuture_;
+						let transactionResponsePromise_;
 						try {
 							// const timeStamp1_ = Date.now();
-							transactionResponseFuture_ = cosmicSignatureGameProxyForSigner_.claimMainPrize();
+							transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.claimMainPrize();
 							// const timeStamp2_ = Date.now();
-							const transactionResponse_ = await transactionResponseFuture_;
+							const transactionResponse_ = await transactionResponsePromise_;
 							// const timeStamp3_ = Date.now();
 							transactionReceipt_ = await transactionResponse_.wait();
 							// const timeStamp4_ = Date.now();
@@ -609,7 +608,7 @@ describe("CosmicSignatureGame-1", function () {
 								transactionBlock_,
 								signer_.address,
 								contracts_,
-								transactionResponseFuture_
+								transactionResponsePromise_
 							);
 						// const timeStamp2_ = Date.now();
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
@@ -733,8 +732,8 @@ describe("CosmicSignatureGame-1", function () {
 					// [/Comment-202505117]
 					if (cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor < 10n ** 30n) {
 						const newEthDutchAuctionEndingBidPriceDivisor_ = cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor * 10n;
-						const transactionResponseFuture_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
-						const transactionResponse_ = await transactionResponseFuture_;
+						const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
+						const transactionResponse_ = await transactionResponsePromise_;
 						transactionReceipt_ = await transactionResponse_.wait();
 						latestBlock_ = await transactionReceipt_.getBlock();
 						eventIndexWrapper_.value = 0;
