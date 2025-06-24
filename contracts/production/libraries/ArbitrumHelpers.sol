@@ -69,7 +69,7 @@ library ArbitrumHelpers {
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
 					// [Comment-202506301]
-					// This is really a shorter integer, but it's probably more efficient to treat this as a blockchain-native word.
+					// This is really a shorter unsigned integer, but it's probably more efficient to treat this as a blockchain-native word.
 					// [/Comment-202506301]
 					gasBacklog_ = abi.decode(returnData_, (uint256));
 				} else {
