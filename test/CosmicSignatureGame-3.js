@@ -82,6 +82,7 @@ describe("CosmicSignatureGame-3", function () {
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 		await brokenEthReceiver_.waitForDeployment();
 		const brokenEthReceiverAddr_ = await brokenEthReceiver_.getAddress();
+		// await expect(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(brokenEthReceiverAddr_)).not.reverted;
 		const brokenEthReceiverProxy_ = brokenEthReceiverFactory_.attach(contracts_.cosmicSignatureGameProxyAddr);
@@ -90,12 +91,12 @@ describe("CosmicSignatureGame-3", function () {
 		// If we upgraded to `CosmicSignatureGameOpenBid`, we would call `brokenEthReceiverProxy_.initialize2` at this point.
 
 		// This and further calls to this method corrupt game proxy state.
-		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(2)).not.reverted;
+		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
 
 		await expect(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,})).revertedWithPanic(0x01n);
-		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(1)).not.reverted;
+		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(1n)).not.reverted;
 		await expect(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,})).revertedWith("I am not accepting deposits.");
-		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(0)).not.reverted;
+		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
 		await expect(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,})).not.reverted;
 	});
 

@@ -2,7 +2,7 @@
 pragma solidity 0.8.29;
 
 contract BrokenEthReceiver {
-	/// @notice 0, 1, 2.
+	/// @notice 1, 2, or any other value.
 	uint256 public ethDepositAcceptanceModeCode = 0;
 
 	constructor() {
@@ -21,7 +21,7 @@ contract BrokenEthReceiver {
 		if (ethDepositAcceptanceModeCode == 1) {
 			revert ("I am not accepting deposits.");
 		} else {
-			assert(ethDepositAcceptanceModeCode == 0);
+			assert(ethDepositAcceptanceModeCode != 2);
 		}
 	}
 }

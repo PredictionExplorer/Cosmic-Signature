@@ -303,7 +303,7 @@ describe("Bidding", function () {
 	// Similar tests exist in multiple places.
 	// [/Comment-202507055]
 	// [Comment-202507057/]
-	it("Reentry attempts by donated ERC-20 and ERC-721 token contracts", async function () {
+	it("Reentries by donated ERC-20 and ERC-721 token contracts", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 	
 		const maliciousTokenFactory_ = await hre.ethers.getContractFactory("MaliciousToken", contracts_.deployerAcct);

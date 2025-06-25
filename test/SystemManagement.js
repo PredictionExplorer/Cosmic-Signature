@@ -345,7 +345,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxyForOwner_.setRoundActivationTime(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidHasBeenPlacedInCurrentRound");
 	});
 
-	it("Unauthorized access attempts to setters", async function () {
+	it("Unauthorized access to setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		const cosmicSignatureGameProxyForSigner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]);

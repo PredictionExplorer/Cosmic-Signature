@@ -24,7 +24,7 @@ describe("CosmicSignatureToken-Old", function () {
 		await cosmicSignatureToken.nonces(signer0.address);
 	});
 
-	it("Unauthorized access attempts to restricted methods", async function () {
+	it("Unauthorized access to restricted methods", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {ownerAcct, signers, cosmicSignatureGameProxy, cosmicSignatureNft, cosmicSignatureToken, charityWallet,} =
 			await loadFixture(deployContractsForUnitTesting);

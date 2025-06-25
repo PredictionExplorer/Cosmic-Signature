@@ -12,16 +12,6 @@ pragma solidity 0.8.29;
 // import { StakingWalletCosmicSignatureNft } from "../production/StakingWalletCosmicSignatureNft.sol";
 // import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-// todo-0 Delete this. Use `BrokenEthReceiver` instead.
-// /// @notice Used to test `revert` statements for charity deposits.
-// contract BrokenCharity {
-// 	// uint256 private _counter;
-//
-// 	receive() external payable {
-// 		require(false, "Test deposit failed.");
-// 	}
-// }
-
 // contract TestStakingWalletCosmicSignatureNft is StakingWalletCosmicSignatureNft {
 // 	constructor(CosmicSignatureNft nft_, address game_) StakingWalletCosmicSignatureNft(nft_, game_) {}
 //

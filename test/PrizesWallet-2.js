@@ -193,8 +193,8 @@ describe("PrizesWallet-2", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
 		// await hre.ethers.provider.send("evm_mine");
 
-		for ( let ethDepositAcceptanceModeCode_ = 2n; ethDepositAcceptanceModeCode_ >= 0n; -- ethDepositAcceptanceModeCode_ ) {
-			await expect(bidderContract_.setEthDepositAcceptanceModeCode(ethDepositAcceptanceModeCode_)).not.reverted;
+		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
+			await expect(bidderContract_.setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_)).not.reverted;
 			for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
 				const prizeWinnerAddress_ = (counter_ <= 0) ? bidderContractAddr_ : contracts_.signers[1].address;
 				const prizeWinnerEthBalanceAmount_ = (await contracts_.prizesWallet["getEthBalanceInfo(address)"](prizeWinnerAddress_))[1];
@@ -203,7 +203,7 @@ describe("PrizesWallet-2", function () {
 					(counter_ <= 0) ?
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth"]() :
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth(address)"](contracts_.signers[1].address);
-				if (ethDepositAcceptanceModeCode_ > 0n) {
+				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.prizesWallet, "FundTransferFailed")
 						.withArgs("ETH withdrawal failed.", bidderContractAddr_, prizeWinnerEthBalanceAmount_);
@@ -322,7 +322,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	// Comment-202507055 applies.
-	it("Reentry attempts", async function () {
+	it("Reentries", async function () {
 		// #region
 
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);

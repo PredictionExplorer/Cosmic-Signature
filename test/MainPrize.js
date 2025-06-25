@@ -406,8 +406,8 @@ describe("MainPrize", function () {
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setCharityAddress(brokenEthReceiverAddr_)).not.reverted;
 
-		for ( let ethDepositAcceptanceModeCode_ = 2n; ethDepositAcceptanceModeCode_ >= 0n; -- ethDepositAcceptanceModeCode_ ) {
-			await expect(brokenEthReceiver_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(ethDepositAcceptanceModeCode_)).not.reverted;
+		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
+			await expect(brokenEthReceiver_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_)).not.reverted;
 			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
 			await hre.ethers.provider.send("evm_mine");
@@ -424,7 +424,7 @@ describe("MainPrize", function () {
 			const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
 			expect(charityEthDonationAmount_).greaterThan(0n);
 			const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize();
-			if (ethDepositAcceptanceModeCode_ > 0n) {
+			if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
 				await expect(transactionResponsePromise_)
 					.emit(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
 					.withArgs("ETH transfer to charity failed.", brokenEthReceiverAddr_, cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_);
@@ -434,7 +434,7 @@ describe("MainPrize", function () {
 					.withArgs(brokenEthReceiverAddr_, cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_);
 			}
 			const brokenEthReceiverEthBalanceAmount_ = await hre.ethers.provider.getBalance(brokenEthReceiverAddr_);
-			expect(brokenEthReceiverEthBalanceAmount_).equal((ethDepositAcceptanceModeCode_ > 0n) ? 0n : (cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_));
+			expect(brokenEthReceiverEthBalanceAmount_).equal((brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) ? 0n : (cosmicSignatureNftStakingTotalEthRewardAmount_ + charityEthDonationAmount_));
 		}
 	});
 

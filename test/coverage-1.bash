@@ -25,8 +25,8 @@
 		# todo-0 Uncomment the command line with no arguments.
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/MainPrize.js'
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-1.js,PrizesWallet-2.js}'
-		'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-?.js,StakingWalletCosmicSignatureNft.js,SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-?.js,BidderContract.js,BlockTimeStamps.js}'
-		# 'npx' 'hardhat' 'coverage'
+		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-?.js,StakingWalletCosmicSignatureNft.js,SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-?.js,BidderContract.js,BlockTimeStamps.js}'
+		'npx' 'hardhat' 'coverage'
 
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Coverage failed. Press any key to finish.'
