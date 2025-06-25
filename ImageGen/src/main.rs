@@ -9,10 +9,12 @@ mod analysis;
 mod sim;
 mod render;
 mod spectrum;
+mod drift;
 
 use utils::*;
 use sim::*;
 use render::*;
+use drift::*;
 
 /// Command-line arguments
 #[derive(Parser, Debug)]
@@ -83,6 +85,18 @@ struct Args {
     /// Strength of density-aware alpha compression (0 = off)
     #[arg(long, default_value_t = 6.0)]
     alpha_compress: f64,
+
+    /// Disable drift motion (drift is enabled by default)
+    #[arg(long, default_value_t = false)]
+    no_drift: bool,
+
+    /// Drift mode: linear, brownian
+    #[arg(long, default_value = "brownian")]
+    drift_mode: String,
+
+    /// Scale of drift motion (relative to system size)
+    #[arg(long, default_value_t = 0.01)]
+    drift_scale: f64,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -137,8 +151,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.num_steps_sim
     );
     let sim_result = get_positions(best_bodies.clone(), args.num_steps_sim);
-    let positions = sim_result.positions;
+    let mut positions = sim_result.positions;
     println!("   => Done.");
+
+    // 2.5) Apply drift transformation if enabled (default)
+    if !args.no_drift {
+        println!("STAGE 2.5/7: Applying {} drift...", args.drift_mode);
+        
+        // Create and apply drift using the existing RNG
+        let num_steps = positions[0].len();
+        let mut drift_transform = parse_drift_mode(&args.drift_mode, &mut rng, args.drift_scale, num_steps);
+        let dt = 0.001; // Same dt as used in simulation
+        drift_transform.apply(&mut positions, dt);
+        
+        println!("   => Drift applied with scale {}", args.drift_scale);
+    }
 
     // 3) Generate color sequences
     println!("STAGE 3/7: Generating color sequences + alpha...");
