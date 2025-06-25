@@ -23,11 +23,11 @@
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-2 Reentries$'
 			# 'npx' 'hardhat' 'test' '--grep' '^Arbitrum Calls to Arbitrum precompile contracts errors$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d '
-			# 'npx' 'hardhat' 'test' '--grep' '^CharityWallet '
+			'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft '
 			# 'npx' 'hardhat' 'test' '--grep' '^\w+\b(?!-Old) '
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
-			'npx' 'hardhat' 'test'
+			# 'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
 				read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
