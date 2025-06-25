@@ -9,16 +9,15 @@ import argparse
 # ===================== Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 1,
-    'max_random_sleep': 3,
+    'max_concurrent': 3,
+    'max_random_sleep': 100,
     # --- Seed Generation Config ---
     'base_seed_string': "cosmic_signature", # Base string for seed generation
-    'num_seeds_per_combo': 10,             # How many seeds to try for each drift combo
+    'num_seeds_per_combo': 30,             # How many seeds to try for each drift combo
     'seed_hex_bytes': 6,                    # How many bytes of the hash to use (6 bytes = 48 bits)
-    'base_output_name': 'drift', # Added base name for output files
     # --- Drift Test Matrix ---
-    'drift_scales': [1.0, 10.0, 100.0],      # Different drift scales to test
-    'drift_modes': ['none', 'linear', 'brownian'],  # Different drift modes to test
+    'drift_scales': [0.3, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0],      # Different drift scales to test
+    'drift_modes': ['none', 'brownian'],  # Different drift modes to test
     'use_test_matrix': True                # Whether to use the test matrix or single config
 }
 
@@ -113,7 +112,6 @@ def main():
     max_workers = CONFIG['max_concurrent']
     base_string = CONFIG['base_seed_string']
     seed_bytes_len = CONFIG['seed_hex_bytes']
-    base_output_name = CONFIG['base_output_name']
     num_seeds = CONFIG['num_seeds_per_combo']
 
     # Generate drift configurations
@@ -172,7 +170,6 @@ def main():
                 'seed_idx': seed_idx,
                 'base_string': base_string,
                 'seed_bytes_len': seed_bytes_len,
-                'base_output_name': base_output_name,
                 'pics_dir': pics_dir
             }
             all_jobs.append(job_info)
@@ -191,14 +188,14 @@ def main():
             seed_idx = job['seed_idx']
 
             # 1. Generate the input string for hashing - include drift config
-            input_seed_str = f"{job['base_string']}_{drift_str}_{seed_idx}"
+            input_seed_str = f"{drift_str}_{seed_idx}"
 
             # 2. Generate the actual hex seed using the hash
             hex_seed = generate_hex_seed(input_seed_str, job['seed_bytes_len'])
 
             # 3. Derive filename including drift settings
             seed_suffix = hex_seed[2:][:8] # Use first 8 chars of hex seed
-            output_file_base = f"{job['base_output_name']}_{drift_str}_{seed_suffix}"
+            output_file_base = f"{seed_suffix}_{drift_str}"
 
             # Check existence in the 'pics' directory
             output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
