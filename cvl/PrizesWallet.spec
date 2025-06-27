@@ -24,7 +24,7 @@ hook Sstore currentContract._donatedTokens[INDEX uint256 idx].amount uint256 new
 			if (newValue> oldValue) {
 				gDonatedERC20Unclaimed[round][addr] = 
 					gDonatedERC20Unclaimed[round][addr] + (to_mathint(newValue) - to_mathint(oldValue));
-			} else {
+			 else {
 				assert oldValue < newValue;		// amount of donated tokens can only increase or set to 0
 			}
 		}
@@ -36,54 +36,18 @@ hook LOG4(uint offset, uint length, bytes32 t1,bytes32 t2, bytes32 t3, bytes32 t
 }
 rule genericMethodMatcher1Step() {
 
+    require currentContract == e0.msg.sender;
     // Step 0
     method f0; env e0; calldataarg args0;
-    // if this is one of the game-only methods, enforce the guard
     if (f0.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector
      || f0.selector == sig:PrizesWallet.depositEth(uint256,address).selector
      || f0.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector
      || f0.selector == sig:PrizesWallet.donateNft(uint256,address,address,uint256).selector) {
-        require currentContract.game() == e0.msg.sender;
+		//require e0.msg.sender=0x0101010101010101010101010101010101010101;
+    	require currentContract.game() == e0.msg.sender;
     }
+	
     f0(e0, args0);
 
 	satisfy true;
 }
-rule genericMethodMatcher3Steps() {
-
-    // Step 0
-    method f0; env e0; calldataarg args0;
-    // if this is one of the game-only methods, enforce the guard
-    if (f0.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector
-     || f0.selector == sig:PrizesWallet.depositEth(uint256,address).selector
-     || f0.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector
-     || f0.selector == sig:PrizesWallet.donateNft(uint256,address,address,uint256).selector) {
-        require currentContract.game() == e0.msg.sender;
-    }
-    f0(e0, args0);
-
-    // Step 1
-    method f1; env e1; calldataarg args1;
-    if (f1.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector
-     || f1.selector == sig:PrizesWallet.depositEth(uint256,address).selector
-     || f1.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector
-     || f1.selector == sig:PrizesWallet.donateNft(uint256,address,address,uint256).selector) {
-        require currentContract.game() == e1.msg.sender;
-    }
-    f1(e1, args1);
-
-    // Step 2
-    method f2; env e2; calldataarg args2;
-    if (f2.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector
-     || f2.selector == sig:PrizesWallet.depositEth(uint256,address).selector
-     || f2.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector
-     || f2.selector == sig:PrizesWallet.donateNft(uint256,address,address,uint256).selector) {
-        require currentContract.game() == e2.msg.sender;
-    }
-    f2(e2, args2);
-
-	satisfy true;
-}
-//	if (f.selector == sig:PrizesWallet.registerRoundEndAndDepositEthMany(uint256,address,(address,uint256)[]).selector) {
-//		require currentContract.game() == e.msg.sender
-//	}
