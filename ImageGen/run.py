@@ -19,7 +19,9 @@ CONFIG = {
     # --- Drift Test Matrix ---
     'drift_scales': [0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0],      # Different drift scales to test
     'drift_modes': ['none', 'linear', 'brownian'],  # Different drift modes to test
-    'num_steps_options': [100000, 300000, 1000000],  # Different simulation step counts to test
+    'num_steps_options': [100000, 300000, 1000000, 3000000],  # Different simulation step counts to test
+    # --- Alpha Compression Matrix ---
+    'alpha_compress_values': [0.0, 3.0, 6.0, 12.0],  # Different alpha compression values to test
     'use_test_matrix': True                # Whether to use the test matrix or single config
 }
 
@@ -93,6 +95,8 @@ def main():
                         help='Maximum concurrent workers (default: 1)')
     parser.add_argument('--num-steps-sim', type=int,
                         help='Number of simulation steps for single config mode')
+    parser.add_argument('--alpha-compress', type=float,
+                        help='Alpha compression value for single config mode')
     args = parser.parse_args()
 
     # Update CONFIG based on arguments
@@ -111,8 +115,13 @@ def main():
             CONFIG['single_drift_scale'] = args.drift_scale
         else:
             CONFIG['single_drift_scale'] = 0.01
+            
+        if args.alpha_compress is not None:
+            CONFIG['single_alpha_compress'] = args.alpha_compress
+        else:
+            CONFIG['single_alpha_compress'] = 6.0  # Default value
 
-        # Get config values
+    # Get config values
     max_workers = CONFIG['max_concurrent']
     base_string = CONFIG['base_seed_string']
     seed_bytes_len = CONFIG['seed_hex_bytes']
@@ -135,23 +144,26 @@ def main():
                 print(f"  - {config['mode']} drift, scale={config['scale']}")
             else:
                 print(f"  - no drift")
+        print(f"Will test with {len(CONFIG['alpha_compress_values'])} alpha compression values: {CONFIG['alpha_compress_values']}")
         print(f"Will generate {num_seeds} random seeds")
         print(f"Each seed will be run with {len(CONFIG['num_steps_options'])} step counts: {CONFIG['num_steps_options']}")
         print(f"Each seed+steps combo will be run with all {len(drift_configs)} drift configurations")
-        print(f"Total runs: {num_seeds} × {len(CONFIG['num_steps_options'])} × {len(drift_configs)} = {num_seeds * len(CONFIG['num_steps_options']) * len(drift_configs)}")
+        print(f"Each drift configuration will be run with all {len(CONFIG['alpha_compress_values'])} alpha compression values")
+        print(f"Total runs: {num_seeds} × {len(CONFIG['num_steps_options'])} × {len(drift_configs)} × {len(CONFIG['alpha_compress_values'])} = {num_seeds * len(CONFIG['num_steps_options']) * len(drift_configs) * len(CONFIG['alpha_compress_values'])}")
     else:
         # Single configuration
         mode = CONFIG.get('single_drift_mode', 'brownian')
         scale = CONFIG.get('single_drift_scale', 0.01)
+        alpha_compress = CONFIG.get('single_alpha_compress', 6.0)
         if mode == 'none':
             drift_configs.append({'mode': mode, 'scale': 0, 'enabled': False})
         else:
             drift_configs.append({'mode': mode, 'scale': scale, 'enabled': True})
 
         if drift_configs[0]['enabled']:
-            print(f"Running single configuration: {mode} drift, scale={scale}")
+            print(f"Running single configuration: {mode} drift, scale={scale}, alpha_compress={alpha_compress}")
         else:
-            print(f"Running single configuration: no drift")
+            print(f"Running single configuration: no drift, alpha_compress={alpha_compress}")
         
         # Handle step counts for single config
         if args.num_steps_sim:
@@ -168,34 +180,44 @@ def main():
     print(f"Using max {max_workers} concurrent workers\n")
 
     # Generate all job configurations first
-    # Iterate through seeds first, then steps, then drift configs for each combination
+    # Iterate through seeds first, then steps, then drift configs, then alpha compress for each combination
     all_jobs = []
+    
+    # Get alpha_compress values based on mode
+    if CONFIG['use_test_matrix']:
+        alpha_compress_values = CONFIG['alpha_compress_values']
+    else:
+        # Single config mode - use single value
+        alpha_compress_values = [CONFIG.get('single_alpha_compress', 6.0)]
+    
     for seed_idx in range(num_seeds):
         for num_steps in CONFIG['num_steps_options']:
             for drift_config in drift_configs:
-                # Format drift info for filename
-                if drift_config['enabled']:
-                    drift_str = f"{drift_config['mode']}_s{drift_config['scale']}"
-                else:
-                    drift_str = "nodrift"
+                for alpha_compress in alpha_compress_values:
+                    # Format drift info for filename
+                    if drift_config['enabled']:
+                        drift_str = f"{drift_config['mode']}_s{drift_config['scale']}"
+                    else:
+                        drift_str = "nodrift"
 
-                # Format steps for filename (100k, 300k, 1M)
-                if num_steps >= 1000000:
-                    steps_str = f"{num_steps // 1000000}M"
-                else:
-                    steps_str = f"{num_steps // 1000}k"
+                    # Format steps for filename (100k, 300k, 1M)
+                    if num_steps >= 1000000:
+                        steps_str = f"{num_steps // 1000000}M"
+                    else:
+                        steps_str = f"{num_steps // 1000}k"
 
-                job_info = {
-                    'drift_config': drift_config,
-                    'drift_str': drift_str,
-                    'seed_idx': seed_idx,
-                    'num_steps': num_steps,
-                    'steps_str': steps_str,
-                    'base_string': base_string,
-                    'seed_bytes_len': seed_bytes_len,
-                    'pics_dir': pics_dir
-                }
-                all_jobs.append(job_info)
+                    job_info = {
+                        'drift_config': drift_config,
+                        'drift_str': drift_str,
+                        'seed_idx': seed_idx,
+                        'num_steps': num_steps,
+                        'steps_str': steps_str,
+                        'alpha_compress': alpha_compress,
+                        'base_string': base_string,
+                        'seed_bytes_len': seed_bytes_len,
+                        'pics_dir': pics_dir
+                    }
+                    all_jobs.append(job_info)
 
     # Randomize the order of all jobs
     random.shuffle(all_jobs)
@@ -217,9 +239,10 @@ def main():
         # 2. Generate the actual hex seed using the hash
         hex_seed = generate_hex_seed(input_seed_str, job['seed_bytes_len'])
 
-        # 3. Derive filename including steps and drift settings
+        # 3. Derive filename including steps, drift settings, and alpha compress
         seed_suffix = hex_seed[2:][:8] # Use first 8 chars of hex seed
-        output_file_base = f"{seed_suffix}_{job['steps_str']}_{drift_str}"
+        alpha_str = f"a{job['alpha_compress']}"
+        output_file_base = f"{seed_suffix}_{job['steps_str']}_{alpha_str}_{drift_str}"
 
         # Check existence in the 'pics' directory
         output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
@@ -235,6 +258,7 @@ def main():
             CONFIG['program_path'],
             '--seed', hex_seed,
             '--num-steps-sim', str(job['num_steps']),
+            '--alpha-compress', str(job['alpha_compress']),
             # Pass ONLY the base filename - Rust handles the directory
             '--file-name', output_file_base
         ]

@@ -167,6 +167,16 @@ pub fn compute_black_white_gamma(
     (all_r[black_idx], all_r[white_idx], all_g[black_idx], all_g[white_idx], all_b[black_idx], all_b[white_idx])
 }
 
+/// Calculate the average density of a frame based on accumulated alpha values
+fn calculate_frame_density(accum: &[(f64, f64, f64, f64)]) -> f64 {
+    let total_alpha: f64 = accum.par_iter()
+        .map(|(_, _, _, a)| a)
+        .sum();
+    let num_pixels = accum.len() as f64;
+    // Return average alpha per pixel as density metric
+    total_alpha / num_pixels
+}
+
 /// Pass 2: final frames => color mapping => write frames
 #[allow(dead_code)]
 pub fn pass_2_write_frames(
@@ -193,6 +203,9 @@ pub fn pass_2_write_frames(
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
+
+    // Get initial alpha compression value from CLI
+    let base_alpha_compress = get_alpha_compress();
 
     // Use bounding_box (with padding)
     let (min_x, max_x, min_y, max_y) = bounding_box(positions);
@@ -231,6 +244,20 @@ pub fn pass_2_write_frames(
         // --- Per-Frame Processing and Writing ---
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {
+            // Calculate frame density and adapt alpha compression
+            let density = calculate_frame_density(&accum_crisp);
+            // Map density to alpha compression: low density = 0, high density = base value
+            let adaptive_compress = if density < 0.1 {
+                0.0 // Very low density: pure additive
+            } else if density < 1.0 {
+                base_alpha_compress * (density / 1.0) // Linear ramp up
+            } else {
+                base_alpha_compress // Full compression for high density
+            };
+            
+            // Update global alpha compression for this frame
+            set_alpha_compress(adaptive_compress);
+            
             // 1. Blur (if enabled)
             let mut temp_blur = accum_crisp.clone();
             if blur_radius_px > 0 {
@@ -290,11 +317,13 @@ pub fn pass_2_write_frames(
             });
 
             // 2.5 Exposure boost to brighten dark regions
-            let exposure = 1.15; // Increased from 1.0
+            let exposure_gamma = 1.2; // Power for log-space exposure (was 1.15 linear)
              final_frame_pixels.par_iter_mut().for_each(|pix| {
-                 pix.0 *= exposure;
-                 pix.1 *= exposure;
-                 pix.2 *= exposure;
+                 // Log-space exposure: raises to power of 1/gamma
+                 // This lifts shadows without blowing highlights
+                 pix.0 = pix.0.powf(1.0 / exposure_gamma);
+                 pix.1 = pix.1.powf(1.0 / exposure_gamma);
+                 pix.2 = pix.2.powf(1.0 / exposure_gamma);
              });
 
             // 3. Apply Levels & Convert to 8-bit
@@ -353,26 +382,45 @@ fn aces_film(x: f64) -> f64 {
     (x * (A * x + B)) / (x * (C * x + D) + E)
 }
 
-/// Simple RGB gradient generator
-pub fn generate_color_gradient(rng: &mut sim::Sha3RandomByteStream, length: usize) -> Vec<Rgb<u8>> {
+/// Simple RGB gradient generator with per-body hue drift
+pub fn generate_color_gradient(
+    rng: &mut sim::Sha3RandomByteStream, 
+    length: usize,
+    body_index: usize,
+    base_hue_offset: f64,
+) -> Vec<Rgb<u8>> {
     let mut colors = Vec::with_capacity(length);
     let mut hue = rng.next_f64() * 360.0;
+    // Add unique offset per body
+    hue += body_index as f64 * 120.0; // Spread bodies evenly in hue space
+    
     let base_saturation = 0.7;
     let saturation_range = 0.3; // 0.7 to 1.0
     let base_lightness = 0.4;
     let lightness_range = 0.2; // 0.4 to 0.6
 
-    for _ in 0..length {
+    for step in 0..length {
+        // Per-body hue drift: logarithmic growth with simulation time
+        let time_drift = if step > 0 {
+            base_hue_offset * (1.0 + (step as f64).ln()).min(360.0)
+        } else {
+            0.0
+        };
+        
+        let step_hue = hue + time_drift;
+        
         // Slightly vary hue
-        if rng.next_byte() & 1 == 0 { hue += 0.1; } else { hue -= 0.1; }
-        if hue < 0.0 { hue += 360.0; } else if hue >= 360.0 { hue -= 360.0; }
+        let mut current_hue = step_hue;
+        if rng.next_byte() & 1 == 0 { current_hue += 0.1; } else { current_hue -= 0.1; }
+        // Wrap around hue circle
+        current_hue = current_hue.rem_euclid(360.0);
 
         // Generate random saturation and lightness within ranges
         let saturation = base_saturation + rng.next_f64() * saturation_range;
         let lightness = base_lightness + rng.next_f64() * lightness_range;
 
         // Create HSL color and convert to SRGB
-        let hsl_color = Hsl::new(hue, saturation, lightness);
+        let hsl_color = Hsl::new(current_hue, saturation, lightness);
         let rgb = Srgb::from_color(hsl_color);
 
         colors.push(Rgb([(rgb.red*255.0) as u8,(rgb.green*255.0) as u8,(rgb.blue*255.0) as u8]));
@@ -386,9 +434,12 @@ pub fn generate_body_color_sequences(
     length: usize,
     alpha_value: f64,
 ) -> (Vec<Vec<Rgb<u8>>>, Vec<f64>) {
-    let b1 = generate_color_gradient(rng, length);
-    let b2 = generate_color_gradient(rng, length);
-    let b3 = generate_color_gradient(rng, length);
+    // Base hue offset for time-based drift (in degrees per log-time unit)
+    let base_hue_offset = 0.5; // Subtle drift over time
+    
+    let b1 = generate_color_gradient(rng, length, 0, base_hue_offset);
+    let b2 = generate_color_gradient(rng, length, 1, base_hue_offset);
+    let b3 = generate_color_gradient(rng, length, 2, base_hue_offset);
     println!("   => Setting all body alphas to 1/{alpha_value:.0} = {alpha_value:.3e}");
     (vec![b1,b2,b3], vec![alpha_value;3])
 }
@@ -911,6 +962,9 @@ pub fn pass_2_write_frames_spectral(
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
 
+    // Get initial alpha compression value from CLI
+    let base_alpha_compress = get_alpha_compress();
+
     let (min_x, max_x, min_y, max_y) = bounding_box(positions);
     let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
         let ww = (max_x - min_x).max(1e-12);
@@ -920,7 +974,6 @@ pub fn pass_2_write_frames_spectral(
         (px as f32, py as f32)
     };
 
-    // level ranges
     let range_r = (white_r - black_r).max(1e-14);
     let range_g = (white_g - black_g).max(1e-14);
     let range_b = (white_b - black_b).max(1e-14);
@@ -949,8 +1002,22 @@ pub fn pass_2_write_frames_spectral(
 
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {
-            // convert SPD -> RGBA
+            // Convert SPD -> RGBA for density calculation
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+            
+            // Calculate frame density and adapt alpha compression
+            let density = calculate_frame_density(&accum_rgba);
+            // Map density to alpha compression: low density = 0, high density = base value
+            let adaptive_compress = if density < 0.1 {
+                0.0 // Very low density: pure additive
+            } else if density < 1.0 {
+                base_alpha_compress * (density / 1.0) // Linear ramp up
+            } else {
+                base_alpha_compress // Full compression for high density
+            };
+            
+            // Update global alpha compression for this frame
+            set_alpha_compress(adaptive_compress);
 
             // blur processing identical to original
             let mut temp_blur = accum_rgba.clone();
@@ -979,14 +1046,15 @@ pub fn pass_2_write_frames_spectral(
 
             // exposure + levels + ACES same as original
             let mut buf_8bit = vec![0u8; npix * 3];
-            let exposure = 1.15;
+            let exposure_gamma = 1.2; // Power for log-space exposure (was 1.15 linear)
             buf_8bit
                 .par_chunks_mut(3)
                 .zip(final_frame_pixels.par_iter())
                 .for_each(|(chunk, &(mut fr, mut fg, mut fb, fa))| {
-                    fr *= exposure;
-                    fg *= exposure;
-                    fb *= exposure;
+                    // Apply log-space exposure boost
+                    fr = fr.powf(1.0 / exposure_gamma);
+                    fg = fg.powf(1.0 / exposure_gamma);
+                    fb = fb.powf(1.0 / exposure_gamma);
 
                     let mut rr = fr * fa;
                     let mut gg = fg * fa;
