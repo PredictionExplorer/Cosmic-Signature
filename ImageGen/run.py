@@ -4,6 +4,7 @@ import random
 import time
 import hashlib # For seed generation
 from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 import argparse
 
 # ===================== Configuration =====================
@@ -12,12 +13,13 @@ CONFIG = {
     'max_concurrent': 3,
     'max_random_sleep': 100,
     # --- Seed Generation Config ---
-    'base_seed_string': "cosmic_signature", # Base string for seed generation
-    'num_seeds_per_combo': 30,             # How many seeds to try for each drift combo
+    'base_seed_string': "cosmic_signature00", # Base string for seed generation
+    'num_seeds_per_combo': 4,             # How many seeds to try for each drift combo
     'seed_hex_bytes': 6,                    # How many bytes of the hash to use (6 bytes = 48 bits)
     # --- Drift Test Matrix ---
-    'drift_scales': [0.3, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0],      # Different drift scales to test
-    'drift_modes': ['none', 'brownian'],  # Different drift modes to test
+    'drift_scales': [0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0],      # Different drift scales to test
+    'drift_modes': ['none', 'linear', 'brownian'],  # Different drift modes to test
+    'num_steps_options': [100000, 300000, 1000000],  # Different simulation step counts to test
     'use_test_matrix': True                # Whether to use the test matrix or single config
 }
 
@@ -89,6 +91,8 @@ def main():
     parser.add_argument('--max-concurrent', type=int,
                         default=CONFIG.get('max_concurrent', 1),
                         help='Maximum concurrent workers (default: 1)')
+    parser.add_argument('--num-steps-sim', type=int,
+                        help='Number of simulation steps for single config mode')
     args = parser.parse_args()
 
     # Update CONFIG based on arguments
@@ -131,8 +135,10 @@ def main():
                 print(f"  - {config['mode']} drift, scale={config['scale']}")
             else:
                 print(f"  - no drift")
-        print(f"Each configuration will use {num_seeds} different seeds")
-        print(f"Total runs: {len(drift_configs) * num_seeds}")
+        print(f"Will generate {num_seeds} random seeds")
+        print(f"Each seed will be run with {len(CONFIG['num_steps_options'])} step counts: {CONFIG['num_steps_options']}")
+        print(f"Each seed+steps combo will be run with all {len(drift_configs)} drift configurations")
+        print(f"Total runs: {num_seeds} × {len(CONFIG['num_steps_options'])} × {len(drift_configs)} = {num_seeds * len(CONFIG['num_steps_options']) * len(drift_configs)}")
     else:
         # Single configuration
         mode = CONFIG.get('single_drift_mode', 'brownian')
@@ -146,6 +152,14 @@ def main():
             print(f"Running single configuration: {mode} drift, scale={scale}")
         else:
             print(f"Running single configuration: no drift")
+        
+        # Handle step counts for single config
+        if args.num_steps_sim:
+            CONFIG['num_steps_options'] = [args.num_steps_sim]
+            print(f"Using custom step count: {args.num_steps_sim}")
+        else:
+            print(f"Using default step counts: {CONFIG['num_steps_options']}")
+        
         print(f"Using {num_seeds} different seeds")
 
         # Rust program now saves PNGs to 'pics/' and videos to 'vids/'
@@ -154,90 +168,144 @@ def main():
     print(f"Using max {max_workers} concurrent workers\n")
 
     # Generate all job configurations first
+    # Iterate through seeds first, then steps, then drift configs for each combination
     all_jobs = []
-    for drift_config in drift_configs:
-        # Format drift info for filename
-        if drift_config['enabled']:
-            drift_str = f"{drift_config['mode']}_s{drift_config['scale']}"
-        else:
-            drift_str = "nodrift"
+    for seed_idx in range(num_seeds):
+        for num_steps in CONFIG['num_steps_options']:
+            for drift_config in drift_configs:
+                # Format drift info for filename
+                if drift_config['enabled']:
+                    drift_str = f"{drift_config['mode']}_s{drift_config['scale']}"
+                else:
+                    drift_str = "nodrift"
 
-        # Generate seeds for this configuration
-        for seed_idx in range(num_seeds):
-            job_info = {
-                'drift_config': drift_config,
-                'drift_str': drift_str,
-                'seed_idx': seed_idx,
-                'base_string': base_string,
-                'seed_bytes_len': seed_bytes_len,
-                'pics_dir': pics_dir
-            }
-            all_jobs.append(job_info)
+                # Format steps for filename (100k, 300k, 1M)
+                if num_steps >= 1000000:
+                    steps_str = f"{num_steps // 1000000}M"
+                else:
+                    steps_str = f"{num_steps // 1000}k"
+
+                job_info = {
+                    'drift_config': drift_config,
+                    'drift_str': drift_str,
+                    'seed_idx': seed_idx,
+                    'num_steps': num_steps,
+                    'steps_str': steps_str,
+                    'base_string': base_string,
+                    'seed_bytes_len': seed_bytes_len,
+                    'pics_dir': pics_dir
+                }
+                all_jobs.append(job_info)
 
     # Randomize the order of all jobs
     random.shuffle(all_jobs)
     print(f"Randomized order of {len(all_jobs)} total jobs\n")
 
-    futures = []
+    # Prepare jobs to run (filter out existing ones first)
+    jobs_to_run = []
+    skipped_count = 0
+    
+    for job in all_jobs:
+        drift_config = job['drift_config']
+        drift_str = job['drift_str']
+        seed_idx = job['seed_idx']
+
+        # 1. Generate the input string for hashing - DO NOT include drift config
+        # This ensures the same seed is used across all drift settings
+        input_seed_str = f"{base_string}_{seed_idx}"
+
+        # 2. Generate the actual hex seed using the hash
+        hex_seed = generate_hex_seed(input_seed_str, job['seed_bytes_len'])
+
+        # 3. Derive filename including steps and drift settings
+        seed_suffix = hex_seed[2:][:8] # Use first 8 chars of hex seed
+        output_file_base = f"{seed_suffix}_{job['steps_str']}_{drift_str}"
+
+        # Check existence in the 'pics' directory
+        output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
+
+        # 4. Check if the output PNG already exists
+        if os.path.exists(output_png_path):
+            print(f"Skipping: {output_file_base} (already exists)")
+            skipped_count += 1
+            continue # Skip this iteration
+
+        # 5. Construct the command
+        command = [
+            CONFIG['program_path'],
+            '--seed', hex_seed,
+            '--num-steps-sim', str(job['num_steps']),
+            # Pass ONLY the base filename - Rust handles the directory
+            '--file-name', output_file_base
+        ]
+
+        # Add drift configuration
+        if not drift_config['enabled']:
+            command.append('--no-drift')
+        else:
+            # Add drift mode and scale
+            command.extend(['--drift-mode', drift_config['mode']])
+            command.extend(['--drift-scale', str(drift_config['scale'])])
+
+        jobs_to_run.append({
+            'command': command,
+            'output_file_base': output_file_base,
+            'hex_seed': hex_seed
+        })
+
+    print(f"\nSkipped {skipped_count} existing files")
+    print(f"Will run {len(jobs_to_run)} jobs with max {max_workers} concurrent workers\n")
+
+    # Run jobs maintaining constant concurrency level
     run_counter = 0
+    active_futures = {}
+    job_index = 0
+    
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Process jobs in randomized order
-        for job in all_jobs:
-            drift_config = job['drift_config']
-            drift_str = job['drift_str']
-            seed_idx = job['seed_idx']
-
-            # 1. Generate the input string for hashing - include drift config
-            input_seed_str = f"{drift_str}_{seed_idx}"
-
-            # 2. Generate the actual hex seed using the hash
-            hex_seed = generate_hex_seed(input_seed_str, job['seed_bytes_len'])
-
-            # 3. Derive filename including drift settings
-            seed_suffix = hex_seed[2:][:8] # Use first 8 chars of hex seed
-            output_file_base = f"{seed_suffix}_{drift_str}"
-
-            # Check existence in the 'pics' directory
-            output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
-
-            # 4. Check if the output PNG already exists
-            if os.path.exists(output_png_path):
-                print(f"Skipping: {output_file_base} (already exists)")
-                continue # Skip this iteration
-
-            # 5. Construct the command
-            command = [
-                CONFIG['program_path'],
-                '--seed', hex_seed,
-                # Pass ONLY the base filename - Rust handles the directory
-                '--file-name', output_file_base
-            ]
-
-            # Add drift configuration
-            if not drift_config['enabled']:
-                command.append('--no-drift')
-            else:
-                # Add drift mode and scale
-                command.extend(['--drift-mode', drift_config['mode']])
-                command.extend(['--drift-scale', str(drift_config['scale'])])
-
-            # 6. Submit the command to the executor
-            print(f"Submitting: {output_file_base} (seed {hex_seed})")
-            futures.append(executor.submit(run_command, command))
+        # Submit initial batch of jobs
+        while len(active_futures) < max_workers and job_index < len(jobs_to_run):
+            job = jobs_to_run[job_index]
+            jobs_remaining = len(jobs_to_run) - job_index
+            print(f"[Submitting] {job['output_file_base']} (seed {job['hex_seed']}) | Jobs remaining: {jobs_remaining}")
+            future = executor.submit(run_command, job['command'])
+            active_futures[future] = job
+            job_index += 1
             run_counter += 1
 
-        print(f"\nAll {len(futures)} jobs submitted. Waiting for completion...")
-        # Wait for all submitted futures to complete
-        for future in futures:
-            try:
-                future.result() # Wait for the task to finish and retrieve result/exception
-            except Exception as e:
-                print(f"A job raised an exception: {e}")
-            except KeyboardInterrupt:
-                 print("\nCaught KeyboardInterrupt, stopping...")
-                 # Attempt to cancel pending futures
-                 executor.shutdown(wait=False, cancel_futures=True)
-                 break # Exit the loop
+        # Process jobs as they complete and submit new ones
+        try:
+            while active_futures:
+                # Wait for at least one job to complete
+                done, pending = concurrent.futures.wait(
+                    active_futures.keys(), 
+                    return_when=concurrent.futures.FIRST_COMPLETED
+                )
+                
+                # Process completed jobs
+                for future in done:
+                    job = active_futures.pop(future)
+                    try:
+                        future.result()  # This will raise exception if job failed
+                        print(f"[Completed] {job['output_file_base']} | Active jobs: {len(active_futures)}")
+                    except Exception as e:
+                        print(f"[Failed] {job['output_file_base']} raised an exception: {e} | Active jobs: {len(active_futures)}")
+                    
+                    # Submit a new job if available
+                    if job_index < len(jobs_to_run):
+                        new_job = jobs_to_run[job_index]
+                        jobs_remaining = len(jobs_to_run) - job_index
+                        print(f"[Submitting] {new_job['output_file_base']} (seed {new_job['hex_seed']}) | Jobs remaining: {jobs_remaining}")
+                        new_future = executor.submit(run_command, new_job['command'])
+                        active_futures[new_future] = new_job
+                        job_index += 1
+                        run_counter += 1
+                
+        except KeyboardInterrupt:
+            print("\nCaught KeyboardInterrupt, stopping...")
+            # Cancel all pending futures
+            for future in active_futures:
+                future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
 
     print(f"\nCompleted! Processed {run_counter} unique configurations.")
     print("Check the 'pics/' directory for results organized by drift settings.")
