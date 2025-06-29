@@ -27,6 +27,201 @@ fn get_alpha_compress() -> f64 {
     f64::from_bits(ALPHA_COMPRESS_BITS.load(Ordering::Relaxed))
 }
 
+/// Mipmap pyramid for efficient multi-scale filtering
+pub struct MipPyramid {
+    levels: Vec<Vec<(f64, f64, f64, f64)>>,
+    widths: Vec<usize>,
+    heights: Vec<usize>,
+}
+
+impl MipPyramid {
+    pub fn new(base: &[(f64, f64, f64, f64)], width: usize, height: usize, levels: usize) -> Self {
+        let mut pyramid = MipPyramid {
+            levels: vec![base.to_vec()],
+            widths: vec![width],
+            heights: vec![height],
+        };
+        
+        for level in 1..levels {
+            let prev_w = pyramid.widths[level - 1];
+            let prev_h = pyramid.heights[level - 1];
+            let new_w = (prev_w + 1) / 2;
+            let new_h = (prev_h + 1) / 2;
+            
+            let mut downsampled = vec![(0.0, 0.0, 0.0, 0.0); new_w * new_h];
+            
+            // Box filter downsample (parallel)
+            downsampled.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
+                let x = idx % new_w;
+                let y = idx / new_w;
+                
+                // Sample 2x2 region from previous level
+                let x0 = (x * 2).min(prev_w - 1);
+                let x1 = ((x * 2) + 1).min(prev_w - 1);
+                let y0 = (y * 2).min(prev_h - 1);
+                let y1 = ((y * 2) + 1).min(prev_h - 1);
+                
+                let p00 = pyramid.levels[level - 1][y0 * prev_w + x0];
+                let p01 = pyramid.levels[level - 1][y0 * prev_w + x1];
+                let p10 = pyramid.levels[level - 1][y1 * prev_w + x0];
+                let p11 = pyramid.levels[level - 1][y1 * prev_w + x1];
+                
+                *pixel = (
+                    (p00.0 + p01.0 + p10.0 + p11.0) * 0.25,
+                    (p00.1 + p01.1 + p10.1 + p11.1) * 0.25,
+                    (p00.2 + p01.2 + p10.2 + p11.2) * 0.25,
+                    (p00.3 + p01.3 + p10.3 + p11.3) * 0.25,
+                );
+            });
+            
+            pyramid.levels.push(downsampled);
+            pyramid.widths.push(new_w);
+            pyramid.heights.push(new_h);
+        }
+        
+        pyramid
+    }
+    
+    pub fn upsample_bilinear(&self, level: usize, target_w: usize, target_h: usize) -> Vec<(f64, f64, f64, f64)> {
+        let src = &self.levels[level];
+        let src_w = self.widths[level];
+        let src_h = self.heights[level];
+        let mut result = vec![(0.0, 0.0, 0.0, 0.0); target_w * target_h];
+        
+        result.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
+            let x = idx % target_w;
+            let y = idx / target_w;
+            
+            // Map to source coordinates
+            let sx = (x as f64 * src_w as f64 / target_w as f64).min((src_w - 1) as f64);
+            let sy = (y as f64 * src_h as f64 / target_h as f64).min((src_h - 1) as f64);
+            
+            let x0 = sx.floor() as usize;
+            let y0 = sy.floor() as usize;
+            let x1 = (x0 + 1).min(src_w - 1);
+            let y1 = (y0 + 1).min(src_h - 1);
+            
+            let fx = sx - x0 as f64;
+            let fy = sy - y0 as f64;
+            
+            // Bilinear interpolation
+            let p00 = src[y0 * src_w + x0];
+            let p01 = src[y0 * src_w + x1];
+            let p10 = src[y1 * src_w + x0];
+            let p11 = src[y1 * src_w + x1];
+            
+            let top = (
+                p00.0 * (1.0 - fx) + p01.0 * fx,
+                p00.1 * (1.0 - fx) + p01.1 * fx,
+                p00.2 * (1.0 - fx) + p01.2 * fx,
+                p00.3 * (1.0 - fx) + p01.3 * fx,
+            );
+            
+            let bottom = (
+                p10.0 * (1.0 - fx) + p11.0 * fx,
+                p10.1 * (1.0 - fx) + p11.1 * fx,
+                p10.2 * (1.0 - fx) + p11.2 * fx,
+                p10.3 * (1.0 - fx) + p11.3 * fx,
+            );
+            
+            *pixel = (
+                top.0 * (1.0 - fy) + bottom.0 * fy,
+                top.1 * (1.0 - fy) + bottom.1 * fy,
+                top.2 * (1.0 - fy) + bottom.2 * fy,
+                top.3 * (1.0 - fy) + bottom.3 * fy,
+            );
+        });
+        
+        result
+    }
+}
+
+/// Configuration for Difference-of-Gaussians bloom
+pub struct DogBloomConfig {
+    pub inner_sigma: f64,   // Base blur radius
+    pub outer_ratio: f64,   // Outer sigma = inner * ratio (typically 2-3)
+    pub strength: f64,      // DoG multiplier (0.2-0.8)
+    pub threshold: f64,     // Minimum value to include
+}
+
+impl Default for DogBloomConfig {
+    fn default() -> Self {
+        Self {
+            inner_sigma: 6.0,
+            outer_ratio: 2.5,
+            strength: 0.35,
+            threshold: 0.01,
+        }
+    }
+}
+
+/// Apply Difference-of-Gaussians bloom effect
+pub fn apply_dog_bloom(
+    input: &[(f64, f64, f64, f64)],
+    width: usize,
+    height: usize,
+    config: &DogBloomConfig,
+) -> Vec<(f64, f64, f64, f64)> {
+    // Create mip pyramid (3 levels)
+    let pyramid = MipPyramid::new(input, width, height, 3);
+    
+    // Blur at different mip levels for efficiency
+    let inner_radius = config.inner_sigma.round() as usize;
+    let outer_radius = (config.inner_sigma * config.outer_ratio).round() as usize;
+    
+    // Blur level 1 (half resolution) with inner sigma
+    let mut blur_inner = pyramid.levels[1].clone();
+    parallel_blur_2d_rgba(
+        &mut blur_inner,
+        pyramid.widths[1],
+        pyramid.heights[1],
+        inner_radius / 2,  // Adjust for mip level
+    );
+    
+    // Blur level 2 (quarter resolution) with outer sigma
+    let mut blur_outer = pyramid.levels[2].clone();
+    parallel_blur_2d_rgba(
+        &mut blur_outer,
+        pyramid.widths[2],
+        pyramid.heights[2],
+        outer_radius / 4,  // Adjust for mip level
+    );
+    
+    // Upsample both to original resolution
+    let inner_upsampled = pyramid.upsample_bilinear(1, width, height);
+    let outer_upsampled = pyramid.upsample_bilinear(2, width, height);
+    
+    // Compute DoG and apply threshold
+    let mut dog_result = vec![(0.0, 0.0, 0.0, 0.0); width * height];
+    
+    dog_result.par_iter_mut()
+        .zip(inner_upsampled.par_iter())
+        .zip(outer_upsampled.par_iter())
+        .for_each(|((dog, &inner), &outer)| {
+            let diff = (
+                inner.0 - outer.0,
+                inner.1 - outer.1,
+                inner.2 - outer.2,
+                inner.3 - outer.3,
+            );
+            
+            // Compute luminance for thresholding
+            let lum = 0.299 * diff.0 + 0.587 * diff.1 + 0.114 * diff.2;
+            
+            if lum > config.threshold {
+                *dog = (
+                    diff.0 * config.strength,
+                    diff.1 * config.strength,
+                    diff.2 * config.strength,
+                    diff.3 * config.strength,
+                );
+            }
+            // Negative values are left as zero (clamped)
+        });
+    
+    dog_result
+}
+
 /// Save single image as PNG
 pub fn save_image_as_png(
     rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>,
@@ -1056,6 +1251,8 @@ pub fn pass_1_build_histogram_spectral(
     all_r: &mut Vec<f64>,
     all_g: &mut Vec<f64>,
     all_b: &mut Vec<f64>,
+    bloom_mode: &str,
+    dog_config: &DogBloomConfig,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
@@ -1137,28 +1334,47 @@ pub fn pass_1_build_histogram_spectral(
             // convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-            // blur
-            let mut temp_blur = accum_rgba.clone();
-            if blur_radius_px > 0 {
-                parallel_blur_2d_rgba(
-                    &mut temp_blur,
-                    width as usize,
-                    height as usize,
-                    blur_radius_px,
-                );
-            }
-
-            // composite crisp + blur
+            // Apply bloom effect based on mode
             let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
-            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let (cr, cg, cb, ca) = accum_rgba[i];
-                let (br, bg, bb, ba) = temp_blur[i];
-                let out_r = cr * blur_core_brightness + br * blur_strength;
-                let out_g = cg * blur_core_brightness + bg * blur_strength;
-                let out_b = cb * blur_core_brightness + bb * blur_strength;
-                let out_a = ca * blur_core_brightness + ba * blur_strength;
-                *pix = (out_r, out_g, out_b, out_a);
-            });
+            
+            if bloom_mode == "dog" {
+                // Apply DoG bloom
+                let dog_bloom = apply_dog_bloom(&accum_rgba, width as usize, height as usize, dog_config);
+                
+                // Composite crisp + DoG
+                final_frame_pixels.par_iter_mut()
+                    .zip(accum_rgba.par_iter())
+                    .zip(dog_bloom.par_iter())
+                    .for_each(|((pix, &base), &dog)| {
+                        let out_r = base.0 * blur_core_brightness + dog.0;
+                        let out_g = base.1 * blur_core_brightness + dog.1;
+                        let out_b = base.2 * blur_core_brightness + dog.2;
+                        let out_a = base.3 * blur_core_brightness + dog.3;
+                        *pix = (out_r.min(1.0), out_g.min(1.0), out_b.min(1.0), out_a);
+                    });
+            } else {
+                // Original Gaussian blur
+                let mut temp_blur = accum_rgba.clone();
+                if blur_radius_px > 0 {
+                    parallel_blur_2d_rgba(
+                        &mut temp_blur,
+                        width as usize,
+                        height as usize,
+                        blur_radius_px,
+                    );
+                }
+
+                // composite crisp + blur
+                final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
+                    let (cr, cg, cb, ca) = accum_rgba[i];
+                    let (br, bg, bb, ba) = temp_blur[i];
+                    let out_r = cr * blur_core_brightness + br * blur_strength;
+                    let out_g = cg * blur_core_brightness + bg * blur_strength;
+                    let out_b = cb * blur_core_brightness + bb * blur_strength;
+                    let out_a = ca * blur_core_brightness + ba * blur_strength;
+                    *pix = (out_r, out_g, out_b, out_a);
+                });
+            }
 
             // collect histogram
             all_r.reserve(npix);
@@ -1195,6 +1411,8 @@ pub fn pass_2_write_frames_spectral(
     white_g: f64,
     black_b: f64,
     white_b: f64,
+    bloom_mode: &str,
+    dog_config: &DogBloomConfig,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
 ) -> Result<(), Box<dyn Error>> {
@@ -1298,35 +1516,61 @@ pub fn pass_2_write_frames_spectral(
             // Update global alpha compression for this frame
             set_alpha_compress(adaptive_compress);
 
-            // blur processing identical to original
-            let mut temp_blur = accum_rgba.clone();
-            if blur_radius_px > 0 {
-                parallel_blur_2d_rgba(
-                    &mut temp_blur,
-                    width as usize,
-                    height as usize,
-                    blur_radius_px,
-                );
-            }
-
+            // Apply bloom effect based on mode
             let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
-            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let (cr, cg, cb, ca) = accum_rgba[i];
-                let (br, bg, bb, ba) = temp_blur[i];
-                let base_r = cr * blur_core_brightness;
-                let base_g = cg * blur_core_brightness;
-                let base_b = cb * blur_core_brightness;
-                let base_a = ca * blur_core_brightness;
-                let bloom_r = br * blur_strength;
-                let bloom_g = bg * blur_strength;
-                let bloom_b = bb * blur_strength;
-                let bloom_a = ba * blur_strength;
-                let out_r = base_r + bloom_r - base_r * bloom_r;
-                let out_g = base_g + bloom_g - base_g * bloom_g;
-                let out_b = base_b + bloom_b - base_b * bloom_b;
-                let out_a = base_a + bloom_a;
-                *pix = (out_r, out_g, out_b, out_a);
-            });
+            
+            if bloom_mode == "dog" {
+                // Apply DoG bloom
+                let dog_bloom = apply_dog_bloom(&accum_rgba, width as usize, height as usize, dog_config);
+                
+                // Composite crisp + DoG
+                final_frame_pixels.par_iter_mut()
+                    .zip(accum_rgba.par_iter())
+                    .zip(dog_bloom.par_iter())
+                    .for_each(|((pix, &base), &dog)| {
+                        let base_r = base.0 * blur_core_brightness;
+                        let base_g = base.1 * blur_core_brightness;
+                        let base_b = base.2 * blur_core_brightness;
+                        let base_a = base.3 * blur_core_brightness;
+                        
+                        // Add DoG bloom
+                        let out_r = (base_r + dog.0).min(f64::MAX);
+                        let out_g = (base_g + dog.1).min(f64::MAX);
+                        let out_b = (base_b + dog.2).min(f64::MAX);
+                        let out_a = base_a;
+                        
+                        *pix = (out_r, out_g, out_b, out_a);
+                    });
+            } else {
+                // Original Gaussian blur processing
+                let mut temp_blur = accum_rgba.clone();
+                if blur_radius_px > 0 {
+                    parallel_blur_2d_rgba(
+                        &mut temp_blur,
+                        width as usize,
+                        height as usize,
+                        blur_radius_px,
+                    );
+                }
+
+                final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
+                    let (cr, cg, cb, ca) = accum_rgba[i];
+                    let (br, bg, bb, ba) = temp_blur[i];
+                    let base_r = cr * blur_core_brightness;
+                    let base_g = cg * blur_core_brightness;
+                    let base_b = cb * blur_core_brightness;
+                    let base_a = ca * blur_core_brightness;
+                    let bloom_r = br * blur_strength;
+                    let bloom_g = bg * blur_strength;
+                    let bloom_b = bb * blur_strength;
+                    let bloom_a = ba * blur_strength;
+                    let out_r = base_r + bloom_r - base_r * bloom_r;
+                    let out_g = base_g + bloom_g - base_g * bloom_g;
+                    let out_b = base_b + bloom_b - base_b * bloom_b;
+                    let out_a = base_a + bloom_a;
+                    *pix = (out_r, out_g, out_b, out_a);
+                });
+            }
 
             // exposure + levels + ACES same as original
             let mut buf_8bit = vec![0u8; npix * 3];

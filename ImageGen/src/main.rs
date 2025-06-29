@@ -100,6 +100,22 @@ struct Args {
     /// Profile tag to append to output filenames
     #[arg(long, default_value = "")]
     profile_tag: String,
+
+    /// Bloom mode: gaussian or dog
+    #[arg(long, default_value = "dog")]
+    bloom_mode: String,
+    
+    /// DoG bloom strength (0.1-1.0)
+    #[arg(long, default_value_t = 0.35)]
+    dog_strength: f64,
+    
+    /// DoG inner sigma in pixels
+    #[arg(long, default_value_t = 6.0)]
+    dog_sigma: f64,
+    
+    /// DoG outer/inner sigma ratio
+    #[arg(long, default_value_t = 2.5)]
+    dog_ratio: f64,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -203,6 +219,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut all_g = Vec::new();
     let mut all_b = Vec::new();
 
+    // Create DoG bloom config
+    let dog_config = render::DogBloomConfig {
+        inner_sigma: args.dog_sigma,
+        outer_ratio: args.dog_ratio,
+        strength: args.dog_strength,
+        threshold: 0.01,
+    };
+
     pass_1_build_histogram_spectral(
         &positions,
         &colors,
@@ -216,6 +240,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         &mut all_r,
         &mut all_g,
         &mut all_b,
+        &args.bloom_mode,
+        &dog_config,
     );
 
     // 6) compute black/white/gamma
@@ -271,6 +297,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 white_g,
                 black_b,
                 white_b,
+                &args.bloom_mode,
+                &dog_config,
                 |buf_8bit| {
                     out.write_all(buf_8bit)?;
                     Ok(())

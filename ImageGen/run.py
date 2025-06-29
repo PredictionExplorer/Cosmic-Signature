@@ -10,18 +10,18 @@ import argparse
 # ===================== Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 3,
-    'max_random_sleep': 100,
+    'max_concurrent': 2,
+    'max_random_sleep': 5,
     # --- Seed Generation Config ---
     'base_seed_string': "cosmic_signature00", # Base string for seed generation
     'num_seeds_per_combo': 4,             # How many seeds to try for each drift combo
     'seed_hex_bytes': 6,                    # How many bytes of the hash to use (6 bytes = 48 bits)
     # --- Drift Test Matrix ---
-    'drift_scales': [0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0],      # Different drift scales to test
+    'drift_scales': [0.1, 0.3, 1.0, 3.0, 10.0, 30.0],      # Different drift scales to test
     'drift_modes': ['none', 'linear', 'brownian'],  # Different drift modes to test
-    'num_steps_options': [100000, 300000, 1000000, 3000000],  # Different simulation step counts to test
+    'num_steps_options': [100000, 300000, 1000000],  # Different simulation step counts to test
     # --- Alpha Compression Matrix ---
-    'alpha_compress_values': [0.0, 3.0, 6.0, 12.0],  # Different alpha compression values to test
+    'alpha_compress_values': [0.0, 3.0, 6.0],  # Different alpha compression values to test
     'use_test_matrix': True                # Whether to use the test matrix or single config
 }
 
@@ -115,7 +115,7 @@ def main():
             CONFIG['single_drift_scale'] = args.drift_scale
         else:
             CONFIG['single_drift_scale'] = 0.01
-            
+
         if args.alpha_compress is not None:
             CONFIG['single_alpha_compress'] = args.alpha_compress
         else:
@@ -164,14 +164,14 @@ def main():
             print(f"Running single configuration: {mode} drift, scale={scale}, alpha_compress={alpha_compress}")
         else:
             print(f"Running single configuration: no drift, alpha_compress={alpha_compress}")
-        
+
         # Handle step counts for single config
         if args.num_steps_sim:
             CONFIG['num_steps_options'] = [args.num_steps_sim]
             print(f"Using custom step count: {args.num_steps_sim}")
         else:
             print(f"Using default step counts: {CONFIG['num_steps_options']}")
-        
+
         print(f"Using {num_seeds} different seeds")
 
         # Rust program now saves PNGs to 'pics/' and videos to 'vids/'
@@ -182,14 +182,14 @@ def main():
     # Generate all job configurations first
     # Iterate through seeds first, then steps, then drift configs, then alpha compress for each combination
     all_jobs = []
-    
+
     # Get alpha_compress values based on mode
     if CONFIG['use_test_matrix']:
         alpha_compress_values = CONFIG['alpha_compress_values']
     else:
         # Single config mode - use single value
         alpha_compress_values = [CONFIG.get('single_alpha_compress', 6.0)]
-    
+
     for seed_idx in range(num_seeds):
         for num_steps in CONFIG['num_steps_options']:
             for drift_config in drift_configs:
@@ -226,7 +226,7 @@ def main():
     # Prepare jobs to run (filter out existing ones first)
     jobs_to_run = []
     skipped_count = 0
-    
+
     for job in all_jobs:
         drift_config = job['drift_config']
         drift_str = job['drift_str']
@@ -284,7 +284,7 @@ def main():
     run_counter = 0
     active_futures = {}
     job_index = 0
-    
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit initial batch of jobs
         while len(active_futures) < max_workers and job_index < len(jobs_to_run):
@@ -301,10 +301,10 @@ def main():
             while active_futures:
                 # Wait for at least one job to complete
                 done, pending = concurrent.futures.wait(
-                    active_futures.keys(), 
+                    active_futures.keys(),
                     return_when=concurrent.futures.FIRST_COMPLETED
                 )
-                
+
                 # Process completed jobs
                 for future in done:
                     job = active_futures.pop(future)
@@ -313,7 +313,7 @@ def main():
                         print(f"[Completed] {job['output_file_base']} | Active jobs: {len(active_futures)}")
                     except Exception as e:
                         print(f"[Failed] {job['output_file_base']} raised an exception: {e} | Active jobs: {len(active_futures)}")
-                    
+
                     # Submit a new job if available
                     if job_index < len(jobs_to_run):
                         new_job = jobs_to_run[job_index]
@@ -323,7 +323,7 @@ def main():
                         active_futures[new_future] = new_job
                         job_index += 1
                         run_counter += 1
-                
+
         except KeyboardInterrupt:
             print("\nCaught KeyboardInterrupt, stopping...")
             # Cancel all pending futures
