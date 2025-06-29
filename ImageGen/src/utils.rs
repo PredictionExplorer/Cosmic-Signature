@@ -1,7 +1,29 @@
-use rustfft::num_complex::Complex;
-use rustfft::FftPlanner;
 use nalgebra::Vector3;
+use rustfft::FftPlanner;
+use rustfft::num_complex::Complex;
 use std::f64::{INFINITY, NEG_INFINITY};
+
+/// Performance metrics for rendering
+#[allow(dead_code)]
+pub struct RenderMetrics {
+    pub frame_time_ms: f64,
+    pub blur_time_ms: f64,
+    pub peak_memory_mb: f64,
+}
+
+#[allow(dead_code)]
+impl RenderMetrics {
+    pub fn new() -> Self {
+        Self { frame_time_ms: 0.0, blur_time_ms: 0.0, peak_memory_mb: 0.0 }
+    }
+
+    pub fn log(&self) {
+        println!(
+            "Performance: frame={:.1}ms blur={:.1}ms peak_mem={:.1}MB",
+            self.frame_time_ms, self.blur_time_ms, self.peak_memory_mb
+        );
+    }
+}
 
 /// Compute Fourier transform of a real-valued signal
 pub fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {

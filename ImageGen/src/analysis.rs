@@ -1,6 +1,6 @@
-use nalgebra::Vector3;
 use crate::sim::{Body, G};
 use crate::utils::fourier_transform;
+use nalgebra::Vector3;
 use statrs::statistics::Statistics;
 
 /// Total energy: kinetic + potential
@@ -31,12 +31,7 @@ pub fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
 }
 
 /// A measure of “regularity” vs “chaos”, smaller => more chaotic
-pub fn non_chaoticness(
-    m1: f64,
-    m2: f64,
-    m3: f64,
-    positions: &[Vec<Vector3<f64>>],
-) -> f64 {
+pub fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     if len == 0 {
         return 0.0;

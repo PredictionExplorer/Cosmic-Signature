@@ -1,20 +1,19 @@
 use clap::Parser;
-use hex;
 use std::error::Error;
 use std::fs;
 use image::{ImageBuffer, Rgb};
 
-mod utils;
 mod analysis;
-mod sim;
-mod render;
-mod spectrum;
 mod drift;
+mod render;
+mod sim;
+mod spectrum;
+mod utils;
 
-use utils::*;
-use sim::*;
-use render::*;
 use drift::*;
+use render::*;
+use sim::*;
+use utils::*;
 
 /// Command-line arguments
 #[derive(Parser, Debug)]
@@ -78,7 +77,7 @@ struct Args {
     #[arg(long, default_value_t = 10_000_000)]
     alpha_denom: usize,
 
-    /// If body’s energy in COM frame is above this, treat as escaping
+    /// If body's energy in COM frame is above this, treat as escaping
     #[arg(long, default_value_t = -0.3)]
     escape_threshold: f64,
 
@@ -97,6 +96,10 @@ struct Args {
     /// Scale of drift motion (relative to system size)
     #[arg(long, default_value_t = 0.01)]
     drift_scale: f64,
+
+    /// Profile tag to append to output filenames
+    #[arg(long, default_value = "")]
+    profile_tag: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -121,11 +124,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = args.height;
 
     // Convert hex seed
-    let hex_seed = if args.seed.starts_with("0x") {
-        &args.seed[2..]
-    } else {
-        &args.seed
-    };
+    let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
@@ -146,10 +145,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     // 2) Re-run best orbit
-    println!(
-        "STAGE 2/7: Re-running best orbit for {} steps...",
-        args.num_steps_sim
-    );
+    println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
     let sim_result = get_positions(best_bodies.clone(), args.num_steps_sim);
     let mut positions = sim_result.positions;
     println!("   => Done.");
@@ -157,13 +153,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 2.5) Apply drift transformation if enabled (default)
     if !args.no_drift {
         println!("STAGE 2.5/7: Applying {} drift...", args.drift_mode);
-        
+
         // Create and apply drift using the existing RNG
         let num_steps = positions[0].len();
-        let mut drift_transform = parse_drift_mode(&args.drift_mode, &mut rng, args.drift_scale, num_steps);
+        let mut drift_transform =
+            parse_drift_mode(&args.drift_mode, &mut rng, args.drift_scale, num_steps);
         let dt = 0.001; // Same dt as used in simulation
         drift_transform.apply(&mut positions, dt);
-        
+
         println!("   => Drift applied with scale {}", args.drift_scale);
     }
 
@@ -178,10 +175,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 4) bounding box info
     println!("STAGE 4/7: Determining bounding box...");
     let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
-    println!(
-        "   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]",
-        min_x, max_x, min_y, max_y
-    );
+    println!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", min_x, max_x, min_y, max_y);
 
     // 5) pass 1 => gather histogram
     println!("STAGE 5/7: PASS 1 => building global histogram...");
@@ -196,8 +190,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             // stronger default blur
             (0.012 * width.min(height) as f64).round() as usize,
-            8.0,  // boosted blur strength
-            8.0,  // core brightness = equal to strength for brighter lines
+            8.0, // boosted blur strength
+            8.0, // core brightness = equal to strength for brighter lines
         )
     };
 
@@ -244,8 +238,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 7) pass 2 => final frames => feed into ffmpeg
     println!("STAGE 7/7: PASS 2 => final frames => FFmpeg...");
-    let output_vid = format!("vids/{}.mp4", args.file_name);
-    let output_png = format!("pics/{}.png", args.file_name);
+
+    // Generate filename with optional profile tag
+    let base_filename = if args.profile_tag.is_empty() {
+        args.file_name.clone()
+    } else {
+        format!("{}_{}", args.file_name, args.profile_tag)
+    };
+
+    let output_vid = format!("vids/{}.mp4", base_filename);
+    let output_png = format!("pics/{}.png", base_filename);
     let mut last_frame_png: Option<ImageBuffer<Rgb<u8>, Vec<u8>>> = None;
 
     create_video_from_frames_singlepass(
@@ -260,7 +262,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 width,
                 height,
                 blur_radius_px,
-                blur_strength,         // Pass blur_strength
+                blur_strength,        // Pass blur_strength
                 blur_core_brightness, // Pass blur_core_brightness
                 frame_interval,
                 black_r,
@@ -284,7 +286,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(last_frame) = last_frame_png {
         println!("Attempting to save PNG to: {}", output_png);
         match save_image_as_png(&last_frame, &output_png) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => eprintln!("Failed to save final PNG: {}", e),
         }
     } else {

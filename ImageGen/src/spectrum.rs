@@ -5,8 +5,8 @@
 //! SPD buffer, then we convert the spectrum → linear-sRGB right before
 //! the normal tone-mapping / bloom pipeline.
 
-use once_cell::sync::Lazy;
 use image::Rgb;
+use once_cell::sync::Lazy;
 use palette::{FromColor, Hsl, Srgb};
 
 /// Number of wavelength buckets in the SPD.
@@ -111,7 +111,9 @@ pub fn spd_to_rgba(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     let mut b = 0.0;
     let mut total = 0.0;
     for (e, (&(lr, lg, lb), &k)) in spd.iter().zip(BIN_RGB.iter().zip(BIN_TONE.iter())) {
-        if *e == 0.0 { continue; }
+        if *e == 0.0 {
+            continue;
+        }
         // Per-bin tone curve
         let e_mapped = 1.0 - (-k * *e).exp();
         total += e_mapped;
@@ -119,10 +121,14 @@ pub fn spd_to_rgba(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
         g += e_mapped * lg;
         b += e_mapped * lb;
     }
-    if total == 0.0 { return (0.0,0.0,0.0,0.0); }
+    if total == 0.0 {
+        return (0.0, 0.0, 0.0, 0.0);
+    }
 
     // Normalise colour so it does NOT desaturate when total is high.
-    r /= total; g /= total; b /= total;
+    r /= total;
+    g /= total;
+    b /= total;
 
     // Boost saturation (linear RGB) to combat greying from multi-hue blend.
     let mean = (r + g + b) / 3.0;

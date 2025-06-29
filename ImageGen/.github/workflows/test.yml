@@ -1,0 +1,127 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [ main, develop, brownian ]
+  pull_request:
+    branches: [ main, develop, brownian ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Check formatting
+      run: cargo fmt -- --check
+      
+    - name: Run clippy
+      run: cargo clippy -- -D warnings
+    
+    - name: Build
+      run: cargo build --release
+      
+    - name: Run tests
+      run: cargo test --release
+    
+    - name: Generate test image
+      run: |
+        ./target/release/three_body_problem \
+          --seed 0x46205528 \
+          --width 512 --height 288 \
+          --num-steps-sim 100000 \
+          --drift-mode brownian \
+          --drift-scale 1.0 \
+          --alpha-compress 6.0 \
+          --file-name ci_test \
+          --profile-tag pr_${{ github.event.pull_request.number || github.run_number }}
+    
+    - name: List generated files
+      run: |
+        echo "Contents of pics/:"
+        ls -la pics/
+        echo "Generated test image:"
+        ls -la pics/ci_test_*.png || echo "No test image found"
+    
+    - name: Verify image (if reference exists)
+      run: |
+        if [ -f "ci/reference/baseline_512x288.png" ]; then
+          echo "Reference image found, verifying..."
+          python3 ci/verify_reference.py pics/ci_test_pr_*.png ci/reference/baseline_512x288.png
+        else
+          echo "No reference image found, skipping verification"
+          echo "Run 'ci/reference/generate_reference.sh' to create reference images"
+        fi
+      continue-on-error: true
+    
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-images-${{ matrix.os }}
+        path: |
+          pics/*.png
+          vids/*.mp4
+        retention-days: 7
+        
+  benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Build release
+      run: cargo build --release
+      
+    - name: Run benchmark
+      run: |
+        echo "Running performance benchmark..."
+        time ./target/release/three_body_problem \
+          --seed 0xBENCH \
+          --width 1920 --height 1080 \
+          --num-steps-sim 50000 \
+          --file-name benchmark \
+          --profile-tag perf
+        
+        echo "Benchmark complete"
+        
+    - name: Report file sizes
+      run: |
+        echo "Output file sizes:"
+        ls -lh pics/benchmark_perf.png || echo "PNG not found"
+        ls -lh vids/benchmark_perf.mp4 || echo "MP4 not found" 

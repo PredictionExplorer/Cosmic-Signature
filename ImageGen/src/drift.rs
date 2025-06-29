@@ -1,5 +1,5 @@
-use nalgebra::Vector3;
 use crate::sim::Sha3RandomByteStream;
+use nalgebra::Vector3;
 use std::f64::consts::PI;
 
 /// Trait for applying drift transformations to position data
@@ -25,16 +25,16 @@ impl BrownianDrift {
     pub fn new(rng: &mut Sha3RandomByteStream, scale: f64, num_steps: usize) -> Self {
         let dt_sqrt = 0.001f64.sqrt(); // Using known dt value
         let mut displacements = Vec::with_capacity(num_steps);
-        
+
         for _ in 0..num_steps {
             // Generate 3D Gaussian displacement using Box-Muller transform
             let dx = Self::gaussian_from_rng(rng) * scale * dt_sqrt;
             let dy = Self::gaussian_from_rng(rng) * scale * dt_sqrt;
             let dz = Self::gaussian_from_rng(rng) * scale * dt_sqrt;
-            
+
             displacements.push(Vector3::new(dx, dy, dz));
         }
-        
+
         Self { displacements }
     }
 
@@ -43,13 +43,13 @@ impl BrownianDrift {
         // Box-Muller transform: convert two uniform [0,1] to two Gaussian N(0,1)
         let u1 = rng.next_f64();
         let u2 = rng.next_f64();
-        
+
         // Avoid log(0)
         let u1 = u1.max(1e-10);
-        
+
         let r = (-2.0 * u1.ln()).sqrt();
         let theta = 2.0 * PI * u2;
-        
+
         r * theta.cos() // Return one of the two generated values
     }
 }
@@ -87,13 +87,13 @@ impl LinearDrift {
         let theta = rng.next_f64() * PI; // polar angle [0, π]
         let phi = rng.next_f64() * 2.0 * PI; // azimuthal angle [0, 2π]
         let speed = scale;
-        
+
         let velocity = Vector3::new(
             speed * theta.sin() * phi.cos(),
             speed * theta.sin() * phi.sin(),
             speed * theta.cos(),
         );
-        
+
         Self { velocity }
     }
 }
@@ -108,7 +108,7 @@ impl DriftTransform for LinearDrift {
 
         for step in 0..steps {
             let offset = self.velocity * (step as f64) * dt;
-            
+
             // Apply the same offset to all bodies at this timestep
             for body_positions in positions.iter_mut() {
                 body_positions[step] += offset;
@@ -118,7 +118,12 @@ impl DriftTransform for LinearDrift {
 }
 
 /// Parse drift mode from string
-pub fn parse_drift_mode(mode: &str, rng: &mut Sha3RandomByteStream, scale: f64, num_steps: usize) -> Box<dyn DriftTransform> {
+pub fn parse_drift_mode(
+    mode: &str,
+    rng: &mut Sha3RandomByteStream,
+    scale: f64,
+    num_steps: usize,
+) -> Box<dyn DriftTransform> {
     match mode.to_lowercase().as_str() {
         "none" => Box::new(NoDrift),
         "brownian" => Box::new(BrownianDrift::new(rng, scale, num_steps)),
@@ -128,4 +133,4 @@ pub fn parse_drift_mode(mode: &str, rng: &mut Sha3RandomByteStream, scale: f64, 
             Box::new(BrownianDrift::new(rng, scale, num_steps))
         }
     }
-} 
+}
