@@ -488,35 +488,8 @@ pub struct FrameMetadata {
 }
 ```
 
-#### 4. Switch to f32 Accumulation
-```rust
-// render.rs
-// Change accumulator types from (f64,f64,f64,f64) to (f32,f32,f32,f32)
-
-pub fn draw_line_segment_aa_alpha(
-    accum: &mut [(f32,f32,f32,f32)],  // Changed from f64
-    width: u32, height: u32,
-    mut x0: f32, mut y0: f32, mut x1: f32, mut y1: f32,
-    col0: Rgb<u8>, col1: Rgb<u8>,
-    alpha0: f64, alpha1: f64,
-) {
-    // Convert colors to f32 instead of f64
-    let r0 = col0[0] as f32 / 255.0;
-    let g0 = col0[1] as f32 / 255.0;
-    let b0 = col0[2] as f32 / 255.0;
-    // ... rest of implementation
-}
-
-// Update blur functions to work with f32
-pub fn parallel_blur_2d_rgba_f32(
-    buffer: &mut [(f32,f32,f32,f32)],
-    width: usize,
-    height: usize,
-    radius: usize,
-) {
-    // Similar to f64 version but with f32 arithmetic
-}
-```
+#### 4. Keep f64 Precision
+We maintain f64 throughout the pipeline for maximum precision, as the performance difference is minimal and quality is paramount.
 
 #### 5. Update Render Pipeline
 ```rust
@@ -556,7 +529,7 @@ hdr_scale: f64,  // Multiplier for line alpha in HDR mode
 - Render same scene with `--hdr-mode off` vs `--hdr-mode auto`
 - Verify no pixel values exceed reasonable bounds before tonemapping
 - Test with very sparse (few lines) and very dense (many overlapping lines) scenes
-- Measure memory usage reduction from f64→f32 conversion
+- Verify performance with f64 precision throughout
 - Add HDR reference image
 
 ### Expected Visual Changes
@@ -566,9 +539,9 @@ hdr_scale: f64,  // Multiplier for line alpha in HDR mode
 - Possible slight color shift due to different accumulation
 
 ### Files Changed
-- `src/render.rs` (remove compression, add exposure calc, f32 conversion)
+- `src/render.rs` (remove compression, add exposure calc)
 - `src/main.rs` (add HDR CLI args)
-- `src/spectrum.rs` (update to f32 if needed)
+- `src/spectrum.rs` (no changes needed)
 - `ci/reference/` (add HDR reference)
 
 ---
@@ -585,7 +558,7 @@ Create a modular post-processing pipeline to support future effects without code
 // post_effects.rs (new file)
 use std::error::Error;
 
-pub type PixelBuffer = Vec<(f32, f32, f32, f32)>;
+pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
 
 pub trait PostEffect: Send + Sync {
     fn name(&self) -> &str;
@@ -635,7 +608,7 @@ impl PostEffect for GaussianBloom {
     
     fn process(&self, input: &PixelBuffer, width: usize, height: usize) -> Result<PixelBuffer, Box<dyn Error>> {
         let mut blurred = input.clone();
-        parallel_blur_2d_rgba_f32(&mut blurred, width, height, self.radius);
+        parallel_blur_2d_rgba(&mut blurred, width, height, self.radius);
         
         let mut output = input.clone();
         output.par_iter_mut()
@@ -674,9 +647,9 @@ impl PostEffect for DogBloom {
         output.par_iter_mut()
             .zip(dog.par_iter())
             .for_each(|(out, &add)| {
-                out.0 = (out.0 + add.0).min(f32::MAX);
-                out.1 = (out.1 + add.1).min(f32::MAX);
-                out.2 = (out.2 + add.2).min(f32::MAX);
+                out.0 = (out.0 + add.0).min(f64::MAX);
+                out.1 = (out.1 + add.1).min(f64::MAX);
+                out.2 = (out.2 + add.2).min(f64::MAX);
             });
         
         Ok(output)
@@ -721,9 +694,9 @@ impl PostEffect for AcesTonemap {
     fn process(&self, input: &PixelBuffer, width: usize, height: usize) -> Result<PixelBuffer, Box<dyn Error>> {
         let mut output = input.clone();
         output.par_iter_mut().for_each(|pix| {
-            pix.0 = aces_film(pix.0 as f64) as f32;
-            pix.1 = aces_film(pix.1 as f64) as f32;
-            pix.2 = aces_film(pix.2 as f64) as f32;
+            pix.0 = aces_film(pix.0);
+            pix.1 = aces_film(pix.1);
+            pix.2 = aces_film(pix.2);
         });
         
         Ok(output)
@@ -829,7 +802,7 @@ use rayon::prelude::*;
 /// Input: linear RGB values (not gamma corrected)
 /// Output: L (lightness), a (green-red), b (blue-yellow)
 #[inline]
-pub fn linear_srgb_to_oklab(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
+pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     // Matrix multiplication: RGB to LMS
     let l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
     let m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
@@ -850,7 +823,7 @@ pub fn linear_srgb_to_oklab(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
 
 /// Convert OKLab to linear sRGB
 #[inline]
-pub fn oklab_to_linear_srgb(l: f32, a: f32, b: f32) -> (f32, f32, f32) {
+pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     // Transform from Lab to LMS (cube root space)
     let l_cbrt = l + 0.3963377774 * a + 0.2158037573 * b;
     let m_cbrt = l - 0.1055613458 * a - 0.0638541728 * b;
@@ -870,7 +843,7 @@ pub fn oklab_to_linear_srgb(l: f32, a: f32, b: f32) -> (f32, f32, f32) {
 }
 
 /// SIMD-optimized batch conversion
-pub fn linear_srgb_to_oklab_batch(pixels: &[(f32, f32, f32, f32)]) -> Vec<(f32, f32, f32, f32)> {
+pub fn linear_srgb_to_oklab_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, f64, f64, f64)> {
     pixels.par_iter()
         .map(|&(r, g, b, a)| {
             let (l, a_ch, b_ch) = linear_srgb_to_oklab(r, g, b);
@@ -879,7 +852,7 @@ pub fn linear_srgb_to_oklab_batch(pixels: &[(f32, f32, f32, f32)]) -> Vec<(f32, 
         .collect()
 }
 
-pub fn oklab_to_linear_srgb_batch(pixels: &[(f32, f32, f32, f32)]) -> Vec<(f32, f32, f32, f32)> {
+pub fn oklab_to_linear_srgb_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, f64, f64, f64)> {
     pixels.par_iter()
         .map(|&(l, a_ch, b_ch, alpha)| {
             let (r, g, b) = oklab_to_linear_srgb(l, a_ch, b_ch);
@@ -890,7 +863,7 @@ pub fn oklab_to_linear_srgb_batch(pixels: &[(f32, f32, f32, f32)]) -> Vec<(f32, 
 
 /// Soft gamut mapping for out-of-gamut colors
 #[inline]
-pub fn soft_clip_rgb(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
+pub fn soft_clip_rgb(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     // Find how far out of gamut we are
     let min_val = r.min(g).min(b);
     let max_val = r.max(g).max(b);
@@ -941,7 +914,7 @@ impl PostEffect for PerceptualBlur {
         
         // Apply blur in OKLab space
         let mut blurred_oklab = oklab_buffer.clone();
-        parallel_blur_2d_rgba_f32(&mut blurred_oklab, width, height, self.radius);
+        parallel_blur_2d_rgba(&mut blurred_oklab, width, height, self.radius);
         
         // Convert back to RGB
         let mut blurred_rgb = oklab_to_linear_srgb_batch(&blurred_oklab);
@@ -1006,9 +979,9 @@ mod tests {
         let step = 0.1;
         
         for i in -5..=5 {
-            let l_adjusted = base_color.0 + (i as f32) * step;
+            let l_adjusted = base_color.0 + (i as f64) * step;
             let (r, g, b) = oklab_to_linear_srgb(l_adjusted, base_color.1, base_color.2);
-            println!("L offset {}: RGB({:.3}, {:.3}, {:.3})", i as f32 * step, r, g, b);
+            println!("L offset {}: RGB({:.3}, {:.3}, {:.3})", i as f64 * step, r, g, b);
         }
     }
 }
@@ -1091,22 +1064,22 @@ pub fn get_draw_space() -> DrawSpace {
 // render.rs
 #[inline]
 fn plot(
-    accum: &mut [(f32,f32,f32,f32)], 
+    accum: &mut [(f64,f64,f64,f64)], 
     width: u32, 
     height: u32,
     x: i32, 
     y: i32, 
-    alpha: f32,
-    color_r: f32, 
-    color_g: f32, 
-    color_b: f32, 
-    base_alpha: f32
+    alpha: f64,
+    color_r: f64, 
+    color_g: f64, 
+    color_b: f64, 
+    base_alpha: f64
 ) {
     if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
         let idx = (y as usize * width as usize) + x as usize;
         
         let hdr_scale = get_hdr_scale();
-        let src_alpha = (alpha * base_alpha * hdr_scale).clamp(0.0, f32::MAX);
+        let src_alpha = (alpha * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
         
         match get_draw_space() {
             DrawSpace::LinearRgb => {
@@ -1156,7 +1129,7 @@ pub fn generate_color_gradient_oklab(
     length: usize,
     body_index: usize,
     base_hue_offset: f64,
-) -> Vec<(f32, f32, f32)> {
+) -> Vec<(f64, f64, f64)> {
     let mut colors = Vec::with_capacity(length);
     
     // Start in LCH space for intuitive control
@@ -1188,7 +1161,7 @@ pub fn generate_color_gradient_oklab(
         let b = chroma * hue_rad.sin();
         
         // Store as OKLab for direct use
-        colors.push((lightness as f32, a as f32, b as f32));
+        colors.push((lightness, a, b));
     }
     
     colors
@@ -1199,9 +1172,9 @@ pub fn generate_color_gradient_oklab(
 ```rust
 // render.rs
 fn convert_buffer_to_output_space(
-    buffer: &[(f32, f32, f32, f32)],
+    buffer: &[(f64, f64, f64, f64)],
     draw_space: DrawSpace,
-) -> Vec<(f32, f32, f32, f32)> {
+) -> Vec<(f64, f64, f64, f64)> {
     match draw_space {
         DrawSpace::LinearRgb => buffer.to_vec(),
         DrawSpace::Oklab => {
@@ -1519,7 +1492,7 @@ Add professional export options and comprehensive documentation.
 use exr::prelude::*;
 
 pub fn export_exr(
-    buffer: &[(f32, f32, f32, f32)],
+    buffer: &[(f64, f64, f64, f64)],
     width: usize,
     height: usize,
     path: &str,
@@ -1540,11 +1513,11 @@ pub fn export_exr(
             ..exr_metadata
         },
         Encoding::FAST_LOSSLESS,
-        SpecificChannels::rgba(|pixel: Vec4<f32>| pixel),
+        SpecificChannels::rgba(|pixel: Vec4<f64>| pixel),
     );
     
     // Convert buffer to EXR format
-    let pixels: Vec<Vec4<f32>> = buffer.iter()
+    let pixels: Vec<Vec4<f64>> = buffer.iter()
         .map(|&(r, g, b, a)| Vec4(r, g, b, a))
         .collect();
     

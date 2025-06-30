@@ -1,5 +1,6 @@
 //! Rendering module: histogram passes, color mapping, line drawing, and output
 
+use crate::post_effects::{PostEffectChain, AutoExposure, GaussianBloom, DogBloom};
 use crate::sim;
 use crate::spectrum::{BIN_SHIFT, NUM_BINS, rgb_to_bin, spd_to_rgba};
 use crate::utils::{bounding_box, build_gaussian_kernel};
@@ -150,6 +151,7 @@ impl MipPyramid {
 }
 
 /// Configuration for Difference-of-Gaussians bloom
+#[derive(Clone)]
 pub struct DogBloomConfig {
     pub inner_sigma: f64,   // Base blur radius
     pub outer_ratio: f64,   // Outer sigma = inner * ratio (typically 2-3)
@@ -311,6 +313,9 @@ pub fn pass_1_build_histogram(
     all_r: &mut Vec<f64>,
     all_g: &mut Vec<f64>,
     all_b: &mut Vec<f64>,
+    bloom_mode: &str,
+    dog_config: &DogBloomConfig,
+    hdr_mode: &str,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
@@ -360,29 +365,21 @@ pub fn pass_1_build_histogram(
         let is_final = step == total_steps - 1;
         // Process frame data on frame_interval OR the very last step
         if (step > 0 && step % frame_interval == 0) || is_final {
-            // 1. Blur (if enabled)
-            let mut temp_blur = accum_crisp.clone(); // Start with crisp data
-            if blur_radius_px > 0 {
-                parallel_blur_2d_rgba(
-                    &mut temp_blur,
-                    width as usize,
-                    height as usize,
-                    blur_radius_px,
-                );
-            }
-
-            // 2. Composite Crisp + Blur
-            let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
-            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let (cr, cg, cb, ca) = accum_crisp[i];
-                let (br, bg, bb, ba) = temp_blur[i]; // Use the potentially blurred buffer
-                // Blend crisp and blurred components
-                let out_r = cr * blur_core_brightness + br * blur_strength;
-                let out_g = cg * blur_core_brightness + bg * blur_strength;
-                let out_b = cb * blur_core_brightness + bb * blur_strength;
-                let out_a = ca * blur_core_brightness + ba * blur_strength; // Combine alphas too?
-                *pix = (out_r, out_g, out_b, out_a);
-            });
+            // Create and apply post-effect chain
+            let post_chain = create_post_effect_chain(
+                bloom_mode,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                dog_config,
+                hdr_mode,
+            );
+            
+            let final_frame_pixels = post_chain.process(
+                accum_crisp.clone(),
+                width as usize,
+                height as usize,
+            ).expect("Post-effect chain failed");
 
             // 3. Collect Histogram Data (Premultiplied)
             // Reserve approximate space to reduce reallocations
@@ -463,6 +460,9 @@ pub fn pass_2_write_frames(
     white_g: f64,
     black_b: f64,
     white_b: f64,
+    bloom_mode: &str,
+    dog_config: &DogBloomConfig,
+    hdr_mode: &str,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
 ) -> Result<(), Box<dyn Error>> {
@@ -532,73 +532,21 @@ pub fn pass_2_write_frames(
             // Update global alpha compression for this frame
             set_alpha_compress(adaptive_compress);
 
-            // 1. Blur (if enabled)
-            let mut temp_blur = accum_crisp.clone();
-            if blur_radius_px > 0 {
-                parallel_blur_2d_rgba(
-                    &mut temp_blur,
-                    width as usize,
-                    height as usize,
-                    blur_radius_px,
-                );
-            }
-
-            // 2. Composite Crisp + Blur + Bloom
-            let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
-            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let (cr, cg, cb, ca) = accum_crisp[i];
-                let (br, bg, bb, ba) = temp_blur[i];
-                // base composite
-                let base_r = cr * blur_core_brightness;
-                let base_g = cg * blur_core_brightness;
-                let base_b = cb * blur_core_brightness;
-                let base_a = ca * blur_core_brightness;
-                // bloom from blur pass
-                let bloom_r = br * blur_strength;
-                let bloom_g = bg * blur_strength;
-                let bloom_b = bb * blur_strength;
-                let bloom_a = ba * blur_strength;
-                // Screen Blend Approximation: C = A + B - A*B
-                let out_r = (base_r + bloom_r - base_r * bloom_r).clamp(0.0, f64::MAX); // Clamp to avoid negative
-                let out_g = (base_g + bloom_g - base_g * bloom_g).clamp(0.0, f64::MAX);
-                let out_b = (base_b + bloom_b - base_b * bloom_b).clamp(0.0, f64::MAX);
-                // carry through alpha
-                let out_a = base_a + bloom_a;
-                *pix = (out_r, out_g, out_b, out_a);
-            });
-
-            // --- Bloom highlight pass ---
-            let mut bloom_highlight = vec![(0.0, 0.0, 0.0, 0.0); npix];
-            // threshold and extra blur for highlights
-            let highlight_radius = blur_radius_px * 2;
-            let threshold = 0.3;
-            // extract bright regions
-            for (idx, &(r, g, b, a)) in final_frame_pixels.iter().enumerate() {
-                let lum = (0.299 * r + 0.587 * g + 0.114 * b) * a;
-                if lum > threshold {
-                    bloom_highlight[idx] = (r, g, b, a);
-                }
-            }
-            // heavy blur on highlights
-            if highlight_radius > 0 {
-                parallel_blur_2d_rgba(
-                    &mut bloom_highlight,
-                    width as usize,
-                    height as usize,
-                    highlight_radius,
-                );
-            }
-            // add back to final + clamp
-            final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                let (r1, g1, b1, a1) = *pix;
-                let (r2, g2, b2, _) = bloom_highlight[i];
-                // full highlight blend
-                let rf = (r1 + r2).min(1.0);
-                let gf = (g1 + g2).min(1.0);
-                let bf = (b1 + b2).min(1.0);
-                let af = a1;
-                *pix = (rf, gf, bf, af);
-            });
+            // Create and apply post-effect chain
+            let post_chain = create_post_effect_chain(
+                bloom_mode,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                dog_config,
+                hdr_mode,
+            );
+            
+            let final_frame_pixels = post_chain.process(
+                accum_crisp.clone(),
+                width as usize,
+                height as usize,
+            )?;
 
             // 3. Apply Levels & Convert to 8-bit
             let mut buf_8bit = vec![0u8; npix * 3];
@@ -1378,59 +1326,21 @@ pub fn pass_1_build_histogram_spectral(
             // convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-            // Apply auto-exposure if enabled
-            if hdr_mode == "auto" {
-                let exposure_calc = ExposureCalculator::default();
-                let exposure = exposure_calc.calculate_exposure(&accum_rgba);
-                accum_rgba.par_iter_mut().for_each(|pix| {
-                    pix.0 *= exposure;
-                    pix.1 *= exposure;
-                    pix.2 *= exposure;
-                    // Alpha unchanged
-                });
-            }
-
-            // Apply bloom effect based on mode
-            let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
+            // Create and apply post-effect chain
+            let post_chain = create_post_effect_chain(
+                bloom_mode,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                dog_config,
+                hdr_mode,
+            );
             
-            if bloom_mode == "dog" {
-                // Apply DoG bloom
-                let dog_bloom = apply_dog_bloom(&accum_rgba, width as usize, height as usize, dog_config);
-                
-                // Composite crisp + DoG
-                final_frame_pixels.par_iter_mut()
-                    .zip(accum_rgba.par_iter())
-                    .zip(dog_bloom.par_iter())
-                    .for_each(|((pix, &base), &dog)| {
-                        let out_r = base.0 * blur_core_brightness + dog.0;
-                        let out_g = base.1 * blur_core_brightness + dog.1;
-                        let out_b = base.2 * blur_core_brightness + dog.2;
-                        let out_a = base.3 * blur_core_brightness + dog.3;
-                        *pix = (out_r.min(1.0), out_g.min(1.0), out_b.min(1.0), out_a);
-                    });
-            } else {
-                // Original Gaussian blur
-                let mut temp_blur = accum_rgba.clone();
-                if blur_radius_px > 0 {
-                    parallel_blur_2d_rgba(
-                        &mut temp_blur,
-                        width as usize,
-                        height as usize,
-                        blur_radius_px,
-                    );
-                }
-
-                // composite crisp + blur
-                final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                    let (cr, cg, cb, ca) = accum_rgba[i];
-                    let (br, bg, bb, ba) = temp_blur[i];
-                    let out_r = cr * blur_core_brightness + br * blur_strength;
-                    let out_g = cg * blur_core_brightness + bg * blur_strength;
-                    let out_b = cb * blur_core_brightness + bb * blur_strength;
-                    let out_a = ca * blur_core_brightness + ba * blur_strength;
-                    *pix = (out_r, out_g, out_b, out_a);
-                });
-            }
+            let final_frame_pixels = post_chain.process(
+                accum_rgba.clone(),
+                width as usize,
+                height as usize,
+            ).expect("Post-effect chain failed");
 
             // collect histogram
             all_r.reserve(npix);
@@ -1556,73 +1466,21 @@ pub fn pass_2_write_frames_spectral(
             // Convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-            // Apply auto-exposure if enabled
-            if hdr_mode == "auto" {
-                let exposure_calc = ExposureCalculator::default();
-                let exposure = exposure_calc.calculate_exposure(&accum_rgba);
-                accum_rgba.par_iter_mut().for_each(|pix| {
-                    pix.0 *= exposure;
-                    pix.1 *= exposure;
-                    pix.2 *= exposure;
-                    // Alpha unchanged
-                });
-            }
-
-            // Apply bloom effect based on mode
-            let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
+            // Create and apply post-effect chain
+            let post_chain = create_post_effect_chain(
+                bloom_mode,
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+                dog_config,
+                hdr_mode,
+            );
             
-            if bloom_mode == "dog" {
-                // Apply DoG bloom
-                let dog_bloom = apply_dog_bloom(&accum_rgba, width as usize, height as usize, dog_config);
-                
-                // Composite crisp + DoG
-                final_frame_pixels.par_iter_mut()
-                    .zip(accum_rgba.par_iter())
-                    .zip(dog_bloom.par_iter())
-                    .for_each(|((pix, &base), &dog)| {
-                        let base_r = base.0 * blur_core_brightness;
-                        let base_g = base.1 * blur_core_brightness;
-                        let base_b = base.2 * blur_core_brightness;
-                        let base_a = base.3 * blur_core_brightness;
-                        
-                        // Add DoG bloom
-                        let out_r = (base_r + dog.0).min(f64::MAX);
-                        let out_g = (base_g + dog.1).min(f64::MAX);
-                        let out_b = (base_b + dog.2).min(f64::MAX);
-                        let out_a = base_a;
-                        
-                        *pix = (out_r, out_g, out_b, out_a);
-                    });
-            } else {
-                // Original Gaussian blur processing
-                let mut temp_blur = accum_rgba.clone();
-                if blur_radius_px > 0 {
-                    parallel_blur_2d_rgba(
-                        &mut temp_blur,
-                        width as usize,
-                        height as usize,
-                        blur_radius_px,
-                    );
-                }
-
-                final_frame_pixels.par_iter_mut().enumerate().for_each(|(i, pix)| {
-                    let (cr, cg, cb, ca) = accum_rgba[i];
-                    let (br, bg, bb, ba) = temp_blur[i];
-                    let base_r = cr * blur_core_brightness;
-                    let base_g = cg * blur_core_brightness;
-                    let base_b = cb * blur_core_brightness;
-                    let base_a = ca * blur_core_brightness;
-                    let bloom_r = br * blur_strength;
-                    let bloom_g = bg * blur_strength;
-                    let bloom_b = bb * blur_strength;
-                    let bloom_a = ba * blur_strength;
-                    let out_r = base_r + bloom_r - base_r * bloom_r;
-                    let out_g = base_g + bloom_g - base_g * bloom_g;
-                    let out_b = base_b + bloom_b - base_b * bloom_b;
-                    let out_a = base_a + bloom_a;
-                    *pix = (out_r, out_g, out_b, out_a);
-                });
-            }
+            let final_frame_pixels = post_chain.process(
+                accum_rgba.clone(),
+                width as usize,
+                height as usize,
+            )?;
 
             // levels + ACES tonemapping
             let mut buf_8bit = vec![0u8; npix * 3];
@@ -1652,4 +1510,50 @@ pub fn pass_2_write_frames_spectral(
     }
     println!("   pass 2 (spectral render): 100% done");
     Ok(())
+}
+
+/// Creates a post-effect chain based on render parameters.
+/// 
+/// Effects are applied in order:
+/// 1. Auto-exposure (if enabled)
+/// 2. Bloom (Gaussian or DoG)
+/// 
+/// Note: Tonemapping is handled separately during 8-bit conversion
+/// to maintain compatibility with the levels adjustment workflow.
+/// The levels adjustment (black/white points) must be applied in linear space
+/// before tonemapping for correct results.
+pub fn create_post_effect_chain(
+    bloom_mode: &str,
+    blur_radius_px: usize,
+    blur_strength: f64,
+    blur_core_brightness: f64,
+    dog_config: &DogBloomConfig,
+    hdr_mode: &str,
+) -> PostEffectChain {
+    let mut chain = PostEffectChain::new();
+    
+    // 1. Auto-exposure (if enabled)
+    if hdr_mode == "auto" {
+        chain.add(Box::new(AutoExposure::new()));
+    }
+    
+    // 2. Bloom effect
+    match bloom_mode {
+        "dog" => {
+            chain.add(Box::new(DogBloom::new(
+                dog_config.clone(),
+                blur_core_brightness,
+            )));
+        }
+        _ => {
+            // Default to Gaussian bloom
+            chain.add(Box::new(GaussianBloom::new(
+                blur_radius_px,
+                blur_strength,
+                blur_core_brightness,
+            )));
+        }
+    }
+    
+    chain
 }

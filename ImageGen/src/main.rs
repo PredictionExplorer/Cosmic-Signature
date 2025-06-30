@@ -5,6 +5,7 @@ use image::{ImageBuffer, Rgb};
 
 mod analysis;
 mod drift;
+mod post_effects;
 mod render;
 mod sim;
 mod spectrum;
