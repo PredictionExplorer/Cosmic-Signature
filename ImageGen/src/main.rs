@@ -116,6 +116,14 @@ struct Args {
     /// DoG outer/inner sigma ratio
     #[arg(long, default_value_t = 2.5)]
     dog_ratio: f64,
+    
+    /// HDR mode: off or auto
+    #[arg(long, default_value = "auto")]
+    hdr_mode: String,
+    
+    /// HDR scale multiplier for line alpha
+    #[arg(long, default_value_t = 0.15)]
+    hdr_scale: f64,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -188,6 +196,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     render::set_alpha_compress(args.alpha_compress);
 
+    // Set HDR scale based on mode
+    if args.hdr_mode == "auto" {
+        render::set_hdr_scale(args.hdr_scale);
+    } else {
+        render::set_hdr_scale(1.0);  // No HDR scaling when off
+    }
+
     // 4) bounding box info
     println!("STAGE 4/7: Determining bounding box...");
     let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
@@ -242,6 +257,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &mut all_b,
         &args.bloom_mode,
         &dog_config,
+        &args.hdr_mode,
     );
 
     // 6) compute black/white/gamma
@@ -299,6 +315,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 white_b,
                 &args.bloom_mode,
                 &dog_config,
+                &args.hdr_mode,
                 |buf_8bit| {
                     out.write_all(buf_8bit)?;
                     Ok(())

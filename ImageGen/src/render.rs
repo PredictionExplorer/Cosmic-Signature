@@ -15,6 +15,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 // 0 => disabled (legacy behaviour).
 static ALPHA_COMPRESS_BITS: AtomicU64 = AtomicU64::new(0);
 
+// Global parameter: HDR scale multiplier for line alpha
+static HDR_SCALE: AtomicU64 = AtomicU64::new(1.0f64.to_bits());
+
 /// Set the global alpha-compression coefficient.
 /// Should be called once from `main` after CLI parsing.
 /// Typical range: 0 (disabled) .. 10 (very strong).
@@ -25,6 +28,16 @@ pub fn set_alpha_compress(k: f64) {
 #[inline]
 fn get_alpha_compress() -> f64 {
     f64::from_bits(ALPHA_COMPRESS_BITS.load(Ordering::Relaxed))
+}
+
+/// Set the global HDR scale coefficient.
+pub fn set_hdr_scale(scale: f64) {
+    HDR_SCALE.store(scale.to_bits(), Ordering::Relaxed);
+}
+
+#[inline]
+fn get_hdr_scale() -> f64 {
+    f64::from_bits(HDR_SCALE.load(Ordering::Relaxed))
 }
 
 /// Mipmap pyramid for efficient multi-scale filtering
@@ -152,6 +165,56 @@ impl Default for DogBloomConfig {
             strength: 0.35,
             threshold: 0.01,
         }
+    }
+}
+
+/// Auto-exposure calculator for HDR tone mapping
+pub struct ExposureCalculator {
+    target_percentile: f64,
+    min_exposure: f64,
+    max_exposure: f64,
+}
+
+impl Default for ExposureCalculator {
+    fn default() -> Self {
+        Self {
+            target_percentile: 0.95,
+            min_exposure: 0.1,
+            max_exposure: 10.0,
+        }
+    }
+}
+
+impl ExposureCalculator {
+    pub fn calculate_exposure(&self, pixels: &[(f64, f64, f64, f64)]) -> f64 {
+        // Compute luminance values
+        let luminances: Vec<f64> = pixels
+            .par_iter()
+            .map(|(r, g, b, a)| {
+                // Rec. 709 luminance weights
+                let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                lum * a  // Premultiplied
+            })
+            .filter(|&l| l > 0.0)  // Ignore black pixels
+            .collect();
+        
+        if luminances.is_empty() {
+            return 1.0;
+        }
+        
+        // Find percentile using partial sort
+        let mut sorted = luminances;
+        let percentile_idx = ((sorted.len() as f64 * self.target_percentile) as usize)
+            .min(sorted.len() - 1);
+        
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let percentile_value = sorted[percentile_idx];
+        
+        // Calculate exposure to map percentile to ~0.8
+        let exposure = 0.8 / percentile_value.max(1e-10);
+        
+        // Clamp to reasonable range
+        exposure.clamp(self.min_exposure, self.max_exposure)
     }
 }
 
@@ -537,16 +600,6 @@ pub fn pass_2_write_frames(
                 *pix = (rf, gf, bf, af);
             });
 
-            // 2.5 Exposure boost to brighten dark regions
-            let exposure_gamma = 1.2; // Power for log-space exposure (was 1.15 linear)
-            final_frame_pixels.par_iter_mut().for_each(|pix| {
-                // Log-space exposure: raises to power of 1/gamma
-                // This lifts shadows without blowing highlights
-                pix.0 = pix.0.powf(1.0 / exposure_gamma);
-                pix.1 = pix.1.powf(1.0 / exposure_gamma);
-                pix.2 = pix.2.powf(1.0 / exposure_gamma);
-            });
-
             // 3. Apply Levels & Convert to 8-bit
             let mut buf_8bit = vec![0u8; npix * 3];
             buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
@@ -752,15 +805,8 @@ fn plot(
         let idx = (y as usize * width as usize) + x as usize;
 
         // Calculate effective alpha for the source (line segment + AA coverage)
-        let mut src_alpha = (alpha as f64 * base_alpha).clamp(0.0, 1.0);
-
-        // --- Density-aware compression -----------------------------------
-        let k = get_alpha_compress();
-        if k > 0.0 {
-            // Exponential soft-knee: approaches 1.0 asymptotically.
-            src_alpha = 1.0 - (-k * src_alpha).exp();
-        }
-        // -----------------------------------------------------------------
+        let hdr_scale = get_hdr_scale();
+        let src_alpha = (alpha as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
 
         // Get destination values
         let (dst_r, dst_g, dst_b, dst_alpha) = accum[idx];
@@ -1036,12 +1082,9 @@ fn plot_spec(
         }
     }
 
-    let mut energy = coverage as f64 * base_alpha;
-    // Density-aware compression identical to RGBA path
-    let k = get_alpha_compress();
-    if k > 0.0 {
-        energy = 1.0 - (-k * energy).exp();
-    }
+    // Use HDR scale instead of compression
+    let hdr_scale = get_hdr_scale();
+    let energy = (coverage as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
 
     let left_energy = energy * (1.0 - w_right);
     let right_energy = energy * w_right;
@@ -1253,6 +1296,7 @@ pub fn pass_1_build_histogram_spectral(
     all_b: &mut Vec<f64>,
     bloom_mode: &str,
     dog_config: &DogBloomConfig,
+    hdr_mode: &str,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
@@ -1334,6 +1378,18 @@ pub fn pass_1_build_histogram_spectral(
             // convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
+            // Apply auto-exposure if enabled
+            if hdr_mode == "auto" {
+                let exposure_calc = ExposureCalculator::default();
+                let exposure = exposure_calc.calculate_exposure(&accum_rgba);
+                accum_rgba.par_iter_mut().for_each(|pix| {
+                    pix.0 *= exposure;
+                    pix.1 *= exposure;
+                    pix.2 *= exposure;
+                    // Alpha unchanged
+                });
+            }
+
             // Apply bloom effect based on mode
             let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
             
@@ -1413,6 +1469,7 @@ pub fn pass_2_write_frames_spectral(
     white_b: f64,
     bloom_mode: &str,
     dog_config: &DogBloomConfig,
+    hdr_mode: &str,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
 ) -> Result<(), Box<dyn Error>> {
@@ -1422,9 +1479,6 @@ pub fn pass_2_write_frames_spectral(
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
-
-    // Get initial alpha compression value from CLI
-    let base_alpha_compress = get_alpha_compress();
 
     let (min_x, max_x, min_y, max_y) = bounding_box(positions);
     let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
@@ -1499,22 +1553,20 @@ pub fn pass_2_write_frames_spectral(
 
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {
-            // Convert SPD -> RGBA for density calculation
+            // Convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-            // Calculate frame density and adapt alpha compression
-            let density = calculate_frame_density(&accum_rgba);
-            // Map density to alpha compression: low density = 0, high density = base value
-            let adaptive_compress = if density < 0.1 {
-                0.0 // Very low density: pure additive
-            } else if density < 1.0 {
-                base_alpha_compress * (density / 1.0) // Linear ramp up
-            } else {
-                base_alpha_compress // Full compression for high density
-            };
-
-            // Update global alpha compression for this frame
-            set_alpha_compress(adaptive_compress);
+            // Apply auto-exposure if enabled
+            if hdr_mode == "auto" {
+                let exposure_calc = ExposureCalculator::default();
+                let exposure = exposure_calc.calculate_exposure(&accum_rgba);
+                accum_rgba.par_iter_mut().for_each(|pix| {
+                    pix.0 *= exposure;
+                    pix.1 *= exposure;
+                    pix.2 *= exposure;
+                    // Alpha unchanged
+                });
+            }
 
             // Apply bloom effect based on mode
             let mut final_frame_pixels = vec![(0.0, 0.0, 0.0, 0.0); npix];
@@ -1572,15 +1624,10 @@ pub fn pass_2_write_frames_spectral(
                 });
             }
 
-            // exposure + levels + ACES same as original
+            // levels + ACES tonemapping
             let mut buf_8bit = vec![0u8; npix * 3];
-            let exposure_gamma = 1.2; // Power for log-space exposure (was 1.15 linear)
             buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
-                |(chunk, &(mut fr, mut fg, mut fb, fa))| {
-                    // Apply log-space exposure boost
-                    fr = fr.powf(1.0 / exposure_gamma);
-                    fg = fg.powf(1.0 / exposure_gamma);
-                    fb = fb.powf(1.0 / exposure_gamma);
+                |(chunk, &(fr, fg, fb, fa))| {
 
                     let mut rr = fr * fa;
                     let mut gg = fg * fa;
