@@ -1,6 +1,6 @@
 //! Rendering module: histogram passes, color mapping, line drawing, and output
 
-use crate::post_effects::{PostEffectChain, AutoExposure, GaussianBloom, DogBloom};
+use crate::post_effects::{PostEffectChain, AutoExposure, GaussianBloom, DogBloom, PerceptualBlur, PerceptualBlurConfig};
 use crate::sim;
 use crate::spectrum::{BIN_SHIFT, NUM_BINS, rgb_to_bin, spd_to_rgba};
 use crate::utils::{bounding_box, build_gaussian_kernel};
@@ -316,6 +316,8 @@ pub fn pass_1_build_histogram(
     bloom_mode: &str,
     dog_config: &DogBloomConfig,
     hdr_mode: &str,
+    perceptual_blur_enabled: bool,
+    perceptual_blur_config: Option<&PerceptualBlurConfig>,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
@@ -373,6 +375,8 @@ pub fn pass_1_build_histogram(
                 blur_core_brightness,
                 dog_config,
                 hdr_mode,
+                perceptual_blur_enabled,
+                perceptual_blur_config,
             );
             
             let final_frame_pixels = post_chain.process(
@@ -463,6 +467,8 @@ pub fn pass_2_write_frames(
     bloom_mode: &str,
     dog_config: &DogBloomConfig,
     hdr_mode: &str,
+    perceptual_blur_enabled: bool,
+    perceptual_blur_config: Option<&PerceptualBlurConfig>,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
 ) -> Result<(), Box<dyn Error>> {
@@ -540,6 +546,8 @@ pub fn pass_2_write_frames(
                 blur_core_brightness,
                 dog_config,
                 hdr_mode,
+                perceptual_blur_enabled,
+                perceptual_blur_config,
             );
             
             let final_frame_pixels = post_chain.process(
@@ -1245,6 +1253,8 @@ pub fn pass_1_build_histogram_spectral(
     bloom_mode: &str,
     dog_config: &DogBloomConfig,
     hdr_mode: &str,
+    perceptual_blur_enabled: bool,
+    perceptual_blur_config: Option<&PerceptualBlurConfig>,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
@@ -1334,6 +1344,8 @@ pub fn pass_1_build_histogram_spectral(
                 blur_core_brightness,
                 dog_config,
                 hdr_mode,
+                perceptual_blur_enabled,
+                perceptual_blur_config,
             );
             
             let final_frame_pixels = post_chain.process(
@@ -1380,6 +1392,8 @@ pub fn pass_2_write_frames_spectral(
     bloom_mode: &str,
     dog_config: &DogBloomConfig,
     hdr_mode: &str,
+    perceptual_blur_enabled: bool,
+    perceptual_blur_config: Option<&PerceptualBlurConfig>,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
 ) -> Result<(), Box<dyn Error>> {
@@ -1474,6 +1488,8 @@ pub fn pass_2_write_frames_spectral(
                 blur_core_brightness,
                 dog_config,
                 hdr_mode,
+                perceptual_blur_enabled,
+                perceptual_blur_config,
             );
             
             let final_frame_pixels = post_chain.process(
@@ -1517,6 +1533,7 @@ pub fn pass_2_write_frames_spectral(
 /// Effects are applied in order:
 /// 1. Auto-exposure (if enabled)
 /// 2. Bloom (Gaussian or DoG)
+/// 3. Perceptual blur (if enabled) 
 /// 
 /// Note: Tonemapping is handled separately during 8-bit conversion
 /// to maintain compatibility with the levels adjustment workflow.
@@ -1529,6 +1546,8 @@ pub fn create_post_effect_chain(
     blur_core_brightness: f64,
     dog_config: &DogBloomConfig,
     hdr_mode: &str,
+    perceptual_blur_enabled: bool,
+    perceptual_blur_config: Option<&PerceptualBlurConfig>,
 ) -> PostEffectChain {
     let mut chain = PostEffectChain::new();
     
@@ -1553,6 +1572,18 @@ pub fn create_post_effect_chain(
                 blur_core_brightness,
             )));
         }
+    }
+    
+    // 3. Perceptual blur (if enabled)
+    if perceptual_blur_enabled {
+        let config = perceptual_blur_config.cloned().unwrap_or_else(|| {
+            PerceptualBlurConfig {
+                radius: blur_radius_px,
+                strength: 0.5,
+                gamut_mode: crate::oklab::GamutMapMode::PreserveHue,
+            }
+        });
+        chain.add(Box::new(PerceptualBlur::new(config)));
     }
     
     chain

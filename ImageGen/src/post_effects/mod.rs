@@ -121,10 +121,12 @@ impl Default for PostEffectChain {
 pub mod exposure;
 pub mod gaussian_bloom;
 pub mod dog_bloom;
+pub mod perceptual_blur;
 
 pub use exposure::AutoExposure;
 pub use gaussian_bloom::GaussianBloom;
 pub use dog_bloom::DogBloom;
+pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
 
 #[cfg(test)]
 mod tests {

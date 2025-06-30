@@ -10,6 +10,7 @@ mod render;
 mod sim;
 mod spectrum;
 mod utils;
+mod oklab;
 
 use drift::*;
 use render::*;
@@ -125,6 +126,22 @@ struct Args {
     /// HDR scale multiplier for line alpha
     #[arg(long, default_value_t = 0.15)]
     hdr_scale: f64,
+    
+    /// Enable perceptual blur in OKLab space: off or on
+    #[arg(long, default_value = "on")]
+    perceptual_blur: String,
+    
+    /// Perceptual blur radius (pixels), defaults to main blur radius
+    #[arg(long)]
+    perceptual_blur_radius: Option<usize>,
+    
+    /// Perceptual blur strength (0.0-1.0)
+    #[arg(long, default_value_t = 0.5)]
+    perceptual_blur_strength: f64,
+    
+    /// Gamut mapping mode for perceptual blur: clamp, preserve-hue, soft-clip
+    #[arg(long, default_value = "preserve-hue")]
+    perceptual_gamut_mode: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -243,6 +260,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         threshold: 0.01,
     };
 
+    // Create perceptual blur config
+    let perceptual_blur_enabled = args.perceptual_blur.to_lowercase() == "on";
+    let perceptual_blur_config = if perceptual_blur_enabled {
+        Some(post_effects::PerceptualBlurConfig {
+            radius: args.perceptual_blur_radius.unwrap_or(blur_radius_px),
+            strength: args.perceptual_blur_strength,
+            gamut_mode: match args.perceptual_gamut_mode.as_str() {
+                "clamp" => oklab::GamutMapMode::Clamp,
+                "soft-clip" => oklab::GamutMapMode::SoftClip,
+                _ => oklab::GamutMapMode::PreserveHue,
+            },
+        })
+    } else {
+        None
+    };
+
     pass_1_build_histogram_spectral(
         &positions,
         &colors,
@@ -259,6 +292,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         &args.bloom_mode,
         &dog_config,
         &args.hdr_mode,
+        perceptual_blur_enabled,
+        perceptual_blur_config.as_ref(),
     );
 
     // 6) compute black/white/gamma
@@ -317,6 +352,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 &args.bloom_mode,
                 &dog_config,
                 &args.hdr_mode,
+                perceptual_blur_enabled,
+                perceptual_blur_config.as_ref(),
                 |buf_8bit| {
                     out.write_all(buf_8bit)?;
                     Ok(())
