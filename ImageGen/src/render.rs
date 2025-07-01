@@ -7,11 +7,10 @@ use crate::spectrum::{BIN_SHIFT, NUM_BINS, rgb_to_bin, spd_to_rgba};
 use crate::utils::{bounding_box, build_gaussian_kernel};
 use image::{DynamicImage, ImageBuffer, Rgb};
 use nalgebra::Vector3;
-use palette::{FromColor, Hsl, Srgb};
 use rayon::prelude::*;
 use std::error::Error;
 use std::io::Write;
-use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 // Global parameter: strength of density-aware alpha compression.
 // 0 => disabled (legacy behaviour).
@@ -19,29 +18,6 @@ static ALPHA_COMPRESS_BITS: AtomicU64 = AtomicU64::new(0);
 
 // Global parameter: HDR scale multiplier for line alpha
 static HDR_SCALE: AtomicU64 = AtomicU64::new(1.0f64.to_bits());
-
-// Global parameter: color space for accumulation
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DrawSpace {
-    LinearRgb,
-    Oklab,
-}
-
-static DRAW_SPACE: AtomicU8 = AtomicU8::new(DrawSpace::Oklab as u8);
-
-/// Set the global draw space (RGB or OKLab)
-pub fn set_draw_space(space: DrawSpace) {
-    DRAW_SPACE.store(space as u8, Ordering::Relaxed);
-}
-
-/// Get the current draw space
-#[inline]
-pub fn get_draw_space() -> DrawSpace {
-    match DRAW_SPACE.load(Ordering::Relaxed) {
-        1 => DrawSpace::Oklab,
-        _ => DrawSpace::LinearRgb,
-    }
-}
 
 /// Set the global alpha-compression coefficient.
 /// Should be called once from `main` after CLI parsing.
@@ -392,7 +368,7 @@ pub fn pass_1_build_histogram(
         // Process frame data on frame_interval OR the very last step
         if (step > 0 && step % frame_interval == 0) || is_final {
             // Convert from draw space to RGB if needed
-            let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp, get_draw_space());
+            let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
             
             // Create and apply post-effect chain
             let post_chain = create_post_effect_chain(
@@ -565,8 +541,8 @@ pub fn pass_2_write_frames(
             // Update global alpha compression for this frame
             set_alpha_compress(adaptive_compress);
 
-            // Convert from draw space to RGB if needed
-            let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp, get_draw_space());
+            // Convert from OKLab to RGB
+            let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
             
             // Create and apply post-effect chain
             let post_chain = create_post_effect_chain(
@@ -641,56 +617,7 @@ fn aces_film(x: f64) -> f64 {
     (x * (A * x + B)) / (x * (C * x + D) + E)
 }
 
-/// Simple RGB gradient generator with per-body hue drift
-pub fn generate_color_gradient(
-    rng: &mut sim::Sha3RandomByteStream,
-    length: usize,
-    body_index: usize,
-    base_hue_offset: f64,
-) -> Vec<Rgb<u8>> {
-    let mut colors = Vec::with_capacity(length);
-    let mut hue = rng.next_f64() * 360.0;
-    // Add unique offset per body
-    hue += body_index as f64 * 120.0; // Spread bodies evenly in hue space
 
-    let base_saturation = 0.7;
-    let saturation_range = 0.3; // 0.7 to 1.0
-    let base_lightness = 0.4;
-    let lightness_range = 0.2; // 0.4 to 0.6
-
-    for step in 0..length {
-        // Per-body hue drift: logarithmic growth with simulation time
-        let time_drift =
-            if step > 0 { base_hue_offset * (1.0 + (step as f64).ln()).min(360.0) } else { 0.0 };
-
-        let step_hue = hue + time_drift;
-
-        // Slightly vary hue
-        let mut current_hue = step_hue;
-        if rng.next_byte() & 1 == 0 {
-            current_hue += 0.1;
-        } else {
-            current_hue -= 0.1;
-        }
-        // Wrap around hue circle
-        current_hue = current_hue.rem_euclid(360.0);
-
-        // Generate random saturation and lightness within ranges
-        let saturation = base_saturation + rng.next_f64() * saturation_range;
-        let lightness = base_lightness + rng.next_f64() * lightness_range;
-
-        // Create HSL color and convert to SRGB
-        let hsl_color = Hsl::new(current_hue, saturation, lightness);
-        let rgb = Srgb::from_color(hsl_color);
-
-        colors.push(Rgb([
-            (rgb.red * 255.0) as u8,
-            (rgb.green * 255.0) as u8,
-            (rgb.blue * 255.0) as u8,
-        ]));
-    }
-    colors
-}
 
 /// Generate color gradient optimized for OKLab space
 /// 
@@ -785,25 +712,12 @@ pub fn generate_body_color_sequences(
     // Base hue offset for time-based drift (in degrees per log-time unit)
     let base_hue_offset = 0.5; // Subtle drift over time
 
-    // Choose color generation based on draw space
-    let (b1, b2, b3) = match get_draw_space() {
-        DrawSpace::Oklab => {
-            // Use OKLab-optimized color generation
-            (
-                generate_color_gradient_oklab(rng, length, 0, base_hue_offset),
-                generate_color_gradient_oklab(rng, length, 1, base_hue_offset),
-                generate_color_gradient_oklab(rng, length, 2, base_hue_offset),
-            )
-        }
-        DrawSpace::LinearRgb => {
-            // Use traditional HSL-based generation
-            (
-                generate_color_gradient(rng, length, 0, base_hue_offset),
-                generate_color_gradient(rng, length, 1, base_hue_offset),
-                generate_color_gradient(rng, length, 2, base_hue_offset),
-            )
-        }
-    };
+    // Use OKLab-optimized color generation
+    let (b1, b2, b3) = (
+        generate_color_gradient_oklab(rng, length, 0, base_hue_offset),
+        generate_color_gradient_oklab(rng, length, 1, base_hue_offset),
+        generate_color_gradient_oklab(rng, length, 2, base_hue_offset),
+    );
     
     println!("   => Setting all body alphas to 1/{alpha_value:.0} = {alpha_value:.3e}");
     (vec![b1, b2, b3], vec![alpha_value; 3])
@@ -895,44 +809,20 @@ fn plot(
         let hdr_scale = get_hdr_scale();
         let src_alpha = (alpha as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
 
-        match get_draw_space() {
-            DrawSpace::LinearRgb => {
-                // Get destination values
-                let (dst_r, dst_g, dst_b, dst_alpha) = accum[idx];
-
-                // Premultiply source color (assuming input color_r/g/b are straight alpha)
-                let src_r_pre = color_r * src_alpha;
-                let src_g_pre = color_g * src_alpha;
-                let src_b_pre = color_b * src_alpha;
-
-                // Apply "Over" blending formula for color (output is premultiplied)
-                let out_r = src_r_pre + dst_r * (1.0 - src_alpha);
-                let out_g = src_g_pre + dst_g * (1.0 - src_alpha);
-                let out_b = src_b_pre + dst_b * (1.0 - src_alpha);
-
-                // Combine alpha
-                let out_alpha = src_alpha + dst_alpha * (1.0 - src_alpha);
-
-                // Update accumulator with new premultiplied RGBA
-                accum[idx] = (out_r, out_g, out_b, out_alpha);
-            }
-            DrawSpace::Oklab => {
-                // Convert source color to OKLab
-                let (src_l, src_a, src_b) = oklab::linear_srgb_to_oklab(color_r, color_g, color_b);
-                
-                // Get destination values (already in OKLab space)
-                let (dst_l, dst_a, dst_b, dst_alpha) = accum[idx];
-                
-                // Composite in OKLab space
-                let (out_l, out_a, out_b, out_alpha) = oklab::oklab_over_composite(
-                    src_l, src_a, src_b, src_alpha,
-                    dst_l, dst_a, dst_b, dst_alpha,
-                );
-                
-                // Update accumulator with new premultiplied OKLab values
-                accum[idx] = (out_l, out_a, out_b, out_alpha);
-            }
-        }
+        // Convert source color to OKLab
+        let (src_l, src_a, src_b) = oklab::linear_srgb_to_oklab(color_r, color_g, color_b);
+        
+        // Get destination values (already in OKLab space)
+        let (dst_l, dst_a, dst_b, dst_alpha) = accum[idx];
+        
+        // Composite in OKLab space
+        let (out_l, out_a, out_b, out_alpha) = oklab::oklab_over_composite(
+            src_l, src_a, src_b, src_alpha,
+            dst_l, dst_a, dst_b, dst_alpha,
+        );
+        
+        // Update accumulator with new premultiplied OKLab values
+        accum[idx] = (out_l, out_a, out_b, out_alpha);
     }
 }
 
@@ -1387,49 +1277,42 @@ fn convert_spd_buffer_to_rgba(src: &[[f64; NUM_BINS]], dest: &mut [(f64, f64, f6
 }
 
 // ====================== COLOR SPACE CONVERSION ======================
-/// Convert accumulation buffer from current draw space to RGB if needed.
+/// Convert accumulation buffer from OKLab to RGB.
 /// 
-/// When in OKLab mode, the accumulation buffer stores (L,a,b,A) values.
+/// The accumulation buffer stores (L,a,b,A) values in OKLab space.
 /// This function converts them back to (R,G,B,A) for post-processing.
 /// 
 /// # Arguments
-/// * `buffer` - The accumulation buffer (may be RGB or OKLab)
-/// * `draw_space` - The color space used for accumulation
+/// * `buffer` - The accumulation buffer in OKLab space
 /// 
 /// # Returns
-/// * A buffer in RGB space (either the original or a converted copy)
+/// * A buffer in RGB space
 fn convert_accum_buffer_to_rgb(
     buffer: &[(f64, f64, f64, f64)],
-    draw_space: DrawSpace,
 ) -> Vec<(f64, f64, f64, f64)> {
-    match draw_space {
-        DrawSpace::LinearRgb => buffer.to_vec(),
-        DrawSpace::Oklab => {
-            // Parallel conversion with gamut mapping
-            buffer.par_iter()
-                .map(|&(l, a, b, alpha)| {
-                    if alpha > 0.0 {
-                        // Unpremultiply OKLab values
-                        let l_straight = l / alpha;
-                        let a_straight = a / alpha;
-                        let b_straight = b / alpha;
-                        
-                        // Convert to RGB
-                        let (r, g, b_rgb) = oklab::oklab_to_linear_srgb(l_straight, a_straight, b_straight);
-                        
-                        // Apply gamut mapping
-                        let (r_mapped, g_mapped, b_mapped) = 
-                            oklab::GamutMapMode::PreserveHue.map_to_gamut(r, g, b_rgb);
-                        
-                        // Re-premultiply
-                        (r_mapped * alpha, g_mapped * alpha, b_mapped * alpha, alpha)
-                    } else {
-                        (0.0, 0.0, 0.0, 0.0)
-                    }
-                })
-                .collect()
-        }
-    }
+    // Parallel conversion with gamut mapping
+    buffer.par_iter()
+        .map(|&(l, a, b, alpha)| {
+            if alpha > 0.0 {
+                // Unpremultiply OKLab values
+                let l_straight = l / alpha;
+                let a_straight = a / alpha;
+                let b_straight = b / alpha;
+                
+                // Convert to RGB
+                let (r, g, b_rgb) = oklab::oklab_to_linear_srgb(l_straight, a_straight, b_straight);
+                
+                // Apply gamut mapping
+                let (r_mapped, g_mapped, b_mapped) = 
+                    oklab::GamutMapMode::PreserveHue.map_to_gamut(r, g, b_rgb);
+                
+                // Re-premultiply
+                (r_mapped * alpha, g_mapped * alpha, b_mapped * alpha, alpha)
+            } else {
+                (0.0, 0.0, 0.0, 0.0)
+            }
+        })
+        .collect()
 }
 
 // ====================== PASS 1 (SPECTRAL) ===========================

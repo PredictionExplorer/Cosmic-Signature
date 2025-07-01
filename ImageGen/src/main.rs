@@ -143,9 +143,7 @@ struct Args {
     #[arg(long, default_value = "preserve-hue")]
     perceptual_gamut_mode: String,
     
-    /// Color space for accumulation: oklab or rgb
-    #[arg(long, default_value = "oklab")]
-    draw_space: String,
+
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -225,16 +223,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         render::set_hdr_scale(1.0);  // No HDR scaling when off
     }
     
-    // Set draw space (color accumulation mode)
-    let draw_space = match args.draw_space.to_lowercase().as_str() {
-        "rgb" => render::DrawSpace::LinearRgb,
-        _ => render::DrawSpace::Oklab,  // Default to OKLab
-    };
-    render::set_draw_space(draw_space);
-    println!("   => Using {} color space for accumulation", match draw_space {
-        render::DrawSpace::LinearRgb => "Linear RGB",
-        render::DrawSpace::Oklab => "OKLab",
-    });
+    // Using OKLab color space for accumulation
+    println!("   => Using OKLab color space for accumulation");
 
     // 4) bounding box info
     println!("STAGE 4/7: Determining bounding box...");
