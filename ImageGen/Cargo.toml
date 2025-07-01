@@ -18,6 +18,7 @@ rustfft  = "6.3.0"
 sha3     = "0.10.8"
 statrs   = "0.18.0"
 once_cell = "1.19.0"
+smallvec = "1.11.0"
 
 [profile.release]
 opt-level       = 3

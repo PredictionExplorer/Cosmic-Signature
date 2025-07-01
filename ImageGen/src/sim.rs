@@ -179,11 +179,12 @@ pub fn shift_bodies_to_com(b: &mut [Body]) {
 pub fn is_definitely_escaping(b: &[Body], th: f64) -> bool {
     let mut loc = b.to_vec();
     shift_bodies_to_com(&mut loc);
-    for i in 0..loc.len() {
+    let n = loc.len(); // Cache length to avoid repeated calls
+    for i in 0..n {
         let bi = &loc[i];
         let kin = 0.5 * bi.mass * bi.velocity.norm_squared();
         let mut pot = 0.0;
-        for j in 0..loc.len() {
+        for j in 0..n {
             if i != j {
                 let bj = &loc[j];
                 let d = (bi.position - bj.position).norm();

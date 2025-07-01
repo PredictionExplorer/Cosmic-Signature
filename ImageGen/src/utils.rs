@@ -1,6 +1,7 @@
 use nalgebra::Vector3;
 use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
+use smallvec::SmallVec;
 use std::f64::{INFINITY, NEG_INFINITY};
 
 /// Performance metrics for rendering
@@ -72,15 +73,16 @@ pub fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
 }
 
 /// Build a simple 1D Gaussian kernel
-pub fn build_gaussian_kernel(radius: usize) -> Vec<f64> {
+pub fn build_gaussian_kernel(radius: usize) -> SmallVec<[f64; 32]> {
     if radius == 0 {
-        return Vec::new();
+        return SmallVec::new();
     }
     let sigma = (radius as f64 / 3.0).max(1.0);
-    let mut kernel = Vec::with_capacity(2 * radius + 1);
+    let kernel_size = 2 * radius + 1;
+    let mut kernel = SmallVec::with_capacity(kernel_size);
     let two_sigma2 = 2.0 * sigma * sigma;
     let mut sum = 0.0;
-    for i in 0..(2 * radius + 1) {
+    for i in 0..kernel_size {
         let x = i as f64 - radius as f64;
         let val = (-x * x / two_sigma2).exp();
         kernel.push(val);
