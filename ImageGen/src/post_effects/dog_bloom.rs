@@ -1,4 +1,4 @@
-//! Difference of Gaussians (DoG) bloom effect implementation.
+//! Difference of Gaussians (`DoG`) bloom effect implementation.
 
 use super::{PixelBuffer, PostEffect};
 use crate::render::{apply_dog_bloom, DogBloomConfig};
@@ -10,7 +10,7 @@ use std::error::Error;
 /// Creates sharper, more defined bloom by subtracting two Gaussian blurs
 /// of different radii, emphasizing edges and reducing overall haziness.
 pub struct DogBloom {
-    /// Configuration for the DoG algorithm.
+    /// Configuration for the `DoG` algorithm.
     pub config: DogBloomConfig,
     
     /// Brightness multiplier for the core (unblurred) image.
@@ -21,7 +21,7 @@ pub struct DogBloom {
 }
 
 impl DogBloom {
-    /// Creates a new DoG bloom effect with the given configuration.
+    /// Creates a new `DoG` bloom effect with the given configuration.
     pub fn new(config: DogBloomConfig, core_brightness: f64) -> Self {
         Self {
             config,
@@ -32,10 +32,6 @@ impl DogBloom {
 }
 
 impl PostEffect for DogBloom {
-    fn name(&self) -> &str {
-        "DoG Bloom"
-    }
-    
     fn is_enabled(&self) -> bool {
         self.enabled
     }

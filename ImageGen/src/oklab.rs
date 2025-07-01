@@ -9,20 +9,15 @@
 use rayon::prelude::*;
 
 /// Configuration for gamut mapping strategies when converting from OKLab back to sRGB.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum GamutMapMode {
     /// Simple clamping of out-of-gamut values (fast but can cause discontinuities)
     Clamp,
     /// Preserve hue by scaling towards gray (maintains perceptual hue)
+    #[default]
     PreserveHue,
     /// Soft clipping using smooth transitions (reduces harsh edges)
     SoftClip,
-}
-
-impl Default for GamutMapMode {
-    fn default() -> Self {
-        GamutMapMode::PreserveHue
-    }
 }
 
 /// Convert linear sRGB to OKLab color space.
@@ -38,9 +33,9 @@ impl Default for GamutMapMode {
 #[inline]
 pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     // Step 1: Linear RGB to cone response (LMS)
-    let l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
-    let m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
-    let s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+    let l = 0.412_221_470_8 * r + 0.536_332_536_3 * g + 0.051_445_992_9 * b;
+    let m = 0.211_903_498_2 * r + 0.680_699_545_1 * g + 0.107_396_956_6 * b;
+    let s = 0.088_302_461_9 * r + 0.281_718_837_6 * g + 0.629_978_700_5 * b;
     
     // Step 2: Apply nonlinearity (cube root)
     let l_prime = l.cbrt();
@@ -48,9 +43,9 @@ pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     let s_prime = s.cbrt();
     
     // Step 3: Transform to Lab coordinates
-    let lab_l = 0.2104542553 * l_prime + 0.7936177850 * m_prime - 0.0040720468 * s_prime;
-    let lab_a = 1.9779984951 * l_prime - 2.4285922050 * m_prime + 0.4505937099 * s_prime;
-    let lab_b = 0.0259040371 * l_prime + 0.7827717662 * m_prime - 0.8086757660 * s_prime;
+    let lab_l = 0.210_454_255_3 * l_prime + 0.793_617_785_0 * m_prime - 0.004_072_046_8 * s_prime;
+    let lab_a = 1.977_998_495_1 * l_prime - 2.428_592_205_0 * m_prime + 0.450_593_709_9 * s_prime;
+    let lab_b = 0.025_904_037_1 * l_prime + 0.782_771_766_2 * m_prime - 0.808_675_766_0 * s_prime;
     
     (lab_l, lab_a, lab_b)
 }
@@ -67,9 +62,9 @@ pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
 #[inline]
 pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     // Step 1: Lab to nonlinear cone response
-    let l_prime = l + 0.3963377774 * a + 0.2158037573 * b;
-    let m_prime = l - 0.1055613458 * a - 0.0638541728 * b;
-    let s_prime = l - 0.0894841775 * a - 1.2914855480 * b;
+    let l_prime = l + 0.396_337_777_4 * a + 0.215_803_757_3 * b;
+    let m_prime = l - 0.105_561_345_8 * a - 0.063_854_172_8 * b;
+    let s_prime = l - 0.089_484_177_5 * a - 1.291_485_548_0 * b;
     
     // Step 2: Apply inverse nonlinearity (cube)
     let l_lms = l_prime * l_prime * l_prime;
@@ -77,9 +72,9 @@ pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     let s_lms = s_prime * s_prime * s_prime;
     
     // Step 3: Cone response to linear RGB
-    let r = 4.0767416621 * l_lms - 3.3077115913 * m_lms + 0.2309699292 * s_lms;
-    let g = -1.2684380046 * l_lms + 2.6097574011 * m_lms - 0.3413193965 * s_lms;
-    let b = -0.0041960863 * l_lms - 0.7034186147 * m_lms + 1.7076147010 * s_lms;
+    let r = 4.076_741_662_1 * l_lms - 3.307_711_591_3 * m_lms + 0.230_969_929_2 * s_lms;
+    let g = -1.268_438_004_6 * l_lms + 2.609_757_401_1 * m_lms - 0.341_319_396_5 * s_lms;
+    let b = -0.004_196_086_3 * l_lms - 0.703_418_614_7 * m_lms + 1.707_614_701_0 * s_lms;
     
     (r, g, b)
 }
@@ -110,38 +105,7 @@ pub fn oklab_to_linear_srgb_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, 
         .collect()
 }
 
-/// Performs "over" compositing in OKLab space with premultiplied alpha.
-/// 
-/// This function implements the Porter-Duff "over" operator for OKLab colors.
-/// Both source and destination colors should already be in OKLab space.
-/// 
-/// # Arguments
-/// * `src_l`, `src_a`, `src_b` - Source color in OKLab (unpremultiplied)
-/// * `src_alpha` - Source alpha value
-/// * `dst_l`, `dst_a`, `dst_b` - Destination color in OKLab (premultiplied)
-/// * `dst_alpha` - Destination alpha value
-/// 
-/// # Returns
-/// * `(L, a, b, alpha)` - Composited color in OKLab (premultiplied)
-#[inline]
-#[allow(dead_code)]
-pub fn oklab_over_composite(
-    src_l: f64, src_a: f64, src_b: f64, src_alpha: f64,
-    dst_l: f64, dst_a: f64, dst_b: f64, dst_alpha: f64,
-) -> (f64, f64, f64, f64) {
-    // Premultiply source
-    let src_l_pre = src_l * src_alpha;
-    let src_a_pre = src_a * src_alpha;
-    let src_b_pre = src_b * src_alpha;
-    
-    // Over formula: src + dst * (1 - src_alpha)
-    let out_l = src_l_pre + dst_l * (1.0 - src_alpha);
-    let out_a = src_a_pre + dst_a * (1.0 - src_alpha);
-    let out_b = src_b_pre + dst_b * (1.0 - src_alpha);
-    let out_alpha = src_alpha + dst_alpha * (1.0 - src_alpha);
-    
-    (out_l, out_a, out_b, out_alpha)
-}
+
 
 impl GamutMapMode {
     /// Map an RGB color that may be outside the [0, 1] gamut to valid range.
@@ -165,7 +129,7 @@ impl GamutMapMode {
                 }
                 
                 // Calculate luminance using Rec. 709 coefficients
-                let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                let lum = 0.212_6 * r + 0.715_2 * g + 0.072_2 * b;
                 
                 // Binary search for the scale factor that brings the color into gamut
                 let mut low = 0.0;
@@ -184,9 +148,9 @@ impl GamutMapMode {
                     let test_b = lum_clamped + (b - lum) * mid;
                     
                     // Check if this scale factor keeps us in gamut
-                    if test_r >= 0.0 && test_r <= 1.0 &&
-                       test_g >= 0.0 && test_g <= 1.0 &&
-                       test_b >= 0.0 && test_b <= 1.0 {
+                    if (0.0..=1.0).contains(&test_r) &&
+                       (0.0..=1.0).contains(&test_g) &&
+                       (0.0..=1.0).contains(&test_b) {
                         low = mid;
                     } else {
                         high = mid;
@@ -347,11 +311,11 @@ mod tests {
                 let (r_out, g_out, b_out) = mode.map_to_gamut(*r, *g, *b);
                 
                 // Verify all outputs are in valid range
-                assert!(r_out >= 0.0 && r_out <= 1.0, 
+                assert!((0.0..=1.0).contains(&r_out), 
                     "{:?} failed to map {} R to gamut: {}", mode, name, r_out);
-                assert!(g_out >= 0.0 && g_out <= 1.0, 
+                assert!((0.0..=1.0).contains(&g_out), 
                     "{:?} failed to map {} G to gamut: {}", mode, name, g_out);
-                assert!(b_out >= 0.0 && b_out <= 1.0, 
+                assert!((0.0..=1.0).contains(&b_out), 
                     "{:?} failed to map {} B to gamut: {}", mode, name, b_out);
             }
         }
@@ -366,9 +330,9 @@ mod tests {
         let (r_out, g_out, b_out) = GamutMapMode::PreserveHue.map_to_gamut(r_in, g_in, b_in);
         
         // Verify the color is now in gamut
-        assert!(r_out >= 0.0 && r_out <= 1.0, "R out of gamut: {}", r_out);
-        assert!(g_out >= 0.0 && g_out <= 1.0, "G out of gamut: {}", g_out);
-        assert!(b_out >= 0.0 && b_out <= 1.0, "B out of gamut: {}", b_out);
+        assert!((0.0..=1.0).contains(&r_out), "R out of gamut: {}", r_out);
+        assert!((0.0..=1.0).contains(&g_out), "G out of gamut: {}", g_out);
+        assert!((0.0..=1.0).contains(&b_out), "B out of gamut: {}", b_out);
         
         // Test that the luminance is preserved
         let lum_in = 0.2126 * r_in + 0.7152 * g_in + 0.0722 * b_in;
@@ -392,8 +356,8 @@ mod tests {
         
         // Verify all values are in gamut
         assert!(r_neg >= 0.0, "R should be non-negative: {}", r_neg);
-        assert!(g_neg >= 0.0 && g_neg <= 1.0, "G out of gamut: {}", g_neg);
-        assert!(b_neg >= 0.0 && b_neg <= 1.0, "B out of gamut: {}", b_neg);
+        assert!((0.0..=1.0).contains(&g_neg), "G out of gamut: {}", g_neg);
+        assert!((0.0..=1.0).contains(&b_neg), "B out of gamut: {}", b_neg);
         
         // Test 4: Already in gamut - should be unchanged
         let in_gamut = (0.8, 0.5, 0.3);

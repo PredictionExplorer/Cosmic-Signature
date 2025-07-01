@@ -4,9 +4,8 @@ use crate::oklab;
 use crate::render::{
     color::OklabColor,
     context::RenderContext,
-    drawing::{draw_line_segment_aa_alpha, draw_line_segment_aa_spectral},
-    effects::{DogBloomConfig, create_post_effect_chain, parallel_blur_2d_rgba},
-    histogram::calculate_frame_density,
+    drawing::{draw_line_segment_aa_alpha, draw_line_segment_aa_spectral, LineParams},
+    effects::{DogBloomConfig, PostEffectConfig, create_post_effect_chain, parallel_blur_2d_rgba},
     RenderConfig,
 };
 use crate::render_utils::{EffectChainBuilder, EffectConfig, FrameParams, HistogramData};
@@ -81,7 +80,6 @@ impl AcesLut {
 static ACES_LUT: Lazy<AcesLut> = Lazy::new(AcesLut::new);
 
 /// Convert accumulation buffer from OKLab to RGB
-#[allow(dead_code)]
 fn convert_accum_buffer_to_rgb(
     buffer: &[(f64, f64, f64, f64)],
 ) -> Vec<(f64, f64, f64, f64)> {
@@ -106,8 +104,60 @@ fn convert_spd_buffer_to_rgba(src: &[[f64; NUM_BINS]], dest: &mut [(f64, f64, f6
         });
 }
 
+/// Parameters for histogram building pass
+#[allow(dead_code)] // For future use with refactored pass functions
+pub struct HistogramPassParams<'a> {
+    pub positions: &'a [Vec<Vector3<f64>>],
+    pub colors: &'a [Vec<OklabColor>],
+    pub body_alphas: &'a [f64],
+    pub width: u32,
+    pub height: u32,
+    pub blur_radius_px: usize,
+    pub blur_strength: f64,
+    pub blur_core_brightness: f64,
+    pub frame_interval: usize,
+    pub all_r: &'a mut Vec<f64>,
+    pub all_g: &'a mut Vec<f64>,
+    pub all_b: &'a mut Vec<f64>,
+    pub bloom_mode: &'a str,
+    pub dog_config: &'a DogBloomConfig,
+    pub hdr_mode: &'a str,
+    pub perceptual_blur_enabled: bool,
+    pub perceptual_blur_config: Option<&'a crate::post_effects::PerceptualBlurConfig>,
+    pub render_config: &'a RenderConfig,
+}
+
+/// Parameters for frame writing pass
+#[allow(dead_code)] // For future use with refactored pass functions
+pub struct FrameWritePassParams<'a, F> {
+    pub positions: &'a [Vec<Vector3<f64>>],
+    pub colors: &'a [Vec<OklabColor>],
+    pub body_alphas: &'a [f64],
+    pub width: u32,
+    pub height: u32,
+    pub blur_radius_px: usize,
+    pub blur_strength: f64,
+    pub blur_core_brightness: f64,
+    pub frame_interval: usize,
+    pub black_r: f64,
+    pub white_r: f64,
+    pub black_g: f64,
+    pub white_g: f64,
+    pub black_b: f64,
+    pub white_b: f64,
+    pub bloom_mode: &'a str,
+    pub dog_config: &'a DogBloomConfig,
+    pub hdr_mode: &'a str,
+    pub perceptual_blur_enabled: bool,
+    pub perceptual_blur_config: Option<&'a crate::post_effects::PerceptualBlurConfig>,
+    pub frame_sink: F,
+    pub last_frame_out: &'a mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    pub render_config: &'a RenderConfig,
+}
+
 /// Pass 1: Build histogram for color leveling
-#[allow(dead_code)]
+#[allow(dead_code)] // Exported API, not used in current example
+#[allow(clippy::too_many_arguments)]
 pub fn pass_1_build_histogram(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
@@ -177,9 +227,9 @@ pub fn pass_1_build_histogram(
         let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Accumulate crisp lines for every step
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale });
 
         // Process frame data on frame_interval OR the very last step
         let is_final = step == total_steps - 1;
@@ -188,10 +238,7 @@ pub fn pass_1_build_histogram(
             let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
             
             // Process with persistent effect chain
-            let frame_params = FrameParams {
-                frame_number: step / frame_interval,
-                density: Some(calculate_frame_density(&accum_crisp)),
-            };
+            let frame_params = FrameParams {};
             
             let final_frame_pixels = effect_chain.process_frame(
                 rgb_buffer,
@@ -219,7 +266,8 @@ pub fn pass_1_build_histogram(
 }
 
 /// Pass 2: Write frames with color correction
-#[allow(dead_code)]
+#[allow(dead_code)] // Exported API, not used in current example
+#[allow(clippy::too_many_arguments)]
 pub fn pass_2_write_frames(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
@@ -268,7 +316,7 @@ pub fn pass_2_write_frames(
     let mut accum_blur = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
     
     // Create post-effect chain
-    let post_chain = create_post_effect_chain(
+    let post_chain = create_post_effect_chain(PostEffectConfig {
         bloom_mode,
         blur_radius_px,
         blur_strength,
@@ -277,7 +325,7 @@ pub fn pass_2_write_frames(
         hdr_mode,
         perceptual_blur_enabled,
         perceptual_blur_config,
-    );
+    });
     
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 100).max(1);
@@ -306,15 +354,15 @@ pub fn pass_2_write_frames(
         let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Draw crisp lines
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale });
 
         // Draw blurred lines (for motion blur effect)
         if blur_radius_px > 0 {
-            draw_line_segment_aa_alpha(&mut accum_blur, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
-            draw_line_segment_aa_alpha(&mut accum_blur, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
-            draw_line_segment_aa_alpha(&mut accum_blur, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
+            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale });
+            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale });
+            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale });
         }
 
         // Process frame on interval or final step
@@ -391,6 +439,7 @@ pub fn pass_2_write_frames(
 }
 
 /// Pass 1: Build histogram (spectral mode)
+#[allow(clippy::too_many_arguments)]
 pub fn pass_1_build_histogram_spectral(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
@@ -419,7 +468,7 @@ pub fn pass_1_build_histogram_spectral(
     let mut accum_spd = vec![[0.0; NUM_BINS]; npix];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); npix];
     
-    let post_chain = create_post_effect_chain(
+    let post_chain = create_post_effect_chain(PostEffectConfig {
         bloom_mode,
         blur_radius_px,
         blur_strength,
@@ -428,7 +477,7 @@ pub fn pass_1_build_histogram_spectral(
         hdr_mode,
         perceptual_blur_enabled,
         perceptual_blur_config,
-    );
+    });
     
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 100).max(1);
@@ -482,6 +531,7 @@ pub fn pass_1_build_histogram_spectral(
 }
 
 /// Pass 2: Write frames (spectral mode)
+#[allow(clippy::too_many_arguments)]
 pub fn pass_2_write_frames_spectral(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
@@ -527,7 +577,7 @@ pub fn pass_2_write_frames_spectral(
     let mut accum_spd = vec![[0.0; NUM_BINS]; npix];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); npix];
     
-    let post_chain = create_post_effect_chain(
+    let post_chain = create_post_effect_chain(PostEffectConfig {
         bloom_mode,
         blur_radius_px,
         blur_strength,
@@ -536,7 +586,7 @@ pub fn pass_2_write_frames_spectral(
         hdr_mode,
         perceptual_blur_enabled,
         perceptual_blur_config,
-    );
+    });
     
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 100).max(1);

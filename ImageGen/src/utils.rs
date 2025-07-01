@@ -2,30 +2,6 @@ use nalgebra::Vector3;
 use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
 use smallvec::SmallVec;
-use std::f64::{INFINITY, NEG_INFINITY};
-use log::info;
-
-/// Performance metrics for rendering
-#[allow(dead_code)]
-pub struct RenderMetrics {
-    pub frame_time_ms: f64,
-    pub blur_time_ms: f64,
-    pub peak_memory_mb: f64,
-}
-
-#[allow(dead_code)]
-impl RenderMetrics {
-    pub fn new() -> Self {
-        Self { frame_time_ms: 0.0, blur_time_ms: 0.0, peak_memory_mb: 0.0 }
-    }
-
-    pub fn log(&self) {
-        info!(
-            "Performance: frame={:.1}ms blur={:.1}ms peak_mem={:.1}MB",
-            self.frame_time_ms, self.blur_time_ms, self.peak_memory_mb
-        );
-    }
-}
 
 /// Compute Fourier transform of a real-valued signal
 pub fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
@@ -38,10 +14,10 @@ pub fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
 
 /// 2D bounding box: (min_x, max_x, min_y, max_y)
 pub fn bounding_box_2d(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
-    let mut min_x = INFINITY;
-    let mut max_x = NEG_INFINITY;
-    let mut min_y = INFINITY;
-    let mut max_y = NEG_INFINITY;
+    let mut min_x = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
     for body in positions {
         for p in body {
             min_x = min_x.min(p[0]);

@@ -42,7 +42,7 @@ pub fn create_video_from_frames_singlepass(
     
     // Build FFmpeg command with optimized settings
     let mut ffmpeg = Command::new("ffmpeg")
-        .args(&[
+        .args([
             "-y",                           // Overwrite output file
             "-f", "rawvideo",              // Input format
             "-pix_fmt", "rgb24",           // Input pixel format

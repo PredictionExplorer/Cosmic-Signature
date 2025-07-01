@@ -15,10 +15,16 @@ mod spectrum;
 mod utils;
 mod oklab;
 
-use drift::*;
-use render::*;
-use sim::*;
-use utils::*;
+use drift::parse_drift_mode;
+use render::{
+    color::generate_body_color_sequences,
+    histogram::compute_black_white_gamma,
+    video::create_video_from_frames_singlepass,
+};
+use render_passes::{pass_1_build_histogram_spectral, pass_2_write_frames_spectral};
+use render_utils::save_image_as_png;
+use sim::{get_positions, Sha3RandomByteStream};
+use utils::bounding_box;
 
 /// Command-line arguments
 #[derive(Parser, Debug)]

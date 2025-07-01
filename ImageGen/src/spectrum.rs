@@ -55,33 +55,20 @@ fn wavelength_to_rgb(lambda: f64) -> (f64, f64, f64) {
 /// Pre-computed linear-sRGB triplet for each bin's unit intensity.
 pub static BIN_RGB: Lazy<[(f64, f64, f64); NUM_BINS]> = Lazy::new(|| {
     let mut arr = [(0.0, 0.0, 0.0); NUM_BINS];
-    for i in 0..NUM_BINS {
-        arr[i] = wavelength_to_rgb(wavelength_nm_for_bin(i));
+    for (i, elem) in arr.iter_mut().enumerate() {
+        *elem = wavelength_to_rgb(wavelength_nm_for_bin(i));
     }
     arr
 });
 
-/// Sub-pixel shift for each wavelength bin to create "prismatic" fringes.
-/// Computed along a golden-angle spiral inside one pixel (≤ ±0.35 px).
-#[allow(dead_code)]
-pub static BIN_SHIFT: Lazy<[(f32, f32); NUM_BINS]> = Lazy::new(|| {
-    let golden = std::f32::consts::PI * (3.0 - 5.0_f32.sqrt()); // ≈2.39996
-    let mut arr = [(0.0, 0.0); NUM_BINS];
-    let base = 1.5_f32; // stronger dispersion
-    for i in 0..NUM_BINS {
-        let radius = base * (i as f32 + 1.0) / NUM_BINS as f32;
-        let angle = (i as f32) * golden;
-        arr[i] = (radius * angle.cos(), radius * angle.sin());
-    }
-    arr
-});
+
 
 /// Per-bin tone-mapping strength k_b used in `energy' = 1 - exp(-k_b * e)`.
 pub static BIN_TONE: Lazy<[f64; NUM_BINS]> = Lazy::new(|| {
     let mut arr = [1.0f64; NUM_BINS];
-    for i in 0..NUM_BINS {
+    for (i, elem) in arr.iter_mut().enumerate() {
         // Blues (low i) get stronger k (brighter), reds lower to curb washout
-        arr[i] = 2.0 - 1.4 * (i as f64) / (NUM_BINS as f64 - 1.0);
+        *elem = 2.0 - 1.4 * (i as f64) / (NUM_BINS as f64 - 1.0);
     }
     arr
 });

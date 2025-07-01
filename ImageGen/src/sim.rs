@@ -180,14 +180,11 @@ pub fn shift_bodies_to_com(b: &mut [Body]) {
 pub fn is_definitely_escaping(b: &[Body], th: f64) -> bool {
     let mut loc = b.to_vec();
     shift_bodies_to_com(&mut loc);
-    let n = loc.len(); // Cache length to avoid repeated calls
-    for i in 0..n {
-        let bi = &loc[i];
+    for (i, bi) in loc.iter().enumerate() {
         let kin = 0.5 * bi.mass * bi.velocity.norm_squared();
         let mut pot = 0.0;
-        for j in 0..n {
+        for (j, bj) in loc.iter().enumerate() {
             if i != j {
-                let bj = &loc[j];
                 let d = (bi.position - bj.position).norm();
                 if d > 1e-12 {
                     pot += -G * bi.mass * bj.mass / d;
@@ -317,7 +314,7 @@ pub fn select_best_trajectory(
         "   => Discarded {dtot}/{num_sims} ({:.1}%) orbits due to filters or escapes.",
         100.0 * dtot as f64 / num_sims as f64
     );
-    let mut iv: Vec<(TrajectoryResult, usize)> = results.into_iter().filter_map(|x| x).collect();
+    let mut iv: Vec<(TrajectoryResult, usize)> = results.into_iter().flatten().collect();
     if iv.is_empty() {
         panic!("No valid orbits found after filtering + escape checks!");
     }

@@ -36,10 +36,6 @@ impl GaussianBloom {
 }
 
 impl PostEffect for GaussianBloom {
-    fn name(&self) -> &str {
-        "Gaussian Bloom"
-    }
-    
     fn is_enabled(&self) -> bool {
         self.enabled
     }

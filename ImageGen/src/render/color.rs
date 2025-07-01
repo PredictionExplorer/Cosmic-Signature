@@ -33,7 +33,7 @@ pub fn generate_color_gradient_oklab(
     body_index: usize,
     base_hue_offset: f64,
 ) -> Vec<OklabColor> {
-    trace!("Generating color gradient for body {} with {} steps", body_index, length);
+    trace!("Generating color gradient for body {body_index} with {length} steps");
     
     // Pre-allocate with exact capacity
     let mut colors = Vec::with_capacity(length);
@@ -85,7 +85,7 @@ pub fn generate_body_color_sequences(
     length: usize,
     alpha_value: f64,
 ) -> (Vec<Vec<OklabColor>>, Vec<f64>) {
-    trace!("Generating color sequences for {} steps", length);
+    trace!("Generating color sequences for {length} steps");
     
     // Base hue offset for time-based color drift
     let base_hue_offset = 10.0 + rng.next_f64() * 40.0; // 10-50 degree drift
@@ -99,11 +99,4 @@ pub fn generate_body_color_sequences(
     let body_alphas = vec![alpha_value; 3];
     
     (body_colors, body_alphas)
-}
-
-/// Linear interpolation helper
-#[inline]
-#[allow(dead_code)]
-pub(crate) fn lerp(a: f64, b: f64, t: f32) -> f64 {
-    a + (b - a) * t as f64
 } 

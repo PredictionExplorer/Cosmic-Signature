@@ -83,16 +83,4 @@ pub fn compute_black_white_gamma(
     (black_r, white_r, black_g, white_g, black_b, white_b)
 }
 
-/// Calculate frame density for adaptive processing
-///
-/// Computes the average alpha value across all pixels as a measure of density
-#[allow(dead_code)]
-pub fn calculate_frame_density(accum: &[(f64, f64, f64, f64)]) -> f64 {
-    let total_alpha: f64 = accum.par_iter()
-        .map(|(_, _, _, a)| a)
-        .sum();
-    
-    let density = total_alpha / accum.len() as f64;
-    debug!("Frame density: {:.4}", density);
-    density
-} 
+ 

@@ -35,6 +35,6 @@ pub use crate::render_passes::{
 
 // Re-export utility functions
 pub use crate::render_utils::{
-    EffectChainBuilder, EffectConfig, FrameData, FrameIterator, FrameParams,
+    EffectChainBuilder, EffectConfig, FrameParams,
     HistogramData, save_image_as_png,
 }; 

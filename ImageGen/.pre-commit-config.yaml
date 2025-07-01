@@ -1,0 +1,42 @@
+# Pre-commit hooks for the Three Body Problem renderer
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: rust-fmt
+        name: Rust Format Check
+        entry: cargo fmt --all --
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+      
+      - id: rust-clippy
+        name: Rust Clippy
+        entry: cargo clippy --all-features --all-targets -- -D warnings
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+      
+      - id: rust-test
+        name: Rust Tests
+        entry: cargo test
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+      
+      - id: rust-check
+        name: Rust Check
+        entry: cargo check
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=5000'] 

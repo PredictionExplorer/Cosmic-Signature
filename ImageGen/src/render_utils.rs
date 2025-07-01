@@ -1,90 +1,12 @@
 //! Rendering utilities for common functionality
 
-#![allow(dead_code)]
-
 use crate::oklab;
 use crate::post_effects::{PostEffectChain, AutoExposure, GaussianBloom, DogBloom, PerceptualBlur, PerceptualBlurConfig};
-use crate::render::{DogBloomConfig, OklabColor};
-use nalgebra::Vector3;
+use crate::render::DogBloomConfig;
 use std::error::Error;
 
 /// Type alias for pixel buffer
 type PixelBuffer = Vec<(f64, f64, f64, f64)>;
-
-/// Encapsulates common rendering operations and coordinate transformations
-#[allow(dead_code)]
-pub struct RenderContext {
-    pub width: u32,
-    pub height: u32,
-    pub width_usize: usize,
-    pub height_usize: usize,
-    pub width_i32: i32,
-    pub height_i32: i32,
-    bounds: BoundingBox,
-}
-
-/// Bounding box for coordinate transformations
-#[derive(Clone, Copy, Debug)]
-#[allow(dead_code)]
-struct BoundingBox {
-    min_x: f64,
-    max_x: f64,
-    min_y: f64,
-    max_y: f64,
-    width: f64,
-    height: f64,
-}
-
-impl RenderContext {
-    /// Creates a new render context from position data
-    pub fn new(width: u32, height: u32, positions: &[Vec<Vector3<f64>>]) -> Self {
-        let (min_x, max_x, min_y, max_y) = crate::utils::bounding_box(positions);
-        let bounds = BoundingBox {
-            min_x,
-            max_x,
-            min_y,
-            max_y,
-            width: (max_x - min_x).max(1e-12),
-            height: (max_y - min_y).max(1e-12),
-        };
-        
-        Self {
-            width,
-            height,
-            width_usize: width as usize,
-            height_usize: height as usize,
-            width_i32: width as i32,
-            height_i32: height as i32,
-            bounds,
-        }
-    }
-    
-    /// Convert world coordinates to pixel coordinates
-    #[inline]
-    pub fn to_pixel(&self, x: f64, y: f64) -> (f32, f32) {
-        let px = ((x - self.bounds.min_x) / self.bounds.width) * (self.width as f64);
-        let py = ((y - self.bounds.min_y) / self.bounds.height) * (self.height as f64);
-        (px as f32, py as f32)
-    }
-    
-    /// Get total pixel count
-    #[inline]
-    pub fn pixel_count(&self) -> usize {
-        self.width_usize * self.height_usize
-    }
-    
-    /// Check if pixel coordinates are in bounds
-    #[inline]
-    pub fn in_bounds(&self, x: i32, y: i32) -> bool {
-        x >= 0 && x < self.width_i32 && y >= 0 && y < self.height_i32
-    }
-    
-    /// Get linear index from 2D coordinates
-    #[inline]
-    pub fn pixel_index(&self, x: i32, y: i32) -> usize {
-        (y as usize * self.width_usize) + x as usize
-    }
-}
 
 /// Configuration for effect chain creation
 #[derive(Clone, Debug)]
@@ -100,23 +22,20 @@ pub struct EffectConfig {
 }
 
 /// Per-frame parameters that may vary
-#[derive(Clone, Debug)]
-pub struct FrameParams {
-    pub frame_number: usize,
-    pub density: Option<f64>,
-}
+/// Currently used as a placeholder for future frame-specific parameters
+#[derive(Clone, Debug, Default)]
+pub struct FrameParams {}
 
 /// Persistent effect chain builder
 pub struct EffectChainBuilder {
     chain: PostEffectChain,
-    config: EffectConfig,
 }
 
 impl EffectChainBuilder {
     /// Create a new effect chain builder with given configuration
     pub fn new(config: EffectConfig) -> Self {
         let chain = Self::build_chain(&config);
-        Self { chain, config }
+        Self { chain }
     }
     
     /// Build the effect chain based on configuration
@@ -174,11 +93,13 @@ impl EffectChainBuilder {
 }
 
 /// Optimized histogram storage with better memory layout
+#[allow(dead_code)] // Used by non-spectral render passes which are currently unused
 pub struct HistogramData {
     /// Interleaved RGB data for better cache locality
     data: Vec<[f64; 3]>,
 }
 
+#[allow(dead_code)]
 impl HistogramData {
     /// Create new histogram storage with given capacity
     pub fn with_capacity(capacity: usize) -> Self {
@@ -254,72 +175,7 @@ impl HistogramData {
     }
 }
 
-/// Common frame iteration logic
-pub trait FrameIterator {
-    /// Iterate through frames with a callback
-    fn iterate_frames<F>(
-        &self,
-        positions: &[Vec<Vector3<f64>>],
-        colors: &[Vec<OklabColor>],
-        body_alphas: &[f64],
-        frame_interval: usize,
-        callback: F,
-    ) -> Result<(), Box<dyn Error>>
-    where
-        F: FnMut(FrameData) -> Result<(), Box<dyn Error>>;
-}
 
-/// Data for a single frame iteration
-pub struct FrameData {
-    pub step: usize,
-    pub is_frame_boundary: bool,
-    pub is_final: bool,
-    pub positions: [(f64, f64); 3],
-    pub colors: [OklabColor; 3],
-    pub alphas: [f64; 3],
-}
-
-impl FrameIterator for RenderContext {
-    fn iterate_frames<F>(
-        &self,
-        positions: &[Vec<Vector3<f64>>],
-        colors: &[Vec<OklabColor>],
-        body_alphas: &[f64],
-        frame_interval: usize,
-        mut callback: F,
-    ) -> Result<(), Box<dyn Error>>
-    where
-        F: FnMut(FrameData) -> Result<(), Box<dyn Error>>,
-    {
-        let total_steps = positions[0].len();
-        
-        for step in 0..total_steps {
-            let p0 = positions[0][step];
-            let p1 = positions[1][step];
-            let p2 = positions[2][step];
-            
-            let (x0, y0) = self.to_pixel(p0[0], p0[1]);
-            let (x1, y1) = self.to_pixel(p1[0], p1[1]);
-            let (x2, y2) = self.to_pixel(p2[0], p2[1]);
-            
-            let is_frame_boundary = step > 0 && step % frame_interval == 0;
-            let is_final = step == total_steps - 1;
-            
-            let frame_data = FrameData {
-                step,
-                is_frame_boundary,
-                is_final,
-                positions: [(x0 as f64, y0 as f64), (x1 as f64, y1 as f64), (x2 as f64, y2 as f64)],
-                colors: [colors[0][step], colors[1][step], colors[2][step]],
-                alphas: [body_alphas[0], body_alphas[1], body_alphas[2]],
-            };
-            
-            callback(frame_data)?;
-        }
-        
-        Ok(())
-    }
-}
 
 /// Save an RGB image buffer as PNG
 pub fn save_image_as_png(

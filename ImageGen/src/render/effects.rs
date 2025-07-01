@@ -34,6 +34,18 @@ impl Default for DogBloomConfig {
     }
 }
 
+/// Configuration for creating post-effect chains
+pub struct PostEffectConfig<'a> {
+    pub bloom_mode: &'a str,
+    pub blur_radius_px: usize,
+    pub blur_strength: f64,
+    pub blur_core_brightness: f64,
+    pub dog_config: &'a DogBloomConfig,
+    pub hdr_mode: &'a str,
+    pub perceptual_blur_enabled: bool,
+    pub perceptual_blur_config: Option<&'a PerceptualBlurConfig>,
+}
+
 /// Mipmap pyramid for efficient multi-scale filtering
 pub struct MipPyramid {
     levels: Vec<Vec<(f64, f64, f64, f64)>>,
@@ -88,73 +100,6 @@ impl MipPyramid {
         }
         
         pyramid
-    }
-    
-    /// Upsample a level using bilinear interpolation
-    #[allow(dead_code)]
-    pub fn upsample_bilinear(&self, level: usize, target_w: usize, target_h: usize) -> Vec<(f64, f64, f64, f64)> {
-        let src = &self.levels[level];
-        let src_w = self.widths[level];
-        let src_h = self.heights[level];
-        let mut result = vec![(0.0, 0.0, 0.0, 0.0); target_w * target_h];
-        
-        result.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
-            let x = idx % target_w;
-            let y = idx / target_w;
-            
-            // Map to source coordinates
-            let sx = (x as f64 * src_w as f64 / target_w as f64).min((src_w - 1) as f64);
-            let sy = (y as f64 * src_h as f64 / target_h as f64).min((src_h - 1) as f64);
-            
-            let x0 = sx.floor() as usize;
-            let y0 = sy.floor() as usize;
-            let x1 = (x0 + 1).min(src_w - 1);
-            let y1 = (y0 + 1).min(src_h - 1);
-            
-            let fx = sx - x0 as f64;
-            let fy = sy - y0 as f64;
-            
-            // Get source pixels
-            let p00 = src[y0 * src_w + x0];
-            let p01 = src[y0 * src_w + x1];
-            let p10 = src[y1 * src_w + x0];
-            let p11 = src[y1 * src_w + x1];
-            
-            // Proper premultiplied alpha interpolation
-            let top = (
-                p00.0 * (1.0 - fx) + p01.0 * fx,
-                p00.1 * (1.0 - fx) + p01.1 * fx,
-                p00.2 * (1.0 - fx) + p01.2 * fx,
-                p00.3 * (1.0 - fx) + p01.3 * fx,
-            );
-            
-            let bottom = (
-                p10.0 * (1.0 - fx) + p11.0 * fx,
-                p10.1 * (1.0 - fx) + p11.1 * fx,
-                p10.2 * (1.0 - fx) + p11.2 * fx,
-                p10.3 * (1.0 - fx) + p11.3 * fx,
-            );
-            
-            *pixel = (
-                top.0 * (1.0 - fy) + bottom.0 * fy,
-                top.1 * (1.0 - fy) + bottom.1 * fy,
-                top.2 * (1.0 - fy) + bottom.2 * fy,
-                top.3 * (1.0 - fy) + bottom.3 * fy,
-            );
-            
-            // Renormalize if needed for very low alpha to avoid color bleeding
-            if pixel.3 > 0.0 && pixel.3 < 0.01 {
-                let scale = pixel.3 / (p00.3 * (1.0 - fx) * (1.0 - fy) + 
-                                       p01.3 * fx * (1.0 - fy) + 
-                                       p10.3 * (1.0 - fx) * fy + 
-                                       p11.3 * fx * fy).max(1e-10);
-                pixel.0 *= scale;
-                pixel.1 *= scale;
-                pixel.2 *= scale;
-            }
-        });
-        
-        result
     }
 }
 
@@ -221,7 +166,7 @@ impl GaussianBlurContext {
         let kernel_vec = build_gaussian_kernel(radius);
         
         // Use SmallVec for small kernels to avoid heap allocation
-        let kernel = SmallVec::from(kernel_vec);
+        let kernel = kernel_vec;
         
         Self {
             kernel,
@@ -241,14 +186,14 @@ pub fn parallel_blur_2d_rgba(
         return;
     }
     
-    debug!("Applying Gaussian blur with radius {}", radius);
+    debug!("Applying Gaussian blur with radius {radius}");
     
     let blur_ctx = GaussianBlurContext::new(radius);
     let temp = buffer.to_vec();
     
     // Horizontal pass (parallelized by row)
     buffer.par_chunks_mut(width).enumerate().for_each(|(y, row)| {
-        for x in 0..width {
+        for (x, pixel) in row.iter_mut().enumerate() {
             let mut sum = (0.0, 0.0, 0.0, 0.0);
             
             for (i, &k) in blur_ctx.kernel.iter().enumerate() {
@@ -261,7 +206,7 @@ pub fn parallel_blur_2d_rgba(
                 sum.3 += src.3 * k;
             }
             
-            row[x] = sum;
+            *pixel = sum;
         }
     });
     
@@ -372,7 +317,7 @@ pub fn apply_dog_bloom(
     height: usize,
     config: &DogBloomConfig,
 ) -> Vec<(f64, f64, f64, f64)> {
-    trace!("Applying DoG bloom with config: {:?}", config);
+    trace!("Applying DoG bloom with config: {config:?}");
     
     // Create mip pyramid (3 levels)
     let pyramid = MipPyramid::new(input, width, height, 3);
@@ -447,48 +392,39 @@ pub fn apply_dog_bloom(
 }
 
 /// Create a post-effect chain based on configuration
-pub fn create_post_effect_chain(
-    bloom_mode: &str,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&PerceptualBlurConfig>,
-) -> PostEffectChain {
-    trace!("Creating post-effect chain with bloom_mode={}, hdr_mode={}", bloom_mode, hdr_mode);
+pub fn create_post_effect_chain(config: PostEffectConfig) -> PostEffectChain {
+    trace!("Creating post-effect chain with bloom_mode={}, hdr_mode={}", config.bloom_mode, config.hdr_mode);
     
     let mut chain = PostEffectChain::new();
     
     // 1. Auto-exposure (if enabled)
-    if hdr_mode == "auto" {
+    if config.hdr_mode == "auto" {
         chain.add(Box::new(AutoExposure::new()));
     }
     
     // 2. Bloom effect
-    match bloom_mode {
+    match config.bloom_mode {
         "dog" => {
             chain.add(Box::new(PostDogBloom::new(
-                dog_config.clone(),
-                blur_core_brightness,
+                config.dog_config.clone(),
+                config.blur_core_brightness,
             )));
         }
         _ => {
             // Default to Gaussian bloom
             chain.add(Box::new(GaussianBloom::new(
-                blur_radius_px,
-                blur_strength,
-                blur_core_brightness,
+                config.blur_radius_px,
+                config.blur_strength,
+                config.blur_core_brightness,
             )));
         }
     }
     
     // 3. Perceptual blur (if enabled)
-    if perceptual_blur_enabled {
-        let blur_config = perceptual_blur_config.cloned().unwrap_or(
+    if config.perceptual_blur_enabled {
+        let blur_config = config.perceptual_blur_config.cloned().unwrap_or(
             PerceptualBlurConfig {
-                radius: blur_radius_px,
+                radius: config.blur_radius_px,
                 strength: 0.5,
                 gamut_mode: oklab::GamutMapMode::PreserveHue,
             }

@@ -30,10 +30,6 @@ impl Error for PostEffectError {}
 /// Each effect transforms an input buffer and returns a new buffer.
 /// Effects should be stateless and safe to call multiple times.
 pub trait PostEffect: Send + Sync {
-    /// Returns the human-readable name of this effect.
-    #[allow(dead_code)]
-    fn name(&self) -> &str;
-    
     /// Process the input buffer and return the result.
     /// 
     /// # Arguments
@@ -97,18 +93,6 @@ impl PostEffectChain {
         }
         Ok(buffer)
     }
-    
-    /// Returns the number of effects in the chain.
-    #[allow(dead_code)]
-    pub fn len(&self) -> usize {
-        self.effects.len()
-    }
-    
-    /// Returns true if the chain has no effects.
-    #[allow(dead_code)]
-    pub fn is_empty(&self) -> bool {
-        self.effects.is_empty()
-    }
 }
 
 impl Default for PostEffectChain {
@@ -139,8 +123,6 @@ mod tests {
     }
     
     impl PostEffect for AddEffect {
-        fn name(&self) -> &str { "Add Effect" }
-        
         fn is_enabled(&self) -> bool { self.enabled }
         
         fn process(&self, input: &PixelBuffer, _width: usize, _height: usize) -> Result<PixelBuffer, Box<dyn Error>> {
@@ -158,8 +140,6 @@ mod tests {
     #[test]
     fn test_empty_chain() {
         let chain = PostEffectChain::new();
-        assert!(chain.is_empty());
-        assert_eq!(chain.len(), 0);
         
         let input = vec![(0.5, 0.5, 0.5, 1.0)];
         let result = chain.process(input.clone(), 1, 1).unwrap();
@@ -170,9 +150,6 @@ mod tests {
     fn test_single_effect() {
         let mut chain = PostEffectChain::new();
         chain.add(Box::new(AddEffect { value: 0.1, enabled: true }));
-        
-        assert_eq!(chain.len(), 1);
-        assert!(!chain.is_empty());
         
         let input = vec![(0.5, 0.5, 0.5, 1.0)];
         let result = chain.process(input, 1, 1).unwrap();

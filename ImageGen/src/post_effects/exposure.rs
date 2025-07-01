@@ -34,10 +34,6 @@ impl Default for AutoExposure {
 }
 
 impl PostEffect for AutoExposure {
-    fn name(&self) -> &str {
-        "Auto Exposure"
-    }
-    
     fn is_enabled(&self) -> bool {
         self.enabled
     }
