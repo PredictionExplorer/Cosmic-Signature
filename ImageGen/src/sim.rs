@@ -8,6 +8,7 @@ use nalgebra::Vector3;
 use rayon::prelude::*;
 use sha3::{Digest, Sha3_256};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use log::info;
 
 /// Gravitational constant
 pub const G: f64 = 9.8;
@@ -220,7 +221,7 @@ pub fn select_best_trajectory(
     ew: f64,
     th: f64,
 ) -> (Vec<Body>, TrajectoryResult) {
-    println!("STAGE 1/7: Borda search over {num_sims} random orbits...");
+    info!("STAGE 1/7: Borda search over {num_sims} random orbits...");
     // Generate random triples and immediately transform them to the COM frame so
     // the total linear momentum and the COM position are exactly zero.
     let many: Vec<Vec<Body>> = (0..num_sims)
@@ -279,7 +280,7 @@ pub fn select_best_trajectory(
         .map(|(i, b)| {
             let cnt = pc.fetch_add(1, Ordering::Relaxed) + 1;
             if cnt % cs == 0 {
-                println!("   Borda search: {:.0}% done", (cnt as f64 / num_sims as f64) * 100.0);
+                info!("   Borda search: {:.0}% done", (cnt as f64 / num_sims as f64) * 100.0);
             }
             let e = calculate_total_energy(b);
             let ang = calculate_total_angular_momentum(b).norm();
@@ -312,7 +313,7 @@ pub fn select_best_trajectory(
         })
         .collect();
     let dtot = dc.load(Ordering::Relaxed);
-    println!(
+    info!(
         "   => Discarded {dtot}/{num_sims} ({:.1}%) orbits due to filters or escapes.",
         100.0 * dtot as f64 / num_sims as f64
     );
@@ -351,6 +352,6 @@ pub fn select_best_trajectory(
     iv.sort_by(|a, b| b.0.total_score_weighted.partial_cmp(&a.0.total_score_weighted).unwrap());
     let bi = iv[0].1;
     let bt = iv[0].0.clone();
-    println!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
+    info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
     (many[bi].clone(), bt)
 }

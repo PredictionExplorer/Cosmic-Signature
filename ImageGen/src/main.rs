@@ -2,11 +2,14 @@ use clap::Parser;
 use std::error::Error;
 use std::fs;
 use image::{ImageBuffer, Rgb};
+use log::{error, info, warn};
 
 mod analysis;
 mod drift;
 mod post_effects;
 mod render;
+mod render_passes;
+mod render_utils;
 mod sim;
 mod spectrum;
 mod utils;
@@ -147,6 +150,9 @@ struct Args {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize logger
+    env_logger::init();
+    
     let args = Args::parse();
 
     let num_sims = match args.num_sims {
@@ -189,14 +195,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     // 2) Re-run best orbit
-    println!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
+    info!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
     let sim_result = get_positions(best_bodies.clone(), args.num_steps_sim);
     let mut positions = sim_result.positions;
-    println!("   => Done.");
+    info!("   => Done.");
 
     // 2.5) Apply drift transformation if enabled (default)
     if !args.no_drift {
-        println!("STAGE 2.5/7: Applying {} drift...", args.drift_mode);
+        info!("STAGE 2.5/7: Applying {} drift...", args.drift_mode);
 
         // Create and apply drift using the existing RNG
         let num_steps = positions[0].len();
@@ -205,11 +211,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let dt = 0.001; // Same dt as used in simulation
         drift_transform.apply(&mut positions, dt);
 
-        println!("   => Drift applied with scale {}", args.drift_scale);
+        info!("   => Drift applied with scale {}", args.drift_scale);
     }
 
     // 3) Generate color sequences
-    println!("STAGE 3/7: Generating color sequences + alpha...");
+    info!("STAGE 3/7: Generating color sequences + alpha...");
     let alpha_value = 1.0 / (args.alpha_denom as f64);
     let (colors, body_alphas) =
         generate_body_color_sequences(&mut rng, args.num_steps_sim, alpha_value);
@@ -221,15 +227,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     
     // Using OKLab color space for accumulation
-    println!("   => Using OKLab color space for accumulation");
+    info!("   => Using OKLab color space for accumulation");
 
     // 4) bounding box info
-    println!("STAGE 4/7: Determining bounding box...");
+    info!("STAGE 4/7: Determining bounding box...");
     let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
-    println!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", min_x, max_x, min_y, max_y);
+    info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", min_x, max_x, min_y, max_y);
 
     // 5) pass 1 => gather histogram
-    println!("STAGE 5/7: PASS 1 => building global histogram...");
+    info!("STAGE 5/7: PASS 1 => building global histogram...");
     let (blur_radius_px, blur_strength, blur_core_brightness) = if args.special {
         (
             // stronger blur for special mode
@@ -300,7 +306,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     // 6) compute black/white/gamma
-    println!("STAGE 6/7: Determine global black/white/gamma...");
+    info!("STAGE 6/7: Determine global black/white/gamma...");
     let (black_r, white_r, black_g, white_g, black_b, white_b) = compute_black_white_gamma(
         &mut all_r,
         &mut all_g,
@@ -308,7 +314,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.clip_black,
         args.clip_white,
     );
-    println!(
+    info!(
         "   => R:[{:.3e},{:.3e}] G:[{:.3e},{:.3e}] B:[{:.3e},{:.3e}]",
         black_r, white_r, black_g, white_g, black_b, white_b
     );
@@ -318,7 +324,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     drop(all_b);
 
     // 7) pass 2 => final frames => feed into ffmpeg
-    println!("STAGE 7/7: PASS 2 => final frames => FFmpeg...");
+    info!("STAGE 7/7: PASS 2 => final frames => FFmpeg...");
 
     // Generate filename with optional profile tag
     let base_filename = if args.profile_tag.is_empty() {
@@ -371,16 +377,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Save final frame if available
     if let Some(last_frame) = last_frame_png {
-        println!("Attempting to save PNG to: {}", output_png);
+        info!("Attempting to save PNG to: {}", output_png);
         match save_image_as_png(&last_frame, &output_png) {
             Ok(_) => {}
-            Err(e) => eprintln!("Failed to save final PNG: {}", e),
+            Err(e) => error!("Failed to save final PNG: {}", e),
         }
     } else {
-        eprintln!("Warning: No final frame was generated to save as PNG.");
+        warn!("Warning: No final frame was generated to save as PNG.");
     }
 
-    println!(
+    info!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
     );

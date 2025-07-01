@@ -1,4 +1,5 @@
 use crate::sim::Sha3RandomByteStream;
+use log::error;
 use nalgebra::Vector3;
 use std::f64::consts::PI;
 
@@ -129,7 +130,7 @@ pub fn parse_drift_mode(
         "brownian" => Box::new(BrownianDrift::new(rng, scale, num_steps)),
         "linear" => Box::new(LinearDrift::new(rng, scale)),
         _ => {
-            eprintln!("Unknown drift mode '{}', using 'brownian'", mode);
+            error!("Unknown drift mode '{}', using 'brownian'", mode);
             Box::new(BrownianDrift::new(rng, scale, num_steps))
         }
     }

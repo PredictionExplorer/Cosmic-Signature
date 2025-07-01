@@ -63,6 +63,7 @@ pub static BIN_RGB: Lazy<[(f64, f64, f64); NUM_BINS]> = Lazy::new(|| {
 
 /// Sub-pixel shift for each wavelength bin to create "prismatic" fringes.
 /// Computed along a golden-angle spiral inside one pixel (≤ ±0.35 px).
+#[allow(dead_code)]
 pub static BIN_SHIFT: Lazy<[(f32, f32); NUM_BINS]> = Lazy::new(|| {
     let golden = std::f32::consts::PI * (3.0 - 5.0_f32.sqrt()); // ≈2.39996
     let mut arr = [(0.0, 0.0); NUM_BINS];

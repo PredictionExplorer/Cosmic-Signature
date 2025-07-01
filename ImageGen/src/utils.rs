@@ -3,6 +3,7 @@ use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
 use smallvec::SmallVec;
 use std::f64::{INFINITY, NEG_INFINITY};
+use log::info;
 
 /// Performance metrics for rendering
 #[allow(dead_code)]
@@ -19,7 +20,7 @@ impl RenderMetrics {
     }
 
     pub fn log(&self) {
-        println!(
+        info!(
             "Performance: frame={:.1}ms blur={:.1}ms peak_mem={:.1}MB",
             self.frame_time_ms, self.blur_time_ms, self.peak_memory_mb
         );

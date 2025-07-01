@@ -124,6 +124,7 @@ pub fn oklab_to_linear_srgb_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, 
 /// # Returns
 /// * `(L, a, b, alpha)` - Composited color in OKLab (premultiplied)
 #[inline]
+#[allow(dead_code)]
 pub fn oklab_over_composite(
     src_l: f64, src_a: f64, src_b: f64, src_alpha: f64,
     dst_l: f64, dst_a: f64, dst_b: f64, dst_alpha: f64,
