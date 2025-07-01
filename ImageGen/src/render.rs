@@ -658,10 +658,10 @@ pub fn pass_2_write_frames(
                     gg = (gg - black_g) / ranges.g;
                     bb = (bb - black_b) / ranges.b;
 
-                    // Apply ACES Filmic Tonemapping
-                    rr = aces_film(rr);
-                    gg = aces_film(gg);
-                    bb = aces_film(bb);
+                    // Apply ACES Filmic Tonemapping (optimized with LUT)
+                    rr = ACES_LUT.apply(rr);
+                    gg = ACES_LUT.apply(gg);
+                    bb = ACES_LUT.apply(bb);
 
                     // Scale to 0-255 and clamp (final output clamp)
                     chunk[0] = (rr * 255.0).round().clamp(0.0, 255.0) as u8;
@@ -692,6 +692,7 @@ const C: f64 = 2.43;
 const D: f64 = 0.59;
 const E: f64 = 0.14;
 
+#[allow(dead_code)]
 fn aces_film(x: f64) -> f64 {
     // Clamp negative values before applying curve
     let x = x.max(0.0);
@@ -699,7 +700,76 @@ fn aces_film(x: f64) -> f64 {
     (x * (A * x + B)) / (x * (C * x + D) + E)
 }
 
+/// Optimized ACES tonemapping using lookup table
+struct AcesLut {
+    table: Vec<f64>,
+    scale: f64,
+    max_input: f64,
+}
 
+impl AcesLut {
+    fn new() -> Self {
+        const LUT_SIZE: usize = 2048;
+        const MAX_INPUT: f64 = 16.0; // Covers typical HDR range
+        
+        let mut table = Vec::with_capacity(LUT_SIZE);
+        let scale = (LUT_SIZE - 1) as f64 / MAX_INPUT;
+        
+        // Pre-compute ACES values
+        for i in 0..LUT_SIZE {
+            let x = (i as f64) / scale;
+            let y = (x * (A * x + B)) / (x * (C * x + D) + E);
+            table.push(y);
+        }
+        
+        Self {
+            table,
+            scale,
+            max_input: MAX_INPUT,
+        }
+    }
+    
+    #[inline]
+    fn apply(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            return 0.0;
+        }
+        
+        if x >= self.max_input {
+            // For very large values, use direct computation
+            return (x * (A * x + B)) / (x * (C * x + D) + E);
+        }
+        
+        // Linear interpolation in LUT
+        let pos = x * self.scale;
+        let idx = pos as usize;
+        let frac = pos - idx as f64;
+        
+        if idx >= self.table.len() - 1 {
+            return self.table[self.table.len() - 1];
+        }
+        
+        // Linear interpolation
+        self.table[idx] * (1.0 - frac) + self.table[idx + 1] * frac
+    }
+}
+
+// Lazy static for global LUT
+use std::sync::LazyLock;
+static ACES_LUT: LazyLock<AcesLut> = LazyLock::new(AcesLut::new);
+
+
+
+// Color generation constants
+const HUE_FULL_CIRCLE: f64 = 360.0;  // Degrees in a full rotation
+const BODY_HUE_SEPARATION: f64 = 120.0;  // 360/3 for even distribution
+const HUE_DRIFT_JITTER: f64 = 0.1;  // Small random hue variation
+
+// OKLab perceptual constants
+const OKLAB_CHROMA_BASE: f64 = 0.12;  // Typical chroma range 0-0.3
+const OKLAB_CHROMA_RANGE: f64 = 0.08;
+const OKLAB_LIGHTNESS_BASE: f64 = 0.65;
+const OKLAB_LIGHTNESS_RANGE: f64 = 0.25;
 
 /// Generate color gradient optimized for OKLab space
 /// 
@@ -714,36 +784,35 @@ pub fn generate_color_gradient_oklab(
     let mut colors = Vec::with_capacity(length);
     
     // Start with a random hue
-    let mut hue = rng.next_f64() * 360.0;
-    hue += body_index as f64 * 120.0; // Spread bodies evenly
+    let base_hue = rng.next_f64() * HUE_FULL_CIRCLE + body_index as f64 * BODY_HUE_SEPARATION;
     
-    // OKLab-optimized parameters
-    let base_chroma = 0.12;  // OKLab chroma is typically 0-0.3
-    let chroma_range = 0.08;
-    let base_lightness = 0.65;
-    let lightness_range = 0.25;
+    // Pre-compute logarithms for time drift
+    let ln_cache: Vec<f64> = (0..length)
+        .map(|i| if i > 0 { (i as f64).ln() } else { 0.0 })
+        .collect();
+    
+    // Pre-generate random values to reduce RNG calls
+    let random_bits: Vec<u8> = (0..length).map(|_| rng.next_byte()).collect();
+    let random_chromas: Vec<f64> = (0..length).map(|_| rng.next_f64()).collect();
+    let random_lightnesses: Vec<f64> = (0..length).map(|_| rng.next_f64()).collect();
     
     for step in 0..length {
-        // Time-based hue drift
-        let time_drift = if step > 0 {
-            base_hue_offset * (1.0 + (step as f64).ln()).min(360.0)
-        } else {
-            0.0
-        };
+        // Time-based hue drift using pre-computed logarithm
+        let time_drift = base_hue_offset * (1.0 + ln_cache[step]).min(HUE_FULL_CIRCLE);
         
-        let mut current_hue = (hue + time_drift).rem_euclid(360.0);
+        let mut current_hue = (base_hue + time_drift).rem_euclid(HUE_FULL_CIRCLE);
         
-        // Slight random variation
-        if rng.next_byte() & 1 == 0 {
-            current_hue += 0.1;
+        // Slight random variation using pre-generated bits
+        if random_bits[step] & 1 == 0 {
+            current_hue += HUE_DRIFT_JITTER;
         } else {
-            current_hue -= 0.1;
+            current_hue -= HUE_DRIFT_JITTER;
         }
-        current_hue = current_hue.rem_euclid(360.0);
+        current_hue = current_hue.rem_euclid(HUE_FULL_CIRCLE);
         
-        // Generate in LCh space
-        let chroma = base_chroma + rng.next_f64() * chroma_range;
-        let lightness = base_lightness + rng.next_f64() * lightness_range;
+        // Generate in LCh space using pre-generated random values
+        let chroma = OKLAB_CHROMA_BASE + random_chromas[step] * OKLAB_CHROMA_RANGE;
+        let lightness = OKLAB_LIGHTNESS_BASE + random_lightnesses[step] * OKLAB_LIGHTNESS_RANGE;
         
         // Convert LCh to Lab
         let hue_rad = current_hue.to_radians();
@@ -777,6 +846,36 @@ pub fn generate_body_color_sequences(
     (vec![b1, b2, b3], vec![alpha_value; 3])
 }
 
+use smallvec::SmallVec;
+
+/// Gaussian blur context with cached kernel
+struct GaussianBlurContext {
+    kernel: SmallVec<[f64; 32]>,
+    kernel_len: usize,
+    radius: usize,
+}
+
+impl GaussianBlurContext {
+    fn new(radius: usize) -> Self {
+        if radius == 0 {
+            let mut kernel = SmallVec::new();
+            kernel.push(1.0);
+            return Self {
+                kernel,
+                kernel_len: 1,
+                radius: 0,
+            };
+        }
+        let kernel = build_gaussian_kernel(radius);
+        let kernel_len = kernel.len();
+        Self {
+            kernel,
+            kernel_len,
+            radius,
+        }
+    }
+}
+
 /// Parallel 2D blur (premultiplied RGBA in f64)
 pub fn parallel_blur_2d_rgba(
     buffer: &mut [(f64, f64, f64, f64)],
@@ -787,18 +886,19 @@ pub fn parallel_blur_2d_rgba(
     if radius == 0 {
         return;
     }
-    let kernel = build_gaussian_kernel(radius);
-    let k_len = kernel.len();
+    
+    let ctx = GaussianBlurContext::new(radius);
     let mut temp = vec![(0.0, 0.0, 0.0, 0.0); width * height];
 
+    // Horizontal pass
     temp.par_chunks_mut(width).zip(buffer.par_chunks(width)).for_each(|(trow, brow)| {
         for x in 0..width {
             let mut sum = [0.0; 4];
-            for k in 0..k_len {
-                let dx = (x as isize + (k as isize - radius as isize)).clamp(0, width as isize - 1)
-                    as usize;
+            for k in 0..ctx.kernel_len {
+                let dx = (x as isize + (k as isize - ctx.radius as isize))
+                    .clamp(0, width as isize - 1) as usize;
                 let (r, g, b, a) = brow[dx];
-                let w = kernel[k];
+                let w = ctx.kernel[k];
                 sum[0] += r * w;
                 sum[1] += g * w;
                 sum[2] += b * w;
@@ -807,14 +907,16 @@ pub fn parallel_blur_2d_rgba(
             trow[x] = (sum[0], sum[1], sum[2], sum[3]);
         }
     });
+    
+    // Vertical pass
     buffer.par_chunks_mut(width).enumerate().for_each(|(y, brow)| {
         for x in 0..width {
             let mut sum = [0.0; 4];
-            for k in 0..k_len {
-                let yy = (y as isize + (k as isize - radius as isize)).clamp(0, height as isize - 1)
-                    as usize;
+            for k in 0..ctx.kernel_len {
+                let yy = (y as isize + (k as isize - ctx.radius as isize))
+                    .clamp(0, height as isize - 1) as usize;
                 let (r, g, b, a) = temp[yy * width + x];
-                let w = kernel[k];
+                let w = ctx.kernel[k];
                 sum[0] += r * w;
                 sum[1] += g * w;
                 sum[2] += b * w;
@@ -841,13 +943,35 @@ fn rfpart(x: f32) -> f32 {
     1.0 - x.fract()
 }
 
+/// Plot context for optimized pixel plotting
+#[allow(dead_code)]
+struct PlotContext {
+    width: u32,
+    height: u32,
+    width_i32: i32,
+    height_i32: i32,
+    width_usize: usize,
+}
+
+impl PlotContext {
+    #[inline]
+    fn new(width: u32, height: u32) -> Self {
+        Self {
+            width,
+            height,
+            width_i32: width as i32,
+            height_i32: height as i32,
+            width_usize: width as usize,
+        }
+    }
+}
+
 // Function to plot a pixel with alpha blending
 #[inline]
 #[allow(dead_code)]
 fn plot(
     accum: &mut [(f64, f64, f64, f64)],
-    width: u32,
-    height: u32,
+    ctx: &PlotContext,
     x: i32,
     y: i32,
     alpha: f32, // alpha here is the anti-aliasing coverage (0..1)
@@ -857,27 +981,31 @@ fn plot(
     base_alpha: f64, // base_alpha is the line segment's alpha
     hdr_scale: f64,
 ) {
-    if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-        let idx = (y as usize * width as usize) + x as usize;
-
-        // Calculate effective alpha for the source (line segment + AA coverage)
-        let src_alpha = (alpha as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
-
-        // Source color is already in OKLab space
-        let (src_l, src_a, src_b) = (color_l, color_a, color_b);
-        
-        // Get destination values (already in OKLab space)
-        let (dst_l, dst_a, dst_b, dst_alpha) = accum[idx];
-        
-        // Composite in OKLab space
-        let (out_l, out_a, out_b, out_alpha) = oklab::oklab_over_composite(
-            src_l, src_a, src_b, src_alpha,
-            dst_l, dst_a, dst_b, dst_alpha,
-        );
-        
-        // Update accumulator with new premultiplied OKLab values
-        accum[idx] = (out_l, out_a, out_b, out_alpha);
+    // Early bounds check
+    if x < 0 || x >= ctx.width_i32 || y < 0 || y >= ctx.height_i32 {
+        return;
     }
+    
+    // Single index calculation
+    let idx = (y as usize * ctx.width_usize) + x as usize;
+
+    // Calculate effective alpha for the source (line segment + AA coverage)
+    let src_alpha = (alpha as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
+
+    // Source color is already in OKLab space
+    let (src_l, src_a, src_b) = (color_l, color_a, color_b);
+    
+    // Get destination values (already in OKLab space)
+    let (dst_l, dst_a, dst_b, dst_alpha) = accum[idx];
+    
+    // Composite in OKLab space
+    let (out_l, out_a, out_b, out_alpha) = oklab::oklab_over_composite(
+        src_l, src_a, src_b, src_alpha,
+        dst_l, dst_a, dst_b, dst_alpha,
+    );
+    
+    // Update accumulator with new premultiplied OKLab values
+    accum[idx] = (out_l, out_a, out_b, out_alpha);
 }
 
 /// Line drawing with Xiaolin Wu anti-aliasing and alpha compositing (additive)
@@ -897,6 +1025,9 @@ pub fn draw_line_segment_aa_alpha(
     alpha1: f64,
     hdr_scale: f64,
 ) {
+    // Create plot context for optimized plotting
+    let ctx = PlotContext::new(width, height);
+    
     // Extract OKLab components
     let (l0, a0, b0) = col0;
     let (l1, a1, b1) = col1;
@@ -927,12 +1058,12 @@ pub fn draw_line_segment_aa_alpha(
 
     if steep {
         // Original coord system: (py0, px0) and (py0 + 1, px0)
-        plot(accum, width, height, py0, px0, rfpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
-        plot(accum, width, height, py0 + 1, px0, fpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
+        plot(accum, &ctx, py0, px0, rfpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
+        plot(accum, &ctx, py0 + 1, px0, fpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
     } else {
         // Original coord system: (px0, py0) and (px0, py0 + 1)
-        plot(accum, width, height, px0, py0, rfpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
-        plot(accum, width, height, px0, py0 + 1, fpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
+        plot(accum, &ctx, px0, py0, rfpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
+        plot(accum, &ctx, px0, py0 + 1, fpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
     }
     let mut intery = yend0 + gradient; // First y-intersection for the main loop
 
@@ -945,12 +1076,12 @@ pub fn draw_line_segment_aa_alpha(
 
     if steep {
         // Original coord system: (py1, px1) and (py1 + 1, px1)
-        plot(accum, width, height, py1, px1, rfpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
-        plot(accum, width, height, py1 + 1, px1, fpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
+        plot(accum, &ctx, py1, px1, rfpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
+        plot(accum, &ctx, py1 + 1, px1, fpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
     } else {
         // Original coord system: (px1, py1) and (px1, py1 + 1)
-        plot(accum, width, height, px1, py1, rfpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
-        plot(accum, width, height, px1, py1 + 1, fpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
+        plot(accum, &ctx, px1, py1, rfpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
+        plot(accum, &ctx, px1, py1 + 1, fpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
     }
 
     // Main loop: iterate between endpoints px0 and px1
@@ -964,8 +1095,7 @@ pub fn draw_line_segment_aa_alpha(
             // Original coord system: (ipart(intery), x) and (ipart(intery) + 1, x)
             plot(
                 accum,
-                width,
-                height,
+                &ctx,
                 ipart(intery),
                 x,
                 rfpart(intery),
@@ -977,8 +1107,7 @@ pub fn draw_line_segment_aa_alpha(
             );
             plot(
                 accum,
-                width,
-                height,
+                &ctx,
                 ipart(intery) + 1,
                 x,
                 fpart(intery),
@@ -1000,8 +1129,7 @@ pub fn draw_line_segment_aa_alpha(
             // Original coord system: (x, ipart(intery)) and (x, ipart(intery) + 1)
             plot(
                 accum,
-                width,
-                height,
+                &ctx,
                 x,
                 ipart(intery),
                 rfpart(intery),
@@ -1013,8 +1141,7 @@ pub fn draw_line_segment_aa_alpha(
             );
             plot(
                 accum,
-                width,
-                height,
+                &ctx,
                 x,
                 ipart(intery) + 1,
                 fpart(intery),
@@ -1497,12 +1624,16 @@ pub fn pass_1_build_histogram_spectral(
                 density: None,
             };
             
+            // Take ownership of accum_rgba to avoid clone
+            let rgba_buffer = std::mem::take(&mut accum_rgba);
             let final_frame_pixels = effect_chain.process_frame(
-                accum_rgba.clone(),
+                rgba_buffer,
                 width as usize,
                 height as usize,
                 &frame_params,
             ).expect("Post-effect chain failed");
+            // Reallocate for next iteration
+            accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
             // Collect histogram data efficiently
             histogram.reserve(ctx.pixel_count());
@@ -1661,12 +1792,16 @@ pub fn pass_2_write_frames_spectral(
                 density: None,
             };
             
+            // Take ownership of accum_rgba to avoid clone
+            let rgba_buffer = std::mem::take(&mut accum_rgba);
             let final_frame_pixels = effect_chain.process_frame(
-                accum_rgba.clone(),
+                rgba_buffer,
                 width as usize,
                 height as usize,
                 &frame_params,
             )?;
+            // Reallocate for next iteration
+            accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
             // levels + ACES tonemapping
             let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
@@ -1679,9 +1814,10 @@ pub fn pass_2_write_frames_spectral(
                     rr = (rr - black_r) / ranges.r;
                     gg = (gg - black_g) / ranges.g;
                     bb = (bb - black_b) / ranges.b;
-                    rr = aces_film(rr);
-                    gg = aces_film(gg);
-                    bb = aces_film(bb);
+                    // Apply ACES Filmic Tonemapping (optimized with LUT)
+                    rr = ACES_LUT.apply(rr);
+                    gg = ACES_LUT.apply(gg);
+                    bb = ACES_LUT.apply(bb);
                     chunk[0] = (rr * 255.0).round().clamp(0.0, 255.0) as u8;
                     chunk[1] = (gg * 255.0).round().clamp(0.0, 255.0) as u8;
                     chunk[2] = (bb * 255.0).round().clamp(0.0, 255.0) as u8;
