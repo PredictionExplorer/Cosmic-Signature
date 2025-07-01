@@ -104,56 +104,7 @@ fn convert_spd_buffer_to_rgba(src: &[[f64; NUM_BINS]], dest: &mut [(f64, f64, f6
         });
 }
 
-/// Parameters for histogram building pass
-#[allow(dead_code)] // For future use with refactored pass functions
-pub struct HistogramPassParams<'a> {
-    pub positions: &'a [Vec<Vector3<f64>>],
-    pub colors: &'a [Vec<OklabColor>],
-    pub body_alphas: &'a [f64],
-    pub width: u32,
-    pub height: u32,
-    pub blur_radius_px: usize,
-    pub blur_strength: f64,
-    pub blur_core_brightness: f64,
-    pub frame_interval: usize,
-    pub all_r: &'a mut Vec<f64>,
-    pub all_g: &'a mut Vec<f64>,
-    pub all_b: &'a mut Vec<f64>,
-    pub bloom_mode: &'a str,
-    pub dog_config: &'a DogBloomConfig,
-    pub hdr_mode: &'a str,
-    pub perceptual_blur_enabled: bool,
-    pub perceptual_blur_config: Option<&'a crate::post_effects::PerceptualBlurConfig>,
-    pub render_config: &'a RenderConfig,
-}
 
-/// Parameters for frame writing pass
-#[allow(dead_code)] // For future use with refactored pass functions
-pub struct FrameWritePassParams<'a, F> {
-    pub positions: &'a [Vec<Vector3<f64>>],
-    pub colors: &'a [Vec<OklabColor>],
-    pub body_alphas: &'a [f64],
-    pub width: u32,
-    pub height: u32,
-    pub blur_radius_px: usize,
-    pub blur_strength: f64,
-    pub blur_core_brightness: f64,
-    pub frame_interval: usize,
-    pub black_r: f64,
-    pub white_r: f64,
-    pub black_g: f64,
-    pub white_g: f64,
-    pub black_b: f64,
-    pub white_b: f64,
-    pub bloom_mode: &'a str,
-    pub dog_config: &'a DogBloomConfig,
-    pub hdr_mode: &'a str,
-    pub perceptual_blur_enabled: bool,
-    pub perceptual_blur_config: Option<&'a crate::post_effects::PerceptualBlurConfig>,
-    pub frame_sink: F,
-    pub last_frame_out: &'a mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
-    pub render_config: &'a RenderConfig,
-}
 
 /// Pass 1: Build histogram for color leveling
 #[allow(dead_code)] // Exported API, not used in current example
@@ -227,9 +178,9 @@ pub fn pass_1_build_histogram(
         let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Accumulate crisp lines for every step
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale });
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale });
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
 
         // Process frame data on frame_interval OR the very last step
         let is_final = step == total_steps - 1;
@@ -354,15 +305,15 @@ pub fn pass_2_write_frames(
         let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Draw crisp lines
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale });
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale });
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
 
         // Draw blurred lines (for motion blur effect)
         if blur_radius_px > 0 {
-            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale });
-            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale });
-            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale });
+            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0, y0, x1, y1, col0: c0, col1: c1, alpha0: a0, alpha1: a1, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
+            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0: x1, y0: y1, x1: x2, y1: y2, col0: c1, col1: c2, alpha0: a1, alpha1: a2, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
+            draw_line_segment_aa_alpha(&mut accum_blur, width, height, LineParams { x0: x2, y0: y2, x1: x0, y1: y0, col0: c2, col1: c0, alpha0: a2, alpha1: a0, hdr_scale: render_config.hdr_scale, alpha_compress: render_config.alpha_compress });
         }
 
         // Process frame on interval or final step
@@ -505,9 +456,9 @@ pub fn pass_1_build_histogram_spectral(
         let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Draw spectral lines
-        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
-        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
-        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale, render_config.alpha_compress);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale, render_config.alpha_compress);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale, render_config.alpha_compress);
 
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {
@@ -615,9 +566,9 @@ pub fn pass_2_write_frames_spectral(
         let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Draw spectral lines
-        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
-        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
-        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale, render_config.alpha_compress);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale, render_config.alpha_compress);
+        draw_line_segment_aa_spectral(&mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale, render_config.alpha_compress);
 
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {

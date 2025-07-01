@@ -93,13 +93,11 @@ impl EffectChainBuilder {
 }
 
 /// Optimized histogram storage with better memory layout
-#[allow(dead_code)] // Used by non-spectral render passes which are currently unused
 pub struct HistogramData {
     /// Interleaved RGB data for better cache locality
     data: Vec<[f64; 3]>,
 }
 
-#[allow(dead_code)]
 impl HistogramData {
     /// Create new histogram storage with given capacity
     pub fn with_capacity(capacity: usize) -> Self {
@@ -114,21 +112,6 @@ impl HistogramData {
         self.data.push([r, g, b]);
     }
     
-    /// Get the length of the histogram
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-    
-    /// Check if histogram is empty
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-    
-    /// Clear the histogram data
-    pub fn clear(&mut self) {
-        self.data.clear();
-    }
-    
     /// Reserve additional capacity
     pub fn reserve(&mut self, additional: usize) {
         self.data.reserve(additional);
@@ -138,44 +121,7 @@ impl HistogramData {
     pub fn data(&self) -> &[[f64; 3]] {
         &self.data
     }
-    
-    /// Compute black and white points for color leveling
-    pub fn compute_black_white_points(
-        &mut self,
-        clip_black: f64,
-        clip_white: f64,
-    ) -> (f64, f64, f64, f64, f64, f64) {
-        let total_pix = self.data.len();
-        if total_pix == 0 {
-            return (0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-        }
-        
-        // Extract channels for sorting
-        let mut r_values: Vec<f64> = self.data.iter().map(|rgb| rgb[0]).collect();
-        let mut g_values: Vec<f64> = self.data.iter().map(|rgb| rgb[1]).collect();
-        let mut b_values: Vec<f64> = self.data.iter().map(|rgb| rgb[2]).collect();
-        
-        // Use select_nth_unstable for O(n) percentile finding
-        let black_idx = ((clip_black * total_pix as f64).round() as usize)
-            .min(total_pix.saturating_sub(1));
-        let white_idx = ((clip_white * total_pix as f64).round() as usize)
-            .min(total_pix.saturating_sub(1));
-        
-        // Find percentiles using partial sort (O(n) complexity)
-        let black_r = *r_values.select_nth_unstable_by(black_idx, |a, b| a.partial_cmp(b).unwrap()).1;
-        let white_r = *r_values.select_nth_unstable_by(white_idx, |a, b| a.partial_cmp(b).unwrap()).1;
-        
-        let black_g = *g_values.select_nth_unstable_by(black_idx, |a, b| a.partial_cmp(b).unwrap()).1;
-        let white_g = *g_values.select_nth_unstable_by(white_idx, |a, b| a.partial_cmp(b).unwrap()).1;
-        
-        let black_b = *b_values.select_nth_unstable_by(black_idx, |a, b| a.partial_cmp(b).unwrap()).1;
-        let white_b = *b_values.select_nth_unstable_by(white_idx, |a, b| a.partial_cmp(b).unwrap()).1;
-        
-        (black_r, white_r, black_g, white_g, black_b, white_b)
-    }
 }
-
-
 
 /// Save an RGB image buffer as PNG
 pub fn save_image_as_png(

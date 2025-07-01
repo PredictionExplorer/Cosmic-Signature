@@ -13,6 +13,7 @@ pub struct PlotParams {
     pub color: OklabColor,
     pub alpha: f64,
     pub hdr_scale: f64,
+    pub alpha_compress: f64,
 }
 
 /// Parameters for drawing a line segment
@@ -26,6 +27,7 @@ pub struct LineParams {
     pub alpha0: f64,
     pub alpha1: f64,
     pub hdr_scale: f64,
+    pub alpha_compress: f64,
 }
 
 /// Parameters for plotting a single pixel in spectral mode
@@ -38,6 +40,7 @@ struct SpectralPlotParams {
     w_right: f64,
     base_alpha: f64,
     hdr_scale: f64,
+    alpha_compress: f64,
 }
 
 /// Parameters for drawing a line segment in spectral mode
@@ -51,6 +54,7 @@ pub struct SpectralLineParams {
     pub alpha0: f64,
     pub alpha1: f64,
     pub hdr_scale: f64,
+    pub alpha_compress: f64,
 }
 
 /// Compute the integer part of a floating point number
@@ -85,14 +89,23 @@ fn plot(
     // Convert OKLab to linear RGB
     let rgb = oklab::oklab_to_linear_srgb(params.color.0, params.color.1, params.color.2);
     
-    // Compute source alpha (coverage * base alpha * HDR scale)
-    let src_alpha = params.coverage as f64 * params.alpha * params.hdr_scale;
-
     // Single index calculation
     let idx = (params.y as usize * ctx.width_usize) + params.x as usize;
     
     // Get destination pixel
     let dst = &mut accum[idx];
+
+    // Apply alpha compression based on current density
+    // The more alpha already accumulated, the less we add
+    let compression_factor = if params.alpha_compress > 0.0 {
+        // Use exponential decay: new_alpha = alpha * exp(-compress * current_alpha)
+        (-params.alpha_compress * dst.3).exp()
+    } else {
+        1.0
+    };
+    
+    // Compute source alpha (coverage * base alpha * HDR scale * compression)
+    let src_alpha = params.coverage as f64 * params.alpha * params.hdr_scale * compression_factor;
 
     // Premultiplied alpha compositing
     // Source is already premultiplied (rgb * src_alpha)
@@ -126,6 +139,7 @@ pub fn draw_line_segment_aa_alpha(
     let mut alpha0 = params.alpha0;
     let mut alpha1 = params.alpha1;
     let hdr_scale = params.hdr_scale;
+    let alpha_compress = params.alpha_compress;
 
     let dx = (x1 - x0).abs();
     let dy = (y1 - y0).abs();
@@ -157,11 +171,11 @@ pub fn draw_line_segment_aa_alpha(
     let ypxl1 = ipart(yend);
 
     if steep {
-        plot(accum, &ctx, &PlotParams { x: ypxl1, y: xpxl1, coverage: rfpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale });
-        plot(accum, &ctx, &PlotParams { x: ypxl1 + 1, y: xpxl1, coverage: fpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale });
+        plot(accum, &ctx, &PlotParams { x: ypxl1, y: xpxl1, coverage: rfpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale, alpha_compress });
+        plot(accum, &ctx, &PlotParams { x: ypxl1 + 1, y: xpxl1, coverage: fpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale, alpha_compress });
     } else {
-        plot(accum, &ctx, &PlotParams { x: xpxl1, y: ypxl1, coverage: rfpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale });
-        plot(accum, &ctx, &PlotParams { x: xpxl1, y: ypxl1 + 1, coverage: fpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale });
+        plot(accum, &ctx, &PlotParams { x: xpxl1, y: ypxl1, coverage: rfpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale, alpha_compress });
+        plot(accum, &ctx, &PlotParams { x: xpxl1, y: ypxl1 + 1, coverage: fpart(yend) * xgap, color: col0, alpha: alpha0, hdr_scale, alpha_compress });
     }
 
     let mut intery = yend + gradient;
@@ -174,11 +188,11 @@ pub fn draw_line_segment_aa_alpha(
     let ypxl2 = ipart(yend);
 
     if steep {
-        plot(accum, &ctx, &PlotParams { x: ypxl2, y: xpxl2, coverage: rfpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale });
-        plot(accum, &ctx, &PlotParams { x: ypxl2 + 1, y: xpxl2, coverage: fpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale });
+        plot(accum, &ctx, &PlotParams { x: ypxl2, y: xpxl2, coverage: rfpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale, alpha_compress });
+        plot(accum, &ctx, &PlotParams { x: ypxl2 + 1, y: xpxl2, coverage: fpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale, alpha_compress });
     } else {
-        plot(accum, &ctx, &PlotParams { x: xpxl2, y: ypxl2, coverage: rfpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale });
-        plot(accum, &ctx, &PlotParams { x: xpxl2, y: ypxl2 + 1, coverage: fpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale });
+        plot(accum, &ctx, &PlotParams { x: xpxl2, y: ypxl2, coverage: rfpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale, alpha_compress });
+        plot(accum, &ctx, &PlotParams { x: xpxl2, y: ypxl2 + 1, coverage: fpart(yend) * xgap, color: col1, alpha: alpha1, hdr_scale, alpha_compress });
     }
 
     // Draw the line between endpoints
@@ -200,14 +214,14 @@ pub fn draw_line_segment_aa_alpha(
         
         if steep {
             plot(accum, &ctx, &PlotParams { x: ipart(intery), y: x, coverage: rfpart(intery), 
-                 color: interp_color, alpha: interp_alpha, hdr_scale });
+                 color: interp_color, alpha: interp_alpha, hdr_scale, alpha_compress });
             plot(accum, &ctx, &PlotParams { x: ipart(intery) + 1, y: x, coverage: fpart(intery), 
-                 color: interp_color, alpha: interp_alpha, hdr_scale });
+                 color: interp_color, alpha: interp_alpha, hdr_scale, alpha_compress });
         } else {
             plot(accum, &ctx, &PlotParams { x, y: ipart(intery), coverage: rfpart(intery), 
-                 color: interp_color, alpha: interp_alpha, hdr_scale });
+                 color: interp_color, alpha: interp_alpha, hdr_scale, alpha_compress });
             plot(accum, &ctx, &PlotParams { x, y: ipart(intery) + 1, coverage: fpart(intery), 
-                 color: interp_color, alpha: interp_alpha, hdr_scale });
+                 color: interp_color, alpha: interp_alpha, hdr_scale, alpha_compress });
         }
         intery += gradient;
     }
@@ -226,20 +240,36 @@ fn plot_spec(
     height: u32,
     params: &SpectralPlotParams,
 ) {
+    // Parameters for depositing energy
+    struct DepositParams {
+        xi: i32,
+        yi: i32,
+        energy: f64,
+        bin: usize,
+        alpha_compress: f64,
+    }
+    
     // Inner helper to deposit energy into a specific bin
     #[inline]
     fn deposit(
         accum: &mut [[f64; NUM_BINS]],
         width: u32,
         height: u32,
-        xi: i32,
-        yi: i32,
-        energy: f64,
-        bin: usize,
+        params: &DepositParams,
     ) {
-        if xi >= 0 && xi < width as i32 && yi >= 0 && yi < height as i32 {
-            let idx = (yi as usize) * (width as usize) + (xi as usize);
-            accum[idx][bin] += energy;
+        if params.xi >= 0 && params.xi < width as i32 && params.yi >= 0 && params.yi < height as i32 {
+            let idx = (params.yi as usize) * (width as usize) + (params.xi as usize);
+            
+            // Apply alpha compression based on current energy in the bin
+            let compression_factor = if params.alpha_compress > 0.0 {
+                // Use exponential decay based on total energy at this pixel
+                let current_energy: f64 = accum[idx].iter().sum();
+                (-params.alpha_compress * current_energy).exp()
+            } else {
+                1.0
+            };
+            
+            accum[idx][params.bin] += params.energy * compression_factor;
         }
     }
 
@@ -249,12 +279,18 @@ fn plot_spec(
     // Distribute energy between wavelength bins
     if params.bin_left == params.bin_right {
         // Single bin case
-        deposit(accum, width, height, params.x, params.y, total_energy, params.bin_left);
+        deposit(accum, width, height, &DepositParams {
+            xi: params.x, yi: params.y, energy: total_energy, bin: params.bin_left, alpha_compress: params.alpha_compress
+        });
     } else {
         // Split between two bins
         let w_left = 1.0 - params.w_right;
-        deposit(accum, width, height, params.x, params.y, total_energy * w_left, params.bin_left);
-        deposit(accum, width, height, params.x, params.y, total_energy * params.w_right, params.bin_right);
+        deposit(accum, width, height, &DepositParams {
+            xi: params.x, yi: params.y, energy: total_energy * w_left, bin: params.bin_left, alpha_compress: params.alpha_compress
+        });
+        deposit(accum, width, height, &DepositParams {
+            xi: params.x, yi: params.y, energy: total_energy * params.w_right, bin: params.bin_right, alpha_compress: params.alpha_compress
+        });
     }
 }
 
@@ -275,8 +311,9 @@ pub fn draw_line_segment_aa_spectral(
     alpha0: f64,
     alpha1: f64,
     hdr_scale: f64,
+    alpha_compress: f64,
 ) {
-    let params = SpectralLineParams { x0, y0, x1, y1, col0, col1, alpha0, alpha1, hdr_scale };
+    let params = SpectralLineParams { x0, y0, x1, y1, col0, col1, alpha0, alpha1, hdr_scale, alpha_compress };
     draw_line_segment_aa_spectral_impl(accum, width, height, params);
 }
 
@@ -327,23 +364,23 @@ fn draw_line_segment_aa_spectral_impl(
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: ypxl1, y: xpxl1, coverage: rfpart(yend) * xgap, 
             bin_left: bin0_left, bin_right: bin0_right, w_right: w0_right, 
-            base_alpha: params.alpha0, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha0, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: ypxl1 + 1, y: xpxl1, coverage: fpart(yend) * xgap, 
             bin_left: bin0_left, bin_right: bin0_right, w_right: w0_right, 
-            base_alpha: params.alpha0, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha0, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
     } else {
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: xpxl1, y: ypxl1, coverage: rfpart(yend) * xgap, 
             bin_left: bin0_left, bin_right: bin0_right, w_right: w0_right, 
-            base_alpha: params.alpha0, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha0, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: xpxl1, y: ypxl1 + 1, coverage: fpart(yend) * xgap, 
             bin_left: bin0_left, bin_right: bin0_right, w_right: w0_right, 
-            base_alpha: params.alpha0, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha0, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
     }
 
@@ -366,23 +403,23 @@ fn draw_line_segment_aa_spectral_impl(
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: ypxl2, y: xpxl2, coverage: rfpart(yend) * xgap, 
             bin_left: bin1_left, bin_right: bin1_right, w_right: w1_right, 
-            base_alpha: params.alpha1, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha1, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: ypxl2 + 1, y: xpxl2, coverage: fpart(yend) * xgap, 
             bin_left: bin1_left, bin_right: bin1_right, w_right: w1_right, 
-            base_alpha: params.alpha1, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha1, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
     } else {
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: xpxl2, y: ypxl2, coverage: rfpart(yend) * xgap, 
             bin_left: bin1_left, bin_right: bin1_right, w_right: w1_right, 
-            base_alpha: params.alpha1, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha1, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
         plot_spec(accum, width, height, &SpectralPlotParams { 
             x: xpxl2, y: ypxl2 + 1, coverage: fpart(yend) * xgap, 
             bin_left: bin1_left, bin_right: bin1_right, w_right: w1_right, 
-            base_alpha: params.alpha1, hdr_scale: params.hdr_scale 
+            base_alpha: params.alpha1, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
         });
     }
 
@@ -409,23 +446,23 @@ fn draw_line_segment_aa_spectral_impl(
             plot_spec(accum, width, height, &SpectralPlotParams { 
                 x: ipart(intery), y: x, coverage: rfpart(intery), 
                 bin_left, bin_right, w_right, 
-                base_alpha: interp_alpha, hdr_scale: params.hdr_scale 
+                base_alpha: interp_alpha, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
             });
             plot_spec(accum, width, height, &SpectralPlotParams { 
                 x: ipart(intery) + 1, y: x, coverage: fpart(intery), 
                 bin_left, bin_right, w_right, 
-                base_alpha: interp_alpha, hdr_scale: params.hdr_scale 
+                base_alpha: interp_alpha, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
             });
         } else {
             plot_spec(accum, width, height, &SpectralPlotParams { 
                 x, y: ipart(intery), coverage: rfpart(intery), 
                 bin_left, bin_right, w_right, 
-                base_alpha: interp_alpha, hdr_scale: params.hdr_scale 
+                base_alpha: interp_alpha, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
             });
             plot_spec(accum, width, height, &SpectralPlotParams { 
                 x, y: ipart(intery) + 1, coverage: fpart(intery), 
                 bin_left, bin_right, w_right, 
-                base_alpha: interp_alpha, hdr_scale: params.hdr_scale 
+                base_alpha: interp_alpha, hdr_scale: params.hdr_scale, alpha_compress: params.alpha_compress 
             });
         }
         intery += gradient;

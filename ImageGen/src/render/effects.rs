@@ -10,6 +10,9 @@ use log::{debug, trace};
 use rayon::prelude::*;
 use smallvec::SmallVec;
 
+// Rec. 709 (sRGB) luminance coefficients
+const REC709_LUMINANCE: [f64; 3] = [0.212_6, 0.715_2, 0.072_2];
+
 /// Configuration for Difference-of-Gaussians bloom
 #[derive(Clone, Debug)]
 pub struct DogBloomConfig {
@@ -128,7 +131,7 @@ impl ExposureCalculator {
             .par_iter()
             .map(|(r, g, b, a)| {
                 // Rec. 709 luminance weights
-                let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                let lum = REC709_LUMINANCE[0] * r + REC709_LUMINANCE[1] * g + REC709_LUMINANCE[2] * b;
                 lum * a  // Premultiplied
             })
             .filter(|&l| l > 0.0)  // Ignore black pixels

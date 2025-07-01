@@ -5,8 +5,62 @@
 //!
 //! This module provides accurate conversions between linear sRGB and OKLab color spaces,
 //! with support for batch processing and various gamut mapping strategies.
+//!
+//! # Matrix Constants Origin
+//!
+//! The transformation matrices used in this module are derived from the OKLab paper
+//! and represent optimized color space transformations:
+//!
+//! ## RGB to LMS (Cone Response) Matrix
+//! This matrix transforms from linear sRGB to the LMS cone response space.
+//! The coefficients are optimized to:
+//! - Minimize hue shifts in blue regions
+//! - Provide good lightness prediction
+//! - Match human cone response characteristics
+//!
+//! ## LMS to OKLab Matrix  
+//! This matrix transforms from the nonlinear cone response to the perceptual OKLab space.
+//! The coefficients are derived through numerical optimization to ensure:
+//! - L (lightness) correlates well with perceived brightness
+//! - a (green-red) and b (blue-yellow) axes are perceptually uniform
+//! - Euclidean distance in OKLab space matches perceptual color difference
+//!
+//! All matrices are pre-computed and validated against the reference implementation.
 
 use rayon::prelude::*;
+
+// Transformation matrix: Linear sRGB to LMS cone response
+// Optimized for D65 illuminant
+const SRGB_TO_LMS: [[f64; 3]; 3] = [
+    [0.412_221_470_8, 0.536_332_536_3, 0.051_445_992_9],  // L cone
+    [0.211_903_498_2, 0.680_699_545_1, 0.107_396_956_6],  // M cone
+    [0.088_302_461_9, 0.281_718_837_6, 0.629_978_700_5],  // S cone
+];
+
+// Transformation matrix: Nonlinear LMS to OKLab
+// Derived through optimization to ensure perceptual uniformity
+const LMS_TO_OKLAB: [[f64; 3]; 3] = [
+    [0.210_454_255_3,  0.793_617_785_0, -0.004_072_046_8],  // L (lightness)
+    [1.977_998_495_1, -2.428_592_205_0,  0.450_593_709_9],  // a (green-red)
+    [0.025_904_037_1,  0.782_771_766_2, -0.808_675_766_0],  // b (blue-yellow)
+];
+
+// Inverse transformation matrix: OKLab to nonlinear LMS
+const OKLAB_TO_LMS: [[f64; 3]; 3] = [
+    [1.0,  0.396_337_777_4,  0.215_803_757_3],  // L' = L + 0.396a + 0.216b
+    [1.0, -0.105_561_345_8, -0.063_854_172_8],  // M' = L - 0.106a - 0.064b
+    [1.0, -0.089_484_177_5, -1.291_485_548_0],  // S' = L - 0.089a - 1.291b
+];
+
+// Inverse transformation matrix: LMS to linear sRGB
+const LMS_TO_SRGB: [[f64; 3]; 3] = [
+    [ 4.076_741_662_1, -3.307_711_591_3,  0.230_969_929_2],  // R
+    [-1.268_438_004_6,  2.609_757_401_1, -0.341_319_396_5],  // G
+    [-0.004_196_086_3, -0.703_418_614_7,  1.707_614_701_0],  // B
+];
+
+// Rec. 709 (sRGB) luminance coefficients for perceptual weighting
+const REC709_LUMINANCE: [f64; 3] = [0.212_6, 0.715_2, 0.072_2];
 
 /// Configuration for gamut mapping strategies when converting from OKLab back to sRGB.
 #[derive(Debug, Clone, Copy, Default)]
@@ -33,9 +87,11 @@ pub enum GamutMapMode {
 #[inline]
 pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     // Step 1: Linear RGB to cone response (LMS)
-    let l = 0.412_221_470_8 * r + 0.536_332_536_3 * g + 0.051_445_992_9 * b;
-    let m = 0.211_903_498_2 * r + 0.680_699_545_1 * g + 0.107_396_956_6 * b;
-    let s = 0.088_302_461_9 * r + 0.281_718_837_6 * g + 0.629_978_700_5 * b;
+    // Matrix optimized for the D65 illuminant (standard daylight)
+    // These coefficients transform sRGB primaries to cone fundamentals
+    let l = SRGB_TO_LMS[0][0] * r + SRGB_TO_LMS[0][1] * g + SRGB_TO_LMS[0][2] * b;
+    let m = SRGB_TO_LMS[1][0] * r + SRGB_TO_LMS[1][1] * g + SRGB_TO_LMS[1][2] * b;
+    let s = SRGB_TO_LMS[2][0] * r + SRGB_TO_LMS[2][1] * g + SRGB_TO_LMS[2][2] * b;
     
     // Step 2: Apply nonlinearity (cube root)
     let l_prime = l.cbrt();
@@ -43,9 +99,9 @@ pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     let s_prime = s.cbrt();
     
     // Step 3: Transform to Lab coordinates
-    let lab_l = 0.210_454_255_3 * l_prime + 0.793_617_785_0 * m_prime - 0.004_072_046_8 * s_prime;
-    let lab_a = 1.977_998_495_1 * l_prime - 2.428_592_205_0 * m_prime + 0.450_593_709_9 * s_prime;
-    let lab_b = 0.025_904_037_1 * l_prime + 0.782_771_766_2 * m_prime - 0.808_675_766_0 * s_prime;
+    let lab_l = LMS_TO_OKLAB[0][0] * l_prime + LMS_TO_OKLAB[0][1] * m_prime + LMS_TO_OKLAB[0][2] * s_prime;
+    let lab_a = LMS_TO_OKLAB[1][0] * l_prime + LMS_TO_OKLAB[1][1] * m_prime + LMS_TO_OKLAB[1][2] * s_prime;
+    let lab_b = LMS_TO_OKLAB[2][0] * l_prime + LMS_TO_OKLAB[2][1] * m_prime + LMS_TO_OKLAB[2][2] * s_prime;
     
     (lab_l, lab_a, lab_b)
 }
@@ -62,9 +118,9 @@ pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
 #[inline]
 pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     // Step 1: Lab to nonlinear cone response
-    let l_prime = l + 0.396_337_777_4 * a + 0.215_803_757_3 * b;
-    let m_prime = l - 0.105_561_345_8 * a - 0.063_854_172_8 * b;
-    let s_prime = l - 0.089_484_177_5 * a - 1.291_485_548_0 * b;
+    let l_prime = OKLAB_TO_LMS[0][0] * l + OKLAB_TO_LMS[0][1] * a + OKLAB_TO_LMS[0][2] * b;
+    let m_prime = OKLAB_TO_LMS[1][0] * l + OKLAB_TO_LMS[1][1] * a + OKLAB_TO_LMS[1][2] * b;
+    let s_prime = OKLAB_TO_LMS[2][0] * l + OKLAB_TO_LMS[2][1] * a + OKLAB_TO_LMS[2][2] * b;
     
     // Step 2: Apply inverse nonlinearity (cube)
     let l_lms = l_prime * l_prime * l_prime;
@@ -72,9 +128,9 @@ pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     let s_lms = s_prime * s_prime * s_prime;
     
     // Step 3: Cone response to linear RGB
-    let r = 4.076_741_662_1 * l_lms - 3.307_711_591_3 * m_lms + 0.230_969_929_2 * s_lms;
-    let g = -1.268_438_004_6 * l_lms + 2.609_757_401_1 * m_lms - 0.341_319_396_5 * s_lms;
-    let b = -0.004_196_086_3 * l_lms - 0.703_418_614_7 * m_lms + 1.707_614_701_0 * s_lms;
+    let r = LMS_TO_SRGB[0][0] * l_lms + LMS_TO_SRGB[0][1] * m_lms + LMS_TO_SRGB[0][2] * s_lms;
+    let g = LMS_TO_SRGB[1][0] * l_lms + LMS_TO_SRGB[1][1] * m_lms + LMS_TO_SRGB[1][2] * s_lms;
+    let b = LMS_TO_SRGB[2][0] * l_lms + LMS_TO_SRGB[2][1] * m_lms + LMS_TO_SRGB[2][2] * s_lms;
     
     (r, g, b)
 }
@@ -105,8 +161,6 @@ pub fn oklab_to_linear_srgb_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, 
         .collect()
 }
 
-
-
 impl GamutMapMode {
     /// Map an RGB color that may be outside the [0, 1] gamut to valid range.
     /// 
@@ -129,7 +183,7 @@ impl GamutMapMode {
                 }
                 
                 // Calculate luminance using Rec. 709 coefficients
-                let lum = 0.212_6 * r + 0.715_2 * g + 0.072_2 * b;
+                let lum = REC709_LUMINANCE[0] * r + REC709_LUMINANCE[1] * g + REC709_LUMINANCE[2] * b;
                 
                 // Binary search for the scale factor that brings the color into gamut
                 let mut low = 0.0;
@@ -335,8 +389,8 @@ mod tests {
         assert!((0.0..=1.0).contains(&b_out), "B out of gamut: {}", b_out);
         
         // Test that the luminance is preserved
-        let lum_in = 0.2126 * r_in + 0.7152 * g_in + 0.0722 * b_in;
-        let lum_out = 0.2126 * r_out + 0.7152 * g_out + 0.0722 * b_out;
+        let lum_in = REC709_LUMINANCE[0] * r_in + REC709_LUMINANCE[1] * g_in + REC709_LUMINANCE[2] * b_in;
+        let lum_out = REC709_LUMINANCE[0] * r_out + REC709_LUMINANCE[1] * g_out + REC709_LUMINANCE[2] * b_out;
         let lum_expected = lum_in.clamp(0.0, 1.0);
         assert!((lum_out - lum_expected).abs() < 0.01,
             "Luminance not preserved: {} vs {}", lum_out, lum_expected);

@@ -5,8 +5,8 @@ use nalgebra::Vector3;
 /// Rendering configuration parameters
 #[derive(Clone, Copy, Debug)]
 pub struct RenderConfig {
-    /// Alpha compression factor (reserved for future use)
-    #[allow(dead_code)] // TODO: Implement alpha compression in render passes
+    /// Alpha compression factor to reduce overdraw saturation
+    /// Higher values reduce alpha more aggressively in dense areas
     pub alpha_compress: f64,
     /// HDR scale factor for brightness
     pub hdr_scale: f64,
