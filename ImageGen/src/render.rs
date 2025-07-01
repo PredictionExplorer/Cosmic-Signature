@@ -4,13 +4,17 @@ use crate::post_effects::{PostEffectChain, AutoExposure, GaussianBloom, DogBloom
 use crate::oklab;
 use crate::sim;
 use crate::spectrum::{BIN_SHIFT, NUM_BINS, spd_to_rgba};
-use crate::utils::{bounding_box, build_gaussian_kernel};
+use crate::utils::build_gaussian_kernel;
 use image::{DynamicImage, ImageBuffer, Rgb};
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use std::error::Error;
 use std::io::Write;
 
+/// Render utilities module for common functionality
+#[path = "render_utils.rs"]
+mod utils;
+pub use self::utils::{RenderContext, EffectChainBuilder, HistogramData, FrameParams, EffectConfig};
 
 /// Type alias for OKLab color (L, a, b components)
 pub type OklabColor = (f64, f64, f64);
@@ -202,7 +206,7 @@ fn upsample_bilinear(
 }
 
 /// Configuration for Difference-of-Gaussians bloom
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DogBloomConfig {
     pub inner_sigma: f64,   // Base blur radius
     pub outer_ratio: f64,   // Outer sigma = inner * ratio (typically 2-3)
@@ -383,21 +387,28 @@ pub fn pass_1_build_histogram(
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
     render_config: &RenderConfig,
 ) {
-    let npix = (width as usize) * (height as usize);
-    let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
+    // Create render context
+    let ctx = RenderContext::new(width, height, positions);
+    let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
+    
+    // Create persistent effect chain
+    let effect_config = EffectConfig {
+        bloom_mode: bloom_mode.to_string(),
+        blur_radius_px,
+        blur_strength,
+        blur_core_brightness,
+        dog_config: dog_config.clone(),
+        hdr_mode: hdr_mode.to_string(),
+        perceptual_blur_enabled,
+        perceptual_blur_config: perceptual_blur_config.cloned(),
+    };
+    let effect_chain = EffectChainBuilder::new(effect_config);
+    
+    // Create histogram storage (more efficient than separate vectors)
+    let mut histogram = HistogramData::with_capacity(ctx.pixel_count() * 10); // Estimate capacity
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
-
-    // Use bounding_box (with padding) for scaling
-    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
-    let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
-        let ww = (max_x - min_x).max(1e-12); // Avoid division by zero
-        let hh = (max_y - min_y).max(1e-12);
-        let px = ((xx - min_x) / ww) * (width as f64);
-        let py = ((yy - min_y) / hh) * (height as f64);
-        (px as f32, py as f32)
-    };
 
     // Iterate through ALL steps
     for step in 0..total_steps {
@@ -418,9 +429,9 @@ pub fn pass_1_build_histogram(
         let a1 = body_alphas[1];
         let a2 = body_alphas[2];
 
-        let (x0, y0) = to_pixel(p0[0], p0[1]);
-        let (x1, y1) = to_pixel(p1[0], p1[1]);
-        let (x2, y2) = to_pixel(p2[0], p2[1]);
+        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
+        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
+        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Accumulate crisp lines for every step
         draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
@@ -434,42 +445,43 @@ pub fn pass_1_build_histogram(
             // Convert from draw space to RGB if needed
             let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
             
-            // Create and apply post-effect chain
-            let post_chain = create_post_effect_chain(
-                bloom_mode,
-                blur_radius_px,
-                blur_strength,
-                blur_core_brightness,
-                dog_config,
-                hdr_mode,
-                perceptual_blur_enabled,
-                perceptual_blur_config,
-            );
+            // Process with persistent effect chain
+            let frame_params = FrameParams {
+                frame_number: step / frame_interval,
+                density: None, // Could calculate if needed
+            };
             
-            let final_frame_pixels = post_chain.process(
+            let final_frame_pixels = effect_chain.process_frame(
                 rgb_buffer,
                 width as usize,
                 height as usize,
+                &frame_params,
             ).expect("Post-effect chain failed");
 
-            // 3. Collect Histogram Data (Premultiplied)
-            // Reserve approximate space to reduce reallocations
-            all_r.reserve(npix);
-            all_g.reserve(npix);
-            all_b.reserve(npix);
-
+            // Collect histogram data more efficiently
+            histogram.reserve(ctx.pixel_count());
             for &(r, g, b, a) in &final_frame_pixels {
                 // Composite over black implicitly (premultiplying by alpha)
-                let dr = r * a;
-                let dg = g * a;
-                let db = b * a;
-                // Add all pixels' contributions to histogram
-                all_r.push(dr);
-                all_g.push(dg);
-                all_b.push(db);
+                histogram.push(r * a, g * a, b * a);
             }
         }
     }
+    
+    // Transfer histogram data to output vectors (for backward compatibility)
+    all_r.clear();
+    all_g.clear();
+    all_b.clear();
+    all_r.reserve(histogram.len());
+    all_g.reserve(histogram.len());
+    all_b.reserve(histogram.len());
+    
+    // Extract channels from interleaved storage
+    for rgb in histogram.data() {
+        all_r.push(rgb[0]);
+        all_g.push(rgb[1]);
+        all_b.push(rgb[2]);
+    }
+    
     println!("   pass 1 (histogram): 100% done"); // Final message
 }
 
@@ -481,28 +493,27 @@ pub fn compute_black_white_gamma(
     clip_black: f64,
     clip_white: f64,
 ) -> (f64, f64, f64, f64, f64, f64) {
-    all_r.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    all_g.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    all_b.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
     let total_pix = all_r.len();
     if total_pix == 0 {
         return (0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
     }
 
-    let black_idx = ((clip_black * total_pix as f64).round() as isize)
-        .clamp(0, (total_pix - 1) as isize) as usize;
-    let white_idx = ((clip_white * total_pix as f64).round() as isize)
-        .clamp(0, (total_pix - 1) as isize) as usize;
+    let black_idx = ((clip_black * total_pix as f64).round() as usize)
+        .min(total_pix.saturating_sub(1));
+    let white_idx = ((clip_white * total_pix as f64).round() as usize)
+        .min(total_pix.saturating_sub(1));
 
-    (
-        all_r[black_idx],
-        all_r[white_idx],
-        all_g[black_idx],
-        all_g[white_idx],
-        all_b[black_idx],
-        all_b[white_idx],
-    )
+    // Use select_nth_unstable_by for O(n) complexity instead of O(n log n) sort
+    let black_r = *all_r.select_nth_unstable_by(black_idx, |a, b| a.partial_cmp(b).unwrap()).1;
+    let white_r = *all_r.select_nth_unstable_by(white_idx, |a, b| a.partial_cmp(b).unwrap()).1;
+    
+    let black_g = *all_g.select_nth_unstable_by(black_idx, |a, b| a.partial_cmp(b).unwrap()).1;
+    let white_g = *all_g.select_nth_unstable_by(white_idx, |a, b| a.partial_cmp(b).unwrap()).1;
+    
+    let black_b = *all_b.select_nth_unstable_by(black_idx, |a, b| a.partial_cmp(b).unwrap()).1;
+    let white_b = *all_b.select_nth_unstable_by(white_idx, |a, b| a.partial_cmp(b).unwrap()).1;
+
+    (black_r, white_r, black_g, white_g, black_b, white_b)
 }
 
 /// Calculate the average density of a frame based on accumulated alpha values
@@ -540,8 +551,22 @@ pub fn pass_2_write_frames(
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
     render_config: &RenderConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let npix = (width as usize) * (height as usize);
-    let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
+    // Create render context
+    let ctx = RenderContext::new(width, height, positions);
+    let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
+
+    // Create persistent effect chain
+    let effect_config = EffectConfig {
+        bloom_mode: bloom_mode.to_string(),
+        blur_radius_px,
+        blur_strength,
+        blur_core_brightness,
+        dog_config: dog_config.clone(),
+        hdr_mode: hdr_mode.to_string(),
+        perceptual_blur_enabled,
+        perceptual_blur_config: perceptual_blur_config.cloned(),
+    };
+    let effect_chain = EffectChainBuilder::new(effect_config);
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
@@ -549,20 +574,17 @@ pub fn pass_2_write_frames(
     // Get initial alpha compression value from render config
     let base_alpha_compress = render_config.alpha_compress;
 
-    // Use bounding_box (with padding)
-    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
-    let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
-        let ww = (max_x - min_x).max(1e-12);
-        let hh = (max_y - min_y).max(1e-12);
-        let px = ((xx - min_x) / ww) * (width as f64);
-        let py = ((yy - min_y) / hh) * (height as f64);
-        (px as f32, py as f32)
+    // Calculate ranges for level adjustment (store in a struct for clarity)
+    struct ColorRanges {
+        r: f64,
+        g: f64,
+        b: f64,
+    }
+    let ranges = ColorRanges {
+        r: (white_r - black_r).max(1e-14),
+        g: (white_g - black_g).max(1e-14),
+        b: (white_b - black_b).max(1e-14),
     };
-
-    // Calculate ranges for level adjustment
-    let range_r = (white_r - black_r).max(1e-14);
-    let range_g = (white_g - black_g).max(1e-14);
-    let range_b = (white_b - black_b).max(1e-14);
 
     // Iterate through ALL steps
     for step in 0..total_steps {
@@ -580,9 +602,9 @@ pub fn pass_2_write_frames(
         let a1 = body_alphas[1];
         let a2 = body_alphas[2];
 
-        let (x0, y0) = to_pixel(p0[0], p0[1]);
-        let (x1, y1) = to_pixel(p1[0], p1[1]);
-        let (x2, y2) = to_pixel(p2[0], p2[1]);
+        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
+        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
+        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         // Accumulate crisp lines
         draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
@@ -609,26 +631,21 @@ pub fn pass_2_write_frames(
             // Convert from OKLab to RGB
             let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
             
-            // Create and apply post-effect chain
-            let post_chain = create_post_effect_chain(
-                bloom_mode,
-                blur_radius_px,
-                blur_strength,
-                blur_core_brightness,
-                dog_config,
-                hdr_mode,
-                perceptual_blur_enabled,
-                perceptual_blur_config,
-            );
+            // Process with persistent effect chain
+            let frame_params = FrameParams {
+                frame_number: step / frame_interval,
+                density: Some(density),
+            };
             
-            let final_frame_pixels = post_chain.process(
+            let final_frame_pixels = effect_chain.process_frame(
                 rgb_buffer,
                 width as usize,
                 height as usize,
+                &frame_params,
             )?;
 
             // 3. Apply Levels & Convert to 8-bit
-            let mut buf_8bit = vec![0u8; npix * 3];
+            let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
             buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
                 |(chunk, &(fr, fg, fb, fa))| {
                     // Premultiply by alpha (composite over black)
@@ -637,9 +654,9 @@ pub fn pass_2_write_frames(
                     let mut bb = fb * fa;
 
                     // Apply levels (black/white points)
-                    rr = (rr - black_r) / range_r;
-                    gg = (gg - black_g) / range_g;
-                    bb = (bb - black_b) / range_b;
+                    rr = (rr - black_r) / ranges.r;
+                    gg = (gg - black_g) / ranges.g;
+                    bb = (bb - black_b) / ranges.b;
 
                     // Apply ACES Filmic Tonemapping
                     rr = aces_film(rr);
@@ -1384,22 +1401,29 @@ pub fn pass_1_build_histogram_spectral(
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
     render_config: &RenderConfig,
 ) {
-    let npix = (width as usize) * (height as usize);
-    let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
+    // Create render context
+    let ctx = RenderContext::new(width, height, positions);
+    let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
+    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); npix];
+    // Create persistent effect chain
+    let effect_config = EffectConfig {
+        bloom_mode: bloom_mode.to_string(),
+        blur_radius_px,
+        blur_strength,
+        blur_core_brightness,
+        dog_config: dog_config.clone(),
+        hdr_mode: hdr_mode.to_string(),
+        perceptual_blur_enabled,
+        perceptual_blur_config: perceptual_blur_config.cloned(),
+    };
+    let effect_chain = EffectChainBuilder::new(effect_config);
+    
+    // Create histogram storage
+    let mut histogram = HistogramData::with_capacity(ctx.pixel_count() * 10);
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
-
-    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
-    let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
-        let ww = (max_x - min_x).max(1e-12);
-        let hh = (max_y - min_y).max(1e-12);
-        let px = ((xx - min_x) / ww) * (width as f64);
-        let py = ((yy - min_y) / hh) * (height as f64);
-        (px as f32, py as f32)
-    };
 
     for step in 0..total_steps {
         if step % chunk_line == 0 {}
@@ -1415,9 +1439,9 @@ pub fn pass_1_build_histogram_spectral(
         let a1 = body_alphas[1];
         let a2 = body_alphas[2];
 
-        let (x0, y0) = to_pixel(p0[0], p0[1]);
-        let (x1, y1) = to_pixel(p1[0], p1[1]);
-        let (x2, y2) = to_pixel(p2[0], p2[1]);
+        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
+        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
+        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -1467,39 +1491,41 @@ pub fn pass_1_build_histogram_spectral(
             // convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-            // Note: Spectral rendering always produces RGB, no conversion needed
-            // Create and apply post-effect chain
-            let post_chain = create_post_effect_chain(
-                bloom_mode,
-                blur_radius_px,
-                blur_strength,
-                blur_core_brightness,
-                dog_config,
-                hdr_mode,
-                perceptual_blur_enabled,
-                perceptual_blur_config,
-            );
+            // Process with persistent effect chain
+            let frame_params = FrameParams {
+                frame_number: step / frame_interval,
+                density: None,
+            };
             
-            let final_frame_pixels = post_chain.process(
+            let final_frame_pixels = effect_chain.process_frame(
                 accum_rgba.clone(),
                 width as usize,
                 height as usize,
+                &frame_params,
             ).expect("Post-effect chain failed");
 
-            // collect histogram
-            all_r.reserve(npix);
-            all_g.reserve(npix);
-            all_b.reserve(npix);
+            // Collect histogram data efficiently
+            histogram.reserve(ctx.pixel_count());
             for &(r, g, b, a) in &final_frame_pixels {
-                let dr = r * a;
-                let dg = g * a;
-                let db = b * a;
-                all_r.push(dr);
-                all_g.push(dg);
-                all_b.push(db);
+                histogram.push(r * a, g * a, b * a);
             }
         }
     }
+    
+    // Transfer histogram data to output vectors
+    all_r.clear();
+    all_g.clear();
+    all_b.clear();
+    all_r.reserve(histogram.len());
+    all_g.reserve(histogram.len());
+    all_b.reserve(histogram.len());
+    
+    for rgb in histogram.data() {
+        all_r.push(rgb[0]);
+        all_g.push(rgb[1]);
+        all_b.push(rgb[2]);
+    }
+    
     println!("   pass 1 (spectral histogram): 100% done");
 }
 
@@ -1530,25 +1556,38 @@ pub fn pass_2_write_frames_spectral(
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
     render_config: &RenderConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let npix = (width as usize) * (height as usize);
-    let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
-    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); npix];
+    // Create render context
+    let ctx = RenderContext::new(width, height, positions);
+    let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
+    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
+
+    // Create persistent effect chain
+    let effect_config = EffectConfig {
+        bloom_mode: bloom_mode.to_string(),
+        blur_radius_px,
+        blur_strength,
+        blur_core_brightness,
+        dog_config: dog_config.clone(),
+        hdr_mode: hdr_mode.to_string(),
+        perceptual_blur_enabled,
+        perceptual_blur_config: perceptual_blur_config.cloned(),
+    };
+    let effect_chain = EffectChainBuilder::new(effect_config);
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
 
-    let (min_x, max_x, min_y, max_y) = bounding_box(positions);
-    let to_pixel = |xx: f64, yy: f64| -> (f32, f32) {
-        let ww = (max_x - min_x).max(1e-12);
-        let hh = (max_y - min_y).max(1e-12);
-        let px = ((xx - min_x) / ww) * (width as f64);
-        let py = ((yy - min_y) / hh) * (height as f64);
-        (px as f32, py as f32)
+    // Color ranges struct for clarity
+    struct ColorRanges {
+        r: f64,
+        g: f64,
+        b: f64,
+    }
+    let ranges = ColorRanges {
+        r: (white_r - black_r).max(1e-14),
+        g: (white_g - black_g).max(1e-14),
+        b: (white_b - black_b).max(1e-14),
     };
-
-    let range_r = (white_r - black_r).max(1e-14);
-    let range_g = (white_g - black_g).max(1e-14);
-    let range_b = (white_b - black_b).max(1e-14);
 
     for step in 0..total_steps {
         if step % chunk_line == 0 {}
@@ -1564,9 +1603,9 @@ pub fn pass_2_write_frames_spectral(
         let a1 = body_alphas[1];
         let a2 = body_alphas[2];
 
-        let (x0, y0) = to_pixel(p0[0], p0[1]);
-        let (x1, y1) = to_pixel(p1[0], p1[1]);
-        let (x2, y2) = to_pixel(p2[0], p2[1]);
+        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
+        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
+        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
 
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -1616,36 +1655,30 @@ pub fn pass_2_write_frames_spectral(
             // Convert SPD -> RGBA
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-            // Note: Spectral rendering always produces RGB, no conversion needed
-            // Create and apply post-effect chain
-            let post_chain = create_post_effect_chain(
-                bloom_mode,
-                blur_radius_px,
-                blur_strength,
-                blur_core_brightness,
-                dog_config,
-                hdr_mode,
-                perceptual_blur_enabled,
-                perceptual_blur_config,
-            );
+            // Process with persistent effect chain
+            let frame_params = FrameParams {
+                frame_number: step / frame_interval,
+                density: None,
+            };
             
-            let final_frame_pixels = post_chain.process(
+            let final_frame_pixels = effect_chain.process_frame(
                 accum_rgba.clone(),
                 width as usize,
                 height as usize,
+                &frame_params,
             )?;
 
             // levels + ACES tonemapping
-            let mut buf_8bit = vec![0u8; npix * 3];
+            let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
             buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
                 |(chunk, &(fr, fg, fb, fa))| {
 
                     let mut rr = fr * fa;
                     let mut gg = fg * fa;
                     let mut bb = fb * fa;
-                    rr = (rr - black_r) / range_r;
-                    gg = (gg - black_g) / range_g;
-                    bb = (bb - black_b) / range_b;
+                    rr = (rr - black_r) / ranges.r;
+                    gg = (gg - black_g) / ranges.g;
+                    bb = (bb - black_b) / ranges.b;
                     rr = aces_film(rr);
                     gg = aces_film(gg);
                     bb = aces_film(bb);
@@ -1676,6 +1709,7 @@ pub fn pass_2_write_frames_spectral(
 /// to maintain compatibility with the levels adjustment workflow.
 /// The levels adjustment (black/white points) must be applied in linear space
 /// before tonemapping for correct results.
+#[allow(dead_code)]
 pub fn create_post_effect_chain(
     bloom_mode: &str,
     blur_radius_px: usize,
@@ -1713,15 +1747,17 @@ pub fn create_post_effect_chain(
     
     // 3. Perceptual blur (if enabled)
     if perceptual_blur_enabled {
-        let config = perceptual_blur_config.cloned().unwrap_or_else(|| {
+        let config = perceptual_blur_config.cloned().unwrap_or(
             PerceptualBlurConfig {
                 radius: blur_radius_px,
                 strength: 0.5,
                 gamut_mode: crate::oklab::GamutMapMode::PreserveHue,
             }
-        });
+        );
         chain.add(Box::new(PerceptualBlur::new(config)));
     }
     
     chain
 }
+
+
