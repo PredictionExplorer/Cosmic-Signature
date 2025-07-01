@@ -3,6 +3,7 @@ use std::error::Error;
 use std::fs;
 use image::{ImageBuffer, Rgb};
 use log::{error, info, warn};
+use std::io::Write;
 
 mod analysis;
 mod drift;
@@ -21,7 +22,7 @@ use render::{
     histogram::compute_black_white_gamma,
     video::create_video_from_frames_singlepass,
 };
-use render_passes::{pass_1_build_histogram_spectral, pass_2_write_frames_spectral};
+use render_passes::{SpectralHistogramParams, SpectralFrameWriteParams, pass_1_build_histogram_spectral, pass_2_write_frames_spectral};
 use render_utils::save_image_as_png;
 use sim::{get_positions, Sha3RandomByteStream};
 use utils::bounding_box;
@@ -290,26 +291,26 @@ fn main() -> Result<(), Box<dyn Error>> {
         None
     };
 
-    pass_1_build_histogram_spectral(
-        &positions,
-        &colors,
-        &body_alphas,
+    pass_1_build_histogram_spectral(SpectralHistogramParams {
+        positions: &positions,
+        colors: &colors,
+        body_alphas: &body_alphas,
         width,
         height,
         blur_radius_px,
         blur_strength,
         blur_core_brightness,
         frame_interval,
-        &mut all_r,
-        &mut all_g,
-        &mut all_b,
-        &args.bloom_mode,
-        &dog_config,
-        &args.hdr_mode,
+        all_r: &mut all_r,
+        all_g: &mut all_g,
+        all_b: &mut all_b,
+        bloom_mode: &args.bloom_mode,
+        dog_config: &dog_config,
+        hdr_mode: &args.hdr_mode,
         perceptual_blur_enabled,
-        perceptual_blur_config.as_ref(),
-        &render_config,
-    );
+        perceptual_blur_config: perceptual_blur_config.as_ref(),
+        render_config: &render_config,
+    });
 
     // 6) compute black/white/gamma
     info!("STAGE 6/7: Determine global black/white/gamma...");
@@ -348,15 +349,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         height,
         frame_rate,
         |out| {
-            pass_2_write_frames_spectral(
-                &positions,
-                &colors,
-                &body_alphas,
+            let out_ref = out;  // Create explicit reference
+            pass_2_write_frames_spectral(SpectralFrameWriteParams {
+                positions: &positions,
+                colors: &colors,
+                body_alphas: &body_alphas,
                 width,
                 height,
                 blur_radius_px,
-                blur_strength,        // Pass blur_strength
-                blur_core_brightness, // Pass blur_core_brightness
+                blur_strength,
+                blur_core_brightness,
                 frame_interval,
                 black_r,
                 white_r,
@@ -364,18 +366,18 @@ fn main() -> Result<(), Box<dyn Error>> {
                 white_g,
                 black_b,
                 white_b,
-                &args.bloom_mode,
-                &dog_config,
-                &args.hdr_mode,
+                bloom_mode: &args.bloom_mode,
+                dog_config: &dog_config,
+                hdr_mode: &args.hdr_mode,
                 perceptual_blur_enabled,
-                perceptual_blur_config.as_ref(),
-                |buf_8bit| {
-                    out.write_all(buf_8bit)?;
+                perceptual_blur_config: perceptual_blur_config.as_ref(),
+                frame_sink: |buf_8bit: &[u8]| -> Result<(), Box<dyn Error>> {
+                    Write::write_all(out_ref, buf_8bit)?;
                     Ok(())
                 },
-                &mut last_frame_png,
-                &render_config,
-            )?;
+                last_frame_out: &mut last_frame_png,
+                render_config: &render_config,
+            })?;
             Ok(())
         },
         &output_vid,

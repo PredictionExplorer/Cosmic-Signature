@@ -3,93 +3,97 @@
 use nalgebra::Vector3;
 
 /// Rendering configuration parameters
-#[derive(Clone, Copy, Debug)]
 pub struct RenderConfig {
+    /// High dynamic range scale factor  
+    pub hdr_scale: f64,
     /// Alpha compression factor to reduce overdraw saturation
     /// Higher values reduce alpha more aggressively in dense areas
     pub alpha_compress: f64,
-    /// HDR scale factor for brightness
-    pub hdr_scale: f64,
 }
 
 impl Default for RenderConfig {
     fn default() -> Self {
         Self {
-            alpha_compress: 0.0,
             hdr_scale: 1.0,
+            alpha_compress: 0.0,
         }
     }
 }
 
-/// Encapsulates common rendering operations and coordinate transformations
+/// Main rendering context
 pub struct RenderContext {
+    /// Image width
     pub width: u32,
+    /// Image height  
     pub height: u32,
-    pub width_usize: usize,
-    pub height_usize: usize,
+    /// Total pixel count
+    pixel_count: usize,
+    /// Bounding box for coordinate transformation
     bounds: BoundingBox,
 }
 
-/// Bounding box for coordinate transformations
-#[derive(Clone, Copy, Debug)]
 struct BoundingBox {
     min_x: f64,
+    max_x: f64,
     min_y: f64,
-    width: f64,
-    height: f64,
+    max_y: f64,
 }
 
 impl RenderContext {
-    /// Creates a new render context from position data
+    /// Create a new render context from positions
     pub fn new(width: u32, height: u32, positions: &[Vec<Vector3<f64>>]) -> Self {
-        let (min_x, max_x, min_y, max_y) = crate::utils::bounding_box(positions);
-        let bounds = BoundingBox {
-            min_x,
-            min_y,
-            width: (max_x - min_x).max(1e-12),
-            height: (max_y - min_y).max(1e-12),
-        };
+        let pixel_count = (width as usize) * (height as usize);
+        let bounds = calculate_bounds(positions);
         
         Self {
             width,
             height,
-            width_usize: width as usize,
-            height_usize: height as usize,
+            pixel_count,
             bounds,
         }
     }
     
+    /// Get total pixel count
+    pub fn pixel_count(&self) -> usize {
+        self.pixel_count
+    }
+    
     /// Convert world coordinates to pixel coordinates
-    #[inline]
     pub fn to_pixel(&self, x: f64, y: f64) -> (f32, f32) {
-        let px = ((x - self.bounds.min_x) / self.bounds.width) * (self.width as f64);
-        let py = ((y - self.bounds.min_y) / self.bounds.height) * (self.height as f64);
+        let norm_x = (x - self.bounds.min_x) / (self.bounds.max_x - self.bounds.min_x);
+        let norm_y = (y - self.bounds.min_y) / (self.bounds.max_y - self.bounds.min_y);
+        
+        let px = norm_x * (self.width as f64 - 1.0);
+        let py = (1.0 - norm_y) * (self.height as f64 - 1.0); // Flip Y
+        
         (px as f32, py as f32)
     }
+}
+
+/// Calculate bounding box from positions
+fn calculate_bounds(positions: &[Vec<Vector3<f64>>]) -> BoundingBox {
+    let mut min_x = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
     
-    /// Get total pixel count
-    #[inline]
-    pub fn pixel_count(&self) -> usize {
-        self.width_usize * self.height_usize
+    for body_positions in positions {
+        for pos in body_positions {
+            min_x = min_x.min(pos[0]);
+            max_x = max_x.max(pos[0]);
+            min_y = min_y.min(pos[1]);
+            max_y = max_y.max(pos[1]);
+        }
     }
     
-
-}
-
-/// Context for optimized plot operations
-pub struct PlotContext {
-    pub width_i32: i32,
-    pub height_i32: i32,
-    pub width_usize: usize,
-}
-
-impl PlotContext {
-    /// Create a new plot context
-    pub fn new(width: u32, height: u32) -> Self {
-        Self {
-            width_i32: width as i32,
-            height_i32: height as i32,
-            width_usize: width as usize,
-        }
+    // Add 10% margin
+    let margin_x = (max_x - min_x) * 0.1;
+    let margin_y = (max_y - min_y) * 0.1;
+    
+    BoundingBox {
+        min_x: min_x - margin_x,
+        max_x: max_x + margin_x,
+        min_y: min_y - margin_y,
+        max_y: max_y + margin_y,
     }
 } 

@@ -1,7 +1,7 @@
 //! Auto-exposure post-processing effect.
 
 use super::{PixelBuffer, PostEffect};
-use crate::render::ExposureCalculator;
+use crate::render::effects::ExposureCalculator;
 use rayon::prelude::*;
 use std::error::Error;
 

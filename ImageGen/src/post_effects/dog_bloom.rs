@@ -1,7 +1,8 @@
-//! Difference of Gaussians (`DoG`) bloom effect implementation.
+//! Difference of Gaussians bloom effect
 
 use super::{PixelBuffer, PostEffect};
-use crate::render::{apply_dog_bloom, DogBloomConfig};
+use crate::render::effects::apply_dog_bloom;
+use crate::render::DogBloomConfig;
 use rayon::prelude::*;
 use std::error::Error;
 
