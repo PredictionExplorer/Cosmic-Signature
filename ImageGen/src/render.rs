@@ -3,43 +3,36 @@
 use crate::post_effects::{PostEffectChain, AutoExposure, GaussianBloom, DogBloom, PerceptualBlur, PerceptualBlurConfig};
 use crate::oklab;
 use crate::sim;
-use crate::spectrum::{BIN_SHIFT, NUM_BINS, rgb_to_bin, spd_to_rgba};
+use crate::spectrum::{BIN_SHIFT, NUM_BINS, spd_to_rgba};
 use crate::utils::{bounding_box, build_gaussian_kernel};
 use image::{DynamicImage, ImageBuffer, Rgb};
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use std::error::Error;
 use std::io::Write;
-use std::sync::atomic::{AtomicU64, Ordering};
 
-// Global parameter: strength of density-aware alpha compression.
-// 0 => disabled (legacy behaviour).
-static ALPHA_COMPRESS_BITS: AtomicU64 = AtomicU64::new(0);
 
-// Global parameter: HDR scale multiplier for line alpha
-static HDR_SCALE: AtomicU64 = AtomicU64::new(1.0f64.to_bits());
+/// Type alias for OKLab color (L, a, b components)
+pub type OklabColor = (f64, f64, f64);
 
-/// Set the global alpha-compression coefficient.
-/// Should be called once from `main` after CLI parsing.
-/// Typical range: 0 (disabled) .. 10 (very strong).
-pub fn set_alpha_compress(k: f64) {
-    ALPHA_COMPRESS_BITS.store(k.to_bits(), Ordering::Relaxed);
+/// Rendering configuration parameters
+#[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
+pub struct RenderConfig {
+    pub alpha_compress: f64,
+    pub hdr_scale: f64,
 }
 
-#[inline]
-fn get_alpha_compress() -> f64 {
-    f64::from_bits(ALPHA_COMPRESS_BITS.load(Ordering::Relaxed))
+impl Default for RenderConfig {
+    fn default() -> Self {
+        Self {
+            alpha_compress: 0.0,
+            hdr_scale: 1.0,
+        }
+    }
 }
 
-/// Set the global HDR scale coefficient.
-pub fn set_hdr_scale(scale: f64) {
-    HDR_SCALE.store(scale.to_bits(), Ordering::Relaxed);
-}
 
-#[inline]
-fn get_hdr_scale() -> f64 {
-    f64::from_bits(HDR_SCALE.load(Ordering::Relaxed))
-}
 
 /// Mipmap pyramid for efficient multi-scale filtering
 pub struct MipPyramid {
@@ -302,7 +295,7 @@ pub fn save_image_as_png(
 #[allow(dead_code)]
 pub fn pass_1_build_histogram(
     positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<Rgb<u8>>],
+    colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
     width: u32,
     height: u32,
@@ -318,6 +311,7 @@ pub fn pass_1_build_histogram(
     hdr_mode: &str,
     perceptual_blur_enabled: bool,
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    render_config: &RenderConfig,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
@@ -359,9 +353,9 @@ pub fn pass_1_build_histogram(
         let (x2, y2) = to_pixel(p2[0], p2[1]);
 
         // Accumulate crisp lines for every step
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2, a1, a2);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0, a2, a0);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
 
         // --- Per-Frame Processing for Histogram ---
         let is_final = step == total_steps - 1;
@@ -453,7 +447,7 @@ fn calculate_frame_density(accum: &[(f64, f64, f64, f64)]) -> f64 {
 #[allow(dead_code)]
 pub fn pass_2_write_frames(
     positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<Rgb<u8>>],
+    colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
     width: u32,
     height: u32,
@@ -474,6 +468,7 @@ pub fn pass_2_write_frames(
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    render_config: &RenderConfig,
 ) -> Result<(), Box<dyn Error>> {
     let npix = (width as usize) * (height as usize);
     let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); npix];
@@ -481,8 +476,8 @@ pub fn pass_2_write_frames(
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
 
-    // Get initial alpha compression value from CLI
-    let base_alpha_compress = get_alpha_compress();
+    // Get initial alpha compression value from render config
+    let base_alpha_compress = render_config.alpha_compress;
 
     // Use bounding_box (with padding)
     let (min_x, max_x, min_y, max_y) = bounding_box(positions);
@@ -520,9 +515,9 @@ pub fn pass_2_write_frames(
         let (x2, y2) = to_pixel(p2[0], p2[1]);
 
         // Accumulate crisp lines
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2, a1, a2);
-        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0, a2, a0);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x0, y0, x1, y1, c0, c1, a0, a1, render_config.hdr_scale);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x1, y1, x2, y2, c1, c2, a1, a2, render_config.hdr_scale);
+        draw_line_segment_aa_alpha(&mut accum_crisp, width, height, x2, y2, x0, y0, c2, c0, a2, a0, render_config.hdr_scale);
 
         // --- Per-Frame Processing and Writing ---
         let is_final = step == total_steps - 1;
@@ -530,16 +525,16 @@ pub fn pass_2_write_frames(
             // Calculate frame density and adapt alpha compression
             let density = calculate_frame_density(&accum_crisp);
             // Map density to alpha compression: low density = 0, high density = base value
-            let adaptive_compress = if density < 0.1 {
+            let _adaptive_compress = if density < 0.1 {
                 0.0 // Very low density: pure additive
             } else if density < 1.0 {
                 base_alpha_compress * (density / 1.0) // Linear ramp up
             } else {
                 base_alpha_compress // Full compression for high density
             };
-
-            // Update global alpha compression for this frame
-            set_alpha_compress(adaptive_compress);
+            
+            // TODO: Use adaptive_compress for per-frame compression if needed
+            // For now, we're using the fixed value from render_config
 
             // Convert from OKLab to RGB
             let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
@@ -628,7 +623,7 @@ pub fn generate_color_gradient_oklab(
     length: usize,
     body_index: usize,
     base_hue_offset: f64,
-) -> Vec<Rgb<u8>> {
+) -> Vec<OklabColor> {
     let mut colors = Vec::with_capacity(length);
     
     // Start with a random hue
@@ -668,36 +663,8 @@ pub fn generate_color_gradient_oklab(
         let a = chroma * hue_rad.cos();
         let b = chroma * hue_rad.sin();
         
-        // Convert OKLab to RGB
-        let (r_linear, g_linear, b_linear) = oklab::oklab_to_linear_srgb(lightness, a, b);
-        
-        // Apply gamut mapping
-        let (r_mapped, g_mapped, b_mapped) = 
-            oklab::GamutMapMode::PreserveHue.map_to_gamut(r_linear, g_linear, b_linear);
-        
-        // Convert to sRGB and quantize
-        // Note: We're using linear->sRGB approximation here
-        let r_srgb = if r_mapped <= 0.0031308 {
-            12.92 * r_mapped
-        } else {
-            1.055 * r_mapped.powf(1.0 / 2.4) - 0.055
-        };
-        let g_srgb = if g_mapped <= 0.0031308 {
-            12.92 * g_mapped
-        } else {
-            1.055 * g_mapped.powf(1.0 / 2.4) - 0.055
-        };
-        let b_srgb = if b_mapped <= 0.0031308 {
-            12.92 * b_mapped
-        } else {
-            1.055 * b_mapped.powf(1.0 / 2.4) - 0.055
-        };
-        
-        colors.push(Rgb([
-            (r_srgb * 255.0).round().clamp(0.0, 255.0) as u8,
-            (g_srgb * 255.0).round().clamp(0.0, 255.0) as u8,
-            (b_srgb * 255.0).round().clamp(0.0, 255.0) as u8,
-        ]));
+        // Store OKLab color directly
+        colors.push((lightness, a, b));
     }
     
     colors
@@ -708,7 +675,7 @@ pub fn generate_body_color_sequences(
     rng: &mut sim::Sha3RandomByteStream,
     length: usize,
     alpha_value: f64,
-) -> (Vec<Vec<Rgb<u8>>>, Vec<f64>) {
+) -> (Vec<Vec<OklabColor>>, Vec<f64>) {
     // Base hue offset for time-based drift (in degrees per log-time unit)
     let base_hue_offset = 0.5; // Subtle drift over time
 
@@ -797,20 +764,20 @@ fn plot(
     x: i32,
     y: i32,
     alpha: f32, // alpha here is the anti-aliasing coverage (0..1)
-    color_r: f64,
-    color_g: f64,
+    color_l: f64,
+    color_a: f64,
     color_b: f64,
     base_alpha: f64, // base_alpha is the line segment's alpha
+    hdr_scale: f64,
 ) {
     if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
         let idx = (y as usize * width as usize) + x as usize;
 
         // Calculate effective alpha for the source (line segment + AA coverage)
-        let hdr_scale = get_hdr_scale();
         let src_alpha = (alpha as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
 
-        // Convert source color to OKLab
-        let (src_l, src_a, src_b) = oklab::linear_srgb_to_oklab(color_r, color_g, color_b);
+        // Source color is already in OKLab space
+        let (src_l, src_a, src_b) = (color_l, color_a, color_b);
         
         // Get destination values (already in OKLab space)
         let (dst_l, dst_a, dst_b, dst_alpha) = accum[idx];
@@ -837,18 +804,15 @@ pub fn draw_line_segment_aa_alpha(
     mut y0: f32,
     mut x1: f32,
     mut y1: f32,
-    col0: Rgb<u8>,
-    col1: Rgb<u8>,
+    col0: OklabColor,
+    col1: OklabColor,
     alpha0: f64,
     alpha1: f64,
+    hdr_scale: f64,
 ) {
-    // Convert colors to f64 (0.0-1.0)
-    let r0 = col0[0] as f64 / 255.0;
-    let g0 = col0[1] as f64 / 255.0;
-    let b0 = col0[2] as f64 / 255.0;
-    let r1 = col1[0] as f64 / 255.0;
-    let g1 = col1[1] as f64 / 255.0;
-    let b1 = col1[2] as f64 / 255.0;
+    // Extract OKLab components
+    let (l0, a0, b0) = col0;
+    let (l1, a1, b1) = col1;
 
     let steep = (y1 - y0).abs() > (x1 - x0).abs();
 
@@ -876,12 +840,12 @@ pub fn draw_line_segment_aa_alpha(
 
     if steep {
         // Original coord system: (py0, px0) and (py0 + 1, px0)
-        plot(accum, width, height, py0, px0, rfpart(yend0) * xgap0, r0, g0, b0, alpha0);
-        plot(accum, width, height, py0 + 1, px0, fpart(yend0) * xgap0, r0, g0, b0, alpha0);
+        plot(accum, width, height, py0, px0, rfpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
+        plot(accum, width, height, py0 + 1, px0, fpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
     } else {
         // Original coord system: (px0, py0) and (px0, py0 + 1)
-        plot(accum, width, height, px0, py0, rfpart(yend0) * xgap0, r0, g0, b0, alpha0);
-        plot(accum, width, height, px0, py0 + 1, fpart(yend0) * xgap0, r0, g0, b0, alpha0);
+        plot(accum, width, height, px0, py0, rfpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
+        plot(accum, width, height, px0, py0 + 1, fpart(yend0) * xgap0, l0, a0, b0, alpha0, hdr_scale);
     }
     let mut intery = yend0 + gradient; // First y-intersection for the main loop
 
@@ -894,20 +858,20 @@ pub fn draw_line_segment_aa_alpha(
 
     if steep {
         // Original coord system: (py1, px1) and (py1 + 1, px1)
-        plot(accum, width, height, py1, px1, rfpart(yend1) * xgap1, r1, g1, b1, alpha1);
-        plot(accum, width, height, py1 + 1, px1, fpart(yend1) * xgap1, r1, g1, b1, alpha1);
+        plot(accum, width, height, py1, px1, rfpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
+        plot(accum, width, height, py1 + 1, px1, fpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
     } else {
         // Original coord system: (px1, py1) and (px1, py1 + 1)
-        plot(accum, width, height, px1, py1, rfpart(yend1) * xgap1, r1, g1, b1, alpha1);
-        plot(accum, width, height, px1, py1 + 1, fpart(yend1) * xgap1, r1, g1, b1, alpha1);
+        plot(accum, width, height, px1, py1, rfpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
+        plot(accum, width, height, px1, py1 + 1, fpart(yend1) * xgap1, l1, a1, b1, alpha1, hdr_scale);
     }
 
     // Main loop: iterate between endpoints px0 and px1
     if steep {
         for x in (px0 + 1)..px1 {
             let t = (x as f32 - x0) / dx.max(1e-9); // Interpolation factor (0..1)
-            let interp_r = lerp(r0, r1, t);
-            let interp_g = lerp(g0, g1, t);
+            let interp_l = lerp(l0, l1, t);
+            let interp_a = lerp(a0, a1, t);
             let interp_b = lerp(b0, b1, t);
             let interp_alpha = lerp(alpha0, alpha1, t);
             // Original coord system: (ipart(intery), x) and (ipart(intery) + 1, x)
@@ -918,10 +882,11 @@ pub fn draw_line_segment_aa_alpha(
                 ipart(intery),
                 x,
                 rfpart(intery),
-                interp_r,
-                interp_g,
+                interp_l,
+                interp_a,
                 interp_b,
                 interp_alpha,
+                hdr_scale,
             );
             plot(
                 accum,
@@ -930,18 +895,19 @@ pub fn draw_line_segment_aa_alpha(
                 ipart(intery) + 1,
                 x,
                 fpart(intery),
-                interp_r,
-                interp_g,
+                interp_l,
+                interp_a,
                 interp_b,
                 interp_alpha,
+                hdr_scale,
             );
             intery += gradient;
         }
     } else {
         for x in (px0 + 1)..px1 {
             let t = (x as f32 - x0) / dx.max(1e-9); // Interpolation factor (0..1)
-            let interp_r = lerp(r0, r1, t);
-            let interp_g = lerp(g0, g1, t);
+            let interp_l = lerp(l0, l1, t);
+            let interp_a = lerp(a0, a1, t);
             let interp_b = lerp(b0, b1, t);
             let interp_alpha = lerp(alpha0, alpha1, t);
             // Original coord system: (x, ipart(intery)) and (x, ipart(intery) + 1)
@@ -952,10 +918,11 @@ pub fn draw_line_segment_aa_alpha(
                 x,
                 ipart(intery),
                 rfpart(intery),
-                interp_r,
-                interp_g,
+                interp_l,
+                interp_a,
                 interp_b,
                 interp_alpha,
+                hdr_scale,
             );
             plot(
                 accum,
@@ -964,10 +931,11 @@ pub fn draw_line_segment_aa_alpha(
                 x,
                 ipart(intery) + 1,
                 fpart(intery),
-                interp_r,
-                interp_g,
+                interp_l,
+                interp_a,
                 interp_b,
                 interp_alpha,
+                hdr_scale,
             );
             intery += gradient;
         }
@@ -1035,6 +1003,7 @@ fn plot_spec(
     bin_right: usize, // second bin (may equal left)
     w_right: f64,     // weight for right bin (0..1)
     base_alpha: f64,  // base opacity for the line segment
+    hdr_scale: f64,
 ) {
     // Helper to deposit energy with prismatic sub-pixel shift
     #[inline]
@@ -1080,7 +1049,6 @@ fn plot_spec(
     }
 
     // Use HDR scale instead of compression
-    let hdr_scale = get_hdr_scale();
     let energy = (coverage as f64 * base_alpha * hdr_scale).clamp(0.0, f64::MAX);
 
     let left_energy = energy * (1.0 - w_right);
@@ -1099,13 +1067,14 @@ pub fn draw_line_segment_aa_spectral(
     mut y0: f32,
     mut x1: f32,
     mut y1: f32,
-    col0: Rgb<u8>,
-    col1: Rgb<u8>,
+    col0: OklabColor,
+    col1: OklabColor,
     alpha0: f64,
     alpha1: f64,
+    hdr_scale: f64,
 ) {
-    let bin0 = rgb_to_bin(&col0);
-    let bin1 = rgb_to_bin(&col1);
+    let bin0 = crate::spectrum::oklab_to_bin(&col0);
+    let bin1 = crate::spectrum::oklab_to_bin(&col1);
 
     let steep = (y1 - y0).abs() > (x1 - x0).abs();
     if steep {
@@ -1129,7 +1098,7 @@ pub fn draw_line_segment_aa_spectral(
     let py0 = ipart(yend0);
 
     if steep {
-        plot_spec(accum, width, height, py0, px0, rfpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0);
+        plot_spec(accum, width, height, py0, px0, rfpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0, hdr_scale);
         plot_spec(
             accum,
             width,
@@ -1141,9 +1110,10 @@ pub fn draw_line_segment_aa_spectral(
             bin0,
             0.0,
             alpha0,
+            hdr_scale,
         );
     } else {
-        plot_spec(accum, width, height, px0, py0, rfpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0);
+        plot_spec(accum, width, height, px0, py0, rfpart(yend0) * xgap0, bin0, bin0, 0.0, alpha0, hdr_scale);
         plot_spec(
             accum,
             width,
@@ -1155,6 +1125,7 @@ pub fn draw_line_segment_aa_spectral(
             bin0,
             0.0,
             alpha0,
+            hdr_scale,
         );
     }
     let mut intery = yend0 + gradient;
@@ -1167,7 +1138,7 @@ pub fn draw_line_segment_aa_spectral(
     let py1 = ipart(yend1);
 
     if steep {
-        plot_spec(accum, width, height, py1, px1, rfpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1);
+        plot_spec(accum, width, height, py1, px1, rfpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1, hdr_scale);
         plot_spec(
             accum,
             width,
@@ -1179,9 +1150,10 @@ pub fn draw_line_segment_aa_spectral(
             bin1,
             0.0,
             alpha1,
+            hdr_scale,
         );
     } else {
-        plot_spec(accum, width, height, px1, py1, rfpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1);
+        plot_spec(accum, width, height, px1, py1, rfpart(yend1) * xgap1, bin1, bin1, 0.0, alpha1, hdr_scale);
         plot_spec(
             accum,
             width,
@@ -1193,6 +1165,7 @@ pub fn draw_line_segment_aa_spectral(
             bin1,
             0.0,
             alpha1,
+            hdr_scale,
         );
     }
 
@@ -1216,6 +1189,7 @@ pub fn draw_line_segment_aa_spectral(
                 bin_right,
                 w_right,
                 alpha_t,
+                hdr_scale,
             );
             plot_spec(
                 accum,
@@ -1228,6 +1202,7 @@ pub fn draw_line_segment_aa_spectral(
                 bin_right,
                 w_right,
                 alpha_t,
+                hdr_scale,
             );
             intery += gradient;
         }
@@ -1250,6 +1225,7 @@ pub fn draw_line_segment_aa_spectral(
                 bin_right,
                 w_right,
                 alpha_t,
+                hdr_scale,
             );
             plot_spec(
                 accum,
@@ -1262,6 +1238,7 @@ pub fn draw_line_segment_aa_spectral(
                 bin_right,
                 w_right,
                 alpha_t,
+                hdr_scale,
             );
             intery += gradient;
         }
@@ -1319,7 +1296,7 @@ fn convert_accum_buffer_to_rgb(
 /// Pass 1: gather global histogram for final color leveling (spectral)
 pub fn pass_1_build_histogram_spectral(
     positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<Rgb<u8>>],
+    colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
     width: u32,
     height: u32,
@@ -1335,6 +1312,7 @@ pub fn pass_1_build_histogram_spectral(
     hdr_mode: &str,
     perceptual_blur_enabled: bool,
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    render_config: &RenderConfig,
 ) {
     let npix = (width as usize) * (height as usize);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
@@ -1383,6 +1361,7 @@ pub fn pass_1_build_histogram_spectral(
             c1,
             a0,
             a1,
+            render_config.hdr_scale,
         );
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -1396,6 +1375,7 @@ pub fn pass_1_build_histogram_spectral(
             c2,
             a1,
             a2,
+            render_config.hdr_scale,
         );
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -1409,6 +1389,7 @@ pub fn pass_1_build_histogram_spectral(
             c0,
             a2,
             a0,
+            render_config.hdr_scale,
         );
 
         let is_final = step == total_steps - 1;
@@ -1456,7 +1437,7 @@ pub fn pass_1_build_histogram_spectral(
 /// Pass 2: final frames => color mapping => write frames (spectral)
 pub fn pass_2_write_frames_spectral(
     positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<Rgb<u8>>],
+    colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
     width: u32,
     height: u32,
@@ -1477,6 +1458,7 @@ pub fn pass_2_write_frames_spectral(
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
     mut frame_sink: impl FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    render_config: &RenderConfig,
 ) -> Result<(), Box<dyn Error>> {
     let npix = (width as usize) * (height as usize);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; npix];
@@ -1528,6 +1510,7 @@ pub fn pass_2_write_frames_spectral(
             c1,
             a0,
             a1,
+            render_config.hdr_scale,
         );
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -1541,6 +1524,7 @@ pub fn pass_2_write_frames_spectral(
             c2,
             a1,
             a2,
+            render_config.hdr_scale,
         );
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -1554,6 +1538,7 @@ pub fn pass_2_write_frames_spectral(
             c0,
             a2,
             a0,
+            render_config.hdr_scale,
         );
 
         let is_final = step == total_steps - 1;

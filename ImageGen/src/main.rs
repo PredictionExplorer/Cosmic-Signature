@@ -214,14 +214,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (colors, body_alphas) =
         generate_body_color_sequences(&mut rng, args.num_steps_sim, alpha_value);
 
-    render::set_alpha_compress(args.alpha_compress);
-
-    // Set HDR scale based on mode
-    if args.hdr_mode == "auto" {
-        render::set_hdr_scale(args.hdr_scale);
-    } else {
-        render::set_hdr_scale(1.0);  // No HDR scaling when off
-    }
+    // Create render configuration
+    let render_config = render::RenderConfig {
+        alpha_compress: args.alpha_compress,
+        hdr_scale: if args.hdr_mode == "auto" { args.hdr_scale } else { 1.0 },
+    };
     
     // Using OKLab color space for accumulation
     println!("   => Using OKLab color space for accumulation");
@@ -299,6 +296,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &args.hdr_mode,
         perceptual_blur_enabled,
         perceptual_blur_config.as_ref(),
+        &render_config,
     );
 
     // 6) compute black/white/gamma
@@ -364,6 +362,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Ok(())
                 },
                 &mut last_frame_png,
+                &render_config,
             )?;
             Ok(())
         },

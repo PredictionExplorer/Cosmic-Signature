@@ -1,13 +1,11 @@
 //! Spectral utilities: 16-bin SPD handling and conversions.
 //!
-//! Our “spectral accumulation” keeps one energy value per wavelength bin
+//! Our "spectral accumulation" keeps one energy value per wavelength bin
 //! (bins are equally spaced from 380-700 nm).  Rendering draws into this
 //! SPD buffer, then we convert the spectrum → linear-sRGB right before
 //! the normal tone-mapping / bloom pipeline.
 
-use image::Rgb;
 use once_cell::sync::Lazy;
-use palette::{FromColor, Hsl, Srgb};
 
 /// Number of wavelength buckets in the SPD.
 pub const NUM_BINS: usize = 16;
@@ -54,7 +52,7 @@ fn wavelength_to_rgb(lambda: f64) -> (f64, f64, f64) {
     (r * factor, g * factor, b * factor)
 }
 
-/// Pre-computed linear-sRGB triplet for each bin’s unit intensity.
+/// Pre-computed linear-sRGB triplet for each bin's unit intensity.
 pub static BIN_RGB: Lazy<[(f64, f64, f64); NUM_BINS]> = Lazy::new(|| {
     let mut arr = [(0.0, 0.0, 0.0); NUM_BINS];
     for i in 0..NUM_BINS {
@@ -63,7 +61,7 @@ pub static BIN_RGB: Lazy<[(f64, f64, f64); NUM_BINS]> = Lazy::new(|| {
     arr
 });
 
-/// Sub-pixel shift for each wavelength bin to create “prismatic” fringes.
+/// Sub-pixel shift for each wavelength bin to create "prismatic" fringes.
 /// Computed along a golden-angle spiral inside one pixel (≤ ±0.35 px).
 pub static BIN_SHIFT: Lazy<[(f32, f32); NUM_BINS]> = Lazy::new(|| {
     let golden = std::f32::consts::PI * (3.0 - 5.0_f32.sqrt()); // ≈2.39996
@@ -87,15 +85,21 @@ pub static BIN_TONE: Lazy<[f64; NUM_BINS]> = Lazy::new(|| {
     arr
 });
 
-/// Convert an image‐space RGB (u8) colour to its closest wavelength bin based on hue.
+
+
+/// Convert an OKLab color to its closest wavelength bin based on hue.
 #[inline]
-pub fn rgb_to_bin(col: &Rgb<u8>) -> usize {
-    let srgb = Srgb::new(col[0] as f32 / 255.0, col[1] as f32 / 255.0, col[2] as f32 / 255.0);
-    let hsl: Hsl = Hsl::from_color(srgb);
-    let mut hue_deg = hsl.hue.into_degrees() as f64;
-    if hue_deg < 0.0 {
-        hue_deg += 360.0;
+pub fn oklab_to_bin(col: &(f64, f64, f64)) -> usize {
+    let (_l, a, b) = *col;
+    
+    // Calculate hue from a and b components
+    let mut hue_rad = b.atan2(a);
+    if hue_rad < 0.0 {
+        hue_rad += 2.0 * std::f64::consts::PI;
     }
+    let hue_deg = hue_rad.to_degrees();
+    
+    // Map hue to bin
     let bin = (hue_deg / 360.0 * NUM_BINS as f64).floor() as usize;
     bin.min(NUM_BINS - 1)
 }
