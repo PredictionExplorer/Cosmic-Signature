@@ -56,8 +56,8 @@ impl MipPyramid {
         for level in 1..levels {
             let prev_w = pyramid.widths[level - 1];
             let prev_h = pyramid.heights[level - 1];
-            let new_w = (prev_w + 1) / 2;
-            let new_h = (prev_h + 1) / 2;
+            let new_w = prev_w.div_ceil(2);
+            let new_h = prev_h.div_ceil(2);
             
             let mut downsampled = vec![(0.0, 0.0, 0.0, 0.0); new_w * new_h];
             
@@ -116,12 +116,14 @@ impl MipPyramid {
             let fx = sx - x0 as f64;
             let fy = sy - y0 as f64;
             
-            // Bilinear interpolation
+            // Get source pixels
             let p00 = src[y0 * src_w + x0];
             let p01 = src[y0 * src_w + x1];
             let p10 = src[y1 * src_w + x0];
             let p11 = src[y1 * src_w + x1];
             
+            // Proper premultiplied alpha interpolation
+            // First interpolate premultiplied colors normally
             let top = (
                 p00.0 * (1.0 - fx) + p01.0 * fx,
                 p00.1 * (1.0 - fx) + p01.1 * fx,
@@ -142,6 +144,17 @@ impl MipPyramid {
                 top.2 * (1.0 - fy) + bottom.2 * fy,
                 top.3 * (1.0 - fy) + bottom.3 * fy,
             );
+            
+            // Renormalize if needed for very low alpha to avoid color bleeding
+            if pixel.3 > 0.0 && pixel.3 < 0.01 {
+                let scale = pixel.3 / (p00.3 * (1.0 - fx) * (1.0 - fy) + 
+                                       p01.3 * fx * (1.0 - fy) + 
+                                       p10.3 * (1.0 - fx) * fy + 
+                                       p11.3 * fx * fy).max(1e-10);
+                pixel.0 *= scale;
+                pixel.1 *= scale;
+                pixel.2 *= scale;
+            }
         });
         
         result
@@ -149,6 +162,7 @@ impl MipPyramid {
 }
 
 /// Standalone bilinear upsampling function for arbitrary data
+/// Handles premultiplied alpha values correctly
 fn upsample_bilinear(
     src: &[(f64, f64, f64, f64)],
     src_w: usize,
@@ -174,12 +188,14 @@ fn upsample_bilinear(
         let fx = sx - x0 as f64;
         let fy = sy - y0 as f64;
         
-        // Bilinear interpolation
+        // Get source pixels (premultiplied RGBA)
         let p00 = src[y0 * src_w + x0];
         let p01 = src[y0 * src_w + x1];
         let p10 = src[y1 * src_w + x0];
         let p11 = src[y1 * src_w + x1];
         
+        // Proper premultiplied alpha interpolation
+        // Interpolate premultiplied values directly
         let top = (
             p00.0 * (1.0 - fx) + p01.0 * fx,
             p00.1 * (1.0 - fx) + p01.1 * fx,
@@ -200,6 +216,20 @@ fn upsample_bilinear(
             top.2 * (1.0 - fy) + bottom.2 * fy,
             top.3 * (1.0 - fy) + bottom.3 * fy,
         );
+        
+        // Renormalize for very low alpha to prevent color bleeding
+        if pixel.3 > 0.0 && pixel.3 < 0.01 {
+            let expected_alpha = p00.3 * (1.0 - fx) * (1.0 - fy) + 
+                                p01.3 * fx * (1.0 - fy) + 
+                                p10.3 * (1.0 - fx) * fy + 
+                                p11.3 * fx * fy;
+            if expected_alpha > 1e-10 {
+                let scale = pixel.3 / expected_alpha;
+                pixel.0 *= scale;
+                pixel.1 *= scale;
+                pixel.2 *= scale;
+            }
+        }
     });
     
     result
@@ -617,7 +647,7 @@ pub fn pass_2_write_frames(
             // Calculate frame density and adapt alpha compression
             let density = calculate_frame_density(&accum_crisp);
             // Map density to alpha compression: low density = 0, high density = base value
-            let _adaptive_compress = if density < 0.1 {
+            let adaptive_compress = if density < 0.1 {
                 0.0 // Very low density: pure additive
             } else if density < 1.0 {
                 base_alpha_compress * (density / 1.0) // Linear ramp up
@@ -625,11 +655,28 @@ pub fn pass_2_write_frames(
                 base_alpha_compress // Full compression for high density
             };
             
-            // TODO: Use adaptive_compress for per-frame compression if needed
-            // For now, we're using the fixed value from render_config
+            // Apply adaptive compression to the accumulation buffer if compression is enabled
+            let compressed_buffer = if adaptive_compress > 0.0 {
+                // Apply alpha compression: reduce alpha while preserving color ratios
+                accum_crisp.par_iter()
+                    .map(|&(l, a, b, alpha)| {
+                        if alpha > 0.0 {
+                            // Compress alpha using 1 / (1 + k*alpha) formula
+                            let compressed_alpha = alpha / (1.0 + adaptive_compress * alpha);
+                            // Scale premultiplied color components proportionally
+                            let scale = compressed_alpha / alpha;
+                            (l * scale, a * scale, b * scale, compressed_alpha)
+                        } else {
+                            (l, a, b, alpha)
+                        }
+                    })
+                    .collect()
+            } else {
+                accum_crisp.clone()
+            };
 
             // Convert from OKLab to RGB
-            let rgb_buffer = convert_accum_buffer_to_rgb(&accum_crisp);
+            let rgb_buffer = convert_accum_buffer_to_rgb(&compressed_buffer);
             
             // Process with persistent effect chain
             let frame_params = FrameParams {
@@ -1470,36 +1517,38 @@ fn convert_spd_buffer_to_rgba(src: &[[f64; NUM_BINS]], dest: &mut [(f64, f64, f6
 // ====================== COLOR SPACE CONVERSION ======================
 /// Convert accumulation buffer from OKLab to RGB.
 /// 
-/// The accumulation buffer stores (L,a,b,A) values in OKLab space.
-/// This function converts them back to (R,G,B,A) for post-processing.
+/// The accumulation buffer stores premultiplied (L,a,b,A) values in OKLab space.
+/// This function converts them to premultiplied (R,G,B,A) in linear sRGB space.
 /// 
 /// # Arguments
-/// * `buffer` - The accumulation buffer in OKLab space
+/// * `buffer` - The accumulation buffer in premultiplied OKLab space
 /// 
 /// # Returns
-/// * A buffer in RGB space
+/// * A buffer in premultiplied RGB space
 fn convert_accum_buffer_to_rgb(
     buffer: &[(f64, f64, f64, f64)],
 ) -> Vec<(f64, f64, f64, f64)> {
     // Parallel conversion with gamut mapping
+    // Keep values premultiplied throughout to avoid precision loss
     buffer.par_iter()
-        .map(|&(l, a, b, alpha)| {
-            if alpha > 0.0 {
-                // Unpremultiply OKLab values
-                let l_straight = l / alpha;
-                let a_straight = a / alpha;
-                let b_straight = b / alpha;
+        .map(|&(l_pre, a_pre, b_pre, alpha)| {
+            if alpha > 1e-10 {
+                // Unpremultiply only for color space conversion
+                let l_straight = l_pre / alpha;
+                let a_straight = a_pre / alpha;
+                let b_straight = b_pre / alpha;
                 
                 // Convert to RGB
                 let (r, g, b_rgb) = oklab::oklab_to_linear_srgb(l_straight, a_straight, b_straight);
                 
-                // Apply gamut mapping
+                // Apply gamut mapping on straight values
                 let (r_mapped, g_mapped, b_mapped) = 
                     oklab::GamutMapMode::PreserveHue.map_to_gamut(r, g, b_rgb);
                 
-                // Re-premultiply
+                // Return premultiplied RGB
                 (r_mapped * alpha, g_mapped * alpha, b_mapped * alpha, alpha)
             } else {
+                // Fully transparent pixel
                 (0.0, 0.0, 0.0, 0.0)
             }
         })
