@@ -44,11 +44,14 @@ describe("PrizesWallet-2", function () {
 	// #endregion
 	// #region
 
-	it("The registerRoundEndAndDepositEthMany, withdrawEverything, donateToken, donateNft methods", async function () {
+	it("The registerRoundEndAndDepositEthMany, withdrawEverything, donateToken, claimDonatedToken, donateNft methods", async function () {
 		// #region
 
+		/** @type {Promise<import("ethers").TransactionResponse>} */
 		let transactionResponsePromise_;
+		/** @type {import("ethers").TransactionResponse} */
 		let transactionResponse_;
+		/** @type {import("ethers").TransactionReceipt} */
 		let transactionReceipt_;
 
 		// #endregion
@@ -64,6 +67,7 @@ describe("PrizesWallet-2", function () {
 			tokens_.push(token_);
 			const tokenAddr_ = await token_.getAddress();
 			tokensAddr_.push(tokenAddr_);
+			// await expect(token_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
 		}
 
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.signers[10].address);
@@ -74,7 +78,7 @@ describe("PrizesWallet-2", function () {
 
 		// #endregion
 		// #region
-		
+
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
 			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n);
 			await expect(transactionResponsePromise_).not.reverted;
@@ -95,23 +99,63 @@ describe("PrizesWallet-2", function () {
 		// #endregion
 		// #region
 
-		const ethDeposits_ = [
-			[contracts_.signers[0].address, 1n * 10n ** (18n - 3n),],
-			[contracts_.signers[1].address, 2n * 10n ** (18n - 3n),],
-			[contracts_.signers[2].address, 4n * 10n ** (18n - 3n),],
-			[contracts_.signers[3].address, 8n * 10n ** (18n - 3n),],
-		];
-		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).registerRoundEndAndDepositEthMany(0n, contracts_.signers[2].address, ethDeposits_, {value: (1n + 2n + 4n + 8n) * 10n ** (18n - 3n),});
-		transactionResponse_ = await transactionResponsePromise_;
-		transactionReceipt_ = await transactionResponse_.wait();
-		expect(transactionReceipt_.logs.length).equal(4);
-		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
-			assertEvent(
-				transactionReceipt_.logs[3 - counter_],
-				newPrizesWallet_,
-				"EthReceived",
-				[0n, contracts_.signers[counter_].address, BigInt(1 << counter_) * 10n ** (18n - 3n),]
-			);
+		{
+			const ethDeposits_ = [
+				[contracts_.signers[0].address, 1n * 10n ** (18n - 3n),],
+				[contracts_.signers[1].address, 2n * 10n ** (18n - 3n),],
+				[contracts_.signers[2].address, 4n * 10n ** (18n - 3n),],
+				[contracts_.signers[3].address, 8n * 10n ** (18n - 3n),],
+			];
+			transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).registerRoundEndAndDepositEthMany(0n, contracts_.signers[2].address, ethDeposits_, {value: (1n + 2n + 4n + 8n) * 10n ** (18n - 3n),});
+			transactionResponse_ = await transactionResponsePromise_;
+			transactionReceipt_ = await transactionResponse_.wait();
+			expect(transactionReceipt_.logs.length).equal(4);
+			for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
+				assertEvent(
+					transactionReceipt_.logs[3 - counter_],
+					newPrizesWallet_,
+					"EthReceived",
+					[0n, contracts_.signers[counter_].address, BigInt(1 << counter_) * 10n ** (18n - 3n),]
+				);
+			}
+		}
+
+		// #endregion
+		// #region
+
+		{
+			const donatedTokenHolderAddr_ = await newPrizesWallet_.donatedTokens(0n);
+			const donatedTokenHolder_ = await hre.ethers.getContractAt("DonatedTokenHolder", donatedTokenHolderAddr_, contracts_.signers[6]);
+			transactionResponsePromise_ = donatedTokenHolder_/*.connect(...)*/.authorizeDeployerAsMyTokenSpender(tokensAddr_[0]);
+			await expect(transactionResponsePromise_)
+				.revertedWithCustomError(donatedTokenHolder_, "UnauthorizedCaller")
+				.withArgs("Deployer only.", contracts_.signers[6].address);
+
+			let donatedTokenAmountToClaim_ = (1n << 2n) * 10n ** 18n - 4n;
+			let donatedTokenTotalAmountClamed_ = 0n;
+			for ( let counter_ = 3; ; -- counter_ ) {
+				expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(0n, tokensAddr_[2])).equal((1n << 2n) * 10n ** 18n - donatedTokenTotalAmountClamed_);
+				expect(await tokens_[2].balanceOf(contracts_.signers[2].address)).equal((10n ** (18n + 1n) - (1n << 2n) * 10n ** 18n) + donatedTokenTotalAmountClamed_);
+				transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).claimDonatedToken(0n, tokensAddr_[2], donatedTokenAmountToClaim_);
+				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
+				if (counter_ == 1) {
+					await transactionResponsePromiseAssertion_
+						.revertedWithCustomError(tokens_[2], "ERC20InsufficientBalance")
+						.withArgs(donatedTokenHolderAddr_, 1n, 2n);
+				} else {
+					await transactionResponsePromiseAssertion_
+						.emit(newPrizesWallet_, "DonatedTokenClaimed")
+						.withArgs(0n, contracts_.signers[2].address, tokensAddr_[2], donatedTokenAmountToClaim_)
+						.and.emit(tokens_[2], "Transfer")
+						.withArgs(donatedTokenHolderAddr_, contracts_.signers[2].address, donatedTokenAmountToClaim_);
+					donatedTokenTotalAmountClamed_ += donatedTokenAmountToClaim_;
+				}
+				if (counter_ <= 0) {
+					break;
+				}
+				donatedTokenAmountToClaim_ = BigInt(counter_);
+			}
+			expect(donatedTokenTotalAmountClamed_).equal((1n << 2n) * 10n ** 18n);
 		}
 
 		// #endregion
@@ -125,49 +169,51 @@ describe("PrizesWallet-2", function () {
 		// #endregion
 		// #region
 
-		const donatedTokensToClaim_ = [
-			[0n, tokensAddr_[3],],
-			[0n, tokensAddr_[1],],
-		];
-		const donatedNftIndexes_ = [3n, 0n,];
-		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(true, donatedTokensToClaim_, donatedNftIndexes_);
-		transactionResponse_ = await transactionResponsePromise_;
-		transactionReceipt_ = await transactionResponse_.wait();
-		expect(transactionReceipt_.logs.length).equal(9);
-		assertEvent(
-			transactionReceipt_.logs[0],
-			newPrizesWallet_,
-			"EthWithdrawn",
-			[contracts_.signers[2].address, contracts_.signers[2].address, (1n << 2n) * 10n ** (18n - 3n),]
-		);
-		assertEvent(
-			transactionReceipt_.logs[1],
-			newPrizesWallet_,
-			"DonatedTokenClaimed",
-			[0n, contracts_.signers[2].address, tokensAddr_[1], (1n << 1n) * 10n ** 18n,]
-		);
-		expect(tokens_[1].interface.parseLog(transactionReceipt_.logs[2]).name).equal("Transfer");
-		assertEvent(
-			transactionReceipt_.logs[3],
-			newPrizesWallet_,
-			"DonatedTokenClaimed",
-			[0n, contracts_.signers[2].address, tokensAddr_[3], (1n << 3n) * 10n ** 18n,]
-		);
-		expect(tokens_[3].interface.parseLog(transactionReceipt_.logs[4]).name).equal("Transfer");
-		assertEvent(
-			transactionReceipt_.logs[5],
-			newPrizesWallet_,
-			"DonatedNftClaimed",
-			[0n, contracts_.signers[2].address, contracts_.randomWalkNftAddr, 0n, 0n]
-		);
-		expect(contracts_.randomWalkNft.interface.parseLog(transactionReceipt_.logs[6]).name).equal("Transfer");
-		assertEvent(
-			transactionReceipt_.logs[7],
-			newPrizesWallet_,
-			"DonatedNftClaimed",
-			[0n, contracts_.signers[2].address, contracts_.randomWalkNftAddr, 3n, 3n]
-		);
-		expect(contracts_.randomWalkNft.interface.parseLog(transactionReceipt_.logs[8]).name).equal("Transfer");
+		{
+			const donatedTokensToClaim_ = [
+				[0n, tokensAddr_[3], 0n,],
+				[0n, tokensAddr_[1], (1n << 1n) * 10n ** 18n,],
+			];
+			const donatedNftIndexes_ = [3n, 0n,];
+			transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(true, donatedTokensToClaim_, donatedNftIndexes_);
+			transactionResponse_ = await transactionResponsePromise_;
+			transactionReceipt_ = await transactionResponse_.wait();
+			expect(transactionReceipt_.logs.length).equal(9);
+			assertEvent(
+				transactionReceipt_.logs[0],
+				newPrizesWallet_,
+				"EthWithdrawn",
+				[contracts_.signers[2].address, contracts_.signers[2].address, (1n << 2n) * 10n ** (18n - 3n),]
+			);
+			assertEvent(
+				transactionReceipt_.logs[1],
+				newPrizesWallet_,
+				"DonatedTokenClaimed",
+				[0n, contracts_.signers[2].address, tokensAddr_[1], (1n << 1n) * 10n ** 18n,]
+			);
+			expect(tokens_[1].interface.parseLog(transactionReceipt_.logs[2]).name).equal("Transfer");
+			assertEvent(
+				transactionReceipt_.logs[3],
+				newPrizesWallet_,
+				"DonatedTokenClaimed",
+				[0n, contracts_.signers[2].address, tokensAddr_[3], (1n << 3n) * 10n ** 18n,]
+			);
+			expect(tokens_[3].interface.parseLog(transactionReceipt_.logs[4]).name).equal("Transfer");
+			assertEvent(
+				transactionReceipt_.logs[5],
+				newPrizesWallet_,
+				"DonatedNftClaimed",
+				[0n, contracts_.signers[2].address, contracts_.randomWalkNftAddr, 0n, 0n]
+			);
+			expect(contracts_.randomWalkNft.interface.parseLog(transactionReceipt_.logs[6]).name).equal("Transfer");
+			assertEvent(
+				transactionReceipt_.logs[7],
+				newPrizesWallet_,
+				"DonatedNftClaimed",
+				[0n, contracts_.signers[2].address, contracts_.randomWalkNftAddr, 3n, 3n]
+			);
+			expect(contracts_.randomWalkNft.interface.parseLog(transactionReceipt_.logs[8]).name).equal("Transfer");
+		}
 
 		// #endregion
 	});
@@ -193,17 +239,18 @@ describe("PrizesWallet-2", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
 		// await hre.ethers.provider.send("evm_mine");
 
-		for ( let ethDepositAcceptanceModeCode_ = 2n; ethDepositAcceptanceModeCode_ >= 0n; -- ethDepositAcceptanceModeCode_ ) {
-			await expect(bidderContract_.setEthDepositAcceptanceModeCode(ethDepositAcceptanceModeCode_)).not.reverted;
+		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
+			await expect(bidderContract_.setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_)).not.reverted;
 			for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
 				const prizeWinnerAddress_ = (counter_ <= 0) ? bidderContractAddr_ : contracts_.signers[1].address;
 				const prizeWinnerEthBalanceAmount_ = (await contracts_.prizesWallet["getEthBalanceInfo(address)"](prizeWinnerAddress_))[1];
 				// console.info(hre.ethers.formatEther(prizeWinnerEthBalanceAmount_));
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ =
 					(counter_ <= 0) ?
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth"]() :
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth(address)"](contracts_.signers[1].address);
-				if (ethDepositAcceptanceModeCode_ > 0n) {
+				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.prizesWallet, "FundTransferFailed")
 						.withArgs("ETH withdrawal failed.", bidderContractAddr_, prizeWinnerEthBalanceAmount_);
@@ -222,6 +269,7 @@ describe("PrizesWallet-2", function () {
 	it("The donateNft method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
+		/** @type {Promise<import("ethers").TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).mint({value: 10n ** (18n - 2n),});
 		await expect(transactionResponsePromise_).not.reverted;
 		let nftId_ = 0n;
@@ -264,6 +312,7 @@ describe("PrizesWallet-2", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).not.reverted;
 
+		/** @type {import("ethers").TransactionResponse} */
 		let transactionResponse_ = await contracts_.prizesWallet.connect(contracts_.signers[2]).claimManyDonatedNfts([0n, 1n, 2n]);
 		let transactionReceipt_ = await transactionResponse_.wait();
 		let prizesWalletDonatedNftClaimedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletDonatedNftClaimedTopicHash_) >= 0));
@@ -282,9 +331,11 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("Incorrect or forbidden operations", async function () {
-		// todo-0 Everywhere, rename "future" to "promise".
+		/** @type {Promise<import("ethers").TransactionResponse>} */
 		let transactionResponsePromise_;
+		// /** @type {import("ethers").TransactionResponse} */
 		// let transactionResponse_;
+		// /** @type {import("ethers").TransactionReceipt} */
 		// let transactionReceipt_;
 
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
@@ -322,7 +373,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	// Comment-202507055 applies.
-	it("Reentry attempts", async function () {
+	it("Reentries", async function () {
 		// #region
 
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
@@ -345,19 +396,22 @@ describe("PrizesWallet-2", function () {
 		// #endregion
 		// #region
 
-		const ethDonationAmount_ = 10n ** 18n;
-		await expect(contracts_.signers[0].sendTransaction({to: maliciousTokenAddr_, value: ethDonationAmount_,})).not.reverted;
-		await expect(contracts_.signers[0].sendTransaction({to: maliciousPrizeWinnerAddr_, value: ethDonationAmount_,})).not.reverted;
+		{
+			const ethDonationAmount_ = 10n ** 18n;
+			await expect(contracts_.signers[0].sendTransaction({to: maliciousTokenAddr_, value: ethDonationAmount_,})).not.reverted;
+			await expect(contracts_.signers[0].sendTransaction({to: maliciousPrizeWinnerAddr_, value: ethDonationAmount_,})).not.reverted;
+		}
 
 		const timeoutDurationToWithdrawPrizes_ = await newPrizesWallet_.timeoutDurationToWithdrawPrizes();
 		let roundNum_ = 0n;
-		let nextDonatedNftIndex_ = 0n;
+		let nextDonatedNftToDonateIndex_ = 0n;
 		let nextDonatedNftToClaimIndex_ = 0n;
+		const donatedNftRoundNums_ = [];
 
 		// #endregion
 		// #region
 
-		for ( let counter_ = 0; counter_ < 250; ++ counter_ ) {
+		for ( let iterationCounter_ = 1; iterationCounter_ <= 250; ++ iterationCounter_ ) {
 			// #region
 
 			let randomNumber_ = generateRandomUInt32();
@@ -367,6 +421,10 @@ describe("PrizesWallet-2", function () {
 
 			await expect(maliciousToken_.connect(contracts_.signers[0]).setModeCode(maliciousActorModeCode_)).not.reverted;
 			await expect(maliciousPrizeWinner_.connect(contracts_.signers[0]).setModeCode(maliciousActorModeCode_)).not.reverted;
+			let nextDonatedNftToDonateIndexIncrement_ = 0n;
+			let nextDonatedNftToClaimIndexIncrement_ = 0n;
+			let transactionWillNotFailDueToReentry_ = false;
+			// console.info("202507179");
 
 			// #endregion
 			// #region
@@ -374,13 +432,11 @@ describe("PrizesWallet-2", function () {
 			for (;;) {
 				// #region
 
-				let nextDonatedNftIndexIncrement_ = 0n;
-				let nextDonatedNftToClaimIndexIncrement_ = 0n;
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				let transactionResponsePromise_;
-				let transactionWillNotFailDueToReentry_ = false;
 				randomNumber_ = generateRandomUInt32();
 				const choiceCode_ = randomNumber_ % 14;
-				// console.info("202507069", choiceCode_.toString());
+				// console.info(`202507069 ${choiceCode_} ${maliciousActorModeCode_}`);
 
 				// #endregion
 				// #region
@@ -408,7 +464,7 @@ describe("PrizesWallet-2", function () {
 							case 2: {
 								if (roundNum_ > 0n) {
 									// console.info("202507074");
-									donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddr_,]);
+									donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddr_, 1n,]);
 								} else {
 									// console.info("202507075");
 									transactionWillNotFailDueToReentry_ = true;
@@ -416,7 +472,7 @@ describe("PrizesWallet-2", function () {
 								break;
 							}
 							default: {
-								if (nextDonatedNftToClaimIndex_ < nextDonatedNftIndex_) {
+								if (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) {
 									// console.info("202507076");
 									donatedNftIndexes_.push(nextDonatedNftToClaimIndex_);
 									nextDonatedNftToClaimIndexIncrement_ = 1n;
@@ -457,35 +513,41 @@ describe("PrizesWallet-2", function () {
 							continue;
 						}
 						// console.info("202507084");
-						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doClaimDonatedToken(roundNum_ - 1n, maliciousTokenAddr_);
+
+						// [Comment-202507153]
+						// It appears that this can call `maliciousToken.transferFrom` to transfer from the zero address,
+						// which won't cause a reversal.
+						// Comment-202507177 relates.
+						// [/Comment-202507153]
+						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doClaimDonatedToken(roundNum_ - 1n, maliciousTokenAddr_, 1n);
+
 						break;
 					}
 					case 8: {
 						const donatedTokensToClaim_ = [];
 						if (roundNum_ > 0n) {
 							// console.info("202507085");
-							donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddr_,]);
+							donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddr_, 1n,]);
 						} else {
 							// console.info("202507086");
 							transactionWillNotFailDueToReentry_ = true;
 						}
+
+						// Comment-202507153 applies.
 						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doClaimManyDonatedTokens(donatedTokensToClaim_);
+
 						break;
 					}
 					case 9:
 					case 10:
 					case 11: {
-						if (roundNum_ <= 0n) {
-							// console.info("202507087");
-							continue;
-						}
 						// console.info("202507088");
-						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateNft(roundNum_ - 1n, contracts_.signers[0].address, maliciousTokenAddr_, 0n);
-						nextDonatedNftIndexIncrement_ = 1n;
+						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateNft(roundNum_, contracts_.signers[0].address, maliciousTokenAddr_, 0n);
+						nextDonatedNftToDonateIndexIncrement_ = 1n;
 						break;
 					}
 					case 12: {
-						if (nextDonatedNftToClaimIndex_ >= nextDonatedNftIndex_) {
+						if ( ! (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) ) {
 							// console.info("202507089");
 							continue;
 						}
@@ -495,8 +557,9 @@ describe("PrizesWallet-2", function () {
 						break;
 					}
 					default: {
+						expect(choiceCode_).equal(13);
 						const donatedNftIndexes_ = [];
-						if (nextDonatedNftToClaimIndex_ < nextDonatedNftIndex_) {
+						if (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) {
 							// console.info("202507092");
 							donatedNftIndexes_.push(nextDonatedNftToClaimIndex_);
 							nextDonatedNftToClaimIndexIncrement_ = 1n;
@@ -534,9 +597,15 @@ describe("PrizesWallet-2", function () {
 						}
 					}
 				} else {
-					// console.info("202507096");
 					await transactionResponsePromiseAssertion_.not.reverted;
-					nextDonatedNftIndex_ += nextDonatedNftIndexIncrement_;
+					// nextDonatedNftToDonateIndex_ += nextDonatedNftToDonateIndexIncrement_;
+					if (nextDonatedNftToDonateIndexIncrement_ > 0n) {
+						// console.info("202507096");
+						donatedNftRoundNums_[Number(nextDonatedNftToDonateIndex_)] = roundNum_;
+						++ nextDonatedNftToDonateIndex_;
+					} else {
+						// console.info("202507097");
+					}
 					nextDonatedNftToClaimIndex_ += nextDonatedNftToClaimIndexIncrement_;
 				}
 

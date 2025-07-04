@@ -20,6 +20,11 @@ contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 		emit DonationReceived(_msgSender(), msg.value);
 	}
 
+	/// todo-0 Delete this.
+	fallback() external payable {
+		revert ("Method does not exist.");
+	}
+
 	function setCharityAddress(address newValue_) external override onlyOwner {
 		charityAddress = newValue_;
 		emit CharityAddressChanged(newValue_);

@@ -6,6 +6,8 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
+/// todo-1 Now Chrono-Warrior also gets ETH.
+/// todo-1 So maybe this function name should not include "raffle".
 async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 	const unique_winners = {};
 	for (let i = 0; i < event_logs.length; i++) {

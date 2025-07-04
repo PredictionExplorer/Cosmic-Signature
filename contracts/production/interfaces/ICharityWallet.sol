@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.29;
 
-/// @title Charitable donations management.
+/// @title Charitable Donations Management.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface collects ETH donations
 /// and lets anybody to periodically transfer accumulated donations to a designated charity.

@@ -71,7 +71,7 @@ abstract contract MaliciousActorBase {
 			} else if (modeCode == 107) {
 				prizesWallet.donateToken(0, address(this), IERC20(address(this)), 1);
 			} else if (modeCode == 108) {
-				prizesWallet.claimDonatedToken(0, IERC20(address(this)));
+				prizesWallet.claimDonatedToken(0, IERC20(address(this)), 1);
 			} else if (modeCode == 109) {
 				IPrizesWallet.DonatedTokenToClaim[] memory donatedTokensToClaim_;
 				prizesWallet.claimManyDonatedTokens(donatedTokensToClaim_);

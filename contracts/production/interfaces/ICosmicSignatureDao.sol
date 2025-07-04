@@ -4,7 +4,7 @@ pragma solidity 0.8.29;
 import { IGovernor } from "@openzeppelin/contracts/governance/IGovernor.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
-/// @title Governance interface for the Cosmic Signature ecosystem.
+/// @title Governance Interface for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the governance mechanism for the Cosmic Signature ecosystem.
 /// It extends various OpenZeppelin Governor modules to create a comprehensive DAO.
