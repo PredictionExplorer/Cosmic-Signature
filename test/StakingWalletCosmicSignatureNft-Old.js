@@ -946,12 +946,4 @@ describe("StakingWalletCosmicSignatureNft-Old", function () {
 	// 	await expect(newStakingWalletCosmicSignatureNft_.claimManyRewards([3], [depositId])).not.to.be.reverted;
 	// });
 
-	it("Shouldn't be possible to deploy StakingWalletCosmicSignatureNft with zero-address-ed parameters", async function () {
-		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
-		const {signers, stakingWalletCosmicSignatureNftFactory,} = await loadFixture(deployContractsForUnitTesting);
-		const [signer0,] = signers;
-
-		await expect(stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, signer0.address /* , {gasLimit: 3000000} */)).revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
-		await expect(stakingWalletCosmicSignatureNftFactory.deploy(signer0.address, hre.ethers.ZeroAddress /* , {gasLimit: 3000000} */)).revertedWithCustomError(stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
-	});
 });

@@ -8,6 +8,13 @@ const { shuffleArray } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("StakingWalletCosmicSignatureNft", function () {
+	it("Deployment", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+
+		await expect(contracts_.stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, contracts_.signers[0].address)).revertedWithCustomError(contracts_.stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+		await expect(contracts_.stakingWalletCosmicSignatureNftFactory.deploy(contracts_.signers[0].address, hre.ethers.ZeroAddress)).revertedWithCustomError(contracts_.stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
+	});
+
 	it("Bidding and Cosmic Signature NFT staking", async function () {
 		let durationUntilRoundActivation_;
 		let durationUntilMainPrize_;
