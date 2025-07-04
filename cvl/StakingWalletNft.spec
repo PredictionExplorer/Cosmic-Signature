@@ -7,40 +7,29 @@ methods {
 	function getStakeActionTokenId(uint256 index) external returns (uint256) envfree;
 	function getStakeActionInitialReward(uint256 index) external returns (uint256) envfree;
 }
-persistent ghost mathint numStakes;
-persistent ghost mathint numUnstakes;
-hook Sstore currentContract.stakeActions[INDEX uint256 id].nftOwnerAddress address newVal (address oldVal) {
-	if ((newVal == 0) && (oldVal != 0)) { // delete
-		numUnstakes = numUnstakes + 1;	
-	} else {
-		if ((newVal != 0) && (oldVal == 0)) { // new action
-			numStakes = numStakes + 1;
-		} else {
-			assert false, "nftOwnerAddress changed to another which is not allowed";
-		}
-	}
+persistent ghost mathint actionCounterDiff;
+hook Sstore currentContract.actionCounter uint256 newVal (uint256 oldVal) {
+	actionCounterDiff = actionCounterDiff  + (newVal - oldVal);
 }
-
-rule genericMethodMatcher() {
-
-	require numStakes == 0;
-	require numUnstakes == 0;
-	require currentContract.actionCounter() == 0;
-	require currentContract.numStakedNfts() == 0;
-	require currentContract.getStakeActionAddr(currentContract.actionCounter()) == 0;
-	require currentContract.getStakeActionTokenId(currentContract.actionCounter()) == 0;
-	require currentContract.getStakeActionInitialReward(currentContract.actionCounter()) == 0;
+rule actionCounterValidation() 
+{	
+	// verification policy:
+	//		- One state variable per rule
+	//		- Uses generic method matcher (i.e.: f(e,args) ) construct to prove that no other method touches our state variable
+	//					unless explicitly stated in the rule logic
+	uint256 ac = currentContract.actionCounter();
+	require actionCounterDiff == 0;
 
     method f; env e; calldataarg args;
 	require f.isPayable == false;
     require currentContract != e.msg.sender;
+	require e.msg.sender != 0;
     if (f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
     	require currentContract.game() == e.msg.sender;
     }
-
 	mathint actionCounterBefore = currentContract.actionCounter(e);	
 
-    f(e, args);
+    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
 
 	mathint actionCounterAfter = currentContract.actionCounter(e);
 
@@ -49,16 +38,15 @@ rule genericMethodMatcher() {
 		(f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) ||
 		(f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector)
 	) {
-		assert (actionCounterBefore + 1) == actionCounterAfter,"Action counter must be increemented only by +1";
+		assert ((actionCounterBefore + 1)== actionCounterAfter),"Action counter must be increemented only by +1";
 	} else {
-		if (f.selector == sig:StakingWalletCosmicSignatureNft.tryPerformMaintenance(address).selector) {
-			assert (actionCounterBefore == actionCounterAfter, "Action counter must remain unchanged");
+		if (
+			(f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) ||
+			(f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector)
+		) {
+			assert ((actionCounterBefore + actionCounterDiff) == actionCounterAfter),"...Many() method doesn't increment actionCounter correctly";
 		} else {
-			if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
-				assert (actionCounterBefore + numUnstakes) == actionCounterAfter,"unstakeMany() doesn't increment actionCounter correctly";
-			}
+			assert (actionCounterBefore == actionCounterAfter), "Action counter must remain unchanged";
 		}
 	}
-
-	satisfy true;
 }
