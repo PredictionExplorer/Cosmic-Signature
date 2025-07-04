@@ -14,6 +14,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
+import { DonatedTokenHolder } from "./DonatedTokenHolder.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 
 // #endregion
@@ -33,7 +34,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// This timeout applies to all kinds of prizes, including ETH.
 	/// Comment-202411064 applies.
 	/// [Comment-202506139]
-	/// This should be longer -- to increase the chance that people will have enough time, even if an asteroid hits the Earth.
+	/// This should be pretty long -- to increase the chance that people will have enough time, even if an asteroid hits the Earth.
 	/// [/Comment-202506139]
 	/// See also: `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
 	uint256 public timeoutDurationToWithdrawPrizes = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES;
@@ -47,14 +48,26 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// @dev Comment-202411252 relates.
 	EthBalanceInfo[1 << 160] private _ethBalancesInfo;
 
-	/// @notice Contains info about ERC-20 token donations.
-	/// Call `_getDonatedTokenIndex` to calculate item index.
-	DonatedToken[(1 << 64) * (1 << 160)] private _donatedTokens;
+	/// @notice Details about ERC-20 token donations made to the Game.
+	/// Contains 1 item for each bidding round number.
+	DonatedToken[1 << 64] public donatedTokens;
 
 	uint256 public nextDonatedNftIndex = 0;
 
 	/// @notice Contains info about NFT donations.
+	/// Contains zero or more items for each bidding round.
 	DonatedNft[1 << 64] public donatedNfts;
+
+	// #endregion
+	// #region `constructor`
+
+	/// @notice Constructor.
+	/// @param game_ The `CosmicSignatureGame` contract address.
+	constructor(address game_)
+		_providedAddressIsNonZero(game_)
+		Ownable(_msgSender()) {
+		game = game_;
+	}
 
 	// #endregion
 	// #region `_onlyGame`
@@ -73,17 +86,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		if (_msgSender() != game) {
 			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
 		}
-	}
-
-	// #endregion
-	// #region `constructor`
-
-	/// @notice Constructor.
-	/// @param game_ The `CosmicSignatureGame` contract address.
-	constructor(address game_)
-		_providedAddressIsNonZero(game_)
-		Ownable(_msgSender()) {
-		game = game_;
 	}
 
 	// #endregion
@@ -120,6 +122,12 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_registerRoundEnd`
 
 	function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private {
+		// [ToDo-202507148-1]
+		// Should I make at least one of these (maybe the 1st one) a `require`,
+		// so that a potentially malicious upgraded Game contract could not rewrite history.
+		// The same applies to the `assert` near Comment-202411252.
+		// But then all `_onlyGame` methods in all contract will have to be reviewed and possibly uglified.
+		// [/ToDo-202507148-1]
 		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
 		// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
 		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
@@ -161,7 +169,8 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// [Comment-202411252]
 		// Even if this address already has a nonzero balance from a past bidding round,
 		// we will forget and overwrite that past bidding round number,
-		// which will reinitialize the timeout to withdraw the cumulative balance.
+		// which will update the timeout time to withdraw the cumulative balance.
+		// ToDo-202507148-1 relates and/or applies.
 		// [/Comment-202411252]
 		// #enable_asserts assert(roundNum_ >= ethBalanceInfoReference_.roundNum);
 		ethBalanceInfoReference_.roundNum = roundNum_;
@@ -208,7 +217,13 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[ethBalanceInfoReference_.roundNum];
 		require(
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-			CosmicSignatureErrors.EarlyWithdrawal("Not enough time has elapsed.", roundTimeoutTimeToWithdrawPrizes_, block.timestamp)
+			CosmicSignatureErrors.EthWithdrawalDenied(
+				"Only the ETH prize winner is permitted to withdraw their balance before a timeout expires.",
+				prizeWinnerAddress_,
+				_msgSender(),
+				roundTimeoutTimeToWithdrawPrizes_,
+				block.timestamp
+			)
 		);
 
 		// It's OK if this is zero.
@@ -247,76 +262,75 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		nonReentrant
 		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
-		uint256 newDonatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
-		DonatedToken storage newDonatedTokenReference_ = _donatedTokens[newDonatedTokenIndex_];
-
-		// This can revert due to overflow, which, in turn, probably can happen only if the donor
-		// and/or the provided ERC-20 contract are malicious.
-		newDonatedTokenReference_.amount += amount_;
-
+		DonatedToken storage newDonatedTokenReference_ = donatedTokens[roundNum_];
+		DonatedToken memory newDonatedTokenCopy_ = newDonatedTokenReference_;
+		if (address(newDonatedTokenCopy_.holder) == address(0)) {
+			newDonatedTokenCopy_.holder = new DonatedTokenHolder(tokenAddress_);
+			newDonatedTokenReference_.holder = newDonatedTokenCopy_.holder;
+		} else {
+			// This is unnecessary if this particular token was already donated in the current bidding round, but keeping it simple.
+			newDonatedTokenCopy_.holder.authorizeDeployerAsMyTokenSpender(tokenAddress_);
+		}
 		emit TokenDonated(roundNum_, donorAddress_, tokenAddress_, amount_);
 
-		// [Comment-202502242]
-		// This would revert if `tokenAddress_` is zero or there is no ERC-20-compatible contract there.
-		// todo-1 +++ Test the above.
-		// [/Comment-202502242]
+		// Comment-202502242 applies.
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this token amount.
 		// todo-1 Our web site really should provide an easy way to authorize that.
 		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
-		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(this), amount_);
+		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(newDonatedTokenCopy_.holder), amount_);
 	}
 
 	// #endregion
 	// #region `claimDonatedToken`
 
-	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external override nonReentrant {
-		_claimDonatedToken(roundNum_, tokenAddress_);
+	function claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant {
+		_claimDonatedToken(roundNum_, tokenAddress_, amount_);
 	}
 
 	// #endregion
 	// #region `_claimDonatedToken`
 
-	function _claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) private {
-		// [Comment-202502244]
-		// According to Comment-202411283, we must validate `roundNum_` here.
-		// But array bounds check near Comment-202411287 will implicitly validate it.
-		// [/Comment-202502244]
-
+	function _claimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_, uint256 amount_) private {
 		// [Comment-202411286]
-		// Nothing would be broken if the `mainPrizeBeneficiaryAddresses` item is still zero.
-		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item would also be zero.
+		// This logic will work even if the `mainPrizeBeneficiaryAddresses` item is still zero.
+		// In that case, the `roundTimeoutTimesToWithdrawPrizes` item would also be zero,
+		// which would cause the transaction reversal.
 		// [/Comment-202411286]
-		{
-			// [Comment-202411287/]
-			if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
-				
-				uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
-				require(
-					block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-					CosmicSignatureErrors.DonatedTokenClaimDenied(
-						"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
-						roundNum_,
-						_msgSender(),
-						tokenAddress_
-					)
-				);
-			}
+		if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
+			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
+			require(
+				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
+				CosmicSignatureErrors.DonatedTokenClaimDenied(
+					"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
+					roundNum_,
+					_msgSender(),
+					tokenAddress_,
+					roundTimeoutTimeToWithdrawPrizes_,
+					block.timestamp
+				)
+			);
 		}
 
-		// Comment-202502244 relates.
-		uint256 donatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
+		DonatedToken storage donatedTokenReference_ = donatedTokens[roundNum_];
 
-		DonatedToken storage donatedTokenReference_ = _donatedTokens[donatedTokenIndex_];
-
-		// It's OK if `donatedTokenCopy_.amount` is zero.
-		// It would be zero if this donation was never made or has already been claimed.
+		// [Comment-202507151]
+		// It's probably not too bad if `donatedTokenCopy_.holder` is zero.
+		// The transaction would likely revert, but it's up to the `tokenAddress_` contract.
+		// One reason for it to revert is that the zero address has not authorized us to spend its tokens.
+		// [/Comment-202507151]
 		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
 
-		delete donatedTokenReference_.amount;
-		emit DonatedTokenClaimed(roundNum_, _msgSender(), tokenAddress_, donatedTokenCopy_.amount);
+		if (amount_ == 0) {
+			// According to Comment-202507143, this can potentially be zero.
+			// Comment-202502242 applies.
+			// Comment-202507151 applies.
+			amount_ = tokenAddress_.balanceOf(address(donatedTokenCopy_.holder));
+		}
+		emit DonatedTokenClaimed(roundNum_, _msgSender(), tokenAddress_, amount_);
 
 		// Comment-202502242 applies.
-		SafeERC20.safeTransfer(tokenAddress_, _msgSender(), donatedTokenCopy_.amount);
+		// Comment-202507151 applies.
+		SafeERC20.safeTransferFrom(tokenAddress_, address(donatedTokenCopy_.holder), _msgSender(), amount_);
 	}
 
 	// #endregion
@@ -333,32 +347,22 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
 			-- donatedTokenToClaimIndex_;
 			DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
-			_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress);
+			_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress, donatedTokenToClaimReference_.amount);
 		}
 	}
 
 	// #endregion
-	// #region `getDonatedTokenAmount`
+	// #region `getDonatedTokenBalanceAmount`
 
-	function getDonatedTokenAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override returns (uint256) {
-		uint256 donatedTokenIndex_ = _getDonatedTokenIndex(roundNum_, tokenAddress_);
-		return _donatedTokens[donatedTokenIndex_].amount;
-	}
+	function getDonatedTokenBalanceAmount(uint256 roundNum_, IERC20 tokenAddress_) external view override /*nonReentrant*/ returns (uint256) {
+		DonatedToken storage donatedTokenReference_ = donatedTokens[roundNum_];
+		DonatedToken memory donatedTokenCopy_ = donatedTokenReference_;
+		return
+			(address(donatedTokenCopy_.holder) == address(0)) ?
+			0 :
 
-	// #endregion
-	// #region `_getDonatedTokenIndex`
-
-	function _getDonatedTokenIndex(uint256 roundNum_, IERC20 tokenAddress_) private pure returns (uint256) {
-		// [Comment-202409215]
-		// It appears to be unnecessary to spend gas on this validation.
-		// todo-1 +++ In some cases, instead of referencing this comment, comment near respective variable that it's OK if it's zero.
-		// [/Comment-202409215]
-		// [Comment-202411283]
-		// But in some cases the caller must validate this.
-		// [/Comment-202411283]
-		// #enable_asserts assert(roundNum_ < (1 << 64));
-
-		return roundNum_ | (uint256(uint160(address(tokenAddress_))) << 64);
+			// Comment-202502242 applies.
+			tokenAddress_.balanceOf(address(donatedTokenCopy_.holder));
 	}
 
 	// #endregion
@@ -379,7 +383,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 		// [Comment-202502245]
 		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
-		// todo-1 Test the above.
 		// [/Comment-202502245]
 		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this NFT.
 		// todo-1 Our web site really should provide an easy way to authorize that.
@@ -400,16 +403,11 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	function _claimDonatedNft(uint256 index_) private {
 		DonatedNft storage donatedNftReference_ = donatedNfts[index_];
 		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
-
 		if (address(donatedNftCopy_.nftAddress) == address(0)) {
-			if (index_ < nextDonatedNftIndex) {
-				revert CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", index_);
-			} else {
-				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", index_);
+			if (index_ >= nextDonatedNftIndex) {
+				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", _msgSender(), index_);
 			}
-		} else {
-			// It's impossible that we need to throw `CosmicSignatureErrors.InvalidDonatedNftIndex`.
-			// #enable_asserts assert(index_ < nextDonatedNftIndex);
+			revert CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", _msgSender(), index_);
 		}
 
 		// Comment-202411286 applies.
@@ -420,7 +418,9 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 				CosmicSignatureErrors.DonatedNftClaimDenied(
 					"Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 					_msgSender(),
-					index_
+					index_,
+					roundTimeoutTimeToWithdrawPrizes_,
+					block.timestamp
 				)
 			);
 		}

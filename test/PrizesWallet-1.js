@@ -9,7 +9,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper } = require("../src/Helpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject /* , assertEvent */ } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
 
 // #endregion
 // #region
@@ -59,7 +59,7 @@ describe("PrizesWallet-1", function () {
 		// [Comment-202506082]
 		// The bigger is this value the higher is the chance that that Solidity coverage will be 100%.
 		// [/Comment-202506082]
-		const numIterationsToRun_ = ( ! SKIP_LONG_TESTS ) ? 3000 : 100;
+		const numIterationsToRun_ = ( ! SKIP_LONG_TESTS ) ? 3000 : 200;
 
 		// #endregion
 		// #region
@@ -68,13 +68,6 @@ describe("PrizesWallet-1", function () {
 
 		const fakeGame_ = contracts_.signers[19];
 
-		// We will not use `contracts_.prizesWallet`.
-		// todo-1 +++ See above.
-		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(fakeGame_.address);
-		await newPrizesWallet_.waitForDeployment();
-		await expect(newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
-		const newPrizesWalletAddr_ = await newPrizesWallet_.getAddress();
-
 		// ERC-20 tokens to be donated.
 		const tokens_ = [];
 		const tokensAddr_ = [];
@@ -82,7 +75,9 @@ describe("PrizesWallet-1", function () {
 			const token_ = await contracts_.cosmicSignatureTokenFactory.deploy(fakeGame_.address);
 			await token_.waitForDeployment();
 			tokens_.push(token_);
-			tokensAddr_.push(await token_.getAddress());
+			const tokenAddr_ = await token_.getAddress();
+			tokensAddr_.push(tokenAddr_);
+			// await expect(token_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
 		}
 
 		// NFTs to be donated.
@@ -91,21 +86,27 @@ describe("PrizesWallet-1", function () {
 		for (let nftContractIndex_ = numNftContracts_; ( -- nftContractIndex_ ) >= 0; ) {
 			const nftContract_ = await contracts_.randomWalkNftFactory.deploy();
 			await nftContract_.waitForDeployment();
-			await expect(nftContract_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
 			nftContracts_.push(nftContract_);
-			nftContractsAddr_.push(await nftContract_.getAddress());
+			const nftContractAddr_ = await nftContract_.getAddress();
+			nftContractsAddr_.push(nftContractAddr_);
+			await expect(nftContract_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
 		}
+
+		// We will not use `contracts_.prizesWallet`.
+		// todo-1 +++ See above.
+		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(fakeGame_.address);
+		await newPrizesWallet_.waitForDeployment();
+		const newPrizesWalletAddr_ = await newPrizesWallet_.getAddress();
+		await expect(newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
 
 		// #endregion
 		// #region
 
-		for (const token_ of tokens_) {
-			for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
+		for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
+			for (const token_ of tokens_) {
 				await expect(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n)).not.reverted;
 			}
-		}
-		for (const nftContract_ of nftContracts_) {
-			for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
+			for (const nftContract_ of nftContracts_) {
 				await expect(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddr_, true)).not.reverted;
 			}
 		}
@@ -113,13 +114,21 @@ describe("PrizesWallet-1", function () {
 		// #endregion
 		// #region Simulated ERC-20 Token Contracts State.
 
+		// This array contains `numTokens_` items, an item for each ERC-20 token contract.
+		// Each item is an object in which each property key is an address as `string`
+		// and value is ERC-20 token balance amount as `bigint`.
 		const allTokenBalanceAmounts_ = [];
+
 		for (let tokenIndex_ = numTokens_; ( -- tokenIndex_ ) >= 0; ) {
 			const tokenBalanceAmounts_ = {};
+
+			// [Comment-202507161/]
+			tokenBalanceAmounts_[hre.ethers.ZeroAddress] = 0n;
+
+			// tokenBalanceAmounts_[newPrizesWalletAddr_] = 0n;
 			for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
 				tokenBalanceAmounts_[contracts_.signers[bidderIndex_].address] = 0n;
 			}
-			tokenBalanceAmounts_[newPrizesWalletAddr_] = 0n;
 			allTokenBalanceAmounts_.push(tokenBalanceAmounts_);
 		}
 
@@ -133,7 +142,7 @@ describe("PrizesWallet-1", function () {
 
 		// #endregion
 		// #region Simulated `PrizesWallet` State.
-		
+
 		let ethBalanceAmount_ = 0n;
 
 		// It could make sense to keep signer indexes here, which could be more efficient, but it's OK to keep their addresses too.
@@ -147,8 +156,7 @@ describe("PrizesWallet-1", function () {
 		}
 
 		// This array contains an item for each bidding round.
-		// Each item is an array containing `numTokens_` items.
-		// Each item is a `bigint` representing donated token amount.
+		// Each item is a `string` representing donated token holder address. It can be zero.
 		const donatedTokens_ = [];
 
 		const donatedNfts_ = [];
@@ -164,8 +172,9 @@ describe("PrizesWallet-1", function () {
 		const prepareNextRound_ = async () => {
 			mainPrizeBeneficiaryAddresses_.push(hre.ethers.ZeroAddress);
 			roundTimeoutTimesToWithdrawPrizes_.push(0n);
-			donatedTokens_.push(new Array(numTokens_).fill(0n));
+			donatedTokens_.push(hre.ethers.ZeroAddress);
 			++ roundNum_;
+			// console.log(`202507165 ${roundNum_}`);
 		};
 
 		// #endregion
@@ -176,7 +185,7 @@ describe("PrizesWallet-1", function () {
 		// #endregion
 		// #region
 
-		for ( let iterationCounter_ = 0; iterationCounter_ < numIterationsToRun_; ++ iterationCounter_ ) {
+		for ( let iterationCounter_ = 1; iterationCounter_ <= numIterationsToRun_; ++ iterationCounter_ ) {
 			// #region
 
 			// This time increase gives strangers a chance to claim someone's unclaimed prizes.
@@ -187,7 +196,7 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506195");
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					await hre.ethers.provider.send("evm_increaseTime", [Number(randomNumber_ % (timeoutDurationToWithdrawPrizes_ * 3n / 2n))]);
-					// await hre.ethers.provider.send("evm_mine");
+					await hre.ethers.provider.send("evm_mine");
 				} else {
 					// console.info("202506196");
 				}
@@ -197,7 +206,7 @@ describe("PrizesWallet-1", function () {
 			// #region
 
 			randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-			const numChoice1s_ = 13;
+			const numChoice1s_ = 14;
 			let choice1Code_ = Number(randomNumber_ % BigInt(numChoice1s_));
 
 			// #endregion
@@ -309,6 +318,7 @@ describe("PrizesWallet-1", function () {
 					}
 				}
 				const prizeWinnerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address);
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["withdrawEth()"]();
 				await expect(transactionResponsePromise_)
 					.emit(newPrizesWallet_, "EthWithdrawn")
@@ -357,7 +367,9 @@ describe("PrizesWallet-1", function () {
 					}
 				}
 				const strangerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address);
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[strangerIndex_])["withdrawEth(address)"](contracts_.signers[prizeWinnerIndex_].address);
+				/** @type {import("ethers").TransactionReceipt} */
 				let transactionReceipt_ = undefined;
 				try {
 					const transactionResponse_ = await transactionResponsePromise_;
@@ -376,8 +388,14 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506094");
 					expect(transactionReceipt_ != undefined).equal(false);
 					await expect(transactionResponsePromise_)
-						.revertedWithCustomError(newPrizesWallet_, "EarlyWithdrawal")
-						.withArgs("Not enough time has elapsed.", roundTimeoutTimeToWithdrawPrizes_, BigInt(transactionBlock_.timestamp));
+						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
+						.withArgs(
+							"Only the ETH prize winner is permitted to withdraw their balance before a timeout expires.",
+							contracts_.signers[prizeWinnerIndex_].address,
+							contracts_.signers[strangerIndex_].address,
+							roundTimeoutTimeToWithdrawPrizes_,
+							BigInt(transactionBlock_.timestamp)
+						);
 				} else {
 					// console.info("202506095");
 
@@ -427,6 +445,7 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506151");
 					tokenAmount_ = 0n;
 				}
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ =
 					newPrizesWallet_.connect(fakeGame_).donateToken(
 						roundNum_,
@@ -438,130 +457,253 @@ describe("PrizesWallet-1", function () {
 				// Over time, the probability of this condition being `true` declines.
 				// It's because ERC-20 token balance of each bidder tends to increase.
 				// To prevent a too fast decline of this probability, it could make sense to mint less near Comment-202506191
-				// than donate near Comment-202506102, but the current logic really works OK as is.
+				// than donate near Comment-202506102, but the current logic appears to work OK as is.
+				// One factor that helps is that some donations or their parts never get claimed.
 				if ( ! (tokenAmount_ <= allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address]) ) {
 
 					// console.info("202506107", iterationCounter_.toString());
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(tokens_[tokenIndex_], "ERC20InsufficientBalance");
 				} else {
-					// console.info("202506154", roundNum_.toString(), tokenIndex_.toString(), hre.ethers.formatEther(tokenAmount_));
-					await expect(transactionResponsePromise_)
-						.emit(newPrizesWallet_, "TokenDonated")
-						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, tokensAddr_[tokenIndex_], tokenAmount_)
-						.and.emit(tokens_[tokenIndex_], "Transfer")
-						.withArgs(contracts_.signers[donorIndex_].address, newPrizesWalletAddr_, tokenAmount_);
-					allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address] -= tokenAmount_;
-					allTokenBalanceAmounts_[tokenIndex_][newPrizesWalletAddr_] += tokenAmount_;
-					donatedTokens_[Number(roundNum_)][tokenIndex_] += tokenAmount_;
-					expect(await tokens_[tokenIndex_].balanceOf(contracts_.signers[donorIndex_].address)).equal(allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address]);
-					expect(await tokens_[tokenIndex_].balanceOf(newPrizesWalletAddr_)).equal(allTokenBalanceAmounts_[tokenIndex_][newPrizesWalletAddr_]);
-					expect(await newPrizesWallet_.getDonatedTokenAmount(roundNum_, tokensAddr_[tokenIndex_])).equal(donatedTokens_[Number(roundNum_)][tokenIndex_]);
-				}
+					// console.info("202506154", iterationCounter_.toString(), roundNum_.toString(), tokenIndex_.toString(), hre.ethers.formatEther(tokenAmount_));
+					await(await transactionResponsePromise_).wait();
 
-				// #endregion
-			} else if ((choice1Code_ -= 1) < 0) {
-				// #region `claimDonatedToken`
+					// Because near Comment-202507161 we have added the zero addresses to `allTokenBalanceAmounts_`,
+					// near Comment-202507163 we will implicitly validates that this is a nonzero.
+					const donatedTokenHolderAddr_ = await newPrizesWallet_.donatedTokens(roundNum_);
 
-				// console.info("202506114");
-				const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
-				let mainPrizeBeneficiaryIndex_;
-				let tokenIndex_;
-				let donationRoundNum_;
-				let roundTimeoutTimeToWithdrawPrizes_;
-				for (let counter_ = Math.min(numBidders_, Number(roundNum_) + 1); ; ) {
-					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-					mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
-					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-					tokenIndex_ = Number(randomNumber_ % BigInt(numTokens_));
-					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-					donationRoundNum_ = roundNum_ -  randomNumber_ % BigInt(Math.min(Number(roundNum_) + 1, 10));
-					roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(donationRoundNum_)];
-					if ( donatedTokens_[Number(donationRoundNum_)][tokenIndex_] > 0n &&
-					     ( contracts_.signers[mainPrizeBeneficiaryIndex_].address == mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)] ||
-					       (blockBeforeTransaction_.timestamp + 1 >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n)
-						  )
-					) {
-						// console.info("202506182");
-						break;
-					}
-					if (( -- counter_ ) <= 0) {
-						// console.info("202506183");
-						break;
-					}
-				}
-				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddr_[tokenIndex_]);
-				let transactionReceipt_ = undefined;
-				try {
-					const transactionResponse_ = await transactionResponsePromise_;
-					transactionReceipt_ = await transactionResponse_.wait();
-				} catch (transactionErrorObject_) {
-					checkTransactionErrorObject(transactionErrorObject_);
-				}
-				// const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
-				// console.info(
-				// 	"202506186",
-				// 	donationRoundNum_.toString(),
-				// 	tokenIndex_.toString(),
-				// 	hre.ethers.formatEther(donatedTokens_[Number(donationRoundNum_)][tokenIndex_]),
-				// 	contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-				// 	mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)],
-				// 	transactionBlock_.timestamp.toString(),
-				// 	roundTimeoutTimeToWithdrawPrizes_.toString()
-				// );
-				let transactionShouldHaveSucceeded_ = true;
-				if (transactionShouldHaveSucceeded_) {
-					if (contracts_.signers[mainPrizeBeneficiaryIndex_].address != mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)]) {
-						// console.info("202506202");
+					if (donatedTokens_[Number(roundNum_)] == hre.ethers.ZeroAddress) {
+						// console.log("202507154", donatedTokenHolderAddr_, typeof donatedTokenHolderAddr_);
+						donatedTokens_[Number(roundNum_)] = donatedTokenHolderAddr_;
+						for (const tokenBalanceAmounts_ of allTokenBalanceAmounts_) {
+							// console.log("202507157");
 
-						// // [Comment-202506169/]
-						// if (donatedTokens_[Number(donationRoundNum_)][tokenIndex_] > 0n) {
-						// 	++ testCounter1_;
-						// }
+							// [Comment-202507163/]
+							expect(Object.hasOwn(tokenBalanceAmounts_, donatedTokenHolderAddr_)).equal(false);
 
-						const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
-						if (transactionBlock_.timestamp >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n) {
-							// console.info("202506173");
-
-							// // Comment-202506169 applies.
-							// if (donatedTokens_[Number(donationRoundNum_)][tokenIndex_] > 0n) {
-							// 	console.info("202506115", (( ++ testCounter2_ ) / testCounter1_).toPrecision(2));
-							// }
-						} else {
-							// console.info("202506116");
-							await expect(transactionResponsePromise_)
-								.revertedWithCustomError(newPrizesWallet_, "DonatedTokenClaimDenied")
-								.withArgs(
-									"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
-									donationRoundNum_,
-									contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-									tokensAddr_[tokenIndex_]
-								);
-							transactionShouldHaveSucceeded_ = false;
+							tokenBalanceAmounts_[donatedTokenHolderAddr_] = 0n;
 						}
 					} else {
-						// console.info("202506117");
+						// console.log("202507159");
+						expect(donatedTokenHolderAddr_).equal(donatedTokens_[Number(roundNum_)]);
 					}
-				}
-				expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
-				if (transactionShouldHaveSucceeded_) {
-					// console.info("202506124");
+					allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address] -= tokenAmount_;
+					allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddr_] += tokenAmount_;
 					await expect(transactionResponsePromise_)
-						.emit(newPrizesWallet_, "DonatedTokenClaimed")
-						.withArgs(
-							donationRoundNum_,
-							contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-							tokensAddr_[tokenIndex_],
-							donatedTokens_[Number(donationRoundNum_)][tokenIndex_]
-						)
+						.emit(tokens_[tokenIndex_], "Approval")
+						.withArgs(donatedTokenHolderAddr_, newPrizesWalletAddr_, (1n << 256n) - 1n)
+						.and.emit(newPrizesWallet_, "TokenDonated")
+						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, tokensAddr_[tokenIndex_], tokenAmount_)
 						.and.emit(tokens_[tokenIndex_], "Transfer")
-						.withArgs(newPrizesWalletAddr_, contracts_.signers[mainPrizeBeneficiaryIndex_].address, donatedTokens_[Number(donationRoundNum_)][tokenIndex_]);
-					allTokenBalanceAmounts_[tokenIndex_][newPrizesWalletAddr_] -= donatedTokens_[Number(donationRoundNum_)][tokenIndex_];
-					allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[mainPrizeBeneficiaryIndex_].address] += donatedTokens_[Number(donationRoundNum_)][tokenIndex_];
-					donatedTokens_[Number(donationRoundNum_)][tokenIndex_] = 0n;
-					expect(await tokens_[tokenIndex_].balanceOf(contracts_.signers[mainPrizeBeneficiaryIndex_].address)).equal(allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[mainPrizeBeneficiaryIndex_].address]);
-					expect(await tokens_[tokenIndex_].balanceOf(newPrizesWalletAddr_)).equal(allTokenBalanceAmounts_[tokenIndex_][newPrizesWalletAddr_]);
-					expect(await newPrizesWallet_.getDonatedTokenAmount(donationRoundNum_, tokensAddr_[tokenIndex_])).equal(donatedTokens_[Number(donationRoundNum_)][tokenIndex_]);
+						.withArgs(contracts_.signers[donorIndex_].address, donatedTokenHolderAddr_, tokenAmount_);
+					expect(await tokens_[tokenIndex_].balanceOf(contracts_.signers[donorIndex_].address)).equal(allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address]);
+					expect(await tokens_[tokenIndex_].balanceOf(donatedTokenHolderAddr_)).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddr_]);
+				}
+
+				// This will work even if `donatedTokens_[Number(roundNum_)]` is still zero.
+				expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(roundNum_, tokensAddr_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(roundNum_)]]);
+
+				// #endregion
+			} else if ((choice1Code_ -= 2) < 0) {
+				// #region `claimDonatedToken`
+
+				{
+					// #region
+
+					// console.info("202506114");
+					const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
+					let mainPrizeBeneficiaryIndex_;
+					let tokenIndex_;
+					let donationRoundNum_;
+					let donationRoundTimeoutTimeToWithdrawPrizes_;
+
+					// #endregion
+					// #region
+
+					for (let counter_ = Math.min(numBidders_, Number(roundNum_) + 1); ; ) {
+						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+						mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
+						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+						tokenIndex_ = Number(randomNumber_ % BigInt(numTokens_));
+						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+						donationRoundNum_ = roundNum_ -  randomNumber_ % BigInt(Math.min(Number(roundNum_) + 1, 10));
+						donationRoundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(donationRoundNum_)];
+						if ( allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] > 0n &&
+						     ( contracts_.signers[mainPrizeBeneficiaryIndex_].address == mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)] ||
+						       (blockBeforeTransaction_.timestamp + 1 >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n)
+						     )
+						) {
+							// console.info("202506182");
+							break;
+						}
+						if (( -- counter_ ) <= 0) {
+							// console.info("202506183");
+							break;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					let donatedTokenAmountToClaim_;
+
+					// #endregion
+					// #region
+
+					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+					if (choice1Code_ == -1) {
+						// console.info("202507166");
+						donatedTokenAmountToClaim_ = randomNumber_ % ((allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] << 1n) + 1n);
+					} else {
+						// console.info("202507167");
+						donatedTokenAmountToClaim_ =
+							((randomNumber_ & 1n) == 0n) ?
+							0n :
+							allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]];
+					}
+
+					// #endregion
+					// #region
+
+					/** @type {Promise<import("ethers").TransactionResponse>} */
+					const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddr_[tokenIndex_], donatedTokenAmountToClaim_);
+					/** @type {import("ethers").TransactionReceipt} */
+					let transactionReceipt_ = undefined;
+					try {
+						const transactionResponse_ = await transactionResponsePromise_;
+						transactionReceipt_ = await transactionResponse_.wait();
+						// console.info("202507168");
+					} catch (transactionErrorObject_) {
+						// console.error("202507169", transactionErrorObject_.message);
+						checkTransactionErrorObject(transactionErrorObject_);
+					}
+
+					// #endregion
+					// #region //
+
+					// {
+					// 	const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
+					// 	console.info(
+					// 		"202506186",
+					// 		donationRoundNum_.toString(),
+					// 		tokenIndex_.toString(),
+					// 		hre.ethers.formatEther(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]),
+					// 		contracts_.signers[mainPrizeBeneficiaryIndex_].address,
+					// 		mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)],
+					// 		transactionBlock_.timestamp.toString(),
+					// 		donationRoundTimeoutTimeToWithdrawPrizes_.toString()
+					// 	);
+					// }
+
+					// #endregion
+					// #region
+
+					let transactionShouldHaveSucceeded_ = true;
+
+					// #endregion
+					// #region
+
+					if (transactionShouldHaveSucceeded_) {
+						if (contracts_.signers[mainPrizeBeneficiaryIndex_].address != mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)]) {
+							// console.info("202506202");
+
+							// // [Comment-202506169/]
+							// if (allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] > 0n) {
+							// 	++ testCounter1_;
+							// }
+
+							const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
+							if (transactionBlock_.timestamp >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n) {
+								// console.info("202506173");
+
+								// // Comment-202506169 applies.
+								// if (allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] > 0n) {
+								// 	console.info("202506115", (( ++ testCounter2_ ) / testCounter1_).toPrecision(2));
+								// }
+							} else {
+								// console.info("202506116");
+								await expect(transactionResponsePromise_)
+									.revertedWithCustomError(newPrizesWallet_, "DonatedTokenClaimDenied")
+									.withArgs(
+										"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
+										donationRoundNum_,
+										contracts_.signers[mainPrizeBeneficiaryIndex_].address,
+										tokensAddr_[tokenIndex_],
+										donationRoundTimeoutTimeToWithdrawPrizes_,
+										BigInt(transactionBlock_.timestamp)
+									);
+								transactionShouldHaveSucceeded_ = false;
+							}
+						} else {
+							// console.info("202506117");
+						}
+					}
+
+					// #endregion
+					// #region
+
+					if (transactionShouldHaveSucceeded_) {
+						if (donatedTokens_[Number(donationRoundNum_)] == hre.ethers.ZeroAddress) {
+							// console.info("202507171");
+							await expect(transactionResponsePromise_).revertedWithCustomError(tokens_[tokenIndex_], "ERC20InvalidApprover");
+							transactionShouldHaveSucceeded_ = false;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					if (transactionShouldHaveSucceeded_) {
+						if (donatedTokenAmountToClaim_ == 0n) {
+							// console.info("202507172");
+							donatedTokenAmountToClaim_ = allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]];
+						} else {
+							// console.info("202507173");
+						}
+						if (donatedTokenAmountToClaim_ > allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]) {
+							// console.info("202507174");
+							await expect(transactionResponsePromise_).revertedWithCustomError(tokens_[tokenIndex_], "ERC20InsufficientBalance");
+							transactionShouldHaveSucceeded_ = false;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
+
+					// #endregion
+					// #region
+
+					if (transactionShouldHaveSucceeded_) {
+						// console.info("202506124");
+						allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] -= donatedTokenAmountToClaim_;
+						allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[mainPrizeBeneficiaryIndex_].address] += donatedTokenAmountToClaim_;
+						await expect(transactionResponsePromise_)
+							.emit(newPrizesWallet_, "DonatedTokenClaimed")
+							.withArgs(
+								donationRoundNum_,
+								contracts_.signers[mainPrizeBeneficiaryIndex_].address,
+								tokensAddr_[tokenIndex_],
+								donatedTokenAmountToClaim_
+							)
+							.and.emit(tokens_[tokenIndex_], "Transfer")
+							.withArgs(
+								donatedTokens_[Number(donationRoundNum_)],
+								contracts_.signers[mainPrizeBeneficiaryIndex_].address,
+								donatedTokenAmountToClaim_
+							);
+						expect(await tokens_[tokenIndex_].balanceOf(donatedTokens_[Number(donationRoundNum_)])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]);
+						expect(await tokens_[tokenIndex_].balanceOf(contracts_.signers[mainPrizeBeneficiaryIndex_].address)).equal(allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[mainPrizeBeneficiaryIndex_].address]);
+					}
+
+					// #endregion
+					// #region
+
+					// This will work even if `donatedTokens_[Number(donationRoundNum_)]` is still zero.
+					expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(donationRoundNum_, tokensAddr_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]);
+
+					// #endregion
 				}
 
 				// #endregion
@@ -590,6 +732,7 @@ describe("PrizesWallet-1", function () {
 						break;
 					}
 				}
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ =
 					newPrizesWallet_.connect(fakeGame_).donateNft(
 						roundNum_,
@@ -629,7 +772,7 @@ describe("PrizesWallet-1", function () {
 				const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
 				let mainPrizeBeneficiaryIndex_;
 				let donatedNftIndex_;
-				let roundTimeoutTimeToWithdrawPrizes_ = undefined;
+				let donationRoundTimeoutTimeToWithdrawPrizes_ = undefined;
 				for (let counter_ = Math.min(numBidders_, donatedNfts_.length + 1); ; ) {
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
@@ -640,8 +783,8 @@ describe("PrizesWallet-1", function () {
 							// console.info("202506187", iterationCounter_.toString());
 							break;
 						}
-						roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(donatedNfts_[donatedNftIndex_].roundNum)];
-						if (blockBeforeTransaction_.timestamp + 1 >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n) {
+						donationRoundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(donatedNfts_[donatedNftIndex_].roundNum)];
+						if (blockBeforeTransaction_.timestamp + 1 >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n) {
 							// console.info("202506188", iterationCounter_.toString());
 							break;
 						}
@@ -651,7 +794,9 @@ describe("PrizesWallet-1", function () {
 						break;
 					}
 				}
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedNft(BigInt(donatedNftIndex_));
+				/** @type {import("ethers").TransactionReceipt} */
 				let transactionReceipt_ = undefined;
 				try {
 					const transactionResponse_ = await transactionResponsePromise_;
@@ -665,7 +810,7 @@ describe("PrizesWallet-1", function () {
 						// console.info("202506167");
 						await expect(transactionResponsePromise_)
 							.revertedWithCustomError(newPrizesWallet_, "InvalidDonatedNftIndex")
-							.withArgs("Invalid donated NFT index.", BigInt(donatedNftIndex_));
+							.withArgs("Invalid donated NFT index.", contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
 						transactionShouldHaveSucceeded_ = false;
 					}
 				}
@@ -674,7 +819,7 @@ describe("PrizesWallet-1", function () {
 						// console.info("202506168");
 						await expect(transactionResponsePromise_)
 							.revertedWithCustomError(newPrizesWallet_, "DonatedNftAlreadyClaimed")
-							.withArgs("Donated NFT already claimed.", BigInt(donatedNftIndex_));
+							.withArgs("Donated NFT already claimed.", contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
 						transactionShouldHaveSucceeded_ = false;
 					}
 				}
@@ -686,7 +831,7 @@ describe("PrizesWallet-1", function () {
 						// ++ testCounter3_;
 
 						const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
-						if (transactionBlock_.timestamp >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n) {
+						if (transactionBlock_.timestamp >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n) {
 							// console.info("202506205");
 
 							// // Comment-202506169 applies.
@@ -698,7 +843,9 @@ describe("PrizesWallet-1", function () {
 								.withArgs(
 									"Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 									contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-									BigInt(donatedNftIndex_)
+									BigInt(donatedNftIndex_),
+									donationRoundTimeoutTimeToWithdrawPrizes_,
+									BigInt(transactionBlock_.timestamp)
 								);
 							transactionShouldHaveSucceeded_ = false;
 						}

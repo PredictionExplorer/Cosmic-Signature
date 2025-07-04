@@ -12,7 +12,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 // #endregion
 // #region
 
-/// @title Custom errors.
+/// @title Custom Errors.
 /// @author The Cosmic Signature Development Team.
 /// @notice This library contains custom errors used by the Cosmic Signature contracts.
 /// See also: `CosmicSignatureEvents`.
@@ -79,17 +79,17 @@ library CosmicSignatureErrors {
 	// #region Main Prize
 
 	/// @notice Thrown when attempting to claim the main prize too early.
-	/// See also: `EarlyWithdrawal`.
 	/// @param errStr Description of the error.
 	/// @param mainPrizeTime The time when this operation will be permitted.
 	/// @param blockTimeStamp The current block timestamp.
 	error MainPrizeEarlyClaim(string errStr, uint256 mainPrizeTime, uint256 blockTimeStamp);
 
 	/// @notice Thrown when someone other than the last bidder attempts to claim the main prize before a timeout expires.
-	/// See also: `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
+	/// See also: `EthWithdrawalDenied`, `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
 	/// @param lastBidderAddress The last bidder address.
 	/// @param beneficiaryAddress The address that attempted to claim the prize.
+	/// Comment-202411254 applies.
 	/// @param durationUntilOperationIsPermitted The duration until this operation will be permitted.
 	error MainPrizeClaimDenied(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 durationUntilOperationIsPermitted);
 
@@ -114,37 +114,69 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region Prizes Wallet
 
-	/// @notice Thrown when attempting to withdraw a prize or whatever too early.
-	/// See also: `MainPrizeEarlyClaim`.
+	/// @notice Thrown when someone attempts to withdraw ETH, but is not permitted to do so.
+	/// See also: `MainPrizeClaimDenied`, `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
+	/// @param prizeWinnerAddress Prize winner address.
+	/// @param beneficiaryAddress The address that attempted to withdrew the funds.
+	/// Comment-202411285 applies.
 	/// @param operationPermittedTime The time when this operation will be permitted.
 	/// @param blockTimeStamp The current block timestamp.
-	error EarlyWithdrawal(string errStr, uint256 operationPermittedTime, uint256 blockTimeStamp);
+	error EthWithdrawalDenied(
+		string errStr,
+		address prizeWinnerAddress,
+		address beneficiaryAddress,
+		uint256 operationPermittedTime,
+		uint256 blockTimeStamp
+	);
 
 	/// @notice Thrown when someone attempts to claim an ERC-20 token donation, but is not permitted to do so.
-	/// See also: `MainPrizeClaimDenied`, `DonatedNftClaimDenied`.
+	/// See also: `MainPrizeClaimDenied`, `EthWithdrawalDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
 	/// @param roundNum Bidding round number.
 	/// @param beneficiaryAddress The address that attempted to claim the donation.
+	/// Comment-202501249 applies.
 	/// @param tokenAddress The ERC-20 contract address.
-	error DonatedTokenClaimDenied(string errStr, uint256 roundNum, address beneficiaryAddress, IERC20 tokenAddress);
+	/// @param operationPermittedTime The time when this operation will be permitted.
+	/// @param blockTimeStamp The current block timestamp.
+	error DonatedTokenClaimDenied(
+		string errStr,
+		uint256 roundNum,
+		address beneficiaryAddress,
+		IERC20 tokenAddress,
+		uint256 operationPermittedTime,
+		uint256 blockTimeStamp
+	);
 
 	/// @notice Thrown when attempting to claim a non-existent donated NFT.
 	/// @param errStr Description of the error.
-	/// @param index `donatedNfts` non-existent item index.
-	error InvalidDonatedNftIndex(string errStr, uint256 index);
-
-	/// @notice Thrown when someone attempts to claim a donated NFT, but is not permitted to do so.
-	/// See also: `MainPrizeClaimDenied`, `DonatedTokenClaimDenied`.
-	/// @param errStr Description of the error.
 	/// @param beneficiaryAddress The address that attempted to claim the donation.
-	/// @param index `donatedNfts` item index.
-	error DonatedNftClaimDenied(string errStr, address beneficiaryAddress, uint256 index);
+	/// Comment-202501249 applies.
+	/// @param index `donatedNfts` non-existent item index.
+	error InvalidDonatedNftIndex(string errStr, address beneficiaryAddress, uint256 index);
 
 	/// @notice Thrown when attempting to claim an already claimed donated NFT.
 	/// @param errStr Description of the error.
+	/// @param beneficiaryAddress The address that attempted to claim the donation.
+	/// Comment-202501249 applies.
 	/// @param index `donatedNfts` item index.
-	error DonatedNftAlreadyClaimed(string errStr, uint256 index);
+	error DonatedNftAlreadyClaimed(string errStr, address beneficiaryAddress, uint256 index);
+
+	/// @notice Thrown when someone attempts to claim a donated NFT, but is not permitted to do so.
+	/// See also: `MainPrizeClaimDenied`, `EthWithdrawalDenied`, `DonatedTokenClaimDenied`.
+	/// @param errStr Description of the error.
+	/// @param beneficiaryAddress The address that attempted to claim the donation.
+	/// Comment-202501249 applies.
+	/// @param index `donatedNfts` item index.
+	/// @param operationPermittedTime The time when this operation will be permitted.
+	/// @param blockTimeStamp The current block timestamp.
+	error DonatedNftClaimDenied(
+		string errStr,
+		address beneficiaryAddress,
+		uint256 index,
+		uint256 operationPermittedTime,
+		uint256 blockTimeStamp
+	);
 
 	// #endregion
 	// #region NFT Staking

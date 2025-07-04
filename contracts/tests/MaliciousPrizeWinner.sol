@@ -8,6 +8,7 @@ import { MaliciousActorBase } from "./MaliciousActorBase.sol";
 
 /// @dev Issue. It looks like we really need this contract only to reenter another contract on ETH receive.
 /// For other operations we could use a regular signer.
+/// So it would be OK to eliminate some of this code.
 contract MaliciousPrizeWinner is MaliciousActorBase {
 	constructor(PrizesWallet prizesWallet_, CosmicSignatureGame game_) MaliciousActorBase(prizesWallet_, game_) {
 		// Doing nothing.
@@ -29,8 +30,8 @@ contract MaliciousPrizeWinner is MaliciousActorBase {
 		prizesWallet.withdrawEth(prizeWinnerAddress_);
 	}
 
-	function doClaimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_) external {
-		prizesWallet.claimDonatedToken(roundNum_, tokenAddress_);
+	function doClaimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_, uint256 amount_) external {
+		prizesWallet.claimDonatedToken(roundNum_, tokenAddress_, amount_);
 	}
 
 	function doClaimManyDonatedTokens(IPrizesWallet.DonatedTokenToClaim[] calldata donatedTokensToClaim_) external {

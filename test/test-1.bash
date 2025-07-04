@@ -20,13 +20,11 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-0 Uncomment the command line with no arguments.
+			# 'npx' 'hardhat' 'test' '--grep' '^Bidding '
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-2 Reentries$'
-			# 'npx' 'hardhat' 'test' '--grep' '^Arbitrum Calls to Arbitrum precompile contracts errors$'
-			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d '
-			'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft '
-			# 'npx' 'hardhat' 'test' '--grep' '^\w+\b(?!-Old) '
-			# 'npx' 'hardhat' 'test' '--grep' '(?<!Long-term aggressive bidding behaves correctly)$'
+			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
+			'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
 			# 'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
