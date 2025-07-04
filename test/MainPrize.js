@@ -224,6 +224,7 @@ describe("MainPrize", function () {
 		// Asserting the number of ETH deposits.
 		let prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletEthReceivedTopicHash_) >= 0));
 		expect(prizesWalletEthReceivedLogs_.length).equal(numSecondaryEthPrizesToDistribute_);
+		
 		expectedCosmicSignatureNftTotalSupply_ += numCosmicSignatureNftsToDistribute_;
 		expect(await contracts_.cosmicSignatureNft.totalSupply()).equal(expectedCosmicSignatureNftTotalSupply_);
 

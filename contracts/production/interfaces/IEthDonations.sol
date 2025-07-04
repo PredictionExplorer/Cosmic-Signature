@@ -35,7 +35,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @notice This method allows anybody to donate ETH without placing a bid.
 	/// It's OK if `msg.value` is zero.
 	/// [Comment-202503113]
-	/// As per the Comment-202409215 preference, the logic running on the blockchain doesn't enforce a minimum donation.
+	/// The logic running on the blockchain doesn't enforce a minimum donation.
 	/// The enforcement is done at higher levels in the stack.
 	/// [/Comment-202503113]
 	/// See also: `donateEthWithInfo`, `IBidding.receive`.

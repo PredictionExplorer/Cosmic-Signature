@@ -16,7 +16,7 @@ import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 	uint256[] public donatedNftIndexes;
-	
+
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
 	}

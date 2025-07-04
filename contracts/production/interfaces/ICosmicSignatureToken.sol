@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
-/// @title The official ERC-20 token for the Cosmic Signature ecosystem.
+/// @title The Official ERC-20 Token for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interface implements the CosmicSignatureToken (CST) --
 /// an ERC20 token with additional features.

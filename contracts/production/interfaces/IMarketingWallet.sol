@@ -4,7 +4,7 @@ pragma solidity 0.8.29;
 import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 
-/// @title Marketer reward wallet.
+/// @title Marketer Reward Wallet.
 /// @author The Cosmic Signature Development Team.
 /// @notice This wallet holds and manages CST funds used to reward people for marketing the project on social media
 /// and to fund whatever other marketing activities. The `CosmicSignatureGame` contract

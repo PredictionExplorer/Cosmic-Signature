@@ -343,6 +343,7 @@ describe("Bidding", function () {
 			// Comment-202507062 applies.
 			const maliciousTokenModeCode_ = BigInt(randomNumber_ % (10 * 2) + 1);
 
+			// console.log(`202507155 ${maliciousTokenModeCode_}`);
 			await expect(maliciousToken_.connect(contracts_.signers[0]).setModeCode(maliciousTokenModeCode_)).not.reverted;
 			let transactionResponsePromise_;
 			randomNumber_ = generateRandomUInt32();
