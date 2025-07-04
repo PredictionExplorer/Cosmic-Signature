@@ -27,6 +27,8 @@
 //
 // [/Comment-202505289]
 
+"use strict";
+
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
