@@ -1,0 +1,115 @@
+## 🔐 Core Safety Invariants
+
+### 1. **NFT One-Time Stake**
+
+* **Invariant**: An NFT (`nftId`) can only be staked once across the lifetime of the contract.
+* **Rationale**: Enforced in `_stake` via `usedNfts[nftId_] == 0`.
+* **CVL**: Assert `usedNfts[nftId] == 0` before stake, and `usedNfts[nftId] == 1` forever after.
+
+### 2. **Valid Unstake Access**
+
+* **Invariant**: Only the NFT owner who initiated the stake can unstake it.
+* **Rationale**: `_unstake` reverts if `msg.sender != stakeActions[id].nftOwnerAddress`.
+* **CVL**: Assert that `stakeActions[id].nftOwnerAddress == msg.sender` during `unstake`.
+
+### 3. **NFT Transfers**
+
+* **Invariant**: The contract gains custody of the NFT during staking and returns it on unstaking.
+* **Rationale**: Uses `nft.transferFrom(...)` both ways.
+* **CVL**: Assert that:
+
+  * After `stake`, contract owns the NFT.
+  * After `unstake`, `msg.sender` owns the NFT.
+
+---
+
+## 💰 Financial Safety & Correctness
+
+### 4. **Reward Accounting Accuracy**
+
+* **Invariant**: `rewardAmountPerStakedNft` increments proportionally to deposits.
+* **Rationale**: `deposit()` divides msg.value by `numStakedNfts`.
+* **CVL**: Assert that `rewardAmountPerStakedNft += msg.value / numStakedNfts` holds on deposit.
+
+### 5. **Reward Fairness**
+
+* **Invariant**: Users only claim the difference between current and initial reward rate.
+* **Rationale**: `_unstake` calculates `reward = rewardAmountPerStakedNft - s.initialRewardAmountPerStakedNft`.
+* **CVL**: Assert reward correctness, and that overpayment is impossible.
+
+### 6. **No Reward Drain on Empty Pool**
+
+* **Invariant**: `deposit` should fail or do nothing when `numStakedNfts == 0`.
+* **Rationale**: Prevents division by zero.
+* **CVL**: Assert that either revert occurs or reward isn't updated.
+
+---
+
+## 🧮 State Consistency
+
+### 7. **Action ID Uniqueness and Order**
+
+* **Invariant**: `actionCounter` is strictly incrementing and unique for each stake/unstake.
+* **CVL**: Assert `actionCounter` increases monotonically.
+
+### 8. **Stake/Unstake Balance**
+
+* **Invariant**: `numStakedNfts` should equal number of active (non-zero) stake actions.
+* **CVL**: Assert that at any time, the count of `stakeActions[i].nftOwnerAddress != 0` equals `numStakedNfts`.
+
+### 9. **Stake Action Slot Sanity**
+
+* **Invariant**: If `stakeActions[i].nftOwnerAddress == 0`, then all fields in `stakeActions[i]` must be reset.
+* **CVL**: Assert consistency after `unstake()` — no stale data left.
+
+---
+
+## 🛡️ Access Control Invariants
+
+### 10. **Only Game Can Deposit**
+
+* **Invariant**: `deposit` is only callable by `game` address.
+* **CVL**: Assert `msg.sender == game` in `deposit()`.
+
+### 11. **Only Owner Can Maintain**
+
+* **Invariant**: `tryPerformMaintenance()` is `onlyOwner`.
+* **CVL**: Assert `msg.sender == owner()` for any call to this function.
+
+---
+
+## ❤️ Charity & Maintenance Logic
+
+### 12. **Charity Funds Only if Pool is Empty**
+
+* **Invariant**: `tryPerformMaintenance` only callable when `numStakedNfts == 0`.
+* **CVL**: Assert that if `numStakedNfts != 0`, the call must revert.
+
+### 13. **Charity Transfer Emits Event**
+
+* **Invariant**: ETH sent to charity address must emit either success or failure event.
+* **CVL**: Ensure event is emitted for both branches of transfer logic.
+
+---
+
+## 🧪 Defensive Programming
+
+### 14. **No Reentrancy**
+
+* **Invariant**: No external calls (like NFT or ETH transfers) allow reentrancy.
+* **Rationale**: `nonReentrant` modifier ensures this.
+* **CVL**: Check transitions cannot re-enter `stake`, `unstake`, `deposit`.
+
+### 15. **No Funds Lost in Transfer**
+
+* **Invariant**: ETH sent must either succeed or revert via `FundTransferFailed`.
+* **CVL**: Assert `(bool success, ) = call{value: amount}("")` must succeed or emit error.
+
+---
+
+## 🚀 Suggested Extensions for Deeper Safety
+
+* **Invariant**: `nftId` is valid (could be linked to total supply or ownership validation).
+* **Invariant**: `nft.transferFrom` does not fail silently (may add try/catch or custom ERC721 wrapper).
+* **Invariant**: Ensure stake/unstake cannot be spammed with same ID due to timing issues (e.g., front-running).
+
