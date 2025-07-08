@@ -21,7 +21,9 @@ rule actionCounterValidation()
 	require actionCounterDiff == 0;
 
     method f; env e; calldataarg args;
-	require f.isPayable == false;
+    if (f.selector != sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
+		require f.isPayable == false;
+	}
     require currentContract != e.msg.sender;
 	require e.msg.sender != 0;
     if (f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
