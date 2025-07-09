@@ -38,6 +38,18 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	NftInfo[1 << 64] private _nftsInfo;
 
 	// #endregion
+	// #region `constructor`
+
+	/// @notice Constructor.
+	/// @param game_ The `CosmicSignatureGame` contract address.
+	constructor(address game_)
+		_providedAddressIsNonZero(game_)
+		Ownable(_msgSender())
+		ERC721("CosmicSignatureNft", "CSN") {
+		game = game_;
+	}
+
+	// #endregion
 	// #region `_onlyGame`
 
 	/// @dev Comment-202411253 applies.
@@ -56,18 +68,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 			// revert CosmicSignatureErrors.NoMintPrivileges("Only the CosmicSignatureGame contract is permitted to mint an NFT.", _msgSender());
 			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
 		}
-	}
-
-	// #endregion
-	// #region `constructor`
-
-	/// @notice Constructor.
-	/// @param game_ The `CosmicSignatureGame` contract address.
-	constructor(address game_)
-		_providedAddressIsNonZero(game_)
-		Ownable(_msgSender())
-		ERC721("CosmicSignatureNft", "CSN") {
-		game = game_;
 	}
 
 	// #endregion

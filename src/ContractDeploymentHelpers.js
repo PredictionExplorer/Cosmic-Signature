@@ -193,8 +193,14 @@ const deployContractsAdvanced = async function (
  * @returns 
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
+	// [Comment-202507202]
+	// Similar magic numbers are hardcoded in multiple places.
+	// [/Comment-202507202]
 	if (roundActivationTime > -1_000_000_000n) {
+
+		// Comment-202507202 applies.
 		if (roundActivationTime < 1_000_000_000n) {
+
 			// Comment-202409255 applies.
 			const hre = HardhatContext.getHardhatContext().environment;
 

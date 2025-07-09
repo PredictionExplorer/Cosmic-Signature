@@ -346,7 +346,7 @@ describe("SystemManagement", function () {
 	});
 
 	it("Unauthorized access to setters", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameProxyForSigner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]);
 		const randomNumber1_ = 9n + generateRandomUInt256() % 3n;

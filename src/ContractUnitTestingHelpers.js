@@ -42,15 +42,24 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
 async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
 
-	// Since we call this here, a typical test doesn't need to call this
-	// immediately after `loadFixtureDeployContractsForUnitTesting` returns,
-	// and a quick test doesn't need to call this at all.
-	await makeNextBlockTimeDeterministic();
+	// Comment-202507202 applies.
+	if (roundActivationTime > -1_000_000_000n && roundActivationTime < 1_000_000_000n) {
+
+		// [Comment-202507204]
+		// Making `setRoundActivationTimeIfNeeded` behavior deterministic.
+		// [/Comment-202507204]
+		// Since we call this here, a typical test doesn't need to call this
+		// immediately after `loadFixtureDeployContractsForUnitTesting` returns,
+		// and a quick test doesn't need to call this at all.
+		await makeNextBlockTimeDeterministic();
+	}
 
 	// Given issue 2 in Comment-202501193, mining a dummy block.
 	await hre.ethers.provider.send("evm_mine");
 
+	// Comment-202507204 relates.
 	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
+
 	return contracts;
 }
 

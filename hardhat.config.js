@@ -402,8 +402,10 @@ const hardhatUserConfig = {
 	// todo-1 If I add add Arbitrum Sepolia do the above.
 	networks: {
 		hardhat: {
-			// // Comment-202501193 relates and/or applies.
-			// initialDate: "2002-01-01",
+			// Comment-202501193 relates and/or applies.
+			initialDate:
+				// "2002-01-01",
+				"2025-01-01",
 
 			allowUnlimitedContractSize: true,
 

@@ -55,25 +55,6 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	uint256 public rewardAmountPerStakedNft = 0;
 
 	// #endregion
-	// #region `_onlyGame`
-
-	/// @dev Comment-202411253 applies.
-	modifier _onlyGame() {
-		_checkOnlyGame();
-		_;
-	}
-
-	// #endregion
-	// #region `_checkOnlyGame`
-
-	/// @dev Comment-202411253 applies.
-	function _checkOnlyGame() private view {
-		if (_msgSender() != game) {
-			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
-		}
-	}
-
-	// #endregion
 	// #region `constructor`
 
 	/// @notice Constructor.
@@ -92,6 +73,25 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 		Ownable(_msgSender()) {
 		nft = nft_;
 		game = game_;
+	}
+
+	// #endregion
+	// #region `_onlyGame`
+
+	/// @dev Comment-202411253 applies.
+	modifier _onlyGame() {
+		_checkOnlyGame();
+		_;
+	}
+
+	// #endregion
+	// #region `_checkOnlyGame`
+
+	/// @dev Comment-202411253 applies.
+	function _checkOnlyGame() private view {
+		if (_msgSender() != game) {
+			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
+		}
 	}
 
 	// #endregion
@@ -273,7 +273,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 
 		// [Comment-202410161]
 		// The division can panic due to division by zero.
-		// This can potentially be zero.
+		// This quotient can potentially be zero.
 		// Comment-202503043 relates and/or applies.
 		// todo-1 Test that this doesn't burn all remaining gas. Remember that the caller sends only 63/64 of it to us.
 		// [/Comment-202410161]

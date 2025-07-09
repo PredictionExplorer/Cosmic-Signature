@@ -448,6 +448,7 @@ describe("CosmicSignatureGame-1", function () {
 							// console.info("202505162");
 						}
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
+						// console.info("202507209", hre.ethers.formatEther(signerEthBalanceAmountBeforeTransaction_), hre.ethers.formatEther(ethPriceToPayMaxLimit_));
 						let transactionResponsePromise_;
 						try {
 							transactionResponsePromise_ =
