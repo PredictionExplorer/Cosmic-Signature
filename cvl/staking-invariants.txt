@@ -1,3 +1,13 @@
+
+Summary:
+	- actionCounter always increments
+	- stake/unstake operations are only allowed for stake(),unstake(),stakeMany(),unstakeMany() methods
+	- stake/usntake operations are only allowed to modify all the fields of stakeAction[] array element (struct StakeAction), they can't modify one or two fields, all three fields must be modified
+	- 
+	- StakeAction struct in stakeActions[] array stays zero for unstaked tokens and non-zero for staked tokens
+
+
+
 ## 🔐 Core Safety Invariants
 
 ### 1. **NFT One-Time Stake**
