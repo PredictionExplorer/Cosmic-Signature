@@ -5,6 +5,7 @@ Summary:
 	- stake/usntake operations are only allowed to modify all the fields of stakeAction[] array element (struct StakeAction), they can't modify one or two fields, all three fields must be modified
 	- 
 	- StakeAction struct in stakeActions[] array stays zero for unstaked tokens and non-zero for staked tokens
+	- numSakedNfts alwas equal to the number of active stake actions (stakeAction[] with non-unstaked token)
 
 
 
