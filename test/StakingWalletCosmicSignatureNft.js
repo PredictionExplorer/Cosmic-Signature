@@ -655,6 +655,13 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		}
 	});
 
+	it("An unauthorized caller deposits ETH", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+
+		await expect(contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[1]).deposit(0, {value: 1n,}))
+			.revertedWithCustomError(contracts_.stakingWalletCosmicSignatureNft, "UnauthorizedCaller");
+	});
+
 	it("Reentries", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
@@ -705,12 +712,5 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				break;
 			}
 		}
-	});
-
-	it("An unauthorized caller deposits ETH", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
-
-		await expect(contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[1]).deposit(0, {value: 1n,}))
-			.revertedWithCustomError(contracts_.stakingWalletCosmicSignatureNft, "UnauthorizedCaller");
 	});
 });
