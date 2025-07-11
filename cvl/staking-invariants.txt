@@ -7,6 +7,9 @@ Summary:
 	- StakeAction struct in stakeActions[] array stays zero for unstaked tokens and non-zero for staked tokens
 	- numSakedNfts alwas equal to the number of active stake actions (stakeAction[] with non-unstaked token)
 
+	- Out of all the methods available in StakingWallet CST, only stake()/stakeMany() methods can change values in  usedNfts[] array (meaning, can mark NFTs with 'used' status)
+	- Out of all the methods available in StakingWallet CST , only stake() and stakeMany() methods can set usedNfts[tokenId] to 1 for a particular tokenId (meaning, the NFT was used)
+
 
 
 ## 🔐 Core Safety Invariants
