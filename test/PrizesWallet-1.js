@@ -59,7 +59,7 @@ describe("PrizesWallet-1", function () {
 		// [Comment-202506082]
 		// The bigger is this value the higher is the chance that that Solidity coverage will be 100%.
 		// [/Comment-202506082]
-		const numIterationsToRun_ = ( ! SKIP_LONG_TESTS ) ? 3000 : 200;
+		const numIterations_ = ( ! SKIP_LONG_TESTS ) ? 3000 : 200;
 
 		// #endregion
 		// #region
@@ -185,7 +185,7 @@ describe("PrizesWallet-1", function () {
 		// #endregion
 		// #region
 
-		for ( let iterationCounter_ = 1; iterationCounter_ <= numIterationsToRun_; ++ iterationCounter_ ) {
+		for ( let iterationCounter_ = 1; iterationCounter_ <= numIterations_; ++ iterationCounter_ ) {
 			// #region
 
 			// This time increase gives strangers a chance to claim someone's unclaimed prizes.

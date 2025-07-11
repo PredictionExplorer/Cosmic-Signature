@@ -21,10 +21,10 @@
 
 			# todo-0 Uncomment the command line with no arguments.
 			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft '
-			'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft The stakeMany and unstakeMany methods$'
+			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft Cosmic Signature NFT staking ETH reward amounts and the tryPerformMaintenance method$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
-			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
+			'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
 			# 'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
