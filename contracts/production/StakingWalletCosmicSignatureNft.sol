@@ -352,6 +352,9 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	function getStakeActionInitialReward(uint256 index) external view returns (uint256) {
 		return stakeActions[index].initialRewardAmountPerStakedNft;
 	}
+	function getNftUsedStatus(uint256 index) external view returns (uint256) {
+		return usedNfts[index];
+	}
 	function wasTokenUsed(uint256 tokenId) external view returns (bool) {
 		return usedNfts[tokenId] == 1;
 	}
