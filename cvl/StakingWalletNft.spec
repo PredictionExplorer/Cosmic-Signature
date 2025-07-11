@@ -3,6 +3,7 @@ methods {
 	function numStakedNfts() external returns (uint256) envfree;
 	function actionCounter() external returns (uint256) envfree;
 	function numStakedNfts() external returns (uint256) envfree;
+	function rewardAmountPerStakedNft() external returns (uint256) envfree;
 	function getStakeActionAddr(uint256 index) external returns (address) envfree;
 	function getStakeActionTokenId(uint256 index) external returns (uint256) envfree;
 	function getStakeActionInitialReward(uint256 index) external returns (uint256) envfree;
@@ -259,23 +260,39 @@ rule rewardPerTokenIsSetCorrectly()
     	require currentContract.getStakeActionAddr(acNext) == 0;
 		require currentContract.getNftUsedStatus(acNext) == 0;
     }
-    if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
-		// before unstake() all state variables must have some valid value
-    	require currentContract.getStakeActionTokenId(acNext) > 0;
-    	require currentContract.getStakeActionInitialReward(acNext) > 0;
-    	require currentContract.getStakeActionAddr(acNext) != 0;
-		require currentContract.numStakedNfts() > 0 ;
-	}
-	mathint balanceBefore = nativeBalances[currentContract];
 
-    (e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	mathint balanceBefore;
+	require balanceBefore == nativeBalances[currentContract];
+	mathint initialReward;
+	uint256 tokenId;
+	uint256 actionId;
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+		require currentContract.numStakedNfts() > 0 ;
+    	require currentContract.getStakeActionTokenId(actionId) > 0;
+    	require currentContract.getStakeActionInitialReward(actionId) > 0;
+    	require currentContract.getStakeActionAddr(actionId) != 0;
+		require (actionId > 0) && (actionId < currentContract.actionCounter());
+		require initialReward == currentContract.getStakeActionInitialReward(actionId);
+		currentContract.unstake(e,actionId);
+	} else {
+		require f.selector != sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector;
+	    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	}
 
 	mathint balanceAfter = nativeBalances[currentContract];
+	mathint currentReward = currentContract.rewardAmountPerStakedNft();
+
     if (
 		(f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector)
 	) {
 		assert (balanceBefore + e.msg.value ) == balanceAfter,"balance of the contract did not increase as it should";
 	} else {
-		assert balanceBefore == balanceAfter, "balance of the contract changed while it should not";
+		if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+			assert (currentReward > initialReward) ,"Current reward per NFT staked must be always greater than initial reward";
+			mathint amountToPay = currentReward - initialReward;
+			assert (nativeBalances[currentContract] + amountToPay) == balanceBefore,"Balance of the contract after unstake() is incorrect";
+		} else {
+			assert balanceBefore == balanceAfter, "balance of the contract changed while it should not";
+		}
 	}
 }
