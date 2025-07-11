@@ -6,34 +6,30 @@ import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } fro
 import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
 contract BrokenStakingWalletCosmicSignatureNft is BrokenEthReceiver {
-	StakingWalletCosmicSignatureNft private /*immutable*/ _stakingWalletCosmicSignatureNft;
+	StakingWalletCosmicSignatureNft public /*immutable*/ stakingWalletCosmicSignatureNft;
 
 	constructor() {
 		// Doing nothing.
 	}
 
 	function setStakingWalletCosmicSignatureNft(IStakingWalletCosmicSignatureNft newValue_) external {
-		_stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
+		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}
 
 	function doSetApprovalForAll(IERC721 nft_) external {
-		nft_.setApprovalForAll(address(_stakingWalletCosmicSignatureNft), true);
-	}
-
-	function doStake(uint256 nftId) external {
-		_stakingWalletCosmicSignatureNft.stake(nftId);
-	}
-
-	function doUnstake(uint256 stakeActionId_) external {
-		_stakingWalletCosmicSignatureNft.unstake(stakeActionId_);
+		nft_.setApprovalForAll(address(stakingWalletCosmicSignatureNft), true);
 	}
 
 	function deposit(uint256 roundNum_) external payable {
-		doDeposit(roundNum_);
+		_doDeposit(roundNum_);
 	}
 
-	function doDeposit(uint256 roundNum_) public payable {
+	function doDeposit(uint256 roundNum_) external payable {
+		_doDeposit(roundNum_);
+	}
+
+	function _doDeposit(uint256 roundNum_) private {
 		_checkIfEthDepositsAreAccepted();
-		_stakingWalletCosmicSignatureNft.deposit(roundNum_);
+		stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum_);
 	}
 }

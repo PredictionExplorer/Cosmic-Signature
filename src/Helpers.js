@@ -22,8 +22,9 @@ const { HardhatContext } = require("hardhat/internal/context");
  * @param {array} array_
  */
 function shuffleArray(array_) {
-	for (let index1_ = array_.length; ( -- index1_ ) > 0; ) {
-		const index2_ = generateRandomUInt32() % (index1_ + 1);
+	for (let index1_ = array_.length; index1_ >= 2; ) {
+		const index2_ = generateRandomUInt32() % index1_;
+		-- index1_;
 		[array_[index1_], array_[index2_]] = [array_[index2_], array_[index1_]];
 	}	
 }

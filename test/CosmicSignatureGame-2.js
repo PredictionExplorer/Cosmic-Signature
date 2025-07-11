@@ -54,7 +54,8 @@ describe("CosmicSignatureGame-2", function () {
 		}
 	});
 
-	// Issue. I have eliminated the `fallback` method.
+	// Issue. I have eliminated the `fallback` method and refactored this test to confirm the behavior that is expected
+	// when there is no `fallback` method.
 	it("The fallback method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 

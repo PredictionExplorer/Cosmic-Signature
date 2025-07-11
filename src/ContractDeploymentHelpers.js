@@ -190,22 +190,23 @@ const deployContractsAdvanced = async function (
  *    less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
  *    greater than or equal 1 billion: use the given value as is.
  *    any other value: use the latest mined block timestamp plus the given value.
- * @returns 
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
+	// [Comment-202507202]
+	// Similar magic numbers are hardcoded in multiple places.
+	// [/Comment-202507202]
 	if (roundActivationTime > -1_000_000_000n) {
+
+		// Comment-202507202 applies.
 		if (roundActivationTime < 1_000_000_000n) {
+
 			// Comment-202409255 applies.
 			const hre = HardhatContext.getHardhatContext().environment;
 
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
 			roundActivationTime += BigInt(latestBlock.timestamp);
 		}
-		//try {
-			await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
-		// } catch (e) {
-		// 	console.log(e);
-		// }
+		await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
 	}
 }
 

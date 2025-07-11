@@ -62,15 +62,13 @@ describe("Bidding", function () {
 	});
 
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
-		let latestBlock_ = await hre.ethers.provider.getBlock("latest");
-		const newRoundActivationTime_ = BigInt(latestBlock_.timestamp + 2);
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setRoundActivationTime(newRoundActivationTime_)).not.reverted;
+		const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
 
 		for ( let counter_ = -1; counter_ <= 1; ++ counter_ ) {
-			latestBlock_ = await hre.ethers.provider.getBlock("latest");
-			expect(latestBlock_.timestamp).equal(Number(newRoundActivationTime_) + counter_);
+			const latestBlock_ = await hre.ethers.provider.getBlock("latest");
+			expect(latestBlock_.timestamp).equal(Number(roundActivationTime_) + counter_);
 			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
 			expect(durationUntilRoundActivation_).equal( - counter_ );
 			const durationElapsedSinceRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationElapsedSinceRoundActivation();

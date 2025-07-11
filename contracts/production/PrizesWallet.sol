@@ -126,7 +126,8 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// Should I make at least one of these (maybe the 1st one) a `require`,
 		// so that a potentially malicious upgraded Game contract could not rewrite history.
 		// The same applies to the `assert` near Comment-202411252.
-		// But then all `_onlyGame` methods in all contract will have to be reviewed and possibly uglified.
+		// But then all `_onlyGame` methods in all our contracts will have to be reviewed and possibly uglified.
+		// To be discussed with the auditor.
 		// [/ToDo-202507148-1]
 		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
 		// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));

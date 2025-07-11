@@ -7,6 +7,11 @@ import { ICosmicSignatureNft } from "../production/interfaces/ICosmicSignatureNf
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 /// @notice This contract is used in tests to create special test setups.
+/// @dev
+/// [ToDo-202507205-1]
+/// Can I eliminate this?
+/// If so, remember to review numbered comments and todos, especially Comment-202503124.
+/// [/ToDo-202507205-1]
 contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// @dev Issue. Random number related logic in this test contract is kinda lousy, but keeping it simple.
 	RandomNumberHelpers.RandomNumberSeedWrapper private _entropy;

@@ -488,7 +488,7 @@ describe("MainPrize", function () {
 				const paidEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 				const overpaidEthPrice_ = ethPriceToPayMaxLimit_ - paidEthPrice_;
 				expect(overpaidEthPrice_).greaterThan(0n);
-				const transactionResponsePromise_ = maliciousBidder_.connect(contracts_.signers[4]).doBidWithEth({value: ethPriceToPayMaxLimit_,});
+				const transactionResponsePromise_ = maliciousBidder_.connect(contracts_.signers[4]).doBidWithEth(-1, "", {value: ethPriceToPayMaxLimit_,});
 				if (maliciousBidderModeCode_ > 0n) {
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")

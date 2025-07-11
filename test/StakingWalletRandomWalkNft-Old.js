@@ -73,6 +73,7 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	// 		await loadFixture(deployContractsForUnitTesting);
 	// 	const [signer0,] = signers;
 	//
+	// 	// // todo-1 Can I call `setRoundActivationTimeIfNeeded` instead?
 	// 	// await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(123_456_789_012n);
 	//
 	// 	// todo-9 This contract no longer exists.
@@ -83,6 +84,7 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 	//
 	// 	// todo-1 Can we call `await transactionReceipt_.getBlock()` instead?
 	// 	let latestBlock_ = await hre.ethers.provider.getBlock("latest");
+	// 	// todo-1 Can I call `setRoundActivationTimeIfNeeded` instead?
 	// 	await cosmicSignatureGameProxy.connect(ownerAcct).setRoundActivationTime(latestBlock_.timestamp + 1);
 	//
 	// 	let sampleTokenId = 33;
@@ -158,7 +160,7 @@ describe("StakingWalletRandomWalkNft-Old", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await cosmicSignatureGameProxy.connect(signer0).claimMainPrize();
 
-		// forward timestamp se we can unstake
+		// forward timestamp so we can unstake
 		// todo-1 The forwarding no longer needed, right?
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) + 60 * 24 * 60 * 60]);
 		// await hre.ethers.provider.send("evm_mine");

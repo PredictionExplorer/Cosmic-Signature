@@ -24,11 +24,6 @@ contract MaliciousCharity {
 	function _reenterIfNeeded() internal {
 		if (reentryDepth <= 0) {
 			++ reentryDepth;
-
-			// [Comment-202507129]
-			// todo-0 This comment is not referenced anywhere yet.
-			// Similar magic numbers are hardcoded in multiple places.
-			// [/Comment-202507131]
 			if (modeCode == 1) {
 				CosmicSignatureHelpers.transferEthTo(payable(address(charityWallet)), msg.value);
 			} else if (modeCode == 2) {
@@ -36,7 +31,6 @@ contract MaliciousCharity {
 			} else if (modeCode == 3) {
 				charityWallet.send(0);
 			}
-
 			-- reentryDepth;
 		}
 	}

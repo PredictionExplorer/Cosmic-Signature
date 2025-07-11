@@ -8,6 +8,7 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
 /// @notice This contract will return all the assets before selfdestruct transaction,
 /// required for testing on the MainNet (Arbitrum) (prior to launch).
+/// @dev ToDo-202507205-1 applies.
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {
