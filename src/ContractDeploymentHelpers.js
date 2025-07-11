@@ -190,7 +190,6 @@ const deployContractsAdvanced = async function (
  *    less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
  *    greater than or equal 1 billion: use the given value as is.
  *    any other value: use the latest mined block timestamp plus the given value.
- * @returns 
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
 	// [Comment-202507202]
@@ -207,11 +206,7 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
 			roundActivationTime += BigInt(latestBlock.timestamp);
 		}
-		//try {
-			await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
-		// } catch (e) {
-		// 	console.log(e);
-		// }
+		await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
 	}
 }
 

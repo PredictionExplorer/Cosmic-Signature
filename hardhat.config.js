@@ -284,6 +284,7 @@ const hardhatUserConfig = {
 			// By default, this is "paris".
 			// See https://hardhat.org/hardhat-runner/docs/config#default-evm-version
 			// But we want this to be the latest with which Arbitrum is compatible.
+			// todo-1 Revisit this.
 			// [/Comment-202408026]
 			evmVersion: "cancun",
 
