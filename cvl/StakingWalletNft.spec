@@ -8,6 +8,7 @@ methods {
 	function getStakeActionTokenId(uint256 index) external returns (uint256) envfree;
 	function getStakeActionInitialReward(uint256 index) external returns (uint256) envfree;
 	function getNftUsedStatus(uint256 index) external returns (uint256) envfree;
+	function _.transferFrom(address from, address to, uint256 tokenId) external => cvlNftTransferFrom(calledContract,from,to,tokenId) expect void;
 }
 persistent ghost mathint actionCounterDiff;
 persistent ghost mathint gStakeActionNftIdSet;
@@ -17,6 +18,10 @@ persistent ghost mathint gUsedNftsChanged;
 persistent ghost bytes4 currentMethodSignature;
 persistent ghost mathint gNumActiveStakeActions;
 persistent ghost mathint gNumStakedNfts;
+persistent ghost mathint gBalDiffStakingWallet;
+function cvlNftTransferFrom(address token,address from, address to, uint256 tokenId) {
+	// doesn't do anything
+}
 
 hook Sstore currentContract.actionCounter uint256 newVal (uint256 oldVal) {
 	actionCounterDiff = actionCounterDiff  + (newVal - oldVal);
@@ -76,6 +81,10 @@ hook Sstore stakeActions[INDEX uint256 idx].initialRewardAmountPerStakedNft uint
 }
 hook Sstore usedNfts[INDEX uint256 idx] uint256 newValue (uint256 oldValue) {
 	gUsedNftsChanged = 1;
+}
+hook CALL(uint g, address addr, uint value, uint argsOffs, uint argLength, uint retOffset, uint retLength) uint rc {
+
+
 }
 rule actionCounterValidation() 
 {	
