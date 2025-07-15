@@ -12,7 +12,7 @@ describe("MainPrize", function () {
 	it("Test 1", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
-		// const timeStamp1_ = Date.now();
+		// const timeStamp1_ = performance.now();
 
 		const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, generateRandomUInt256())) - Number(1n << (53n - 2n)), 0));
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).donateEth({value: ethDonationAmount_,})).not.reverted;
@@ -131,8 +131,8 @@ describe("MainPrize", function () {
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).not.reverted;
 
-		// const timeStamp2_ = Date.now();
-		// console.info("202506249", (timeStamp2_ - timeStamp1_).toString());
+		// const timeStamp2_ = performance.now();
+		// console.info(`202506249 ${timeStamp2_ - timeStamp1_}`);
 	});
 
 	// Issue. This test doesn't test CST prizes.
@@ -255,7 +255,7 @@ describe("MainPrize", function () {
 			const parsedLog_ = contracts_.prizesWallet.interface.parseLog(prizesWalletEthReceivedLogs_[prizesWalletEthDepositIndex_]);
 			if (uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] == undefined) {
 				uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] = true;
-				const prizeWinnerSigner_ = await hre.ethers.getSigner(parsedLog_.args.prizeWinnerAddress);
+				const prizeWinnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[parsedLog_.args.prizeWinnerAddress]];
 				await expect(contracts_.prizesWallet.connect(prizeWinnerSigner_).withdrawEth()).not.reverted;
 			}
 		}
@@ -335,7 +335,7 @@ describe("MainPrize", function () {
 			if (uniqueRaffleWinnerBidderEthPrizeWinners_[parsedLog_.args.winnerAddress] == undefined) {
 				uniqueRaffleWinnerBidderEthPrizeWinners_[parsedLog_.args.winnerAddress] = true;
 				if (parsedLog_.args.winnerAddress != bidderContractAddr_) {
-					const prizeWinnerSigner_ = await hre.ethers.getSigner(parsedLog_.args.winnerAddress);
+					const prizeWinnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[parsedLog_.args.winnerAddress]];
 					await expect(contracts_.prizesWallet.connect(prizeWinnerSigner_).withdrawEth()).not.reverted;
 				}
 			}
