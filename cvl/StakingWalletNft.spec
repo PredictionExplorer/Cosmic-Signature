@@ -86,6 +86,25 @@ hook CALL(uint g, address addr, uint value, uint argsOffs, uint argLength, uint 
 
 
 }
+function genericFunctionMatcher(method f,env e,address charity,uint256 round,uint256 nftId,uint256 actionId,uint256[] manyActionIds) {
+
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
+		deposit(e,round);
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
+		stake(e,nftId);
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+		unstake(e,actionId);
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+		stakeMany(e,manyActionIds);
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
+		unstakeMany(e,manyActionIds);
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.tryPerformMaintenance(address).selector) {
+		tryPerformMaintenance(e,charity);
+	} else {
+		calldataarg args;
+		f(e,args);
+	}
+}
 rule actionCounterValidation() 
 {	
 	// verification policy:
@@ -268,13 +287,37 @@ rule rewardPerTokenIsSetCorrectly()
     	require currentContract.getStakeActionInitialReward(acNext) == 0;
     	require currentContract.getStakeActionAddr(acNext) == 0;
 		require currentContract.getNftUsedStatus(acNext) == 0;
+    } else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+		// before stake() all state variables must have 0-values
+    	require currentContract.getStakeActionTokenId(acNext) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext) == 0;
+    	require currentContract.getStakeActionAddr(acNext) == 0;
+		require currentContract.getNftUsedStatus(acNext) == 0;
+		uint256 acNext2;
+		require acNext2 == (ac + 2);
+    	require currentContract.getStakeActionTokenId(acNext2) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext2) == 0;
+    	require currentContract.getStakeActionAddr(acNext2) == 0;
+		require currentContract.getNftUsedStatus(acNext2) == 0;
+		uint256 acNext3;
+		require acNext3 == (ac + 3);
+    	require currentContract.getStakeActionTokenId(acNext3) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext3) == 0;
+    	require currentContract.getStakeActionAddr(acNext3) == 0;
+		require currentContract.getNftUsedStatus(acNext3) == 0;
     }
 
 	mathint balanceBefore;
 	require balanceBefore == nativeBalances[currentContract];
+	mathint winnerBalanceBefore = nativeBalances[e.msg.sender];
 	mathint initialReward;
 	uint256 tokenId;
 	uint256 actionId;
+	uint256[] manyActionIds;
+	address charity;
+	require charity != currentContract;
+	require charity != 0;
+	uint256 round;
     if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
 		require currentContract.numStakedNfts() > 0 ;
     	require currentContract.getStakeActionTokenId(actionId) > 0;
@@ -282,26 +325,30 @@ rule rewardPerTokenIsSetCorrectly()
     	require currentContract.getStakeActionAddr(actionId) != 0;
 		require (actionId > 0) && (actionId < currentContract.actionCounter());
 		require initialReward == currentContract.getStakeActionInitialReward(actionId);
-		currentContract.unstake(e,actionId);
-	} else {
-		require f.selector != sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector;
-	    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
+		require manyActionIds.length == 3;
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+		require manyActionIds.length == 3;
 	}
+	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
 	mathint balanceAfter = nativeBalances[currentContract];
 	mathint currentReward = currentContract.rewardAmountPerStakedNft();
+	mathint winnerBalanceAfter = nativeBalances[e.msg.sender];
+	mathint amountToPay = currentReward - initialReward;
 
     if (
 		(f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector)
 	) {
 		assert (balanceBefore + e.msg.value ) == balanceAfter,"balance of the contract did not increase as it should";
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+		assert (currentReward >= initialReward) ,"Current reward per NFT staked must be always greater (or equal) than initial reward";
+		assert (winnerBalanceBefore + amountToPay) == winnerBalanceAfter, "Balance of the winner didn't increase by correct amount after unstake()";
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
+		assert (winnerBalanceBefore + amountToPay) == winnerBalanceAfter, "Balance of the winner didn't increase by correct amount after unstakeMany()";
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.tryPerformMaintenance(address).selector) {
+		assert balanceAfter  == 0, "balance after tryPerformMaintenance() is not 0";
 	} else {
-		if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
-			assert (currentReward > initialReward) ,"Current reward per NFT staked must be always greater than initial reward";
-			mathint amountToPay = currentReward - initialReward;
-			assert (nativeBalances[currentContract] + amountToPay) == balanceBefore,"Balance of the contract after unstake() is incorrect";
-		} else {
-			assert balanceBefore == balanceAfter, "balance of the contract changed while it should not";
-		}
+		assert balanceBefore == balanceAfter, "balance of the contract changed while it should not";
 	}
 }
