@@ -93,6 +93,11 @@ async function deployContractsForUnitTestingAdvanced(
 	const ownerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const charityAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const signers = await hre.ethers.getSigners();
+	const signerAddressToIndexMapping =
+		signers.reduce(
+			(accumulator, item, itemIndex) => (accumulator[item.address] = itemIndex, accumulator),
+			{}
+		);
 	const signer18 = signers[18];
 	const signer19 = signers[19];
 	const ethAmount = 10n ** 18n;
@@ -108,6 +113,7 @@ async function deployContractsForUnitTestingAdvanced(
 			-1_000_000_000n
 		);
 	contracts.signers = signers;
+	contracts.signerAddressToIndexMapping = signerAddressToIndexMapping;
 	contracts.charityAcct = charityAcct;
 	contracts.ownerAcct = ownerAcct;
 	contracts.deployerAcct = deployerAcct;

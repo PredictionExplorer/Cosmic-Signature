@@ -16,12 +16,12 @@ describe("CosmicSignatureToken-Old", function () {
 		expect(await cosmicSignatureToken.game()).equal(cosmicSignatureGameProxyAddr);
 	});
 	
-	it("ERC20 nonces() function exists", async function () {
+	it("The ERC20 nonces method exists", async function () {
 		// todo-1 Call `loadFixtureDeployContractsForUnitTesting` instead of `loadFixture(deployContractsForUnitTesting)`.
 		const {signers, cosmicSignatureToken,} = await loadFixture(deployContractsForUnitTesting);
 		const [signer0,] = signers;
 
-		await cosmicSignatureToken.nonces(signer0.address);
+		expect(await cosmicSignatureToken.nonces(signer0.address)).equal(0n);
 	});
 
 	it("Unauthorized access to restricted methods", async function () {

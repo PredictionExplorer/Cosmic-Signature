@@ -86,21 +86,9 @@ describe("CosmicSignatureGame-1", function () {
 			// // const blockchainPropertyGetterAddr_ = await blockchainPropertyGetter_.getAddress();
 
 			// #endregion
-			// #region `findSignerIndex_`
-
-			const findSignerIndex_ = (signerAddress_) => {
-				for (let signerIndex_ = contracts_.signers.length; ( -- signerIndex_ ) >= 0; ) {
-					if (contracts_.signers[signerIndex_].address == signerAddress_) {
-						return signerIndex_;
-					}
-				}
-				expect(false).equal(true);
-			};
-
-			// #endregion
 			// #region
 
-			// const timeStamp1_ = Date.now();
+			// const timeStamp1_ = performance.now();
 			// todo-1 Test separately that it fails correctly if this has not been done.
 			// todo-1 Mention that test here.
 			for (const signer5_ of contracts_.signers) {
@@ -109,7 +97,7 @@ describe("CosmicSignatureGame-1", function () {
 				const cosmicSignatureNftForSigner5_ = contracts_.cosmicSignatureNft.connect(signer5_);
 				await expect(cosmicSignatureNftForSigner5_.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddr, true)).not.reverted;
 			}
-			// const timeStamp2_ = Date.now();
+			// const timeStamp2_ = performance.now();
 			// console.info((timeStamp2_ - timeStamp1_).toString());
 
 			// #endregion
@@ -161,7 +149,7 @@ describe("CosmicSignatureGame-1", function () {
 				if (fairRandomNumber1_ == 6 && cosmicSignatureGameProxySimulator_.getTotalNumBids() > 0n) {
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					if ((randomNumber_ & 0xFn) != 0n) {
-						signerIndex_ = findSignerIndex_(cosmicSignatureGameProxySimulator_.lastBidderAddress);
+						signerIndex_ = contracts_.signerAddressToIndexMapping[cosmicSignatureGameProxySimulator_.lastBidderAddress];
 					}
 				}
 				if (signerIndex_ < 0) {
@@ -294,10 +282,11 @@ describe("CosmicSignatureGame-1", function () {
 					}
 
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-					const timeIncrement_ = randomNumber_ % timeIncrementMaxLimit_;
-					if (timeIncrement_ > 0n) {
-						if (timeIncrement_ > 1n) {
-							await hre.ethers.provider.send("evm_increaseTime", [Number(timeIncrement_)]);
+					let timeIncrement_ = Number(randomNumber_ % timeIncrementMaxLimit_);
+					if (timeIncrement_ > 0) {
+						if (timeIncrement_ > 1) {
+							// await hre.ethers.provider.send("evm_increaseTime", [timeIncrement_,]);
+							await hre.ethers.provider.send("evm_setNextBlockTimestamp", [latestBlock_.timestamp + timeIncrement_,]);
 						}
 						await hre.ethers.provider.send("evm_mine");
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -581,13 +570,13 @@ describe("CosmicSignatureGame-1", function () {
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
 						let transactionResponsePromise_;
 						try {
-							// const timeStamp1_ = Date.now();
+							// const timeStamp1_ = performance.now();
 							transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.claimMainPrize();
-							// const timeStamp2_ = Date.now();
+							// const timeStamp2_ = performance.now();
 							const transactionResponse_ = await transactionResponsePromise_;
-							// const timeStamp3_ = Date.now();
+							// const timeStamp3_ = performance.now();
 							transactionReceipt_ = await transactionResponse_.wait();
-							// const timeStamp4_ = Date.now();
+							// const timeStamp4_ = performance.now();
 							// console.info(
 							// 	(timeStamp2_ - timeStamp1_).toString(),
 							// 	(timeStamp3_ - timeStamp2_).toString(),
@@ -603,7 +592,7 @@ describe("CosmicSignatureGame-1", function () {
 						// #endregion
 						// #region
 
-						// const timeStamp1_ = Date.now();
+						// const timeStamp1_ = performance.now();
 						const transactionShouldHaveSucceeded_ =
 							await cosmicSignatureGameProxySimulator_.canClaimMainPrize(
 								transactionBlock_,
@@ -611,13 +600,13 @@ describe("CosmicSignatureGame-1", function () {
 								contracts_,
 								transactionResponsePromise_
 							);
-						// const timeStamp2_ = Date.now();
+						// const timeStamp2_ = performance.now();
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("202505113", signerIndex_.toString());
 							// console.info("202505142", cosmicSignatureGameProxySimulator_.getTotalNumBids().toString());
 							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
-							// const timeStamp3_ = Date.now();
+							// const timeStamp3_ = performance.now();
 							await cosmicSignatureGameProxySimulator_.claimMainPrize(
 								blockBeforeTransaction_,
 								transactionBlock_,
@@ -628,7 +617,7 @@ describe("CosmicSignatureGame-1", function () {
 								eventIndexWrapper_
 								// blockchainPropertyGetter_
 							);
-							// const timeStamp4_ = Date.now();
+							// const timeStamp4_ = performance.now();
 							// console.info(
 							// 	(timeStamp2_ - timeStamp1_).toString(),
 							// 	(timeStamp4_ - timeStamp3_).toString()

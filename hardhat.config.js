@@ -338,8 +338,7 @@ const hardhatUserConfig = {
 	// "hardhat-preprocessor" package configuration.
 	preprocess: {
 		eachLine:
-			(hre) =>
-			(
+			(hre) => (
 				{
 					// In case Hardhat Preprocessor is disabled, it doesn't matter whether this object exists or changed.
 					// In that case, Hardhat will recompile only the modified contracts, which is the normal behavior of Hardhat.
@@ -408,16 +407,28 @@ const hardhatUserConfig = {
 				// "2002-01-01",
 				"2025-01-01",
 
-			allowUnlimitedContractSize: true,
-
 			// // Comment-202501193 relates and/or applies.
 			// allowBlocksWithSameTimestamp: true,
 
-			// initialBaseFeePerGas: 1e9,
+			allowUnlimitedContractSize: true,
 
-			// // This is needed so that the minimg of multiple transactions per block worked.
-			// // Actually, this appears to be unnecessary if we specify `gasLimit` when making a contract metod call.
-			// gas: "auto",
+			// [Comment-202507272]
+			// Providing a particular value, rather than "auto", increases testing speed.
+			// Although it's also possible to provide a particular `gasLimit` when calling a contract method.
+			// By default, this is taken from `blockGasLimit`.
+			// Issue. The docs says that by default this is "auto", but it doesn't appear to be the case, particularly for Hardhat Network.
+			// Comment-202507252 relates.
+			// [/Comment-202507272]
+			gas: 30_000_000,
+
+			// [Comment-202507252]
+			// When automining is disabled, a bigger value allows to mine many transactions per block with a single "evm_mine".
+			// But for things to work, the `gas` parameter probably must be a fraction of this.
+			// Comment-202507272 relates.
+			// [/Comment-202507252]
+			blockGasLimit: 30_000_000 * 10_000,
+
+			// initialBaseFeePerGas: 1e9,
 
 			// [Comment-202501193]
 			// This configures to deterministically mine a block when we submit a transaction request
@@ -441,13 +452,17 @@ const hardhatUserConfig = {
 			//
 			// Note that the `initialDate` parameter does not change this behavior. It only changes the initial timestamp,
 			// but system time passage still drives timestamp increses.
+			// Although a constant `initialDate` makes it possible to replay a test driven by random numbers
+			// if we start it with the same random number seed.
 			// [/Comment-202501193]
 			mining: {
+				// // This is `true` by default, which is what we need.
 				// auto: false,
-				auto: true,
-				// interval: 1000,
-				interval: 0,
+
+				// // This is 0 by default, which is what we need.
+				// interval: 1_000,
 				// interval: 999_999_999,
+
 				mempool: {
 					order: "fifo"
 				},
