@@ -14,6 +14,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// [Comment-202412033]
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
+/// Comment-202507302 relates.
 /// todo-1 Describe in a user manual under what conditions CSTs are minted and burned.
 /// todo-1 There is already a readme file describing it.
 /// [/Comment-202412033]

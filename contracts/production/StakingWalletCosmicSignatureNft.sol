@@ -301,7 +301,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	///    `numStakedNfts`.
 	///    `onlyOwner`.
 	/// I have made this method `nonReentrant`. Although doing so probably was unnecessary if we assumed
-	/// that the owner is not malicious/buggy.
+	/// that the owner is not malicious.
 	/// todo-1 Does ToDo-202507148-1 relate?
 	function tryPerformMaintenance(address charityAddress_) external override nonReentrant onlyOwner returns (bool) {
 		// #region

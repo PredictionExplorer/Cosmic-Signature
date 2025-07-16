@@ -30,7 +30,13 @@ contract CosmicSignatureToken is
 	ERC20Burnable,
 
 	ERC20Permit,
+
+	// [Comment-202507302]
+	// This supports the token total supply of up to `(1 << 208) - 1`.
+	// Comment-202412033 relates.
+	// [/Comment-202507302]
 	ERC20Votes,
+
 	AddressValidator,
 	ICosmicSignatureToken {
 	// #region State
