@@ -294,12 +294,16 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	/// Observable universe entities accessed here:
 	///    `address.balance`.
 	///    `address.call`.
+	///    `nonReentrant`.
 	///    `CosmicSignatureErrors.ThereAreStakedNfts`.
 	///    `CosmicSignatureEvents.FundsTransferredToCharity`.
 	///    `CosmicSignatureEvents.FundTransferFailed`.
 	///    `numStakedNfts`.
 	///    `onlyOwner`.
-	function tryPerformMaintenance(address charityAddress_) external override onlyOwner returns (bool) {
+	/// I have made this method `nonReentrant`. Although doing so probably was unnecessary if we assumed
+	/// that the owner is not malicious/buggy.
+	/// todo-1 Does ToDo-202507148-1 relate?
+	function tryPerformMaintenance(address charityAddress_) external override nonReentrant onlyOwner returns (bool) {
 		// #region
 
 		require(numStakedNfts == 0, CosmicSignatureErrors.ThereAreStakedNfts("There are still staked NFTs."));
@@ -316,6 +320,9 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 			// It's OK if this is zero.
 			uint256 amount_ = address(this).balance;
 
+			// [Comment-202507296]
+			// This would revert if `charityAddress_ == address(this)`.
+			// [/Comment-202507296]
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
 

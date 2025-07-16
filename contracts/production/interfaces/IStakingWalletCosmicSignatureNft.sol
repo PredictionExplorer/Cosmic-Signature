@@ -88,6 +88,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// Only the contract owner is permitted to call this method.
 	/// @param charityAddress_ Charity address.
 	/// May be zero. If it's zero the method will do nothing.
+	/// Comment-202507296 applies.
 	/// @return `true` on success; `false` on error.
 	/// @dev
 	/// [Comment-202503043]
