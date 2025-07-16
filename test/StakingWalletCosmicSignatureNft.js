@@ -729,7 +729,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 
-		for ( let maliciousCosmicSignatureNftStakerModeCode_ = 5n; ; -- maliciousCosmicSignatureNftStakerModeCode_ ) {
+		for ( let maliciousCosmicSignatureNftStakerModeCode_ = 6n; ; -- maliciousCosmicSignatureNftStakerModeCode_ ) {
 			await expect(maliciousCosmicSignatureNftStaker_.connect(contracts_.signers[0]).setModeCode(maliciousCosmicSignatureNftStakerModeCode_)).not.reverted;
 			const transactionResponsePromise_ = maliciousCosmicSignatureNftStaker_.connect(contracts_.signers[0]).doUnstake(stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
 			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);

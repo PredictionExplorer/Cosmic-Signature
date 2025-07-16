@@ -48,6 +48,10 @@ contract MaliciousCosmicSignatureNftStaker {
 		stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum_);
 	}
 
+	function _doTryPerformMaintenance(address charityAddress_) private returns (bool) {
+		return stakingWalletCosmicSignatureNft.tryPerformMaintenance(charityAddress_);
+	}
+
 	function _reenterIfNeeded() internal {
 		if (reentryDepth <= 0) {
 			++ reentryDepth;
@@ -63,6 +67,8 @@ contract MaliciousCosmicSignatureNftStaker {
 				doUnstakeMany(stakeActionIds_);
 			} else if (modeCode == 5) {
 				_doDeposit(0);
+			} else if (modeCode == 6) {
+				_doTryPerformMaintenance(address(0));
 			}
 			-- reentryDepth;
 		}

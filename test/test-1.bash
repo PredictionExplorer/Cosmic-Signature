@@ -20,7 +20,7 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-0 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletRandomWalkNft '
+			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureToken '
 			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletRandomWalkNft Double-unstaking Random Walk NFTs$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
