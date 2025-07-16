@@ -52,6 +52,21 @@ contract CosmicSignatureToken is
 	// uint256 public marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
 
 	// #endregion
+	// #region `constructor`
+
+	/// @notice Constructor.
+	/// @param game_ The `CosmicSignatureGame` contract address.
+	constructor(address game_ /* , address marketingWalletAddress_ */)
+		_providedAddressIsNonZero(game_)
+		// _providedAddressIsNonZero(marketingWalletAddress_)
+		// Ownable(_msgSender())
+		ERC20("CosmicSignatureToken", "CST")
+		ERC20Permit("CosmicSignatureToken") {
+		game = game_;
+		// marketingWalletAddress = marketingWalletAddress_;
+	}
+
+	// #endregion
 	// #region `_onlyGame`
 
 	/// @dev Comment-202411253 applies.
@@ -71,21 +86,6 @@ contract CosmicSignatureToken is
 		if (_msgSender() != game) {
 			revert CosmicSignatureErrors.UnauthorizedCaller("Only the CosmicSignatureGame contract is permitted to call this method.", _msgSender());
 		}
-	}
-
-	// #endregion
-	// #region `constructor`
-
-	/// @notice Constructor.
-	/// @param game_ The `CosmicSignatureGame` contract address.
-	constructor(address game_ /* , address marketingWalletAddress_ */)
-		_providedAddressIsNonZero(game_)
-		// _providedAddressIsNonZero(marketingWalletAddress_)
-		// Ownable(_msgSender())
-		ERC20("CosmicSignatureToken", "CST")
-		ERC20Permit("CosmicSignatureToken") {
-		game = game_;
-		// marketingWalletAddress = marketingWalletAddress_;
 	}
 
 	// #endregion
@@ -255,7 +255,8 @@ contract CosmicSignatureToken is
 		// // #enable_asserts // #disable_smtchecker console.log("_update exiting.");
 	}
 
-	// /// @dev I have tested that `super._update` calls this.
+	// /// @dev We need this method just for a test. We don't need it in the production.
+	// /// I have tested that `super._update` calls this.
 	// /// So I have confirmed that by calling `super._update` we call `ERC20Votes._update`, rather than `ERC20._update`.
 	// function _transferVotingUnits(address from_, address to_, uint256 amount_) internal override {
 	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits entered.");
