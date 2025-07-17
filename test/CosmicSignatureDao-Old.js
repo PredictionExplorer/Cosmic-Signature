@@ -69,10 +69,10 @@ describe("CosmicSignatureDao-Old", function () {
 		expect(await charityWallet.charityAddress()).not.equal(signer5.address);
 		transactionResponsePromise_ = cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
 		await expect(transactionResponsePromise_).revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
-		await charityWallet.connect(ownerAcct).transferOwnership(signer4.address);
+		await expect(charityWallet.connect(ownerAcct).transferOwnership(signer4.address)).not.reverted;
 		transactionResponsePromise_ = cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
 		await expect(transactionResponsePromise_).revertedWithCustomError(charityWallet, "OwnableUnauthorizedAccount");
-		await charityWallet.connect(signer4).transferOwnership(cosmicSignatureDaoAddr);
+		await expect(charityWallet.connect(signer4).transferOwnership(cosmicSignatureDaoAddr)).not.reverted;
 		transactionResponse_ = await cosmicSignatureDao.connect(signer4).execute([charityWalletAddr], [0], [proposal_func], desc_hash);
 		transactionReceipt_ = await transactionResponse_.wait();
 		expect(await charityWallet.charityAddress()).equal(signer5.address);

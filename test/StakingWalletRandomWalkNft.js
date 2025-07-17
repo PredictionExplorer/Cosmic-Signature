@@ -12,7 +12,8 @@ describe("StakingWalletRandomWalkNft", function () {
 	it("Deployment", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
-		await expect(contracts_.stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress)).revertedWithCustomError(contracts_.stakingWalletRandomWalkNftFactory, "ZeroAddress");
+		await expect(contracts_.stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress))
+			.revertedWithCustomError(contracts_.stakingWalletRandomWalkNftFactory, "ZeroAddress");
 	});
 
 	it("Minting, staking, and unstaking of 10 Random Walk NFTs", async function () {

@@ -11,7 +11,8 @@ describe("CosmicSignatureToken", function () {
 	it("Deployment", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
-		await expect(contracts_.cosmicSignatureTokenFactory.deploy(hre.ethers.ZeroAddress)).revertedWithCustomError(contracts_.cosmicSignatureTokenFactory, "ZeroAddress");
+		await expect(contracts_.cosmicSignatureTokenFactory.deploy(hre.ethers.ZeroAddress))
+			.revertedWithCustomError(contracts_.cosmicSignatureTokenFactory, "ZeroAddress");
 	});
 
 	it("Smoke-test", async function () {
