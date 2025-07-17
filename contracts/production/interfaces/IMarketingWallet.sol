@@ -18,22 +18,11 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434912738329?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 /// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434239454529?thread_ts=1733769207.177129&cid=C02EDDE5UF8
 interface IMarketingWallet is IAddressValidator {
-	// /// @notice Emitted when `token` is changed.
-	// /// @param newValue The new value.
-	// /// @dev Comment-202502235 applies.
-	// event CosmicSignatureTokenAddressChanged(ICosmicSignatureToken indexed newValue);
-
 	/// @notice Emitted when a CST reward is paid to a marketer.
 	/// @param marketerAddress Recipient address.
 	/// @param amount Amount paid.
 	/// It can potentially be zero.
 	event RewardPaid(address indexed marketerAddress, uint256 amount);
-
-	// /// @notice Sets `token`.
-	// /// Only the contract owner is permitted to call this method.
-	// /// @param newValue_ The new value.
-	// /// @dev Comment-202502235 applies.
-	// function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external;
 
 	/// @notice Pays a CST reward to a marketer.
 	/// Only the contract owner is permitted to call this method.

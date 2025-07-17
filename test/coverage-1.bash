@@ -23,7 +23,7 @@
 		export IS_HARDHAT_COVERAGE='true'
 
 		# todo-0 Uncomment the command line with no arguments.
-		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/CosmicSignatureToken.js'
+		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/MarketingWallet.js'
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{StakingWalletRandomWalkNft.js,StakingWalletCosmicSignatureNft.js}'
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-?.js,StakingWalletCosmicSignatureNft.js,SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-?.js,BidderContract.js,BlockTimeStamps.js}'
 		'npx' 'hardhat' 'coverage'
