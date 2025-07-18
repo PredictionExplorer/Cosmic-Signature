@@ -3,9 +3,11 @@ methods {
 	function numStakedNfts() external returns (uint256) envfree;
 	function actionCounter() external returns (uint256) envfree;
 	function numStakedNfts() external returns (uint256) envfree;
-	function nft() external returns (address) envfree;
+	function tokenOwnerOf(uint256 tokenId) external returns (address) envfree;
+//	function nft() external returns (address) envfree;
 	function CosmicSignatureNft.ownerOf(uint256) external returns (address) envfree;
-	function _.ownerOf(uint256) external envfree;
+	function CosmicSignatureNft.transferFrom(address from,address to, uint256 tokenId) external envfree;
+//	function _.ownerOf(uint256) external envfree;
 	function rewardAmountPerStakedNft() external returns (uint256) envfree;
 	function getStakeActionAddr(uint256 index) external returns (address) envfree;
 	function getStakeActionTokenId(uint256 index) external returns (uint256) envfree;
@@ -74,7 +76,6 @@ rule tokenBalanceCheck()
 	address charity;
 	require charity != currentContract;
 	require charity != 0;
-	address nftContract = currentContract.nft();
 
 	mathint initialReward;
 	uint256 tokenId;
@@ -96,13 +97,13 @@ rule tokenBalanceCheck()
 		require nativeBalances[currentContract] > 0;
 	}
 
-	address ownershipBefore = nftContract.ownerOf(e,tokenId);
+	address ownershipBefore = currentContract.tokenOwnerOf(tokenId);
 	address cc;
 	require cc == currentContract;
 
 	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
-	address ownershipAfter = nftContract.ownerOf(e,tokenId);
+	address ownershipAfter = currentContract.tokenOwnerOf(e,tokenId);
 
 	if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
 		assert(ownershipAfter == currentContract,"token ownership check failed for stake()");
