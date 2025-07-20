@@ -203,6 +203,11 @@ library CosmicSignatureConstants {
 	// #region DAO
 
 	/// @notice Default `CosmicSignatureDao.votingDelay()`.
+	/// @dev
+	/// [Comment-202508041]
+	/// OpenZeppelin logic acts as if this value was greater by 1.
+	/// That's probably because of Comment-202508043.
+	/// [/Comment-202508041]
 	uint48 internal constant DAO_DEFAULT_VOTING_DELAY = 1 days;
 
 	/// @notice Default `CosmicSignatureDao.votingPeriod()`.

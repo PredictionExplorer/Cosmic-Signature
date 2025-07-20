@@ -121,7 +121,10 @@ const deployContractsAdvanced = async function (
 	const marketingWalletAddr = await marketingWallet.getAddress();
 
 	const cosmicSignatureDaoFactory = await hre.ethers.getContractFactory("CosmicSignatureDao", deployerAcct);
+
+	// Comment-202508031 relates and/or applies.
 	const cosmicSignatureDao = await cosmicSignatureDaoFactory.deploy(cosmicSignatureTokenAddr);
+
 	await cosmicSignatureDao.waitForDeployment();
 	const cosmicSignatureDaoAddr = await cosmicSignatureDao.getAddress();
 

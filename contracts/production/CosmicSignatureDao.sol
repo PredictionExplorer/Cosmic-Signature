@@ -34,7 +34,9 @@ contract CosmicSignatureDao is
 	/// @notice Constructor.
 	/// Sets up the governance parameters and links the voting token.
 	/// @param tokenAddress_ The address of the token to be used for voting power.
-	/// We use the `CosmicSignatureToken` contract address for this parameter.
+	/// [Comment-202508031]
+	/// Our contract deployment script passes the `CosmicSignatureToken` contract address for this parameter.
+	/// [/Comment-202508031]
 	constructor(IVotes tokenAddress_)
 		// Comment-202502249 relates and/or applies.
 		_providedAddressIsNonZero(address(tokenAddress_))
@@ -49,7 +51,6 @@ contract CosmicSignatureDao is
 		//    of the Governor contract attached to it. By default, block numbers are used. Since v4.9,
 		//    developers can override the IERC6372 clock to use timestamps instead of block numbers.
 		// [/Comment-202501123]
-		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		GovernorSettings(
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_DELAY,
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_PERIOD,
@@ -62,15 +63,12 @@ contract CosmicSignatureDao is
 		// [/Comment-202502249]
 		GovernorVotes(tokenAddress_)
 
-		// todo-1 There are setters for these settings. Do I need to develop tests that change them?
 		GovernorVotesQuorumFraction(CosmicSignatureConstants.DAO_DEFAULT_VOTES_QUORUM_PERCENTAGE) {
 		// Doing nothing.
 	}
 
 	// #endregion
 	// #region Overrides Required By Solidity
-
-	/// todo-1 Develop a test that tests that these methods return the correct values. Done in part.
 
 	function votingDelay() public view override (IGovernor, Governor, GovernorSettings) returns (uint256) {
 		return super.votingDelay();
