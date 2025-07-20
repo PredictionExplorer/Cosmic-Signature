@@ -58,26 +58,6 @@ interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 		int256 value;
 	}
 
-	// /// @notice Emitted when `marketingWalletAddress` is changed.
-	// /// @param newValue The new value.
-	// event MarketingWalletAddressChanged(address indexed newValue);
-
-	// /// @notice Emitted when `marketingWalletBalanceAmountMaxLimit` is changed.
-	// /// @param newValue The new value.
-	// event MarketingWalletBalanceAmountMaxLimitChanged(uint256 newValue);
-
-	// /// @notice Only the contract owner is permitted to call this method.
-	// function setMarketingWalletAddress(address newValue_) external;
-
-	// /// @notice Only the contract owner is permitted to call this method.
-	// function setMarketingWalletBalanceAmountMaxLimit(uint256 newValue_) external;
-
-	// /// @notice Only the `CosmicSignatureGame` contract is permitted to call this method.
-	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external;
-
-	// /// @notice Only the `CosmicSignatureGame` contract is permitted to call this method.
-	// function mintToMarketingWallet(uint256 amount_) external;
-
 	/// @notice Mints a new token amount and assigns it to the given account.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param account_ The address that will receive the newly minted token amount.

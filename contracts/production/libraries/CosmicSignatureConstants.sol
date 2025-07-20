@@ -146,9 +146,7 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Cosmic Signature Token
 
-	// /// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
-	// /// @dev todo-9 Is this amount OK?
-	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 1_000 ether;
+	// Empty.
 
 	// #endregion
 	// #region Random Walk NFT
@@ -189,9 +187,6 @@ library CosmicSignatureConstants {
 	/// @notice Default `marketingWalletCstContributionAmount`.
 	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
-
-	// See `DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT`.
-	// But I have eliminated it.
 
 	// #endregion
 	// #region Charity
