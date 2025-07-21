@@ -16,10 +16,6 @@ contract BrokenStakingWalletCosmicSignatureNft is BrokenEthReceiver {
 		stakingWalletCosmicSignatureNft = StakingWalletCosmicSignatureNft(address(newValue_));
 	}
 
-	function doSetApprovalForAll(IERC721 nft_) external {
-		nft_.setApprovalForAll(address(stakingWalletCosmicSignatureNft), true);
-	}
-
 	function deposit(uint256 roundNum_) external payable {
 		_doDeposit(roundNum_);
 	}

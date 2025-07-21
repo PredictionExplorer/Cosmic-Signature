@@ -7,13 +7,11 @@ pragma solidity 0.8.29;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-// import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import { IERC20Permit, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-// import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
@@ -22,15 +20,19 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #region
 
 contract CosmicSignatureToken is
-	// Ownable,
 	ERC20,
 
-	// todo-1 +++ This is needed -- confirmed.
 	// Comment-202409177 relates.
 	ERC20Burnable,
 
 	ERC20Permit,
+
+	// [Comment-202507302]
+	// This supports the token total supply of up to `(1 << 208) - 1`.
+	// Comment-202412033 relates.
+	// [/Comment-202507302]
 	ERC20Votes,
+
 	AddressValidator,
 	ICosmicSignatureToken {
 	// #region State
@@ -38,32 +40,16 @@ contract CosmicSignatureToken is
 	/// @notice The `CosmicSignatureGame` contract address.
 	address public immutable game;
 
-	// /// @notice This address holds some CST amount.
-	// /// The held amount is replenished when someone bids with CST.
-	// /// Comment-202412201 relates and/or applies.
-	// /// todo-9 Declare this `immutable`? Maybe don't, because this can be an EOA.
-	// address public marketingWalletAddress;
-
-	// /// @notice
-	// /// [Comment-202412201]
-	// /// If `marketingWalletAddress` already holds at least this token amount, any new received funds will be burned.
-	// /// This limit can be exceeded by a little.
-	// /// [/Comment-202412201]
-	// uint256 public marketingWalletBalanceAmountMaxLimit = CosmicSignatureConstants.DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT;
-
 	// #endregion
 	// #region `constructor`
 
 	/// @notice Constructor.
 	/// @param game_ The `CosmicSignatureGame` contract address.
-	constructor(address game_ /* , address marketingWalletAddress_ */)
+	constructor(address game_)
 		_providedAddressIsNonZero(game_)
-		// _providedAddressIsNonZero(marketingWalletAddress_)
-		// Ownable(_msgSender())
 		ERC20("CosmicSignatureToken", "CST")
 		ERC20Permit("CosmicSignatureToken") {
 		game = game_;
-		// marketingWalletAddress = marketingWalletAddress_;
 	}
 
 	// #endregion
@@ -89,40 +75,6 @@ contract CosmicSignatureToken is
 	}
 
 	// #endregion
-	// #region // `setMarketingWalletAddress`
-
-	// function setMarketingWalletAddress(address newValue_) external override onlyOwner _providedAddressIsNonZero(newValue_) {
-	// 	marketingWalletAddress = newValue_;
-	// 	emit MarketingWalletAddressChanged(newValue_);
-	// }
-
-	// #endregion
-	// #region // `setMarketingWalletBalanceAmountMaxLimit`
-
-	// function setMarketingWalletBalanceAmountMaxLimit(uint256 newValue_) external override onlyOwner {
-	// 	marketingWalletBalanceAmountMaxLimit = newValue_;
-	// 	emit MarketingWalletBalanceAmountMaxLimitChanged(newValue_);
-	// }
-
-	// #endregion
-	// #region // `transferToMarketingWalletOrBurn`
-
-	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external override _onlyGame {
-	// 	if (balanceOf(marketingWalletAddress) < marketingWalletBalanceAmountMaxLimit) {
-	// 		_transfer(fromAddress_, marketingWalletAddress, amount_);
-	// 	} else {
-	// 		_burn(fromAddress_, amount_);
-	// 	}
-	// }
-
-	// #endregion
-	// #region // `mintToMarketingWallet`
-
-	// function mintToMarketingWallet(uint256 amount_) external override _onlyGame {
-	// 	_mint(marketingWalletAddress, amount_);
-	// }
-
-	// #endregion
 	// #region `mint`
 
 	function mint(address account_, uint256 value_) external override _onlyGame {
@@ -140,10 +92,15 @@ contract CosmicSignatureToken is
 	// #region `mintMany`
 
 	function mintMany(MintSpec[] calldata specs_) external override _onlyGame {
-		for (uint256 index_ = specs_.length; index_ > 0; ) {
-			-- index_;
-			MintSpec calldata specReference_ = specs_[index_];
-			_mint(specReference_.account, specReference_.value);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for (uint256 index_ = specs_.length; index_ > 0; ) {
+				-- index_;
+				MintSpec calldata specReference_ = specs_[index_];
+				_mint(specReference_.account, specReference_.value);
+			}
 		}
 	}
 
@@ -151,10 +108,15 @@ contract CosmicSignatureToken is
 	// #region `burnMany`
 
 	function burnMany(MintSpec[] calldata specs_) external override _onlyGame {
-		for (uint256 index_ = specs_.length; index_ > 0; ) {
-			-- index_;
-			MintSpec calldata specReference_ = specs_[index_];
-			_burn(specReference_.account, specReference_.value);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for (uint256 index_ = specs_.length; index_ > 0; ) {
+				-- index_;
+				MintSpec calldata specReference_ = specs_[index_];
+				_burn(specReference_.account, specReference_.value);
+			}
 		}
 	}
 
@@ -182,11 +144,16 @@ contract CosmicSignatureToken is
 	// #region `transferMany`
 
 	function transferMany(address[] calldata tos_, uint256 value_) external override {
-		address from_ = _msgSender();
-		for (uint256 index_ = tos_.length; index_ > 0; ) {
-			-- index_;
-			address to_ = tos_[index_];
-			_transfer(from_, to_, value_);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			address from_ = _msgSender();
+			for (uint256 index_ = tos_.length; index_ > 0; ) {
+				-- index_;
+				address to_ = tos_[index_];
+				_transfer(from_, to_, value_);
+			}
 		}
 	}
 
@@ -194,13 +161,18 @@ contract CosmicSignatureToken is
 	// #region `transferMany`
 
 	function transferMany(MintSpec[] calldata specs_) external override {
-		address from_ = _msgSender();
-		for (uint256 index_ = specs_.length; index_ > 0; ) {
-			-- index_;
-			MintSpec calldata specReference_ = specs_[index_];
-			address to_ = specReference_.account;
-			uint256 value_ = specReference_.value;
-			_transfer(from_, to_, value_);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			address from_ = _msgSender();
+			for (uint256 index_ = specs_.length; index_ > 0; ) {
+				-- index_;
+				MintSpec calldata specReference_ = specs_[index_];
+				address to_ = specReference_.account;
+				uint256 value_ = specReference_.value;
+				_transfer(from_, to_, value_);
+			}
 		}
 	}
 

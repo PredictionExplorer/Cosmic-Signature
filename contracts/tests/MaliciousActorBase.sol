@@ -31,7 +31,7 @@ abstract contract MaliciousActorBase {
 			++ reentryDepth;
 
 			// [Comment-202507062]
-			// Similar magic numbers are hardcoded in multiple places.
+			// Similar magic numbers exist in multiple places.
 			// [/Comment-202507062]
 			if (modeCode == 1) {
 				game.donateEth{value: 1 wei}();

@@ -65,7 +65,7 @@ contract CosmicSignatureGame is
 	// 	revert ("Method does not exist.");
 	// }
 
-	/// todo-0 Delete this.
+	/// todo-1 Delete this.
 	fallback() external payable {
 		revert ("Method does not exist.");
 	}

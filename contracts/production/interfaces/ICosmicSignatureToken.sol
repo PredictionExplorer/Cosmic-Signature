@@ -14,6 +14,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// [Comment-202412033]
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
+/// Comment-202507302 relates.
 /// todo-1 Describe in a user manual under what conditions CSTs are minted and burned.
 /// todo-1 There is already a readme file describing it.
 /// [/Comment-202412033]
@@ -56,26 +57,6 @@ interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 		/// It's OK if this is zero.
 		int256 value;
 	}
-
-	// /// @notice Emitted when `marketingWalletAddress` is changed.
-	// /// @param newValue The new value.
-	// event MarketingWalletAddressChanged(address indexed newValue);
-
-	// /// @notice Emitted when `marketingWalletBalanceAmountMaxLimit` is changed.
-	// /// @param newValue The new value.
-	// event MarketingWalletBalanceAmountMaxLimitChanged(uint256 newValue);
-
-	// /// @notice Only the contract owner is permitted to call this method.
-	// function setMarketingWalletAddress(address newValue_) external;
-
-	// /// @notice Only the contract owner is permitted to call this method.
-	// function setMarketingWalletBalanceAmountMaxLimit(uint256 newValue_) external;
-
-	// /// @notice Only the `CosmicSignatureGame` contract is permitted to call this method.
-	// function transferToMarketingWalletOrBurn(address fromAddress_, uint256 amount_) external;
-
-	// /// @notice Only the `CosmicSignatureGame` contract is permitted to call this method.
-	// function mintToMarketingWallet(uint256 amount_) external;
 
 	/// @notice Mints a new token amount and assigns it to the given account.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.

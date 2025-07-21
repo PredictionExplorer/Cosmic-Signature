@@ -33,7 +33,7 @@ module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
 	// Issue. Do we really need this?
-	// todo-1 Think about the above again.
+	// todo-0 Think about the above again.
 	configureYulOptimizer: true,
 
 	istanbulReporter: ["html", /*"text",*/],

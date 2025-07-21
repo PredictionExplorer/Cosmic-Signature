@@ -18,11 +18,6 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #region State
 
 	/// @notice The `CosmicSignatureToken` contract address.
-	/// Comment-202411064 no longer applies, because of Comment-202502235.
-	/// @dev
-	/// [Comment-202502235]
-	/// I have declared `token` `immutable` and eliminatd `setCosmicSignatureToken` and `CosmicSignatureTokenAddressChanged`.
-	/// [/Comment-202502235]
 	CosmicSignatureToken public immutable token;
 
 	// #endregion
@@ -35,16 +30,6 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 		Ownable(_msgSender()) {
 		token = token_;
 	}
-
-	// #endregion
-	// #region // `setCosmicSignatureToken`
-
-	// function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
-	// 	onlyOwner
-	// 	_providedAddressIsNonZero(address(newValue_)) {
-	// 	token = CosmicSignatureToken(address(newValue_));
-	// 	emit CosmicSignatureTokenAddressChanged(newValue_);
-	// }
 
 	// #endregion
 	// #region `payReward`

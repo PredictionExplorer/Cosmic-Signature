@@ -21,13 +21,14 @@ describe("PrizesWallet-2", function () {
 	it("Deployment", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
-		await expect(contracts_.prizesWalletFactory.deploy(hre.ethers.ZeroAddress)).revertedWithCustomError(contracts_.prizesWalletFactory, "ZeroAddress");
+		await expect(contracts_.prizesWalletFactory.deploy(hre.ethers.ZeroAddress))
+			.revertedWithCustomError(contracts_.prizesWalletFactory, "ZeroAddress");
 	});
 
 	// #endregion
 	// #region
 
-	it("Setters", async function () {
+	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
 		{

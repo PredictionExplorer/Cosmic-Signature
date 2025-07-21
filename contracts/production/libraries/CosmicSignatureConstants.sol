@@ -57,7 +57,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `ethBidPriceIncreaseDivisor`.
 	/// @dev Comment-202502191 depends on this value.
-	/// todo-1 But I will probably refactor that test and rewrite or delete that comment.
+	/// todo-0 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 
 	/// @notice
@@ -86,7 +86,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Comment-202411066 relates.
 	/// @dev Comment-202502193 depends on this value.
-	/// todo-1 But I will probably refactor that test and rewrite or delete that comment.
+	/// todo-0 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
@@ -146,9 +146,7 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Cosmic Signature Token
 
-	// /// @notice Default `CosmicSignatureToken.marketingWalletBalanceAmountMaxLimit`.
-	// /// @dev todo-9 Is this amount OK?
-	// uint256 internal constant DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT = 1_000 ether;
+	// Empty.
 
 	// #endregion
 	// #region Random Walk NFT
@@ -190,9 +188,6 @@ library CosmicSignatureConstants {
 	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
 
-	// See `DEFAULT_MARKETING_WALLET_BALANCE_AMOUNT_MAX_LIMIT`.
-	// But I have eliminated it.
-
 	// #endregion
 	// #region Charity
 
@@ -203,6 +198,11 @@ library CosmicSignatureConstants {
 	// #region DAO
 
 	/// @notice Default `CosmicSignatureDao.votingDelay()`.
+	/// @dev
+	/// [Comment-202508041]
+	/// OpenZeppelin logic acts as if this value was greater by 1.
+	/// That's probably because of Comment-202508043.
+	/// [/Comment-202508041]
 	uint48 internal constant DAO_DEFAULT_VOTING_DELAY = 1 days;
 
 	/// @notice Default `CosmicSignatureDao.votingPeriod()`.

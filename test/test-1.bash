@@ -10,7 +10,7 @@
 	# export FORCE_COLOR='0'
 	# export NO_COLOR=''
 
-	# todo-0 Comment this out.
+	# todo-1 +++ Comment this out.
 	# export SKIP_LONG_TESTS='true'
 
 	SafeTryHardhatTest() {
@@ -19,13 +19,13 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# todo-0 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureToken '
+			# todo-1 +++ Uncomment the command line with no arguments.
+			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureDao '
 			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletRandomWalkNft Double-unstaking Random Walk NFTs$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
-			'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
-			# 'npx' 'hardhat' 'test'
+			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
+			'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
 				read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
