@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.29;
 
-/// todo-1 Can I delete this?
 contract BlockchainPropertyGetter {
 	// function getBlockNumber() external view returns (uint256) {
 	// 	return block.number;

@@ -18,8 +18,10 @@ contract BrokenCosmicSignatureToken {
 		_brokenMint();
 	}
 
-	function mintMany(ICosmicSignatureToken.MintSpec[] calldata) external {
-		_brokenMint();
+	function mintMany(ICosmicSignatureToken.MintSpec[] calldata specs_) external {
+		if (specs_.length > 0) {
+			_brokenMint();
+		}
 	}
 
 	function mintAndBurnMany(ICosmicSignatureToken.MintOrBurnSpec[] calldata specs_) external {

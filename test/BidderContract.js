@@ -17,7 +17,7 @@ describe("BidderContract", function () {
 
 		// await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.prizesWalletAddr, true)).not.reverted;
 		await expect(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr_, true)).not.reverted;
-		await expect(bidderContract_.connect(contracts_.signers[0]).doSetApprovalForAll(contracts_.randomWalkNftAddr, contracts_.prizesWalletAddr)).not.reverted;
+		await expect(bidderContract_.connect(contracts_.signers[0]).doSetApprovalForAll(contracts_.randomWalkNftAddr, contracts_.prizesWalletAddr, true)).not.reverted;
 
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "signer 0 bid", {value: nextEthBidPrice_,})).not.reverted;

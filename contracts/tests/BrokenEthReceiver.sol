@@ -19,7 +19,7 @@ contract BrokenEthReceiver {
 		ethDepositAcceptanceModeCode = newValue_;
 	}
 
-	function surrenderMyEth() external {
+	function surrenderMyEth() public {
 		CosmicSignatureHelpers.transferEthTo(payable(msg.sender), address(this).balance);
 	}
 
