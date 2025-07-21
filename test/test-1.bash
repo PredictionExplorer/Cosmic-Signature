@@ -10,7 +10,7 @@
 	# export FORCE_COLOR='0'
 	# export NO_COLOR=''
 
-	# todo-0 Comment this out.
+	# todo-1 +++ Comment this out.
 	# export SKIP_LONG_TESTS='true'
 
 	SafeTryHardhatTest() {
@@ -19,7 +19,7 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# todo-1 Uncomment the command line with no arguments.
+			# todo-1 +++ Uncomment the command line with no arguments.
 			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureDao '
 			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletRandomWalkNft Double-unstaking Random Walk NFTs$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'

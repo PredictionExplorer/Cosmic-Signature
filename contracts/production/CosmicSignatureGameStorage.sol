@@ -123,7 +123,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202503106]
 	/// We allow the contract owner to change this even if the current bidding round is active.
 	/// Comment-202411236 relates.
-	/// todo-1 The backend and frontend must expect that `delayDurationBeforeRoundActivation` changes.
+	/// todo-1 The backend and frontend must expect that `delayDurationBeforeRoundActivation` changes any time.
 	/// [/Comment-202503106]
 	/// Comment-202503092 applies.
 	uint256 public delayDurationBeforeRoundActivation;
@@ -139,7 +139,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We allow the contract owner to change this under the conditions described in Comment-202503108.
 	/// This design leaves the door open for the owner to change this to a point in the future and then change some parameters.
 	/// Comment-202503106 relates.
-	/// todo-1 The backend and frontend must expect that `roundActivationTime` changes.
+	/// todo-1 The backend and frontend must expect that `roundActivationTime` changes any time.
 	/// [/Comment-202411236]
 	/// [Comment-202503092]
 	/// Conceptually, every point in time is within a bidding round, which number or index is specified by `roundNum`.
@@ -173,12 +173,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202501063]
 	/// Comment-202411064 applies.
 	/// @dev
-	/// todo-1 Develop a test that after the current time reaches `roundActivationTime`,
-	/// todo-1 sets `roundActivationTime` to a point in the future, doubles this divisor,
-	/// todo-1 sets `roundActivationTime` to a point in the past.
-	/// todo-1 The past point needs to be such that ETH bid price continues to gradually decline.
-	/// todo-1 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
-	/// todo-1 (specify exactly how long into the past), so that the new price immediately went into effect.
+	/// todo-0 Develop a test that after the current time reaches `roundActivationTime`,
+	/// todo-0 sets `roundActivationTime` to a point in the future, doubles this divisor,
+	/// todo-0 sets `roundActivationTime` to a point in the past.
+	/// todo-0 The past point needs to be such that ETH bid price continues to gradually decline.
+	/// todo-0 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
+	/// todo-0 (specify exactly how long into the past), so that the new price immediately went into effect.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice Next ETH bid price.

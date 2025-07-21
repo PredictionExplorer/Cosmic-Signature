@@ -7,8 +7,8 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 /// [Comment-202508065]
 /// It will return all the assets back to the `owner()` and self-destruct.
 /// [/Comment-202508065]
-/// @dev todo-1 I can't eliminate this, can I?
-/// todo-1 If I am to eliminate this, remember to review numbered comments and todos, especially Comment-202503124.
+/// @dev todo-1 I can't eliminate this contract, can I?
+/// todo-1 If I am to eliminate it, remember to review numbered comments and todos, especially Comment-202503124.
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() CosmicSignatureGame() {

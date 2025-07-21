@@ -14,7 +14,7 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 // #endregion
 // #region `createStakingWalletCosmicSignatureNftSimulator`
 
-/// todo-1 For now, this is a simplified design. To be revisited.
+/// todo-0 For now, this is a simplified design. To be revisited.
 /*async*/ function createStakingWalletCosmicSignatureNftSimulator(cosmicSignatureNftSimulator_) {
 	// #region
 
@@ -35,7 +35,7 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #endregion
 		// #region `stake`
 
-		/// todo-1 Do we need `canStake` or `unstake`?
+		/// todo-0 Do we need `canStake` or `unstake`?
 		stake: function(nftOwnerAddress_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			expect(this.wasNftUsed(nftId_)).equal(false);
 			this.usedNfts[nftId_] = true;

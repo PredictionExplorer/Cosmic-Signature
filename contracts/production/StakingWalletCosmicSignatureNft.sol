@@ -275,7 +275,9 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 		// The division can panic due to division by zero.
 		// This quotient can potentially be zero.
 		// Comment-202503043 relates and/or applies.
-		// todo-1 Test that this doesn't burn all remaining gas. Remember that the caller sends only 63/64 of it to us.
+		// todo-1 +++ Test that this doesn't burn all remaining gas. Remember that the caller sends only 63/64 of it to us.
+		// todo-1 +++ I only asked ChatGPT about burning all remaining gas on panic.
+		// todo-1 +++ It will not burn it if Solidity compiler 0.8+ was used.
 		// [/Comment-202410161]
 		// Comment-202412045 applies.
 		uint256 rewardAmountPerStakedNftIncrement_ = msg.value / numStakedNftsCopy_;

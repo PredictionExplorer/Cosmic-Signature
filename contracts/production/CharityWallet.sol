@@ -20,7 +20,7 @@ contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 		emit DonationReceived(_msgSender(), msg.value);
 	}
 
-	/// todo-0 Delete this.
+	/// todo-1 Delete this.
 	fallback() external payable {
 		revert ("Method does not exist.");
 	}

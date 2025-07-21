@@ -57,7 +57,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `ethBidPriceIncreaseDivisor`.
 	/// @dev Comment-202502191 depends on this value.
-	/// todo-1 But I will probably refactor that test and rewrite or delete that comment.
+	/// todo-0 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 
 	/// @notice
@@ -86,7 +86,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Comment-202411066 relates.
 	/// @dev Comment-202502193 depends on this value.
-	/// todo-1 But I will probably refactor that test and rewrite or delete that comment.
+	/// todo-0 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.

@@ -398,8 +398,9 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	// When you make changes to the networks, remember to refactor the logic near Comment-202408313.
-	// todo-1 If I add add Arbitrum Sepolia do the above.
+	// todo-1 When you make changes to the networks, remember to refactor the logic near Comment-202408313.
+	// todo-0 If I add add Arbitrum Sepolia do the above.
+	// todo-0 Add it and then search for any sepolia
 	networks: {
 		hardhat: {
 			// Comment-202501193 relates and/or applies.

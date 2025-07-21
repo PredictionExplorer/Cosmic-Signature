@@ -34,8 +34,6 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
 // #endregion
 // #region `loadFixtureDeployContractsForUnitTesting`
 
-// todo-0 Call `loadFixtureDeployContractsForUnitTesting` everywhere.
-// todo-0 After calling it, don't force "evm_mine".
 /**
  * @param {bigint} roundActivationTime 
  */
@@ -69,9 +67,9 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 /**
  * This function is to be used for unit tests.
  * It's OK to pass ths function to `loadFixture`.
- * todo-1 Find this function name (not whole word) and make sure the order of desrtructured contracts
- * todo-1 matched their order in the returned object.
- * todo-1 Or better do not destructure.
+ * todo-0 Find this function name (not whole word) and make sure the order of desrtructured contracts
+ * todo-0 matched their order in the returned object.
+ * todo-0 Or better do not destructure.
  */
 async function deployContractsForUnitTesting() {
 	return deployContractsForUnitTestingAdvanced("CosmicSignatureGame");
