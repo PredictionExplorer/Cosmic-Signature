@@ -196,7 +196,7 @@ const deployContractsAdvanced = async function (
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
 	// [Comment-202507202]
-	// Similar magic numbers are hardcoded in multiple places.
+	// Similar magic numbers exist in multiple places.
 	// [/Comment-202507202]
 	if (roundActivationTime > -1_000_000_000n) {
 
