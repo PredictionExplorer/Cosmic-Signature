@@ -2,12 +2,8 @@ methods {
 	function game() external returns (address) envfree;
 	function numStakedNfts() external returns (uint256) envfree;
 	function actionCounter() external returns (uint256) envfree;
-	function numStakedNfts() external returns (uint256) envfree;
 	function tokenOwnerOf(uint256 tokenId) external returns (address) envfree;
-//	function nft() external returns (address) envfree;
 	function CosmicSignatureNft.ownerOf(uint256) external returns (address) envfree;
-	function CosmicSignatureNft.transferFrom(address from,address to, uint256 tokenId) external envfree;
-//	function _.ownerOf(uint256) external envfree;
 	function rewardAmountPerStakedNft() external returns (uint256) envfree;
 	function getStakeActionAddr(uint256 index) external returns (address) envfree;
 	function getStakeActionTokenId(uint256 index) external returns (uint256) envfree;
@@ -22,7 +18,9 @@ function genericFunctionMatcher(method f,env e,address charity,uint256 round,uin
 		stake(e,nftId);
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
 		unstake(e,actionId);
-	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.pureUnstake(uint256).selector) {
+		pureUnstake(e,actionId);
+	 } else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
 		stakeMany(e,manyActionIds);
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
 		unstakeMany(e,manyActionIds);
@@ -82,13 +80,18 @@ rule tokenBalanceCheck()
 	uint256 actionId;
 	uint256[] manyActionIds;
 	uint256 round;
-    if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+	address ownershipBefore = currentContract.tokenOwnerOf(tokenId);
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.pureUnstake(uint256).selector) {
 		require currentContract.numStakedNfts() > 0 ;
     	require currentContract.getStakeActionTokenId(actionId) > 0;
     	require currentContract.getStakeActionInitialReward(actionId) > 0;
     	require currentContract.getStakeActionAddr(actionId) != 0;
 		require (actionId > 0) && (actionId < currentContract.actionCounter());
 		require initialReward == currentContract.getStakeActionInitialReward(actionId);
+		require(ownershipBefore != 0);
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
+		require(ownershipBefore != currentContract);
+		require(ownershipBefore != 0);
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
 		require manyActionIds.length == 3;
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
@@ -97,17 +100,16 @@ rule tokenBalanceCheck()
 		require nativeBalances[currentContract] > 0;
 	}
 
-	address ownershipBefore = currentContract.tokenOwnerOf(tokenId);
 	address cc;
 	require cc == currentContract;
 
 	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
-	address ownershipAfter = currentContract.tokenOwnerOf(e,tokenId);
+	address ownershipAfter = currentContract.tokenOwnerOf(tokenId);
 
 	if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
 		assert(ownershipAfter == currentContract,"token ownership check failed for stake()");
-	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.pureUnstake(uint256).selector) {
 		assert(ownershipAfter == e.msg.sender,"token ownership check failed for unstake()");
 	} else {
 		assert ownershipBefore == ownershipAfter,"token ownership changed, while the method did not consider it";
