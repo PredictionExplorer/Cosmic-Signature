@@ -11,8 +11,10 @@ describe("CosmicSignatureDao", function () {
 	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
+		// [Comment-202508085]
 		// Signers are placing bids to get some CSTs, which will give them the right to create proposals
-		// and voting weight to vote for them.
+		// and voting weights to vote for them.
+		// [/Comment-202508085]
 		for ( let signerIndex_ = 0; signerIndex_ <= 1; ++ signerIndex_ ) {
 			await expect(contracts_.cosmicSignatureToken.connect(contracts_.signers[signerIndex_]).delegate(contracts_.signers[signerIndex_].address)).not.reverted;
 			for ( let bidIndex_ = 0; bidIndex_ <= 1; ++ bidIndex_ ) {
@@ -200,11 +202,7 @@ describe("CosmicSignatureDao", function () {
 			}
 		};
 
-		// [Comment-202508051]
-		// Because of Comment-202508041, adding 1.
-		// [/Comment-202508051]
-		const votingDelay_ = await contracts_.cosmicSignatureDao.votingDelay() + 1n;
-
+		const votingDelay_ = await contracts_.cosmicSignatureDao.votingDelay();
 		const votingPeriod_ = await contracts_.cosmicSignatureDao.votingPeriod();
 
 		await expect(contracts_.cosmicSignatureToken.connect(contracts_.signers[0]).delegate(contracts_.signers[0].address)).not.reverted;
@@ -258,7 +256,11 @@ describe("CosmicSignatureDao", function () {
 			await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomSignerIndex_()]).castVote(proposalHashSum_, BigInt(generateRandomUInt32() % 3)))
 				.revertedWithCustomError(contracts_.cosmicSignatureDao, "GovernorUnexpectedProposalState");
 
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_)]);
+			// [Comment-202508051]
+			// Because of Comment-202508041, adding 1.
+			// [/Comment-202508051]
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + 1]);
+
 			// await hre.ethers.provider.send("evm_mine");
 			if (modeCode_ <= 0) {
 				// [Comment-202508055]
@@ -277,7 +279,9 @@ describe("CosmicSignatureDao", function () {
 			await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[1]).castVote(proposalHashSum_, 1n)).not.reverted;
 			await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[3]).castVote(proposalHashSum_, 0n)).not.reverted;
 
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + Math.floor(Number(votingPeriod_) / 2)]);
+			// Comment-202508051 applies.
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + 1 + Math.floor(Number(votingPeriod_) / 2)]);
+
 			// await hre.ethers.provider.send("evm_mine");
 			{
 				const proposalExecutorSigner_ = contracts_.signers[generateRandomSignerIndex_()];
@@ -286,7 +290,9 @@ describe("CosmicSignatureDao", function () {
 				await expect(contracts_.cosmicSignatureDao.connect(proposalExecutorSigner_).execute([contracts_.charityWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_))
 					.revertedWithCustomError(contracts_.cosmicSignatureDao, "GovernorUnexpectedProposalState");
 
-				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + Number(votingPeriod_)]);
+				// Comment-202508051 applies.
+				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + 1 + Number(votingPeriod_)]);
+
 				// await hre.ethers.provider.send("evm_mine");
 				const transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(proposalExecutorSigner_).execute([contracts_.charityWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_);
 				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
@@ -310,13 +316,56 @@ describe("CosmicSignatureDao", function () {
 				await expect(contracts_.cosmicSignatureDao.connect(proposalExecutorSigner_).execute([contracts_.charityWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_))
 					.revertedWithCustomError(contracts_.charityWallet, "OwnableUnauthorizedAccount");
 
+				// [Comment-202508086]
+				// Initially, the current owner must transfer the ownership to the DAO.
+				// [/Comment-202508086]
 				await expect(contracts_.charityWallet.connect(proposalExecutorSigner_).transferOwnership(contracts_.cosmicSignatureDaoAddr)).not.reverted;
-				expect(await contracts_.charityWallet.charityAddress()).not.equal(newCharityAddress_);
+
+				expect(await contracts_.charityWallet.charityAddress()).equal(contracts_.charityAcct.address);
 				await expect(contracts_.cosmicSignatureDao.connect(proposalExecutorSigner_).execute([contracts_.charityWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_)).not.reverted;
 				expect(await contracts_.charityWallet.charityAddress()).equal(newCharityAddress_);
 			}
 
 			break;
 		}
+	});
+
+	it("CosmicSignatureDao changes MarketingWallet.owner()", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+
+		// Comment-202508085 applies.
+		for ( let signerIndex_ = 0; signerIndex_ <= 1; ++ signerIndex_ ) {
+			await expect(contracts_.cosmicSignatureToken.connect(contracts_.signers[signerIndex_]).delegate(contracts_.signers[signerIndex_].address)).not.reverted;
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[signerIndex_]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+		}
+
+		const votingDelay_ = await contracts_.cosmicSignatureDao.votingDelay();
+		const votingPeriod_ = await contracts_.cosmicSignatureDao.votingPeriod();
+
+		// Comment-202508086 applies.
+		// todo-0 Do we need a backdoor that allows the DAO to forcibly change owners of most/all our contracts
+		// todo-0 without the current owners cooperating?
+		// todo-0 Maybe only `MarketingWallet.transferOwnership` should always accept a call from the DAO.
+		// todo-0 After I implement that, call this only a half of the time, based on a random number.
+		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).transferOwnership(contracts_.cosmicSignatureDaoAddr)).not.reverted;
+
+		const newOwnerAddress_ = contracts_.signers[generateRandomUInt32() & 3].address;
+		const proposalCallData_ = contracts_.marketingWallet.interface.encodeFunctionData("transferOwnership", [newOwnerAddress_]);
+		const proposalDescription_ = "change MarketingWallet owner";
+		const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
+		const transactionResponse_ = await contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.marketingWalletAddr], [0n], [proposalCallData_], proposalDescription_);
+		const transactionReceipt_ = await transactionResponse_.wait();
+		const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
+		const proposalHashSum_ = parsedLog_.args.proposalId;
+
+		// Comment-202508051 applies.
+		await hre.ethers.provider.send("evm_increaseTime", [Number(votingDelay_) + 1]);
+
+		// await hre.ethers.provider.send("evm_mine");
+		await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).castVote(proposalHashSum_, 1n)).not.reverted;
+		await hre.ethers.provider.send("evm_increaseTime", [Number(votingPeriod_)]);
+		// await hre.ethers.provider.send("evm_mine");
+		await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 3]).execute([contracts_.marketingWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_)).not.reverted;
+		expect(await contracts_.marketingWallet.owner()).equal(newOwnerAddress_);
 	});
 });
