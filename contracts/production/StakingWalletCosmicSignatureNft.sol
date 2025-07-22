@@ -364,6 +364,12 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	function tokenOwnerOf(uint256 tokenId) external view returns (address) {
 		return nft.ownerOf(tokenId);
 	}
+	function pureUnstake(uint256 actionId) external  nonReentrant returns (address) {
+		uint256 tokenId = stakeActions[actionId].nftId;
+		_unstake(actionId);
+		return nft.ownerOf(tokenId);
+	}
+
 	// #endregion
 }
 
