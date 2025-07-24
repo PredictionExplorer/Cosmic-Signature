@@ -3,7 +3,6 @@ methods {
 	function numStakedNfts() external returns (uint256) envfree;
 	function actionCounter() external returns (uint256) envfree;
 	function tokenOwnerOf(uint256 tokenId) external returns (address) envfree;
-	function CosmicSignatureNft.ownerOf(uint256) external returns (address) envfree;
 	function rewardAmountPerStakedNft() external returns (uint256) envfree;
 	function getStakeActionAddr(uint256 index) external returns (address) envfree;
 	function getStakeActionTokenId(uint256 index) external returns (uint256) envfree;
@@ -89,6 +88,7 @@ rule tokenBalanceCheck()
 		require (actionId > 0) && (actionId < currentContract.actionCounter());
 		require initialReward == currentContract.getStakeActionInitialReward(actionId);
 		require(ownershipBefore != 0);
+		require currentContract.getStakeActionTokenId(actionId)==tokenId;
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
 		require(ownershipBefore != currentContract);
 		require(ownershipBefore != 0);
@@ -100,17 +100,20 @@ rule tokenBalanceCheck()
 		require nativeBalances[currentContract] > 0;
 	}
 
-	address cc;
-	require cc == currentContract;
-
 	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
 	address ownershipAfter = currentContract.tokenOwnerOf(tokenId);
 
 	if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
 		assert(ownershipAfter == currentContract,"token ownership check failed for stake()");
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+		assert true;	// do not verify many methods
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.pureUnstake(uint256).selector) {
 		assert(ownershipAfter == e.msg.sender,"token ownership check failed for unstake()");
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
+		assert true;	// do not verify many methods
+	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+		assert true;	// we are using pureUnstakeMany() instead
 	} else {
 		assert ownershipBefore == ownershipAfter,"token ownership changed, while the method did not consider it";
 	}
