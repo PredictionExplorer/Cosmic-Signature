@@ -9,8 +9,10 @@ Summary:
 
 	- Out of all the methods available in StakingWallet CST, only stake()/stakeMany() methods can change values in  usedNfts[] array (meaning, can mark NFTs with 'used' status)
 	- Out of all the methods available in StakingWallet CST , only stake() and stakeMany() methods can set usedNfts[tokenId] to 1 for a particular tokenId (meaning, the NFT was used)
-	- on tryPerformMaintenance() the available balance should be transferred to charity upon return 'true'
-	- 
+	- NFT ownership is given to the contract on stake(), and returned back to original owner on unstake()
+	- After unstake() the balance of the contract is decreased by the same amount as the increase of the balance of staker's account
+	Pending invariants to implement
+	- A pair of stake()-unstake() operations must produce a payout equal to balance of the contract - reminder
 
 
 
