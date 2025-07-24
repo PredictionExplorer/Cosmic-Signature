@@ -75,7 +75,8 @@ hook Sstore stakeActions[INDEX uint256 idx].initialRewardAmountPerStakedNft uint
 		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.stake(uint256).selector)) ||
 		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector)) ||
 		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector)) ||
-		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector))
+		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector)),
+		"variable currentMethodSignature is not set"
 	);
 	gStakeActionAmountSet = 1;
 }
@@ -369,4 +370,36 @@ rule rewardPerTokenIsSetCorrectly()
 	} else {
 		assert balanceBefore == balanceAfter, "balance of the contract changed while it should not";
 	}
+}
+rule payoutOnUnstakeIsCorrectOneStaker() 
+{	
+	currentMethodSignature = to_bytes4(sig:StakingWalletCosmicSignatureNft.stake(uint256).selector);
+    env e_stake;
+
+	uint256 ac = currentContract.actionCounter();
+	uint256 acNext;
+	require acNext == (ac + 1);
+   	require currentContract.getStakeActionTokenId(acNext) == 0;
+   	require currentContract.getStakeActionInitialReward(acNext) == 0;
+   	require currentContract.getStakeActionAddr(acNext) == 0;
+	require currentContract.getNftUsedStatus(acNext) == 0;
+	uint256 tokenId;
+	stake(e_stake,tokenId);
+
+    env e_deposit;
+	require e_deposit.msg.sender != 0;
+    require currentContract != e_deposit.msg.sender;
+   	require currentContract.game() == e_deposit.msg.sender;
+	require e_deposit.msg.value > 0;
+	uint256 round;
+	deposit(e_deposit,round);
+
+	mathint balanceAfterDeposit = nativeBalances[currentContract];
+
+	mathint balanceBeforeUnstake = nativeBalances[e_stake.msg.sender];
+	unstake(e_stake,acNext);
+	mathint balanceAfterUnstake = nativeBalances[e_stake.msg.sender];
+
+	assert (nativeBalances[currentContract]+e_deposit.msg.value)==balanceAfterUnstake,"balance of staker after unstake() is incorrect";
+	assert (nativeBalances[currentContract] < balanceAfterUnstake),"stakingWallet contract balance is larger than staker's balance";
 }
