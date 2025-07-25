@@ -412,10 +412,8 @@ rule payoutOnUnstakeIsCorrectTwoStakers()
 	currentMethodSignature = to_bytes4(sig:StakingWalletCosmicSignatureNft.stake(uint256).selector);
 
     env e_stake1;
-	uint256 ac1 = currentContract.actionCounter();
-	require ac1 == 0;
-	uint256 acNext1;
-	require acNext1 == (ac1 + 1);
+	require currentContract.actionCounter() == 0;
+	uint256 acNext1 = 1;
    	require currentContract.getStakeActionTokenId(acNext1) == 0;
    	require currentContract.getStakeActionInitialReward(acNext1) == 0;
    	require currentContract.getStakeActionAddr(acNext1) == 0;
@@ -428,10 +426,7 @@ rule payoutOnUnstakeIsCorrectTwoStakers()
 	uint256 tokenId1;
 
     env e_stake2;
-	uint256 ac2 = currentContract.actionCounter();
-	require ac2 == acNext1;
-	uint256 acNext2;
-	require acNext2 == (ac2 + 1);
+	uint256 acNext2 = 2;
    	require currentContract.getStakeActionTokenId(acNext2) == 0;
    	require currentContract.getStakeActionInitialReward(acNext2) == 0;
    	require currentContract.getStakeActionAddr(acNext2) == 0;
@@ -442,7 +437,6 @@ rule payoutOnUnstakeIsCorrectTwoStakers()
 	require e_stake2.msg.value == 0;
 	uint256 tokenId2;
 
-
 	stake(e_stake1,tokenId1);
 	stake(e_stake2,tokenId2);
 
@@ -451,11 +445,11 @@ rule payoutOnUnstakeIsCorrectTwoStakers()
     require currentContract != e_deposit.msg.sender;
    	require currentContract.game() == e_deposit.msg.sender;
 	require e_deposit.msg.value > 0;
-	require e_deposit.msg.value == 3333333;
+	mathint rem = e_deposit.msg.value % 2;
+	require rem != 0;
 	uint256 round;
 	deposit(e_deposit,round);
 
-	mathint balanceAfterDeposit = nativeBalances[currentContract];
 
 	mathint balanceBeforeUnstake1 = nativeBalances[e_stake1.msg.sender];
 	unstake(e_stake1,acNext1);
@@ -463,9 +457,11 @@ rule payoutOnUnstakeIsCorrectTwoStakers()
 	mathint balanceBeforeUnstake2 = nativeBalances[e_stake2.msg.sender];
 	unstake(e_stake2,acNext2);
 	mathint balanceAfterUnstake2 = nativeBalances[e_stake2.msg.sender];
-
-	assert false;
-//	assert (nativeBalances[currentContract]+e_deposit.msg.value)==((balanceAfterUnstake1-balanceBeforeUnstake1)+(balanceAfterUnstake2-balanceBeforeUnstake2)),"balance of staker after unstake() is incorrect";
-//	assert (nativeBalances[currentContract] < balanceAfterDeposit),"stakingWallet contract balance is larger than after unstake() operation";
-
+	mathint balanceSWAtTheEnd = nativeBalances[currentContract];
+	mathint rewardStaker1 = balanceAfterUnstake1-balanceBeforeUnstake1;
+	mathint rewardStaker2 = balanceAfterUnstake2-balanceBeforeUnstake2;
+	mathint allOfIt = rewardStaker1 + rewardStaker2 + balanceSWAtTheEnd;
+	assert (e_deposit.msg.value==allOfIt),"fund distribution match the rule in multi-token stake-deposit-unstake sequence";
+	mathint remAtTheEnd = nativeBalances[currentContract] % 2;
+	assert (remAtTheEnd != 0),"reminder at the end in StakingWallet is zero";
 }
