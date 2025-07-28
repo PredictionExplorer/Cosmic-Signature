@@ -20,6 +20,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 	const FIRST_ROUND_INITIAL_ETH_BID_PRICE = 10n ** (18n - 4n);
 	const ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2n;
+	const DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 10n * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 	const RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2n;
 	const CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2n;
 
@@ -62,7 +63,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		FIRST_ROUND_INITIAL_ETH_BID_PRICE,
 		ethDutchAuctionBeginningBidPrice: 0n,
 		ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
-		ethDutchAuctionEndingBidPriceDivisor: 10n * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
+		ethDutchAuctionEndingBidPriceDivisor: DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR,
 		nextEthBidPrice: 0n,
 		ethBidPriceIncreaseDivisor: 100n,
 		RANDOMWALK_NFT_BID_PRICE_DIVISOR,
@@ -472,7 +473,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 			expect(typeof bidderEthBalanceAmountBeforeTransaction_).equal("bigint");
 
-			// If this was zero the transaction would fail.
+			// If this was zero the transaction would have failed.
 			expect(bidderEthBalanceAmountBeforeTransaction_).greaterThan(0n);
 
 			expect(typeof value_).equal("bigint");
@@ -893,7 +894,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 			expect(typeof bidderEthBalanceAmountBeforeTransaction_).equal("bigint");
 
-			// If this was zero the transaction would fail.
+			// If this was zero the transaction would have failed.
 			expect(bidderEthBalanceAmountBeforeTransaction_).greaterThan(0n);
 
 			// #endregion
@@ -911,6 +912,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 				// This random number is named "blockchain based" -- to distinquish it from truly random numbers.
 				// [/Comment-202504265]
 				const blockchainBasedRandomNumberSeedWrapper_ = {/*value: 0n,*/};
+
+				let mainPrizeBeneficiaryCosmicSignatureNftId_;
 
 				// #endregion
 				// #region
@@ -1071,18 +1074,11 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 							++ eventIndexWrapper_.value;
 
 							// #endregion
-							// #region ETH and CS NFT for the Main Prize Beneficiary.
+							// #region CS NFT for the Main Prize Beneficiary.
 
-							mainEthPrizeAmount_ = this.getMainEthPrizeAmount();
 							-- cosmicSignatureNftIndex_;
 							-- cosmicSignatureNftId_;
-							assertEvent(
-								transactionReceipt_.logs[eventIndexWrapper_.value],
-								contracts_.cosmicSignatureGameProxy,
-								"MainPrizeClaimed",
-								[this.roundNum, callerAddress_, mainEthPrizeAmount_, cosmicSignatureNftId_,]
-							);
-							++ eventIndexWrapper_.value;
+							mainPrizeBeneficiaryCosmicSignatureNftId_ = cosmicSignatureNftId_;
 
 							// #endregion
 							// #region CST and CS NFT for the last CST bidder.
@@ -1207,9 +1203,18 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 							// #endregion
 							// #region
 
+							mainEthPrizeAmount_ = this.getMainEthPrizeAmount();
 							charityEthDonationAmount_ = this.getCharityEthDonationAmount();
 							cosmicSignatureNftStakingTotalEthRewardAmount_ = this.getCosmicSignatureNftStakingTotalEthRewardAmount();
 							this.depositEthToPrizesWalletMany(ethDepositsTotalAmount_, ethDeposits_, contracts_, transactionReceipt_, eventIndexWrapper_);
+							const timeoutTimeToWithdrawSecondaryPrizes_ = this.prizesWalletSimulator.registerRoundEnd(transactionBlock_);
+							assertEvent(
+								transactionReceipt_.logs[eventIndexWrapper_.value],
+								contracts_.cosmicSignatureGameProxy,
+								"MainPrizeClaimed",
+								[this.roundNum, callerAddress_, mainEthPrizeAmount_, mainPrizeBeneficiaryCosmicSignatureNftId_, timeoutTimeToWithdrawSecondaryPrizes_,]
+							);
+							++ eventIndexWrapper_.value;
 
 							// #endregion
 						}

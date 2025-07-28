@@ -184,7 +184,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// Comments near `registerRoundEnd` and `depositEth` apply.
 	/// Comment-202502076 relates.
-	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable;
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable returns (uint256);
 
 	/// @notice `CosmicSignatureGame` calls this method on main prize claim.
 	/// Actually, see Comment-202502076.
@@ -197,12 +197,13 @@ interface IPrizesWallet is IAddressValidator {
 	/// As a result, even if the last bidder forgets to claim the main prize, we would still record them as the winner,
 	/// which would make them entitled to claim donated ERC-20 tokens and ERC-721 NFTs.
 	/// But the team feels that it's better to simply treat the person who clicked "Claim" as the winner.
+	/// @return The ended bidding round's timeout time to withdraw prizes.
 	/// @dev
 	/// [Comment-202502076]
 	/// Issue. `registerRoundEnd` and `depositEth` are never called. They exist only for completeness.
 	/// `registerRoundEndAndDepositEthMany` is called instead.
 	/// [/Comment-202502076]
-	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external;
+	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external returns (uint256);
 
 	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
 	function withdrawEverything(

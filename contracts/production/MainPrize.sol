@@ -168,6 +168,7 @@ abstract contract MainPrize is
 			RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_;
 
 			BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
+			uint256 mainPrizeBeneficiaryCosmicSignatureNftId_;
 
 			// #endregion
 			// #region
@@ -345,18 +346,13 @@ abstract contract MainPrize is
 						emit EnduranceChampionPrizePaid(roundNum, cosmicSignatureTokenMintSpecs_[1].account, cstPrizeAmount_, cosmicSignatureNftId_);
 
 						// #endregion
-						// #region ETH and CS NFT for the Main Prize Beneficiary.
-
-						// [Comment-202501161]
-						// It's important to calculate this before ETH transfers change our ETH balance.
-						// [/Comment-202501161]
-						mainEthPrizeAmount_ = getMainEthPrizeAmount();
+						// #region CS NFT for the Main Prize Beneficiary.
 
 						-- cosmicSignatureNftIndex_;
 						// #enable_asserts assert(cosmicSignatureNftIndex_ == uint256(packedVariables1_.cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex));
 						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] == _msgSender());
 						-- cosmicSignatureNftId_;
-						emit MainPrizeClaimed(roundNum, _msgSender(), mainEthPrizeAmount_, cosmicSignatureNftId_);
+						mainPrizeBeneficiaryCosmicSignatureNftId_ = cosmicSignatureNftId_;
 
 						// #endregion
 						// #region CST and CS NFT for the last CST bidder.
@@ -471,7 +467,9 @@ abstract contract MainPrize is
 							IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 							ethDepositReference_.prizeWinnerAddress = chronoWarriorAddress;
 
-							// Comment-202501161 applies.
+							// [Comment-202501161]
+							// It's important to calculate this before ETH transfers change our ETH balance.
+							// [/Comment-202501161]
 							// This can potentially be zero.
 							uint256 chronoWarriorEthPrizeAmount_ = getChronoWarriorEthPrizeAmount();
 
@@ -511,11 +509,21 @@ abstract contract MainPrize is
 						// #region
 
 						// Comment-202501161 applies.
+						mainEthPrizeAmount_ = getMainEthPrizeAmount();
 						charityEthDonationAmount_ = getCharityEthDonationAmount();
 						cosmicSignatureNftStakingTotalEthRewardAmount_ = getCosmicSignatureNftStakingTotalEthRewardAmount();
 
 						// All calculations marked with Comment-202501161 must be made before this.
-						prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, _msgSender(), ethDeposits_);
+						uint256 timeoutTimeToWithdrawSecondaryPrizes_ =
+							prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, _msgSender(), ethDeposits_);
+
+						emit MainPrizeClaimed(
+							roundNum,
+							_msgSender(),
+							mainEthPrizeAmount_,
+							mainPrizeBeneficiaryCosmicSignatureNftId_,
+							timeoutTimeToWithdrawSecondaryPrizes_
+						);
 
 						// #endregion
 					}

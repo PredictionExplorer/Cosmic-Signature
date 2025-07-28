@@ -99,8 +99,8 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
 
-	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame {
-		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
+	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame returns (uint256) {
+		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 		// #enable_asserts uint256 amountSum_ = 0;
 		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
 			-- ethDepositIndex_;
@@ -109,19 +109,21 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			_depositEth(roundNum_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
 		}
 		// #enable_asserts assert(amountSum_ == msg.value);
+		return roundTimeoutTimeToWithdrawPrizes_;
 	}
 
 	// #endregion
 	// #region `registerRoundEnd`
 
-	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override nonReentrant _onlyGame {
-		_registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
+	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override nonReentrant _onlyGame returns (uint256) {
+		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
+		return roundTimeoutTimeToWithdrawPrizes_;
 	}
 
 	// #endregion
 	// #region `_registerRoundEnd`
 
-	function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private {
+	function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private returns (uint256) {
 		// [ToDo-202507148-1]
 		// Should I make at least one of these (maybe the 1st one) a `require`,
 		// so that a potentially malicious upgraded Game contract could not rewrite history.
@@ -135,7 +137,9 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
 		// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
 		mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
-		roundTimeoutTimesToWithdrawPrizes[roundNum_] = block.timestamp + timeoutDurationToWithdrawPrizes;
+		uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
+		roundTimeoutTimesToWithdrawPrizes[roundNum_] = roundTimeoutTimeToWithdrawPrizes_;
+		return roundTimeoutTimeToWithdrawPrizes_;
 	}
 
 	// #endregion
