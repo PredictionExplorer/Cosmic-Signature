@@ -1,0 +1,32 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug Hardhat Tests",
+			"type": "node",
+			"request": "launch",
+			// "console": "externalTerminal",
+
+			// Use the Node runtime. Passing --inspect-brk so it pauses on the first line.
+			"runtimeExecutable": "node",
+			"runtimeArgs": [
+				"--inspect-brk",
+				"${workspaceFolder}/node_modules/.bin/hardhat",
+				"test",
+
+				// // Restricting to a single file.
+				// "test/Bidding.js",
+
+				// Restricting to a grep pattern.
+				"--grep",
+				"^Bidding The HalveEthDutchAuctionEndingBidPrice method$",
+			],
+
+			// // Ignore stepping through internal node_modules.
+			// "skipFiles": ["<node_internals>/**" ],
+
+			// // Optional: if you want to debug only one test file.
+			// "args": ["test/MySpec.js"],
+		},
+	],
+}

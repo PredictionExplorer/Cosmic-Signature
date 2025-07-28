@@ -3,6 +3,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256 } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
@@ -464,7 +465,7 @@ describe("MainPrize", function () {
 		await expect(bidderContract_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(0n)).not.reverted;
 		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
 			.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
-			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n);
+			.withArgs(0n, bidderContractAddr_, mainEthPrizeAmount_, 0n, anyUint);
 	});
 
 	// Comment-202507055 applies.

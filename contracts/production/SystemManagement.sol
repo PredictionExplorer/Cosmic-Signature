@@ -29,13 +29,11 @@ abstract contract SystemManagement is
 	}
 
 	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		ethDutchAuctionDurationDivisor = newValue_;
-		emit EthDutchAuctionDurationDivisorChanged(newValue_);
+		_setEthDutchAuctionDurationDivisor(newValue_);
 	}
 
 	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		ethDutchAuctionEndingBidPriceDivisor = newValue_;
-		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
+		_setEthDutchAuctionEndingBidPriceDivisor(newValue_);
 	}
 
 	function setEthBidPriceIncreaseDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

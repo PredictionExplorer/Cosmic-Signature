@@ -19,12 +19,26 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 /*async*/ function createPrizesWalletSimulator() {
 	// #region
 
+	const DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5n * 7n * 24n * 60n * 60n;
+
+	// #endregion
+	// #region
+
 	const prizesWalletSimulator_ = {
 		// #region Data
 
 		ethBalanceAmount: 0n,
 		// mainPrizeBeneficiaryAddress: hre.ethers.ZeroAddress,
+		timeoutDurationToWithdrawPrizes: DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES,
 		accountEthBalanceAmounts: {},
+
+		// #endregion
+		// #region `registerRoundEnd`
+
+		registerRoundEnd: function(transactionBlock_) {
+			const roundTimeoutTimeToWithdrawPrizes_ = BigInt(transactionBlock_.timestamp) + this.timeoutDurationToWithdrawPrizes;
+			return roundTimeoutTimeToWithdrawPrizes_;
+		},
 
 		// #endregion
 		// #region `depositEthMany`
@@ -91,6 +105,7 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 
 async function assertPrizesWalletSimulator(prizesWalletSimulator_, contracts_, randomNumberSeedWrapper_) {
 	expect(await hre.ethers.provider.getBalance(contracts_.prizesWalletAddr)).equal(prizesWalletSimulator_.ethBalanceAmount);
+	expect(await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes()).equal(prizesWalletSimulator_.timeoutDurationToWithdrawPrizes);
 	await assertPrizesWalletSimulatorOfRandomSigner(prizesWalletSimulator_, contracts_, randomNumberSeedWrapper_);
 }
 

@@ -39,6 +39,164 @@ abstract contract Bidding is
 	}
 
 	// #endregion
+	// #region `HalveEthDutchAuctionEndingBidPrice`
+	
+	/// @dev
+	/// [Comment-202508184]
+	/// Observable universe entities accessed here:
+	///    `onlyOwner`.
+	///    // `CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError`.
+	///    `CosmicSignatureErrors.InvalidOperationInCurrentState`.
+	///    // `roundActivationTime`.
+	///    // `ethDutchAuctionDurationDivisor`.
+	///    `ethDutchAuctionBeginningBidPrice`.
+	///    `ethDutchAuctionEndingBidPriceDivisor`.
+	///    `mainPrizeTimeIncrementInMicroSeconds`.
+	///    `_onlyNonFirstRound`.
+	///       [Comment-202508134]
+	///       Given Comment-202508094, this logic can't work on the very first bidding round.
+	///       [/Comment-202508134]
+	///    `_onlyBeforeBidPlacedInRound`.
+	///    `_setEthDutchAuctionDurationDivisor`.
+	///    `_setEthDutchAuctionEndingBidPriceDivisor`.
+	///    `getEthDutchAuctionDurations`.
+	/// [/Comment-202508184]
+	function HalveEthDutchAuctionEndingBidPrice() external override onlyOwner() _onlyNonFirstRound() /*_onlyRoundIsInactive()*/ _onlyBeforeBidPlacedInRound() {
+		// Check out comments near this method declaration in `IBidding`.
+		// It's possible to implement this logic in an external script, but it's more robust in a method.
+		//
+		// [Comment-202508102]
+		// This method changes `ethDutchAuctionDurationDivisor` and `ethDutchAuctionEndingBidPriceDivisor`.
+		// After the current bidding round ends, the contract owner must restore those parameters by calling respective setters.
+		// [/Comment-202508102]
+		//
+		// [Comment-202508105]
+		// In some way, this method resembles other contract parameter setters, however contrary to Comment-202411236,
+		// it would be incorrect for the caller to set `roundActivationTime` to a point in the future before calling this method
+		// because this method uses `roundActivationTime`. In fact, the validation near Comment-202508096 would fail
+		// if `roundActivationTime` is in the future.
+		// [/Comment-202508105]
+
+		(uint256 ethDutchAuctionDuration_, int256 ethDutchAuctionElapsedDuration_) = getEthDutchAuctionDurations();
+		// // #enable_asserts // #disable_smtchecker console.log("202508107", ethDutchAuctionDuration_, uint256(ethDutchAuctionElapsedDuration_));
+
+		// [Comment-202508096]
+		// Validating that the ETH Dutch auction has ended some duration ago.
+		// The most correct requirement would be that the ETH bid price returned by `getNextEthBidPrice`
+		// has reached its minimum in a past block.
+		// This condition isn't necessarily a perfet substiturte for that in case a block spans multiple seconds, and that's OK.
+		// [/Comment-202508096]
+		if ( ! (ethDutchAuctionElapsedDuration_ > int256(ethDutchAuctionDuration_)) ) {
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState("Too early.");
+		}
+
+		uint256 newEthDutchAuctionEndingBidPriceDivisor_ = ethDutchAuctionEndingBidPriceDivisor;
+
+		// [Comment-202508187]
+		// This is what `getNextEthBidPrice` returns when `ethDutchAuctionElapsedDuration_ >= ethDutchAuctionDuration_`.
+		// We have validated a tighter condition near Comment-202508096.
+		// [/Comment-202508187]
+		// Comment-202501301 applies.
+		// Comment-202508103 applies.
+		uint256 currentEthBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+
+		// [Comment-202508192]
+		// Doubling this.
+		// This can potentially overflow.
+		// [/Comment-202508192]
+		newEthDutchAuctionEndingBidPriceDivisor_ *= 2;
+
+		// [Comment-202508189]
+		// The new ETH Dutch auction ending bid price, which is approximately a half of `currentEthBidPrice_`.
+		// [/Comment-202508189]
+		// Comment-202501301 applies.
+		// Comment-202508103 applies.
+		uint256 ethDutchAuctionEndingBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+
+		// [Comment-202508191]
+		// We need a formula to adjust `ethDutchAuctionDurationDivisor` so that
+		// the value returned by `getNextEthBidPrice` leapped as little as possible.
+		//
+		// This is how `getNextEthBidPrice` calculates the current ETH bid price.
+		// It needs to remain being approximately equal `currentEthBidPrice_`.
+		//
+		// ethDutchAuctionBeginningBidPrice -
+		// (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * ethDutchAuctionElapsedDuration_ / ethDutchAuctionDuration_
+		//
+		// `ethDutchAuctionDuration_` will now increase due to `ethDutchAuctionDurationDivisor` declining.
+		// As seen near Comment-202508099:
+		// ethDutchAuctionDuration_ == mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_
+		//
+		// Let's transform the equation to calculate `newEthDutchAuctionDurationDivisor_`.
+		//
+		// currentEthBidPrice_ ==
+		// ethDutchAuctionBeginningBidPrice -
+		// (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * ethDutchAuctionElapsedDuration_ / (mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_)
+		//
+		// ethDutchAuctionBeginningBidPrice - currentEthBidPrice_ ==
+		// (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * ethDutchAuctionElapsedDuration_ * newEthDutchAuctionDurationDivisor_ / mainPrizeTimeIncrementInMicroSeconds
+		//
+		// newEthDutchAuctionDurationDivisor_ ==
+		// (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) *
+		// mainPrizeTimeIncrementInMicroSeconds /
+		// ((ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * ethDutchAuctionElapsedDuration_)
+		// [/Comment-202508191]
+		uint256 newEthDutchAuctionDurationDivisor_;
+		{
+			uint256 numerator_ = (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) * mainPrizeTimeIncrementInMicroSeconds;
+			uint256 denominator_ = (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * uint256(ethDutchAuctionElapsedDuration_);
+
+			// [Comment-202508142]
+			// Provided our configuration is correct, neither numerator nor denominator can be zero,
+			// while their quotient can potentially be.
+			// Not adding a half of the denominator to the numerator.
+			// Adding 1 to the quotient, and therefore the result cannot be zero.
+			// Another alternative would be to not add 1.
+			// The current formula is better because the alternatives sometimes result in a temporary increase of the ETH bid price,
+			// while our goal is to reduce it.
+			// [/Comment-202508142]
+			newEthDutchAuctionDurationDivisor_ = (numerator_ /* + denominator_ / 2 */) / denominator_ + 1;
+		}
+		// if ( ! (newEthDutchAuctionDurationDivisor_ > 0) ) {
+		// 	revert CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError("newEthDutchAuctionDurationDivisor_ == 0");
+		// }
+		// #enable_asserts assert(newEthDutchAuctionDurationDivisor_ > 0);
+
+		/*
+		{
+			// [Comment-202508135]
+			// This asserion doesn't appear to fail, but is it guaranteed not to?
+			// It appears to be OK if somehow it fails.
+			// [Comment-202508139]
+			// Under normal production conditions, this assertion will succeed.
+			// [/Comment-202508139]
+			// [/Comment-202508135]
+			assert(newEthDutchAuctionDurationDivisor_ <= ethDutchAuctionDurationDivisor);
+
+			// Comment-202508099 applies.
+			uint256 newEthDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_;
+
+			// Comment-202508135 applies.
+			assert(newEthDutchAuctionDuration_ >= ethDutchAuctionDuration_);
+
+			// [Comment-202508157]
+			// This assertion can fail.
+			// If it fails it means that despite of us changing contract parameters, the ETH Dutch auction has already ended,
+			// so the ETH bid price would instantly halve, which is undesirable.
+			// But it happens only when the ETH bid price is already very small, so it makes little difference.
+			// This assertion would not necessarily have a chance to fail if we didn't add 1 near Comment-202508142,
+			// but it would come at the cost of having a different issue described in that comment.
+			// Comment-202508139 applies.
+			// [/Comment-202508157]
+			assert(newEthDutchAuctionDuration_ > uint256(ethDutchAuctionElapsedDuration_));
+		}
+		*/
+
+		_setEthDutchAuctionDurationDivisor(newEthDutchAuctionDurationDivisor_);
+		_setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
+	}
+
+	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
@@ -236,6 +394,9 @@ abstract contract Bidding is
 						// Adding 1 to ensure that the result is a nonzero.
 						// Comment-202503162 relates and/or applies.
 						// [/Comment-202501301]
+						// [Comment-202508103]
+						// Similar formulas exist in multiple places.
+						// [/Comment-202508103]
 						uint256 ethDutchAuctionEndingBidPrice_ = nextEthBidPrice_ / ethDutchAuctionEndingBidPriceDivisor + 1;
 						// #enable_asserts assert(ethDutchAuctionEndingBidPrice_ > 0 && ethDutchAuctionEndingBidPrice_ <= nextEthBidPrice_);
 
@@ -284,7 +445,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getEthDutchAuctionDurations`
 
-	function getEthDutchAuctionDurations() external view override returns (uint256, int256) {
+	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -303,7 +464,11 @@ abstract contract Bidding is
 		unchecked
 		// #enable_smtchecker */
 		{
+			// [Comment-202508099]
+			// Similar formulas exist in multiple places.
+			// [/Comment-202508099]
 			uint256 ethDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / ethDutchAuctionDurationDivisor;
+
 			return ethDutchAuctionDuration_;
 		}
 	}

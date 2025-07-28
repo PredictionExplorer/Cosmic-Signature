@@ -30,6 +30,7 @@ import { ICosmicSignatureGame } from "../production/interfaces/ICosmicSignatureG
 // #endregion
 // #region
 
+// todo-1 Compare both open-bid source files to their non-open-bid counterparts.
 contract CosmicSignatureGameOpenBid is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,

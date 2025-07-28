@@ -28,11 +28,14 @@ interface IMainPrize is
 	/// @param ethPrizeAmount Main ETH prize amount.
 	/// It can potentially be zero.
 	/// @param prizeCosmicSignatureNftId The ID of the Cosmic Signature NFT minted and awarded.
+	/// @param timeoutTimeToWithdrawSecondaryPrizes The ended bidding round's timeout time to withdraw prizes
+	/// from `PrizesWallet`.
 	event MainPrizeClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
 		uint256 ethPrizeAmount,
-		uint256 indexed prizeCosmicSignatureNftId
+		uint256 indexed prizeCosmicSignatureNftId,
+		uint256 timeoutTimeToWithdrawSecondaryPrizes
 	);
 
 	/// @notice Claims the current bidding round main prize.
