@@ -49,6 +49,13 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// todo-1 +++ Do we have a test for this?
 	receive() external payable;
 
+	/// @notice This method gives the contract owner an option to encourage people to bid when the ETH Dutch auction has ended,
+	/// but nobody is willing to bid -- by reducing ETH bid price.
+	/// Only the contract owner is permitted to call this method.
+	/// Comment-202508102 applies.
+	/// See important details in comments in this method body.
+	function HalveEthDutchAuctionEndingBidPrice() external;
+
 	/// @notice Places an ETH plus an optional Random Walk NFT bid and donates an ERC-20 token amount in a single transaction.
 	/// [Comment-202503149]
 	/// Comments near `bidWithEth` apply.

@@ -20,6 +20,10 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 library CosmicSignatureErrors {
 	// #region Bidding
 
+	/// @notice Thrown when an action is attempted during the very first bidding round.
+	/// @param errStr Description of the error.
+	error FirstRound(string errStr);
+
 	/// @notice Thrown when an action is attempted before the current bidding round activation time.
 	/// @param errStr Description of the error.
 	/// @param roundActivationTime The current bidding round activation time.
@@ -41,6 +45,10 @@ library CosmicSignatureErrors {
 	/// in the current bidding round.
 	/// @param errStr Description of the error.
 	error BidHasBeenPlacedInCurrentRound(string errStr);
+
+	// /// @notice Thrown to revert `Bidding.HalveEthDutchAuctionEndingBidPrice`.
+	// /// @param errStr Description of the error.
+	// error EthDutchAuctionEndingBidPriceHalvingError(string errStr);
 
 	/// @notice Thrown when someone attempts to place a bid of a type that is not currently allowed.
 	/// @param errStr Description of the error.
@@ -261,10 +269,10 @@ library CosmicSignatureErrors {
 
 	// error UnknownError(string errStr);
 
-	// /// @notice Thrown when an operation is not possible in the current contract state.
-	// /// @param errStr Description of the error.
-	// /// @dev In .NET, `InvalidOperationException` serves the same purpose.
-	// error InvalidOperationInCurrentState(string errStr);
+	/// @notice Thrown when an operation is not possible or allowed in the current contract state or at the current time.
+	/// @param errStr Description of the error.
+	/// @dev In .NET, `InvalidOperationException` serves the same purpose.
+	error InvalidOperationInCurrentState(string errStr);
 
 	// #endregion
 }

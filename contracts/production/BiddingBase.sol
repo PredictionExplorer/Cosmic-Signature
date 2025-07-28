@@ -6,6 +6,17 @@ import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBiddingBase } from "./interfaces/IBiddingBase.sol";
 
 abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
+	modifier _onlyNonFirstRound() {
+		_checkNonFirstRound();
+		_;
+	}
+
+	function _checkNonFirstRound() internal view {
+		if ( ! (roundNum > 0) ) {
+			revert CosmicSignatureErrors.FirstRound("This operation is invalid during the very first bidding round.");
+		}
+	}
+
 	modifier _onlyRoundIsInactive() {
 		_checkRoundIsInactive();
 		_;
@@ -50,6 +61,16 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 	function _setRoundActivationTime(uint256 newValue_) internal {
 		roundActivationTime = newValue_;
 		emit RoundActivationTimeChanged(newValue_);
+	}
+
+	function _setEthDutchAuctionDurationDivisor(uint256 newValue_) internal {
+		ethDutchAuctionDurationDivisor = newValue_;
+		emit EthDutchAuctionDurationDivisorChanged(newValue_);
+	}
+
+	function _setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) internal {
+		ethDutchAuctionEndingBidPriceDivisor = newValue_;
+		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
 	function getDurationUntilRoundActivation() external view override returns (int256) {

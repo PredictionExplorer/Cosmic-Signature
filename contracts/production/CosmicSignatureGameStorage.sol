@@ -137,7 +137,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev Comment-202503135 relates.
 	/// [Comment-202411236]
 	/// We allow the contract owner to change this under the conditions described in Comment-202503108.
-	/// This design leaves the door open for the owner to change this to a point in the future and then change some parameters.
+	/// This design leaves the door open for the contract owner to change this to a point in the future,
+	/// change some parameters, and then restore this.
+	/// Comment-202508105 relates.
 	/// Comment-202503106 relates.
 	/// todo-1 The backend and frontend must expect that `roundActivationTime` changes any time.
 	/// [/Comment-202411236]
@@ -154,6 +156,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202501025 applies.
 	/// Comment-202411064 applies.
+	/// See also: `HalveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionDurationDivisor;
 
 	/// @notice ETH Dutch auction beginning bid price.
@@ -172,13 +175,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202501063]
 	/// Comment-202411064 applies.
-	/// @dev
-	/// todo-0 Develop a test that after the current time reaches `roundActivationTime`,
-	/// todo-0 sets `roundActivationTime` to a point in the future, doubles this divisor,
-	/// todo-0 sets `roundActivationTime` to a point in the past.
-	/// todo-0 The past point needs to be such that ETH bid price continues to gradually decline.
-	/// todo-0 Comment and document that after the owner changes this, they must set `roundActivationTime` to a point in the past
-	/// todo-0 (specify exactly how long into the past), so that the new price immediately went into effect.
+	/// See also: `HalveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice Next ETH bid price.

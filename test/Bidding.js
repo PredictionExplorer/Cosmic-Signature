@@ -4,9 +4,9 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt32 } = require("../src/Helpers.js");
+const { generateRandomUInt32, generateRandomUInt256 } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;
@@ -39,6 +39,382 @@ const { loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic
 // }
 
 describe("Bidding", function () {
+	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+
+		const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
+
+		for ( let counter_ = -1; counter_ <= 1; ++ counter_ ) {
+			const latestBlock_ = await hre.ethers.provider.getBlock("latest");
+			expect(latestBlock_.timestamp).equal(Number(roundActivationTime_) + counter_);
+			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
+			expect(durationUntilRoundActivation_).equal( - counter_ );
+			const durationElapsedSinceRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationElapsedSinceRoundActivation();
+			expect(durationElapsedSinceRoundActivation_).equal(counter_);
+			await hre.ethers.provider.send("evm_mine");
+		}
+	});
+
+	it("The HalveEthDutchAuctionEndingBidPrice method", async function () {
+		// #region
+
+		if (SKIP_LONG_TESTS) {
+			// todo-0 Log this everywhere.
+			console.warn("Warning 202508151. Skipping a long test.");
+			// return;
+		}
+
+		// #endregion
+		// #region
+
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+
+		// #endregion
+		// #region
+
+		const ethDutchAuctionDurationDivisor_ = await contracts_.cosmicSignatureGameProxy.ethDutchAuctionDurationDivisor();
+		const ethDutchAuctionEndingBidPriceDivisor_ = await contracts_.cosmicSignatureGameProxy.ethDutchAuctionEndingBidPriceDivisor();
+
+		// #endregion
+		// #region
+
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).HalveEthDutchAuctionEndingBidPrice())
+			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FirstRound");
+
+		// #endregion
+		// #region
+
+		// Given Comment-202508134, skipping the 1st bidding round.
+		{
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+			const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
+			// await hre.ethers.provider.send("evm_mine");
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).not.reverted;
+		}
+
+		// #endregion
+		// #region
+
+		{
+			const [ethDutchAuctionDuration_, /*ethDutchAuctionElapsedDuration_,*/] = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
+			const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
+
+			// Sleeping for a random duration to randomize the initial ETH bid price,
+			// which, in turn, will randomize the next block initial ETH bid price.
+			const nextBlockTime_ = Number(roundActivationTime_) + generateRandomUInt32() % (Number(ethDutchAuctionDuration_) + 1);
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(nextBlockTime_),]);
+			// await hre.ethers.provider.send("evm_mine");
+
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidHasBeenPlacedInCurrentRound");
+			const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
+			// await hre.ethers.provider.send("evm_mine");
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize()).not.reverted;
+		}
+
+		// #endregion
+		// #region
+
+		let totalIteration1Counter_ = 0;
+		let totalIteration2Counter_ = 0;
+
+		// #endregion
+		// #region
+
+		for ( let iteration1Counter_ = 1; ; ++ iteration1Counter_ ) {
+			// #region
+
+			let ethDutchAuctionDurationDivisor2_;
+
+			// #endregion
+			// #region
+
+			{
+				// #region
+
+				let [ethDutchAuctionDuration_, /*ethDutchAuctionElapsedDuration_,*/] = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
+
+				{
+					const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
+					const nextBlockTime_ = Number(roundActivationTime_) + Number(ethDutchAuctionDuration_) - 1;
+					await hre.ethers.provider.send("evm_setNextBlockTimestamp", [nextBlockTime_,]);
+					// await hre.ethers.provider.send("evm_mine");
+				}
+
+				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
+					.withArgs("Too early.");
+
+				// #endregion
+				// #region
+
+				let ethDutchAuctionRemainingDuration2_ = 1n;
+
+				// [Comment-202508153]
+				// Similar magic numbers exist in multiple places.
+				// [/Comment-202508153]
+				let iteration2CounterMaxLimit_ = generateRandomUInt32() % 6;
+
+				if (iteration2CounterMaxLimit_ <= 0) {
+					// This is effectively unlimited.
+					iteration2CounterMaxLimit_ = 999_999_999;
+				}
+
+				// #endregion
+				// #region
+
+				for ( let iteration2Counter_ = 1; ; ++ iteration2Counter_ ) {
+					// #region
+
+					// This is the same condition as the one near Comment-202508157.
+					if (ethDutchAuctionRemainingDuration2_ > 0n) {
+
+						// console.info("202508161");
+
+						// [Comment-202508158]
+						// The next call to this method will succeed, even if we do not sleep after this one.
+						// [/Comment-202508158]
+						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+							.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
+							.withArgs("Too early.");
+					} else {
+						// console.info("202508162");
+					}
+
+					// #endregion
+					// #region
+
+					// Sleeping for an exponentially increasing duration, so that we could eventually end the test near Comment-202508144.
+					const nextBlockTimeExtraIncrease_ = generateRandomUInt256() % (((24n + 2n) * 60n * 60n) << BigInt(iteration1Counter_)) - ((2n * 60n * 60n) << BigInt(iteration1Counter_));
+					if (nextBlockTimeExtraIncrease_ > 0n) {
+						if (nextBlockTimeExtraIncrease_ > 1n) {
+							// console.info("202508163");
+							await hre.ethers.provider.send("evm_increaseTime", [Number(nextBlockTimeExtraIncrease_),]);
+						} else {
+							// console.info("202508164");
+						}
+						await hre.ethers.provider.send("evm_mine");
+					} else {
+						// console.info("202508165");
+					}
+
+					// #endregion
+					// #region
+
+					const nextEthBidPrice1_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+					expect(nextEthBidPrice1_).greaterThan(0n);
+
+					// #endregion
+					// #region
+
+					const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice();
+					const transactionResponse_ = await transactionResponsePromise_;
+					const transactionReceipt_ = await transactionResponse_.wait();
+
+					// #endregion
+					// #region
+
+					ethDutchAuctionDurationDivisor2_ = await contracts_.cosmicSignatureGameProxy.ethDutchAuctionDurationDivisor();
+					expect(ethDutchAuctionDurationDivisor2_).greaterThan(0n);
+					const [ethDutchAuctionDuration2_, ethDutchAuctionElapsedDuration2_,] = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
+					const ethDutchAuctionDurationIncrease_ = ethDutchAuctionDuration2_ - ethDutchAuctionDuration_;
+
+					// Given that the assertions near Comment-202508135 are known to succeed, this one is also supposed to.
+					expect(ethDutchAuctionDurationIncrease_).greaterThanOrEqual(0n);
+
+					ethDutchAuctionRemainingDuration2_ = ethDutchAuctionDuration2_ - ethDutchAuctionElapsedDuration2_;
+					const nextEthBidPrice2_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(0n);
+					expect(nextEthBidPrice2_).greaterThan(0n);
+					const nextEthBidPrice3_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+					expect(nextEthBidPrice3_).greaterThan(0n);
+					const nextEthBidPrices21SimilarityScore_ =
+						// Number(nextEthBidPrice2_ - nextEthBidPrice1_) * 2.0 / Number(nextEthBidPrice1_ + nextEthBidPrice2_);
+						Number(nextEthBidPrice2_) / Number(nextEthBidPrice1_);
+					expect(nextEthBidPrices21SimilarityScore_).lessThanOrEqual(1.0);
+					const nextEthBidPrices32SimilarityScore_ =
+						// Number(nextEthBidPrice3_ - nextEthBidPrice2_) * 2.0 / Number(nextEthBidPrice2_ + nextEthBidPrice3_);
+						Number(nextEthBidPrice3_) / Number(nextEthBidPrice2_);
+					expect(nextEthBidPrices32SimilarityScore_).lessThanOrEqual(1.0);
+					// console.info(
+					// 	`${iteration1Counter_} ` +
+					// 	`${iteration2Counter_} ` +
+					// 	`${nextBlockTimeExtraIncrease_} ` +
+					// 	`${ethDutchAuctionDurationDivisor2_} ` +
+					// 	`${ethDutchAuctionDurationIncrease_} ` +
+					// 	`${ethDutchAuctionRemainingDuration2_} ` +
+					// 	`${nextEthBidPrice1_} ` +
+					// 	`${nextEthBidPrice2_} ` +
+					// 	`${nextEthBidPrices21SimilarityScore_} ` +
+					// 	// `${nextEthBidPrice3_} ` +
+					// 	`${nextEthBidPrices32SimilarityScore_} `
+					// );
+
+					// #endregion
+					// #region
+
+					// If this condition is `true`, it makes no sense to double `ethDutchAuctionEndingBidPriceDivisor` again.
+					if (nextEthBidPrice1_ <= 1n) {
+						// console.info("202508145");
+						totalIteration2Counter_ += iteration2Counter_;
+						break;
+					}
+
+					if (iteration2Counter_ >= iteration2CounterMaxLimit_) {
+						// console.info("202508146");
+						totalIteration2Counter_ += iteration2Counter_;
+						break;
+					}
+
+					// #endregion
+					// #region
+
+					// This condition is similar to the one near Comment-202508157.
+					if (ethDutchAuctionRemainingDuration2_ > 1n) {
+
+						// console.info("202508167");
+						const transactionBlock_ = await transactionReceipt_.getBlock();
+
+						// Creating the right conditions for the call near Comment-202508158.
+						// That call can still happen even if we don't reach this point because the condition to make that call is looser.
+						await hre.ethers.provider.send("evm_setNextBlockTimestamp", [transactionBlock_.timestamp + Number(ethDutchAuctionRemainingDuration2_),]);
+						// await hre.ethers.provider.send("evm_mine");
+					} else {
+						// console.info("202508168");
+					}
+
+					ethDutchAuctionDuration_ = ethDutchAuctionDuration2_;
+
+					// #endregion
+				}
+
+				// #endregion
+			}
+
+			// #endregion
+			// #region
+
+			{
+				let configurationRestored_ = false;
+				for (let roundCounter_ = generateRandomUInt32() % 40; ; ) {
+					let nextEthBidPrice_;
+					for (let bidCounter_ = generateRandomUInt32() % 5; ; ) {
+						// console.info("202508169");
+						const signer_ = contracts_.signers[generateRandomUInt32() % contracts_.signers.length];
+						nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
+						await (await contracts_.cosmicSignatureGameProxy.connect(signer_).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).wait();
+						if (( -- bidCounter_ ) < 0) {
+							// console.info("202508171");
+							const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
+							await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
+							// await hre.ethers.provider.send("evm_mine");
+							await expect(contracts_.cosmicSignatureGameProxy.connect(signer_).claimMainPrize()).not.reverted;
+							break;
+						}
+					}
+					if ( ! configurationRestored_ ) {
+						// console.info("202508172");
+						configurationRestored_ = true;
+
+						// Comment-202508102 relates and/or applies.
+						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionDurationDivisor(ethDutchAuctionDurationDivisor_)).not.reverted;
+						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(ethDutchAuctionEndingBidPriceDivisor_)).not.reverted;
+
+						if ( // [Comment-202508144]
+						     // According to Comment-202508142, this cannot be smaller.
+						     // It takes like 10K years to reach this state.
+						     // So it's time to end the test.
+						     // [/Comment-202508144]
+						     ethDutchAuctionDurationDivisor2_ <= 1n ||
+
+						     // [Comment-202508155]
+						     // Similar magic numbers exist in multiple places.
+						     // [/Comment-202508155]
+						     (SKIP_LONG_TESTS && iteration1Counter_ >= 2)
+						) {
+							// console.info("202508173");
+							break;
+						}
+					} else {
+						// console.info("202508174");
+					}
+
+					// Preventing exponential growth of ETH bid price.
+					if (nextEthBidPrice_ >= 10n ** (18n - 1n)) {
+						// console.info("202508159");
+						break;
+					}
+
+					if (( -- roundCounter_ ) < 0) {
+						// console.info("202508175");
+						break;
+					}
+					const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
+					const nextBlockTime_ = Number(roundActivationTime_) + generateRandomUInt32() % (60 * 60);
+					await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(nextBlockTime_),]);
+					// await hre.ethers.provider.send("evm_mine");
+				}
+			}
+
+			// #endregion
+			// #region
+
+			// {
+			// 	const latestBlock_ = await hre.ethers.provider.getBlock("latest");
+			// 	let latestBlockTimeStampAsString_;
+			// 	try {
+			// 		// This will throw an error if the timestamp is too big.
+			// 		latestBlockTimeStampAsString_ = (new Date(latestBlock_.timestamp * 1000)).toISOString();
+			// 	} catch {
+			// 		console.info("202508176");
+			// 		latestBlockTimeStampAsString_ = latestBlock_.timestamp.toString();
+			// 	}
+			// 	console.info(`202508148 ${latestBlockTimeStampAsString_}`);
+			// }
+			if ( // Comment-202508144 applies.
+			     ethDutchAuctionDurationDivisor2_ <= 1n ||
+
+			     // Comment-202508155 applies.
+			     (SKIP_LONG_TESTS && iteration1Counter_ >= 2)
+			) {
+				// console.info("202508149");
+
+				// At this point, `totalIteration1Counter_` is zero, right?
+				// So we could simply assign this here or event eliminate `totalIteration1Counter_` and use `iteration1Counter_` instead.
+				// But it's OK.
+				totalIteration1Counter_ += iteration1Counter_;
+
+				break;
+			}
+
+			// #endregion
+		}
+
+		// #endregion
+		// #region
+
+		// console.info(`202508150 ${totalIteration1Counter_} ${totalIteration2Counter_}`);
+		if ( ! SKIP_LONG_TESTS ) {
+			// console.info("202508177");
+			expect(totalIteration1Counter_).greaterThanOrEqual(10);
+
+			// Comment-202508153 applies.
+			expect(totalIteration2Counter_).greaterThanOrEqual(2 * totalIteration1Counter_);
+		} else {
+			// console.info("202508178");
+
+			// Comment-202508155 applies.
+			expect(totalIteration1Counter_).equal(2);
+			expect(totalIteration2Counter_).greaterThanOrEqual(2);
+		}
+
+		// #endregion
+	});
+
 	it("Bidding-related durations", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
@@ -54,27 +430,12 @@ describe("Bidding", function () {
 		let [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_] = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
 
 		// Making CST bid price almost zero.
-		await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 1 - await makeNextBlockTimeDeterministic(),]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_) - 2 - await makeNextBlockTimeDeterministic(),]);
 		// await hre.ethers.provider.send("evm_mine");
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(0n, "cst bid")).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(0n, "cst bid")).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(0n, "cst bid")).not.reverted;
-	});
-
-	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
-
-		const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
-
-		for ( let counter_ = -1; counter_ <= 1; ++ counter_ ) {
-			const latestBlock_ = await hre.ethers.provider.getBlock("latest");
-			expect(latestBlock_.timestamp).equal(Number(roundActivationTime_) + counter_);
-			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-			expect(durationUntilRoundActivation_).equal( - counter_ );
-			const durationElapsedSinceRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationElapsedSinceRoundActivation();
-			expect(durationElapsedSinceRoundActivation_).equal(counter_);
-			await hre.ethers.provider.send("evm_mine");
-		}
 	});
 
 	it("Bidding with ETH + Random Walk NFT", async function () {

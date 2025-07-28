@@ -6,6 +6,7 @@ pragma solidity 0.8.29;
 // #endregion
 // #region
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
@@ -85,6 +86,73 @@ abstract contract BiddingOpenBid is
 		// #endregion
 	}
 
+	// #endregion
+	// #region `HalveEthDutchAuctionEndingBidPrice`
+	
+	/// @dev Comment-202508184 applies.
+	function HalveEthDutchAuctionEndingBidPrice() external override onlyOwner() _onlyNonFirstRound() /*_onlyRoundIsInactive()*/ _onlyBeforeBidPlacedInRound() {
+		// Check out comments near this method declaration in `IBidding`.
+		// It's possible to implement this logic in an external script, but it's more robust in a method.
+		// Comment-202508102 applies.
+		// Comment-202508105 applies.
+
+		(uint256 ethDutchAuctionDuration_, int256 ethDutchAuctionElapsedDuration_) = getEthDutchAuctionDurations();
+		// // #enable_asserts // #disable_smtchecker console.log("202508107", ethDutchAuctionDuration_, uint256(ethDutchAuctionElapsedDuration_));
+
+		// Comment-202508096 applies.
+		if ( ! (ethDutchAuctionElapsedDuration_ > int256(ethDutchAuctionDuration_)) ) {
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState("Too early.");
+		}
+
+		uint256 newEthDutchAuctionEndingBidPriceDivisor_ = ethDutchAuctionEndingBidPriceDivisor;
+
+		// Comment-202508187 applies.
+		// Comment-202501301 applies.
+		// Comment-202508103 applies.
+		uint256 currentEthBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+
+		// Comment-202508192 applies.
+		newEthDutchAuctionEndingBidPriceDivisor_ *= 2;
+
+		// Comment-202508189 applies.
+		// Comment-202501301 applies.
+		// Comment-202508103 applies.
+		uint256 ethDutchAuctionEndingBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+
+		// Comment-202508191 applies.
+		uint256 newEthDutchAuctionDurationDivisor_;
+		{
+			uint256 numerator_ = (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) * mainPrizeTimeIncrementInMicroSeconds;
+			uint256 denominator_ = (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * uint256(ethDutchAuctionElapsedDuration_);
+
+			// Comment-202508142 applies.
+			newEthDutchAuctionDurationDivisor_ = (numerator_ /* + denominator_ / 2 */) / denominator_ + 1;
+		}
+		// if ( ! (newEthDutchAuctionDurationDivisor_ > 0) ) {
+		// 	revert CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError("newEthDutchAuctionDurationDivisor_ == 0");
+		// }
+		// #enable_asserts assert(newEthDutchAuctionDurationDivisor_ > 0);
+
+		/*
+		{
+			// Comment-202508135 applies.
+			assert(newEthDutchAuctionDurationDivisor_ <= ethDutchAuctionDurationDivisor);
+
+			// Comment-202508099 applies.
+			uint256 newEthDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_;
+
+			// Comment-202508135 applies.
+			assert(newEthDutchAuctionDuration_ >= ethDutchAuctionDuration_);
+
+			// Comment-202508157 applies.
+			assert(newEthDutchAuctionDuration_ > uint256(ethDutchAuctionElapsedDuration_));
+		}
+		*/
+
+		_setEthDutchAuctionDurationDivisor(newEthDutchAuctionDurationDivisor_);
+		_setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
+	}
+	
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
@@ -306,6 +374,7 @@ abstract contract BiddingOpenBid is
 						// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor > 1);
 
 						// Comment-202501301 applies.
+						// Comment-202508103 applies.
 						uint256 ethDutchAuctionEndingBidPrice_ = nextEthBidPrice_ / ethDutchAuctionEndingBidPriceDivisor + 1;
 						// #enable_asserts assert(ethDutchAuctionEndingBidPrice_ > 0 && ethDutchAuctionEndingBidPrice_ <= nextEthBidPrice_);
 
@@ -352,7 +421,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `getEthDutchAuctionDurations`
 
-	function getEthDutchAuctionDurations() external view override returns (uint256, int256) {
+	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -371,7 +440,9 @@ abstract contract BiddingOpenBid is
 		unchecked
 		// #enable_smtchecker */
 		{
+			// Comment-202508099 applies.
 			uint256 ethDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / ethDutchAuctionDurationDivisor;
+
 			return ethDutchAuctionDuration_;
 		}
 	}
