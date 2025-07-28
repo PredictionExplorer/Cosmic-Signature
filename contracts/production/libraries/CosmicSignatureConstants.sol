@@ -45,7 +45,9 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (2 * HOURS_PER_DAY) - 0;
 
 	/// @notice First bidding round initial (first bid) ETH bid price.
-	/// It's impossible to reconfigure it after the contract has been deployed.
+	/// [Comment-202508094]
+	/// It's impossible to reconfigure the price after the contract has been deployed.
+	/// [/Comment-202508094]
 	uint256 internal constant FIRST_ROUND_INITIAL_ETH_BID_PRICE = 0.0001 ether;
 
 	/// @notice Comment-202503084 relates.
