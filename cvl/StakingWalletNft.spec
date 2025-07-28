@@ -1,3 +1,8 @@
+// verification policy:
+//		- One state variable per rule
+//		- Uses generic method matcher (i.e.: f(e,args) also called "Parametric rules" ) construct to prove that 
+//				no other method touches our state variable unless explicitly stated in the rule logic
+
 methods {
 	function game() external returns (address) envfree;
 	function numStakedNfts() external returns (uint256) envfree;
@@ -20,7 +25,7 @@ persistent ghost mathint gNumActiveStakeActions;
 persistent ghost mathint gNumStakedNfts;
 persistent ghost mathint gBalDiffStakingWallet;
 function cvlNftTransferFrom(address token,address from, address to, uint256 tokenId) {
-	// doesn't do anything
+	// does not do anything
 }
 
 hook Sstore currentContract.actionCounter uint256 newVal (uint256 oldVal) {
@@ -31,7 +36,9 @@ hook Sstore stakeActions[INDEX uint256 idx].nftId uint256 newValue (uint256 oldV
 		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.stake(uint256).selector)) ||
 		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector)) ||
 		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector)) ||
-		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector))
+		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector)) ||
+		(currentMethodSignature == to_bytes4(sig:StakingWalletCosmicSignatureNft.pureUnstake(uint256).selector)),
+		"staking function did not initialize currentMethodSignature ghost which is required for running rules in this file"
 	);
 	gStakeActionNftIdSet = 1;
 }
@@ -106,25 +113,79 @@ function genericFunctionMatcher(method f,env e,address charity,uint256 round,uin
 }
 rule actionCounterValidation() 
 {	
-	// verification policy:
-	//		- One state variable per rule
-	//		- Uses generic method matcher (i.e.: f(e,args) also called "Parametric rules" ) construct to prove that 
-	//				no other method touches our state variable unless explicitly stated in the rule logic
-	uint256 ac = currentContract.actionCounter();
 	require actionCounterDiff == 0;
+	uint256 tokenId;
+	uint256 actionId;
+	uint256[] manyActionIds;
+	uint256 round;
+	address charity;
+	require charity != currentContract;
+	require charity != 0;
 
     method f; env e; calldataarg args;
-    if (f.selector != sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
+    	require currentContract.game() == e.msg.sender;
+    } else {
 		require f.isPayable == false;
 	}
     require currentContract != e.msg.sender;
 	require e.msg.sender != 0;
-    if (f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
-    	require currentContract.game() == e.msg.sender;
+	uint256 ac = currentContract.actionCounter();
+	uint256 acNext;
+	require ac == ac + 1;
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) {
+		// before stake() all state variables must have 0-values
+    	require currentContract.getStakeActionTokenId(acNext) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext) == 0;
+    	require currentContract.getStakeActionAddr(acNext) == 0;
+    }
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
+		// before unstake() all state variables must have some valid value
+    	require currentContract.getStakeActionTokenId(acNext) > 0;
+    	require currentContract.getStakeActionInitialReward(acNext) > 0;
+    	require currentContract.getStakeActionAddr(acNext) != 0;
+		require currentContract.numStakedNfts() > 0 ;
+	}
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+		// before stake() all state variables must have 0-values
+    	require currentContract.getStakeActionTokenId(acNext) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext) == 0;
+    	require currentContract.getStakeActionAddr(acNext) == 0;
+		require currentContract.getNftUsedStatus(acNext) == 0;
+		uint256 acNext2;
+		require acNext2 == (ac + 2);
+    	require currentContract.getStakeActionTokenId(acNext2) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext2) == 0;
+    	require currentContract.getStakeActionAddr(acNext2) == 0;
+		require currentContract.getNftUsedStatus(acNext2) == 0;
+		uint256 acNext3;
+		require acNext3 == (ac + 3);
+    	require currentContract.getStakeActionTokenId(acNext3) == 0;
+    	require currentContract.getStakeActionInitialReward(acNext3) == 0;
+    	require currentContract.getStakeActionAddr(acNext3) == 0;
+		require currentContract.getNftUsedStatus(acNext3) == 0;
+    }
+    if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
+		// before stake() all state variables must have 0-values
+    	require currentContract.getStakeActionTokenId(acNext) >= 0;
+    	require currentContract.getStakeActionInitialReward(acNext) >= 0;
+    	require currentContract.getStakeActionAddr(acNext) != 0;
+		uint256 acNext2;
+		require acNext2 == (ac + 2);
+    	require currentContract.getStakeActionTokenId(acNext2) >= 0;
+    	require currentContract.getStakeActionInitialReward(acNext2) >= 0;
+    	require currentContract.getStakeActionAddr(acNext2) != 0;
+		uint256 acNext3;
+		require acNext3 == (ac + 3);
+    	require currentContract.getStakeActionTokenId(acNext3) >= 0;
+    	require currentContract.getStakeActionInitialReward(acNext3) >= 0;
+    	require currentContract.getStakeActionAddr(acNext3) == 0;
+		require currentContract.getNftUsedStatus(acNext3) == 0;
     }
 	mathint actionCounterBefore = currentContract.actionCounter();	
+	currentMethodSignature = to_bytes4(f.selector);
 
-    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	bool maintenanceSuccess = genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
 	mathint actionCounterAfter = currentContract.actionCounter();
 
@@ -151,6 +212,16 @@ rule onlyStakeUnstakeOperationsCanChangeStakeActions()
 	require gStakeActionNftIdSet == 0;
 	require gStakeActionOwnerSet == 0;
 	require gStakeActionAmountSet == 0;
+
+	mathint initialReward;
+	uint256 tokenId;
+	uint256 actionId;
+	uint256[] manyActionIds;
+	uint256 round;
+	address charity;
+	require charity != currentContract;
+	require charity != 0;
+
     method f; env e; calldataarg args;
     if (f.selector != sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
 		require f.isPayable == false;
@@ -161,7 +232,7 @@ rule onlyStakeUnstakeOperationsCanChangeStakeActions()
     	require currentContract.game() == e.msg.sender;
     }
 	currentMethodSignature = to_bytes4(f.selector);
-    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
     if (
 		(f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) ||
@@ -185,12 +256,19 @@ rule onlyStakeUnstakeOperationsCanChangeStakeActions()
 rule numStakedNftsIsMatchingStakeActions() 
 {	
 	// Pending stuff:
-	//		- the stakeMany()/unstakeMany() methods have to be revised when Yuriy fixes the multi functionality
 	//		- for stakeMany()/unstakeMany() we need to populate the data with require statements, this can be
 	//				done by adding a new method , for example unstake3tokens() and write using the style of 'many' functions,
 	//				this way it will be possible to populate 3-value arguments (3 tokens) and escape Certoras limitation
 	//				of inhability to extract arguments from `calldataarg` type
     method f; env e; calldataarg args;
+	mathint initialReward;
+	uint256 tokenId;
+	uint256 actionId;
+	uint256[] manyActionIds;
+	uint256 round;
+	address charity;
+	require charity != currentContract;
+	require charity != 0;
     if (f.selector != sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
 		require f.isPayable == false;
 	}
@@ -219,7 +297,7 @@ rule numStakedNftsIsMatchingStakeActions()
 	require currentContract.numStakedNfts() == gNumStakedNfts;
 	require currentContract.numStakedNfts() == gNumActiveStakeActions;
 
-    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
 	assert currentContract.numStakedNfts() == gNumStakedNfts, "numStakedNfts() doesn't match accumulated (mirrored) ghost";
 	assert currentContract.numStakedNfts() == gNumActiveStakeActions, "numStakedNfts() doesn't match number of active stake actions";
@@ -227,6 +305,14 @@ rule numStakedNftsIsMatchingStakeActions()
 rule usedNftsIsSetCorrectly() 
 {	
     method f; env e; calldataarg args;
+	mathint initialReward;
+	uint256 tokenId;
+	uint256 actionId;
+	uint256[] manyActionIds;
+	uint256 round;
+	address charity;
+	require charity != currentContract;
+	require charity != 0;
     require currentContract != e.msg.sender;
 	require e.msg.sender != 0;
     if (f.selector == sig:StakingWalletCosmicSignatureNft.deposit(uint256).selector) {
@@ -253,21 +339,29 @@ rule usedNftsIsSetCorrectly()
 	}
 	require gUsedNftsChanged == 0;
 
-    f(e, args);		// generic method matcher like this is a requirement for 100% bug-free verification
+	genericFunctionMatcher(f,e,charity,round,tokenId,actionId,manyActionIds);
 
     if (
 		(f.selector == sig:StakingWalletCosmicSignatureNft.stake(uint256).selector) ||
 		(f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector)
 	) {
 		assert gUsedNftsChanged > 0 , "usedNfts[] state variable didn't change while it should have been";
-		uint256 tokenId = currentContract.getStakeActionTokenId(acNext);
-		assert currentContract.getNftUsedStatus(tokenId) == 1,"usedNfts[] was not set to 1";
+		uint256 finalTokenId = currentContract.getStakeActionTokenId(acNext);
+		assert currentContract.getNftUsedStatus(finalTokenId) == 1,"usedNfts[] was not set to 1";
 	} else {
 		assert gUsedNftsChanged == 0 ,"usedNfts[] was changed while it shouldn't have been";
 	}
 }
 rule rewardPerTokenIsSetCorrectly() 
 {	
+	mathint initialReward;
+	uint256 tokenId;
+	uint256 actionId;
+	uint256[] manyActionIds;
+	uint256 round;
+	address charity;
+	require charity != currentContract;
+	require charity != 0;
     method f; env e; calldataarg args;
     require currentContract != e.msg.sender;
 	require e.msg.sender != 0;
@@ -305,19 +399,11 @@ rule rewardPerTokenIsSetCorrectly()
     	require currentContract.getStakeActionAddr(acNext3) == 0;
 		require currentContract.getNftUsedStatus(acNext3) == 0;
     }
-	address charity;
-	require charity != currentContract;
-	require charity != 0;
 
 	mathint balanceBefore;
 	require balanceBefore == nativeBalances[currentContract];
 	mathint winnerBalanceBefore = nativeBalances[e.msg.sender];
 	mathint balanceCharityBefore = nativeBalances[charity];
-	mathint initialReward;
-	uint256 tokenId;
-	uint256 actionId;
-	uint256[] manyActionIds;
-	uint256 round;
     if (f.selector == sig:StakingWalletCosmicSignatureNft.unstake(uint256).selector) {
 		require currentContract.numStakedNfts() > 0 ;
     	require currentContract.getStakeActionTokenId(actionId) > 0;
@@ -354,7 +440,6 @@ rule rewardPerTokenIsSetCorrectly()
 		assert (winnerBalanceBefore + amountToPay) == winnerBalanceAfter, "Balance of the winner didn't increase by correct amount after unstake()";
 		assert (balanceBefore - balanceAfter) == (winnerBalanceAfter - winnerBalanceBefore), "Amount withdrawn after unstake() doesn't match balances";
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
-//		assert (winnerBalanceBefore + (amountToPayMany)) == winnerBalanceAfter, "Balance of the winner didn't increase by correct amount after unstakeMany()";
 		assert (balanceBefore - balanceAfter) == (winnerBalanceAfter - winnerBalanceBefore), "Amount withdrawn after unstakeMany() doesn't match balances";
 	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.tryPerformMaintenance(address).selector) {
 		if (maintenanceSuccess) {
