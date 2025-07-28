@@ -402,6 +402,7 @@ const hardhatUserConfig = {
 	// todo-0 If I add add Arbitrum Sepolia do the above.
 	// todo-0 Add it and then search for any sepolia
 	networks: {
+		// todo-0 review comments here.
 		hardhat: {
 			// Comment-202501193 relates and/or applies.
 			initialDate:
@@ -414,20 +415,33 @@ const hardhatUserConfig = {
 			allowUnlimitedContractSize: true,
 
 			// [Comment-202507272]
-			// Providing a particular value, rather than "auto", increases testing speed.
-			// Although it's also possible to provide a particular `gasLimit` when calling a contract method.
-			// By default, this is taken from `blockGasLimit`.
-			// Issue. The docs says that by default this is "auto", but it doesn't appear to be the case, particularly for Hardhat Network.
+			//
+			// todo-0 Contrary to what one might believe, providing this parameter, doesn't actually suppress gas limit estimate calls.
+			// todo-0 Neither it supports transaction fee estimate calls.
+			// todo-0 It's kinda confusing what's the difference between them.
+			//
+			// todo-0 This is just Hardhat Network config. It doesn't configure how transactions are sent.
+			// todo-0 So revist this whole comment.
+			//
+			// Providing a particular value, rather than "auto", increases testing speed due to skipping gas estimate calls.
+			// todo-0 no, rephrase the above. it simply improves Hardhat network performance.
+			// Although it's possible to override this setting by providing a particular `gasLimit` when calling a contract method.
+			// By default, this value is taken from `blockGasLimit`.
+			// todo-0 delete>>>Issue. The docs says that by default this is "auto", but it doesn't appear to be the case, particularly for Hardhat Network.
+			// Additionally, to truly suppress gas estimate calls, we must replace the `hre.ethers.provider.getFeeData` method
+			// with a one that quickly returns an object and the `hre.ethers.provider.estimateGas` method with one
+			// that quickly returns a `bigint`.
 			// Comment-202507252 relates.
 			// [/Comment-202507272]
 			gas: 30_000_000,
 
 			// [Comment-202507252]
+			// By default, this is 30_000_000.
 			// When automining is disabled, a bigger value allows to mine many transactions per block with a single "evm_mine".
-			// But for things to work, the `gas` parameter probably must be a fraction of this.
+			// But for things to work, the `gas` parameter must be a fraction of this.
 			// Comment-202507272 relates.
 			// [/Comment-202507252]
-			blockGasLimit: 30_000_000 * 10_000,
+			blockGasLimit: 10_000 * 30_000_000,
 
 			// initialBaseFeePerGas: 1e9,
 
@@ -517,6 +531,7 @@ const hardhatUserConfig = {
 	mocha: {
 		parallel: true,
 		timeout: 2 * 60 * 60 * 1000,
+		require: ["./mocha-hooks.js",],
 	},
 
 	// #endregion
