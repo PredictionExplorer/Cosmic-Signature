@@ -7,6 +7,9 @@ const hre = require("hardhat");
 const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
+/// todo-1 Ask Nick if he was able to reproduce these tests with the Tally app.
+/// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434912738329?thread_ts=1731872794.061669&cid=C02EDDE5UF8
+/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434239454529?thread_ts=1733769207.177129&cid=C02EDDE5UF8
 describe("CosmicSignatureDao", function () {
 	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
@@ -330,28 +333,27 @@ describe("CosmicSignatureDao", function () {
 		}
 	});
 
-	it("CosmicSignatureDao changes MarketingWallet.owner()", async function () {
+	it("CosmicSignatureDao changes MarketingWallet.treasurerAddress", async function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		// Comment-202508085 applies.
 		for ( let signerIndex_ = 0; signerIndex_ <= 1; ++ signerIndex_ ) {
-			await expect(contracts_.cosmicSignatureToken.connect(contracts_.signers[signerIndex_]).delegate(contracts_.signers[signerIndex_].address)).not.reverted;
 			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[signerIndex_]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
 		}
 
 		const votingDelay_ = await contracts_.cosmicSignatureDao.votingDelay();
 		const votingPeriod_ = await contracts_.cosmicSignatureDao.votingPeriod();
 
+		for ( let signerIndex_ = 0; signerIndex_ <= 1; ++ signerIndex_ ) {
+			await expect(contracts_.cosmicSignatureToken.connect(contracts_.signers[signerIndex_]).delegate(contracts_.signers[signerIndex_].address)).not.reverted;
+		}
+
 		// Comment-202508086 applies.
-		// todo-0 Do we need a backdoor that allows the DAO to forcibly change owners of most/all our contracts
-		// todo-0 without the current owners cooperating?
-		// todo-0 Maybe only `MarketingWallet.transferOwnership` should always accept a call from the DAO.
-		// todo-0 After I implement that, call this only a half of the time, based on a random number.
 		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).transferOwnership(contracts_.cosmicSignatureDaoAddr)).not.reverted;
 
-		const newOwnerAddress_ = contracts_.signers[generateRandomUInt32() & 3].address;
-		const proposalCallData_ = contracts_.marketingWallet.interface.encodeFunctionData("transferOwnership", [newOwnerAddress_]);
-		const proposalDescription_ = "change MarketingWallet owner";
+		const newTreasurerAddress_ = contracts_.signers[generateRandomUInt32() & 3].address;
+		const proposalCallData_ = contracts_.marketingWallet.interface.encodeFunctionData("setTreasurerAddress", [newTreasurerAddress_]);
+		const proposalDescription_ = "change Marketing Wallet treasurer";
 		const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
 		const transactionResponse_ = await contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.marketingWalletAddr], [0n], [proposalCallData_], proposalDescription_);
 		const transactionReceipt_ = await transactionResponse_.wait();
@@ -365,7 +367,9 @@ describe("CosmicSignatureDao", function () {
 		await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).castVote(proposalHashSum_, 1n)).not.reverted;
 		await hre.ethers.provider.send("evm_increaseTime", [Number(votingPeriod_)]);
 		// await hre.ethers.provider.send("evm_mine");
-		await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 3]).execute([contracts_.marketingWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_)).not.reverted;
-		expect(await contracts_.marketingWallet.owner()).equal(newOwnerAddress_);
+		await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 3]).execute([contracts_.marketingWalletAddr], [0n], [proposalCallData_], proposalDescriptionHashSum_))
+			.emit(contracts_.marketingWallet, "TreasurerAddressChanged")
+			.withArgs(newTreasurerAddress_);
+		expect(await contracts_.marketingWallet.treasurerAddress()).equal(newTreasurerAddress_);
 	});
 });

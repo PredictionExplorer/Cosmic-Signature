@@ -87,20 +87,24 @@ async function deployContractsForUnitTestingAdvanced(
 ) {
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
+	// todo-0 Avoid `createRandom`. Use a hardcoded private key.
 	const deployerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const ownerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const charityAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
+	const treasurerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 	const signers = await hre.ethers.getSigners();
 	const signerAddressToIndexMapping =
 		signers.reduce(
 			(accumulator, item, itemIndex) => (accumulator[item.address] = itemIndex, accumulator),
 			{}
 		);
+	const signer17 = signers[17];
 	const signer18 = signers[18];
 	const signer19 = signers[19];
 	const ethAmount = 10n ** 18n;
-	await (await signer18.sendTransaction({to: deployerAcct.address, value: ethAmount,})).wait();
-	await (await signer19.sendTransaction({to: ownerAcct.address, value: ethAmount,})).wait();
+	await (await signer19.sendTransaction({to: deployerAcct.address, value: ethAmount,})).wait();
+	await (await signer18.sendTransaction({to: ownerAcct.address, value: ethAmount,})).wait();
+	await (await signer17.sendTransaction({to: treasurerAcct.address, value: ethAmount,})).wait();
 	const contracts =
 		await deployContractsAdvanced(
 			deployerAcct,
@@ -110,8 +114,9 @@ async function deployContractsForUnitTestingAdvanced(
 			false,
 			-1_000_000_000n
 		);
-	contracts.signers = signers;
 	contracts.signerAddressToIndexMapping = signerAddressToIndexMapping;
+	contracts.signers = signers;
+	contracts.treasurerAcct = treasurerAcct;
 	contracts.charityAcct = charityAcct;
 	contracts.ownerAcct = ownerAcct;
 	contracts.deployerAcct = deployerAcct;
@@ -121,6 +126,7 @@ async function deployContractsForUnitTestingAdvanced(
 	await (await contracts.prizesWallet.transferOwnership(ownerAcct.address)).wait();
 	// await (await contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address)).wait();
 	await (await contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
+	await (await contracts.marketingWallet.setTreasurerAddress(treasurerAcct.address)).wait();
 	await (await contracts.marketingWallet.transferOwnership(ownerAcct.address)).wait();
 	await (await contracts.charityWallet.transferOwnership(ownerAcct.address)).wait();
 	// await (await contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address)).wait();
