@@ -40,7 +40,7 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
  */
 async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForUnitTesting);
-	contracts.signers.forEach((signer) => (signer.reset()));
+	contracts.signers.forEach((signer) => { signer.reset(); });
 	contracts.treasurerAcct.reset();
 	contracts.charityAcct.reset();
 	contracts.ownerAcct.reset();
