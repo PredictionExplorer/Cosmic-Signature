@@ -20,7 +20,7 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-1 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^Bidding '
+			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureDao '
 			# 'npx' 'hardhat' 'test' '--grep' '^Bidding The HalveEthDutchAuctionEndingBidPrice method$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
