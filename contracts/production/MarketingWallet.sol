@@ -7,6 +7,7 @@ pragma solidity 0.8.29;
 // #region
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
 import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
@@ -16,6 +17,9 @@ import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 
 contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #region State
+
+	/// @notice The treasurer's role is to distribute marketing rewards.
+	address public treasurerAddress;
 
 	/// @notice The `CosmicSignatureToken` contract address.
 	CosmicSignatureToken public immutable token;
@@ -28,13 +32,39 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	constructor(CosmicSignatureToken token_)
 		_providedAddressIsNonZero(address(token_))
 		Ownable(_msgSender()) {
+		treasurerAddress = _msgSender();
 		token = token_;
+	}
+
+	// #endregion
+	// #region `_onlyTreasurer`
+
+	modifier _onlyTreasurer() {
+		_checkOnlyTreasurer();
+		_;
+	}
+
+	// #endregion
+	// #region `_checkOnlyTreasurer`
+
+	function _checkOnlyTreasurer() private view {
+		if (_msgSender() != treasurerAddress) {
+			revert CosmicSignatureErrors.UnauthorizedCaller("Only the tresurer is permitted to call this method.", _msgSender());
+		}
+	}
+
+	// #endregion
+	// #region `setTreasurerAddress`
+
+	function setTreasurerAddress(address newValue_) external override onlyOwner _providedAddressIsNonZero(newValue_) {
+		treasurerAddress = newValue_;
+		emit TreasurerAddressChanged(newValue_);
 	}
 
 	// #endregion
 	// #region `payReward`
 
-	function payReward(address marketerAddress_, uint256 amount_) external override onlyOwner {
+	function payReward(address marketerAddress_, uint256 amount_) external override _onlyTreasurer {
 		emit RewardPaid(marketerAddress_, amount_);
 
 		// [Comment-202501137]
@@ -46,7 +76,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #endregion
 	// #region `payManyRewards`
 
-	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external override onlyOwner {
+	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external override _onlyTreasurer {
 		for (uint256 index_ = marketerAddresses_.length; index_ > 0; ) {
 			-- index_;
 			address marketerAddress_ = marketerAddresses_[index_];
@@ -60,7 +90,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #endregion
 	// #region `payManyRewards`
 
-	function payManyRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override onlyOwner {
+	function payManyRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override _onlyTreasurer {
 		for (uint256 index_ = specs_.length; index_ > 0; ) {
 			-- index_;
 			ICosmicSignatureToken.MintSpec calldata specReference_ = specs_[index_];

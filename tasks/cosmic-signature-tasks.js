@@ -35,7 +35,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	}
 	const deployerAcct = new hre.ethers.Wallet(configObject.privKey, hre.ethers.provider);
 
-	// // I dislike this charity address logic. So I have commented it out.
+	// // I dislike this charity address logic. It looks like a quick hack. So I have commented it out.
 	// // The charity address should be provided in the config file. It should not be optional.
 	// if (configObject.charityAddr.length <= 0) {
 	// 	const signers = await hre.ethers.getSigners();

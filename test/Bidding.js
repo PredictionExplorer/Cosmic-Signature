@@ -59,7 +59,6 @@ describe("Bidding", function () {
 		// #region
 
 		if (SKIP_LONG_TESTS) {
-			// todo-0 Log this everywhere.
 			console.warn("Warning 202508151. Skipping a long test.");
 			// return;
 		}
@@ -174,7 +173,8 @@ describe("Bidding", function () {
 					// This is the same condition as the one near Comment-202508157.
 					if (ethDutchAuctionRemainingDuration2_ > 0n) {
 
-						// console.info("202508161");
+						// let latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						// console.info(`202508161 ${latestBlock_.timestamp}`);
 
 						// [Comment-202508158]
 						// The next call to this method will succeed, even if we do not sleep after this one.
@@ -182,8 +182,11 @@ describe("Bidding", function () {
 						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
 							.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
 							.withArgs("Too early.");
+
+						// latestBlock_ = await hre.ethers.provider.getBlock("latest");
+						// console.info(`202508162 ${latestBlock_.timestamp}`);
 					} else {
-						// console.info("202508162");
+						// console.info("202508163");
 					}
 
 					// #endregion
@@ -193,14 +196,14 @@ describe("Bidding", function () {
 					const nextBlockTimeExtraIncrease_ = generateRandomUInt256() % (((24n + 2n) * 60n * 60n) << BigInt(iteration1Counter_)) - ((2n * 60n * 60n) << BigInt(iteration1Counter_));
 					if (nextBlockTimeExtraIncrease_ > 0n) {
 						if (nextBlockTimeExtraIncrease_ > 1n) {
-							// console.info("202508163");
+							// console.info("202508204");
 							await hre.ethers.provider.send("evm_increaseTime", [Number(nextBlockTimeExtraIncrease_),]);
 						} else {
-							// console.info("202508164");
+							// console.info("202508205");
 						}
 						await hre.ethers.provider.send("evm_mine");
 					} else {
-						// console.info("202508165");
+						// console.info("202508206");
 					}
 
 					// #endregion

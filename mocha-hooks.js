@@ -8,6 +8,7 @@ const hre = require("hardhat");
 // }
 
 async function beforeAll() {
+	// console.info("202508203");
 	expect(hre.network.name).equal("hardhat");
 
 	// Doing what Comment-202507272 recommends.

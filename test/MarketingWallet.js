@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { generateRandomUInt32 } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("MarketingWallet", function () {
@@ -12,6 +13,20 @@ describe("MarketingWallet", function () {
 
 		await expect(contracts_.marketingWalletFactory.deploy(hre.ethers.ZeroAddress))
 			.revertedWithCustomError(contracts_.marketingWalletFactory, "ZeroAddress");
+	});
+
+	it("Changing the treasurer", async function () {
+		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+
+		let randomNumber32_ = generateRandomUInt32();
+		const unauthorizedOwnerSigner_ = ((randomNumber32_ & 1) == 0) ? contracts_.treasurerAcct : contracts_.signers[11];
+		const newTreasurerSigner_ = ((randomNumber32_ & 2) == 0) ? contracts_.ownerAcct : contracts_.signers[12];
+		await expect(contracts_.marketingWallet.connect(unauthorizedOwnerSigner_).setTreasurerAddress(newTreasurerSigner_.address))
+			.revertedWithCustomError(contracts_.marketingWallet, "OwnableUnauthorizedAccount");
+		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).setTreasurerAddress(newTreasurerSigner_.address))
+			.emit(contracts_.marketingWallet, "TreasurerAddressChanged")
+			.withArgs(newTreasurerSigner_.address);
+		expect(await contracts_.marketingWallet.treasurerAddress()).equal(newTreasurerSigner_.address);
 	});
 
 	it("Paying marketing rewards", async function () {
@@ -27,15 +42,18 @@ describe("MarketingWallet", function () {
 
 		{
 			const availableMarketingRewardAmount_ = await contracts_.cosmicSignatureToken.balanceOf(contracts_.marketingWalletAddr);
+			let randomNumber32_ = generateRandomUInt32();
+			const unauthorizedTreasurerSigner_ = ((randomNumber32_ & 1) == 0) ? contracts_.ownerAcct : contracts_.signers[11];
 
-			await expect(contracts_.marketingWallet.connect(contracts_.signers[0]).payReward(contracts_.signers[1].address, 0n))
-				.revertedWithCustomError(contracts_.marketingWallet, "OwnableUnauthorizedAccount");
-			await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).payReward(hre.ethers.ZeroAddress, 0n))
+			await expect(contracts_.marketingWallet.connect(unauthorizedTreasurerSigner_).payReward(contracts_.signers[1].address, 0n))
+				.revertedWithCustomError(contracts_.marketingWallet, "UnauthorizedCaller")
+				.withArgs("Only the tresurer is permitted to call this method.", unauthorizedTreasurerSigner_.address);
+			await expect(contracts_.marketingWallet.connect(contracts_.treasurerAcct).payReward(hre.ethers.ZeroAddress, 0n))
 				.revertedWithCustomError(contracts_.cosmicSignatureToken, "ERC20InvalidReceiver");
-			await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).payReward(contracts_.signers[1].address, 0n))
+			await expect(contracts_.marketingWallet.connect(contracts_.treasurerAcct).payReward(contracts_.signers[1].address, 0n))
 				.emit(contracts_.marketingWallet, "RewardPaid")
 				.withArgs(contracts_.signers[1].address, 0n);
-			await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).payReward(contracts_.signers[1].address, 21n))
+			await expect(contracts_.marketingWallet.connect(contracts_.treasurerAcct).payReward(contracts_.signers[1].address, 21n))
 				.emit(contracts_.marketingWallet, "RewardPaid")
 				.withArgs(contracts_.signers[1].address, 21n);
 
@@ -44,9 +62,10 @@ describe("MarketingWallet", function () {
 				contracts_.signers[2].address,
 				contracts_.signers[1].address,
 			];
-			await expect(contracts_.marketingWallet.connect(contracts_.signers[0])["payManyRewards(address[],uint256)"](marketerAddresses_, 31))
-				.revertedWithCustomError(contracts_.marketingWallet, "OwnableUnauthorizedAccount");
-			await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct)["payManyRewards(address[],uint256)"](marketerAddresses_, 31))
+			await expect(contracts_.marketingWallet.connect(unauthorizedTreasurerSigner_)["payManyRewards(address[],uint256)"](marketerAddresses_, 31))
+				.revertedWithCustomError(contracts_.marketingWallet, "UnauthorizedCaller")
+				.withArgs("Only the tresurer is permitted to call this method.", unauthorizedTreasurerSigner_.address);
+			await expect(contracts_.marketingWallet.connect(contracts_.treasurerAcct)["payManyRewards(address[],uint256)"](marketerAddresses_, 31))
 				.emit(contracts_.marketingWallet, "RewardPaid")
 				.withArgs(contracts_.signers[1].address, 31n)
 				.and.emit(contracts_.marketingWallet, "RewardPaid")
@@ -59,9 +78,10 @@ describe("MarketingWallet", function () {
 				[contracts_.signers[2].address, 51n,],
 				[contracts_.signers[3].address, 61n,],
 			];
-			await expect(contracts_.marketingWallet.connect(contracts_.signers[0])["payManyRewards((address,uint256)[])"](transferSpecs_))
-				.revertedWithCustomError(contracts_.marketingWallet, "OwnableUnauthorizedAccount");
-			await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct)["payManyRewards((address,uint256)[])"](transferSpecs_))
+			await expect(contracts_.marketingWallet.connect(unauthorizedTreasurerSigner_)["payManyRewards((address,uint256)[])"](transferSpecs_))
+				.revertedWithCustomError(contracts_.marketingWallet, "UnauthorizedCaller")
+				.withArgs("Only the tresurer is permitted to call this method.", unauthorizedTreasurerSigner_.address);
+			await expect(contracts_.marketingWallet.connect(contracts_.treasurerAcct)["payManyRewards((address,uint256)[])"](transferSpecs_))
 				.emit(contracts_.marketingWallet, "RewardPaid")
 				.withArgs(contracts_.signers[3].address, 61n)
 				.and.emit(contracts_.marketingWallet, "RewardPaid")
