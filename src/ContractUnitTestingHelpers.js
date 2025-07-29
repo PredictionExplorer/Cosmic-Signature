@@ -87,11 +87,10 @@ async function deployContractsForUnitTestingAdvanced(
 ) {
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
-	// todo-0 Avoid `createRandom`. Use a hardcoded private key.
-	const deployerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
-	const ownerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
-	const charityAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
-	const treasurerAcct = hre.ethers.Wallet.createRandom(hre.ethers.provider);
+	const deployerAcct = new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider);
+	const ownerAcct = new hre.ethers.Wallet("0x76ca1febfcbf4447a32f397ba08d768582bb8fce17cc434f8b667c2a4c81ea50", hre.ethers.provider);
+	const charityAcct = new hre.ethers.Wallet("0x87cc6d37b7d24b0597513b189ab17da83f85a50f4c01490ba356a8603e646410", hre.ethers.provider);
+	const treasurerAcct = new hre.ethers.Wallet("0x6614113dc9574a9987b032f1264af4588924f7f03b9141cca2d0adabe4ee38da", hre.ethers.provider);
 	const signers = await hre.ethers.getSigners();
 	const signerAddressToIndexMapping =
 		signers.reduce(
