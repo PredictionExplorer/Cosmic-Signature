@@ -16,7 +16,7 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #region `deployContracts`
 
 /**
- * @param {import("ethers").BaseWallet} deployerAcct 
+ * @param {import("ethers").AbstractSigner} deployerAcct 
  * @param {string} randomWalkNftAddr 
  * @param {string} charityAddr 
  * @param {boolean} transferOwnershipToCosmicSignatureDao 
@@ -43,7 +43,7 @@ const deployContracts = async function (
 // #region `deployContractsAdvanced`
 
 /**
- * @param {import("ethers").BaseWallet} deployerAcct 
+ * @param {import("ethers").AbstractSigner} deployerAcct 
  * @param {string} cosmicSignatureGameContractName 
  * @param {string} randomWalkNftAddr May be empty.
  * @param {string} charityAddr 
