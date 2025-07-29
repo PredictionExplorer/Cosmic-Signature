@@ -43,7 +43,6 @@ describe("CosmicSignatureGame-1", function () {
 		// #region
 
 		if (SKIP_LONG_TESTS) {
-			// todo-0 Log this everywhere.
 			console.warn("Warning 202505015. Skipping a long test.");
 			// return;
 		}

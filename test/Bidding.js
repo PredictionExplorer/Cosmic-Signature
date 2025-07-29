@@ -59,7 +59,6 @@ describe("Bidding", function () {
 		// #region
 
 		if (SKIP_LONG_TESTS) {
-			// todo-0 Log this everywhere.
 			console.warn("Warning 202508151. Skipping a long test.");
 			// return;
 		}
