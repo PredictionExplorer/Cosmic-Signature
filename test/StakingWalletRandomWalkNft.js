@@ -2,7 +2,6 @@
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
-const { NonceManager } = require("ethers");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { shuffleArray, generateRandomUInt32, generateRandomUInt256 } = require("../src/Helpers.js");
@@ -170,8 +169,6 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
 
-		const concurrentSigners_ = contracts_.signers.map((signer_) => (new NonceManager(signer_)));
-
 		{
 			const luckyStakerAddresses_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numStakersToPick_, /*hre.ethers.hashMessage("0xffff")*/ 0xe1027c1afb832e7bd4ac3301523cf66aed14912422b036d444e0c2d4adc0afa2n);
 			expect(luckyStakerAddresses_.length).equal(0);
@@ -181,10 +178,10 @@ describe("StakingWalletRandomWalkNft", function () {
 		try {
 			const transactionResponsePromises_ = [];
 			for ( let stakerIndex_ = 0; stakerIndex_ < numStakers_; ++ stakerIndex_ ) {
-				const concurrentSigner_ = concurrentSigners_[stakerIndex_];
-				transactionResponsePromises_.push(contracts_.randomWalkNft.connect(concurrentSigner_).setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true));
+				const signer_ = contracts_.signers[stakerIndex_];
+				transactionResponsePromises_.push(contracts_.randomWalkNft.connect(signer_).setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true));
 				for ( let nftIndex_ = 0; nftIndex_ < numNftsPerStaker_; ++ nftIndex_ ) {
-					transactionResponsePromises_.push(contracts_.randomWalkNft.connect(concurrentSigner_).mint({value: 10n ** 18n,}));
+					transactionResponsePromises_.push(contracts_.randomWalkNft.connect(signer_).mint({value: 10n ** 18n,}));
 				}
 			}
 			let transactionResponses_ = await Promise.all(transactionResponsePromises_);
@@ -216,8 +213,8 @@ describe("StakingWalletRandomWalkNft", function () {
 			expect(await contracts_.randomWalkNft.totalSupply()).equal(BigInt(numStakers_ * numNftsPerStaker_));
 			transactionResponsePromises_.length = 0;
 			for ( let stakerIndex_ = 0; stakerIndex_ < numStakers_; ++ stakerIndex_ ) {
-				const concurrentSigner_ = concurrentSigners_[stakerIndex_];
-				transactionResponsePromises_.push(contracts_.stakingWalletRandomWalkNft.connect(concurrentSigner_).stakeMany(allNftIds_[stakerIndex_]));
+				const signer_ = contracts_.signers[stakerIndex_];
+				transactionResponsePromises_.push(contracts_.stakingWalletRandomWalkNft.connect(signer_).stakeMany(allNftIds_[stakerIndex_]));
 			}
 			transactionResponses_ = await Promise.all(transactionResponsePromises_);
 
