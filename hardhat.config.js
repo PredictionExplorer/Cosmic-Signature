@@ -148,7 +148,12 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
 require("hardhat-abi-exporter");
-require("hardhat-docgen");
+
+// // Issue. After I upgraded to Hardhat 2.26.1, this import started to cause all Solidity files recompile
+// // on each Hardhat Test task run. So I have commented it out and deleted the following line from "package.json":
+// // "hardhat-docgen": "=1.3.0",
+// require("hardhat-docgen");
+
 require("@nomiclabs/hardhat-solhint");
 require("hardhat-tracer");
 
