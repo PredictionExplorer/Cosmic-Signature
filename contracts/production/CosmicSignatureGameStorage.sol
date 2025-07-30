@@ -411,6 +411,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// @dev Comment-202412142 applies.
 	// /// Comment-202412148 applies.
 	// uint256[1 << 255] private transient __gap_transient;
+	uint256 private transient __gap_transient;
 
 	// #endregion
 }
