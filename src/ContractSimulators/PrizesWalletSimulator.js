@@ -14,8 +14,6 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 // #endregion
 // #region `createPrizesWalletSimulator`
 
-/// todo-0 For now, this is a simplified design. To be revisited.
-/// todo-0 Later add the ability to donate tokens and NFTs. Add those features to prizes wallet simulator.
 /*async*/ function createPrizesWalletSimulator() {
 	// #region
 

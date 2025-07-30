@@ -15,7 +15,6 @@
 // #region // `createMarketingWalletSimulator`
 
 // We don't need this.
-// todo-0 Really?
 
 // #endregion
 // #region //

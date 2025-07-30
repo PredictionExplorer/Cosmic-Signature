@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
@@ -22,4 +22,5 @@ abstract contract OwnableUpgradeableWithReservedStorageGaps is OwnableUpgradeabl
 	// todo-1 Transient storage is not yet supported for reference types.
 	// /// @dev Comment-202412142 applies.
 	// uint256[256] private transient __gap_transient;
+	uint256 private transient __gap_transient;
 }

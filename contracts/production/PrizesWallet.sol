@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 // #endregion
 // #region
@@ -177,7 +177,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// which will update the timeout time to withdraw the cumulative balance.
 		// A little issue with this design is that the saving of `roundNum` costs some gas,
 		// which we would not have to pay if we used `roundNum` as array item index.
-		// ToDo-202507148-1 relates and/or applies.
+		// Given ToDo-202507148-1, it could be better to use `roundNum` as array item index.
 		// [/Comment-202411252]
 		// #enable_asserts assert(roundNum_ >= ethBalanceInfoReference_.roundNum);
 		ethBalanceInfoReference_.roundNum = roundNum_;

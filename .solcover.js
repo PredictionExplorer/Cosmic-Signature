@@ -32,9 +32,8 @@
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
-	// Issue. Do we really need this?
-	// todo-0 Think about the above again.
-	configureYulOptimizer: true,
+	// // It appears that we don't need this unless the compilation fails.
+	// configureYulOptimizer: true,
 
 	istanbulReporter: ["html", /*"text",*/],
 	mocha: {

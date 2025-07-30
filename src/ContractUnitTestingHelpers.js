@@ -58,7 +58,7 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 		await makeNextBlockTimeDeterministic();
 	}
 
-	// Given issue 2 in Comment-202501193, mining a dummy block.
+	// Given the issue 2 in Comment-202501193, mining a dummy block.
 	await hre.ethers.provider.send("evm_mine");
 
 	// Comment-202507204 relates.
@@ -73,9 +73,6 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 /**
  * This function is to be used for unit tests.
  * It's OK to pass ths function to `loadFixture`.
- * todo-0 Find this function name (not whole word) and make sure the order of desrtructured contracts
- * todo-0 matched their order in the returned object.
- * todo-0 Or better do not destructure.
  */
 async function deployContractsForUnitTesting() {
 	return deployContractsForUnitTestingAdvanced("CosmicSignatureGame");

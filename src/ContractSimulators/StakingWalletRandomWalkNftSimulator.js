@@ -14,7 +14,6 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 // #endregion
 // #region `createStakingWalletRandomWalkNftSimulator`
 
-/// todo-0 For now, this is a simplified design. To be revisited.
 /*async*/ function createStakingWalletRandomWalkNftSimulator(randomWalkNftSimulator_) {
 	// #region
 
@@ -28,14 +27,14 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 
 		actionCounter: 0n,
 
-		/// todo-0 If I implement `unstake` this would need to be sparse.
-		/// todo-0 Actually this is already sparse, given that the item at the index of 0 is missing.
+		/// If I implement `unstake` this would need to be sparse.
+		/// Actually this is already kinda sparse, given that the item at the index of 0 is missing.
+		/// Comment-202508224 relates and/or applies.
 		stakeActions: [undefined,],
 
 		// #endregion
 		// #region `stake`
 
-		/// todo-0 Do we need `canStake` or `unstake`?
 		stake: function(nftOwnerAddress_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			expect(this.wasNftUsed(nftId_)).equal(false);
 			this.usedNfts[nftId_] = true;
@@ -164,7 +163,11 @@ async function assertRandomWalkNftStakeAction(stakingWalletRandomWalkNftSimulato
 	} else {
 		expect(stakeActionFromContract_[0]).equal(stakeActionFromContractSimulator_.nftId);
 		expect(stakeActionFromContract_[1]).equal(stakeActionFromContractSimulator_.nftOwnerAddress);
-		// todo-0 expect(stakeActionFromContract_[2]).equal(stakeActionFromContractSimulator_.index);
+
+		// // [Comment-202508224]
+		// // Issue. Currently, `stakeActionFromContractSimulator_.index` doesn't exist.
+		// // [/Comment-202508224]
+		// expect(stakeActionFromContract_[2]).equal(stakeActionFromContractSimulator_.index);
 	}
 }
 

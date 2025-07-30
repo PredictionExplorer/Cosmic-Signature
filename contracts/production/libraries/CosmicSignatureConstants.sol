@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 // #endregion
 // #region
@@ -58,8 +58,6 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 10 * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 
 	/// @notice Default `ethBidPriceIncreaseDivisor`.
-	/// @dev Comment-202502191 depends on this value.
-	/// todo-0 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 
 	/// @notice
@@ -87,8 +85,6 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
 
 	/// @notice Comment-202411066 relates.
-	/// @dev Comment-202502193 depends on this value.
-	/// todo-0 But I will probably refactor that test and rewrite or delete that comment.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.

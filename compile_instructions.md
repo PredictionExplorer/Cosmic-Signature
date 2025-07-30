@@ -8,16 +8,16 @@
    ```
 
 2. **Install Solidity Compiler**:
-   The project uses Solidity 0.8.29. The hardhat config looks for the compiler in these locations:
-   - `~/.solc-select/artifacts/solc-0.8.29/solc-0.8.29`
+   The project uses Solidity 0.8.30. The hardhat config looks for the compiler in these locations:
+   - `~/.solc-select/artifacts/solc-0.8.30/solc-0.8.30`
    - `~/.local/bin/solc`
    - `/usr/bin/solc`
 
    Install using solc-select:
    ```bash
    pip install solc-select
-   solc-select install 0.8.29
-   solc-select use 0.8.29
+   solc-select install 0.8.30
+   solc-select use 0.8.30
    ```
 
 ## Compilation Commands
@@ -53,8 +53,8 @@
 
 ## Important Notes
 
-- The project uses Solidity 0.8.29 with optimization enabled
-- EVM version is set to "cancun" (latest Arbitrum-compatible)
+- The project uses Solidity 0.8.30 with optimization enabled
+- EVM version is set to "prague" (latest Arbitrum-compatible)
 - Via-IR is enabled for better optimization
 - Different cache folders are used based on compilation mode
 - The project includes a preprocessor for conditional compilation
