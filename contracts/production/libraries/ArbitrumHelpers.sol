@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import { ArbSys } from "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import { ArbGasInfo } from "@arbitrum/nitro-contracts/src/precompiles/ArbGasInfo.sol";

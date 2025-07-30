@@ -12,10 +12,10 @@ Cosmic Signature is an NFT gaming project with:
 # Install dependencies
 npm install
 
-# Install Solidity 0.8.29
+# Install Solidity 0.8.30
 pip install solc-select
-solc-select install 0.8.29
-solc-select use 0.8.29
+solc-select install 0.8.30
+solc-select use 0.8.30
 
 # Compile contracts
 npx hardhat compile

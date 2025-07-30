@@ -88,8 +88,6 @@ describe("CosmicSignatureGame-1", function () {
 			// #region
 
 			// const timeStamp1_ = performance.now();
-			// todo-0 Test separately that it fails correctly if this has not been done.
-			// todo-0 Mention that test here.
 			for (const signer5_ of contracts_.signers) {
 				const randomWalkNftForSigner5_ = contracts_.randomWalkNft.connect(signer5_);
 				await expect(randomWalkNftForSigner5_.setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true)).not.reverted;
@@ -295,8 +293,6 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region
 
-				// todo-0 Calling only some contract methods for now. We need to call some others as well.
-				// todo-0 Or maybe develop separate tests for those.
 				switch (fairRandomNumber1_) {
 					// #region Minting a Random Walk NFT.
 
@@ -391,9 +387,6 @@ describe("CosmicSignatureGame-1", function () {
 					// #endregion
 					// #region Calling `CosmicSignatureGame.bidWithEth`
 
-					// todo-0 Here and when calling bidWithCst, sometimes bid with donating an NFT.
-					// todo-0 Maybe deploy 2 more RW NFT contracts to be used for donations.
-					// todo-0 But maybe develop a separate test for that.
 					case 4: {
 						// #region
 

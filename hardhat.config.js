@@ -63,7 +63,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // Another, arguably better option is to use the "solc-select" tool.
 // It's documented at https://github.com/crytic/solc-select .
 // After you install it, to switch to a particular solc version, use this command:
-//    solc-select use 0.8.29 --always-install
+//    solc-select use 0.8.30 --always-install
 // It's OK if afterwards you switch to a different version. As long as the given version remains installed, we will find and use it.
 //
 // Update 1. It turns out that just like solcjs, solc installed with solc-select also fails when SMTChecker is enabled.
@@ -86,7 +86,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // [ToDo-202409098-1]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
 // [/ToDo-202409098-1]
-const solidityVersion = "0.8.29";
+const solidityVersion = "0.8.30";
 
 // Comment-202409011 applies.
 // [Comment-202411136]
@@ -96,7 +96,7 @@ const solidityVersion = "0.8.29";
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
 // We print it near Comment-202411143.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.ab55807c.Linux.g++";
+const solidityCompilerLongVersion = solidityVersion + "+commit.73712a01.Linux.g++";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
@@ -189,7 +189,8 @@ function populateNetworkIsMainNetOnce(hre) {
 		case "localhost":
 		case "rinkeby":
 		case "sepolia":
-		case "arbigoerli": {
+		case "arbigoerli":
+		case "arbitrumSepolia": {
 			networkIsMainNet = false;
 			break;
 		}
@@ -286,13 +287,13 @@ const hardhatUserConfig = {
 			// But we want this to be the latest with which Arbitrum is compatible.
 			// todo-1 Revisit this.
 			// [/Comment-202408026]
-			evmVersion: "cancun",
+			evmVersion: "prague",
 
 			// [Comment-202408025]
 			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.29, this is `false` by default.
+			// As of the 0.8.30, this is `false` by default.
 			viaIR: true,
 
 			// Comment-202408025 applies.
@@ -303,14 +304,14 @@ const hardhatUserConfig = {
 				// // exceeding the max allowed limit, especially when modifiers are used.
 				// // I have observed that when I decorated a method with the `nonReentrant` modifier,
 				// // the contract bytecode size has increased by about 2200 bytes.
-				// // Converting modifiers into methods helps and therefore should be preferred, but in some cases it doesn't help that much.
+				// // Converting modifiers into methods appears to help, but the effect could be random.
 				// // So let's not configure this.
 				// runs: 20_000,
 
 				// details: {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
-				// 		// this setting makes Hardhat work as well as possible.
+				// 		// this setting makes Hardhat "work as well as possible".
 				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
 				// 		// So we probably don't need this.
 				// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
@@ -398,11 +399,8 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	// todo-1 When you make changes to the networks, remember to refactor the logic near Comment-202408313.
-	// todo-0 If I add add Arbitrum Sepolia do the above.
-	// todo-0 Add it and then search for any sepolia
+	// todo-1 When making changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
-		// todo-0 review comments here.
 		hardhat: {
 			// Comment-202501193 relates and/or applies.
 			initialDate:
@@ -415,30 +413,17 @@ const hardhatUserConfig = {
 			allowUnlimitedContractSize: true,
 
 			// [Comment-202507272]
-			//
-			// todo-0 Contrary to what one might believe, providing this parameter, doesn't actually suppress gas limit estimate calls.
-			// todo-0 Neither it supports transaction fee estimate calls.
-			// todo-0 It's kinda confusing what's the difference between them.
-			//
-			// todo-0 This is just Hardhat Network config. It doesn't configure how transactions are sent.
-			// todo-0 So revist this whole comment.
-			//
-			// Providing a particular value, rather than "auto", increases testing speed due to skipping gas estimate calls.
-			// todo-0 no, rephrase the above. it simply improves Hardhat network performance.
-			// Although it's possible to override this setting by providing a particular `gasLimit` when calling a contract method.
+			// Providing a particular value, rather than "auto", improves Hardhat Network performance.
 			// By default, this value is taken from `blockGasLimit`.
-			// todo-0 delete>>>Issue. The docs says that by default this is "auto", but it doesn't appear to be the case, particularly for Hardhat Network.
-			// Additionally, to truly suppress gas estimate calls, we must replace the `hre.ethers.provider.getFeeData` method
-			// with a one that quickly returns an object and the `hre.ethers.provider.estimateGas` method with one
-			// that quickly returns a `bigint`.
+			// We also use this near Comment-202508223.
 			// Comment-202507252 relates.
 			// [/Comment-202507272]
 			gas: 30_000_000,
 
 			// [Comment-202507252]
 			// By default, this is 30_000_000.
-			// When automining is disabled, a bigger value allows to mine many transactions per block with a single "evm_mine".
-			// But for things to work, the `gas` parameter must be a fraction of this.
+			// When automining is disabled and the `gas` parameter is a fraction of this,
+			// a bigger value allows to mine multiple transactions per block with a single "evm_mine".
 			// Comment-202507272 relates.
 			// [/Comment-202507252]
 			blockGasLimit: 10_000 * 30_000_000,
@@ -446,9 +431,8 @@ const hardhatUserConfig = {
 			// initialBaseFeePerGas: 1e9,
 
 			// [Comment-202501193]
-			// This configures to deterministically mine a block when we submit a transaction request
-			// to execute a non-`view` contract method.
-			// Block timestamp increment is always 1 second and is not configurable (see more on this in the issue 3).
+			// This configures to deterministically mine a block when a transaction request arrives.
+			// Block timestamp increment is always 1 second and is not configurable, with caveats described in the issue 3.
 			// Issue 1. So we cannot easily test adjacent blocks with equal timestamps.
 			// 
 			// Issue 2.  Hardhat advances the next block timestamp to at least the current system time.
@@ -465,10 +449,9 @@ const hardhatUserConfig = {
 			// So to increase the chance of deterministic behavior when the current system time is approaching the beginning of a second,
 			// we must wait until the next second and then subtract 1 or more from the value we are to pass to "evm_increaseTime".
 			//
-			// Note that the `initialDate` parameter does not change this behavior. It only changes the initial timestamp,
-			// but system time passage still drives timestamp increses.
-			// Although a constant `initialDate` makes it possible to replay a test driven by random numbers
-			// if we start it with the same random number seed.
+			// Note that the `initialDate` parameter does not change this behavior. It only changes the initial timestamp.
+			// System time passage still drives timestamp increses.
+			// Although a constant `initialDate` makes it possible to more deterministically replay a test.
 			// [/Comment-202501193]
 			mining: {
 				// // This is `true` by default, which is what we need.
@@ -500,6 +483,11 @@ const hardhatUserConfig = {
 			url: "https://goerli-rollup.arbitrum.io/rpc",
 			accounts: (process.env.PRIVATE_KEY != undefined) ? [process.env.PRIVATE_KEY] : [],
 		},
+      arbitrumSepolia: {
+         url: "https://sepolia-rollup.arbitrum.io/rpc",
+			accounts: (process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY != undefined) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
+			// gasMultiplier: 2,
+      },
 		arbitrumOne: {
 			url: "https://arb1.arbitrum.io/rpc",
 			accounts: (process.env.MAINNET_PRIVATE_KEY != undefined) ? [process.env.MAINNET_PRIVATE_KEY] : [],

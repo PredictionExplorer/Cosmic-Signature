@@ -402,8 +402,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
-		// todo-0 Do we need `bidWithEthAndDonateToken`? Maybe at least add a region for it.
-		// todo-0 Do we need `bidWithEthAndDonateNft`? Maybe at least add a region for it.
+		// We don't need `bidWithEthAndDonateToken`.
+		// We don't need `bidWithEthAndDonateNft`.
 		// #region `canBidWithEth`
 
 		/// Issue. To keep it simple, this method doesn't assert that the bidder has enough ETH.
@@ -553,10 +553,6 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 				[this.roundNum, bidderAddress_, paidEthPrice_, (-1n), randomWalkNftId_, message_, this.mainPrizeTime,]
 			);
 			++ eventIndexWrapper_.value;
-
-			// todo-0 Not testing refund transfer error.
-			// todo-0 Reference where we test it.
-			// todo-0 But Solidity coverage indicates that it was tested, right, so maybe no ned to reference where we test it.
 			this.ethBalanceAmount += paidEthPrice_;
 			const transactionFeeInEth_ = transactionReceipt_.fee;
 			expect(transactionFeeInEth_).greaterThan(0n);
@@ -639,8 +635,8 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
-		// todo-0 Do we need `bidWithCstAndDonateToken`? Maybe at least add a region for it.
-		// todo-0 Do we need `bidWithCstAndDonateNft`? Maybe at least add a region for it.
+		// We don't need `bidWithCstAndDonateToken`.
+		// We don't need `bidWithCstAndDonateNft`.
 		// #region `canBidWithCst`
 
 		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponsePromise_) {
