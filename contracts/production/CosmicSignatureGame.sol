@@ -65,11 +65,6 @@ contract CosmicSignatureGame is
 	// 	revert ("Method does not exist.");
 	// }
 
-	/// todo-1 Delete this.
-	fallback() external payable {
-		revert ("Method does not exist.");
-	}
-
 	// #endregion
 	// #region `initialize`
 
