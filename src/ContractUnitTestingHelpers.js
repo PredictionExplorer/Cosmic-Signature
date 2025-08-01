@@ -23,8 +23,15 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
 // #endregion
 // #region // `TransactionRevertedExpectedlyError`
 
+// // [Comment-202508253]
+// // This is how we can use this:
+// //
 // // catch (errorObject) {
 // // 	if (errorObject instanceof TransactionRevertedExpectedlyError) {} else {throw errorObject;}
+// //
+// // We don't currently need this.
+// // `checkTransactionErrorObject` is a somewhat similar function.
+// // [/Comment-202508253]
 //
 // class TransactionRevertedExpectedlyError extends Error {
 // 	constructor (message_) {
@@ -162,12 +169,30 @@ function assertAddressIsValid(address) {
 }
 
 // #endregion
+// #region `tryWaitForTransactionReceipt`
+
+/**
+ * @param {Promise<import("ethers").TransactionResponse>} transactionResponsePromise
+ */
+async function tryWaitForTransactionReceipt(transactionResponsePromise) {
+	try {
+		return await waitForTransactionReceipt(transactionResponsePromise);
+	} catch (transactionErrorObject) {
+		checkTransactionErrorObject(transactionErrorObject);
+	}
+	return undefined;
+}
+
+// #endregion
 // #region `checkTransactionErrorObject`
 
+/// Comment-202508253 relates.
 function checkTransactionErrorObject(transactionErrorObject) {
-	const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
-	if ( ! weExpectThisError ) {
-		throw transactionErrorObject;
+	{
+		const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
+		if ( ! weExpectThisError ) {
+			throw transactionErrorObject;
+		}
 	}
 	expect(transactionErrorObject.receipt).equal(undefined);
 }
@@ -267,6 +292,7 @@ module.exports = {
 	deployContractsForUnitTestingAdvanced,
 	storeContractDeployedByteCodeAtAddress,
 	assertAddressIsValid,
+	tryWaitForTransactionReceipt,
 	checkTransactionErrorObject,
 	assertEvent,
 	makeNextBlockTimeDeterministic,

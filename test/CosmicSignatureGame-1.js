@@ -11,7 +11,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { createFairRandomNumberGenerator } = require("../src/FairRandomNumberGenerator.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, tryWaitForTransactionReceipt } = require("../src/ContractUnitTestingHelpers.js");
 const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/ContractSimulators/CosmicSignatureTokenSimulator.js");
 const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/ContractSimulators/RandomWalkNftSimulator.js");
 const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/ContractSimulators/CosmicSignatureNftSimulator.js");
@@ -434,17 +434,11 @@ describe("CosmicSignatureGame-1", function () {
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
 						// console.info("202507209", hre.ethers.formatEther(signerEthBalanceAmountBeforeTransaction_), hre.ethers.formatEther(ethPriceToPayMaxLimit_));
 						/** @type {Promise<import("ethers").TransactionResponse>} */
-						let transactionResponsePromise_;
-						try {
-							transactionResponsePromise_ =
-								sendEth_ ?
-								signer_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: ethPriceToPayMaxLimit_,}) :
-								cosmicSignatureGameProxyForSigner_.bidWithEth(randomWalkNftId_, bidMessage_, {value: ethPriceToPayMaxLimit_,});
-							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-						} catch (transactionErrorObject_) {
-							// console.warn(transactionErrorObject_.message);
-							checkTransactionErrorObject(transactionErrorObject_);
-						}
+						const transactionResponsePromise_ =
+							sendEth_ ?
+							signer_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: ethPriceToPayMaxLimit_,}) :
+							cosmicSignatureGameProxyForSigner_.bidWithEth(randomWalkNftId_, bidMessage_, {value: ethPriceToPayMaxLimit_,});
+						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
 						transactionBlock_ = latestBlock_;
 
@@ -508,15 +502,8 @@ describe("CosmicSignatureGame-1", function () {
 						const cstPriceToPayMaxLimit_ = randomNumber_ % (paidCstPrice_ * 16n + 1n);
 
 						/** @type {Promise<import("ethers").TransactionResponse>} */
-						let transactionResponsePromise_;
-						try {
-							// todo-0 In cases like this create promise before try.
-							transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceToPayMaxLimit_, bidMessage_);
-							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-						} catch (transactionErrorObject_) {
-							// console.warn(transactionErrorObject_.message);
-							checkTransactionErrorObject(transactionErrorObject_);
-						}
+						const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceToPayMaxLimit_, bidMessage_);
+						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
 						transactionBlock_ = latestBlock_;
 
@@ -565,25 +552,8 @@ describe("CosmicSignatureGame-1", function () {
 						blockBeforeTransaction_ = latestBlock_;
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
 						/** @type {Promise<import("ethers").TransactionResponse>} */
-						let transactionResponsePromise_;
-						try {
-							// const timeStamp1_ = performance.now();
-							transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.claimMainPrize();
-							// const timeStamp2_ = performance.now();
-							// const transactionResponse_ = await transactionResponsePromise_;
-							// const timeStamp3_ = performance.now();
-							// transactionReceipt_ = await transactionResponse_.wait();
-							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-							// const timeStamp4_ = performance.now();
-							// console.info(
-							// 	(timeStamp2_ - timeStamp1_).toString(),
-							// 	(timeStamp3_ - timeStamp2_).toString(),
-							// 	(timeStamp4_ - timeStamp3_).toString()
-							// );
-						} catch (transactionErrorObject_) {
-							// console.warn(transactionErrorObject_.message);
-							checkTransactionErrorObject(transactionErrorObject_);
-						}
+						const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.claimMainPrize();
+						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
 						transactionBlock_ = latestBlock_;
 						
@@ -740,7 +710,7 @@ describe("CosmicSignatureGame-1", function () {
 				const errorContext_ = {randomNumberSeed: uint256ToPaddedHexString(randomNumberSeed_),};
 				console.error("Error 202504055. " + JSON.stringify(errorContext_));
 			}
-			console.error(errorObject_.stack);
+			// console.error(errorObject_.stack);
 			throw errorObject_;
 
 			// #endregion

@@ -9,7 +9,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, tryWaitForTransactionReceipt } = require("../src/ContractUnitTestingHelpers.js");
 
 // #endregion
 // #region
@@ -368,13 +368,7 @@ describe("PrizesWallet-1", function () {
 				const strangerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address);
 				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[strangerIndex_])["withdrawEth(address)"](contracts_.signers[prizeWinnerIndex_].address);
-				/** @type {import("ethers").TransactionReceipt} */
-				let transactionReceipt_ = undefined;
-				try {
-					transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				} catch (transactionErrorObject_) {
-					checkTransactionErrorObject(transactionErrorObject_);
-				}
+				const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 				const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
 
 				// // Comment-202506169 applies.
@@ -384,7 +378,7 @@ describe("PrizesWallet-1", function () {
 
 				if ( ! (transactionBlock_.timestamp >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n) ) {
 					// console.info("202506094");
-					expect(transactionReceipt_ != undefined).equal(false);
+					expect(transactionReceipt_ != undefined).false;
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
 						.withArgs(
@@ -402,7 +396,7 @@ describe("PrizesWallet-1", function () {
 					// 	console.info("202506174", (( ++ testCounter6_ ) / testCounter5_).toPrecision(2));
 					// }
 
-					expect(transactionReceipt_ != undefined).equal(true);
+					expect(transactionReceipt_ != undefined).true;
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "EthWithdrawn")
 						.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
@@ -477,7 +471,7 @@ describe("PrizesWallet-1", function () {
 							// console.log("202507157");
 
 							// [Comment-202507163/]
-							expect(Object.hasOwn(tokenBalanceAmounts_, donatedTokenHolderAddr_)).equal(false);
+							expect(Object.hasOwn(tokenBalanceAmounts_, donatedTokenHolderAddr_)).false;
 
 							tokenBalanceAmounts_[donatedTokenHolderAddr_] = 0n;
 						}
@@ -565,15 +559,12 @@ describe("PrizesWallet-1", function () {
 
 					/** @type {Promise<import("ethers").TransactionResponse>} */
 					const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddr_[tokenIndex_], donatedTokenAmountToClaim_);
-					/** @type {import("ethers").TransactionReceipt} */
-					let transactionReceipt_ = undefined;
-					try {
-						transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-						// console.info("202507168");
-					} catch (transactionErrorObject_) {
-						// console.error("202507169", transactionErrorObject_.message);
-						checkTransactionErrorObject(transactionErrorObject_);
-					}
+					const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
+					// if (transactionReceipt_ != undefined) {
+					// 	console.info("202507168");
+					// } else {
+					// 	console.error("202507169");
+					// }
 
 					// #endregion
 					// #region //
@@ -793,13 +784,7 @@ describe("PrizesWallet-1", function () {
 				}
 				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedNft(BigInt(donatedNftIndex_));
-				/** @type {import("ethers").TransactionReceipt} */
-				let transactionReceipt_ = undefined;
-				try {
-					transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				} catch (transactionErrorObject_) {
-					checkTransactionErrorObject(transactionErrorObject_);
-				}
+				const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 				let transactionShouldHaveSucceeded_ = true;
 				if (transactionShouldHaveSucceeded_) {
 					if ( ! (donatedNftIndex_ < donatedNfts_.length) ) {
