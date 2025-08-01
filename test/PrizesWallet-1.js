@@ -8,7 +8,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper } = require("../src/Helpers.js");
+const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, checkTransactionErrorObject } = require("../src/ContractUnitTestingHelpers.js");
 
 // #endregion
@@ -77,7 +77,7 @@ describe("PrizesWallet-1", function () {
 			tokens_.push(token_);
 			const tokenAddr_ = await token_.getAddress();
 			tokensAddr_.push(tokenAddr_);
-			// await expect(token_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+			// await waitForTransactionReceipt(token_.transferOwnership(contracts_.ownerAcct.address));
 		}
 
 		// NFTs to be donated.
@@ -89,7 +89,7 @@ describe("PrizesWallet-1", function () {
 			nftContracts_.push(nftContract_);
 			const nftContractAddr_ = await nftContract_.getAddress();
 			nftContractsAddr_.push(nftContractAddr_);
-			await expect(nftContract_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+			await waitForTransactionReceipt(nftContract_.transferOwnership(contracts_.ownerAcct.address));
 		}
 
 		// We will not use `contracts_.prizesWallet`.
@@ -97,17 +97,17 @@ describe("PrizesWallet-1", function () {
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(fakeGame_.address);
 		await newPrizesWallet_.waitForDeployment();
 		const newPrizesWalletAddr_ = await newPrizesWallet_.getAddress();
-		await expect(newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+		await waitForTransactionReceipt(newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address));
 
 		// #endregion
 		// #region
 
 		for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
 			for (const token_ of tokens_) {
-				await expect(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n)).not.reverted;
+				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n));
 			}
 			for (const nftContract_ of nftContracts_) {
-				await expect(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddr_, true)).not.reverted;
+				await waitForTransactionReceipt(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddr_, true));
 			}
 		}
 
@@ -259,7 +259,7 @@ describe("PrizesWallet-1", function () {
 				// console.info("202506084");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
-				await expect(newPrizesWallet_.connect(fakeGame_).registerRoundEnd(roundNum_, contracts_.signers[mainPrizeBeneficiaryIndex_].address)).not.reverted;
+				await waitForTransactionReceipt(newPrizesWallet_.connect(fakeGame_).registerRoundEnd(roundNum_, contracts_.signers[mainPrizeBeneficiaryIndex_].address));
 				const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
 				mainPrizeBeneficiaryAddresses_[Number(roundNum_)] = contracts_.signers[mainPrizeBeneficiaryIndex_].address;
 				roundTimeoutTimesToWithdrawPrizes_[Number(roundNum_)] = BigInt(transactionBlock_.timestamp) + timeoutDurationToWithdrawPrizes_;
@@ -323,8 +323,7 @@ describe("PrizesWallet-1", function () {
 				await expect(transactionResponsePromise_)
 					.emit(newPrizesWallet_, "EthWithdrawn")
 					.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[prizeWinnerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
-				const transactionResponse_ = await transactionResponsePromise_;
-				const transactionReceipt_ = await transactionResponse_.wait();
+				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 				ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
 				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddr_)).equal(ethBalanceAmount_);
 				const transactionFeeInEth_ = transactionReceipt_.fee;
@@ -372,8 +371,7 @@ describe("PrizesWallet-1", function () {
 				/** @type {import("ethers").TransactionReceipt} */
 				let transactionReceipt_ = undefined;
 				try {
-					const transactionResponse_ = await transactionResponsePromise_;
-					transactionReceipt_ = await transactionResponse_.wait();
+					transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 				} catch (transactionErrorObject_) {
 					checkTransactionErrorObject(transactionErrorObject_);
 				}
@@ -466,7 +464,7 @@ describe("PrizesWallet-1", function () {
 						.revertedWithCustomError(tokens_[tokenIndex_], "ERC20InsufficientBalance");
 				} else {
 					// console.info("202506154", iterationCounter_.toString(), roundNum_.toString(), tokenIndex_.toString(), hre.ethers.formatEther(tokenAmount_));
-					await(await transactionResponsePromise_).wait();
+					await waitForTransactionReceipt(transactionResponsePromise_);
 
 					// Because near Comment-202507161 we have added the zero addresses to `allTokenBalanceAmounts_`,
 					// near Comment-202507163 we will implicitly validates that this is a nonzero.
@@ -570,8 +568,7 @@ describe("PrizesWallet-1", function () {
 					/** @type {import("ethers").TransactionReceipt} */
 					let transactionReceipt_ = undefined;
 					try {
-						const transactionResponse_ = await transactionResponsePromise_;
-						transactionReceipt_ = await transactionResponse_.wait();
+						transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 						// console.info("202507168");
 					} catch (transactionErrorObject_) {
 						// console.error("202507169", transactionErrorObject_.message);
@@ -799,8 +796,7 @@ describe("PrizesWallet-1", function () {
 				/** @type {import("ethers").TransactionReceipt} */
 				let transactionReceipt_ = undefined;
 				try {
-					const transactionResponse_ = await transactionResponsePromise_;
-					transactionReceipt_ = await transactionResponse_.wait();
+					transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 				} catch (transactionErrorObject_) {
 					checkTransactionErrorObject(transactionErrorObject_);
 				}

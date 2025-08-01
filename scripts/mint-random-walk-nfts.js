@@ -4,14 +4,16 @@
 
 // const { expect } = require("chai");
 const hre = require("hardhat");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 const numRWalkToMint = 4;
 
 async function mint_random_walk_token(testingAcct, randomWalkNft) {
 	let randomWalkNftMintPrice = await randomWalkNft.getMintPrice();
-	let transactionResponse = await randomWalkNft.connect(testingAcct).mint({value: randomWalkNftMintPrice,});
-	let transactionReceipt = await transactionResponse.wait();
+	/** @type {Promise<import("ethers").TransactionResponse>} */
+	let transactionResponsePromise = randomWalkNft.connect(testingAcct).mint({value: randomWalkNftMintPrice,});
+	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = randomWalkNft.interface.parseLog(event_logs[0]);

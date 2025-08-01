@@ -4,6 +4,7 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 /// todo-1 Now Chrono-Warrior also gets ETH.
@@ -26,8 +27,9 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount();
 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount();
 	// todo-1 Think about `gasLimit`. Maybe add it in some other places. Is there a default value when sending to a testnet or mainnet?
-	let transactionResponse = await cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
-	let transactionReceipt = await transactionResponse.wait();
+	/** @type {Promise<import("ethers").TransactionResponse>} */
+	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
+	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);

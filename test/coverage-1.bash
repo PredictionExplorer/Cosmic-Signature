@@ -22,6 +22,9 @@
 		# [/Comment-202505294]
 		export IS_HARDHAT_COVERAGE='true'
 
+		# todo-0 testing
+		export SOLIDITY_COVERAGE='true'
+
 		# todo-1 Uncomment the command line with no arguments.
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/Bidding.js'
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-?.js,StakingWalletCosmicSignatureNft.js,SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-?.js,BidderContract.js,BlockTimeStamps.js}'

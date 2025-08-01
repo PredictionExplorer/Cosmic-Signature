@@ -4,7 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { sleepForMilliSeconds, generateRandomUInt32 } = require("../src/Helpers.js");
+const { sleepForMilliSeconds, generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
 
 // Comment-202501193 relates and/or applies.
@@ -23,11 +23,11 @@ describe("BlockTimeStamps", function () {
 					break;
 				}
 				case 2: {
-					await expect(contracts_.signers[1].sendTransaction({to: contracts_.signers[2].address, value: 1,})).not.reverted;
+					await waitForTransactionReceipt(contracts_.signers[1].sendTransaction({to: contracts_.signers[2].address, value: 1,}));
 					break;
 				}
 				default: {
-					await expect(contracts_.charityWallet.connect(contracts_.signers[1]).send()).not.reverted;
+					await waitForTransactionReceipt(contracts_.charityWallet.connect(contracts_.signers[1]).send());
 					break;
 				}
 			}

@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("CharityWallet", function () {
@@ -52,7 +53,7 @@ describe("CharityWallet", function () {
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 		await brokenEthReceiver_.waitForDeployment();
 		const brokenEthReceiverAddr_ = await brokenEthReceiver_.getAddress();
-		// await expect(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+		// await waitForTransactionReceipt(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address));
 		
 		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(brokenEthReceiverAddr_))
 			.emit(contracts_.charityWallet, "CharityAddressChanged")
@@ -62,7 +63,8 @@ describe("CharityWallet", function () {
 			.withArgs(contracts_.signers[2].address, 3n);
 
 		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
-			await expect(brokenEthReceiver_.connect(contracts_.signers[5]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_)).not.reverted;
+			await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[5]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_));
+			/** @type {Promise<import("ethers").TransactionResponse>} */
 			let transactionResponsePromise_ = contracts_.charityWallet.connect(contracts_.signers[1])["send()"]();
 			let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 			if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
@@ -95,15 +97,16 @@ describe("CharityWallet", function () {
 		const maliciousCharity_ = await maliciousCharityFactory_.deploy(contracts_.charityWalletAddr);
 		await maliciousCharity_.waitForDeployment();
 		const maliciousCharityAddr_ = await maliciousCharity_.getAddress();
-		// await expect(maliciousCharity_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+		// await waitForTransactionReceipt(maliciousCharity_.transferOwnership(contracts_.ownerAcct.address));
 		
 		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(maliciousCharityAddr_))
 			.emit(contracts_.charityWallet, "CharityAddressChanged")
 			.withArgs(maliciousCharityAddr_);
 
 		for ( let maliciousCharityModeCode_ = 3n; maliciousCharityModeCode_ >= 0n; -- maliciousCharityModeCode_ ) {
-			await expect(maliciousCharity_.connect(contracts_.signers[5]).setModeCode(maliciousCharityModeCode_)).not.reverted;
+			await waitForTransactionReceipt(maliciousCharity_.connect(contracts_.signers[5]).setModeCode(maliciousCharityModeCode_));
 			for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				let transactionResponsePromise_;
 				if (counter_ <= 0) {
 					transactionResponsePromise_ = contracts_.charityWallet.connect(contracts_.signers[1])["send()"]();

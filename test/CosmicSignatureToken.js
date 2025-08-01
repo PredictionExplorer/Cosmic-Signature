@@ -4,7 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt32 } = require("../src/Helpers.js");
+const { generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("CosmicSignatureToken", function () {
@@ -31,19 +31,19 @@ describe("CosmicSignatureToken", function () {
 		const newCosmicSignatureToken_ = await contracts_.cosmicSignatureTokenFactory.deploy(contracts_.signers[0].address);
 		await newCosmicSignatureToken_.waitForDeployment();
 		// const newCosmicSignatureTokenAddr_ = await newCosmicSignatureToken_.getAddress();
-		// await expect(newCosmicSignatureToken_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+		// await waitForTransactionReceipt(newCosmicSignatureToken_.transferOwnership(contracts_.ownerAcct.address));
 		const newCosmicSignatureTokenForSigner0_ = newCosmicSignatureToken_.connect(contracts_.signers[0]);
 
 		// Comment-202507302 applies.
-		await expect(newCosmicSignatureTokenForSigner0_.mint(contracts_.signers[1].address, (1n << 208n) - 1n)).not.reverted;
+		await waitForTransactionReceipt(newCosmicSignatureTokenForSigner0_.mint(contracts_.signers[1].address, (1n << 208n) - 1n));
 		await expect(newCosmicSignatureTokenForSigner0_.mint(contracts_.signers[1].address, 1n))
 			.revertedWithCustomError(newCosmicSignatureTokenForSigner0_, "ERC20ExceededSafeSupply");
-		await expect(newCosmicSignatureToken_.connect(contracts_.signers[1]).transfer(contracts_.signers[10].address, (1n << 208n) - 1n)).not.reverted;
+		await waitForTransactionReceipt(newCosmicSignatureToken_.connect(contracts_.signers[1]).transfer(contracts_.signers[10].address, (1n << 208n) - 1n));
 		await expect(newCosmicSignatureTokenForSigner0_.mint(contracts_.signers[1].address, 1n))
 			.revertedWithCustomError(newCosmicSignatureTokenForSigner0_, "ERC20ExceededSafeSupply");
-		await expect(newCosmicSignatureToken_.connect(contracts_.signers[10])["burn(uint256)"](((1n << 208n) - 1n) - 1n)).not.reverted;
+		await waitForTransactionReceipt(newCosmicSignatureToken_.connect(contracts_.signers[10])["burn(uint256)"](((1n << 208n) - 1n) - 1n));
 		expect(await newCosmicSignatureToken_.totalSupply()).equal(1n);
-		await expect(newCosmicSignatureTokenForSigner0_["burn(address,uint256)"](contracts_.signers[10].address, 1n)).not.reverted;
+		await waitForTransactionReceipt(newCosmicSignatureTokenForSigner0_["burn(address,uint256)"](contracts_.signers[10].address, 1n));
 		expect(await newCosmicSignatureToken_.totalSupply()).equal(0n);
 
 		{
@@ -52,7 +52,7 @@ describe("CosmicSignatureToken", function () {
 				[contracts_.signers[2].address, 20n,],
 				[contracts_.signers[3].address, 30n,],
 			];
-			await expect(newCosmicSignatureTokenForSigner0_.mintMany(mintSpecs_)).not.reverted;
+			await waitForTransactionReceipt(newCosmicSignatureTokenForSigner0_.mintMany(mintSpecs_));
 			const burnSpecs_ = [
 				[contracts_.signers[2].address, 9n,],
 				[contracts_.signers[1].address, 11n,],
@@ -61,7 +61,7 @@ describe("CosmicSignatureToken", function () {
 			await expect(newCosmicSignatureTokenForSigner0_.burnMany(burnSpecs_))
 				.revertedWithCustomError(newCosmicSignatureTokenForSigner0_, "ERC20InsufficientBalance");
 			-- burnSpecs_[1][1];
-			await expect(newCosmicSignatureTokenForSigner0_.burnMany(burnSpecs_)).not.reverted;
+			await waitForTransactionReceipt(newCosmicSignatureTokenForSigner0_.burnMany(burnSpecs_));
 			const mintAndBurnSpecs_ = [
 				[contracts_.signers[2].address, 15n,],
 				[contracts_.signers[3].address, -17n,],
@@ -71,19 +71,19 @@ describe("CosmicSignatureToken", function () {
 			await expect(newCosmicSignatureTokenForSigner0_.mintAndBurnMany(mintAndBurnSpecs_))
 				.revertedWithCustomError(newCosmicSignatureTokenForSigner0_, "ERC20InsufficientBalance");
 			[mintAndBurnSpecs_[1], mintAndBurnSpecs_[3]] = [mintAndBurnSpecs_[3], mintAndBurnSpecs_[1]];
-			await expect(newCosmicSignatureTokenForSigner0_.mintAndBurnMany(mintAndBurnSpecs_)).not.reverted;
+			await waitForTransactionReceipt(newCosmicSignatureTokenForSigner0_.mintAndBurnMany(mintAndBurnSpecs_));
 			const tos_ = [
 				contracts_.signers[6].address,
 				contracts_.signers[5].address,
 				contracts_.signers[4].address,
 			];
-			await expect(newCosmicSignatureToken_.connect(contracts_.signers[3])["transferMany(address[],uint256)"](tos_, 3)).not.reverted;
+			await waitForTransactionReceipt(newCosmicSignatureToken_.connect(contracts_.signers[3])["transferMany(address[],uint256)"](tos_, 3));
 			const transferSpecs_ = [
 				[contracts_.signers[4].address, 2n,],
 				[contracts_.signers[5].address, 4n,],
 				[contracts_.signers[6].address, 5n,],
 			];
-			await expect(newCosmicSignatureToken_.connect(contracts_.signers[2])["transferMany((address,uint256)[])"](transferSpecs_)).not.reverted;
+			await waitForTransactionReceipt(newCosmicSignatureToken_.connect(contracts_.signers[2])["transferMany((address,uint256)[])"](transferSpecs_));
 			expect(await newCosmicSignatureToken_.balanceOf(contracts_.signers[1].address)).equal(10n - (11n - 1n) + 9n);
 			expect(await newCosmicSignatureToken_.balanceOf(contracts_.signers[2].address)).equal(20n - 9n + 15n - 2n - 4n - 5n);
 			expect(await newCosmicSignatureToken_.balanceOf(contracts_.signers[3].address)).equal(30n - 14n + 10n - 17n - 3n * 3n);
@@ -106,7 +106,7 @@ describe("CosmicSignatureToken", function () {
 			.revertedWithCustomError(contracts_.cosmicSignatureToken, "UnauthorizedCaller");
 		await expect(contracts_.cosmicSignatureToken.connect(pickUnauthorizedCaller_())["burn(address,uint256)"](contracts_.signers[1].address, 1n))
 			.revertedWithCustomError(contracts_.cosmicSignatureToken, "UnauthorizedCaller");
-		await expect(contracts_.cosmicSignatureToken.connect(pickUnauthorizedCaller_())["burn(uint256)"](0n)).not.reverted;
+		await waitForTransactionReceipt(contracts_.cosmicSignatureToken.connect(pickUnauthorizedCaller_())["burn(uint256)"](0n));
 		await expect(contracts_.cosmicSignatureToken.connect(pickUnauthorizedCaller_()).burnFrom(contracts_.signers[1].address, 1n))
 			.revertedWithCustomError(contracts_.cosmicSignatureToken, "ERC20InsufficientAllowance");
 		await expect(contracts_.cosmicSignatureToken.connect(pickUnauthorizedCaller_()).mintMany(emptyAray_))

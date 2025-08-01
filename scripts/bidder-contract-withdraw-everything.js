@@ -2,11 +2,12 @@
 
 // const { expect } = require("chai");
 // const hre = require("hardhat");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 const { getBidderContract } = require("./helpers.js");
 
 async function main() {
 	const bidderContract = await getBidderContract();
-	await (await bidderContract.withdrawEverything()).wait();
+	await waitForTransactionReceipt(bidderContract.withdrawEverything());
 }
 
 main()

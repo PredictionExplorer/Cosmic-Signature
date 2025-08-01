@@ -4,7 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt32 } = require("../src/Helpers.js");
+const { generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("MarketingWallet", function () {
@@ -33,11 +33,11 @@ describe("MarketingWallet", function () {
 		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
 
 		{
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
 			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).claimMainPrize()).not.reverted;
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).claimMainPrize());
 		}
 
 		{

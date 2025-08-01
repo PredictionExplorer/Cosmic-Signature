@@ -8,7 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { parseBooleanEnvironmentVariable, sleepForMilliSeconds } = require("./Helpers.js");
+const { parseBooleanEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
 
@@ -105,9 +105,9 @@ async function deployContractsForUnitTestingAdvanced(
 	const signer18 = signers[18];
 	const signer19 = signers[19];
 	const ethAmount = 10n ** 18n;
-	await (await signer19.sendTransaction({to: deployerAcct.address, value: ethAmount,})).wait();
-	await (await signer18.sendTransaction({to: ownerAcct.address, value: ethAmount,})).wait();
-	await (await signer17.sendTransaction({to: treasurerAcct.address, value: ethAmount,})).wait();
+	await waitForTransactionReceipt(signer19.sendTransaction({to: deployerAcct.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer18.sendTransaction({to: ownerAcct.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer17.sendTransaction({to: treasurerAcct.address, value: ethAmount,}));
 	const contracts =
 		await deployContractsAdvanced(
 			deployerAcct,
@@ -123,18 +123,18 @@ async function deployContractsForUnitTestingAdvanced(
 	contracts.charityAcct = charityAcct;
 	contracts.ownerAcct = ownerAcct;
 	contracts.deployerAcct = deployerAcct;
-	// await (await contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.randomWalkNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.prizesWallet.transferOwnership(ownerAcct.address)).wait();
-	// await (await contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.marketingWallet.setTreasurerAddress(treasurerAcct.address)).wait();
-	await (await contracts.marketingWallet.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.charityWallet.transferOwnership(ownerAcct.address)).wait();
-	// await (await contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address)).wait();
-	// await (await contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address)).wait();
+	// await waitForTransactionReceipt(contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.randomWalkNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.prizesWallet.transferOwnership(ownerAcct.address));
+	// await waitForTransactionReceipt(contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.marketingWallet.setTreasurerAddress(treasurerAcct.address));
+	await waitForTransactionReceipt(contracts.marketingWallet.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.charityWallet.transferOwnership(ownerAcct.address));
+	// await waitForTransactionReceipt(contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address));
+	// await waitForTransactionReceipt(contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address));
 	return contracts;
 }
 
