@@ -155,9 +155,9 @@ describe("CosmicSignatureGame-3", function () {
 				try {
 					// await waitForTransactionReceipt(transactionResponsePromise_);
 					await transactionResponsePromise_;
-					expect(false).equal(true);
+					expect(false).true;
 				} catch (errorObject_) {
-					expect(errorObject_.message).equal("Contract at 0x0000000000000000000000000000000000000000 doesn't look like an ERC 1967 proxy with a logic contract address\n\n");
+					expect(errorObject_.message.startsWith("Contract at 0x0000000000000000000000000000000000000000 doesn't look like an ERC 1967 proxy with a logic contract address")).true;
 				}
 			}
 

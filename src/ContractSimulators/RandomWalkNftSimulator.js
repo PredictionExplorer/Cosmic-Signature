@@ -28,7 +28,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `assertNftIdIsValid`
 
 		assertNftIdIsValid: function(nftId_) {
-			expect(this.isNftIdValid(nftId_)).equal(true);
+			expect(this.isNftIdValid(nftId_)).true;
 		},
 
 		// #endregion

@@ -35,7 +35,7 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #region `stake`
 
 		stake: function(nftOwnerAddress_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(this.wasNftUsed(nftId_)).equal(false);
+			expect(this.wasNftUsed(nftId_)).false;
 			this.usedNfts[nftId_] = true;
 			const newActionCounter_ = this.actionCounter + 1n;
 			this.actionCounter = newActionCounter_;

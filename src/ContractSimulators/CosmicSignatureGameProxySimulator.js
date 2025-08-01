@@ -509,7 +509,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 				}
 			} else {
-				expect(false).equal(true);
+				expect(false).true;
 			}
 			if (randomWalkNftId_ < 0n) {
 				// console.info("202505088");
