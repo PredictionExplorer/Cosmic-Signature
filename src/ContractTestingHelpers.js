@@ -40,13 +40,13 @@ let preparedHardhatCoverage = false;
 // }
 
 // #endregion
-// #region `loadFixtureDeployContractsForUnitTesting`
+// #region `loadFixtureDeployContractsForTesting`
 
 /**
  * @param {bigint} roundActivationTime 
  */
-async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
-	const contracts = await loadFixture(deployContractsForUnitTesting);
+async function loadFixtureDeployContractsForTesting(roundActivationTime) {
+	const contracts = await loadFixture(deployContractsForTesting);
 	contracts.signers.forEach((signer) => { signer.reset(); });
 	contracts.treasurerAcct.reset();
 	contracts.charityAcct.reset();
@@ -60,7 +60,7 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 		// Making `setRoundActivationTimeIfNeeded` behavior deterministic.
 		// [/Comment-202507204]
 		// Since we call this here, a typical test doesn't need to call this
-		// immediately after `loadFixtureDeployContractsForUnitTesting` returns,
+		// immediately after `loadFixtureDeployContractsForTesting` returns,
 		// and a quick test doesn't need to call this at all.
 		await makeNextBlockTimeDeterministic();
 	}
@@ -75,24 +75,24 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 }
 
 // #endregion
-// #region `deployContractsForUnitTesting`
+// #region `deployContractsForTesting`
 
 /**
  * This function is to be used for unit tests.
  * It's OK to pass ths function to `loadFixture`.
  */
-async function deployContractsForUnitTesting() {
-	return deployContractsForUnitTestingAdvanced("CosmicSignatureGame");
+async function deployContractsForTesting() {
+	return deployContractsForTestingAdvanced("CosmicSignatureGame");
 }
 
 // #endregion
-// #region `deployContractsForUnitTestingAdvanced`
+// #region `deployContractsForTestingAdvanced`
 
 /**
  * This function is to be used for unit tests.
  * @param {string} cosmicSignatureGameContractName 
  */
-async function deployContractsForUnitTestingAdvanced(
+async function deployContractsForTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
 	await hackPrepareHardhatCoverageOnceIfNeeded();
@@ -327,9 +327,9 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 module.exports = {
 	SKIP_LONG_TESTS,
 	// TransactionRevertedExpectedlyError,
-	loadFixtureDeployContractsForUnitTesting,
-	deployContractsForUnitTesting,
-	deployContractsForUnitTestingAdvanced,
+	loadFixtureDeployContractsForTesting,
+	deployContractsForTesting,
+	deployContractsForTestingAdvanced,
 	storeContractDeployedByteCodeAtAddress,
 	assertAddressIsValid,
 	tryWaitForTransactionReceipt,

@@ -9,7 +9,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, tryWaitForTransactionReceipt } = require("../src/ContractTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region
@@ -64,7 +64,7 @@ describe("PrizesWallet-1", function () {
 		// #endregion
 		// #region
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const fakeGame_ = contracts_.signers[19];
 

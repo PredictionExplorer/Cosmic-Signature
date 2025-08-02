@@ -6,7 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;
@@ -40,7 +40,7 @@ const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, makeNextBlock
 
 describe("Bidding", function () {
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const roundActivationTime_ = await contracts_.cosmicSignatureGameProxy.roundActivationTime();
 
@@ -66,7 +66,7 @@ describe("Bidding", function () {
 		// #endregion
 		// #region
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// #endregion
 		// #region
@@ -419,7 +419,7 @@ describe("Bidding", function () {
 	});
 
 	it("Bidding-related durations", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
@@ -442,7 +442,7 @@ describe("Bidding", function () {
 	});
 
 	it("Bidding with ETH + Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
 		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[1]).mint({value: randomWalkNftMintPrice_,}));
@@ -466,7 +466,7 @@ describe("Bidding", function () {
 	});
 
 	it("Each bidder bids with ETH + Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		for ( let signerIndex_ = 0; signerIndex_ <= 9; ++ signerIndex_ ) {
 			const randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
@@ -484,7 +484,7 @@ describe("Bidding", function () {
 	});
 
 	it("ETH bid refund", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// Comment-202506033 applies.
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
@@ -501,7 +501,7 @@ describe("Bidding", function () {
 	});
 
 	it("ETH + Random Walk NFT bid refund", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// Comment-202506033 applies.
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
@@ -526,7 +526,7 @@ describe("Bidding", function () {
 	});
 
 	it("ETH refund receive by bidder reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
@@ -557,7 +557,7 @@ describe("Bidding", function () {
 	});
 
 	it("Bidding with CST", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const cosmicSignatureGameProxyBidPlacedTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("BidPlaced").topicHash;
 		const delayDurationBeforeRoundActivation_ = await contracts_.cosmicSignatureGameProxy.delayDurationBeforeRoundActivation();
@@ -630,7 +630,7 @@ describe("Bidding", function () {
 	});
 
 	it("Cosmic Signature Token first mint reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const brokenCosmicSignatureTokenFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken", contracts_.deployerAcct);
 		const brokenCosmicSignatureToken_ = await brokenCosmicSignatureTokenFactory_.deploy(0n);
@@ -645,7 +645,7 @@ describe("Bidding", function () {
 	});
 
 	it("Cosmic Signature Token second mint reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const numTokenMintsPerBid_ = 1n;
 		const brokenCosmicSignatureTokenFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken", contracts_.deployerAcct);
@@ -667,7 +667,7 @@ describe("Bidding", function () {
 	// [/Comment-202507055]
 	// [Comment-202507057/]
 	it("Reentries by donated ERC-20 and ERC-721 token contracts", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 	
 		const maliciousTokenFactory_ = await hre.ethers.getContractFactory("MaliciousToken", contracts_.deployerAcct);
 		const maliciousToken_ = await maliciousTokenFactory_.deploy(hre.ethers.ZeroAddress, contracts_.cosmicSignatureGameProxyAddr);

@@ -7,11 +7,11 @@ const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting, deployContractsForUnitTestingAdvanced, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting, deployContractsForTestingAdvanced, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
 
 describe("MainPrize", function () {
 	it("Test 1", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// const timeStamp1_ = performance.now();
 
@@ -142,7 +142,7 @@ describe("MainPrize", function () {
 
 	// Issue. This test doesn't test CST prizes.
 	it("The number of prizes", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const prizesWalletEthReceivedTopicHash_ = contracts_.prizesWallet.interface.getEvent("EthReceived").topicHash;
 
@@ -269,7 +269,7 @@ describe("MainPrize", function () {
 
 	// Issue. This test doesn't test some prizes.
 	it("Prize amounts", async function () {
-		const contracts_ = await deployContractsForUnitTestingAdvanced("SpecialCosmicSignatureGame");
+		const contracts_ = await deployContractsForTestingAdvanced("SpecialCosmicSignatureGame");
 
 		// [Comment-202506033]
 		// The use of `BidderContract` eliminates the need to subtract gas used.
@@ -351,7 +351,7 @@ describe("MainPrize", function () {
 	});
 
 	it("The StakingWalletCosmicSignatureNft.deposit method reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const brokenStakingWalletCosmicSignatureNftFactory_ = await hre.ethers.getContractFactory("BrokenStakingWalletCosmicSignatureNft", contracts_.deployerAcct);
 		const brokenStakingWalletCosmicSignatureNft_ = await brokenStakingWalletCosmicSignatureNftFactory_.deploy();
@@ -404,7 +404,7 @@ describe("MainPrize", function () {
 
 	// Comment-202411077 relates and/or applies.
 	it("ETH receive by charity reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
@@ -448,7 +448,7 @@ describe("MainPrize", function () {
 	});
 
 	it("ETH receive by main prize beneficiary reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
@@ -478,7 +478,7 @@ describe("MainPrize", function () {
 	// Comment-202507055 applies.
 	// Comment-202507059 relates and/or applies.
 	it("Reentry and double-claim attempts", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const maliciousBidderFactory_ = await hre.ethers.getContractFactory("MaliciousBidder", contracts_.deployerAcct);
 		const maliciousBidder_ = await maliciousBidderFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);

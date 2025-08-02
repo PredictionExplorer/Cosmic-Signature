@@ -10,7 +10,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting, assertEvent } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting, assertEvent } = require("../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region
@@ -19,7 +19,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("Deployment", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.prizesWalletFactory.deploy(hre.ethers.ZeroAddress))
 			.revertedWithCustomError(contracts_.prizesWalletFactory, "ZeroAddress");
@@ -29,7 +29,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("Contract parameter setters", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		{
 			const newValue_ = 999_999n + generateRandomUInt256() % 3n;
@@ -56,7 +56,7 @@ describe("PrizesWallet-2", function () {
 		// #endregion
 		// #region
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const tokens_ = [];
 		const tokensAddr_ = [];
@@ -218,7 +218,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("The withdrawEth methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
@@ -263,7 +263,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("The donateNft method", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		/** @type {Promise<import("ethers").TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).mint({value: 10n ** (18n - 2n),});
@@ -289,7 +289,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("The claimManyDonatedNfts method", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const prizesWalletDonatedNftClaimedTopicHash_ = contracts_.prizesWallet.interface.getEvent("DonatedNftClaimed").topicHash;
 
@@ -330,7 +330,7 @@ describe("PrizesWallet-2", function () {
 		/** @type {Promise<import("ethers").TransactionResponse>} */
 		let transactionResponsePromise_;
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.signers[10].address);
 		await newPrizesWallet_.waitForDeployment();
@@ -368,7 +368,7 @@ describe("PrizesWallet-2", function () {
 	it("Reentries", async function () {
 		// #region
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 	
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.signers[10].address);
 		await newPrizesWallet_.waitForDeployment();

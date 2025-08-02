@@ -5,11 +5,11 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { shuffleArray, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting, assertAddressIsValid } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting, assertAddressIsValid } = require("../src/ContractTestingHelpers.js");
 
 describe("StakingWalletRandomWalkNft", function () {
 	it("Deployment", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.stakingWalletRandomWalkNftFactory.deploy(hre.ethers.ZeroAddress))
 			.revertedWithCustomError(contracts_.stakingWalletRandomWalkNftFactory, "ZeroAddress");
@@ -18,7 +18,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	it("Minting, staking, and unstaking of 10 Random Walk NFTs", async function () {
 		const numNfts_ = 10;
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -95,7 +95,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	it("The stakeMany and unstakeMany methods", async function () {
 		const numNfts_ = 10;
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 		const stakingWalletRandomWalkNftNftUnstakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftUnstaked").topicHash;
@@ -172,7 +172,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const numNftsPerStaker_ = 50;
 		const numStakersToPick_ = 300n;
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		{
 			const luckyStakerAddresses_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numStakersToPick_, /*hre.ethers.hashMessage("0xffff")*/ 0xe1027c1afb832e7bd4ac3301523cf66aed14912422b036d444e0c2d4adc0afa2n);
@@ -268,7 +268,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const minToMaxNumLuckyStakerPicksRatioMinLimit_ = 0.8;
 		const numIterationsMaxLimit_ = 30;
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		for ( let stakerIndex_ = 0; stakerIndex_ < numStakers_; ++ stakerIndex_ ) {
 			await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[stakerIndex_]).setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true));
@@ -302,7 +302,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Staking a used Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -329,7 +329,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("An unauthorized caller unstakes a Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -356,7 +356,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Unstaking an invalid stakeActionId", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -394,7 +394,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Double-unstaking Random Walk NFTs", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 

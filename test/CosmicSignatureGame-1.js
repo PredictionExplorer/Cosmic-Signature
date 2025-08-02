@@ -11,7 +11,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { createFairRandomNumberGenerator } = require("../src/FairRandomNumberGenerator.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, tryWaitForTransactionReceipt } = require("../src/ContractTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../src/ContractTestingHelpers.js");
 const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/ContractSimulators/CosmicSignatureTokenSimulator.js");
 const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/ContractSimulators/RandomWalkNftSimulator.js");
 const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/ContractSimulators/CosmicSignatureNftSimulator.js");
@@ -78,7 +78,7 @@ describe("CosmicSignatureGame-1", function () {
 
 			randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 			const roundActivationTimeOffset_ = randomNumber_ % 4096n - 1024n;
-			const contracts_ = await loadFixtureDeployContractsForUnitTesting(roundActivationTimeOffset_);
+			const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTimeOffset_);
 			// const blockchainPropertyGetterFactory_ = await hre.ethers.getContractFactory("BlockchainPropertyGetter", contracts_.deployerAcct);
 			// const blockchainPropertyGetter_ = await blockchainPropertyGetterFactory_.deploy();
 			// await blockchainPropertyGetter_.waitForDeployment();

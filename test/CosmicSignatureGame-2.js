@@ -6,11 +6,11 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt32, uint32ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
 // const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame-2", function () {
 	it("Smoke-test", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const cosmicSignatureGameImplementationByteCodeSize_ =
 			// cosmicSignatureGameFactory.bytecode.length / 2 - 1;
@@ -30,7 +30,7 @@ describe("CosmicSignatureGame-2", function () {
 	});
 
 	it("The transferOwnership method", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		expect(await contracts_.cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
 		await expect(contracts_.cosmicSignatureGameImplementation.connect(contracts_.ownerAcct).transferOwnership(contracts_.deployerAcct.address)).revertedWithCustomError(contracts_.cosmicSignatureGameImplementation, "OwnableUnauthorizedAccount");
@@ -57,7 +57,7 @@ describe("CosmicSignatureGame-2", function () {
 	// Issue. I have eliminated the `fallback` method and refactored this test to confirm the behavior that is expected
 	// when there is no `fallback` method.
 	it("The fallback method", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(
 			hre.ethers.provider.call({

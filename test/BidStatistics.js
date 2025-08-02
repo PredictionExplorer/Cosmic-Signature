@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("BidStatistics", function () {
 	it("Bid duration accounting: 2 bidders place bids of different durations", async function () {
@@ -13,7 +13,7 @@ describe("BidStatistics", function () {
 		//    signer 1 longest bid is 1000 seconds long.
 		//    signer 2 longest bid is 5000 seconds long.
 		
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(100_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(100_000_000_000n);
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000,]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -47,7 +47,7 @@ describe("BidStatistics", function () {
 		//    3 bidders place bids of equal durations of 1000 seconds.
 		//    Signer 1 places the 1st bid and becomes the winner.
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(100_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(100_000_000_000n);
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_000_000,]);
 		// await hre.ethers.provider.send("evm_mine");
@@ -115,7 +115,7 @@ describe("BidStatistics", function () {
 		//    Signer 2 places the 3d bid of 5000 seconds long.
 		//    The 5000 seconds bid is the longest, therefore signer 2 is the Endurance Champion.
 		
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(100_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(100_000_000_000n);
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [100_000_080_000,]);
 		// await hre.ethers.provider.send("evm_mine");

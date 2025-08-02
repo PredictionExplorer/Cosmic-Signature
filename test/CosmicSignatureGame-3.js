@@ -5,11 +5,11 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame-3", function () {
 	it("The initialize method is disabled", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.cosmicSignatureGameImplementation.initialize(contracts_.ownerAcct.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
 		await expect(contracts_.cosmicSignatureGameImplementation.connect(contracts_.ownerAcct).initialize(contracts_.ownerAcct.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
@@ -19,7 +19,7 @@ describe("CosmicSignatureGame-3", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using the recommended approach", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerAcct);
@@ -49,7 +49,7 @@ describe("CosmicSignatureGame-3", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using our minimalistic unsafe approach", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.deployerAcct);
@@ -77,7 +77,7 @@ describe("CosmicSignatureGame-3", function () {
 	// `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would not allow doing this.
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade to a completely different contract using our minimalistic unsafe approach", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
@@ -103,7 +103,7 @@ describe("CosmicSignatureGame-3", function () {
 
 	// Comment-202412129 relates.
 	it("Unauthorized or incorrect CosmicSignatureGame upgrade attempts", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerAcct);

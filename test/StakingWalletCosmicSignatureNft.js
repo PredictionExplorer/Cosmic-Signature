@@ -5,11 +5,11 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { shuffleArray, generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("StakingWalletCosmicSignatureNft", function () {
 	it("Deployment", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.stakingWalletCosmicSignatureNftFactory.deploy(hre.ethers.ZeroAddress, contracts_.signers[0].address))
 			.revertedWithCustomError(contracts_.stakingWalletCosmicSignatureNftFactory, "ZeroAddress");
@@ -18,7 +18,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Minting, staking, and unstaking of at least 10 Cosmic Signature NFTs", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const cosmicSignatureNftNftMintedTopicHash_ = contracts_.cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
@@ -106,7 +106,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("The stakeMany and unstakeMany methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const cosmicSignatureNftNftMintedTopicHash_ = contracts_.cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
@@ -185,7 +185,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Cosmic Signature NFT staking ETH reward amounts and the tryPerformMaintenance method", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
@@ -364,7 +364,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		/** @type {import("ethers").LogDescription} */
 		let parsedLog_;
 
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
 		const cosmicSignatureGameProxyRaffleWinnerCosmicSignatureNftAwardedTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerCosmicSignatureNftAwarded").topicHash;
@@ -485,7 +485,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Staking a used Cosmic Signature NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
 
@@ -518,7 +518,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("An unauthorized caller unstakes a Cosmic Signature NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
 
@@ -551,7 +551,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Unstaking an invalid stakeActionId", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
 
@@ -595,7 +595,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("Double-unstaking Cosmic Signature NFTs", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const cosmicSignatureNftNftMintedTopicHash_ = contracts_.cosmicSignatureNft.interface.getEvent("NftMinted").topicHash;
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
@@ -658,7 +658,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("ETH transfer to the staker reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const brokenCosmicSignatureNftStakerFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureNftStaker", contracts_.deployerAcct);
 		const brokenCosmicSignatureNftStaker_ = await brokenCosmicSignatureNftStakerFactory_.deploy(contracts_.stakingWalletCosmicSignatureNftAddr);
@@ -711,14 +711,14 @@ describe("StakingWalletCosmicSignatureNft", function () {
 	});
 
 	it("An unauthorized caller deposits ETH", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[1]).deposit(0, {value: 1n,}))
 			.revertedWithCustomError(contracts_.stakingWalletCosmicSignatureNft, "UnauthorizedCaller");
 	});
 
 	it("Reentries", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const maliciousCosmicSignatureNftStakerFactory_ = await hre.ethers.getContractFactory("MaliciousCosmicSignatureNftStaker", contracts_.deployerAcct);
 		const maliciousCosmicSignatureNftStaker_ = await maliciousCosmicSignatureNftStakerFactory_.deploy(contracts_.stakingWalletCosmicSignatureNftAddr);

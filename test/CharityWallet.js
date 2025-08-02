@@ -5,11 +5,11 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CharityWallet", function () {
 	it("Normal operations", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.signers[2].sendTransaction({to: contracts_.charityWalletAddr, value: 6n,}))
 			.emit(contracts_.charityWallet, "DonationReceived")
@@ -47,7 +47,7 @@ describe("CharityWallet", function () {
 	});
 
 	it("ETH transfer to charity failure", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
@@ -80,7 +80,7 @@ describe("CharityWallet", function () {
 	});
 
 	it("Unauthorized access to restricted methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.charityWallet.connect(contracts_.signers[1]).setCharityAddress(contracts_.signers[1].address))
 			.revertedWithCustomError(contracts_.charityWallet, "OwnableUnauthorizedAccount")
@@ -91,7 +91,7 @@ describe("CharityWallet", function () {
 	});
 
 	it("Reentries", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const maliciousCharityFactory_ = await hre.ethers.getContractFactory("MaliciousCharity", contracts_.deployerAcct);
 		const maliciousCharity_ = await maliciousCharityFactory_.deploy(contracts_.charityWalletAddr);

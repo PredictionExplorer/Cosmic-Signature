@@ -5,18 +5,18 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureToken", function () {
 	it("Deployment", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.cosmicSignatureTokenFactory.deploy(hre.ethers.ZeroAddress))
 			.revertedWithCustomError(contracts_.cosmicSignatureTokenFactory, "ZeroAddress");
 	});
 
 	it("Smoke-test", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		expect(await contracts_.cosmicSignatureToken.game()).equal(contracts_.cosmicSignatureGameProxyAddr);
 		expect(await contracts_.cosmicSignatureToken.CLOCK_MODE()).equal("mode=timestamp");
@@ -26,7 +26,7 @@ describe("CosmicSignatureToken", function () {
 	});
 	
 	it("Minting, burning, and transferring tokens", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const newCosmicSignatureToken_ = await contracts_.cosmicSignatureTokenFactory.deploy(contracts_.signers[0].address);
 		await newCosmicSignatureToken_.waitForDeployment();
@@ -94,7 +94,7 @@ describe("CosmicSignatureToken", function () {
 	});
 
 	it("Unauthorized access to restricted methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const pickUnauthorizedCaller_ = () => {
 			return ((generateRandomUInt32() & 1) == 0) ? contracts_.ownerAcct : contracts_.signers[0];
