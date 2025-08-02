@@ -17,10 +17,12 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 /// todo-1 +++ But we probably don't need it.
 abstract contract OwnableUpgradeableWithReservedStorageGaps is OwnableUpgradeable {
 	/// @dev Comment-202412142 applies.
+	// solhint-disable-next-line var-name-mixedcase
 	uint256[256] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
-	// /// @dev Comment-202412142 applies.
+	/// @dev Comment-202412142 applies.
 	// uint256[256] private transient __gap_transient;
+	// solhint-disable-next-line var-name-mixedcase
 	uint256 private transient __gap_transient;
 }

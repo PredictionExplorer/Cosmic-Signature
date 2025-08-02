@@ -405,12 +405,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Although it's probably not needed here that much because this contract is the last in the inheritance list
 	/// among those containing storage variables.
 	/// [/Comment-202412148]
+	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 255] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
-	// /// @dev Comment-202412142 applies.
-	// /// Comment-202412148 applies.
+	/// @dev Comment-202412142 applies.
+	/// Comment-202412148 applies.
 	// uint256[1 << 255] private transient __gap_transient;
+	// solhint-disable-next-line var-name-mixedcase
 	uint256 private transient __gap_transient;
 
 	// #endregion

@@ -205,7 +205,7 @@ contract CosmicSignatureToken is
 	// #region `CLOCK_MODE`
 
 	/// @notice Comment-202501123 relates and/or applies.
-	/// solhint-disable-next-line func-name-mixedcase
+	// solhint-disable-next-line func-name-mixedcase
 	function CLOCK_MODE() public pure override returns (string memory) {
 		return "mode=timestamp";
 	}
