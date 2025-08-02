@@ -422,7 +422,11 @@ const hardhatUserConfig = {
 			// By default, this value is taken from `blockGasLimit`.
 			// We also use this near Comment-202508223.
 			// Comment-202507252 relates.
+			// Comment-202508265 relates and/or applies.
 			// [/Comment-202507272]
+			// [Comment-202508267]
+			// Similar magic numbers exist in multiple places.
+			// [/Comment-202508267]
 			gas: 30_000_000,
 
 			// [Comment-202507252]
@@ -430,7 +434,9 @@ const hardhatUserConfig = {
 			// When automining is disabled and the `gas` parameter is a fraction of this,
 			// a bigger value allows to mine multiple transactions per block with a single "evm_mine".
 			// Comment-202507272 relates.
+			// Comment-202508265 relates and/or applies.
 			// [/Comment-202507252]
+			// Comment-202508267 applies.
 			blockGasLimit: 10_000 * 30_000_000,
 
 			// initialBaseFeePerGas: 1e9,
@@ -520,11 +526,13 @@ const hardhatUserConfig = {
 
 	// #endregion
 	// #region
-	
+
 	mocha: {
 		parallel: true,
 		timeout: 2 * 60 * 60 * 1000,
-		require: ["./mocha-hooks.js",],
+
+		// Comment-202508265 relates and/or applies.
+		require: ["./src/MochaHooks.js",],
 	},
 
 	// #endregion

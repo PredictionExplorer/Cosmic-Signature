@@ -9,21 +9,12 @@
 	if [ $? -ne 0 ]; then
 		read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
 	else
-		# [Comment-202505294]
-		# Issue. We need this ugly environment variable to tell our logic that the Hardhat Coverage task is running.
-		# There appears to be no other way to make our logic informed about that.
-		# Why our logic needs to know that?
-		# It used to assert that block base fee per gas is positive.
-		# A problem is that when the Hardhat Coverage task is running, it's zero in both Solidity and JavaScript.
-		# So the asserions failed.
-		# So I have refactored the assertions to assert that in this special case the values are zeros.
-		# There are assertions like that in Solidity code as well. They unconditionally assert that the value is positive,
-		# which implies that for the coverage task we must compile Solidity code with assertions disabled.
-		# [/Comment-202505294]
-		export IS_HARDHAT_COVERAGE='true'
+		# todo-1 Comment this out.
+		# export SKIP_LONG_TESTS='true'
 
-		# todo-0 testing
-		export SOLIDITY_COVERAGE='true'
+		# # Hardhat docs recommends setting this environment variable.
+		# # Although it doesn't necessarily make a difference for our setup, so let's not set it until something starts failing.
+		# export SOLIDITY_COVERAGE='true'
 
 		# todo-1 Uncomment the command line with no arguments.
 		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/Bidding.js'

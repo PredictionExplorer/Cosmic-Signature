@@ -10,15 +10,15 @@ const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { parseBooleanEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
+const { mochaHooks } = require("./MochaHooks.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
 
 // #endregion
 // #region
 
-// Comment-202505294 applies.
-const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE", false);
-
 const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false);
+
+let preparedHardhatCoverage = false;
 
 // #endregion
 // #region // `TransactionRevertedExpectedlyError`
@@ -95,6 +95,7 @@ async function deployContractsForUnitTesting() {
 async function deployContractsForUnitTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
+	await hackPrepareHardhatCoverageOnceIfNeeded();
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
 	const deployerAcct = new MyNonceManager(new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider));
@@ -143,6 +144,36 @@ async function deployContractsForUnitTestingAdvanced(
 	// await waitForTransactionReceipt(contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address));
 	await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address));
 	return contracts;
+}
+
+// #endregion
+// #region `hackPrepareHardhatCoverageIfNeeded`
+
+/// [Comment-202508265]
+/// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
+/// This method fixes the issue.
+/// The `blockGasLimit` parameter also kind of needs fixing, but we are happy with its default value.
+/// Comment-202505294 relates.
+/// todo-2 To be revisited.
+/// [/Comment-202508265]
+async function hackPrepareHardhatCoverageOnceIfNeeded() {
+	// Comment-202508267 applies.
+	const gas = 30_000_000;
+
+	if (( ! hre.__SOLIDITY_COVERAGE_RUNNING ) || preparedHardhatCoverage) {
+		// console.info("202508262");
+
+		expect(hre.network.config.gas).equal(gas);
+
+		return;
+	}
+	
+	// console.info("202508263");
+	preparedHardhatCoverage = true;
+
+	expect(hre.network.config.gas).not.equal(gas);
+	hre.network.config.gas = gas;
+	await mochaHooks.beforeAll();
 }
 
 // #endregion
@@ -256,11 +287,21 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 	let randomNumberSeed = BigInt(prevBlock.hash) >> 1n;
 	{
 		const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
-		if ( ! IS_HARDHAT_COVERAGE ) {
+
+		// [Comment-202505294]
+		// Issue. A problem is that when the Hardhat Coverage task is running,
+		// `baseFeePerGas` is zero in both Solidity and JavaScript.
+		// Therefore we need this ugly assertion logic.
+		// There are assertions like this in Solidity code as well. But they unconditionally assert that the value is positive,
+		// which implies that for the coverage task we must compile Solidity code with assertions disabled.
+		// Comment-202508265 relates.
+		// [/Comment-202505294]
+		if ( ! hre.__SOLIDITY_COVERAGE_RUNNING ) {
 			expect(latestBlockBaseFeePerGas).greaterThan(0n);
 		} else {
 			expect(latestBlockBaseFeePerGas).equal(0n);
 		}
+
 		randomNumberSeed ^= latestBlockBaseFeePerGas << 64n;
 	}
 	{
@@ -284,7 +325,6 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 // #region
 
 module.exports = {
-	IS_HARDHAT_COVERAGE,
 	SKIP_LONG_TESTS,
 	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForUnitTesting,
