@@ -8,23 +8,30 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { parseBooleanEnvironmentVariable, sleepForMilliSeconds } = require("./Helpers.js");
+const { parseBooleanEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
+const { mochaHooks } = require("./MochaHooks.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
 
 // #endregion
 // #region
 
-// Comment-202505294 applies.
-const IS_HARDHAT_COVERAGE = parseBooleanEnvironmentVariable("IS_HARDHAT_COVERAGE", false);
-
 const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false);
+
+let preparedHardhatCoverage = false;
 
 // #endregion
 // #region // `TransactionRevertedExpectedlyError`
 
+// // [Comment-202508253]
+// // This is how we can use this:
+// //
 // // catch (errorObject) {
 // // 	if (errorObject instanceof TransactionRevertedExpectedlyError) {} else {throw errorObject;}
+// //
+// // We don't currently need this.
+// // `checkTransactionErrorObject` is a somewhat similar function.
+// // [/Comment-202508253]
 //
 // class TransactionRevertedExpectedlyError extends Error {
 // 	constructor (message_) {
@@ -33,13 +40,13 @@ const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false
 // }
 
 // #endregion
-// #region `loadFixtureDeployContractsForUnitTesting`
+// #region `loadFixtureDeployContractsForTesting`
 
 /**
  * @param {bigint} roundActivationTime 
  */
-async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
-	const contracts = await loadFixture(deployContractsForUnitTesting);
+async function loadFixtureDeployContractsForTesting(roundActivationTime) {
+	const contracts = await loadFixture(deployContractsForTesting);
 	contracts.signers.forEach((signer) => { signer.reset(); });
 	contracts.treasurerAcct.reset();
 	contracts.charityAcct.reset();
@@ -53,7 +60,7 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 		// Making `setRoundActivationTimeIfNeeded` behavior deterministic.
 		// [/Comment-202507204]
 		// Since we call this here, a typical test doesn't need to call this
-		// immediately after `loadFixtureDeployContractsForUnitTesting` returns,
+		// immediately after `loadFixtureDeployContractsForTesting` returns,
 		// and a quick test doesn't need to call this at all.
 		await makeNextBlockTimeDeterministic();
 	}
@@ -68,26 +75,27 @@ async function loadFixtureDeployContractsForUnitTesting(roundActivationTime) {
 }
 
 // #endregion
-// #region `deployContractsForUnitTesting`
+// #region `deployContractsForTesting`
 
 /**
  * This function is to be used for unit tests.
  * It's OK to pass ths function to `loadFixture`.
  */
-async function deployContractsForUnitTesting() {
-	return deployContractsForUnitTestingAdvanced("CosmicSignatureGame");
+async function deployContractsForTesting() {
+	return deployContractsForTestingAdvanced("CosmicSignatureGame");
 }
 
 // #endregion
-// #region `deployContractsForUnitTestingAdvanced`
+// #region `deployContractsForTestingAdvanced`
 
 /**
  * This function is to be used for unit tests.
  * @param {string} cosmicSignatureGameContractName 
  */
-async function deployContractsForUnitTestingAdvanced(
+async function deployContractsForTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
+	await hackPrepareHardhatCoverageOnceIfNeeded();
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
 	const deployerAcct = new MyNonceManager(new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider));
@@ -105,9 +113,9 @@ async function deployContractsForUnitTestingAdvanced(
 	const signer18 = signers[18];
 	const signer19 = signers[19];
 	const ethAmount = 10n ** 18n;
-	await (await signer19.sendTransaction({to: deployerAcct.address, value: ethAmount,})).wait();
-	await (await signer18.sendTransaction({to: ownerAcct.address, value: ethAmount,})).wait();
-	await (await signer17.sendTransaction({to: treasurerAcct.address, value: ethAmount,})).wait();
+	await waitForTransactionReceipt(signer19.sendTransaction({to: deployerAcct.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer18.sendTransaction({to: ownerAcct.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer17.sendTransaction({to: treasurerAcct.address, value: ethAmount,}));
 	const contracts =
 		await deployContractsAdvanced(
 			deployerAcct,
@@ -123,19 +131,49 @@ async function deployContractsForUnitTestingAdvanced(
 	contracts.charityAcct = charityAcct;
 	contracts.ownerAcct = ownerAcct;
 	contracts.deployerAcct = deployerAcct;
-	// await (await contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.randomWalkNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.prizesWallet.transferOwnership(ownerAcct.address)).wait();
-	// await (await contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.marketingWallet.setTreasurerAddress(treasurerAcct.address)).wait();
-	await (await contracts.marketingWallet.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.charityWallet.transferOwnership(ownerAcct.address)).wait();
-	// await (await contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address)).wait();
-	// await (await contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address)).wait();
-	await (await contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address)).wait();
+	// await waitForTransactionReceipt(contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.randomWalkNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.prizesWallet.transferOwnership(ownerAcct.address));
+	// await waitForTransactionReceipt(contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.marketingWallet.setTreasurerAddress(treasurerAcct.address));
+	await waitForTransactionReceipt(contracts.marketingWallet.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.charityWallet.transferOwnership(ownerAcct.address));
+	// await waitForTransactionReceipt(contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address));
+	// await waitForTransactionReceipt(contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address));
+	await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address));
 	return contracts;
+}
+
+// #endregion
+// #region `hackPrepareHardhatCoverageIfNeeded`
+
+/// [Comment-202508265]
+/// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
+/// This method fixes the issue.
+/// The `blockGasLimit` parameter also kind of needs fixing, but we are happy with its default value.
+/// Comment-202505294 relates.
+/// todo-2 To be revisited.
+/// [/Comment-202508265]
+async function hackPrepareHardhatCoverageOnceIfNeeded() {
+	// Comment-202508267 applies.
+	const gas = 30_000_000;
+
+	if (( ! hre.__SOLIDITY_COVERAGE_RUNNING ) || preparedHardhatCoverage) {
+		// console.info("202508262");
+
+		expect(hre.network.config.gas).equal(gas);
+
+		return;
+	}
+	
+	// console.info("202508263");
+	preparedHardhatCoverage = true;
+
+	expect(hre.network.config.gas).not.equal(gas);
+	hre.network.config.gas = gas;
+	await mochaHooks.beforeAll();
 }
 
 // #endregion
@@ -162,12 +200,30 @@ function assertAddressIsValid(address) {
 }
 
 // #endregion
+// #region `tryWaitForTransactionReceipt`
+
+/**
+ * @param {Promise<import("ethers").TransactionResponse>} transactionResponsePromise
+ */
+async function tryWaitForTransactionReceipt(transactionResponsePromise) {
+	try {
+		return await waitForTransactionReceipt(transactionResponsePromise);
+	} catch (transactionErrorObject) {
+		checkTransactionErrorObject(transactionErrorObject);
+	}
+	return undefined;
+}
+
+// #endregion
 // #region `checkTransactionErrorObject`
 
+/// Comment-202508253 relates.
 function checkTransactionErrorObject(transactionErrorObject) {
-	const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
-	if ( ! weExpectThisError ) {
-		throw transactionErrorObject;
+	{
+		const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
+		if ( ! weExpectThisError ) {
+			throw transactionErrorObject;
+		}
 	}
 	expect(transactionErrorObject.receipt).equal(undefined);
 }
@@ -231,11 +287,21 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 	let randomNumberSeed = BigInt(prevBlock.hash) >> 1n;
 	{
 		const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
-		if ( ! IS_HARDHAT_COVERAGE ) {
+
+		// [Comment-202505294]
+		// Issue. A problem is that when the Hardhat Coverage task is running,
+		// `baseFeePerGas` is zero in both Solidity and JavaScript.
+		// Therefore we need this ugly assertion logic.
+		// There are assertions like this in Solidity code as well. But they unconditionally assert that the value is positive,
+		// which implies that for the coverage task we must compile Solidity code with assertions disabled.
+		// Comment-202508265 relates.
+		// [/Comment-202505294]
+		if ( ! hre.__SOLIDITY_COVERAGE_RUNNING ) {
 			expect(latestBlockBaseFeePerGas).greaterThan(0n);
 		} else {
 			expect(latestBlockBaseFeePerGas).equal(0n);
 		}
+
 		randomNumberSeed ^= latestBlockBaseFeePerGas << 64n;
 	}
 	{
@@ -259,14 +325,14 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 // #region
 
 module.exports = {
-	IS_HARDHAT_COVERAGE,
 	SKIP_LONG_TESTS,
 	// TransactionRevertedExpectedlyError,
-	loadFixtureDeployContractsForUnitTesting,
-	deployContractsForUnitTesting,
-	deployContractsForUnitTestingAdvanced,
+	loadFixtureDeployContractsForTesting,
+	deployContractsForTesting,
+	deployContractsForTestingAdvanced,
 	storeContractDeployedByteCodeAtAddress,
 	assertAddressIsValid,
+	tryWaitForTransactionReceipt,
 	checkTransactionErrorObject,
 	assertEvent,
 	makeNextBlockTimeDeterministic,

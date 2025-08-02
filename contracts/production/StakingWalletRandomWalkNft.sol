@@ -9,7 +9,7 @@ pragma solidity 0.8.30;
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { RandomWalkNFT } from "./RandomWalkNFT.sol";
-import { IStakingWalletNftBase, StakingWalletNftBase } from "./StakingWalletNftBase.sol";
+import { StakingWalletNftBase } from "./StakingWalletNftBase.sol";
 import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWalkNft.sol";
 
 // #endregion

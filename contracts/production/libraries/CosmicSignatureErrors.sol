@@ -46,7 +46,7 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	error BidHasBeenPlacedInCurrentRound(string errStr);
 
-	// /// @notice Thrown to revert `Bidding.HalveEthDutchAuctionEndingBidPrice`.
+	// /// @notice Thrown to revert `Bidding.halveEthDutchAuctionEndingBidPrice`.
 	// /// @param errStr Description of the error.
 	// error EthDutchAuctionEndingBidPriceHalvingError(string errStr);
 

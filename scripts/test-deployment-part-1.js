@@ -6,13 +6,15 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function bid_simple(testingAcct, cosmicSignatureGame) {
 	let nextEthBidPrice1 = await cosmicSignatureGame.getNextEthBidPrice(1n);
 	let nextEthBidPrice0 = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	let transactionResponse = await cosmicSignatureGame.connect(testingAcct).bidWithEth((-1), "test bid", { value: nextEthBidPrice0 });
-	let transactionReceipt = await transactionResponse.wait();
+	/** @type {Promise<import("ethers").TransactionResponse>} */
+	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).bidWithEth((-1), "test bid", { value: nextEthBidPrice0 });
+	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
@@ -29,8 +31,9 @@ async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice);
-	let transactionResponse = await cosmicSignatureGame.connect(testingAcct).bidWithEth(nftId, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice});
-	let transactionReceipt = await transactionResponse.wait();
+	/** @type {Promise<import("ethers").TransactionResponse>} */
+	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).bidWithEth(nftId, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice});
+	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
@@ -49,10 +52,11 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	let transactionResponse = await cosmicSignatureGame
+	/** @type {Promise<import("ethers").TransactionResponse>} */
+	let transactionResponsePromise = cosmicSignatureGame
 		.connect(testingAcct)
 		.bidWithEthAndDonateNft((-1), "donate bid", randomWalkNft.address, donatedTokenId, {value: nextEthBidPrice});
-	let transactionReceipt = await transactionResponse.wait();
+	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
@@ -78,10 +82,11 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice);
-	let transactionResponse = await cosmicSignatureGame
+	/** @type {Promise<import("ethers").TransactionResponse>} */
+	let transactionResponsePromise = cosmicSignatureGame
 		.connect(testingAcct)
 		.bidWithEthAndDonateNft(tokenIdBidding, "donate nft rwalk bid", randomWalkNft.address, donatedTokenId, {value: nextEthPlusRandomWalkNftBidPrice});
-	let transactionReceipt = await transactionResponse.wait();
+	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);

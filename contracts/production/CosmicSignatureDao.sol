@@ -86,6 +86,7 @@ contract CosmicSignatureDao is
 		return super.quorum(timepoint_);
 	}
 
+	// solhint-disable-next-line func-name-mixedcase
 	function CLOCK_MODE() public view override (IERC6372, Governor, GovernorVotes) returns (string memory) {
 		return super.CLOCK_MODE();
 	}

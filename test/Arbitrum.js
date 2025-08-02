@@ -4,12 +4,12 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256 } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting, assertEvent } = require("../src/ContractUnitTestingHelpers.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting, assertEvent } = require("../src/ContractTestingHelpers.js");
 
 describe("Arbitrum", function () {
 	it("Calls to Arbitrum precompile contracts errors", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 		const fakeArbSys_ = await hre.ethers.getContractAt("FakeArbSys", "0x0000000000000000000000000000000000000064", contracts_.signers[0]);
 		const fakeArbGasInfo_ = await hre.ethers.getContractAt("FakeArbGasInfo", "0x000000000000000000000000000000000000006C", contracts_.signers[0]);
 
@@ -46,16 +46,17 @@ describe("Arbitrum", function () {
 			// [/Comment-202507116]
 			fakeArbBaseModeCode_ &= fakeArbBaseModeCode_ >> 128n;
 
-			await expect(fakeArbSys_.setModeCode(fakeArbBaseModeCode_)).not.reverted;
-			await expect(fakeArbGasInfo_.setModeCode(fakeArbBaseModeCode_)).not.reverted;
+			await waitForTransactionReceipt(fakeArbSys_.setModeCode(fakeArbBaseModeCode_));
+			await waitForTransactionReceipt(fakeArbGasInfo_.setModeCode(fakeArbBaseModeCode_));
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationToWaitBeforePlacingFirstBid_),]);
 			// await hre.ethers.provider.send("evm_mine");
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
 			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
-			let transactionResponse_ = await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
-			let transactionReceipt_ = await transactionResponse_.wait();
+			/** @type {Promise<import("ethers").TransactionResponse>} */
+			let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
+			let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			let cosmicSignatureGameProxyArbitrumErrorLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyArbitrumErrorTopicHash_) >= 0));
 			// console.info("202507119", cosmicSignatureGameProxyArbitrumErrorLogs_.length.toString());
 			let eventIndex_ = 0;

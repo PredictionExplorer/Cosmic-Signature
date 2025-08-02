@@ -9,7 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256FromSeedWrapper } = require("../Helpers.js");
-const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../ContractUnitTestingHelpers.js");
+const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../ContractTestingHelpers.js");
 
 // #endregion
 // #region `createCosmicSignatureGameProxySimulator`
@@ -509,7 +509,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 				}
 			} else {
-				expect(false).equal(true);
+				expect(false).true;
 			}
 			if (randomWalkNftId_ < 0n) {
 				// console.info("202505088");

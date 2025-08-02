@@ -9,7 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256FromSeedWrapper } = require("../Helpers.js");
-const { assertEvent } = require("../ContractUnitTestingHelpers.js");
+const { assertEvent } = require("../ContractTestingHelpers.js");
 
 // #endregion
 // #region `createCosmicSignatureTokenSimulator`

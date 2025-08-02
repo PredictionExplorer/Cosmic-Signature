@@ -4,11 +4,12 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame-3", function () {
 	it("The initialize method is disabled", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.cosmicSignatureGameImplementation.initialize(contracts_.ownerAcct.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
 		await expect(contracts_.cosmicSignatureGameImplementation.connect(contracts_.ownerAcct).initialize(contracts_.ownerAcct.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
@@ -18,7 +19,7 @@ describe("CosmicSignatureGame-3", function () {
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using the recommended approach", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerAcct);
@@ -41,14 +42,14 @@ describe("CosmicSignatureGame-3", function () {
 		await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerAcct).initialize(contracts_.ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
 		await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
 		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(3n);
-		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerAcct).setTimesEthBidPrice(10n)).not.reverted;
+		await waitForTransactionReceipt(cosmicSignatureGame2Proxy_.connect(contracts_.ownerAcct).setTimesEthBidPrice(10n));
 		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(10n);
 		expect(await cosmicSignatureGame2Implementation_.timesEthBidPrice()).equal(0n);
 	});
 
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade using our minimalistic unsafe approach", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.deployerAcct);
@@ -57,18 +58,18 @@ describe("CosmicSignatureGame-3", function () {
 		const cosmicSignatureGame2ImplementationAddr_ = await cosmicSignatureGame2Implementation_.getAddress();
 		await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerAcct).initialize(contracts_.ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
 		await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerAcct).initialize2()).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(cosmicSignatureGame2ImplementationAddr_)).not.reverted;
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(cosmicSignatureGame2ImplementationAddr_));
 		expect(await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddr)).equal(cosmicSignatureGame2ImplementationAddr_);
 		const cosmicSignatureGame2Proxy_ = cosmicSignatureGameOpenBidFactory_.attach(contracts_.cosmicSignatureGameProxyAddr);
 		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(0n);
 		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerAcct).initialize(contracts_.ownerAcct.address)).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
 
 		// According to Comment-202502164, anybody is permitted to make this call.
-		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.signers[5]).initialize2()).not.reverted;
+		await waitForTransactionReceipt(cosmicSignatureGame2Proxy_.connect(contracts_.signers[5]).initialize2());
 		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.signers[5]).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
 
 		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(3n);
-		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerAcct).setTimesEthBidPrice(10n)).not.reverted;
+		await waitForTransactionReceipt(cosmicSignatureGame2Proxy_.connect(contracts_.ownerAcct).setTimesEthBidPrice(10n));
 		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(10n);
 		expect(await cosmicSignatureGame2Implementation_.timesEthBidPrice()).equal(0n);
 	});
@@ -76,33 +77,33 @@ describe("CosmicSignatureGame-3", function () {
 	// `HardhatRuntimeEnvironment.upgrades.upgradeProxy` would not allow doing this.
 	// Comment-202412129 relates.
 	it("CosmicSignatureGame upgrade to a completely different contract using our minimalistic unsafe approach", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 		await brokenEthReceiver_.waitForDeployment();
 		const brokenEthReceiverAddr_ = await brokenEthReceiver_.getAddress();
-		// await expect(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address)).not.reverted;
+		// await waitForTransactionReceipt(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address));
 
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(brokenEthReceiverAddr_)).not.reverted;
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(brokenEthReceiverAddr_));
 		const brokenEthReceiverProxy_ = brokenEthReceiverFactory_.attach(contracts_.cosmicSignatureGameProxyAddr);
 		// console.info((await brokenEthReceiverProxy_.ethDepositAcceptanceModeCode()).toString());
 
 		// If we upgraded to `CosmicSignatureGameOpenBid`, we would call `brokenEthReceiverProxy_.initialize2` at this point.
 
 		// This and further calls to this method corrupt game proxy state.
-		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(2n)).not.reverted;
+		await waitForTransactionReceipt(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(2n));
 
 		await expect(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,})).revertedWithPanic(0x01n);
-		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(1n)).not.reverted;
+		await waitForTransactionReceipt(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(1n));
 		await expect(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,})).revertedWith("I am not accepting deposits.");
-		await expect(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(0n)).not.reverted;
-		await expect(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,})).not.reverted;
+		await waitForTransactionReceipt(brokenEthReceiverProxy_.setEthDepositAcceptanceModeCode(0n));
+		await waitForTransactionReceipt(contracts_.signers[5].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: 1n,}));
 	});
 
 	// Comment-202412129 relates.
 	it("Unauthorized or incorrect CosmicSignatureGame upgrade attempts", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerAcct);
@@ -111,6 +112,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
+				// /** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						contracts_.cosmicSignatureGameProxy/*.connect(contracts_.signers[5])*/,
@@ -126,6 +128,7 @@ describe("CosmicSignatureGame-3", function () {
 
 			// Our minimalistic unsafe approach.
 			{
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[5]).upgradeTo(contracts_.signers[0].address);
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 			}
@@ -135,6 +138,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
+				// /** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						hre.ethers.ZeroAddress,
@@ -149,26 +153,29 @@ describe("CosmicSignatureGame-3", function () {
 				// await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
 
 				try {
+					// await waitForTransactionReceipt(transactionResponsePromise_);
 					await transactionResponsePromise_;
-					expect(false).equal(true);
+					expect(false).true;
 				} catch (errorObject_) {
-					expect(errorObject_.message).equal("Contract at 0x0000000000000000000000000000000000000000 doesn't look like an ERC 1967 proxy with a logic contract address\n\n");
+					expect(errorObject_.message.startsWith("Contract at 0x0000000000000000000000000000000000000000 doesn't look like an ERC 1967 proxy with a logic contract address")).true;
 				}
 			}
 
 			// Our minimalistic unsafe approach.
 			{
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(hre.ethers.ZeroAddress);
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
 			}
 		}
 
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setRoundActivationTime(123n)).not.reverted;
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setRoundActivationTime(123n));
 
 		// `_onlyRoundIsInactive`.
 		{
 			// The recommended approach.
 			{
+				// /** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						contracts_.cosmicSignatureGameProxy,
@@ -184,6 +191,7 @@ describe("CosmicSignatureGame-3", function () {
 
 			// Our minimalistic unsafe approach.
 			{
+				/** @type {Promise<import("ethers").TransactionResponse>} */
 				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).upgradeTo(contracts_.signers[0].address);
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 			}

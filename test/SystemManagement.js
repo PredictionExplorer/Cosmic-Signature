@@ -4,13 +4,13 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256 } = require("../src/Helpers.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
 // const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameProxyForOwner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct);
 
@@ -297,16 +297,16 @@ describe("SystemManagement", function () {
 	});
 
 	it("Setters while the current bidding round is active", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		const cosmicSignatureGameProxyForOwner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct);
 		let randomNumber1_ = 9n + generateRandomUInt256() % 3n;
 		const testAcct_ = hre.ethers.Wallet.createRandom();
 
-		await expect(cosmicSignatureGameProxyForOwner_.setDelayDurationBeforeRoundActivation(randomNumber1_)).not.reverted;
+		await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setDelayDurationBeforeRoundActivation(randomNumber1_));
 
 		// After this, the current bidding round remains active.
-		await expect(cosmicSignatureGameProxyForOwner_.setRoundActivationTime(randomNumber1_)).not.reverted;
+		await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setRoundActivationTime(randomNumber1_));
 
 		await expect(cosmicSignatureGameProxyForOwner_.setEthDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setEthDutchAuctionEndingBidPriceDivisor(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
@@ -339,14 +339,14 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxyForOwner_.setCharityAddress(testAcct_.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setCharityEthDonationAmountPercentage(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
 		randomNumber1_ ^= 1n;
-		await expect(cosmicSignatureGameProxyForOwner_.setDelayDurationBeforeRoundActivation(randomNumber1_)).not.reverted;
+		await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setDelayDurationBeforeRoundActivation(randomNumber1_));
 		await expect(cosmicSignatureGameProxyForOwner_.setRoundActivationTime(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidHasBeenPlacedInCurrentRound");
 	});
 
 	it("Unauthorized access to setters", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameProxyForSigner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]);
 		const randomNumber1_ = 9n + generateRandomUInt256() % 3n;

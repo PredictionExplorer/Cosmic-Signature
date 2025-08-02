@@ -184,6 +184,21 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 }
 
 // #endregion
+// #region `waitForTransactionReceipt`
+
+/**
+ * @param {Promise<import("ethers").TransactionResponse>} transactionResponsePromise_
+ */
+async function waitForTransactionReceipt(transactionResponsePromise_) {
+	const transactionResponse_ = await transactionResponsePromise_;
+	// const timeStamp1_ = performance.now();
+	const transactionReceipt_ = await transactionResponse_.wait();
+	// const timeStamp2_ = performance.now();
+	// console.info(`202508248 ${(timeStamp2_ - timeStamp1_).toFixed(3)}`);
+	return transactionReceipt_
+}
+
+// #endregion
 // #region
 
 module.exports = {
@@ -199,6 +214,7 @@ module.exports = {
 	uint32ToPaddedHexString,
 	uint256ToPaddedHexString,
 	sleepForMilliSeconds,
+	waitForTransactionReceipt,
 };
 
 // #endregion

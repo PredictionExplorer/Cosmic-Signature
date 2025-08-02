@@ -4,25 +4,27 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt32 } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("MarketingWallet", function () {
 	it("Deployment", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(-1_000_000_000n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		await expect(contracts_.marketingWalletFactory.deploy(hre.ethers.ZeroAddress))
 			.revertedWithCustomError(contracts_.marketingWalletFactory, "ZeroAddress");
 	});
 
 	it("Changing the treasurer", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		let randomNumber32_ = generateRandomUInt32();
 		const unauthorizedOwnerSigner_ = ((randomNumber32_ & 1) == 0) ? contracts_.treasurerAcct : contracts_.signers[11];
 		const newTreasurerSigner_ = ((randomNumber32_ & 2) == 0) ? contracts_.ownerAcct : contracts_.signers[12];
 		await expect(contracts_.marketingWallet.connect(unauthorizedOwnerSigner_).setTreasurerAddress(newTreasurerSigner_.address))
 			.revertedWithCustomError(contracts_.marketingWallet, "OwnableUnauthorizedAccount");
+		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).setTreasurerAddress(hre.ethers.ZeroAddress))
+			.revertedWithCustomError(contracts_.marketingWallet, "ZeroAddress");
 		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).setTreasurerAddress(newTreasurerSigner_.address))
 			.emit(contracts_.marketingWallet, "TreasurerAddressChanged")
 			.withArgs(newTreasurerSigner_.address);
@@ -30,14 +32,14 @@ describe("MarketingWallet", function () {
 	});
 
 	it("Paying marketing rewards", async function () {
-		const contracts_ = await loadFixtureDeployContractsForUnitTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		{
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).bidWithEth(-1n, "", {value: 10n ** 18n,})).not.reverted;
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
 			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).claimMainPrize()).not.reverted;
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).claimMainPrize());
 		}
 
 		{

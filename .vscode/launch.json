@@ -19,7 +19,7 @@
 
 				// Restricting to a grep pattern.
 				"--grep",
-				"^Bidding The HalveEthDutchAuctionEndingBidPrice method$",
+				"^Bidding The halveEthDutchAuctionEndingBidPrice method$",
 			],
 
 			// // Ignore stepping through internal node_modules.

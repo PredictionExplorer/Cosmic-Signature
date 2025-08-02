@@ -2,8 +2,10 @@
 
 "use strict";
 
+const nodeOsModule = require("node:os");
 const nodeFsModule = require("node:fs");
 const { task } = require("hardhat/config.js");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 
 // Comment-202409255 relates.
 const { deployContracts } = require("../src/ContractDeploymentHelpers.js");
@@ -18,8 +20,8 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	let configObject;
 	try {
 		configObject = JSON.parse(configJsonText);
-	} catch (err) {
-		console.error("Error while parsing JSON data:", err);
+	} catch (errorObject) {
+		console.error(`Error while parsing "${deployConfigFilePath}":` + nodeOsModule.EOL, errorObject);
 		return;
 	}
 	// const configObjectToLog = JSON.parse(JSON.stringify(configObject));
@@ -54,7 +56,7 @@ task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, h
 	if (configObject.donateEthToGameContract) {
 		const ethValue = "2";
 		const ethDonationAmount = hre.ethers.parseEther(ethValue);
-		await (await contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmount})).wait();
+		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmount,}));
 		console.log("Donated " + ethValue + " ETH to the CosmicSignatureGame proxy contract.");
 	}
 	console.log("CosmicSignatureToken address:", contracts.cosmicSignatureTokenAddr);

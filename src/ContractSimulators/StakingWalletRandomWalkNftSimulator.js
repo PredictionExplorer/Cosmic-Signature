@@ -9,7 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256FromSeedWrapper, generateRandomUInt256FromSeed } = require("../Helpers.js");
-const { assertEvent } = require("../ContractUnitTestingHelpers.js");
+const { assertEvent } = require("../ContractTestingHelpers.js");
 
 // #endregion
 // #region `createStakingWalletRandomWalkNftSimulator`
@@ -36,7 +36,7 @@ const { assertEvent } = require("../ContractUnitTestingHelpers.js");
 		// #region `stake`
 
 		stake: function(nftOwnerAddress_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-			expect(this.wasNftUsed(nftId_)).equal(false);
+			expect(this.wasNftUsed(nftId_)).false;
 			this.usedNfts[nftId_] = true;
 			const newActionCounter_ = this.actionCounter + 1n;
 			this.actionCounter = newActionCounter_;

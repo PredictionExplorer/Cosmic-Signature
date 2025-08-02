@@ -9,7 +9,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256FromSeedWrapper } = require("../Helpers.js");
-const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHelpers.js");
+const { assertAddressIsValid, assertEvent } = require("../ContractTestingHelpers.js");
 
 // #endregion
 // #region `createRandomWalkNftSimulator`
@@ -28,7 +28,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractUnitTestingHel
 		// #region `assertNftIdIsValid`
 
 		assertNftIdIsValid: function(nftId_) {
-			expect(this.isNftIdValid(nftId_)).equal(true);
+			expect(this.isNftIdValid(nftId_)).true;
 		},
 
 		// #endregion

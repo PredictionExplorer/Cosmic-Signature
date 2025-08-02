@@ -12,6 +12,8 @@
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
 
+const { waitForTransactionReceipt } = require("./Helpers.js");
+
 // #endregion
 // #region `deployContracts`
 
@@ -132,20 +134,20 @@ const deployContractsAdvanced = async function (
 	const charityWallet = await charityWalletFactory.deploy();
 	await charityWallet.waitForDeployment();
 	const charityWalletAddr = await charityWallet.getAddress();
-	await (await charityWallet.setCharityAddress(charityAddr)).wait();
+	await waitForTransactionReceipt(charityWallet.setCharityAddress(charityAddr));
 	if (transferOwnershipToCosmicSignatureDao) {
 		// It appears that it makes no sense to perform this kind of ownership transfer for any other contracts.
-		await (await charityWallet.transferOwnership(cosmicSignatureDaoAddr)).wait();
+		await waitForTransactionReceipt(charityWallet.transferOwnership(cosmicSignatureDaoAddr));
 	}
 
-	await (await cosmicSignatureGameProxy.setCosmicSignatureToken(cosmicSignatureTokenAddr)).wait();
-	await (await cosmicSignatureGameProxy.setRandomWalkNft(randomWalkNftAddr)).wait();
-	await (await cosmicSignatureGameProxy.setCosmicSignatureNft(cosmicSignatureNftAddr)).wait();
-	await (await cosmicSignatureGameProxy.setPrizesWallet(prizesWalletAddr)).wait();
-	await (await cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr)).wait();
-	await (await cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr)).wait();
-	await (await cosmicSignatureGameProxy.setMarketingWallet(marketingWalletAddr)).wait();
-	await (await cosmicSignatureGameProxy.setCharityAddress(charityWalletAddr)).wait();
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setCosmicSignatureToken(cosmicSignatureTokenAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setRandomWalkNft(randomWalkNftAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setCosmicSignatureNft(cosmicSignatureNftAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setPrizesWallet(prizesWalletAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setStakingWalletRandomWalkNft(stakingWalletRandomWalkNftAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setStakingWalletCosmicSignatureNft(stakingWalletCosmicSignatureNftAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setMarketingWallet(marketingWalletAddr));
+	await waitForTransactionReceipt(cosmicSignatureGameProxy.setCharityAddress(charityWalletAddr));
 	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime);
 
 	return {
@@ -209,7 +211,7 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 			const latestBlock = await hre.ethers.provider.getBlock("latest");
 			roundActivationTime += BigInt(latestBlock.timestamp);
 		}
-		await (await cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime)).wait();
+		await waitForTransactionReceipt(cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime));
 	}
 }
 
