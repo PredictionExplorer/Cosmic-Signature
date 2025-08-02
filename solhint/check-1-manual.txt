@@ -6,6 +6,11 @@
 
 @ After the script finishes, review its report file, which name is specified near Comment-202409124.
 
+@ Use a reg-exp pattern like this to remove lines from the report file:
+
+^.*? (?:no-empty-blocks|gas-multitoken1155|ordering|no-inline-assembly)\n
+^.*? (?:gas-custom-errors|comprehensive-interface)\n
+
 @ An alternative option is to execute the following command in the VS Code integrated terminal:
 
    npx hardhat check
