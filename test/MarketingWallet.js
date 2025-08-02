@@ -23,6 +23,8 @@ describe("MarketingWallet", function () {
 		const newTreasurerSigner_ = ((randomNumber32_ & 2) == 0) ? contracts_.ownerAcct : contracts_.signers[12];
 		await expect(contracts_.marketingWallet.connect(unauthorizedOwnerSigner_).setTreasurerAddress(newTreasurerSigner_.address))
 			.revertedWithCustomError(contracts_.marketingWallet, "OwnableUnauthorizedAccount");
+		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).setTreasurerAddress(hre.ethers.ZeroAddress))
+			.revertedWithCustomError(contracts_.marketingWallet, "ZeroAddress");
 		await expect(contracts_.marketingWallet.connect(contracts_.ownerAcct).setTreasurerAddress(newTreasurerSigner_.address))
 			.emit(contracts_.marketingWallet, "TreasurerAddressChanged")
 			.withArgs(newTreasurerSigner_.address);
