@@ -21,7 +21,7 @@ async function beforeAll() {
 		{
 			// [Comment-202508223/]
 			const gasLimit_ = hre.network.config.gas;
-
+		
 			expect(typeof gasLimit_).equal("number");
 			const bigGasLimit_ = BigInt(gasLimit_);
 			hre.ethers.provider.estimateGas = async () => (/*test1("2"),*/ bigGasLimit_);
