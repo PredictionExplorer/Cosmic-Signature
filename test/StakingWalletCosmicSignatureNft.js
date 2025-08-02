@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { shuffleArray, generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("StakingWalletCosmicSignatureNft", function () {
 	it("Deployment", async function () {

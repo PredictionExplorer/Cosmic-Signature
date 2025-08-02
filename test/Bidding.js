@@ -6,7 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForUnitTesting, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;

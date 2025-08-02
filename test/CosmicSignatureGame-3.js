@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame-3", function () {
 	it("The initialize method is disabled", async function () {

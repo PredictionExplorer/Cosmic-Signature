@@ -7,7 +7,7 @@ const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting, deployContractsForUnitTestingAdvanced, makeNextBlockTimeDeterministic } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting, deployContractsForUnitTestingAdvanced, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
 
 describe("MainPrize", function () {
 	it("Test 1", async function () {

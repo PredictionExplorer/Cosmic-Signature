@@ -6,7 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt32, uint32ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
 // const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CosmicSignatureGame-2", function () {
 	it("Smoke-test", async function () {

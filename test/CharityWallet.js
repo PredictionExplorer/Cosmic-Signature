@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("CharityWallet", function () {
 	it("Normal operations", async function () {

@@ -10,7 +10,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForUnitTesting, assertEvent } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting, assertEvent } = require("../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region

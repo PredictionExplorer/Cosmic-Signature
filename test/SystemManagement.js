@@ -6,7 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
 // const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
+const { loadFixtureDeployContractsForUnitTesting } = require("../src/ContractTestingHelpers.js");
 
 describe("SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {
