@@ -55,7 +55,7 @@ describe("Bidding", function () {
 		}
 	});
 
-	it("The HalveEthDutchAuctionEndingBidPrice method", async function () {
+	it("The halveEthDutchAuctionEndingBidPrice method", async function () {
 		// #region
 
 		if (SKIP_LONG_TESTS) {
@@ -77,9 +77,9 @@ describe("Bidding", function () {
 		// #endregion
 		// #region
 
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).HalveEthDutchAuctionEndingBidPrice())
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).halveEthDutchAuctionEndingBidPrice())
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FirstRound");
 
 		// #endregion
@@ -108,7 +108,7 @@ describe("Bidding", function () {
 			// await hre.ethers.provider.send("evm_mine");
 
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
 				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidHasBeenPlacedInCurrentRound");
 			const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
@@ -145,7 +145,7 @@ describe("Bidding", function () {
 					// await hre.ethers.provider.send("evm_mine");
 				}
 
-				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
 					.withArgs("Too early.");
 
@@ -179,7 +179,7 @@ describe("Bidding", function () {
 						// [Comment-202508158]
 						// The next call to this method will succeed, even if we do not sleep after this one.
 						// [/Comment-202508158]
-						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice())
+						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
 							.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
 							.withArgs("Too early.");
 
@@ -216,7 +216,7 @@ describe("Bidding", function () {
 					// #region
 
 					/** @type {Promise<import("ethers").TransactionResponse>} */
-					const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).HalveEthDutchAuctionEndingBidPrice();
+					const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice();
 					const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 
 					// #endregion

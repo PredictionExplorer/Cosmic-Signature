@@ -156,7 +156,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202501025 applies.
 	/// Comment-202411064 applies.
-	/// See also: `HalveEthDutchAuctionEndingBidPrice`.
+	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionDurationDivisor;
 
 	/// @notice ETH Dutch auction beginning bid price.
@@ -175,7 +175,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202501063]
 	/// Comment-202411064 applies.
-	/// See also: `HalveEthDutchAuctionEndingBidPrice`.
+	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice Next ETH bid price.

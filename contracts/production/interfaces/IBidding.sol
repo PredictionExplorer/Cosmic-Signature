@@ -54,7 +54,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// Only the contract owner is permitted to call this method.
 	/// Comment-202508102 applies.
 	/// See important details in comments in this method body.
-	function HalveEthDutchAuctionEndingBidPrice() external;
+	function halveEthDutchAuctionEndingBidPrice() external;
 
 	/// @notice Places an ETH plus an optional Random Walk NFT bid and donates an ERC-20 token amount in a single transaction.
 	/// [Comment-202503149]

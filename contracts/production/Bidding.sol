@@ -39,7 +39,7 @@ abstract contract Bidding is
 	}
 
 	// #endregion
-	// #region `HalveEthDutchAuctionEndingBidPrice`
+	// #region `halveEthDutchAuctionEndingBidPrice`
 	
 	/// @dev
 	/// [Comment-202508184]
@@ -61,7 +61,7 @@ abstract contract Bidding is
 	///    `_setEthDutchAuctionEndingBidPriceDivisor`.
 	///    `getEthDutchAuctionDurations`.
 	/// [/Comment-202508184]
-	function HalveEthDutchAuctionEndingBidPrice() external override onlyOwner() _onlyNonFirstRound() /*_onlyRoundIsInactive()*/ _onlyBeforeBidPlacedInRound() {
+	function halveEthDutchAuctionEndingBidPrice() external override onlyOwner() _onlyNonFirstRound() /*_onlyRoundIsInactive()*/ _onlyBeforeBidPlacedInRound() {
 		// Check out comments near this method declaration in `IBidding`.
 		// It's possible to implement this logic in an external script, but it's more robust in a method.
 		//
