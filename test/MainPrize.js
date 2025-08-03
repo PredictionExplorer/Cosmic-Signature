@@ -26,7 +26,7 @@ describe("MainPrize", function () {
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_ - 1n,})).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount");
 
 		const initialDurationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getInitialDurationUntilMainPrize();
-		expect(initialDurationUntilMainPrize_).equal(24n * 60n * 60n + 1n);
+		expect(initialDurationUntilMainPrize_).equal(24n * 60n * 60n - 1n);
 		const mainPrizeTimeIncrement_ = await contracts_.cosmicSignatureGameProxy.getMainPrizeTimeIncrement();
 		expect(mainPrizeTimeIncrement_).equal(60n * 60n);
 

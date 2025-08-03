@@ -11,7 +11,7 @@ async function set_parameters(testingAcct, cosmicSignatureGame) {
 
 	const mainPrizeTimeIncrementInMicroSeconds = 3n * 60n * 1_000_000n;
 	await cosmicSignatureGame.connect(testingAcct).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds);
-	const initialDurationUntilMainPrizeDivisor = mainPrizeTimeIncrementInMicroSeconds / 60n;
+	const initialDurationUntilMainPrizeDivisor = (mainPrizeTimeIncrementInMicroSeconds + 60n / 2n) / 60n;
 	await cosmicSignatureGame.connect(testingAcct).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor);
 	const timeoutDurationToClaimMainPrize = 60n * 3n / 2n;
 	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize);

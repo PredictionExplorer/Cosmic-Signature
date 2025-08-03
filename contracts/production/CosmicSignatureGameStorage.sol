@@ -155,6 +155,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public roundActivationTime;
 
 	/// @notice Comment-202501025 applies.
+	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionDurationDivisor;
@@ -203,6 +204,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
+	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	uint256 public cstDutchAuctionDurationDivisor;
 
@@ -280,6 +282,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Main Prize
 
 	/// @notice Comment-202501025 applies.
+	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
 

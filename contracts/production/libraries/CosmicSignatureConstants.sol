@@ -42,7 +42,8 @@ library CosmicSignatureConstants {
 	uint256 internal constant INITIAL_ROUND_ACTIVATION_TIME = /*1_702_512_000*/ TIMESTAMP_9000_01_01;
 
 	/// @notice Default `ethDutchAuctionDurationDivisor`.
-	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY) / (2 * HOURS_PER_DAY) - 0;
+	/// Comment-202508288 relates.
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + (2 days) / 2) / (2 days);
 
 	/// @notice First bidding round initial (first bid) ETH bid price.
 	/// [Comment-202508094]
@@ -79,10 +80,10 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
-	/// @dev
+	/// Comment-202508288 relates.
 	/// todo-1 +++ Rename any "Auction" to "Dutch Auction".
 	/// todo-1 +++ (?<!dutch)(?<!dutch[\-_ ])Auction
-	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 4) / (HOURS_PER_DAY / 2) - 1;
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + ((1 days) / 2) / 2) / ((1 days) / 2);
 
 	/// @notice Comment-202411066 relates.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
@@ -126,7 +127,8 @@ library CosmicSignatureConstants {
 	// #region Main Prize
 
 	/// @notice Default `initialDurationUntilMainPrizeDivisor`.
-	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (MICROSECONDS_PER_SECOND + HOURS_PER_DAY / 2) / HOURS_PER_DAY - 1;
+	/// Comment-202508288 relates.
+	uint256 internal constant DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + (1 days) / 2) / (1 days);
 
 	/// @notice Initial `mainPrizeTimeIncrementInMicroSeconds`, in seconds.
 	uint256 internal constant INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1 hours;
