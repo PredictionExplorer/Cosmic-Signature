@@ -7,9 +7,6 @@ const hre = require("hardhat");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
 
-/// todo-1 Ask Nick if he was able to reproduce these tests with the Tally app.
-/// todo-1 Discussion: https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434912738329?thread_ts=1731872794.061669&cid=C02EDDE5UF8
-/// todo-1 https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735434239454529?thread_ts=1733769207.177129&cid=C02EDDE5UF8
 describe("CosmicSignatureDao", function () {
 	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);

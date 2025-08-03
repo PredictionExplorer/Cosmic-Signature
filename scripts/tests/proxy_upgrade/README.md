@@ -22,7 +22,7 @@ The call to the `bidWithEth` method must now be done in a new way:
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
     let nextEthBidPrice = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
     await cosmicSignatureGameProxy.connect(testingAcct).bidWithEth(params, {value: nextEthBidPrice.mul(multiplier), gasLimit: 30000000});
-// todo-0 Revisit the `gasLimit` thing above
+// todo-1 Revisit the `gasLimit` thing above
 
 In this example the `multiplier` variable is the `timesEthBidPrice` state variable (discussed above) which was read from the contract prior to execution of this code.
 
