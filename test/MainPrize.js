@@ -43,7 +43,7 @@ describe("MainPrize", function () {
 
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).equal(initialDurationUntilMainPrize_);
-		await hre.ethers.provider.send("evm_increaseTime", [100 - await makeNextBlockTimeDeterministic(),]);
+		await hre.ethers.provider.send("evm_increaseTime", [100 - await makeNextBlockTimeDeterministic(300),]);
 		await hre.ethers.provider.send("evm_mine");
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).equal(initialDurationUntilMainPrize_ - 100n);
