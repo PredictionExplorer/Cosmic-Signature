@@ -37,7 +37,7 @@ async function main() {
 	console.log(`nftId = ${nftId}`);
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	// todo-0 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
+	// todo-1 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, nftId, {value: nextEthBidPrice,}));
 
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
