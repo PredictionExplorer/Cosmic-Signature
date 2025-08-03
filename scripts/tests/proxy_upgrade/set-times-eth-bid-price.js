@@ -1,6 +1,6 @@
 "use strict";
 
-const hre = require("hardhat");
+// const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("../../helpers.js");
 
 async function main() {
