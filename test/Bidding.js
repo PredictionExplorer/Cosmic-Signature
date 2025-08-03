@@ -39,6 +39,16 @@ const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTime
 // }
 
 describe("Bidding", function () {
+	it("Smoke-test", async function () {
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+
+		const [ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_,] = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
+		expect(ethDutchAuctionDuration_).equal(2n * 24n * 60n * 60n + 2n);
+		expect(ethDutchAuctionElapsedDuration_).equal(-1n);
+		const [cstDutchAuctionDuration_, /*cstDutchAuctionElapsedDuration_,*/] = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
+		expect(cstDutchAuctionDuration_).equal(1n * 24n * 60n * 60n / 2n);
+	});
+
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 

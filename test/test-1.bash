@@ -21,7 +21,7 @@
 
 			# todo-1 Uncomment the command line with no arguments.
 			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureDao '
-			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletRandomWalkNft The random picking of stakers is really random; algorithm 1$'
+			# 'npx' 'hardhat' 'test' '--grep' '^Bidding Smoke-test$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
