@@ -449,6 +449,11 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		}
 	}
 
+	function getUserEthBalance(address user) external view returns (uint256)  {
+		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(user)];
+		return ethBalanceInfoReference_.amount;
+	}
+
 	// #endregion
 }
 

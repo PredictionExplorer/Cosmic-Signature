@@ -235,20 +235,14 @@ rule actionCounterValidation() {
 	env e;
 	calldataarg args;
 
-	// Rule-specific simplification preserved:
-	uint256 ac = currentContract.actionCounter();
-	require ac == 0;
 
 	// Initialize common preconditions/ghosts
-	genericFunctionInitializer(f, e, charity, round, tokenId, actionId,
-							   manyActionIds);
+	genericFunctionInitializer(f, e, charity, round, tokenId, actionId, manyActionIds);
 
 	// Exercise method & check deltas
 	mathint actionCounterBefore = currentContract.actionCounter();
 
-	bool maintenanceSuccess =
-		genericFunctionMatcher(f, e, charity, round, tokenId, actionId,
-							   manyActionIds);
+	bool maintenanceSuccess = genericFunctionMatcher(f, e, charity, round, tokenId, actionId, manyActionIds);
 
 	mathint actionCounterAfter = currentContract.actionCounter();
 
@@ -380,9 +374,9 @@ rule rewardPerTokenIsSetCorrectly() {
 		require currentContract.getStakeActionAddr(actionId) != 0;
 		require(actionId > 0) && (actionId < currentContract.actionCounter());
 		require initialReward == currentContract.getStakeActionInitialReward(actionId);
-	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
-	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
-	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.tryPerformMaintenance(address).selector) {
+//	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.unstakeMany(uint256[]).selector) {
+//	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.stakeMany(uint256[]).selector) {
+//	} else if (f.selector == sig:StakingWalletCosmicSignatureNft.tryPerformMaintenance(address).selector) {
 	}
 
 	bool maintenanceSuccess = genericFunctionMatcher(f, e, charity, round, tokenId, actionId,manyActionIds);

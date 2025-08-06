@@ -1,53 +1,74 @@
 // SPDX-License-Identifier: CC0-1.0
 methods {
     function mainPrizeBeneficiaryAddresses(uint256) external returns (address) envfree;
-    function getDonatedTokenAmount(uint256, address) external returns (uint256) envfree;
+    function getDonatedTokenBalanceAmount(uint256, address) external returns (uint256) envfree;
     function roundTimeoutTimesToWithdrawPrizes(uint256) external returns (uint256) envfree;
+	function _.balanceOf(address) external envfree;
 	function game() external returns (address) envfree;
+	function getUserEthBalance(address) external returns (uint256) envfree;
 }
 
-// Ghost to track total donated amount changes
-ghost mathint totalDonationChanges;
+function genericFunctionMatcher(method f, env e, address winner,uint256 round, bool ethWithdrawal, IPrizesWallet.DonatedTokenToClaim erc20List, uint256[] erc721List,address donorAddr, address tokenAddr, uint256 amount, uint256 nftIf, uint256 nftIndex, uint256[] nftIndices, uint256 timeoutVal, IPrizesWallet.EthDeposit[] ethDeposits) {
 
-persistent ghost mapping(mathint => mapping(address => mathint)) gDonatedERC20Unclaimed;
-persistent ghost mapping(mathint => mapping(address => mathint)) gDonatedERC20Withdrawn;
+	require winner != 0;
+	require e.msg.sender != currentContract;
+	if (f.selector == sig:PrizesWallet.depositEth(uint256,address).selector) {
+    	require currentContract.game() == e.msg.sender;
+		require winner != 0;
 
-hook Sstore currentContract._donatedTokens[INDEX uint256 idx].amount uint256 newValue (uint256 oldValue) {
-	bytes32 numeric_addr = to_bytes32(idx >> 64);
-	address addr = assert_address(numeric_addr);
-	mathint round = to_mathint(idx & 0xFFFFFFFFFFFFFFFF);
-	if (newValue != oldValue) {
-		if (newValue == 0) {
-			gDonatedERC20Withdrawn[round][addr] = to_mathint(oldValue);
-			assert gDonatedERC20Unclaimed[round][addr] == gDonatedERC20Withdrawn[round][addr];
-		} else {
-			if (newValue> oldValue) {
-				gDonatedERC20Unclaimed[round][addr] = 
-					gDonatedERC20Unclaimed[round][addr] + (to_mathint(newValue) - to_mathint(oldValue));
-			 else {
-				assert oldValue < newValue;		// amount of donated tokens can only increase or set to 0
-			}
-		}
+		require amount > 0;
+		require e.msg.value == amount;
+		depositEth(e,round,winner);
+	} else if (f.selector == sig:PrizesWallet.setTimeoutDurationToWithdrawPrizes(uint256).selector) {
+		require e.msg.sender != currentContract;
+		setTimeoutDurationToWithdrawPrizes(e,timeoutVal);
+	} else if (f.selector == sig:PrizesWallet.registerRoundEndAndDepositEthMany(uint256,address,IPrizesWallet.EthDeposit[]).selector) {
+    	require currentContract.game() == e.msg.sender;
+		registerRoundEndAndDepositEthMany(e,round,winner,ethDeposits);
+	} else if (f.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector) {
+		require winner != 0;
+		registerRoundEnd(e,round,winner);
+	} else if (f.selector == sig:PrizesWallet.withdrawEth(address).selector) {
+		require currentContract.getUserEthBalance(e.msg.sender) > 0;
+		require e.msg.sender == winner;
+		withdrawEth(e,winner);
+	} else if (f.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector) {
+		require tokenAddr != 0;
+		require donorAddr != 0;
+		require tokenAddr.balanceOf(e,tokenAddr)>=amount;
+		donateToken(e,round,donorAddr,tokenAddr,amount);
+	} else if (f.selector == sig:PrizesWallet.claimDonatedToken(uint256,address,uint256).selector) {
+		require tokenAddr != 0;
+		claimDonatedToken(e,round,tokenAddr,amount);
 	}
 }
-hook LOG4(uint offset, uint length, bytes32 t1,bytes32 t2, bytes32 t3, bytes32 t4) {
-	// check for DonatedNftClaimed
-	// implementation pending for Certora's team, they have to explain (in corresponding HelpDesk ticket) how to fetch Log.Data field inside a hook '
-}
-rule genericMethodMatcher1Step() {
+rule balanceChangesCorrectly() {
 
-    require currentContract == e0.msg.sender;
-    // Step 0
-    method f0; env e0; calldataarg args0;
-    if (f0.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector
-     || f0.selector == sig:PrizesWallet.depositEth(uint256,address).selector
-     || f0.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector
-     || f0.selector == sig:PrizesWallet.donateNft(uint256,address,address,uint256).selector) {
-		//require e0.msg.sender=0x0101010101010101010101010101010101010101;
-    	require currentContract.game() == e0.msg.sender;
-    }
+	method f;
+	env e;
+	address winner;
+	uint256 round;
+	bool ethWithdrawal;
+	IPrizesWallet.DonatedTokenToClaim erc20List;
+	uint256[] erc721List;
+	address donorAddr;
+	address tokenAddr;
+	uint256 amount;
+	uint256 nftId;
+	uint256 nftIndex;
+	uint256[] nftIndices;
+	uint256 timeoutVal;
+	IPrizesWallet.EthDeposit[] ethDeposits;
 	
-    f0(e0, args0);
+	uint256 balanceBefore = nativeBalances[currentContract];
+	genericFunctionMatcher(f,e,winner,round,ethWithdrawal,erc20List,erc721List,donorAddr,tokenAddr,amount,nftId,nftIndex,nftIndices,timeoutVal,ethDeposits);
+	uint256 balanceAfter = nativeBalances[currentContract];
 
-	satisfy true;
+	if (f.selector == sig:PrizesWallet.depositEth(uint256,address).selector) {
+		assert balanceBefore < balanceAfter, "balance of PrizesWallet did not increase";
+	} else if (f.selector == sig:PrizesWallet.withdrawEth().selector) {
+		assert balanceBefore > balanceAfter, "balance of PrizesWallet did not decrease";
+	} else {
+		assert balanceBefore == balanceAfter, "balance of PrizesWallet changed while it should not change";
+	}
 }
