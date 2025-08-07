@@ -70,44 +70,44 @@ describe("PrizesWallet-1", function () {
 
 		// ERC-20 tokens to be donated.
 		const tokens_ = [];
-		const tokensAddr_ = [];
+		const tokensAddress_ = [];
 		for (let tokenIndex_ = numTokens_; ( -- tokenIndex_ ) >= 0; ) {
 			const token_ = await contracts_.cosmicSignatureTokenFactory.deploy(fakeGame_.address);
 			await token_.waitForDeployment();
 			tokens_.push(token_);
-			const tokenAddr_ = await token_.getAddress();
-			tokensAddr_.push(tokenAddr_);
-			// await waitForTransactionReceipt(token_.transferOwnership(contracts_.ownerAcct.address));
+			const tokenAddress_ = await token_.getAddress();
+			tokensAddress_.push(tokenAddress_);
+			// await waitForTransactionReceipt(token_.transferOwnership(contracts_.ownerSigner.address));
 		}
 
 		// NFTs to be donated.
 		const nftContracts_ = [];
-		const nftContractsAddr_ = [];
+		const nftContractsAddress_ = [];
 		for (let nftContractIndex_ = numNftContracts_; ( -- nftContractIndex_ ) >= 0; ) {
 			const nftContract_ = await contracts_.randomWalkNftFactory.deploy();
 			await nftContract_.waitForDeployment();
 			nftContracts_.push(nftContract_);
-			const nftContractAddr_ = await nftContract_.getAddress();
-			nftContractsAddr_.push(nftContractAddr_);
-			await waitForTransactionReceipt(nftContract_.transferOwnership(contracts_.ownerAcct.address));
+			const nftContractAddress_ = await nftContract_.getAddress();
+			nftContractsAddress_.push(nftContractAddress_);
+			await waitForTransactionReceipt(nftContract_.transferOwnership(contracts_.ownerSigner.address));
 		}
 
 		// We will not use `contracts_.prizesWallet`.
 		// todo-1 +++ See above.
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(fakeGame_.address);
 		await newPrizesWallet_.waitForDeployment();
-		const newPrizesWalletAddr_ = await newPrizesWallet_.getAddress();
-		await waitForTransactionReceipt(newPrizesWallet_.transferOwnership(contracts_.ownerAcct.address));
+		const newPrizesWalletAddress_ = await newPrizesWallet_.getAddress();
+		await waitForTransactionReceipt(newPrizesWallet_.transferOwnership(contracts_.ownerSigner.address));
 
 		// #endregion
 		// #region
 
 		for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
 			for (const token_ of tokens_) {
-				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddr_, (1n << 256n) - 1n));
+				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddress_, (1n << 256n) - 1n));
 			}
 			for (const nftContract_ of nftContracts_) {
-				await waitForTransactionReceipt(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddr_, true));
+				await waitForTransactionReceipt(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddress_, true));
 			}
 		}
 
@@ -125,7 +125,7 @@ describe("PrizesWallet-1", function () {
 			// [Comment-202507161/]
 			tokenBalanceAmounts_[hre.ethers.ZeroAddress] = 0n;
 
-			// tokenBalanceAmounts_[newPrizesWalletAddr_] = 0n;
+			// tokenBalanceAmounts_[newPrizesWalletAddress_] = 0n;
 			for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
 				tokenBalanceAmounts_[contracts_.signers[bidderIndex_].address] = 0n;
 			}
@@ -174,7 +174,7 @@ describe("PrizesWallet-1", function () {
 			roundTimeoutTimesToWithdrawPrizes_.push(0n);
 			donatedTokens_.push(hre.ethers.ZeroAddress);
 			++ roundNum_;
-			// console.log(`202507165 ${roundNum_}`);
+			// console.info(`202507165 ${roundNum_}`);
 		};
 
 		// #endregion
@@ -289,7 +289,7 @@ describe("PrizesWallet-1", function () {
 				ethBalanceAmount_ += ethAmount_;
 				ethBalancesInfo_[prizeWinnerIndex_].roundNum = roundNum_;
 				ethBalancesInfo_[prizeWinnerIndex_].amount += ethAmount_;
-				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddr_)).equal(ethBalanceAmount_);
+				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				// console.info("202506197", (randomNumber_ & 1n).toString());
 				const ethBalanceInfoFromContract_ =
@@ -325,7 +325,7 @@ describe("PrizesWallet-1", function () {
 					.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[prizeWinnerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
 				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 				ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
-				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddr_)).equal(ethBalanceAmount_);
+				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 				const transactionFeeInEth_ = transactionReceipt_.fee;
 				expect(transactionFeeInEth_).greaterThan(0n);
 				expect(await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address)).equal(prizeWinnerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalancesInfo_[prizeWinnerIndex_].amount);
@@ -401,7 +401,7 @@ describe("PrizesWallet-1", function () {
 						.emit(newPrizesWallet_, "EthWithdrawn")
 						.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
 					ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
-					expect(await hre.ethers.provider.getBalance(newPrizesWalletAddr_)).equal(ethBalanceAmount_);
+					expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 					const transactionFeeInEth_ = transactionReceipt_.fee;
 					expect(transactionFeeInEth_).greaterThan(0n);
 					expect(await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address)).equal(strangerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalancesInfo_[prizeWinnerIndex_].amount);
@@ -442,7 +442,7 @@ describe("PrizesWallet-1", function () {
 					newPrizesWallet_.connect(fakeGame_).donateToken(
 						roundNum_,
 						contracts_.signers[donorIndex_].address,
-						tokensAddr_[tokenIndex_],
+						tokensAddress_[tokenIndex_],
 						tokenAmount_
 					);
 
@@ -462,38 +462,38 @@ describe("PrizesWallet-1", function () {
 
 					// Because near Comment-202507161 we have added the zero addresses to `allTokenBalanceAmounts_`,
 					// near Comment-202507163 we will implicitly validates that this is a nonzero.
-					const donatedTokenHolderAddr_ = await newPrizesWallet_.donatedTokens(roundNum_);
+					const donatedTokenHolderAddress_ = await newPrizesWallet_.donatedTokens(roundNum_);
 
 					if (donatedTokens_[Number(roundNum_)] == hre.ethers.ZeroAddress) {
-						// console.log("202507154", donatedTokenHolderAddr_, typeof donatedTokenHolderAddr_);
-						donatedTokens_[Number(roundNum_)] = donatedTokenHolderAddr_;
+						// console.info("202507154", donatedTokenHolderAddress_, typeof donatedTokenHolderAddress_);
+						donatedTokens_[Number(roundNum_)] = donatedTokenHolderAddress_;
 						for (const tokenBalanceAmounts_ of allTokenBalanceAmounts_) {
-							// console.log("202507157");
+							// console.info("202507157");
 
 							// [Comment-202507163/]
-							expect(Object.hasOwn(tokenBalanceAmounts_, donatedTokenHolderAddr_)).false;
+							expect(Object.hasOwn(tokenBalanceAmounts_, donatedTokenHolderAddress_)).false;
 
-							tokenBalanceAmounts_[donatedTokenHolderAddr_] = 0n;
+							tokenBalanceAmounts_[donatedTokenHolderAddress_] = 0n;
 						}
 					} else {
-						// console.log("202507159");
-						expect(donatedTokenHolderAddr_).equal(donatedTokens_[Number(roundNum_)]);
+						// console.info("202507159");
+						expect(donatedTokenHolderAddress_).equal(donatedTokens_[Number(roundNum_)]);
 					}
 					allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address] -= tokenAmount_;
-					allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddr_] += tokenAmount_;
+					allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddress_] += tokenAmount_;
 					await expect(transactionResponsePromise_)
 						.emit(tokens_[tokenIndex_], "Approval")
-						.withArgs(donatedTokenHolderAddr_, newPrizesWalletAddr_, (1n << 256n) - 1n)
+						.withArgs(donatedTokenHolderAddress_, newPrizesWalletAddress_, (1n << 256n) - 1n)
 						.and.emit(newPrizesWallet_, "TokenDonated")
-						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, tokensAddr_[tokenIndex_], tokenAmount_)
+						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, tokensAddress_[tokenIndex_], tokenAmount_)
 						.and.emit(tokens_[tokenIndex_], "Transfer")
-						.withArgs(contracts_.signers[donorIndex_].address, donatedTokenHolderAddr_, tokenAmount_);
+						.withArgs(contracts_.signers[donorIndex_].address, donatedTokenHolderAddress_, tokenAmount_);
 					expect(await tokens_[tokenIndex_].balanceOf(contracts_.signers[donorIndex_].address)).equal(allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address]);
-					expect(await tokens_[tokenIndex_].balanceOf(donatedTokenHolderAddr_)).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddr_]);
+					expect(await tokens_[tokenIndex_].balanceOf(donatedTokenHolderAddress_)).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddress_]);
 				}
 
 				// This will work even if `donatedTokens_[Number(roundNum_)]` is still zero.
-				expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(roundNum_, tokensAddr_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(roundNum_)]]);
+				expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(roundNum_, tokensAddress_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(roundNum_)]]);
 
 				// #endregion
 			} else if ((choice1Code_ -= 2) < 0) {
@@ -558,7 +558,7 @@ describe("PrizesWallet-1", function () {
 					// #region
 
 					/** @type {Promise<import("ethers").TransactionResponse>} */
-					const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddr_[tokenIndex_], donatedTokenAmountToClaim_);
+					const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddress_[tokenIndex_], donatedTokenAmountToClaim_);
 					const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 					// if (transactionReceipt_ != undefined) {
 					// 	console.info("202507168");
@@ -616,7 +616,7 @@ describe("PrizesWallet-1", function () {
 										"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
 										donationRoundNum_,
 										contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-										tokensAddr_[tokenIndex_],
+										tokensAddress_[tokenIndex_],
 										donationRoundTimeoutTimeToWithdrawPrizes_,
 										BigInt(transactionBlock_.timestamp)
 									);
@@ -672,7 +672,7 @@ describe("PrizesWallet-1", function () {
 							.withArgs(
 								donationRoundNum_,
 								contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-								tokensAddr_[tokenIndex_],
+								tokensAddress_[tokenIndex_],
 								donatedTokenAmountToClaim_
 							)
 							.and.emit(tokens_[tokenIndex_], "Transfer")
@@ -689,7 +689,7 @@ describe("PrizesWallet-1", function () {
 					// #region
 
 					// This will work even if `donatedTokens_[Number(donationRoundNum_)]` is still zero.
-					expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(donationRoundNum_, tokensAddr_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]);
+					expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(donationRoundNum_, tokensAddress_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]);
 
 					// #endregion
 				}
@@ -725,7 +725,7 @@ describe("PrizesWallet-1", function () {
 					newPrizesWallet_.connect(fakeGame_).donateNft(
 						roundNum_,
 						contracts_.signers[donorIndex_].address,
-						nftContractsAddr_[nftContractIndex_],
+						nftContractsAddress_[nftContractIndex_],
 						nftId_
 					);
 				if ( ! (Number(nftId_) < allNfts_[nftContractIndex_].length) ) {
@@ -738,16 +738,16 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506135");
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "NftDonated")
-						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, nftContractsAddr_[nftContractIndex_], nftId_, BigInt(donatedNfts_.length))
+						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, nftContractsAddress_[nftContractIndex_], nftId_, BigInt(donatedNfts_.length))
 						.and.emit(nftContracts_[nftContractIndex_], "Transfer")
-						.withArgs(contracts_.signers[donorIndex_].address, newPrizesWalletAddr_, nftId_);
+						.withArgs(contracts_.signers[donorIndex_].address, newPrizesWalletAddress_, nftId_);
 					const newDonatedNft_ = {roundNum: roundNum_, nftContractIndex: nftContractIndex_, nftId: nftId_,};
 					donatedNfts_.push(newDonatedNft_);
-					allNfts_[nftContractIndex_][Number(nftId_)] = newPrizesWalletAddr_;
+					allNfts_[nftContractIndex_][Number(nftId_)] = newPrizesWalletAddress_;
 					expect(await newPrizesWallet_.nextDonatedNftIndex()).equal(BigInt(donatedNfts_.length));
 					const newDonatedNftFromContract_ = await newPrizesWallet_.donatedNfts(BigInt(donatedNfts_.length - 1));
 					expect(newDonatedNftFromContract_[0]).equal(newDonatedNft_.roundNum);
-					expect(newDonatedNftFromContract_[1]).equal(nftContractsAddr_[newDonatedNft_.nftContractIndex]);
+					expect(newDonatedNftFromContract_[1]).equal(nftContractsAddress_[newDonatedNft_.nftContractIndex]);
 					expect(newDonatedNftFromContract_[2]).equal(newDonatedNft_.nftId);
 				}
 
@@ -842,12 +842,12 @@ describe("PrizesWallet-1", function () {
 						.withArgs(
 							donatedNfts_[donatedNftIndex_].roundNum,
 							contracts_.signers[mainPrizeBeneficiaryIndex_].address,
-							nftContractsAddr_[donatedNfts_[donatedNftIndex_].nftContractIndex],
+							nftContractsAddress_[donatedNfts_[donatedNftIndex_].nftContractIndex],
 							donatedNfts_[donatedNftIndex_].nftId,
 							BigInt(donatedNftIndex_)
 						)
 						.and.emit(nftContracts_[donatedNfts_[donatedNftIndex_].nftContractIndex], "Transfer")
-						.withArgs(newPrizesWalletAddr_, contracts_.signers[mainPrizeBeneficiaryIndex_].address, donatedNfts_[donatedNftIndex_].nftId);
+						.withArgs(newPrizesWalletAddress_, contracts_.signers[mainPrizeBeneficiaryIndex_].address, donatedNfts_[donatedNftIndex_].nftId);
 					allNfts_[donatedNfts_[donatedNftIndex_].nftContractIndex][Number(donatedNfts_[donatedNftIndex_].nftId)] = contracts_.signers[mainPrizeBeneficiaryIndex_].address;
 					donatedNfts_[donatedNftIndex_].roundNum = 0n;
 					donatedNfts_[donatedNftIndex_].nftContractIndex = -1;

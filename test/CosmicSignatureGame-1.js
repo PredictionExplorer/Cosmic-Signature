@@ -79,10 +79,10 @@ describe("CosmicSignatureGame-1", function () {
 			randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 			const roundActivationTimeOffset_ = randomNumber_ % 4096n - 1024n;
 			const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTimeOffset_);
-			// const blockchainPropertyGetterFactory_ = await hre.ethers.getContractFactory("BlockchainPropertyGetter", contracts_.deployerAcct);
+			// const blockchainPropertyGetterFactory_ = await hre.ethers.getContractFactory("BlockchainPropertyGetter", contracts_.deployerSigner);
 			// const blockchainPropertyGetter_ = await blockchainPropertyGetterFactory_.deploy();
 			// await blockchainPropertyGetter_.waitForDeployment();
-			// // const blockchainPropertyGetterAddr_ = await blockchainPropertyGetter_.getAddress();
+			// // const blockchainPropertyGetterAddress_ = await blockchainPropertyGetter_.getAddress();
 
 			// #endregion
 			// #region
@@ -90,9 +90,9 @@ describe("CosmicSignatureGame-1", function () {
 			// const timeStamp1_ = performance.now();
 			for (const signer5_ of contracts_.signers) {
 				const randomWalkNftForSigner5_ = contracts_.randomWalkNft.connect(signer5_);
-				await waitForTransactionReceipt(randomWalkNftForSigner5_.setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddr, true));
+				await waitForTransactionReceipt(randomWalkNftForSigner5_.setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddress, true));
 				const cosmicSignatureNftForSigner5_ = contracts_.cosmicSignatureNft.connect(signer5_);
-				await waitForTransactionReceipt(cosmicSignatureNftForSigner5_.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddr, true));
+				await waitForTransactionReceipt(cosmicSignatureNftForSigner5_.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true));
 			}
 			// const timeStamp2_ = performance.now();
 			// console.info((timeStamp2_ - timeStamp1_).toString());
@@ -436,7 +436,7 @@ describe("CosmicSignatureGame-1", function () {
 						/** @type {Promise<import("ethers").TransactionResponse>} */
 						const transactionResponsePromise_ =
 							sendEth_ ?
-							signer_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: ethPriceToPayMaxLimit_,}) :
+							signer_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddress, value: ethPriceToPayMaxLimit_,}) :
 							cosmicSignatureGameProxyForSigner_.bidWithEth(randomWalkNftId_, bidMessage_, {value: ethPriceToPayMaxLimit_,});
 						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -617,19 +617,19 @@ describe("CosmicSignatureGame-1", function () {
 
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				if ((randomNumber_ & (0x0Fn << (0n * 8n))) == 0n) {
-					// console.log("202505265");
+					// console.info("202505265");
 					await assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
 				}
 				if ((randomNumber_ & (0x0Fn << (1n * 8n))) == 0n) {
-					// console.log("202505266");
+					// console.info("202505266");
 					await assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (2n * 8n))) == 0n) {
-					// console.log("202505267");
+					// console.info("202505267");
 					await assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (3n * 8n))) == 0n) {
-					// console.log("202505268");
+					// console.info("202505268");
 					await assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 
@@ -691,7 +691,7 @@ describe("CosmicSignatureGame-1", function () {
 					if (cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor < 10n ** 30n) {
 						const newEthDutchAuctionEndingBidPriceDivisor_ = cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor * 10n;
 						/** @type {Promise<import("ethers").TransactionResponse>} */
-						const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
+						const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 						transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await transactionReceipt_.getBlock();
 						eventIndexWrapper_.value = 0;

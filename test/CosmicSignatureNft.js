@@ -31,7 +31,7 @@ describe("CosmicSignatureNft", function () {
 			expect(await contracts_.cosmicSignatureNft.nftBaseUri()).not.equal(newValue_);
 			await expect(contracts_.cosmicSignatureNft.connect(contracts_.signers[1]).setNftBaseUri(newValue_))
 				.revertedWithCustomError(contracts_.cosmicSignatureNft, "OwnableUnauthorizedAccount");
-			await expect(contracts_.cosmicSignatureNft.connect(contracts_.ownerAcct).setNftBaseUri(newValue_))
+			await expect(contracts_.cosmicSignatureNft.connect(contracts_.ownerSigner).setNftBaseUri(newValue_))
 				.emit(contracts_.cosmicSignatureNft, "NftBaseUriChanged")
 				.withArgs(newValue_);
 			expect(await contracts_.cosmicSignatureNft.nftBaseUri()).equal(newValue_);
@@ -44,7 +44,7 @@ describe("CosmicSignatureNft", function () {
 			expect(await contracts_.cosmicSignatureNft.nftGenerationScriptUri()).not.equal(newValue_);
 			await expect(contracts_.cosmicSignatureNft.connect(contracts_.signers[1]).setNftGenerationScriptUri(newValue_))
 				.revertedWithCustomError(contracts_.cosmicSignatureNft, "OwnableUnauthorizedAccount");
-			await expect(contracts_.cosmicSignatureNft.connect(contracts_.ownerAcct).setNftGenerationScriptUri(newValue_))
+			await expect(contracts_.cosmicSignatureNft.connect(contracts_.ownerSigner).setNftGenerationScriptUri(newValue_))
 				.emit(contracts_.cosmicSignatureNft, "NftGenerationScriptUriChanged")
 				.withArgs(newValue_);
 			expect(await contracts_.cosmicSignatureNft.nftGenerationScriptUri()).equal(newValue_);
@@ -56,11 +56,11 @@ describe("CosmicSignatureNft", function () {
 
 		const newCosmicSignatureNft_ = await contracts_.cosmicSignatureNftFactory.deploy(contracts_.signers[0].address);
 		await newCosmicSignatureNft_.waitForDeployment();
-		// const newCosmicSignatureNftAddr_ = await newCosmicSignatureNft_.getAddress();
-		await waitForTransactionReceipt(newCosmicSignatureNft_.transferOwnership(contracts_.ownerAcct.address));
+		// const newCosmicSignatureNftAddress_ = await newCosmicSignatureNft_.getAddress();
+		await waitForTransactionReceipt(newCosmicSignatureNft_.transferOwnership(contracts_.ownerSigner.address));
 
 		const pickUnauthorizedCaller_ = () => {
-			return ((generateRandomUInt32() & 1) == 0) ? contracts_.ownerAcct : contracts_.signers[1];
+			return ((generateRandomUInt32() & 1) == 0) ? contracts_.ownerSigner : contracts_.signers[1];
 		};
 
 		{

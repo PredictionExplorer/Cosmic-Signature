@@ -23,7 +23,7 @@ describe("BlockTimeStamps", function () {
 					break;
 				}
 				case 2: {
-					await waitForTransactionReceipt(contracts_.signers[1].sendTransaction({to: contracts_.signers[2].address, value: 1,}));
+					await waitForTransactionReceipt(contracts_.signers[1].sendTransaction({to: contracts_.signers[2].address, value: 1n,}));
 					break;
 				}
 				default: {

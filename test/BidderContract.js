@@ -11,14 +11,14 @@ describe("BidderContract", function () {
 	it("BidderContract wins the Cosmic Signature Game", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
-		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
-		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 		await bidderContract_.waitForDeployment();
-		const bidderContractAddr_ = await bidderContract_.getAddress();
+		const bidderContractAddress_ = await bidderContract_.getAddress();
 
-		// await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.prizesWalletAddr, true));
-		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr_, true));
-		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doSetApprovalForAll(contracts_.randomWalkNftAddr, contracts_.prizesWalletAddr, true));
+		// await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.prizesWalletAddress, true));
+		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddress_, true));
+		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doSetApprovalForAll(contracts_.randomWalkNftAddress, contracts_.prizesWalletAddress, true));
 
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "signer 0 bid", {value: nextEthBidPrice_,}));
@@ -31,7 +31,7 @@ describe("BidderContract", function () {
 		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,}));
 		const donatedNftId_ = 0n;
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
-		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doBidWithEthAndDonateNft(contracts_.randomWalkNftAddr, donatedNftId_, {value: nextEthBidPrice_,}));
+		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doBidWithEthAndDonateNft(contracts_.randomWalkNftAddress, donatedNftId_, {value: nextEthBidPrice_,}));
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doBidWithEth({value: nextEthBidPrice_,}));
 		randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();

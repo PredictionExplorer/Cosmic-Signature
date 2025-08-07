@@ -18,7 +18,7 @@ describe("CosmicSignatureToken", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
-		expect(await contracts_.cosmicSignatureToken.game()).equal(contracts_.cosmicSignatureGameProxyAddr);
+		expect(await contracts_.cosmicSignatureToken.game()).equal(contracts_.cosmicSignatureGameProxyAddress);
 		expect(await contracts_.cosmicSignatureToken.CLOCK_MODE()).equal("mode=timestamp");
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		expect(Number(await contracts_.cosmicSignatureToken.clock())).equal(latestBlock_.timestamp);
@@ -30,8 +30,8 @@ describe("CosmicSignatureToken", function () {
 
 		const newCosmicSignatureToken_ = await contracts_.cosmicSignatureTokenFactory.deploy(contracts_.signers[0].address);
 		await newCosmicSignatureToken_.waitForDeployment();
-		// const newCosmicSignatureTokenAddr_ = await newCosmicSignatureToken_.getAddress();
-		// await waitForTransactionReceipt(newCosmicSignatureToken_.transferOwnership(contracts_.ownerAcct.address));
+		// const newCosmicSignatureTokenAddress_ = await newCosmicSignatureToken_.getAddress();
+		// await waitForTransactionReceipt(newCosmicSignatureToken_.transferOwnership(contracts_.ownerSigner.address));
 		const newCosmicSignatureTokenForSigner0_ = newCosmicSignatureToken_.connect(contracts_.signers[0]);
 
 		// Comment-202507302 applies.
@@ -97,7 +97,7 @@ describe("CosmicSignatureToken", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const pickUnauthorizedCaller_ = () => {
-			return ((generateRandomUInt32() & 1) == 0) ? contracts_.ownerAcct : contracts_.signers[0];
+			return ((generateRandomUInt32() & 1) == 0) ? contracts_.ownerSigner : contracts_.signers[0];
 		};
 
 		const emptyAray_ = [];
