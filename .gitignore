@@ -34,4 +34,6 @@ node_modules
 
 # /config.sh
 
+/scripts/temp
+
 /certora/emv*
