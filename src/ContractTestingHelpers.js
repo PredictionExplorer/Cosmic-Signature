@@ -48,10 +48,10 @@ let preparedHardhatCoverage = false;
 async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForTesting);
 	contracts.signers.forEach((signer) => { signer.reset(); });
-	contracts.treasurerAcct.reset();
-	contracts.charityAcct.reset();
-	contracts.ownerAcct.reset();
-	contracts.deployerAcct.reset();
+	contracts.treasurerSigner.reset();
+	contracts.charitySigner.reset();
+	contracts.ownerSigner.reset();
+	contracts.deployerSigner.reset();
 
 	// Comment-202507202 applies.
 	if (roundActivationTime > -1_000_000_000n && roundActivationTime < 1_000_000_000n) {
@@ -69,7 +69,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	await hre.ethers.provider.send("evm_mine");
 
 	// Comment-202507204 relates.
-	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerAcct), roundActivationTime);
+	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerSigner), roundActivationTime);
 
 	return contracts;
 }
@@ -98,10 +98,10 @@ async function deployContractsForTestingAdvanced(
 	await hackPrepareHardhatCoverageOnceIfNeeded();
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
-	const deployerAcct = new MyNonceManager(new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider));
-	const ownerAcct = new MyNonceManager(new hre.ethers.Wallet("0x76ca1febfcbf4447a32f397ba08d768582bb8fce17cc434f8b667c2a4c81ea50", hre.ethers.provider));
-	const charityAcct = new MyNonceManager(new hre.ethers.Wallet("0x87cc6d37b7d24b0597513b189ab17da83f85a50f4c01490ba356a8603e646410", hre.ethers.provider));
-	const treasurerAcct = new MyNonceManager(new hre.ethers.Wallet("0x6614113dc9574a9987b032f1264af4588924f7f03b9141cca2d0adabe4ee38da", hre.ethers.provider));
+	const deployerSigner = new MyNonceManager(new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider));
+	const ownerSigner = new MyNonceManager(new hre.ethers.Wallet("0x76ca1febfcbf4447a32f397ba08d768582bb8fce17cc434f8b667c2a4c81ea50", hre.ethers.provider));
+	const charitySigner = new MyNonceManager(new hre.ethers.Wallet("0x87cc6d37b7d24b0597513b189ab17da83f85a50f4c01490ba356a8603e646410", hre.ethers.provider));
+	const treasurerSigner = new MyNonceManager(new hre.ethers.Wallet("0x6614113dc9574a9987b032f1264af4588924f7f03b9141cca2d0adabe4ee38da", hre.ethers.provider));
 	// const signers = await hre.ethers.getSigners();
 	const signers = (await hre.ethers.getSigners()).map((signer_) => (new MyNonceManager(signer_)));
 	const signerAddressToIndexMapping =
@@ -113,36 +113,36 @@ async function deployContractsForTestingAdvanced(
 	const signer18 = signers[18];
 	const signer19 = signers[19];
 	const ethAmount = 10n ** 18n;
-	await waitForTransactionReceipt(signer19.sendTransaction({to: deployerAcct.address, value: ethAmount,}));
-	await waitForTransactionReceipt(signer18.sendTransaction({to: ownerAcct.address, value: ethAmount,}));
-	await waitForTransactionReceipt(signer17.sendTransaction({to: treasurerAcct.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer19.sendTransaction({to: deployerSigner.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer18.sendTransaction({to: ownerSigner.address, value: ethAmount,}));
+	await waitForTransactionReceipt(signer17.sendTransaction({to: treasurerSigner.address, value: ethAmount,}));
 	const contracts =
 		await deployContractsAdvanced(
-			deployerAcct,
+			deployerSigner,
 			cosmicSignatureGameContractName,
 			"",
-			charityAcct.address,
+			charitySigner.address,
 			false,
 			-1_000_000_000n
 		);
 	contracts.signerAddressToIndexMapping = signerAddressToIndexMapping;
 	contracts.signers = signers;
-	contracts.treasurerAcct = treasurerAcct;
-	contracts.charityAcct = charityAcct;
-	contracts.ownerAcct = ownerAcct;
-	contracts.deployerAcct = deployerAcct;
-	// await waitForTransactionReceipt(contracts.cosmicSignatureToken.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.randomWalkNft.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.cosmicSignatureNft.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.prizesWallet.transferOwnership(ownerAcct.address));
-	// await waitForTransactionReceipt(contracts.stakingWalletRandomWalkNft.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.marketingWallet.setTreasurerAddress(treasurerAcct.address));
-	await waitForTransactionReceipt(contracts.marketingWallet.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.charityWallet.transferOwnership(ownerAcct.address));
-	// await waitForTransactionReceipt(contracts.cosmicSignatureDao.transferOwnership(ownerAcct.address));
-	// await waitForTransactionReceipt(contracts.cosmicSignatureGameImplementation.transferOwnership(ownerAcct.address));
-	await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.transferOwnership(ownerAcct.address));
+	contracts.treasurerSigner = treasurerSigner;
+	contracts.charitySigner = charitySigner;
+	contracts.ownerSigner = ownerSigner;
+	contracts.deployerSigner = deployerSigner;
+	// await waitForTransactionReceipt(contracts.cosmicSignatureToken.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.randomWalkNft.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.cosmicSignatureNft.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.prizesWallet.transferOwnership(ownerSigner.address));
+	// await waitForTransactionReceipt(contracts.stakingWalletRandomWalkNft.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.stakingWalletCosmicSignatureNft.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.marketingWallet.setTreasurerAddress(treasurerSigner.address));
+	await waitForTransactionReceipt(contracts.marketingWallet.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.charityWallet.transferOwnership(ownerSigner.address));
+	// await waitForTransactionReceipt(contracts.cosmicSignatureDao.transferOwnership(ownerSigner.address));
+	// await waitForTransactionReceipt(contracts.cosmicSignatureGameImplementation.transferOwnership(ownerSigner.address));
+	await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.transferOwnership(ownerSigner.address));
 	return contracts;
 }
 
