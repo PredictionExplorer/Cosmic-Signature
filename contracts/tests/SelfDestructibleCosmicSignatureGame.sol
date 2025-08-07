@@ -22,6 +22,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	}
 
 	/// @notice Comment-202508065 applies.
+	/// @custom:oz-upgrades-unsafe-allow selfdestruct
 	function finalizeTesting() external onlyOwner {
 		// Cosmic Signature NFTs.
 		// todo-1 This logic kinda makes no sense because we mint CS NFTs for bidders, not for the game itself, right?
@@ -37,7 +38,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		}
 
 		// todo-1 We don't need to return RW NFTs, right?
-	
+		// todo-1 But this contract can't own them anyway, right?
+
 		// todo-1 This logic kinda makes no sense because we mint CSTs for bidders, not for the game itself, right?
 		{
 			uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
