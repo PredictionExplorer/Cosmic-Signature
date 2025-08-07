@@ -103,10 +103,10 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.73712a01.Linux.g+
 let solidityCompilerPath;
 const solidityCompilerPathGlobal = "/usr/bin/solc";
 // if (ENABLE_SMTCHECKER < 2) {
-	solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-	if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
-		solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
-		if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
+	solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
+	if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
+		solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
+		if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
 			solidityCompilerPath = solidityCompilerPathGlobal;
 		}
 	}
@@ -127,7 +127,7 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 		console.warn("Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
 	if (ENABLE_SMTCHECKER >= 2) {
-		console.log("SMTChecker execution is enabled.");
+		console.info("SMTChecker execution is enabled.");
 	}
 } else {
 	console.warn("Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
@@ -175,7 +175,7 @@ require("./tasks/cosmic-signature-tasks.js");
 // #endregion
 // #region
 
-/** @type boolean | undefined */
+/** @type {boolean | undefined} */
 let networkIsMainNet = undefined;
 
 /**
@@ -270,7 +270,7 @@ function preProcessSolidityLine(hre, line) {
 // #endregion
 // #region
 
-/** @type import("hardhat/config").HardhatUserConfig */
+/** @type {import("hardhat/config").HardhatUserConfig} */
 const hardhatUserConfig = {
 	// #region
 
@@ -518,6 +518,7 @@ const hardhatUserConfig = {
 	// ToDo-202412098-1 relates.
 	// [/ToDo-202412097-1]
 	// etherscan: {
+	// 	// todo-1 Name this env. var. better.
 	// 	apiKey: process.env.API_KEY,
 	// },
 	// sourcify: {
