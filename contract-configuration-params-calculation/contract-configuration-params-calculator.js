@@ -4,7 +4,7 @@
 
 "use strict";
 
-const input = require("./input.js");
+const { input } = require("./input.js");
 
 calculateDivisor(input.ethDutchAuctionDuration, "ethDutchAuctionDurationDivisor");
 calculateDivisor(input.cstDutchAuctionDuration, "cstDutchAuctionDurationDivisor");
