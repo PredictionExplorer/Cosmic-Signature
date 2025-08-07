@@ -1,98 +1,130 @@
-// npx hardhat deploy-cosmic-signature --deployConfigFilePath tasks/default-config/deploy-local.json
-
 "use strict";
 
 const nodeOsModule = require("node:os");
+const nodePathModule = require("node:path");
 const nodeFsModule = require("node:fs");
 const { task } = require("hardhat/config.js");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
 
 // Comment-202409255 relates.
-const { deployContracts } = require("../src/ContractDeploymentHelpers.js");
+const { deployContractsAdvanced } = require("../src/ContractDeploymentHelpers.js");
 
-task("deploy-cosmic-signature", "Deploys contracts to a network", async (args, hre) => {
-	const deployConfigFilePath = args.deployConfigFilePath;
+// Invocation example:
+// npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath tasks/config/deploy-cosmic-signature-contracts-config-hardhat.json --network hardhat
+task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
+	const deployConfigFilePath = args["deployconfigfilepath"];
 	if (deployConfigFilePath == undefined || deployConfigFilePath.length <= 0) {
-		console.log("Please provide a config file: --deployConfigFilePath <file_path>");
+		// todo-1 Review all calls to `console` to make sure we specify a correct error severity.
+		console.error(`${nodeOsModule.EOL}Please provide a deployment configuration file path: --deployconfigfilepath <file_path>`);
 		return;
 	}
-	const configJsonText = nodeFsModule.readFileSync(deployConfigFilePath, "utf8");
-	let configObject;
+	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
+	let deployConfigObject;
 	try {
-		configObject = JSON.parse(configJsonText);
+		deployConfigObject = JSON.parse(deployConfigJsonString);
 	} catch (errorObject) {
-		console.error(`Error while parsing "${deployConfigFilePath}":` + nodeOsModule.EOL, errorObject);
+		console.error(`${nodeOsModule.EOL}Error parsing "${deployConfigFilePath}":`);
+		console.error(errorObject);
 		return;
 	}
-	// const configObjectToLog = JSON.parse(JSON.stringify(configObject));
-	// configObjectToLog.privKey = "******";
-	// console.log("Using configuration:");
-	// console.log(configObjectToLog);
+
+	console.info();
+	await hre.run("compile");
+
 	{
-		const privKey = configObject.privKey;
-		configObject.privKey = "******";
-		console.log("Using configuration:");
-		console.log(configObject);
-		configObject.privKey = privKey;
+		const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
+		deployConfigObject.deployerPrivateKey = "******";
+		console.info(`${nodeOsModule.EOL}Using configuration:`);
+		console.info(deployConfigObject);
+		deployConfigObject.deployerPrivateKey = deployerPrivateKey;
 	}
-	const deployerAcct = new hre.ethers.Wallet(configObject.privKey, hre.ethers.provider);
 
-	// // I dislike this charity address logic. It looks like a quick hack. So I have commented it out.
-	// // The charity address should be provided in the config file. It should not be optional.
-	// if (configObject.charityAddr.length <= 0) {
-	// 	const signers = await hre.ethers.getSigners();
-	// 	configObject.charityAddr = signers[1].address;
-	// }
-
+	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
+	console.info(`${nodeOsModule.EOL}Deployer address:`, deployerSigner.address);
 	const contracts =
-		await deployContracts(
-			deployerAcct,
-			configObject.randomWalkNftAddr,
-			configObject.charityAddr,
-			configObject.transferOwnershipToCosmicSignatureDao,
-			BigInt(configObject.roundActivationTime)
+		await deployContractsAdvanced(
+			deployerSigner,
+			deployConfigObject.cosmicSignatureGameContractName,
+			deployConfigObject.randomWalkNftAddress,
+			deployConfigObject.charityAddress,
+			deployConfigObject.transferContractOwnershipToCosmicSignatureDao,
+			BigInt(deployConfigObject.roundActivationTime)
 		);
-	console.log("Contracts deployed.");
-	if (configObject.donateEthToGameContract) {
-		const ethValue = "2";
-		const ethDonationAmount = hre.ethers.parseEther(ethValue);
-		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmount,}));
-		console.log("Donated " + ethValue + " ETH to the CosmicSignatureGame proxy contract.");
-	}
-	console.log("CosmicSignatureToken address:", contracts.cosmicSignatureTokenAddr);
-	console.log("RandomWalkNFT address:", contracts.randomWalkNftAddr);
-	console.log("CosmicSignatureNft address:", contracts.cosmicSignatureNftAddr);
-	console.log("PrizesWallet address:", contracts.prizesWalletAddr);
-	console.log("StakingWalletRandomWalkNft address:", contracts.stakingWalletRandomWalkNftAddr);
-	console.log("StakingWalletCosmicSignatureNft address:", contracts.stakingWalletCosmicSignatureNftAddr);
-	console.log("MarketingWallet address:", contracts.marketingWalletAddr);
-	console.log("CharityWallet address:", contracts.charityWalletAddr);
-	console.log("CosmicSignatureDao address:", contracts.cosmicSignatureDaoAddr);
-	console.log("CosmicSignatureGame implementation address:", contracts.cosmicSignatureGameImplementationAddr);
-	console.log("CosmicSignatureGame proxy address:", contracts.cosmicSignatureGameProxyAddr);
-	console.log(
-		"INSERT INTO cg_contracts VALUES('" +
-		contracts.cosmicSignatureGameProxyAddr +
+
+	console.info(`${nodeOsModule.EOL}Contracts deployed.`);
+	console.info(`${nodeOsModule.EOL}CosmicSignatureToken address:`, contracts.cosmicSignatureTokenAddress);
+	console.info("RandomWalkNFT address:", contracts.randomWalkNftAddress);
+	console.info("CosmicSignatureNft address:", contracts.cosmicSignatureNftAddress);
+	console.info("PrizesWallet address:", contracts.prizesWalletAddress);
+	console.info("StakingWalletRandomWalkNft address:", contracts.stakingWalletRandomWalkNftAddress);
+	console.info("StakingWalletCosmicSignatureNft address:", contracts.stakingWalletCosmicSignatureNftAddress);
+	console.info("MarketingWallet address:", contracts.marketingWalletAddress);
+	console.info("CharityWallet address:", contracts.charityWalletAddress);
+	console.info("CosmicSignatureDao address:", contracts.cosmicSignatureDaoAddress);
+	console.info(`${deployConfigObject.cosmicSignatureGameContractName} implementation address:`, contracts.cosmicSignatureGameImplementationAddress);
+	console.info(`${deployConfigObject.cosmicSignatureGameContractName} proxy address:`, contracts.cosmicSignatureGameProxyAddress);
+	console.info(
+		`${nodeOsModule.EOL}INSERT INTO cg_contracts VALUES('` +
+		contracts.cosmicSignatureGameProxyAddress +
 		"','" +
-		contracts.cosmicSignatureNftAddr +
+		contracts.cosmicSignatureNftAddress +
 		"','" +
-		contracts.cosmicSignatureTokenAddr +
+		contracts.cosmicSignatureTokenAddress +
 		"','" +
-		contracts.cosmicSignatureDaoAddr +
+		contracts.cosmicSignatureDaoAddress +
 		"','" +
-		contracts.charityWalletAddr +
+		contracts.charityWalletAddress +
 		"','" +
-		contracts.prizesWalletAddr +
+		contracts.prizesWalletAddress +
 		"','" +
-		contracts.randomWalkNftAddr +
+		contracts.randomWalkNftAddress +
 		"','" +
-		contracts.stakingWalletCosmicSignatureNftAddr +
+		contracts.stakingWalletCosmicSignatureNftAddress +
 		"','" +
-		contracts.stakingWalletRandomWalkNftAddr +
+		contracts.stakingWalletRandomWalkNftAddress +
 		"','" +
-		contracts.marketingWalletAddr +
+		contracts.marketingWalletAddress +
 		"','" +
-		contracts.cosmicSignatureGameImplementationAddr +
+		contracts.cosmicSignatureGameImplementationAddress +
 		"')",
 	);
-}).addParam("deployConfigFilePath", "Config file (JSON) path");
+	const reportObject = {
+		cosmicSignatureTokenAddress: contracts.cosmicSignatureTokenAddress,
+		randomWalkNftAddress: contracts.randomWalkNftAddress,
+		cosmicSignatureNftAddress: contracts.cosmicSignatureNftAddress,
+		prizesWalletAddress: contracts.prizesWalletAddress,
+		stakingWalletRandomWalkNftAddress: contracts.stakingWalletRandomWalkNftAddress,
+		stakingWalletCosmicSignatureNftAddress: contracts.stakingWalletCosmicSignatureNftAddress,
+		marketingWalletAddress: contracts.marketingWalletAddress,
+		charityWalletAddress: contracts.charityWalletAddress,
+		cosmicSignatureDaoAddress: contracts.cosmicSignatureDaoAddress,
+		cosmicSignatureGameImplementationAddress: contracts.cosmicSignatureGameImplementationAddress,
+		cosmicSignatureGameProxyAddress: contracts.cosmicSignatureGameProxyAddress,
+	};
+	const reportJsonString = JSON.stringify(reportObject, null, 3);
+	let reportSavedToFile = false;
+	if (deployConfigObject.saveReportFile) {
+		try {
+			await nodeFsModule.promises.mkdir(nodePathModule.dirname(deployConfigObject.reportFilePath), {recursive: true,});
+			await nodeFsModule.promises.writeFile(deployConfigObject.reportFilePath, reportJsonString);
+			reportSavedToFile = true;
+		} catch (errorObject) {
+			console.error(`${nodeOsModule.EOL}Error saving report to "${deployConfigObject.reportFilePath}":`);
+			console.error(errorObject);
+		}
+	}
+	if (reportSavedToFile ) {
+		console.info(`${nodeOsModule.EOL}Report saved to "${deployConfigObject.reportFilePath}".`);
+	} else {
+		console.info(`${nodeOsModule.EOL}Report:`);
+		console.info(reportJsonString);
+	}
+
+	if (deployConfigObject.donateEthToCosmicSignatureGame) {
+		const ethDonationAmountInEthAsString = deployConfigObject.ethDonationToCosmicSignatureGameAmountInEth.toString();
+		const ethDonationAmountInWei = hre.ethers.parseEther(ethDonationAmountInEthAsString);
+		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmountInWei,}));
+		console.info(`${nodeOsModule.EOL}Donated ${ethDonationAmountInEthAsString} ETH to the ${deployConfigObject.cosmicSignatureGameContractName} proxy contract.`);
+	}
+})
+	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");
