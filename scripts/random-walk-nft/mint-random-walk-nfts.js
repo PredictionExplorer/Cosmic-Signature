@@ -41,7 +41,7 @@ async function mint_random_walks(testingAcct, cosmicSignatureGame) {
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
@@ -51,7 +51,7 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
 	let token_list = await mint_random_walks(testingAcct, cosmicSignatureGame);
-	console.log(token_list);
+	console.info(token_list);
 }
 
 main()

@@ -8,7 +8,7 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
@@ -22,18 +22,18 @@ async function main() {
 		// todo-1 This function no longer exists.
 		await cosmicSignatureGame.connect(testingAcct).prepareMaintenance();
 	} catch(e) {
-		console.log(e);
+		console.info(e);
 	}
 	// todo-1 This function no longer exists.
 	let systemModeCode = await cosmicSignatureGame.systemMode();
-	console.log("systemMode =", systemModeCode);
+	console.info("systemMode =", systemModeCode);
 	if (systemModeCode.toString() == "1") {
-		console.log("System is set for maintenance right after next claimMainPrize() call")
+		console.info("System is set for maintenance right after next claimMainPrize() call")
 	} else {
 		if (systemModeCode.toString() == "2") {
-			console.log("System is in maintenance mode already");
+			console.info("System is in maintenance mode already");
 		} else {
-			console.log("Call failed");
+			console.info("Call failed");
 		}
 	}
 }

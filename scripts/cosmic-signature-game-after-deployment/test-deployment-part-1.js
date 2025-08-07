@@ -106,7 +106,7 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
@@ -114,12 +114,12 @@ async function main() {
 	}
 	let rwalkTokenList = process.env.RWALK_TOKENS;
 	if (rwalkTokenList == undefined || rwalkTokenList.length <= 0) {
-		console.log("Please provide Random Walk NFT list in RWALK_TOKENS environment variable");
+		console.info("Please provide Random Walk NFT list in RWALK_TOKENS environment variable");
 		process.exit(1);
 	}
 	let tokenList = rwalkTokenList.split(",");
 	if (tokenList.length != 4) {
-		console.log("This script needs 4 Random Walk NFTs (in RWALK_TOKENS environment variable)");
+		console.info("This script needs 4 Random Walk NFTs (in RWALK_TOKENS environment variable)");
 		process.exit(1);
 	}
 
@@ -131,7 +131,7 @@ async function main() {
 	await bid_and_donate(testingAcct, cosmicSignatureGame, tokenList[1]);
 	await bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, tokenList[2], tokenList[3]);
 
-	console.log("Bidding test result: success");
+	console.info("Bidding test result: success");
 }
 
 main()

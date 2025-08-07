@@ -34,7 +34,7 @@ async function main() {
 	let log = transactionReceipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
 	let parsed_log = randomWalkNft.interface.parseLog(log);
 	let nftId = parsed_log.args.tokenId;
-	console.log(`nftId = ${nftId}`);
+	console.info(`nftId = ${nftId}`);
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	// todo-1 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);

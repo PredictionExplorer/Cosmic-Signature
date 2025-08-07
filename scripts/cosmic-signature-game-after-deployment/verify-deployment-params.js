@@ -21,11 +21,11 @@ async function main() {
 	let charityWalletContractOwner = await charityWalletContract.owner();
 	let charityDonationsReceiverAddress = await charityWalletContract.charityAddress();
 
-	console.log("bidding round activation time = " + roundActivationTime.toString());
-	console.log("randomWalkNft address = " + randomWalkNftAddress.toString());
-	console.log("charity wallet contract address = " + charityAddress.toString());
-	console.log("owner of charity wallet contract = " + charityWalletContractOwner.toString());
-	console.log("charity donations receiver address = " + charityDonationsReceiverAddress.toString());
+	console.info("bidding round activation time = " + roundActivationTime.toString());
+	console.info("randomWalkNft address = " + randomWalkNftAddress.toString());
+	console.info("charity wallet contract address = " + charityAddress.toString());
+	console.info("owner of charity wallet contract = " + charityWalletContractOwner.toString());
+	console.info("charity donations receiver address = " + charityDonationsReceiverAddress.toString());
 }
 
 main()

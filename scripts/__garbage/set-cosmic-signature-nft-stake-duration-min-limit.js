@@ -6,7 +6,7 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts...",
 		);
 		process.exit(1);
@@ -14,7 +14,7 @@ async function main() {
 	// todo-1 There is no such thing as the minimum staking period any more, right?
 	let period = process.env.STAKE_PERIOD;
 	if (period == undefined || period.length <= 0) {
-		console.log(
+		console.info(
 			"Please provide minimum staking period (seconds) by setting STAKE_PERIOD environment variable on the commandline",
 		);
 		process.exit(1);
@@ -26,17 +26,17 @@ async function main() {
 	// Comment-202502096 applies.
 	let stakingWalletCosmicSignatureNft = await hre.ethers.getContractAt("StakingWalletCosmicSignatureNft", stakingWalletCosmicSignatureNftAddress);
 	
-	console.log("staking wallet");console.log(stakingWalletCosmicSignatureNftAddress);
+	console.info("staking wallet");console.info(stakingWalletCosmicSignatureNftAddress);
 	// todo-1 Why do we need this error handling?
 	try {
 		// todo-1 This function no longer exists.
 		await stakingWalletCosmicSignatureNft.connect(testingAcct).setMinStakePeriod(period);
 	} catch(e) {
-		console.log(e);
+		console.info(e);
 	}
 	// todo-1 This function no longer exists.
 	period = await stakingWalletCosmicSignatureNft.minStakePeriod();
-	console.log("Period value: " + period.toString() + " seconds");
+	console.info("Period value: " + period.toString() + " seconds");
 }
 main()
 	.then(() => process.exit(0))

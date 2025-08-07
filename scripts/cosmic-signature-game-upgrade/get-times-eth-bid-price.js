@@ -6,7 +6,7 @@ const { getCosmicSignatureGameContract } = require("../../helpers.js");
 async function main() {
 	// let privKey = process.env.PRIVKEY;
 	// if (privKey == undefined || privKey.length <= 0) {
-	// 	console.log(
+	// 	console.info(
 	// 		// todo-1 "scripts/deploy.js" no longer exists.
 	// 		"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 	// 	);
@@ -14,7 +14,7 @@ async function main() {
 	// }
 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
 	let value = await cosmicSignatureGame.timesEthBidPrice();
-	console.log("timesEthBidPrice =", value);
+	console.info("timesEthBidPrice =", value);
 }
 
 main()

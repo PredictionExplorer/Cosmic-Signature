@@ -15,7 +15,7 @@ async function main() {
 	await bidderContract.waitForDeployment();
 	const bidderContractAddress = await bidderContract.getAddress();
 
-	console.log("BidderContract address: " + bidderContractAddress);
+	console.info("BidderContract address: " + bidderContractAddress);
 }
 
 main()

@@ -11,7 +11,7 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
 	let o = await cosmicSignatureGame.owner();
-	console.log("Owner of CosmicSignatureGame: " + o);
+	console.info("Owner of CosmicSignatureGame: " + o);
 
 	let address;
 
@@ -19,23 +19,23 @@ async function main() {
 	// address = await cosmicSignatureGame.token();
 	// let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", address);
 	// o = await cosmicSignatureToken.owner();
-	// console.log("Owner of CosmicSignatureToken: " + o);
+	// console.info("Owner of CosmicSignatureToken: " + o);
 
 	address = await cosmicSignatureGame.nft();
 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", address);
 	o = await cosmicSignatureNft.owner();
-	console.log("Owner of CosmicSignatureNft: " + o);
+	console.info("Owner of CosmicSignatureNft: " + o);
 
 	address = await cosmicSignatureGame.prizesWallet();
 	let prizesWalletContract = await hre.ethers.getContractAt("PrizesWallet", address);
 	o = await prizesWalletContract.owner();
-	console.log("Owner of PrizesWallet: " + o);
+	console.info("Owner of PrizesWallet: " + o);
 
 	address = await cosmicSignatureGame.charityAddress();
-	console.log("CharityWallet contract at CosmicSignatureGame contract: " + address);
+	console.info("CharityWallet contract at CosmicSignatureGame contract: " + address);
 	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", address);
 	address = await charityWalletContract.charityAddress();
-	console.log("Charity address at CharityWallet contract: " + address);
+	console.info("Charity address at CharityWallet contract: " + address);
 }
 
 main()

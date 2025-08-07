@@ -73,7 +73,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
@@ -84,7 +84,7 @@ async function main() {
 
 	await claim_prize(testingAcct, cosmicSignatureGame);
 
-	console.log("Claim prize test result: success");
+	console.info("Claim prize test result: success");
 }
 
 main()

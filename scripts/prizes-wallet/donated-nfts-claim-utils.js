@@ -36,18 +36,18 @@ async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
 }
 
 async function list_donated_nfts(nfts) {
-	//console.log(nfts);
+	//console.info(nfts);
 	const numNfts = nfts.length;
 	for (let i = 0; i < numNfts; i++) {
 		const roundNfts = nfts[i];
-		console.log("Bidding round " + i.toString());
+		console.info("Bidding round " + i.toString());
 		if (roundNfts == undefined || roundNfts.length <= 0) {
-			console.log("\t(no claimable NFTs)");
+			console.info("\t(no claimable NFTs)");
 			continue;
 		}
 		for (let j = 0; j < roundNfts.length; j++) {
 			let record = roundNfts[j];
-			console.log(
+			console.info(
 				"\t" +
 					record.nftAddress.toString() +
 					": nftId = " +
@@ -77,11 +77,11 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 	let nfts = await get_unclaimed_donated_nfts(cosmicSignatureGame);
 	if (nfts.length <= 0) {
-		console.log("Map of donated unclaimed NFTs is empty, no claiming is possible");
+		console.info("Map of donated unclaimed NFTs is empty, no claiming is possible");
 		return;
 	}
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log("Fetching NFTs, please wait ...");
+		console.info("Fetching NFTs, please wait ...");
 		await list_donated_nfts(nfts);
 		return;
 	} else {
@@ -89,7 +89,7 @@ async function main() {
 	}
 	let roundNumStr = process.env.ROUND_NUM;
 	if (roundNumStr == undefined || roundNumStr.length <= 0) {
-		console.log("Please provide ROUND_NUM environment variable to claim NFTs");
+		console.info("Please provide ROUND_NUM environment variable to claim NFTs");
 		process.exit(1);
 	}
 	let roundToClaim = parseInt(roundNumStr, 10);
@@ -97,13 +97,13 @@ async function main() {
 	// todo-1 This variable no longer exists. A similar variable exists in `PrizesWallet`.
 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim);
 	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
-		console.log("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress.toString());
+		console.info("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress.toString());
 		process.exit(1);
 	}
 
 	if (privKey.length > 0) {
 		if (paramList.length > 0) {
-			console.log("Sending claimMany transaction");
+			console.info("Sending claimMany transaction");
 			await cosmicSignatureGame.connect(testingAcct).claimManyDonatedNfts(paramList);
 		}
 	}
