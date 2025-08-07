@@ -22,10 +22,10 @@ async function mint_random_walk_token(testingAcct, randomWalkNft) {
 }
 
 async function mint_random_walks(testingAcct, cosmicSignatureGame) {
-	let randomWalkNftAddr = await cosmicSignatureGame.randomWalkNft();
+	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
 
 	// Comment-202502096 applies.
-	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 
 	let output = "";
 	for (let i = 0; i < numRWalkToMint; i++) {

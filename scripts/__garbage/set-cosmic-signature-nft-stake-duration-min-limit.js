@@ -21,12 +21,12 @@ async function main() {
 	}
 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
-	let stakingWalletCosmicSignatureNftAddr = await cosmicSignatureGame.stakingWalletCosmicSignatureNft();
+	let stakingWalletCosmicSignatureNftAddress = await cosmicSignatureGame.stakingWalletCosmicSignatureNft();
 
 	// Comment-202502096 applies.
-	let stakingWalletCosmicSignatureNft = await hre.ethers.getContractAt("StakingWalletCosmicSignatureNft", stakingWalletCosmicSignatureNftAddr);
+	let stakingWalletCosmicSignatureNft = await hre.ethers.getContractAt("StakingWalletCosmicSignatureNft", stakingWalletCosmicSignatureNftAddress);
 	
-	console.log("staking wallet");console.log(stakingWalletCosmicSignatureNftAddr);
+	console.log("staking wallet");console.log(stakingWalletCosmicSignatureNftAddress);
 	// todo-1 Why do we need this error handling?
 	try {
 		// todo-1 This function no longer exists.

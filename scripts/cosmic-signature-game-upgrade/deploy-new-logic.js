@@ -15,7 +15,7 @@ async function main() {
 	// }
 	// let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 	const cosmicSignatureGameProxy = await getCosmicSignatureGameContract();
-	const cosmicSignatureGameProxyAddr = await cosmicSignatureGameProxy.getAddress();
+	const cosmicSignatureGameProxyAddress = await cosmicSignatureGameProxy.getAddress();
 
 	// Comment-202502096 applies.
 	const cosmicSignatureGameOpenBidFactory = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
@@ -30,8 +30,8 @@ async function main() {
 			}
 		);
 	await cosmicSignatureGame2Proxy.waitForDeployment();
-	const cosmicSignatureGame2ImplementationAddr = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddr);
-	console.log("Implementation address =", cosmicSignatureGame2ImplementationAddr);
+	const cosmicSignatureGame2ImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
+	console.log("Implementation address =", cosmicSignatureGame2ImplementationAddress);
 	console.log("timesEthBidPrice =", await cosmicSignatureGame2Proxy.timesEthBidPrice());
 }
 

@@ -8,10 +8,10 @@ const { /*getCosmicSignatureGameContract,*/ getBidderContract } = require("./hel
 async function main() {
 	const [signer0, signer1, signer2,] = await hre.ethers.getSigners();
 	const bidderContract = await getBidderContract();
-	const cosmicSignatureGameAddr = await bidderContract.cosmicSignatureGame();
+	const cosmicSignatureGameAddress = await bidderContract.cosmicSignatureGame();
 
 	// Comment-202502096 applies.
-	const cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddr);
+	const cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddress);
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice,}));
@@ -19,10 +19,10 @@ async function main() {
 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer1).bidWithEth((-1), "signer1 bid", {value: nextEthBidPrice,}));
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer2).bidWithEth((-1), "signer2 bid", {value: nextEthBidPrice,}));
-	let randomWalkNftAddr = await cosmicSignatureGame.randomWalkNft();
+	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
 
 	// Comment-202502096 applies.
-	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGame.address, true));
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(bidderContract.address, true));
@@ -38,7 +38,7 @@ async function main() {
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	// todo-1 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
-	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddr, nftId, {value: nextEthBidPrice,}));
+	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddress, nftId, {value: nextEthBidPrice,}));
 
 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice,}));

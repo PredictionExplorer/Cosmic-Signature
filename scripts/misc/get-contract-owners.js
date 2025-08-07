@@ -13,29 +13,29 @@ async function main() {
 	let o = await cosmicSignatureGame.owner();
 	console.log("Owner of CosmicSignatureGame: " + o);
 
-	let addr;
+	let address;
 
 	// // This contract is no longer `Ownable`.
-	// addr = await cosmicSignatureGame.token();
-	// let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", addr);
+	// address = await cosmicSignatureGame.token();
+	// let cosmicSignatureToken = await hre.ethers.getContractAt("CosmicSignatureToken", address);
 	// o = await cosmicSignatureToken.owner();
 	// console.log("Owner of CosmicSignatureToken: " + o);
 
-	addr = await cosmicSignatureGame.nft();
-	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", addr);
+	address = await cosmicSignatureGame.nft();
+	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", address);
 	o = await cosmicSignatureNft.owner();
 	console.log("Owner of CosmicSignatureNft: " + o);
 
-	addr = await cosmicSignatureGame.prizesWallet();
-	let prizesWalletContract = await hre.ethers.getContractAt("PrizesWallet", addr);
+	address = await cosmicSignatureGame.prizesWallet();
+	let prizesWalletContract = await hre.ethers.getContractAt("PrizesWallet", address);
 	o = await prizesWalletContract.owner();
 	console.log("Owner of PrizesWallet: " + o);
 
-	addr = await cosmicSignatureGame.charityAddress();
-	console.log("CharityWallet contract at CosmicSignatureGame contract: " + addr);
-	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", addr);
-	addr = await charityWalletContract.charityAddress();
-	console.log("Charity address at CharityWallet contract: " + addr);
+	address = await cosmicSignatureGame.charityAddress();
+	console.log("CharityWallet contract at CosmicSignatureGame contract: " + address);
+	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", address);
+	address = await charityWalletContract.charityAddress();
+	console.log("Charity address at CharityWallet contract: " + address);
 }
 
 main()

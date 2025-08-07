@@ -24,10 +24,10 @@ async function bid_simple(testingAcct, cosmicSignatureGame) {
 }
 
 async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
-	// let randomWalkNftAddr = await cosmicSignatureGame.randomWalkNft();
+	// let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
 
 	// // Comment-202502096 applies.
-	// let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+	// let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice);
@@ -44,10 +44,10 @@ async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 }
 
 async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) {
-	let randomWalkNftAddr = await cosmicSignatureGame.randomWalkNft();
+	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
 
 	// Comment-202502096 applies.
-	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 
 	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
@@ -73,10 +73,10 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 }
 
 async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId, tokenIdBidding) {
-	let randomWalkNftAddr = await cosmicSignatureGame.randomWalkNft();
+	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
 
 	// Comment-202502096 applies.
-	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddr);
+	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 	
 	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 

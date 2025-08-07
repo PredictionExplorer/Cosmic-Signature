@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# todo-1 This is a legacy script. Delete it.
+
 # todo-1 Some day, someone should implement better error handling in this script.
 
 #### This script should be used for testing, prior that you have to run hardhat task to deploy the contracts

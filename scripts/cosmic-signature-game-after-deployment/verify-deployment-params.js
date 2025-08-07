@@ -1,6 +1,6 @@
 // Used to check the three main fields of deployed contracts: roundActivationTime, charityAddress and randomWalkNft address
 
-// todo-1 Add the testing/logging of `marketingWalletAddr` to this?
+// todo-1 Add the testing/logging of `marketingWalletAddress` to this?
 
 "use strict";
 
@@ -12,18 +12,18 @@ async function main() {
 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 
 	let roundActivationTime = await cosmicSignatureGame.roundActivationTime();
-	let randomWalkNftAddr = await cosmicSignatureGame.randomWalkNft();
-	let charityAddr = await cosmicSignatureGame.charityAddress();
+	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
+	let charityAddress = await cosmicSignatureGame.charityAddress();
 
 	// Comment-202502096 applies.
-	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", charityAddr);
+	let charityWalletContract = await hre.ethers.getContractAt("CharityWallet", charityAddress);
 	
 	let charityWalletContractOwner = await charityWalletContract.owner();
 	let charityDonationsReceiverAddress = await charityWalletContract.charityAddress();
 
 	console.log("bidding round activation time = " + roundActivationTime.toString());
-	console.log("randomWalkNft address = " + randomWalkNftAddr.toString());
-	console.log("charity wallet contract address = " + charityAddr.toString());
+	console.log("randomWalkNft address = " + randomWalkNftAddress.toString());
+	console.log("charity wallet contract address = " + charityAddress.toString());
 	console.log("owner of charity wallet contract = " + charityWalletContractOwner.toString());
 	console.log("charity donations receiver address = " + charityDonationsReceiverAddress.toString());
 }
