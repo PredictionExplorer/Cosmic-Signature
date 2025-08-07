@@ -144,6 +144,7 @@ console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidit
 // This imports a bunch of other packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
 
+const { HardhatUserConfig, subtask, } = require("hardhat/config");
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
@@ -165,7 +166,6 @@ require("hardhat-tracer");
 // // [/ToDo-202412098-1]
 // require("@nomiclabs/hardhat-etherscan");
 
-const { subtask, } = require("hardhat/config");
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
 require("@openzeppelin/hardhat-upgrades");
 
@@ -179,7 +179,7 @@ require("./tasks/cosmic-signature-tasks.js");
 let networkIsMainNet = undefined;
 
 /**
-@param {import("hardhat/types").HardhatRuntimeEnvironment} hre
+@param {import("hardhat")} hre
 */
 function populateNetworkIsMainNetOnce(hre) {
 	if (networkIsMainNet != undefined) {
@@ -253,7 +253,7 @@ function createSolidityLinePreProcessingRegExp()
 // #region
 
 /**
-@param {import("hardhat/types").HardhatRuntimeEnvironment} hre
+@param {import("hardhat")} hre
 @param {string} line
 */
 function preProcessSolidityLine(hre, line) {
@@ -270,7 +270,7 @@ function preProcessSolidityLine(hre, line) {
 // #endregion
 // #region
 
-/** @type {import("hardhat/config").HardhatUserConfig} */
+/** @type {HardhatUserConfig} */
 const hardhatUserConfig = {
 	// #region
 

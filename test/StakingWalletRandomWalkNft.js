@@ -27,7 +27,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const nftIds_ = [];
 
 		for ( let counter_ = numNfts_; ( -- counter_ ) >= 0; ) {
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: 10n ** 18n,});
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const randomWalkNftMintEventLog_ = transactionReceipt_.logs[1];
@@ -44,7 +44,7 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		for (let nftIndex_ = numNfts_; ( -- nftIndex_ ) >= 0; ) {
 			const nftId_ = nftIds_[nftIndex_];
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ =
 				((nftId_ & 2n) == 0n) ?
 				contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_) :
@@ -73,7 +73,7 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		for (let stakeActionIndex_ = numNfts_; ( -- stakeActionIndex_ ) >= 0; ) {
 			const stakeAction_ = stakeActions_[stakeActionIndex_];
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ =
 				((stakeAction_.stakeActionId & 2n) == 0n) ?
 				contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).unstake(stakeAction_.stakeActionId) :
@@ -105,7 +105,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const nftIds_ = [];
 
 		for ( let counter_ = numNfts_; ( -- counter_ ) >= 0; ) {
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: 10n ** 18n,});
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const randomWalkNftMintEventLog_ = transactionReceipt_.logs[1];
@@ -119,7 +119,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		shuffleArray(nftIds_);
 
 		{
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stakeMany(nftIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equals(numNfts_ * 2);
@@ -144,7 +144,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		shuffleArray(stakeActionIds_);
 
 		{
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).unstakeMany(stakeActionIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equals(numNfts_ * 2);
@@ -181,7 +181,7 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		await hre.ethers.provider.send("evm_setAutomine", [false]);
 		try {
-			/** @type {Array<Promise<import("ethers").TransactionResponse>>} */
+			/** @type {Array<Promise<hre.ethers.TransactionResponse>>} */
 			const transactionResponsePromises_ = [];
 			for ( let stakerIndex_ = 0; stakerIndex_ < numStakers_; ++ stakerIndex_ ) {
 				const signer_ = contracts_.signers[stakerIndex_];
@@ -311,7 +311,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const nftId_ = 0n;
 
 		for ( let counter_ = 0; ; ++ counter_ ) {
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_);
 			if (counter_ <= 0) {
 				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
@@ -337,7 +337,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: 10n ** 18n,}));
 		const nftId_ = 0n;
 
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletRandomWalkNftNftStakedTopicHash_) >= 0));
@@ -363,7 +363,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddress, true));
 		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: 10n ** 18n,}));
 		const nftId_ = 0n;
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletRandomWalkNftNftStakedTopicHash_) >= 0));
@@ -403,7 +403,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const nftIds_ = [];
 
 		for ( let counter_ = 10; ( -- counter_ ) >= 0; ) {
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: 10n ** 18n,});
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const randomWalkNftMintEventLog_ = transactionReceipt_.logs[1];
@@ -416,7 +416,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		shuffleArray(nftIds_);
 
 		{
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stakeMany(nftIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const stakingWalletRandomWalkNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(stakingWalletRandomWalkNftNftStakedTopicHash_) >= 0));
@@ -434,7 +434,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const unstakedStakeActionIds_ = {};
 
 		for (const stakeActionId_ of duplicatedStakeActionIds_) {
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).unstake(stakeActionId_);
 			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 			if ( ! unstakedStakeActionIds_[stakeActionId_] ) {

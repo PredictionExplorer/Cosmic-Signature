@@ -27,7 +27,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount();
 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount();
 	// todo-1 Think about `gasLimit`. Maybe add it in some other places. Is there a default value when sending to a testnet or mainnet?
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");

@@ -48,9 +48,9 @@ describe("PrizesWallet-2", function () {
 	it("The registerRoundEndAndDepositEthMany, withdrawEverything, donateToken, claimDonatedToken, donateNft methods", async function () {
 		// #region
 
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_;
-		/** @type {import("ethers").TransactionReceipt} */
+		/** @type {hre.ethers.TransactionReceipt} */
 		let transactionReceipt_;
 
 		// #endregion
@@ -241,7 +241,7 @@ describe("PrizesWallet-2", function () {
 				const prizeWinnerAddress_ = (counter_ <= 0) ? bidderContractAddress_ : contracts_.signers[1].address;
 				const prizeWinnerEthBalanceAmount_ = (await contracts_.prizesWallet["getEthBalanceInfo(address)"](prizeWinnerAddress_))[1];
 				// console.info(hre.ethers.formatEther(prizeWinnerEthBalanceAmount_));
-				/** @type {Promise<import("ethers").TransactionResponse>} */
+				/** @type {Promise<hre.ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
 					(counter_ <= 0) ?
 					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth"]() :
@@ -265,7 +265,7 @@ describe("PrizesWallet-2", function () {
 	it("The donateNft method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.randomWalkNft.connect(contracts_.signers[1]).mint({value: 10n ** (18n - 2n),});
 		await waitForTransactionReceipt(transactionResponsePromise_);
 		let nftId_ = 0n;
@@ -308,7 +308,7 @@ describe("PrizesWallet-2", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize());
 
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.prizesWallet.connect(contracts_.signers[2]).claimManyDonatedNfts([0n, 1n, 2n]);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		let prizesWalletDonatedNftClaimedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletDonatedNftClaimedTopicHash_) >= 0));
@@ -327,7 +327,7 @@ describe("PrizesWallet-2", function () {
 	// #region
 
 	it("Incorrect or forbidden operations", async function () {
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_;
 
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -424,7 +424,7 @@ describe("PrizesWallet-2", function () {
 			for (;;) {
 				// #region
 
-				/** @type {Promise<import("ethers").TransactionResponse>} */
+				/** @type {Promise<hre.ethers.TransactionResponse>} */
 				let transactionResponsePromise_;
 				randomNumber_ = generateRandomUInt32();
 				const choiceCode_ = randomNumber_ % 14;

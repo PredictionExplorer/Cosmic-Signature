@@ -1,25 +1,27 @@
 "use strict";
 
+const hre = require("hardhat");
+
 class State {
 	/** 
 	 * This is the default signer for all contracts.
 	 * It holds no ETH.
 	 * So we must explicitly `connect` to a particular signer for each call.
-	 * @type {import("ethers").Wallet}
+	 * @type {hre.ethers.Wallet}
 	 */
 	dummySigner;
 
-	/** @type {import("ethers").Wallet} */
+	/** @type {hre.ethers.Wallet} */
 	ownerSigner;
-	/** @type {import("ethers").Wallet} */
+	/** @type {hre.ethers.Wallet} */
 	bidder1Signer;
-	/** @type {import("ethers").Wallet} */
+	/** @type {hre.ethers.Wallet} */
 	bidder2Signer;
-	/** @type {import("ethers").Wallet} */
+	/** @type {hre.ethers.Wallet} */
 	bidder3Signer;
-	/** @type {import("ethers").Wallet} */
+	/** @type {hre.ethers.Wallet} */
 	charitySigner;
-	/** @type {import("ethers").Wallet} */
+	/** @type {hre.ethers.Wallet} */
 	treasurerSigner;
 
 	/** @type {object} */

@@ -12,7 +12,7 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 async function bid_simple(testingAcct, cosmicSignatureGame) {
 	let nextEthBidPrice1 = await cosmicSignatureGame.getNextEthBidPrice(1n);
 	let nextEthBidPrice0 = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).bidWithEth((-1), "test bid", { value: nextEthBidPrice0 });
 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
@@ -31,7 +31,7 @@ async function bid_with_rwalk(testingAcct, cosmicSignatureGame, nftId) {
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice);
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).bidWithEth(nftId, "rwalk bid", {value: nextEthPlusRandomWalkNftBidPrice});
 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("BidPlaced");
@@ -52,7 +52,7 @@ async function bid_and_donate(testingAcct, cosmicSignatureGame, donatedTokenId) 
 	await randomWalkNft.connect(testingAcct).setApprovalForAll(cosmicSignatureGame.address, true);
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = cosmicSignatureGame
 		.connect(testingAcct)
 		.bidWithEthAndDonateNft((-1), "donate bid", randomWalkNft.address, donatedTokenId, {value: nextEthBidPrice});
@@ -82,7 +82,7 @@ async function bid_with_rwalk_and_donate(testingAcct, cosmicSignatureGame, donat
 
 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
 	let nextEthPlusRandomWalkNftBidPrice = await cosmicSignatureGame.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice);
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = cosmicSignatureGame
 		.connect(testingAcct)
 		.bidWithEthAndDonateNft(tokenIdBidding, "donate nft rwalk bid", randomWalkNft.address, donatedTokenId, {value: nextEthPlusRandomWalkNftBidPrice});

@@ -217,7 +217,7 @@ describe("MainPrize", function () {
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]).claimMainPrize();
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		++ roundNum_;
@@ -319,7 +319,7 @@ describe("MainPrize", function () {
 		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[2]).doClaimMainPrize();
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 
@@ -431,7 +431,7 @@ describe("MainPrize", function () {
 			expect(cosmicSignatureNftStakingTotalEthRewardAmount_).greaterThan(0n);
 			const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
 			expect(charityEthDonationAmount_).greaterThan(0n);
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize();
 			if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
 				await expect(transactionResponsePromise_)
@@ -496,7 +496,7 @@ describe("MainPrize", function () {
 				const paidEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 				const overpaidEthPrice_ = ethPriceToPayMaxLimit_ - paidEthPrice_;
 				expect(overpaidEthPrice_).greaterThan(0n);
-				/** @type {Promise<import("ethers").TransactionResponse>} */
+				/** @type {Promise<hre.ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = maliciousBidder_.connect(contracts_.signers[4]).doBidWithEth(-1, "", {value: ethPriceToPayMaxLimit_,});
 				if (maliciousBidderModeCode_ > 0n) {
 					await expect(transactionResponsePromise_)
@@ -513,7 +513,7 @@ describe("MainPrize", function () {
 			for ( let maliciousBidderModeCode_ = 3n; maliciousBidderModeCode_ >= 0n; -- maliciousBidderModeCode_ ) {
 				await waitForTransactionReceipt(maliciousBidder_.connect(contracts_.signers[4]).setModeCode(maliciousBidderModeCode_));
 				const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
-				/** @type {Promise<import("ethers").TransactionResponse>} */
+				/** @type {Promise<hre.ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = maliciousBidder_.connect(contracts_.signers[4]).doClaimMainPrize();
 				if (maliciousBidderModeCode_ > 0n) {
 					await expect(transactionResponsePromise_)

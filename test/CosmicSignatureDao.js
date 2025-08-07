@@ -68,7 +68,7 @@ describe("CosmicSignatureDao", function () {
 			const proposalCallData_ = contracts_.cosmicSignatureDao.interface.encodeFunctionData("setVotingDelay", [votingDelay_]);
 			const proposalDescription_ = "Call CosmicSignatureDao.setVotingDelay";
 			const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.cosmicSignatureDao.target], [0n], [proposalCallData_], proposalDescription_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
@@ -91,7 +91,7 @@ describe("CosmicSignatureDao", function () {
 			const proposalCallData_ = contracts_.cosmicSignatureDao.interface.encodeFunctionData("setVotingPeriod", [votingPeriod_]);
 			const proposalDescription_ = "Call CosmicSignatureDao.setVotingPeriod";
 			const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.cosmicSignatureDao.target], [0n], [proposalCallData_], proposalDescription_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
@@ -113,7 +113,7 @@ describe("CosmicSignatureDao", function () {
 			const proposalCallData_ = contracts_.cosmicSignatureDao.interface.encodeFunctionData("setProposalThreshold", [proposalThreshold_]);
 			const proposalDescription_ = "Call CosmicSignatureDao.setProposalThreshold";
 			const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.cosmicSignatureDao.target], [0n], [proposalCallData_], proposalDescription_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
@@ -135,7 +135,7 @@ describe("CosmicSignatureDao", function () {
 			const proposalCallData_ = contracts_.cosmicSignatureDao.interface.encodeFunctionData("updateQuorumNumerator", [quorumNumerator_]);
 			const proposalDescription_ = "Call CosmicSignatureDao.updateQuorumNumerator";
 			const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.cosmicSignatureDao.target], [0n], [proposalCallData_], proposalDescription_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
@@ -237,7 +237,7 @@ describe("CosmicSignatureDao", function () {
 			await expect(contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUnqualifiedSignerIndex_()]).propose([contracts_.charityWalletAddress], [0n], [proposalCallData_], proposalDescription_))
 				.revertedWithCustomError(contracts_.cosmicSignatureDao, "GovernorInsufficientProposerVotes");
 
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			let transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomQualifiedSignerIndex_()]).propose([contracts_.charityWalletAddress], [0n], [proposalCallData_], proposalDescription_);
 			let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);
@@ -357,7 +357,7 @@ describe("CosmicSignatureDao", function () {
 		const proposalCallData_ = contracts_.marketingWallet.interface.encodeFunctionData("setTreasurerAddress", [newTreasurerAddress_]);
 		const proposalDescription_ = "change Marketing Wallet treasurer";
 		const proposalDescriptionHashSum_ = hre.ethers.id(proposalDescription_);
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		const transactionResponsePromise_ = contracts_.cosmicSignatureDao.connect(contracts_.signers[generateRandomUInt32() & 1]).propose([contracts_.marketingWalletAddress], [0n], [proposalCallData_], proposalDescription_);
 		const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		const parsedLog_ = contracts_.cosmicSignatureDao.interface.parseLog(transactionReceipt_.logs[0]);

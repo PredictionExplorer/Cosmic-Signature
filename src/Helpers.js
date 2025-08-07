@@ -10,6 +10,8 @@
 // #endregion
 // #region
 
+const { TransactionResponse } = require("ethers");
+
 // Comment-202409255 applies.
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
@@ -199,7 +201,7 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 // #region `waitForTransactionReceipt`
 
 /**
- * @param {Promise<import("ethers").TransactionResponse>} transactionResponsePromise_
+ * @param {Promise<TransactionResponse>} transactionResponsePromise_
  */
 async function waitForTransactionReceipt(transactionResponsePromise_) {
 	const transactionResponse_ = await transactionResponsePromise_;

@@ -203,7 +203,7 @@ function assertAddressIsValid(address) {
 // #region `tryWaitForTransactionReceipt`
 
 /**
- * @param {Promise<import("ethers").TransactionResponse>} transactionResponsePromise
+ * @param {Promise<hre.ethers.TransactionResponse>} transactionResponsePromise
  */
 async function tryWaitForTransactionReceipt(transactionResponsePromise) {
 	try {
@@ -233,7 +233,7 @@ function checkTransactionErrorObject(transactionErrorObject) {
 
 /**
  * Asserts a `TransactionReceipt.logs` item.
- * @param {import("ethers").Log} event
+ * @param {hre.ethers.Log} event
  */
 function assertEvent(event, contract, eventName, eventArgs) {
 	const parsedEvent = contract.interface.parseLog(event);
@@ -280,8 +280,8 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
  * This is the test function that Comment-202504071 mentions.
  * Comment-202506282 applies.
  * Comment-202506284 applies.
- * @param {import("ethers").Block} prevBlock
- * @param {import("ethers").Block} latestBlock
+ * @param {hre.ethers.Block} prevBlock
+ * @param {hre.ethers.Block} latestBlock
  */
 /*async*/ function generateRandomUInt256Seed(prevBlock, latestBlock/*, blockchainPropertyGetter*/) {
 	let randomNumberSeed = BigInt(prevBlock.hash) >> 1n;

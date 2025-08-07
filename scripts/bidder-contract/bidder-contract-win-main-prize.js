@@ -27,7 +27,7 @@ async function main() {
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGame.address, true));
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(bidderContract.address, true));
 	let rwalkPrice = await randomWalkNft.getMintPrice();
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = randomWalkNft.connect(signer0).mint({ value: rwalkPrice });
 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");

@@ -11,7 +11,7 @@ const numRWalkToMint = 4;
 
 async function mint_random_walk_token(testingAcct, randomWalkNft) {
 	let randomWalkNftMintPrice = await randomWalkNft.getMintPrice();
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = randomWalkNft.connect(testingAcct).mint({value: randomWalkNftMintPrice,});
 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
