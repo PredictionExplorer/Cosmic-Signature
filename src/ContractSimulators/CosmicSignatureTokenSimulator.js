@@ -157,7 +157,7 @@ async function assertCosmicSignatureTokenBalanceAmountsOfRandomAccount(cosmicSig
 
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 	const cstHolderIndex_ = Number(randomNumber_ % BigInt(numCstHolders_));
-	const cstHolderAddress_ = (cstHolderIndex_ < contracts_.signers.length) ? contracts_.signers[cstHolderIndex_].address : contracts_.marketingWalletAddr;
+	const cstHolderAddress_ = (cstHolderIndex_ < contracts_.signers.length) ? contracts_.signers[cstHolderIndex_].address : contracts_.marketingWalletAddress;
 	await assertCosmicSignatureTokenBalanceAmountOf(cosmicSignatureTokenSimulator_, contracts_, cstHolderAddress_);
 }
 

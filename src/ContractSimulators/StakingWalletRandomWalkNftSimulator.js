@@ -52,7 +52,7 @@ const { assertEvent } = require("../ContractTestingHelpers.js");
 				[newStakeActionId_, nftId_, nftOwnerAddress_, newStakeActionId_,]
 			);
 			++ eventIndexWrapper_.value;
-			this.randomWalkNftSimulator.transferFrom(nftOwnerAddress_, contracts_.stakingWalletRandomWalkNftAddr, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.randomWalkNftSimulator.transferFrom(nftOwnerAddress_, contracts_.stakingWalletRandomWalkNftAddress, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 
 		// #endregion

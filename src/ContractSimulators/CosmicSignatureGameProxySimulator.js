@@ -438,7 +438,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// console.info("202504153");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CallerIsNotNftOwner")
-						.withArgs("You are not the owner of this Random Walk NFT.", contracts_.randomWalkNftAddr, randomWalkNftId_, bidderAddress_);
+						.withArgs("You are not the owner of this Random Walk NFT.", contracts_.randomWalkNftAddress, randomWalkNftId_, bidderAddress_);
 					return false;
 				}
 			}
@@ -1116,7 +1116,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// #endregion
 					// #region CST for Marketing Wallet.
 
-					cosmicSignatureTokenMintSpecs_[0] = {account: contracts_.marketingWalletAddr, value: this.marketingWalletCstContributionAmount,};
+					cosmicSignatureTokenMintSpecs_[0] = {account: contracts_.marketingWalletAddress, value: this.marketingWalletCstContributionAmount,};
 
 					// #endregion
 					// #region Minting CSTs.
@@ -1237,7 +1237,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 						transactionReceipt_.logs[eventIndexWrapper_.value],
 						contracts_.cosmicSignatureGameProxy,
 						"FundsTransferredToCharity",
-						[contracts_.charityWalletAddr, charityEthDonationAmount_,]
+						[contracts_.charityWalletAddress, charityEthDonationAmount_,]
 					);
 					++ eventIndexWrapper_.value;
 
@@ -1321,7 +1321,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			const newEthBalanceAmount_ = this.ethBalanceAmount - value_;
 			expect(newEthBalanceAmount_).greaterThanOrEqual(0n);
 			this.ethBalanceAmount = newEthBalanceAmount_;
-			this.charityWalletSimulator.receive(contracts_.cosmicSignatureGameProxyAddr, value_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.charityWalletSimulator.receive(contracts_.cosmicSignatureGameProxyAddress, value_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 
 		// #endregion
@@ -1347,7 +1347,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 // #region `assertCosmicSignatureGameProxySimulator`
 
 async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_) {
-	expect(await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddr)).equal(cosmicSignatureGameProxySimulator_.ethBalanceAmount);
+	expect(await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress)).equal(cosmicSignatureGameProxySimulator_.ethBalanceAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.numEthDonationWithInfoRecords()).equal(cosmicSignatureGameProxySimulator_.numEthDonationWithInfoRecords());
 	await assertCosmicSignatureGameProxySimulatorOfRandomEthDonationWithInfoRecordIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_);
 	expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(cosmicSignatureGameProxySimulator_.lastBidderAddress);
@@ -1391,15 +1391,15 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	expect(await contracts_.cosmicSignatureGameProxy.mainPrizeTimeIncrementIncreaseDivisor()).equal(cosmicSignatureGameProxySimulator_.mainPrizeTimeIncrementIncreaseDivisor);
 	expect(await contracts_.cosmicSignatureGameProxy.timeoutDurationToClaimMainPrize()).equal(cosmicSignatureGameProxySimulator_.timeoutDurationToClaimMainPrize);
 	expect(await contracts_.cosmicSignatureGameProxy.mainEthPrizeAmountPercentage()).equal(cosmicSignatureGameProxySimulator_.mainEthPrizeAmountPercentage);
-	expect(await contracts_.cosmicSignatureGameProxy.token()).equal(contracts_.cosmicSignatureTokenAddr);
-	expect(await contracts_.cosmicSignatureGameProxy.randomWalkNft()).equal(contracts_.randomWalkNftAddr);
-	expect(await contracts_.cosmicSignatureGameProxy.nft()).equal(contracts_.cosmicSignatureNftAddr);
-	expect(await contracts_.cosmicSignatureGameProxy.prizesWallet()).equal(contracts_.prizesWalletAddr);
-	expect(await contracts_.cosmicSignatureGameProxy.stakingWalletRandomWalkNft()).equal(contracts_.stakingWalletRandomWalkNftAddr);
-	expect(await contracts_.cosmicSignatureGameProxy.stakingWalletCosmicSignatureNft()).equal(contracts_.stakingWalletCosmicSignatureNftAddr);
-	expect(await contracts_.cosmicSignatureGameProxy.marketingWallet()).equal(contracts_.marketingWalletAddr);
+	expect(await contracts_.cosmicSignatureGameProxy.token()).equal(contracts_.cosmicSignatureTokenAddress);
+	expect(await contracts_.cosmicSignatureGameProxy.randomWalkNft()).equal(contracts_.randomWalkNftAddress);
+	expect(await contracts_.cosmicSignatureGameProxy.nft()).equal(contracts_.cosmicSignatureNftAddress);
+	expect(await contracts_.cosmicSignatureGameProxy.prizesWallet()).equal(contracts_.prizesWalletAddress);
+	expect(await contracts_.cosmicSignatureGameProxy.stakingWalletRandomWalkNft()).equal(contracts_.stakingWalletRandomWalkNftAddress);
+	expect(await contracts_.cosmicSignatureGameProxy.stakingWalletCosmicSignatureNft()).equal(contracts_.stakingWalletCosmicSignatureNftAddress);
+	expect(await contracts_.cosmicSignatureGameProxy.marketingWallet()).equal(contracts_.marketingWalletAddress);
 	expect(await contracts_.cosmicSignatureGameProxy.marketingWalletCstContributionAmount()).equal(cosmicSignatureGameProxySimulator_.marketingWalletCstContributionAmount);
-	expect(await contracts_.cosmicSignatureGameProxy.charityAddress()).equal(contracts_.charityWalletAddr);
+	expect(await contracts_.cosmicSignatureGameProxy.charityAddress()).equal(contracts_.charityWalletAddress);
 	expect(await contracts_.cosmicSignatureGameProxy.charityEthDonationAmountPercentage()).equal(cosmicSignatureGameProxySimulator_.charityEthDonationAmountPercentage);
 }
 
@@ -1497,7 +1497,7 @@ async function assertCosmicSignatureGameProxySimulatorRandomWalkNft(cosmicSignat
 
 async function assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, bidderAddress_) {
 	const bidderTotalSpentAmountsFromContract_ = await contracts_.cosmicSignatureGameProxy.getBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_.roundNum, bidderAddress_);
-	// console.log(bidderTotalSpentAmountsFromContract_[0], bidderTotalSpentAmountsFromContract_[1]);
+	// console.info(bidderTotalSpentAmountsFromContract_[0], bidderTotalSpentAmountsFromContract_[1]);
 	const bidderInfoFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getBidderInfo(bidderAddress_);
 	expect(bidderTotalSpentAmountsFromContract_[0]).equal(bidderInfoFromContractSimulator_.totalSpentEthAmount);
 	expect(bidderTotalSpentAmountsFromContract_[1]).equal(bidderInfoFromContractSimulator_.totalSpentCstAmount);
@@ -1508,7 +1508,7 @@ async function assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts
 
 async function assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
 	const currentChampionsFromContract_ = await contracts_.cosmicSignatureGameProxy.tryGetCurrentChampions();
-	// console.log(currentChampionsFromContract_[0], currentChampionsFromContract_[1].toString(), currentChampionsFromContract_[2], currentChampionsFromContract_[3].toString());
+	// console.info(currentChampionsFromContract_[0], currentChampionsFromContract_[1].toString(), currentChampionsFromContract_[2], currentChampionsFromContract_[3].toString());
 	const currentChampionsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.tryGetCurrentChampions(latestBlock_);
 	expect(currentChampionsFromContract_[0]).equal(currentChampionsFromContractSimulator_.enduranceChampionAddress);
 	expect(currentChampionsFromContract_[1]).equal(currentChampionsFromContractSimulator_.enduranceChampionDuration);
@@ -1521,7 +1521,7 @@ async function assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cos
 
 async function assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
 	const ethDutchAuctionDurationsFromContract_ = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
-	// console.log(ethDutchAuctionDurationsFromContract_[0].toString(), ethDutchAuctionDurationsFromContract_[1].toString());
+	// console.info(ethDutchAuctionDurationsFromContract_[0].toString(), ethDutchAuctionDurationsFromContract_[1].toString());
 	const ethDutchAuctionDurationsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getEthDutchAuctionDurations(latestBlock_);
 	expect(ethDutchAuctionDurationsFromContract_[0]).equal(ethDutchAuctionDurationsFromContractSimulator_.ethDutchAuctionDuration);
 	expect(ethDutchAuctionDurationsFromContract_[1]).equal(ethDutchAuctionDurationsFromContractSimulator_.ethDutchAuctionElapsedDuration);
@@ -1532,7 +1532,7 @@ async function assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDuration
 
 async function assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
 	const cstDutchAuctionDurationsFromContract_ = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
-	// console.log(cstDutchAuctionDurationsFromContract_[0].toString(), cstDutchAuctionDurationsFromContract_[1].toString());
+	// console.info(cstDutchAuctionDurationsFromContract_[0].toString(), cstDutchAuctionDurationsFromContract_[1].toString());
 	const cstDutchAuctionDurationsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getCstDutchAuctionDurations(latestBlock_);
 	expect(cstDutchAuctionDurationsFromContract_[0]).equal(cstDutchAuctionDurationsFromContractSimulator_.cstDutchAuctionDuration);
 	expect(cstDutchAuctionDurationsFromContract_[1]).equal(cstDutchAuctionDurationsFromContractSimulator_.cstDutchAuctionElapsedDuration);

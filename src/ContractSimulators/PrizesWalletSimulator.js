@@ -102,7 +102,7 @@ const { assertEvent } = require("../ContractTestingHelpers.js");
 // #region `assertPrizesWalletSimulator`
 
 async function assertPrizesWalletSimulator(prizesWalletSimulator_, contracts_, randomNumberSeedWrapper_) {
-	expect(await hre.ethers.provider.getBalance(contracts_.prizesWalletAddr)).equal(prizesWalletSimulator_.ethBalanceAmount);
+	expect(await hre.ethers.provider.getBalance(contracts_.prizesWalletAddress)).equal(prizesWalletSimulator_.ethBalanceAmount);
 	expect(await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes()).equal(prizesWalletSimulator_.timeoutDurationToWithdrawPrizes);
 	await assertPrizesWalletSimulatorOfRandomSigner(prizesWalletSimulator_, contracts_, randomNumberSeedWrapper_);
 }
