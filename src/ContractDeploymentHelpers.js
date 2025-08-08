@@ -5,8 +5,6 @@
 // #endregion
 // #region
 
-const { AbstractSigner } = require("ethers");
-
 // [Comment-202409255]
 // Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
 // So we must do things differently here.
@@ -20,7 +18,7 @@ const { waitForTransactionReceipt } = require("./Helpers.js");
 // #region `deployContracts`
 
 /**
- * @param {AbstractSigner} deployerSigner 
+ * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
  * @param {string} randomWalkNftAddress 
  * @param {string} charityAddress 
  * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
@@ -47,7 +45,7 @@ const deployContracts = async function (
 // #region `deployContractsAdvanced`
 
 /**
- * @param {AbstractSigner} deployerSigner 
+ * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
  * @param {string} cosmicSignatureGameContractName 
  * @param {string} randomWalkNftAddress May be empty.
  * @param {string} charityAddress 
