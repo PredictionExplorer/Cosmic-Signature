@@ -14,8 +14,6 @@ function genericFunctionMatcher(method f, env e, address winner,uint256 round, b
 	require e.msg.sender != currentContract;
 	if (f.selector == sig:PrizesWallet.depositEth(uint256,address).selector) {
     	require currentContract.game() == e.msg.sender;
-		require winner != 0;
-
 		require amount > 0;
 		require e.msg.value == amount;
 		depositEth(e,round,winner);
@@ -28,8 +26,10 @@ function genericFunctionMatcher(method f, env e, address winner,uint256 round, b
 	} else if (f.selector == sig:PrizesWallet.registerRoundEnd(uint256,address).selector) {
 		require winner != 0;
 		registerRoundEnd(e,round,winner);
-	} else if (f.selector == sig:PrizesWallet.withdrawEth(address).selector) {
+	} else if (f.selector == sig:PrizesWallet.withdrawEth().selector) {
 		require currentContract.getUserEthBalance(e.msg.sender) > 0;
+	} else if (f.selector == sig:PrizesWallet.withdrawEth(address).selector) {
+		require currentContract.getUserEthBalance(winner) > 0;
 		require e.msg.sender == winner;
 		withdrawEth(e,winner);
 	} else if (f.selector == sig:PrizesWallet.donateToken(uint256,address,address,uint256).selector) {
@@ -66,7 +66,10 @@ rule balanceChangesCorrectly() {
 
 	if (f.selector == sig:PrizesWallet.depositEth(uint256,address).selector) {
 		assert balanceBefore < balanceAfter, "balance of PrizesWallet did not increase";
-	} else if (f.selector == sig:PrizesWallet.withdrawEth().selector) {
+	} else if (
+		(f.selector == sig:PrizesWallet.withdrawEth(address).selector) ||
+		(f.selector == sig:PrizesWallet.withdrawEth(address).selector)
+	) {
 		assert balanceBefore > balanceAfter, "balance of PrizesWallet did not decrease";
 	} else {
 		assert balanceBefore == balanceAfter, "balance of PrizesWallet changed while it should not change";
