@@ -134,17 +134,20 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// The price decreases linearly over the Dutch auction duration.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
-	/// An offset to add to `block.timestamp`.
-	/// Currently, consequitive blocks can have equal timestamps, which will likely no longer be the case
+	/// An offset to add to `block.timestamp`. It allows to find out what the price will be in the future or was in the past.
+	/// The returned past price will be correct only if no bids were placed afterwards.
+	/// When deciding on this argument value, take into account that currently, on Arbitrum,
+	/// consequitive blocks can have equal timestamps, which will likely no longer be the case
 	/// after Arbitrum decentralizes their blockchain.
 	/// Sensible values:
 	///    0 when the result is to be used within the same transaction.
-	///    0 when bidding programmatically from an external script.
-	///       But the script developer will probably need to change it to 1 after the decentalization.
-	///       Although an external script can have a smarter time aware logic that conditionally passes different values.
-	///    1 when bidding manually, like through our web site, assuming that human hands aren't too fast.
-	///       todo-2 But in the front-end change it to 1 after the decentalization.
-	///    1 for testing on the Hardhat Network.
+	///    0 when bidding programmatically from an external script,
+	///      while calling this method in the context of the "pending" block.
+	///      Although an external script can have a smarter time aware logic that conditionally passes 0 or 1.
+	///    1 (or 0) when bidding manually, like through our web site, assuming that human hands aren't that fast.
+	///      But in this case the safest option would be to pass 0 and call this method in the context of the "pending" block.
+	///    1 for testing on the Hardhat Network, provided this method is called in the context of the "latest" block
+	///      and the next block timestamp will increase by 1.
 	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.
 	/// It can potentially be zero.
