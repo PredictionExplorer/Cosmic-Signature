@@ -26,7 +26,8 @@ async function main() {
 	// Comment-202502096 applies.
 	let stakingWalletCosmicSignatureNft = await hre.ethers.getContractAt("StakingWalletCosmicSignatureNft", stakingWalletCosmicSignatureNftAddress);
 	
-	console.info("staking wallet");console.info(stakingWalletCosmicSignatureNftAddress);
+	console.info("staking wallet");
+	console.info(stakingWalletCosmicSignatureNftAddress);
 	// todo-1 Why do we need this error handling?
 	try {
 		// todo-1 This function no longer exists.
@@ -38,6 +39,7 @@ async function main() {
 	period = await stakingWalletCosmicSignatureNft.minStakePeriod();
 	console.info("Period value: " + period.toString() + " seconds");
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {

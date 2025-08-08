@@ -39,6 +39,7 @@ async function main() {
 	period = await stakingWalletRandomWalkNft.minStakePeriod();
 	console.info("Period value: " + period.toString() + " seconds");
 }
+
 main()
 	.then(() => process.exit(0))
 	.catch(error => {
