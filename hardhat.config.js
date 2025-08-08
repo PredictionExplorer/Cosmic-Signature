@@ -103,10 +103,10 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.73712a01.Linux.g+
 let solidityCompilerPath;
 const solidityCompilerPathGlobal = "/usr/bin/solc";
 // if (ENABLE_SMTCHECKER < 2) {
-	solidityCompilerPath = process.env["HOME"] + `/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-	if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
-		solidityCompilerPath = process.env["HOME"] + "/.local/bin/solc";
-		if ( ! nodeFsModule.existsSync(solidityCompilerPath) ) {
+	solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
+	if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
+		solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
+		if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
 			solidityCompilerPath = solidityCompilerPathGlobal;
 		}
 	}
@@ -127,7 +127,7 @@ if (ENABLE_HARDHAT_PREPROCESSOR) {
 		console.warn("Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
 	if (ENABLE_SMTCHECKER >= 2) {
-		console.log("SMTChecker execution is enabled.");
+		console.info("SMTChecker execution is enabled.");
 	}
 } else {
 	console.warn("Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
@@ -144,6 +144,7 @@ console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidit
 // This imports a bunch of other packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
 
+const { HardhatUserConfig, subtask, } = require("hardhat/config");
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
@@ -165,7 +166,6 @@ require("hardhat-tracer");
 // // [/ToDo-202412098-1]
 // require("@nomiclabs/hardhat-etherscan");
 
-const { subtask, } = require("hardhat/config");
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
 require("@openzeppelin/hardhat-upgrades");
 
@@ -175,11 +175,11 @@ require("./tasks/cosmic-signature-tasks.js");
 // #endregion
 // #region
 
-/** @type boolean | undefined */
+/** @type {boolean | undefined} */
 let networkIsMainNet = undefined;
 
 /**
-@param {import("hardhat/types").HardhatRuntimeEnvironment} hre
+@param {import("hardhat")} hre
 */
 function populateNetworkIsMainNetOnce(hre) {
 	if (networkIsMainNet != undefined) {
@@ -253,7 +253,7 @@ function createSolidityLinePreProcessingRegExp()
 // #region
 
 /**
-@param {import("hardhat/types").HardhatRuntimeEnvironment} hre
+@param {import("hardhat")} hre
 @param {string} line
 */
 function preProcessSolidityLine(hre, line) {
@@ -270,7 +270,7 @@ function preProcessSolidityLine(hre, line) {
 // #endregion
 // #region
 
-/** @type import("hardhat/config").HardhatUserConfig */
+/** @type {HardhatUserConfig} */
 const hardhatUserConfig = {
 	// #region
 
@@ -518,6 +518,7 @@ const hardhatUserConfig = {
 	// ToDo-202412098-1 relates.
 	// [/ToDo-202412097-1]
 	// etherscan: {
+	// 	// todo-1 Name this env. var. better.
 	// 	apiKey: process.env.API_KEY,
 	// },
 	// sourcify: {

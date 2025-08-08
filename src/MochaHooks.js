@@ -29,6 +29,8 @@ async function beforeAll() {
 	}
 }
 
-module.exports.mochaHooks = {
-	beforeAll,
+module.exports = {
+	mochaHooks: {
+		beforeAll,
+	},
 };

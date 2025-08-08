@@ -53,7 +53,7 @@ const { assertEvent } = require("../ContractTestingHelpers.js");
 				[newStakeActionId_, nftId_, nftOwnerAddress_, newNumStakedNfts_, this.rewardAmountPerStakedNft,]
 			);
 			++ eventIndexWrapper_.value;
-			this.cosmicSignatureNftSimulator.transferFrom(nftOwnerAddress_, contracts_.stakingWalletCosmicSignatureNftAddr, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.cosmicSignatureNftSimulator.transferFrom(nftOwnerAddress_, contracts_.stakingWalletCosmicSignatureNftAddress, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 
 		// #endregion
@@ -117,7 +117,7 @@ const { assertEvent } = require("../ContractTestingHelpers.js");
 // #region `assertStakingWalletCosmicSignatureNftSimulator`
 
 async function assertStakingWalletCosmicSignatureNftSimulator(stakingWalletCosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_) {
-	expect(await hre.ethers.provider.getBalance(contracts_.stakingWalletCosmicSignatureNftAddr)).equal(stakingWalletCosmicSignatureNftSimulator_.ethBalanceAmount);
+	expect(await hre.ethers.provider.getBalance(contracts_.stakingWalletCosmicSignatureNftAddress)).equal(stakingWalletCosmicSignatureNftSimulator_.ethBalanceAmount);
 	expect(await contracts_.stakingWalletCosmicSignatureNft.numStakedNfts()).equal(stakingWalletCosmicSignatureNftSimulator_.numStakedNfts);
 	await assertIfRandomCosmicSignatureNftWasUsedForStakingIfPossible(stakingWalletCosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_);
 	expect(await contracts_.stakingWalletCosmicSignatureNft.actionCounter()).equal(stakingWalletCosmicSignatureNftSimulator_.actionCounter);

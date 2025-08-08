@@ -36,7 +36,7 @@ function generateRandomUInt32() {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
-	const randomBytes_ = hre.ethers.randomBytes(4);
+	const randomBytes_ = hre.ethers.randomBytes(32 / 8);
 	const randomNumber_ = hre.ethers.toNumber(randomBytes_);
 	return randomNumber_;
 }
@@ -48,7 +48,7 @@ function generateRandomUInt256() {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
-	const randomBytes_ = hre.ethers.randomBytes(32);
+	const randomBytes_ = hre.ethers.randomBytes(256 / 8);
 	const randomBigInt_ = hre.ethers.toBigInt(randomBytes_);
 	return randomBigInt_;
 }
@@ -102,6 +102,18 @@ function calculateUInt256HashSumOf(value_) {
 	const hashSumAsString_ = hre.ethers.solidityPackedKeccak256(["uint256"], [value_]);
 	const hashSum_ = BigInt(hashSumAsString_);
 	return hashSum_;
+}
+
+// #endregion
+// #region `generateAccountPrivateKeyFromSeed`
+
+/**
+ * @param {bigint} seed_
+ */
+function generateAccountPrivateKeyFromSeed(seed_) {
+	const accountPrivateKeyAsBigInt_ = generateRandomUInt256FromSeed(seed_);
+	const accountPrivateKeyAsString_ = uint256ToPaddedHexString(accountPrivateKeyAsBigInt_);
+	return accountPrivateKeyAsString_;
 }
 
 // #endregion
@@ -160,7 +172,7 @@ function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_
  * @param {number} value_
  */
 function uint32ToPaddedHexString(value_) {
-	return   "0x" + value_.toString(16).padStart(8, "0");
+	return   "0x" + value_.toString(16).padStart(32 / 8 * 2, "0");
 }
 
 // #endregion
@@ -170,7 +182,7 @@ function uint32ToPaddedHexString(value_) {
  * @param {bigint} value_
  */
 function uint256ToPaddedHexString(value_) {
-	return   "0x" + value_.toString(16).padStart(64, "0");
+	return   "0x" + value_.toString(16).padStart(256 / 8 * 2, "0");
 }
 
 // #endregion
@@ -187,7 +199,7 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 // #region `waitForTransactionReceipt`
 
 /**
- * @param {Promise<import("ethers").TransactionResponse>} transactionResponsePromise_
+ * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
  */
 async function waitForTransactionReceipt(transactionResponsePromise_) {
 	const transactionResponse_ = await transactionResponsePromise_;
@@ -209,6 +221,7 @@ module.exports = {
 	generateRandomUInt256FromSeedWrapper,
 	generateRandomUInt256FromSeed,
 	calculateUInt256HashSumOf,
+	generateAccountPrivateKeyFromSeed,
 	parseBooleanEnvironmentVariable,
 	parseIntegerEnvironmentVariable,
 	uint32ToPaddedHexString,

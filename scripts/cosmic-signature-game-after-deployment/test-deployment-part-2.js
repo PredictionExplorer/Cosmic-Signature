@@ -27,7 +27,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount();
 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount();
 	// todo-1 Think about `gasLimit`. Maybe add it in some other places. Is there a default value when sending to a testnet or mainnet?
-	/** @type {Promise<import("ethers").TransactionResponse>} */
+	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).claimMainPrize({ gasLimit: 2500000 });
 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
@@ -37,10 +37,10 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 	expect(parsed_log.args.beneficiaryAddress).equal(testingAcct.address);
 	expect(parsed_log.args.amount).equal(mainEthPrizeAmount);
 
-	let cosmicSignatureNftAddr = await cosmicSignatureGame.nft();
+	let cosmicSignatureNftAddress = await cosmicSignatureGame.nft();
 
 	// Comment-202502096 applies.
-	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddr);
+	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddress);
 
 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerCosmicSignatureNftAwarded");
 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
@@ -50,19 +50,19 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 		expect(ownr).equal(parsed_log.args.winnerAddress);
 	}
 
-	let prizesWalletAddr = await cosmicSignatureGame.prizesWallet();
+	let prizesWalletAddress = await cosmicSignatureGame.prizesWallet();
 
 	// Comment-202502096 applies.
-	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddr);
+	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddress);
 
 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 	await claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 
-	let charityWalletAddr = await cosmicSignatureGame.charityAddress();
+	let charityWalletAddress = await cosmicSignatureGame.charityAddress();
 
 	// Comment-202502096 applies.
-	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddr);
+	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddress);
 	
 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
@@ -73,7 +73,7 @@ async function claim_prize(testingAcct, cosmicSignatureGame) {
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
@@ -84,7 +84,7 @@ async function main() {
 
 	await claim_prize(testingAcct, cosmicSignatureGame);
 
-	console.log("Claim prize test result: success");
+	console.info("Claim prize test result: success");
 }
 
 main()

@@ -1,0 +1,12 @@
+{
+	"deployerPrivateKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+	"cosmicSignatureGameContractName": "CosmicSignatureGame",
+	"randomWalkNftAddress": "",
+	"charityAddress": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+	"transferContractOwnershipToCosmicSignatureDao": false,
+	"roundActivationTime": -1e9,
+	"donateEthToCosmicSignatureGame": false,
+	"ethDonationToCosmicSignatureGameAmountInEth": 0.2,
+	"saveReportFile": true,
+	"reportFilePath": "../deploy-cosmic-signature-contracts-report-hardhat.json"
+}

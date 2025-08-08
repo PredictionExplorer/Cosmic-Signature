@@ -53,7 +53,7 @@ const { assertAddressIsValid, assertEvent } = require("../ContractTestingHelpers
 // #region `assertCharityWalletSimulator`
 
 async function assertCharityWalletSimulator(charityWalletSimulator_, contracts_) {
-	expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(charityWalletSimulator_.ethBalanceAmount);
+	expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress)).equal(charityWalletSimulator_.ethBalanceAmount);
 }
 
 // #endregion

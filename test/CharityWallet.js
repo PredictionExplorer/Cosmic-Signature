@@ -11,30 +11,30 @@ describe("CharityWallet", function () {
 	it("Normal operations", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
-		await expect(contracts_.signers[2].sendTransaction({to: contracts_.charityWalletAddr, value: 6n,}))
+		await expect(contracts_.signers[2].sendTransaction({to: contracts_.charityWalletAddress, value: 6n,}))
 			.emit(contracts_.charityWallet, "DonationReceived")
 			.withArgs(contracts_.signers[2].address, 6n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(6n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress)).equal(6n);
 
 		await expect(contracts_.charityWallet.connect(contracts_.signers[3])["send(uint256)"](2n))
 			.emit(contracts_.charityWallet, "FundsTransferredToCharity")
-			.withArgs(contracts_.charityAcct.address, 2n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(6n - 2n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityAcct.address)).equal(2n);
+			.withArgs(contracts_.charitySigner.address, 2n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress)).equal(6n - 2n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charitySigner.address)).equal(2n);
 
 		await expect(contracts_.charityWallet.connect(contracts_.signers[4])["send(uint256)"](0n))
 			.emit(contracts_.charityWallet, "FundsTransferredToCharity")
-			.withArgs(contracts_.charityAcct.address, 0n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(6n - 2n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityAcct.address)).equal(2n);
+			.withArgs(contracts_.charitySigner.address, 0n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress)).equal(6n - 2n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charitySigner.address)).equal(2n);
 
 		await expect(contracts_.charityWallet.connect(contracts_.signers[5])["send()"]())
 			.emit(contracts_.charityWallet, "FundsTransferredToCharity")
-			.withArgs(contracts_.charityAcct.address, 6n - 2n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddr)).equal(0n);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityAcct.address)).equal(6n);
+			.withArgs(contracts_.charitySigner.address, 6n - 2n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress)).equal(0n);
+		expect(await hre.ethers.provider.getBalance(contracts_.charitySigner.address)).equal(6n);
 
-		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(hre.ethers.ZeroAddress))
+		await expect(contracts_.charityWallet.connect(contracts_.ownerSigner).setCharityAddress(hre.ethers.ZeroAddress))
 			.emit(contracts_.charityWallet, "CharityAddressChanged")
 			.withArgs(hre.ethers.ZeroAddress);
 
@@ -49,32 +49,32 @@ describe("CharityWallet", function () {
 	it("ETH transfer to charity failure", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
-		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerAcct);
+		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerSigner);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 		await brokenEthReceiver_.waitForDeployment();
-		const brokenEthReceiverAddr_ = await brokenEthReceiver_.getAddress();
-		// await waitForTransactionReceipt(brokenEthReceiver_.transferOwnership(contracts_.ownerAcct.address));
+		const brokenEthReceiverAddress_ = await brokenEthReceiver_.getAddress();
+		// await waitForTransactionReceipt(brokenEthReceiver_.transferOwnership(contracts_.ownerSigner.address));
 		
-		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(brokenEthReceiverAddr_))
+		await expect(contracts_.charityWallet.connect(contracts_.ownerSigner).setCharityAddress(brokenEthReceiverAddress_))
 			.emit(contracts_.charityWallet, "CharityAddressChanged")
-			.withArgs(brokenEthReceiverAddr_);
-		await expect(contracts_.signers[2].sendTransaction({to: contracts_.charityWalletAddr, value: 3n,}))
+			.withArgs(brokenEthReceiverAddress_);
+		await expect(contracts_.signers[2].sendTransaction({to: contracts_.charityWalletAddress, value: 3n,}))
 			.emit(contracts_.charityWallet, "DonationReceived")
 			.withArgs(contracts_.signers[2].address, 3n);
 
 		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
 			await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[5]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_));
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			let transactionResponsePromise_ = contracts_.charityWallet.connect(contracts_.signers[1])["send()"]();
 			let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 			if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
 				await transactionResponsePromiseAssertion_
 					.revertedWithCustomError(contracts_.charityWallet, "FundTransferFailed")
-					.withArgs("ETH transfer to charity failed.", brokenEthReceiverAddr_, 3n);
+					.withArgs("ETH transfer to charity failed.", brokenEthReceiverAddress_, 3n);
 			} else {
 				await transactionResponsePromiseAssertion_
 					.emit(contracts_.charityWallet, "FundsTransferredToCharity")
-					.withArgs(brokenEthReceiverAddr_, 3n);
+					.withArgs(brokenEthReceiverAddress_, 3n);
 			}
 		}
 	});
@@ -93,20 +93,20 @@ describe("CharityWallet", function () {
 	it("Reentries", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
-		const maliciousCharityFactory_ = await hre.ethers.getContractFactory("MaliciousCharity", contracts_.deployerAcct);
-		const maliciousCharity_ = await maliciousCharityFactory_.deploy(contracts_.charityWalletAddr);
+		const maliciousCharityFactory_ = await hre.ethers.getContractFactory("MaliciousCharity", contracts_.deployerSigner);
+		const maliciousCharity_ = await maliciousCharityFactory_.deploy(contracts_.charityWalletAddress);
 		await maliciousCharity_.waitForDeployment();
-		const maliciousCharityAddr_ = await maliciousCharity_.getAddress();
-		// await waitForTransactionReceipt(maliciousCharity_.transferOwnership(contracts_.ownerAcct.address));
+		const maliciousCharityAddress_ = await maliciousCharity_.getAddress();
+		// await waitForTransactionReceipt(maliciousCharity_.transferOwnership(contracts_.ownerSigner.address));
 		
-		await expect(contracts_.charityWallet.connect(contracts_.ownerAcct).setCharityAddress(maliciousCharityAddr_))
+		await expect(contracts_.charityWallet.connect(contracts_.ownerSigner).setCharityAddress(maliciousCharityAddress_))
 			.emit(contracts_.charityWallet, "CharityAddressChanged")
-			.withArgs(maliciousCharityAddr_);
+			.withArgs(maliciousCharityAddress_);
 
 		for ( let maliciousCharityModeCode_ = 3n; maliciousCharityModeCode_ >= 0n; -- maliciousCharityModeCode_ ) {
 			await waitForTransactionReceipt(maliciousCharity_.connect(contracts_.signers[5]).setModeCode(maliciousCharityModeCode_));
 			for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
-				/** @type {Promise<import("ethers").TransactionResponse>} */
+				/** @type {Promise<hre.ethers.TransactionResponse>} */
 				let transactionResponsePromise_;
 				if (counter_ <= 0) {
 					transactionResponsePromise_ = contracts_.charityWallet.connect(contracts_.signers[1])["send()"]();
@@ -117,11 +117,11 @@ describe("CharityWallet", function () {
 				if (maliciousCharityModeCode_ > 0n) {
 					await transactionResponsePromiseAssertion_
 						.revertedWithCustomError(contracts_.charityWallet, "FundTransferFailed")
-						.withArgs("ETH transfer to charity failed.", maliciousCharityAddr_, 0n);
+						.withArgs("ETH transfer to charity failed.", maliciousCharityAddress_, 0n);
 				} else {
 					await transactionResponsePromiseAssertion_
 						.emit(contracts_.charityWallet, "FundsTransferredToCharity")
-						.withArgs(maliciousCharityAddr_, 0n);
+						.withArgs(maliciousCharityAddress_, 0n);
 				}
 			}
 		}

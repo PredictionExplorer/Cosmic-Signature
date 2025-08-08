@@ -7,4 +7,4 @@ const input = {
 	mainPrizeTimeIncrementInMicroSeconds: 1n * 60n * 60n * 1_000_000n,
 };
 
-module.exports = input;
+module.exports = { input, };

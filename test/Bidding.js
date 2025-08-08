@@ -89,7 +89,7 @@ describe("Bidding", function () {
 
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).halveEthDutchAuctionEndingBidPrice())
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FirstRound");
 
 		// #endregion
@@ -118,7 +118,7 @@ describe("Bidding", function () {
 			// await hre.ethers.provider.send("evm_mine");
 
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
+			await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidHasBeenPlacedInCurrentRound");
 			const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
@@ -155,7 +155,7 @@ describe("Bidding", function () {
 					// await hre.ethers.provider.send("evm_mine");
 				}
 
-				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
+				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
 					.withArgs("Too early.");
 
@@ -189,7 +189,7 @@ describe("Bidding", function () {
 						// [Comment-202508158]
 						// The next call to this method will succeed, even if we do not sleep after this one.
 						// [/Comment-202508158]
-						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice())
+						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 							.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
 							.withArgs("Too early.");
 
@@ -225,8 +225,8 @@ describe("Bidding", function () {
 					// #endregion
 					// #region
 
-					/** @type {Promise<import("ethers").TransactionResponse>} */
-					const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).halveEthDutchAuctionEndingBidPrice();
+					/** @type {Promise<hre.ethers.TransactionResponse>} */
+					const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice();
 					const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 
 					// #endregion
@@ -334,8 +334,8 @@ describe("Bidding", function () {
 						configurationRestored_ = true;
 
 						// Comment-202508102 relates and/or applies.
-						await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionDurationDivisor(ethDutchAuctionDurationDivisor_));
-						await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setEthDutchAuctionEndingBidPriceDivisor(ethDutchAuctionEndingBidPriceDivisor_));
+						await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setEthDutchAuctionDurationDivisor(ethDutchAuctionDurationDivisor_));
+						await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setEthDutchAuctionEndingBidPriceDivisor(ethDutchAuctionEndingBidPriceDivisor_));
 
 						if ( // [Comment-202508144]
 						     // According to Comment-202508142, this cannot be smaller.
@@ -497,15 +497,15 @@ describe("Bidding", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// Comment-202506033 applies.
-		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
-		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 		await bidderContract_.waitForDeployment();
-		const bidderContractAddr_ = await bidderContract_.getAddress();
+		const bidderContractAddress_ = await bidderContract_.getAddress();
 
 		const ethAmountSent_ = 10n ** (18n - 2n);
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doBidWithEth({value: ethAmountSent_,}));
-		let bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
+		let bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddress_);
 		let bidderContractExpectedBalanceAmountAfter_ = ethAmountSent_ - nextEthBidPrice_;
 		expect(bidderContractBalanceAmountAfter_).equal(bidderContractExpectedBalanceAmountAfter_);
 	});
@@ -514,13 +514,13 @@ describe("Bidding", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// Comment-202506033 applies.
-		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
-		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 		await bidderContract_.waitForDeployment();
-		const bidderContractAddr_ = await bidderContract_.getAddress();
+		const bidderContractAddress_ = await bidderContract_.getAddress();
 
-		// await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.cosmicSignatureGameProxyAddr, true));
-		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddr_, true));
+		// await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(contracts_.cosmicSignatureGameProxyAddress, true));
+		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).setApprovalForAll(bidderContractAddress_, true));
 
 		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
 		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(contracts_.signers[0]).mint({value: randomWalkNftMintPrice_,}));
@@ -528,7 +528,7 @@ describe("Bidding", function () {
 		const ethAmountSent_ = 10n ** (18n - 2n);
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[0]).doBidWithEthPlusRandomWalkNft(randomWalkNftId_, {value: ethAmountSent_,}));
-		let bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
+		let bidderContractBalanceAmountAfter_ = await hre.ethers.provider.getBalance(bidderContractAddress_);
 		let discountedBidPrice_ = await contracts_.cosmicSignatureGameProxy.getEthPlusRandomWalkNftBidPrice(nextEthBidPrice_);
 		expect(discountedBidPrice_).equal((nextEthBidPrice_ + 1n) / 2n);
 		let bidderContractExpectedBalanceAmountAfter_ = ethAmountSent_ - discountedBidPrice_;
@@ -538,10 +538,10 @@ describe("Bidding", function () {
 	it("ETH refund receive by bidder reversal", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
-		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerAcct);
-		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddr);
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 		await bidderContract_.waitForDeployment();
-		const bidderContractAddr_ = await bidderContract_.getAddress();
+		const bidderContractAddress_ = await bidderContract_.getAddress();
 
 		const ethBidAmount_ = 10n ** 18n;
 
@@ -554,15 +554,15 @@ describe("Bidding", function () {
 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[1]).setEthDepositAcceptanceModeCode(2n));
 		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth({value: ethBidAmount_,}))
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
-			.withArgs("ETH refund transfer failed.", bidderContractAddr_, ethRefundAmount_);
+			.withArgs("ETH refund transfer failed.", bidderContractAddress_, ethRefundAmount_);
 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[1]).setEthDepositAcceptanceModeCode(1n));
 		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth({value: ethBidAmount_,}))
 			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
-			.withArgs("ETH refund transfer failed.", bidderContractAddr_, ethRefundAmount_);
+			.withArgs("ETH refund transfer failed.", bidderContractAddress_, ethRefundAmount_);
 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[1]).setEthDepositAcceptanceModeCode(0n));
 		await expect(bidderContract_.connect(contracts_.signers[1]).doBidWithEth({value: ethBidAmount_,}))
 			.emit(contracts_.cosmicSignatureGameProxy, "BidPlaced");
-		const bidderContractEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(bidderContractAddr_);
+		const bidderContractEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(bidderContractAddress_);
 		expect(bidderContractEthBalanceAmountAfterTransaction_).equal(ethRefundAmount_);
 	});
 
@@ -625,7 +625,7 @@ describe("Bidding", function () {
 
 		cstDutchAuctionRemainingDuration_ = cstDutchAuctionDuration_ - 1n;
 		nextCstBidExpectedPrice_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
-		/** @type {Promise<import("ethers").TransactionResponse>} */
+		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(nextCstBidExpectedPrice_ * 10n, "cst bid");
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
@@ -642,13 +642,13 @@ describe("Bidding", function () {
 	it("Cosmic Signature Token first mint reversal", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
-		const brokenCosmicSignatureTokenFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken", contracts_.deployerAcct);
+		const brokenCosmicSignatureTokenFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken", contracts_.deployerSigner);
 		const brokenCosmicSignatureToken_ = await brokenCosmicSignatureTokenFactory_.deploy(0n);
 		await brokenCosmicSignatureToken_.waitForDeployment();
-		const brokenCosmicSignatureTokenAddr_ = await brokenCosmicSignatureToken_.getAddress();
+		const brokenCosmicSignatureTokenAddress_ = await brokenCosmicSignatureToken_.getAddress();
 
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setCosmicSignatureToken(brokenCosmicSignatureTokenAddr_));
-		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct), 2n);
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setCosmicSignatureToken(brokenCosmicSignatureTokenAddress_));
+		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
 
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})).revertedWith("Test mint failed.");
@@ -658,13 +658,13 @@ describe("Bidding", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const numTokenMintsPerBid_ = 1n;
-		const brokenCosmicSignatureTokenFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken", contracts_.deployerAcct);
+		const brokenCosmicSignatureTokenFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureToken", contracts_.deployerSigner);
 		const brokenCosmicSignatureToken_ = await brokenCosmicSignatureTokenFactory_.deploy(numTokenMintsPerBid_);
 		await brokenCosmicSignatureToken_.waitForDeployment();
-		const brokenCosmicSignatureTokenAddr_ = await brokenCosmicSignatureToken_.getAddress();
+		const brokenCosmicSignatureTokenAddress_ = await brokenCosmicSignatureToken_.getAddress();
 
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct).setCosmicSignatureToken(brokenCosmicSignatureTokenAddr_));
-		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerAcct), 2n);
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setCosmicSignatureToken(brokenCosmicSignatureTokenAddress_));
+		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
 
 		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
@@ -679,10 +679,10 @@ describe("Bidding", function () {
 	it("Reentries by donated ERC-20 and ERC-721 token contracts", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 	
-		const maliciousTokenFactory_ = await hre.ethers.getContractFactory("MaliciousToken", contracts_.deployerAcct);
-		const maliciousToken_ = await maliciousTokenFactory_.deploy(hre.ethers.ZeroAddress, contracts_.cosmicSignatureGameProxyAddr);
+		const maliciousTokenFactory_ = await hre.ethers.getContractFactory("MaliciousToken", contracts_.deployerSigner);
+		const maliciousToken_ = await maliciousTokenFactory_.deploy(hre.ethers.ZeroAddress, contracts_.cosmicSignatureGameProxyAddress);
 		await maliciousToken_.waitForDeployment();
-		const maliciousTokenAddr_ = await maliciousToken_.getAddress();
+		const maliciousTokenAddress_ = await maliciousToken_.getAddress();
 
 		const ethPriceToPayMaxLimit_ = 10n ** (18n - 2n);
 		const ethDonationAmount_ = ethPriceToPayMaxLimit_ * 1_000n;
@@ -703,12 +703,12 @@ describe("Bidding", function () {
 				// await hre.ethers.provider.send("evm_mine");
 
 				// Placing an ETH bid to get some CST.
-				await waitForTransactionReceipt(contracts_.signers[0].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddr, value: ethPriceToPayMaxLimit_,}));
+				await waitForTransactionReceipt(contracts_.signers[0].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddress, value: ethPriceToPayMaxLimit_,}));
 			}
 			return nextCstBidPrice_;
 		};
 
-		await waitForTransactionReceipt(contracts_.signers[0].sendTransaction({to: maliciousTokenAddr_, value: ethDonationAmount_,}));
+		await waitForTransactionReceipt(contracts_.signers[0].sendTransaction({to: maliciousTokenAddress_, value: ethDonationAmount_,}));
 
 		for ( let counter_ = 0; counter_ < 200; ++ counter_ ) {
 			let randomNumber_ = generateRandomUInt32();
@@ -716,33 +716,33 @@ describe("Bidding", function () {
 			// Comment-202507062 applies.
 			const maliciousTokenModeCode_ = BigInt(randomNumber_ % (10 * 2) + 1);
 
-			// console.log(`202507155 ${maliciousTokenModeCode_}`);
+			// console.info(`202507155 ${maliciousTokenModeCode_}`);
 			await waitForTransactionReceipt(maliciousToken_.connect(contracts_.signers[0]).setModeCode(maliciousTokenModeCode_));
-			/** @type {Promise<import("ethers").TransactionResponse>} */
+			/** @type {Promise<hre.ethers.TransactionResponse>} */
 			let transactionResponsePromise_;
 			randomNumber_ = generateRandomUInt32();
 			const choiceCode_ = randomNumber_ % (( ! ethBidPlaced_ ) ? 2 : 4);
 			switch (choiceCode_) {
 				case 0: {
 					// console.info("202507047");
-					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEthAndDonateToken(-1n, "", maliciousTokenAddr_, 1n, {value: ethPriceToPayMaxLimit_,});
+					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEthAndDonateToken(-1n, "", maliciousTokenAddress_, 1n, {value: ethPriceToPayMaxLimit_,});
 					break;
 				}
 				case 1: {
 					// console.info("202507048");
-					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEthAndDonateNft(-1n, "", maliciousTokenAddr_, 0n, {value: ethPriceToPayMaxLimit_,})
+					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEthAndDonateNft(-1n, "", maliciousTokenAddress_, 0n, {value: ethPriceToPayMaxLimit_,})
 					break;
 				}
 				case 2: {
 					// console.info("202507049");
 					const nextCstBidPrice_ = await ensureSignerCstBalanceIsSufficientToPlaceCstBid_();
-					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithCstAndDonateToken(nextCstBidPrice_, "", maliciousTokenAddr_, 1n)
+					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithCstAndDonateToken(nextCstBidPrice_, "", maliciousTokenAddress_, 1n)
 					break;
 				}
 				default: {
 					// console.info("202507050");
 					const nextCstBidPrice_ = await ensureSignerCstBalanceIsSufficientToPlaceCstBid_();
-					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithCstAndDonateNft(nextCstBidPrice_, "", maliciousTokenAddr_, 0n);
+					transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithCstAndDonateNft(nextCstBidPrice_, "", maliciousTokenAddress_, 0n);
 					break;
 				}
 			}

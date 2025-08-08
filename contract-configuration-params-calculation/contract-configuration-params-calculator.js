@@ -1,10 +1,13 @@
 // [Comment-202508288]
 // This script calculates some contract configuration params.
 // [/Comment-202508288]
+// [Comment-202509065]
+// Similar logic exists in multiple places.
+// [/Comment-202509065]
 
 "use strict";
 
-const input = require("./input.js");
+const { input } = require("./input.js");
 
 calculateDivisor(input.ethDutchAuctionDuration, "ethDutchAuctionDurationDivisor");
 calculateDivisor(input.cstDutchAuctionDuration, "cstDutchAuctionDurationDivisor");

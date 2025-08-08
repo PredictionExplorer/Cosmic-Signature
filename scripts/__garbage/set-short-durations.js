@@ -15,15 +15,15 @@ async function set_parameters(testingAcct, cosmicSignatureGame) {
 	await cosmicSignatureGame.connect(testingAcct).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor);
 	const timeoutDurationToClaimMainPrize = 60n * 3n / 2n;
 	await cosmicSignatureGame.connect(testingAcct).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize);
-	console.log("Main prize time increment in microseconds =", mainPrizeTimeIncrementInMicroSeconds);
-	console.log("Initial duration until main prize divisor =", initialDurationUntilMainPrizeDivisor);
-	console.log("Timeout duration to claim main prize =", timeoutDurationToClaimMainPrize);
+	console.info("Main prize time increment in microseconds =", mainPrizeTimeIncrementInMicroSeconds);
+	console.info("Initial duration until main prize divisor =", initialDurationUntilMainPrizeDivisor);
+	console.info("Timeout duration to claim main prize =", timeoutDurationToClaimMainPrize);
 }
 
 async function main() {
 	let privKey = process.env.PRIVKEY;
 	if (privKey == undefined || privKey.length <= 0) {
-		console.log(
+		console.info(
 			// todo-1 "scripts/deploy.js" no longer exists.
 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 		);
@@ -34,7 +34,7 @@ async function main() {
 
 	await set_parameters(testingAcct, cosmicSignatureGame);
 
-	console.log("Completed.");
+	console.info("Completed.");
 }
 
 main()
