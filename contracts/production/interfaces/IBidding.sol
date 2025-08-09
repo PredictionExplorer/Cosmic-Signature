@@ -135,7 +135,8 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
 	/// An offset to add to `block.timestamp`. It allows to find out what the price will be in the future or was in the past.
-	/// The returned past price will be correct only if no bids were placed afterwards.
+	/// The returned past price will not necessarily be correct for a timestamp before certain actions or time points.
+	/// For the most up-to-date result, call this method in the context of the "pending" block.
 	/// When deciding on this argument value, take into account that currently, on Arbitrum,
 	/// consequitive blocks can have equal timestamps, which will likely no longer be the case
 	/// after Arbitrum decentralizes their blockchain.
@@ -144,10 +145,12 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	///    0 when bidding programmatically from an external script,
 	///      while calling this method in the context of the "pending" block.
 	///      Although an external script can have a smarter time aware logic that conditionally passes 0 or 1.
-	///    1 (or 0) when bidding manually, like through our web site, assuming that human hands aren't that fast.
-	///      But in this case the safest option would be to pass 0 and call this method in the context of the "pending" block.
-	///    1 for testing on the Hardhat Network, provided this method is called in the context of the "latest" block
+	///    0 when bidding manually, like through our web site, 
+	///      while calling this method in the context of the "pending" block.
+	///      Alternatively, it could make sense to pass 1, assuming that human hands aren't that fast.
+	///    1 for testing on Hardhat Network, provided this method is called in the context of the "latest" block
 	///      and the next block timestamp will increase by 1.
+	///      Comment-202501193 relates.
 	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.
 	/// It can potentially be zero.

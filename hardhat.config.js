@@ -446,7 +446,7 @@ const hardhatUserConfig = {
 			// Block timestamp increment is always 1 second and is not configurable, with caveats described in the issue 3.
 			// Issue 1. So we cannot easily test adjacent blocks with equal timestamps.
 			// 
-			// Issue 2.  Hardhat advances the next block timestamp to at least the current system time.
+			// Issue 2.  Hardhat Network advances the next block timestamp to at least the current system time.
 			// As a result, if `loadFixture` was already called, after it's called again, the next block timestamp can leap by many seconds,
 			// so if we need to use the last block timestamp immediately after calling `loadFixture`,
 			// we typically must mine a dummy block beforehand.
