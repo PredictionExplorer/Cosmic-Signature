@@ -122,7 +122,7 @@ abstract contract MainPrize is
 				CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.")
 			);
 
-			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
+			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
 			require(
 				durationUntilOperationIsPermitted_ <= int256(0),
 				CosmicSignatureErrors.MainPrizeClaimDenied(

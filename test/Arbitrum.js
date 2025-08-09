@@ -51,7 +51,7 @@ describe("Arbitrum", function () {
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationToWaitBeforePlacingFirstBid_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
+			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			/** @type {Promise<hre.ethers.TransactionResponse>} */

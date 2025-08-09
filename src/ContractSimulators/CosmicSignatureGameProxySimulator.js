@@ -132,9 +132,9 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
-		// #region `getDurationUntilMainPrize`
+		// #region `getDurationUntilMainPrizeRaw`
 
-		getDurationUntilMainPrize: function(latestBlock_) {
+		getDurationUntilMainPrizeRaw: function(latestBlock_) {
 			return this.mainPrizeTime - BigInt(latestBlock_.timestamp);
 		},
 
@@ -850,7 +850,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					return false;
 				}
 				const durationUntilOperationIsPermitted_ =
-					this.getDurationUntilMainPrize(transactionBlock_) + this.timeoutDurationToClaimMainPrize;
+					this.getDurationUntilMainPrizeRaw(transactionBlock_) + this.timeoutDurationToClaimMainPrize;
 				if ( ! (durationUntilOperationIsPermitted_ <= 0n) ) {
 					// console.info("202504254");
 					await expect(transactionResponsePromise_)
