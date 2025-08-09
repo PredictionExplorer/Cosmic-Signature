@@ -28,11 +28,11 @@ async function main() {
 	let multiplier = await cosmicSignatureGame.timesEthBidPrice()
 	// let bidParams = { message: "open bid", randomWalkNftId: -1, isOpenBid: true };
 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
-	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	console.info("nextEthBidPrice before:", nextEthBidPrice);
 	// todo-1 Think about `gasLimit`. Maybe add it in some other places. Is there a default value when sending to a testnet or mainnet?
 	await cosmicSignatureGame.connect(testingAcct).bidWithEth(/*params*/ (-1), true, "open bid", {value: nextEthBidPrice * multiplier, gasLimit: 30000000});
-	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	console.info("nextEthBidPrice after:", nextEthBidPrice);
 }
 

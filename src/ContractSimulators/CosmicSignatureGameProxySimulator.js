@@ -561,9 +561,9 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
-		// #region `getNextEthBidPrice`
+		// #region `getNextEthBidPriceAdvanced`
 
-		getNextEthBidPrice: function(blockBeforeTransaction_, currentTimeOffset_) {
+		getNextEthBidPriceAdvanced: function(blockBeforeTransaction_, currentTimeOffset_) {
 			expect(typeof currentTimeOffset_).equal("bigint");
 			let nextEthBidPrice_;
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
@@ -731,9 +731,9 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		},
 
 		// #endregion
-		// #region `getNextCstBidPrice`
+		// #region `getNextCstBidPriceAdvanced`
 
-		getNextCstBidPrice: function(blockBeforeTransaction_, currentTimeOffset_) {
+		getNextCstBidPriceAdvanced: function(blockBeforeTransaction_, currentTimeOffset_) {
 			expect(typeof currentTimeOffset_).equal("bigint");
 			/*const*/ let [cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_] = this._getCstDutchAuctionTotalAndRemainingDurations(blockBeforeTransaction_);
 			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;

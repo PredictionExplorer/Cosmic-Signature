@@ -87,7 +87,12 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [/Comment-202503155]
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable;
 
+	/// @notice Calls `getNextEthBidPriceAdvanced` with `currentTimeOffset_ = 0`.
+	/// Comments near `getNextEthBidPriceAdvanced` apply.
+	function getNextEthBidPrice() external view returns (uint256);
+
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
+	/// See also: `getNextEthBidPrice`.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return The next ETH bid price, in Wei.
 	/// @dev
@@ -98,7 +103,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// That said, given that we mint a nonzero CST reward for each bid, it's unlikely that the CST bid price will fall below that.
 	/// todo-1 +++ Develop a test that makes ETH prices minimal.
 	/// [/Comment-202503162]
-	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns (uint256);
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @notice Calculates and returns an ETH + Random Walk NFT bid price, given an ETH only bid price.
 	/// @dev Comment-202503162 applies.
@@ -130,8 +135,13 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param message_ Comment-202503155 applies.
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
+	/// @notice Calls `getNextCstBidPriceAdvanced` with `currentTimeOffset_ = 0`.
+	/// Comments near `getNextCstBidPriceAdvanced` apply.
+	function getNextCstBidPrice() external view returns (uint256);
+
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration.
+	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
 	/// An offset to add to `block.timestamp`. It allows to find out what the price will be in the future or was in the past.
@@ -156,7 +166,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// It can potentially be zero.
 	/// Comment-202501022 applies.
 	/// @dev Comment-202503162 applies.
-	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns (uint256);
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// Comment-202501022 applies to the returned elapsed duration.

@@ -13,11 +13,11 @@ async function main() {
 	// Comment-202502096 applies.
 	const cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddress);
 
-	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer0).bidWithEth((-1), "signer0 bid", {value: nextEthBidPrice,}));
-	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer1).bidWithEth((-1), "signer1 bid", {value: nextEthBidPrice,}));
-	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer2).bidWithEth((-1), "signer2 bid", {value: nextEthBidPrice,}));
 	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
 
@@ -36,11 +36,11 @@ async function main() {
 	let nftId = parsed_log.args.tokenId;
 	console.info(`nftId = ${nftId}`);
 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
-	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	// todo-1 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddress, nftId, {value: nextEthBidPrice,}));
 
-	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice(0n);
+	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice,}));
 
 	rwalkPrice = await randomWalkNft.getMintPrice();
