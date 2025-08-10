@@ -1,6 +1,7 @@
 // #region Comment
 
 // See also: "../scripts/helpers.js".
+// todo-1 Am I going to delete it?
 
 // #endregion
 // #region
@@ -13,6 +14,25 @@
 // Comment-202409255 applies.
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
+
+// #endregion
+// #region
+
+// Supported values:
+//    1 to run tests under the "tests" subfolder deterministically and at the maximum speed.
+//    2 to simulate a live blockchain, which is designed for tests under the "scripts" subfolder.
+const HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", 0);
+
+switch (HARDHAT_MODE_CODE) {
+	case 1:
+	case 2: {
+		break;
+	}
+	default: {
+		throw new Error("The HARDHAT_MODE_CODE environment variable is either not set or is invalid.")
+		// break;
+	}	
+}
 
 // #endregion
 // #region `shuffleArray`
@@ -214,6 +234,7 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 // #region
 
 module.exports = {
+	HARDHAT_MODE_CODE,
 	shuffleArray,
 	generateRandomUInt32,
 	generateRandomUInt256,

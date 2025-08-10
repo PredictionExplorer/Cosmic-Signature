@@ -27,6 +27,7 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
+		export HARDHAT_MODE_CODE='1'
 		'npx' 'hardhat' 'check' >> "${SolHintOutputFileName}"
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Check failed. Press any key to finish.'

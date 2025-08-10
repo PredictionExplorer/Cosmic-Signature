@@ -9,8 +9,7 @@ const { waitForTransactionReceipt } = require("../src/Helpers.js");
 // Comment-202409255 relates.
 const { deployContractsAdvanced } = require("../src/ContractDeploymentHelpers.js");
 
-// Invocation example:
-// npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath tasks/config/deploy-cosmic-signature-contracts-config-hardhat.json --network hardhat
+// Comment-202509093 relates.
 task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
 	const deployConfigFilePath = args["deployconfigfilepath"];
 	if (deployConfigFilePath == undefined || deployConfigFilePath.length <= 0) {

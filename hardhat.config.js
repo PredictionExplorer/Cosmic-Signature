@@ -408,12 +408,11 @@ const hardhatUserConfig = {
 	networks: {
 		hardhat: {
 			// Comment-202501193 relates and/or applies.
-			initialDate:
-				// "2002-01-01",
-				"2025-01-01",
+			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : (new Date()).toISOString(),
 
-			// // Comment-202501193 relates and/or applies.
-			// allowBlocksWithSameTimestamp: true,
+			// By default, this is `false`.
+			// Comment-202501193 relates and/or applies.
+			allowBlocksWithSameTimestamp: (helpersModule.HARDHAT_MODE_CODE != 2) ? false : true,
 
 			allowUnlimitedContractSize: true,
 
@@ -427,7 +426,7 @@ const hardhatUserConfig = {
 			// [Comment-202508267]
 			// Similar magic numbers exist in multiple places.
 			// [/Comment-202508267]
-			gas: 30_000_000,
+			gas: (helpersModule.HARDHAT_MODE_CODE == 1) ? 30_000_000 : "auto",
 
 			// [Comment-202507252]
 			// By default, this is 30_000_000.
@@ -442,7 +441,8 @@ const hardhatUserConfig = {
 			// initialBaseFeePerGas: 1e9,
 
 			// [Comment-202501193]
-			// This configures to deterministically mine a block when a transaction request arrives.
+			// When `HARDHAT_MODE_CODE` is 1, this configures to deterministically mine a block
+			// when a transaction request arrives.
 			// Block timestamp increment is always 1 second and is not configurable, with caveats described in the issue 3.
 			// Issue 1. So we cannot easily test adjacent blocks with equal timestamps.
 			// 
@@ -465,15 +465,15 @@ const hardhatUserConfig = {
 			// Although a constant `initialDate` makes it possible to more deterministically replay a test.
 			// [/Comment-202501193]
 			mining: {
-				// // This is `true` by default, which is what we need.
-				// auto: false,
+				// By default, this is `true`.
+				auto: (helpersModule.HARDHAT_MODE_CODE == 1) ? true : false,
 
-				// // This is 0 by default, which is what we need.
-				// interval: 1_000,
-				// interval: 999_999_999,
+				// By default, this is 0.
+				interval: (helpersModule.HARDHAT_MODE_CODE == 1) ? 0 : 10,
 
 				mempool: {
-					order: "fifo"
+					// By default, this is "priority".
+					order: (helpersModule.HARDHAT_MODE_CODE == 1) ? "fifo" : "priority",
 				},
 			},
 		},

@@ -152,9 +152,9 @@ async function deployContractsForTestingAdvanced(
 /// [Comment-202508265]
 /// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
 /// This method fixes the issue.
-/// The `blockGasLimit` parameter also kind of needs fixing, but we are happy with its default value.
+/// The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
 /// Comment-202505294 relates.
-/// todo-2 To be revisited.
+/// todo-2 Is that behavior going to change in a future version of Hardhat? To be revisited.
 /// [/Comment-202508265]
 async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// Comment-202508267 applies.
@@ -171,8 +171,11 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// console.info("202508263");
 	preparedHardhatCoverage = true;
 
+	expect(typeof hre.network.config.gas).equal("number");
 	expect(hre.network.config.gas).not.equal(gas);
 	hre.network.config.gas = gas;
+
+	// This will execute some assertions.
 	await mochaHooks.beforeAll();
 }
 
