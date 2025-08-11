@@ -8,5 +8,5 @@
 	"donateEthToCosmicSignatureGame": false,
 	"ethDonationToCosmicSignatureGameAmountInEth": 0.2,
 	"saveReportFile": true,
-	"reportFilePath": "../deploy-cosmic-signature-contracts-report-hardhat.json"
+	"reportFilePath": "temp/deploy-cosmic-signature-contracts-report-hardhat.json"
 }

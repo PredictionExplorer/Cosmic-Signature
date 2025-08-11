@@ -20,7 +20,7 @@ The call to the `bidWithEth` method must now be done in a new way:
 
     let bidParams = {message: "bid test", randomWalkNftId: -1, isOpenBid: true};
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding],[bidParams]);
-    let nextEthBidPrice = await cosmicSignatureGameProxy.getNextEthBidPrice(0n);
+    let nextEthBidPrice = await cosmicSignatureGameProxy.getNextEthBidPrice({blockTag: "pending",});
     await cosmicSignatureGameProxy.connect(testingAcct).bidWithEth(params, {value: nextEthBidPrice.mul(multiplier), gasLimit: 30000000});
 // todo-1 Revisit the `gasLimit` thing above
 

@@ -87,7 +87,12 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [/Comment-202503155]
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable;
 
+	/// @notice Calls `getNextEthBidPriceAdvanced` with `currentTimeOffset_ = 0`.
+	/// Comments near `getNextEthBidPriceAdvanced` apply.
+	function getNextEthBidPrice() external view returns (uint256);
+
 	/// @notice Calculates the current price that a bidder is required to pay to place an ETH bid.
+	/// See also: `getNextEthBidPrice`.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return The next ETH bid price, in Wei.
 	/// @dev
@@ -98,7 +103,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// That said, given that we mint a nonzero CST reward for each bid, it's unlikely that the CST bid price will fall below that.
 	/// todo-1 +++ Develop a test that makes ETH prices minimal.
 	/// [/Comment-202503162]
-	function getNextEthBidPrice(int256 currentTimeOffset_) external view returns (uint256);
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @notice Calculates and returns an ETH + Random Walk NFT bid price, given an ETH only bid price.
 	/// @dev Comment-202503162 applies.
@@ -130,27 +135,38 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param message_ Comment-202503155 applies.
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
 
+	/// @notice Calls `getNextCstBidPriceAdvanced` with `currentTimeOffset_ = 0`.
+	/// Comments near `getNextCstBidPriceAdvanced` apply.
+	function getNextCstBidPrice() external view returns (uint256);
+
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration.
+	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
-	/// An offset to add to `block.timestamp`.
-	/// Currently, consequitive blocks can have equal timestamps, which will likely no longer be the case
+	/// An offset to add to `block.timestamp`. It allows to find out what the price will be in the future or was in the past.
+	/// The returned past price will not necessarily be correct for a timestamp before certain actions or time points.
+	/// For the most up-to-date result, call this method in the context of the "pending" block.
+	/// When deciding on this argument value, take into account that currently, on Arbitrum,
+	/// consequitive blocks can have equal timestamps, which will likely no longer be the case
 	/// after Arbitrum decentralizes their blockchain.
 	/// Sensible values:
 	///    0 when the result is to be used within the same transaction.
-	///    0 when bidding programmatically from an external script.
-	///       But the script developer will probably need to change it to 1 after the decentalization.
-	///       Although an external script can have a smarter time aware logic that conditionally passes different values.
-	///    1 when bidding manually, like through our web site, assuming that human hands aren't too fast.
-	///       todo-2 But in the front-end change it to 1 after the decentalization.
-	///    1 for testing on the Hardhat Network.
+	///    0 when bidding programmatically from an external script,
+	///      while calling this method in the context of the "pending" block.
+	///      Although an external script can have a smarter time aware logic that conditionally passes 0 or 1.
+	///    0 when bidding manually, like through our web site, 
+	///      while calling this method in the context of the "pending" block.
+	///      Alternatively, it could make sense to pass 1, assuming that human hands aren't that fast.
+	///    1 for testing on Hardhat Network, provided this method is called in the context of the "latest" block
+	///      and the next block timestamp will increase by 1.
+	///      Comment-202501193 relates.
 	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.
 	/// It can potentially be zero.
 	/// Comment-202501022 applies.
 	/// @dev Comment-202503162 applies.
-	function getNextCstBidPrice(int256 currentTimeOffset_) external view returns (uint256);
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// Comment-202501022 applies to the returned elapsed duration.

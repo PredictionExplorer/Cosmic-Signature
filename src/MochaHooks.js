@@ -2,6 +2,7 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const helpersModule = require("./Helpers.js");
 
 // function test1(x_) {
 // 	console.info(Date.now().toString(), x_);
@@ -10,6 +11,7 @@ const hre = require("hardhat");
 async function beforeAll() {
 	// console.info("202508203");
 	expect(hre.network.name).equal("hardhat");
+	expect(helpersModule.HARDHAT_MODE_CODE).equal(1);
 
 	// These methods are called on each transaction request send, which introduces latency.
 	// So, when running unit tests, replacing them to quickly return cached values.

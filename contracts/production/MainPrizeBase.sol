@@ -17,7 +17,12 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		}
 	}
 
-	function getDurationUntilMainPrize() public view override returns (int256) {
+	function getDurationUntilMainPrize() external view override returns (uint256) {
+		int256 durationUntilMainPrize_ = getDurationUntilMainPrizeRaw();
+		return (durationUntilMainPrize_ > int256(0)) ? uint256(durationUntilMainPrize_) : 0;
+	}
+
+	function getDurationUntilMainPrizeRaw() public view override returns (int256) {
 		// todo-1 +++ Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked

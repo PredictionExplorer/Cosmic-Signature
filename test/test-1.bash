@@ -10,9 +10,6 @@
 	# export FORCE_COLOR='0'
 	# export NO_COLOR=''
 
-	# todo-1 Comment this out.
-	# export SKIP_LONG_TESTS='true'
-
 	SafeTryHardhatTest() {
 		if [ ${OutcomeCode} -lt 2 ]; then
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
@@ -21,7 +18,7 @@
 
 			# todo-1 Uncomment the command line with no arguments.
 			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureDao '
-			# 'npx' 'hardhat' 'test' '--grep' '^Bidding Smoke-test$'
+			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize Test 1$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
@@ -41,6 +38,11 @@
 			OutcomeCode=2
 		fi
 	fi
+
+	export HARDHAT_MODE_CODE='1'
+
+	# todo-1 Comment this out.
+	# export SKIP_LONG_TESTS='true'
 
 	# Preprocessor, asserts, no SMTChecker.
 	# Running in this mode first because we enable Hardhat console in this mode.

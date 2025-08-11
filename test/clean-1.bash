@@ -32,6 +32,8 @@
 		fi
 	fi
 
+	export HARDHAT_MODE_CODE='1'
+
 	SafeTryHardhatClean 'true' 'true' '0'
 	SafeTryHardhatClean 'true' 'true' '1'
 	SafeTryHardhatClean 'true' 'false' '0'

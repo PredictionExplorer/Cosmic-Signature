@@ -93,7 +93,7 @@ abstract contract Bidding is
 		uint256 newEthDutchAuctionEndingBidPriceDivisor_ = ethDutchAuctionEndingBidPriceDivisor;
 
 		// [Comment-202508187]
-		// This is what `getNextEthBidPrice` returns when `ethDutchAuctionElapsedDuration_ >= ethDutchAuctionDuration_`.
+		// This is what `getNextEthBidPriceAdvanced` returns when `ethDutchAuctionElapsedDuration_ >= ethDutchAuctionDuration_`.
 		// We have validated a tighter condition near Comment-202508096.
 		// [/Comment-202508187]
 		// Comment-202501301 applies.
@@ -117,7 +117,7 @@ abstract contract Bidding is
 		// We need a formula to adjust `ethDutchAuctionDurationDivisor` so that
 		// the value returned by `getNextEthBidPrice` leapped as little as possible.
 		//
-		// This is how `getNextEthBidPrice` calculates the current ETH bid price.
+		// This is how `getNextEthBidPriceAdvanced` calculates the current ETH bid price.
 		// It needs to remain being approximately equal `currentEthBidPrice_`.
 		//
 		// ethDutchAuctionBeginningBidPrice -
@@ -228,7 +228,7 @@ abstract contract Bidding is
 		// BidType bidType_;
 
 		// Comment-202503162 relates and/or applies.
-		uint256 ethBidPrice_ = getNextEthBidPrice(int256(0));
+		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
 		uint256 paidEthPrice_ =
 			(randomWalkNftId_ < int256(0)) ?
 			ethBidPrice_ :
@@ -371,7 +371,14 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextEthBidPrice`
 
-	function getNextEthBidPrice(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getNextEthBidPrice() external view override returns (uint256) {
+		return getNextEthBidPriceAdvanced(int256(0));
+	}
+
+	// #endregion
+	// #region `getNextEthBidPriceAdvanced`
+
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -506,7 +513,7 @@ abstract contract Bidding is
 		// [/Comment-202501045]
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPrice(int256(0));
+		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
 
 		// Comment-202412045 applies.
 		require(
@@ -568,7 +575,14 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextCstBidPrice`
 
-	function getNextCstBidPrice(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getNextCstBidPrice() external view override returns (uint256) {
+		return getNextCstBidPriceAdvanced(int256(0));
+	}
+
+	// #endregion
+	// #region `getNextCstBidPriceAdvanced`
+
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

@@ -6,7 +6,7 @@ const { getCosmicSignatureGameContract } = require("./helpers.js");
 
 async function main() {
 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
-	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize();
+	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw();
 	console.info("Duration until main prize before:", durationUntilMainPrize);
 	if (durationUntilMainPrize > 0n) {
 		if (durationUntilMainPrize > 1n) {
@@ -15,7 +15,8 @@ async function main() {
 		await hre.ethers.provider.send("evm_mine");
 
 		// This is supposed to be zero.
-		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize();
+		// But this can also be negative.
+		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw();
 
 		console.info("Duration until main prize after:", durationUntilMainPrize);
 	}

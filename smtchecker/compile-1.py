@@ -22,6 +22,7 @@ def main():
         return 2
 
     # Set environment variables
+    os.environ['HARDHAT_MODE_CODE'] = '1'
     os.environ['ENABLE_HARDHAT_PREPROCESSOR'] = 'true'
     os.environ['ENABLE_ASSERTS'] = 'true'
     os.environ['ENABLE_SMTCHECKER'] = '2'

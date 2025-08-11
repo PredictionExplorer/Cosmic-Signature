@@ -411,7 +411,7 @@ describe("CosmicSignatureGame-1", function () {
 						blockBeforeTransaction_ = latestBlock_;
 
 						// Comment-202503162 applies.
-						const ethBidPrice_ = cosmicSignatureGameProxySimulator_.getNextEthBidPrice(blockBeforeTransaction_, 1n);
+						const ethBidPrice_ = cosmicSignatureGameProxySimulator_.getNextEthBidPriceAdvanced(blockBeforeTransaction_, 1n);
 						const paidEthPrice_ =
 							(randomWalkNftId_ < 0n) ?
 							ethBidPrice_ :
@@ -493,7 +493,7 @@ describe("CosmicSignatureGame-1", function () {
 						blockBeforeTransaction_ = latestBlock_;
 
 						// Comment-202503162 applies.
-						const paidCstPrice_ = cosmicSignatureGameProxySimulator_.getNextCstBidPrice(blockBeforeTransaction_, 1n);
+						const paidCstPrice_ = cosmicSignatureGameProxySimulator_.getNextCstBidPriceAdvanced(blockBeforeTransaction_, 1n);
 
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 

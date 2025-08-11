@@ -212,7 +212,7 @@ abstract contract BiddingOpenBid is
 		// BidType bidType_;
 
 		// Comment-202503162 relates and/or applies.
-		uint256 ethBidPrice_ = getNextEthBidPrice(int256(0));
+		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
 		uint256 paidEthPrice_;
 
 		int256 overpaidEthPrice_ = int256(0);
@@ -354,7 +354,14 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `getNextEthBidPrice`
 
-	function getNextEthBidPrice(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getNextEthBidPrice() external view override returns (uint256) {
+		return getNextEthBidPriceAdvanced(int256(0));
+	}
+
+	// #endregion
+	// #region `getNextEthBidPriceAdvanced`
+
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -477,7 +484,7 @@ abstract contract BiddingOpenBid is
 		// Comment-202501045 applies.
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPrice(int256(0));
+		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
 
 		// Comment-202412045 applies.
 		require(
@@ -521,7 +528,14 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `getNextCstBidPrice`
 
-	function getNextCstBidPrice(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getNextCstBidPrice() external view override returns (uint256) {
+		return getNextCstBidPriceAdvanced(int256(0));
+	}
+
+	// #endregion
+	// #region `getNextCstBidPriceAdvanced`
+
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
