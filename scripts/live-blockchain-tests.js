@@ -109,7 +109,7 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 async function main() {
 	// todo-0 print new lines as needed
 	// await hre.run("compile");
-	await tryCreatePrimaryContracts(await runDeployCosmicSignatureContractsTaskIfNeeded());
+	await tryCreateCosmicSignatureContracts(await runDeployCosmicSignatureContractsTaskIfNeeded());
 	await fundAccountsWithEthIfNeeded();
 	await configurePrizesWalletIfNeeded();
 	await configureCosmicSignatureGameIfNeeded();
@@ -147,21 +147,21 @@ async function runDeployCosmicSignatureContractsTaskIfNeeded() {
 			if ( ! deployCosmicSignatureContractsTaskReportFileStats_.isFile() ) {
 				throw new Error(`"${deployCosmicSignatureContractsTaskReportFilePath_}" already exists, but it's not a file.`);
 			}
-			console.info(`${nodeOsModule.EOL}"${deployCosmicSignatureContractsTaskReportFilePath_}" already exists. Reusing the already deployed primary contracts. Assuming their bytecodes have not changed.`);
+			console.info(`${nodeOsModule.EOL}"${deployCosmicSignatureContractsTaskReportFilePath_}" already exists. Reusing the already deployed Cosmic Signature contracts. Assuming their bytecodes have not changed.`);
 		}
 	} else {
-		console.info(`${nodeOsModule.EOL}We are configured to not deploy primary contracts.`);
+		console.info(`${nodeOsModule.EOL}We are configured to not deploy Cosmic Signature contracts.`);
 	}
 	return deployCosmicSignatureContractsTaskReportFilePath_;
 }
 
 // #endregion
-// #region `tryCreatePrimaryContracts`
+// #region `tryCreateCosmicSignatureContracts`
 
 /**
  * @param {string} deployCosmicSignatureContractsTaskReportFilePath_
  */
-async function tryCreatePrimaryContracts(deployCosmicSignatureContractsTaskReportFilePath_) {
+async function tryCreateCosmicSignatureContracts(deployCosmicSignatureContractsTaskReportFilePath_) {
 	let deployCosmicSignatureContractsTaskReportJsonString_;
 	let fileLoadFailed_ = false;
 	try {
