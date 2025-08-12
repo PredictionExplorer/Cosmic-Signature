@@ -12,7 +12,7 @@ const configuration =
 				// "arbitrumSepolia",
 				// "arbitrumOne",
 
-			// Configuration of the primary contract set deployment.
+			// Configuration of our production (as opposed to testing) contracts deployment.
 			cosmicSignatureContractsDeployment: {
 				// The deployment will not happen if this is `false`.
 				enabled: true,
