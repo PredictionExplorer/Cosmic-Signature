@@ -47,7 +47,7 @@ library CosmicSignatureConstants {
 
 	/// @notice First bidding round initial (first bid) ETH bid price.
 	/// [Comment-202508094]
-	/// It's impossible to reconfigure the price after the contract has been deployed.
+	/// It's impossible to reconfigure the very first bid price after the contract has been deployed.
 	/// [/Comment-202508094]
 	uint256 internal constant FIRST_ROUND_INITIAL_ETH_BID_PRICE = 0.0001 ether;
 

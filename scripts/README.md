@@ -7,6 +7,7 @@ Note: for running on Arbitrum Sepolia you need to increase gasLimit (twice) by a
 
 for example:
 
+<!-- todo-0 I have commented out the use of this environment variable. -->
     sepolia: {
         url: `http://[ip_address]:[port]/`,
         accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
