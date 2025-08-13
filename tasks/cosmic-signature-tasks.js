@@ -3,15 +3,14 @@
 const nodeOsModule = require("node:os");
 const nodePathModule = require("node:path");
 const nodeFsModule = require("node:fs");
-const { task } = require("hardhat/config.js");
+const { vars, task } = require("hardhat/config.js");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
 
 // Comment-202409255 relates.
 const { deployContractsAdvanced } = require("../src/ContractDeploymentHelpers.js");
 
-// Comment-202509093 relates.
 task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
-	const deployConfigFilePath = args["deployconfigfilepath"];
+	const deployConfigFilePath = args.deployconfigfilepath;
 	if (deployConfigFilePath == undefined || deployConfigFilePath.length <= 0) {
 		// todo-1 Review all calls to `console` to make sure we specify a correct error severity.
 		console.error(`${nodeOsModule.EOL}Please provide a deployment configuration file path: --deployconfigfilepath <file_path>`);
@@ -26,16 +25,19 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		console.error(errorObject);
 		return;
 	}
+	if (deployConfigObject.deployerPrivateKey.length <= 0) {
+		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
+	}
 
 	console.info();
 	await hre.run("compile");
 
 	{
-		const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
-		deployConfigObject.deployerPrivateKey = "******";
 		console.info(`${nodeOsModule.EOL}Using configuration:`);
+		// const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
+		// deployConfigObject.deployerPrivateKey = "******";
 		console.info(deployConfigObject);
-		deployConfigObject.deployerPrivateKey = deployerPrivateKey;
+		// deployConfigObject.deployerPrivateKey = deployerPrivateKey;
 	}
 
 	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
@@ -125,5 +127,9 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmountInWei,}));
 		console.info(`${nodeOsModule.EOL}Donated ${ethDonationAmountInEthAsString} ETH to the ${deployConfigObject.cosmicSignatureGameContractName} proxy contract.`);
 	}
+})
+	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");
+
+task("register-cosmic-signature-contracts", "Registers (a.k.a. verifies) deployed Cosmic Signature contracts", async (args, hre) => {
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");

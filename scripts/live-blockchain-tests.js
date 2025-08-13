@@ -79,7 +79,7 @@ function createAccountSigners() {
 		state.accountPrivateKeySeed = accountPrivateKeySeed_;
 		console.info(`${nodeOsModule.EOL}accountPrivateKeySeed = ${uint256ToPaddedHexString(accountPrivateKeySeed_)}`);
 		if (accountPrivateKeySeed_ == defaultAccountPrivateKeySeed) {
-			console.warn("Warning. That's the default hardcoded value. Your money may be at risk!");
+			console.warn("Warning. That's the default hardcoded value. Your money, fake or real, may be at risk!");
 		}
 	}
 
