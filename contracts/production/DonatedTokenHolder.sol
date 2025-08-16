@@ -7,9 +7,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { IDonatedTokenHolder } from "./interfaces/IDonatedTokenHolder.sol";
 
-/// @dev todo-1 We aren't going to deploy this contract together with the others.
-/// todo-0 So how to make its source code officially available on EtherScan or a similar site?
-/// todo-0 Will it be automatically included in the `PrizesWallet` source code, or do I need to explicitly "flatten" anything?
 contract DonatedTokenHolder is /*ReentrancyGuardTransient,*/ IDonatedTokenHolder {
 	address private immutable _deployerAddress = msg.sender;
 
