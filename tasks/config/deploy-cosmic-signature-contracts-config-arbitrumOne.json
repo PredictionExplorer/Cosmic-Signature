@@ -1,0 +1,11 @@
+{
+	"deployerPrivateKey": "",
+	"cosmicSignatureGameContractName": "CosmicSignatureGame",
+	"randomWalkNftAddress": "0x895a6F444BE4ba9d124F61DF736605792B35D66b",
+	"charityAddress": "",
+	"transferContractOwnershipToCosmicSignatureDao": false,
+	"roundActivationTime": -1e9,
+	"donateEthToCosmicSignatureGame": false,
+	"ethDonationToCosmicSignatureGameAmountInEth": 0.001,
+	"reportFilePath": "temp/deploy-cosmic-signature-contracts-report-arbitrumOne.json"
+}

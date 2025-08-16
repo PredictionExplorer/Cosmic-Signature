@@ -1,0 +1,11 @@
+{
+	"deployerPrivateKey": "",
+	"cosmicSignatureGameContractName": "CosmicSignatureGame",
+	"randomWalkNftAddress": "0xbb749eff6018a9213dfbca2a20292db1576f530d",
+	"charityAddress": "",
+	"transferContractOwnershipToCosmicSignatureDao": false,
+	"roundActivationTime": -1e9,
+	"donateEthToCosmicSignatureGame": false,
+	"ethDonationToCosmicSignatureGameAmountInEth": 0.001,
+	"reportFilePath": "temp/deploy-cosmic-signature-contracts-report-arbitrumSepolia.json"
+}

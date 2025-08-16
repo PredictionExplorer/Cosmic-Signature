@@ -4,7 +4,7 @@ const nodePathModule = require("node:path");
 const nodeFsModule = require("node:fs");
 const hre = require("hardhat");
 
-async function runDeployCosmicSignatureContractsTask(
+async function runDeployCosmicSignatureContracts(
 	deployerPrivateKey_,
 	cosmicSignatureGameContractName_,
 	randomWalkNftAddress_,
@@ -21,7 +21,6 @@ async function runDeployCosmicSignatureContractsTask(
 		roundActivationTime: -1e9,
 		donateEthToCosmicSignatureGame: false,
 		ethDonationToCosmicSignatureGameAmountInEth: 0,
-		saveReportFile: true,
 		reportFilePath: deployCosmicSignatureContractsTaskReportFilePath_,
 	};
 	const deployCosmicSignatureContractsTaskConfigurationAsJsonString_ = JSON.stringify(deployCosmicSignatureContractsTaskConfiguration_, null, 3);
@@ -33,4 +32,4 @@ async function runDeployCosmicSignatureContractsTask(
 	await hre.run("deploy-cosmic-signature-contracts", deployCosmicSignatureContractsTaskArgs_);
 }
 
-module.exports = { runDeployCosmicSignatureContractsTask, };
+module.exports = { runDeployCosmicSignatureContracts, };

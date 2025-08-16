@@ -6,6 +6,8 @@
 // #region
 
 const nodeFsModule = require("node:fs");
+
+// Comment-202409255 relates.
 const helpersModule = require("./src/Helpers.js");
 
 // #endregion
@@ -95,8 +97,15 @@ const solidityVersion = "0.8.30";
 //    solc --version
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
 // We print it near Comment-202411143.
+//
+// 2025-08 Update.
+// The binary solc long version looks like 0.8.XX+commit.12abcdef.Linux.g++ .
+// Problem is that's too long for EtherScan. It dislikes the ".Linux.g++" suffix.
+// The supported versions listed at https://etherscan.io/solcversions contain no suffixes.
+// solc-js is said to report its version without the suffix.
+// So we must do the same here.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.73712a01.Linux.g++";
+const solidityCompilerLongVersion = solidityVersion + "+commit.73712a01";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
@@ -158,13 +167,7 @@ require("hardhat-abi-exporter");
 require("@nomiclabs/hardhat-solhint");
 require("hardhat-tracer");
 
-// // [ToDo-202412098-1]
-// // todo-0
-// // Use "@nomicfoundation/hardhat-verify" instead.
-// // "@nomicfoundation/hardhat-toolbox" imports it, so it could be unnecessary to explicitly import it.
-// // Maybe comment about that where we import "@nomicfoundation/hardhat-toolbox".
-// // ToDo-202412097-1 relates.
-// // [/ToDo-202412098-1]
+// // It appears that it's unnecessary to include this into "package.json" or import this.
 // require("@nomiclabs/hardhat-etherscan");
 
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
@@ -238,8 +241,7 @@ subtask(
 
 const solidityLinePreProcessingRegExp = ENABLE_HARDHAT_PREPROCESSOR ? createSolidityLinePreProcessingRegExp() : undefined;
 
-function createSolidityLinePreProcessingRegExp()
-{
+function createSolidityLinePreProcessingRegExp() {
 	const regExpPatternPart1 =
 		(ENABLE_ASSERTS ? "enable_asserts" : "disable_asserts") +
 		"|" +
@@ -509,24 +511,17 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	// [ToDo-202412097-1]
-	// todo-0
-	// Use the "@nomicfoundation/hardhat-verify" plugin.
-	// See https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify
-	// Uncomment one or both of these settings.
-	// Sourcify could be a better option than EtherScan.
-	// Write and cross-ref comments here and where we will import "@nomicfoundation/hardhat-verify".
-	// Actually "@nomicfoundation/hardhat-toolbox" already imports it.
-	// ToDo-202412098-1 relates.
-	// [/ToDo-202412097-1]
+	// Comment-202509112 relates.
 	etherscan: {
-		// apiKey: process.env.ETHERSCAN_API_KEY_TOKEN_1,
+		// apiKey: process.env.ETHERSCAN_API_KEY,
 	},
 
 	// #endregion
 	// #region
 
+	// // [Comment-202509112]
 	// // We probably can get by without this.
+	// // [/Comment-202509112]
 	// sourcify: {
 	// 	enabled: true
 	// },

@@ -21,7 +21,7 @@ const hre = require("hardhat");
 const { vars } = require("hardhat/config");
 const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { State } = require("./live-blockchain-tests-state.js");
-const { runDeployCosmicSignatureContractsTask } = require("./cosmic-signature-contracts-deployment/run-deploy-cosmic-signature-contracts-task.js");
+const { runDeployCosmicSignatureContracts } = require("./cosmic-signature-contracts-deployment/run-deploy-cosmic-signature-contracts.js");
 
 // #endregion
 // #region
@@ -109,7 +109,7 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 async function main() {
 	// todo-0 print new lines as needed
 	// await hre.run("compile");
-	await tryCreateCosmicSignatureContracts(await runDeployCosmicSignatureContractsTaskIfNeeded());
+	await tryCreateCosmicSignatureContracts(await runDeployCosmicSignatureContractsIfNeeded());
 	await fundAccountsWithEthIfNeeded();
 	await configurePrizesWalletIfNeeded();
 	await configureCosmicSignatureGameIfNeeded();
@@ -121,9 +121,9 @@ async function main() {
 }
 
 // #endregion
-// #region `runDeployCosmicSignatureContractsTaskIfNeeded`
+// #region `runDeployCosmicSignatureContractsIfNeeded`
 
-async function runDeployCosmicSignatureContractsTaskIfNeeded() {
+async function runDeployCosmicSignatureContractsIfNeeded() {
 	const deployCosmicSignatureContractsTaskReportFilePath_ =
 		configuration.cosmicSignatureContractsDeployment.deployCosmicSignatureContractsTaskReportFilePath
 			.replaceAll("${networkName}", hre.network.name)
@@ -135,7 +135,7 @@ async function runDeployCosmicSignatureContractsTaskIfNeeded() {
 				configuration.cosmicSignatureContractsDeployment.deployCosmicSignatureContractsTaskConfigurationFilePath
 					.replaceAll("${networkName}", hre.network.name)
 					.replaceAll("${cosmicSignatureGameContractName}", configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName);
-			await runDeployCosmicSignatureContractsTask(
+			await runDeployCosmicSignatureContracts(
 				state.ownerSigner.privateKey,
 				configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName,
 				configuration.cosmicSignatureContractsDeployment.randomWalkNftAddress,
