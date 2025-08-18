@@ -47,8 +47,8 @@ const deployContracts = async function (
 /**
  * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
  * @param {string} cosmicSignatureGameContractName 
- * @param {string} randomWalkNftAddress May be empty.
- * @param {string} charityAddress 
+ * @param {string} randomWalkNftAddress May be empty or zero.
+ * @param {string} charityAddress May be empty or zero.
  * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
  * @param {bigint} roundActivationTime 
  */
@@ -88,7 +88,7 @@ const deployContractsAdvanced = async function (
 
 	const randomWalkNftFactory = await hre.ethers.getContractFactory("RandomWalkNFT", deployerSigner);
 	let randomWalkNft;
-	if (randomWalkNftAddress.length <= 0) {
+	if (randomWalkNftAddress.length <= 0 || randomWalkNftAddress == hre.ethers.ZeroAddress) {
 		randomWalkNft = await randomWalkNftFactory.deploy();
 		await randomWalkNft.waitForDeployment();
 		randomWalkNftAddress = await randomWalkNft.getAddress();
@@ -123,10 +123,7 @@ const deployContractsAdvanced = async function (
 	const marketingWalletAddress = await marketingWallet.getAddress();
 
 	const cosmicSignatureDaoFactory = await hre.ethers.getContractFactory("CosmicSignatureDao", deployerSigner);
-
-	// Comment-202508031 relates and/or applies.
 	const cosmicSignatureDao = await cosmicSignatureDaoFactory.deploy(cosmicSignatureTokenAddress);
-
 	await cosmicSignatureDao.waitForDeployment();
 	const cosmicSignatureDaoAddress = await cosmicSignatureDao.getAddress();
 
@@ -134,7 +131,9 @@ const deployContractsAdvanced = async function (
 	const charityWallet = await charityWalletFactory.deploy();
 	await charityWallet.waitForDeployment();
 	const charityWalletAddress = await charityWallet.getAddress();
-	await waitForTransactionReceipt(charityWallet.setCharityAddress(charityAddress));
+	if (charityAddress.length > 0 && charityAddress != hre.ethers.ZeroAddress) {
+		await waitForTransactionReceipt(charityWallet.setCharityAddress(charityAddress));
+	}
 	if (transferContractOwnershipToCosmicSignatureDao) {
 		// It appears that it makes no sense to perform this kind of ownership transfer for any other contracts.
 		await waitForTransactionReceipt(charityWallet.transferOwnership(cosmicSignatureDaoAddress));

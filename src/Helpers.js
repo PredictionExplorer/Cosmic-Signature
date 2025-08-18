@@ -150,6 +150,7 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 
 	switch (rawValue_) {
 		case undefined:
+		case "":
 			return defaultValue_;
 		case "true":
 			return true;
@@ -172,7 +173,7 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
 
-	if (rawValue_ == undefined) {
+	if (rawValue_ == undefined || rawValue_.length <= 0) {
 		return defaultValue_;
 	}
 

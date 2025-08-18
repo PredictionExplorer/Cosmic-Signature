@@ -1,0 +1,6 @@
+{
+	"newCosmicSignatureGameContractVersionNumber": 2,
+	"newCosmicSignatureGameContractName": "CosmicSignatureGameOpenBid",
+	"newInitializerMethodName": "initialize2",
+	"reportFilePath": "temp/upgrade-cosmic-signature-game-report-arbitrumSepolia.json"
+}

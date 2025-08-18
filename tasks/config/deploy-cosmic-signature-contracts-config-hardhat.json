@@ -6,7 +6,6 @@
 	"transferContractOwnershipToCosmicSignatureDao": false,
 	"roundActivationTime": -1e9,
 	"donateEthToCosmicSignatureGame": false,
-	"ethDonationToCosmicSignatureGameAmountInEth": 0.2,
-	"saveReportFile": true,
+	"ethDonationToCosmicSignatureGameAmountInEth": 0.001,
 	"reportFilePath": "temp/deploy-cosmic-signature-contracts-report-hardhat.json"
 }

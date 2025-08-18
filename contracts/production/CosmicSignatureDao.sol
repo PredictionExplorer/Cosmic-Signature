@@ -34,9 +34,7 @@ contract CosmicSignatureDao is
 	/// @notice Constructor.
 	/// Sets up the governance parameters and links the voting token.
 	/// @param tokenAddress_ The address of the token to be used for voting power.
-	/// [Comment-202508031]
 	/// Our contract deployment script passes the `CosmicSignatureToken` contract address for this parameter.
-	/// [/Comment-202508031]
 	constructor(IVotes tokenAddress_)
 		// Comment-202502249 relates and/or applies.
 		_providedAddressIsNonZero(address(tokenAddress_))

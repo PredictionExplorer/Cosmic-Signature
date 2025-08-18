@@ -48,7 +48,7 @@ interface ICosmicSignatureGame is
 	/// Hackers can potentially call this method before the deployer gets a chance to.
 	/// But it's not too bad because the deployer's call transaction would then revert, which the deployer would notice,
 	/// and would then have to deploy both the proxy and the implementation contracts again.
-	/// It would be a bigger problem if we were deplpying the proxy contract via `CREATE2`.
+	/// It would be a bigger problem if we were deploying the proxy contract via `CREATE2`.
 	/// A way to eliminate this vulnerability is to deploy and call `initialize` in a single transaction, which is what
 	/// `HardhatRuntimeEnvironment.upgrades.deployProxy` does.
 	/// Comment-202412129 relates.
