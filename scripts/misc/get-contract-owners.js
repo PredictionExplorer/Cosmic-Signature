@@ -1,5 +1,6 @@
 // todo-1 This test is incomplete.
-// todo-1 We need a test that asserts that all state variables in all contracts have been assigned the right values.
+// todo-1 We need a test that validates that all state variables in all contracts have been assigned the right values.
+// todo-1 But I have developed such a tet already. See `validateCosmicSignatureContractStatesIfNeeded`.
 
 "use strict";
 

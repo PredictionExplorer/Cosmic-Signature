@@ -39,6 +39,9 @@ class State {
 	/** @type {hre.ethers.Wallet} */
 	treasurerSigner;
 
+	/** Whether we have just deployed our production contracts. */
+	deployedCosmicSignatureContracts = false;
+
 	/** @type {object} */
 	contracts;
 

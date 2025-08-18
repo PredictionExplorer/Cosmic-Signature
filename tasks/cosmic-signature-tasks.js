@@ -102,6 +102,7 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		console.info(reportJsonString);
 		throw errorObject;
 	}
+	console.info(`${nodeOsModule.EOL}Report saved to "${deployConfigObject.reportFilePath}"`);
 
 	if (deployConfigObject.donateEthToCosmicSignatureGame) {
 		const ethDonationAmountInEthAsString = deployConfigObject.ethDonationToCosmicSignatureGameAmountInEth.toString();
@@ -267,6 +268,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 		console.info(reportJsonString);
 		throw errorObject;
 	}
+	console.info(`${nodeOsModule.EOL}Report saved to "${upgradeConfigObject.reportFilePath}"`);
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path")
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");

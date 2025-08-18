@@ -10,7 +10,7 @@ for example:
     sepolia: {
         url: `http://[ip_address]:[port]/`,
 <!-- todo-1 I have commented out the use of this environment variable. -->
-        accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+        accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 <!-- todo-1 Do we really need this `gasMultiplier` thing? -->
         gasMultiplier: 2,
     }

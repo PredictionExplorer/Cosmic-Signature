@@ -9,7 +9,7 @@ function main() {
 	console.info();
 	const numRandomNumbersToGenerateAsString_ = process.argv[2];
 	const numRandomNumbersToGenerate_ =
-		(numRandomNumbersToGenerateAsString_ == undefined) ? 1 : parseInt(numRandomNumbersToGenerateAsString_);
+		((numRandomNumbersToGenerateAsString_ ?? "").length <= 0) ? 1 : parseInt(numRandomNumbersToGenerateAsString_);
 	for ( let counter_ = numRandomNumbersToGenerate_; counter_ > 0; -- counter_ ) {
 		const randomNumber_ = generateRandomUInt256();
 		const randomNumberAsString_ = uint256ToPaddedHexString(randomNumber_);
