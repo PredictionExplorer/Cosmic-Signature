@@ -30,6 +30,7 @@ const { validateMarketingWallet, configureMarketingWallet } = require("./marketi
 const { validateCharityWallet } = require("./charity-wallet/charity-wallet-helpers.js");
 const { validateCosmicSignatureDao } = require("./cosmic-signature-dao/cosmic-signature-dao-helpers.js");
 const { validateCosmicSignatureGameState, configureCosmicSignatureGame } = require("./cosmic-signature-game-after-deployment/cosmic-signature-game-after-deployment-helpers.js");
+const { donateEthToCosmicSignatureGame } = require("./cosmic-signature-game-eth-donations/helpers.js");
 const { State } = require("./live-blockchain-tests-state.js");
 
 // #endregion
@@ -144,6 +145,7 @@ async function main() {
 	await fundAccountsWithEthIfNeeded();
 	await validateCosmicSignatureContractStatesIfNeeded();
 	await configureCosmicSignatureContractsIfNeeded();
+	await donateEthToCosmicSignatureGameIfNeeded();
 
 
 	// todo-0 Write more code.
@@ -245,7 +247,7 @@ async function fundAccountsWithEthIfNeeded() {
  * @param {string} accountAddress_
  */
 async function fundAccountWithEthIfNeeded(accountName_, accountAddress_) {
-	const accountEthBalanceAmountMinLimitInWei_ = hre.ethers.parseEther(configuration.accountFundingWithEth.accountEthBalanceAmountMinLimitInEth.toString());
+	const accountEthBalanceAmountMinLimitInWei_ = hre.ethers.parseEther(configuration.accountFundingWithEth.accountEthBalanceAmountMinLimitInEth.toFixed(18));
 	const accountEthBalanceAmount_ = await hre.ethers.provider.getBalance(accountAddress_);
 	if (accountEthBalanceAmount_ >= accountEthBalanceAmountMinLimitInWei_) {
 		return;
@@ -316,6 +318,18 @@ async function configureCosmicSignatureContractsIfNeeded() {
 		configuration.cosmicSignatureGame.mainPrizeTimeIncrement,
 		configuration.cosmicSignatureGame.timeoutDurationToClaimMainPrize
 	);
+}
+
+// #endregion
+// #region `donateEthToCosmicSignatureGameIfNeeded`
+
+async function donateEthToCosmicSignatureGameIfNeeded() {
+	if ( ! configuration.donateEthToCosmicSignatureGame ) {
+		console.info(`${nodeOsModule.EOL}We are configured to not donate ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
+		return;
+	}
+	console.info(`${nodeOsModule.EOL}Donating ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
+	await donateEthToCosmicSignatureGame(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, state.bidder3Signer, configuration.ethDonationToCosmicSignatureGame.amountInEth);
 }
 
 // #endregion

@@ -91,6 +91,11 @@ const configuration =
 				mainPrizeTimeIncrement: 1n * 60n / 3n,
 				timeoutDurationToClaimMainPrize: 1n * 60n,
 			},
+
+			donateEthToCosmicSignatureGame: true,
+			ethDonationToCosmicSignatureGame: {
+				amountInEth: 0.00000000123,
+			},
 		}
 	);
 
