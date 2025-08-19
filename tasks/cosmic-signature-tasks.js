@@ -105,7 +105,7 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	console.info(`${nodeOsModule.EOL}Report saved to "${deployConfigObject.reportFilePath}"`);
 
 	if (deployConfigObject.donateEthToCosmicSignatureGame) {
-		const ethDonationAmountInEthAsString = deployConfigObject.ethDonationToCosmicSignatureGameAmountInEth.toString();
+		const ethDonationAmountInEthAsString = deployConfigObject.ethDonationToCosmicSignatureGameAmountInEth.toFixed(18);
 		const ethDonationAmountInWei = hre.ethers.parseEther(ethDonationAmountInEthAsString);
 		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmountInWei,}));
 		console.info(`${nodeOsModule.EOL}Donated ${ethDonationAmountInEthAsString} ETH to the ${deployConfigObject.cosmicSignatureGameContractName} proxy contract.`);
