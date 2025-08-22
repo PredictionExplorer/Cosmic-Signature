@@ -1,5 +1,3 @@
-// Confirms that deployed contracts are fully operational
-
 "use strict";
 
 // const { expect } = require("chai");

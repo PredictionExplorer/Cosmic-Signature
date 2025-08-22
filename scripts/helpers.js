@@ -39,7 +39,7 @@
 // 		console.error("BIDDER_CONTRACT_ADDRESS environment variable does not contain contract address.");
 // 		process.exit(1);
 // 	}
-///
+//
 // 	// Comment-202502096 applies.
 // 	const bidderContract = await hre.ethers.getContractAt("BidderContract", bidderContractAddress);
 //
