@@ -244,7 +244,7 @@ describe("CosmicSignatureDao", function () {
 			const proposalHashSum_ = parsedLog_.args.proposalId;
 			const proposalCreationTransactionBlock_ = await transactionReceipt_.getBlock();
 
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Math.floor(Number(votingDelay_) / 2)]);
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Math.trunc(Number(votingDelay_) / 2)]);
 			// await hre.ethers.provider.send("evm_mine");
 			if (modeCode_ > 0) {
 				// [Comment-202508053]
@@ -285,7 +285,7 @@ describe("CosmicSignatureDao", function () {
 			await waitForTransactionReceipt(contracts_.cosmicSignatureDao.connect(contracts_.signers[3]).castVote(proposalHashSum_, 0n));
 
 			// Comment-202508051 applies.
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + 1 + Math.floor(Number(votingPeriod_) / 2)]);
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [proposalCreationTransactionBlock_.timestamp + Number(votingDelay_) + 1 + Math.trunc(Number(votingPeriod_) / 2)]);
 
 			// await hre.ethers.provider.send("evm_mine");
 			{
