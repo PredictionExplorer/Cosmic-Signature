@@ -1,3 +1,5 @@
+/// Comment-202509229 applies.
+
 // todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
 
 // Helps building transaction to get back donated Random Walk NFTs used in bid+donate calls
@@ -8,7 +10,6 @@
 
 "use strict";
 
-// const { expect } = require("chai");
 const hre = require("hardhat");
 const { getCosmicSignatureGameContract } = require("./helpers.js");
 

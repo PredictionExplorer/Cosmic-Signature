@@ -50,10 +50,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	}
 // }
 
-// /// [Comment-202509229]
-// /// Issue. This is a legacy function that I preserved for now.
-// /// Consider deleting it.
-// /// [/Comment-202509229]
+// /// Comment-202509229 applies.
 // async function claim_main_prize(testingAcct, cosmicSignatureGame) {
 // 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount();
 // 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount();
