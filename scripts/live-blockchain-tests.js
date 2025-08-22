@@ -19,11 +19,12 @@ prepare1();
 const nodeFsModule = require("node:fs");
 const hre = require("hardhat");
 const { vars } = require("hardhat/config");
-const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
+const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../src/Helpers.js");
 const { runDeployCosmicSignatureContracts } = require("./cosmic-signature-contracts-deployment/run-deploy-cosmic-signature-contracts.js");
-const { validateCosmicSignatureToken } = require("./cosmic-signature-token/cosmic-signature-token-helpers.js");
+const { validateCosmicSignatureToken, configureCosmicSignatureToken } = require("./cosmic-signature-token/cosmic-signature-token-helpers.js");
+const { configureRandomWalkNft, mintRandomWalkNft } = require("./random-walk-nft/random-walk-nft-helpers.js");
 const { validateCosmicSignatureNft } = require("./cosmic-signature-nft/cosmic-signature-nft-helpers.js");
-const { validatePrizesWallet, configurePrizesWallet } = require("./prizes-wallet/prizes-wallet-helpers.js");
+const { validatePrizesWallet, configurePrizesWallet, withdrawEverything } = require("./prizes-wallet/prizes-wallet-helpers.js");
 const { validateStakingWalletRandomWalkNft } = require("./staking-wallet-random-walk-nft/staking-wallet-random-walk-nft-helpers.js");
 const { validateStakingWalletCosmicSignatureNft } = require("./staking-wallet-cosmic-signature-nft/staking-wallet-cosmic-signature-nft-helpers.js");
 const { validateMarketingWallet, configureMarketingWallet } = require("./marketing-wallet/marketing-wallet-helpers.js");
@@ -31,6 +32,8 @@ const { validateCharityWallet } = require("./charity-wallet/charity-wallet-helpe
 const { validateCosmicSignatureDao } = require("./cosmic-signature-dao/cosmic-signature-dao-helpers.js");
 const { validateCosmicSignatureGameState, configureCosmicSignatureGame } = require("./cosmic-signature-game-after-deployment/cosmic-signature-game-after-deployment-helpers.js");
 const { donateEthToCosmicSignatureGame } = require("./cosmic-signature-game-eth-donations/helpers.js");
+const { ensureDurationElapsedSinceRoundActivationIsAtLeast, waitUntilCstDutchAuctionElapsedDurationIsAtLeast, bidWithEth, bidWithEthPlusRandomWalkNft, bidWithEthAndDonateNft, bidWithEthPlusRandomWalkNftAndDonateNft, bidWithCstAndDonateToken } = require("./cosmic-signature-game-bidding/cosmic-signature-game-bidding-helpers.js");
+const { waitUntilMainPrizeTime, claimMainPrize } = require("./cosmic-signature-game-main-prize/cosmic-signature-game-main-prize-helpers.js");
 const { State } = require("./live-blockchain-tests-state.js");
 
 // #endregion
@@ -96,6 +99,7 @@ function prepare1() {
 
 function prepare2() {
 	console.info(`${nodeOsModule.EOL}hre.network.name = ${hre.network.name}`);
+	hackApplyGasMultiplierIfNeeded();
 	createAccountSigners();
 }
 
@@ -146,6 +150,7 @@ async function main() {
 	await validateCosmicSignatureContractStatesIfNeeded();
 	await configureCosmicSignatureContractsIfNeeded();
 	await donateEthToCosmicSignatureGameIfNeeded();
+	await playCosmicSignatureGameIfNeeded();
 
 
 	// todo-0 Write more code.
@@ -306,6 +311,8 @@ async function configureCosmicSignatureContractsIfNeeded() {
 		return;
 	}
 	console.info(`${nodeOsModule.EOL}Configuring Cosmic Signature contracts.`);
+	await configureCosmicSignatureToken(state.contracts.cosmicSignatureToken, state.bidder1Signer, state.bidder2Signer, state.bidder3Signer, state.contracts.prizesWalletAddress);
+	await configureRandomWalkNft(state.contracts.randomWalkNft, state.bidder1Signer, state.bidder2Signer, state.bidder3Signer, state.contracts.prizesWalletAddress);
 	await configurePrizesWallet(state.contracts.prizesWallet, state.ownerSigner, configuration.prizesWallet.timeoutDurationToWithdrawPrizes);
 	await configureMarketingWallet(state.contracts.marketingWallet, state.ownerSigner, state.treasurerSigner.address);
 	await configureCosmicSignatureGame(
@@ -330,6 +337,57 @@ async function donateEthToCosmicSignatureGameIfNeeded() {
 	}
 	console.info(`${nodeOsModule.EOL}Donating ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
 	await donateEthToCosmicSignatureGame(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, state.bidder3Signer, configuration.ethDonationToCosmicSignatureGame.amountInEth);
+}
+
+// #endregion
+// #region `playCosmicSignatureGameIfNeeded`
+
+async function playCosmicSignatureGameIfNeeded() {
+	// console.info(`${nodeOsModule.EOL}Test 1.`);
+	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
+	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
+	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
+	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
+	// console.info("End Test 1.");
+
+	if ( ! configuration.playCosmicSignatureGame ) {
+		console.info(`${nodeOsModule.EOL}We are configured to not play Cosmic Signature Game.`);
+		return;
+	}
+	console.info(`${nodeOsModule.EOL}Playing Cosmic Signature Game.`);
+	const donatedTokensToClaim_ = [];
+	const donatedNftIndexes_ = [];
+	try {
+		for ( let roundCounter_ = 0; roundCounter_ < configuration.cosmicSignatureGamePlaying.numRoundsToPlay; ++ roundCounter_ ) {
+			// Reducing the bidding round's first ETH bid price.
+			// This would do nothing in case we already did this, then we crashed, and then the user restarted us.
+			await ensureDurationElapsedSinceRoundActivationIsAtLeast(state.contracts.cosmicSignatureGameProxy, state.ownerSigner, configuration.cosmicSignatureGame.ethDutchAuctionDuration * 2n / 3n);
+
+			await bidWithEth(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer);
+			const randomWalkNft1Id_ = await mintRandomWalkNft(state.contracts.randomWalkNft, state.bidder2Signer);
+			await bidWithEthPlusRandomWalkNft(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, randomWalkNft1Id_);
+			await bidWithEthAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.randomWalkNftAddress, randomWalkNft1Id_, donatedNftIndexes_);
+			const randomWalkNft2Id_ = await mintRandomWalkNft(state.contracts.randomWalkNft, state.bidder3Signer);
+			await bidWithEthPlusRandomWalkNftAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder3Signer, randomWalkNft2Id_, state.contracts.randomWalkNftAddress, randomWalkNft2Id_);
+
+			// Reducing CST bid price.
+			await waitUntilCstDutchAuctionElapsedDurationIsAtLeast(state.contracts.cosmicSignatureGameProxy, configuration.cosmicSignatureGame.cstDutchAuctionDuration * 2n / 3n);
+
+			await bidWithCstAndDonateToken(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.cosmicSignatureToken, 123, donatedTokensToClaim_);
+			await waitUntilMainPrizeTime(state.contracts.cosmicSignatureGameProxy);
+			await claimMainPrize(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer);
+		}
+	} finally {
+		try {
+			await withdrawEverything(state.contracts.prizesWallet, state.bidder1Signer, true, [], []);
+		} finally {
+			try {
+				await withdrawEverything(state.contracts.prizesWallet, state.bidder2Signer, true, donatedTokensToClaim_, donatedNftIndexes_);
+			} finally {
+				await withdrawEverything(state.contracts.prizesWallet, state.bidder3Signer, true, [], []);
+			}
+		}
+	}
 }
 
 // #endregion

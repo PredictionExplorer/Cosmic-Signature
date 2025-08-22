@@ -16,7 +16,16 @@ async function configurePrizesWallet(prizesWallet_, ownerSigner_, timeoutDuratio
 	await waitForTransactionReceipt(prizesWallet_.connect(ownerSigner_).setTimeoutDurationToWithdrawPrizes(timeoutDurationToWithdrawPrizes_));
 }
 
+async function withdrawEverything(prizesWallet_, bidderSigner_, withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_) {
+	console.info("withdrawEverything");
+	const timeStamp1_ = performance.now();
+	await waitForTransactionReceipt(prizesWallet_.connect(bidderSigner_).withdrawEverything(withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_));
+	const timeStamp2_ = performance.now();
+	console.info(`Took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
+}
+
 module.exports = {
 	validatePrizesWallet,
 	configurePrizesWallet,
+	withdrawEverything,
 };

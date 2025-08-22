@@ -15,7 +15,10 @@ const configuration =
 					// "",
 					// "hardhat",
 					"localhost",
+
+					// // Issue. This is not well supported, because of Comment-202509215.
 					// "sepolia",
+
 					// "arbitrumSepolia",
 					// "arbitrumOne",
 			},
@@ -77,24 +80,28 @@ const configuration =
 			// Configurations to use when configuring newly deployed Cosmic Signature contracts.
 			// todo-0 Should I move these into a child object?
 			prizesWallet: {
-				timeoutDurationToWithdrawPrizes: 1n * 60n,
+				timeoutDurationToWithdrawPrizes: 7n,
 			},
 			cosmicSignatureGame: {
-				delayDurationBeforeRoundActivation: 1n * 60n / 2n,
+				delayDurationBeforeRoundActivation: 4n,
 				// ethDutchAuctionDurationDivisor: ???,
-				ethDutchAuctionDuration: 3n * 60n / 2n,
+				ethDutchAuctionDuration: 18n,
 				// cstDutchAuctionDurationDivisor: ???,
-				cstDutchAuctionDuration: 1n * 60n,
+				cstDutchAuctionDuration: 15n,
 				// initialDurationUntilMainPrizeDivisor: ???,
-				initialDurationUntilMainPrize: 2n * 60n,
+				initialDurationUntilMainPrize: 7n,
 				// mainPrizeTimeIncrementInMicroSeconds: ???,
-				mainPrizeTimeIncrement: 1n * 60n / 3n,
-				timeoutDurationToClaimMainPrize: 1n * 60n,
+				mainPrizeTimeIncrement: 3n,
+				timeoutDurationToClaimMainPrize: 4n,
 			},
 
 			donateEthToCosmicSignatureGame: true,
 			ethDonationToCosmicSignatureGame: {
 				amountInEth: 0.00000000123,
+			},
+			playCosmicSignatureGame: true,
+			cosmicSignatureGamePlaying: {
+				numRoundsToPlay: 3,
 			},
 		}
 	);
