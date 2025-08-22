@@ -140,7 +140,7 @@ describe("MainPrize", function () {
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize());
 
 		// const timeStamp2_ = performance.now();
-		// console.info(`202506249 ${timeStamp2_ - timeStamp1_}`);
+		// console.info(`202506249 ${(timeStamp2_ - timeStamp1_).toFixed(1)}`);
 	});
 
 	// Issue. This test doesn't test CST prizes.
