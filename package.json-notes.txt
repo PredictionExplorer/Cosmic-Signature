@@ -1,3 +1,4 @@
 @ ToDo-202409098-1 applies at least in part to the "hardhat" package version.
 
-@ When upgrading to a new Hardhat version, check if we still need all the hacks near Comment-202508265.
+@ When upgrading to a new Hardhat version, check if we still need all the hacks near Comment-202508265
+  and Comment-202509185.
