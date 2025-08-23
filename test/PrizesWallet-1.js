@@ -170,7 +170,7 @@ describe("PrizesWallet-1", function () {
 		// #endregion
 		// #region `prepareNextRound_`
 
-		const prepareNextRound_ = async () => {
+		const prepareNextRound_ = /*async*/ () => {
 			mainPrizeBeneficiaryAddresses_.push(hre.ethers.ZeroAddress);
 			roundTimeoutTimesToWithdrawPrizes_.push(0n);
 			donatedTokens_.push(hre.ethers.ZeroAddress);
