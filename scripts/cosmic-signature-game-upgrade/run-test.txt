@@ -1,25 +1,29 @@
+Note: this document is legacy. Parts of still make some sense, but it does need a rewrite.
 
 Execute the following commands:
 
-	cd [to this directory]
+	Open a terminal and:
 	
-	#in another terminal run:
-	npx hardhat node
+	cd scripts
+	./hardhat-node.bash
 
-	#in another terminal run all the remaining commands:
+	Open one more terminal and:
+
+	cd <this-folder>
+		
 	# todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
 	# (previously set switchToRuntimeMode=false and donateEthToCosmicSignatureGame=false to get maintenance mode with no transactions)
 	npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath deploy-local.json --network localhost
 
-	#deploy new proxy implementation contract
+	# Deploy new proxy implementation contract.
 	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./deploy-new-logic.js --network localhost
 
-	#the new CosmicSignatureGame contract uses new state variable, timesEthBidPrice, the default value is set at deploy-new-logic.js but
-	#you can change it running this script (note: only in maintenance mode!)) :
+	# The new `CosmicSignatureGame` contract uses new state variable, `timesEthBidPrice`, the default value is set at "deploy-new-logic.js" but
+	# you can change it running this script (note: only in maintenance mode!)) :
 	# todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
 	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./set-times-eth-bid-price.js --network localhost
 
-	#now we can use new bidding feature (bid can be as high as you want but bigger than current nextEthBidPrice * timesEthBidPrice)
+	# Now we can use new bidding feature (bid can be as high as you want but bigger than current `nextEthBidPrice * timesEthBidPrice`).
 	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./bid-with-eth-open-bid.js --network localhost
 
 Validation: bid operation should not fail (i.e. revert) , in etl/cmd/cosmicgme/scripts run ./cginfo script to dump state variables and check the bid price
