@@ -1,7 +1,7 @@
-/// [Comment-202509229]
-/// Issue. These are legacy functions that I preserved for now.
-/// Consider deleting them.
-/// [/Comment-202509229]
+// [Comment-202509229]
+// Issue. These are legacy functions that I preserved for now.
+// Consider deleting them.
+// [/Comment-202509229]
 
 // See also: "../src/Helpers.js".
 

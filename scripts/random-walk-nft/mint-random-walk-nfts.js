@@ -1,6 +1,6 @@
-/// Comment-202509229 applies.
+// Comment-202509229 applies.
 
-"use strict";
+// "use strict";
 
 // const hre = require("hardhat");
 // const { getCosmicSignatureGameContract } = require("../helpers.js");
