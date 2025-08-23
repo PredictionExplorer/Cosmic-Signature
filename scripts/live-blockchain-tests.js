@@ -30,11 +30,11 @@ const { validateStakingWalletCosmicSignatureNft } = require("./staking-wallet-co
 const { validateMarketingWallet, configureMarketingWallet } = require("./marketing-wallet/marketing-wallet-helpers.js");
 const { validateCharityWallet } = require("./charity-wallet/charity-wallet-helpers.js");
 const { validateCosmicSignatureDao } = require("./cosmic-signature-dao/cosmic-signature-dao-helpers.js");
-const { validateCosmicSignatureGameState, configureCosmicSignatureGame } = require("./cosmic-signature-game-after-deployment/cosmic-signature-game-after-deployment-helpers.js");
-const { donateEthToCosmicSignatureGame } = require("./cosmic-signature-game-eth-donations/helpers.js");
-const { ensureDurationElapsedSinceRoundActivationIsAtLeast, waitUntilCstDutchAuctionElapsedDurationIsAtLeast, bidWithEth, bidWithEthPlusRandomWalkNft, bidWithEthAndDonateNft, bidWithEthPlusRandomWalkNftAndDonateNft, bidWithCstAndDonateToken } = require("./cosmic-signature-game-bidding/cosmic-signature-game-bidding-helpers.js");
+const { validateCosmicSignatureGameState, configureCosmicSignatureGame } = require("./cosmic-signature-game/after-deployment-helpers.js");
+const { donateEthToCosmicSignatureGame } = require("./cosmic-signature-game/eth-donations-helpers.js");
+const { ensureDurationElapsedSinceRoundActivationIsAtLeast, waitUntilCstDutchAuctionElapsedDurationIsAtLeast, bidWithEth, bidWithEthPlusRandomWalkNft, bidWithEthAndDonateNft, bidWithEthPlusRandomWalkNftAndDonateNft, bidWithCstAndDonateToken } = require("./cosmic-signature-game/bidding-helpers.js");
+const { waitUntilMainPrizeTime, claimMainPrize } = require("./cosmic-signature-game/main-prize-helpers.js");
 const { finalizeTesting } = require("./selfdestructible-cosmic-signature-game/selfdestructible-cosmic-signature-game-helpers.js");
-const { waitUntilMainPrizeTime, claimMainPrize } = require("./cosmic-signature-game-main-prize/cosmic-signature-game-main-prize-helpers.js");
 const { State } = require("./live-blockchain-tests-state.js");
 
 // #endregion
