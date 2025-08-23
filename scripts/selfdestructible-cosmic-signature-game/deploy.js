@@ -1,7 +1,7 @@
 // // Comment-202509229 applies.
 
 // // Invocation example:
-// // PRIVKEY=0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba npx hardhat run scripts/selfdestructible-cosmic-signature-game/deploy-selfdestructible-cosmic-signature-game.js
+// // PRIVKEY=0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba npx hardhat run scripts/selfdestructible-cosmic-signature-game/deploy.js
 
 // "use strict";
 
