@@ -16,9 +16,9 @@ Execute the following commands:
 	npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath deploy-local.json --network localhost
 
 	# Deploy new proxy implementation contract.
-	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./deploy-new-logic.js --network localhost
+	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./upgrade.js --network localhost
 
-	# The new `CosmicSignatureGame` contract uses new state variable, `timesEthBidPrice`, the default value is set at "deploy-new-logic.js" but
+	# The new `CosmicSignatureGame` contract uses new state variable, `timesEthBidPrice`, the default value is set at "upgrade.js" but
 	# you can change it running this script (note: only in maintenance mode!)) :
 	# todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
 	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./set-times-eth-bid-price.js --network localhost
