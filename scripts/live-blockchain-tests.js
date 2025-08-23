@@ -34,7 +34,7 @@ const { validateCosmicSignatureGameState, configureCosmicSignatureGame } = requi
 const { donateEthToCosmicSignatureGame } = require("./cosmic-signature-game/eth-donations-helpers.js");
 const { ensureDurationElapsedSinceRoundActivationIsAtLeast, waitUntilCstDutchAuctionElapsedDurationIsAtLeast, bidWithEth, bidWithEthPlusRandomWalkNft, bidWithEthAndDonateNft, bidWithEthPlusRandomWalkNftAndDonateNft, bidWithCstAndDonateToken } = require("./cosmic-signature-game/bidding-helpers.js");
 const { waitUntilMainPrizeTime, claimMainPrize } = require("./cosmic-signature-game/main-prize-helpers.js");
-const { finalizeTesting } = require("./selfdestructible-cosmic-signature-game/selfdestructible-cosmic-signature-game-helpers.js");
+const { finalizeTesting } = require("./selfdestructible-cosmic-signature-game/helpers.js");
 const { State } = require("./live-blockchain-tests-state.js");
 
 // #endregion
