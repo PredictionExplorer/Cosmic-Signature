@@ -29,6 +29,7 @@ The call to the `bidWithEth` method must now be done in a new way:
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
     let nextEthBidPrice = await cosmicSignatureGameProxy.getNextEthBidPrice({blockTag: "pending",});
     // todo-1 Revisit this `gasLimit` thing.
+    // todo-1 It appears that we need to call `waitForTransactionReceipt` here.
     await cosmicSignatureGameProxy.connect(testingAcct).bidWithEth(params, {value: nextEthBidPrice * multiplier, gasLimit: 30_000_000,});
 
 In this example the `multiplier` variable is the `timesEthBidPrice` state variable (discussed above) which was read from the contract prior to execution of this code.

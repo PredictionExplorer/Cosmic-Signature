@@ -16,6 +16,7 @@
 // 	// }
 // 	// let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
+// 	// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
 // 	await cosmicSignatureGame.setTimesEthBidPrice(20n);
 // }
 

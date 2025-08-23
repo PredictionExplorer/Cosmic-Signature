@@ -16,6 +16,7 @@
 // 	// }
 // 	// let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract("SelfDestructibleCosmicSignatureGame");
+// 	// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
 // 	await cosmicSignatureGame.finalizeTesting();
 // }
 

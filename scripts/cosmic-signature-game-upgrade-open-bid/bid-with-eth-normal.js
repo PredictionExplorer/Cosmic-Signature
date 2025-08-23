@@ -32,6 +32,7 @@
 // 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	console.info("nextEthBidPrice before:", nextEthBidPrice);
 // 	// todo-1 Revisit this `gasLimit` thing.
+// 	// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
 // 	await cosmicSignatureGame.connect(testingAcct).bidWithEth(/*params*/ -1n, false, "bid test", {value: nextEthBidPrice, gasLimit: 30_000_000,});
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	console.info("nextEthBidPrice after:", nextEthBidPrice);

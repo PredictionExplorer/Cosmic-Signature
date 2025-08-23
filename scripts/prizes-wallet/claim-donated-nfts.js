@@ -105,6 +105,7 @@
 // 	if (privKey.length > 0) {
 // 		if (paramList.length > 0) {
 // 			console.info("Sending claimMany transaction");
+// 			// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
 // 			await cosmicSignatureGame.connect(testingAcct).claimManyDonatedNfts(paramList);
 // 		}
 // 	}
