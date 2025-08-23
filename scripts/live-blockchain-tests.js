@@ -23,7 +23,7 @@ const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPadde
 const { runDeployCosmicSignatureContracts } = require("./cosmic-signature-contracts-deployment/helpers.js");
 const { validateCosmicSignatureToken, configureCosmicSignatureToken } = require("./cosmic-signature-token/cosmic-signature-token-helpers.js");
 const { configureRandomWalkNft, mintRandomWalkNft } = require("./random-walk-nft/random-walk-nft-helpers.js");
-const { validateCosmicSignatureNft } = require("./cosmic-signature-nft/cosmic-signature-nft-helpers.js");
+const { validateCosmicSignatureNft } = require("./cosmic-signature-nft/helpers.js");
 const { validatePrizesWallet, configurePrizesWallet, withdrawEverything } = require("./prizes-wallet/prizes-wallet-helpers.js");
 const { validateStakingWalletRandomWalkNft } = require("./staking-wallet-random-walk-nft/staking-wallet-random-walk-nft-helpers.js");
 const { validateStakingWalletCosmicSignatureNft } = require("./staking-wallet-cosmic-signature-nft/staking-wallet-cosmic-signature-nft-helpers.js");
