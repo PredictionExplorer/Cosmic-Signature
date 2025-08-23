@@ -4,7 +4,7 @@
 
 // const hre = require("hardhat");
 // const { getCosmicSignatureGameContract } = require("../helpers.js");
-// const { mintRandomWalkNft } = require("./random-walk-nft-helpers.js");
+// const { mintRandomWalkNft } = require("./helpers.js");
 
 // const numRWalkToMint = 4;
 
