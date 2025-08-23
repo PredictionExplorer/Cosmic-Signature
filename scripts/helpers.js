@@ -1,5 +1,5 @@
 // [Comment-202509229]
-// Issue. These are legacy functions that I preserved for now.
+// Issue. These are legacy functions that I stopped short of deleting for now.
 // Consider deleting them.
 // [/Comment-202509229]
 
