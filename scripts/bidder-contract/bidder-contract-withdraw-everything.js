@@ -1,18 +1,20 @@
-"use strict";
+// Comment-202509229 applies.
 
-// const { expect } = require("chai");
-// const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { getBidderContract } = require("./helpers.js");
+// "use strict";
 
-async function main() {
-	const bidderContract = await getBidderContract();
-	await waitForTransactionReceipt(bidderContract.withdrawEverything());
-}
+// // const { expect } = require("chai");
+// // const hre = require("hardhat");
+// const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+// const { getBidderContract } = require("../helpers.js");
 
-main()
-	.then(() => (process.exit(0)))
-	.catch((errorObject_) => {
-		console.error(errorObject_);
-		process.exit(1);
-	});
+// async function main() {
+// 	const bidderContract = await getBidderContract();
+// 	await waitForTransactionReceipt(bidderContract.withdrawEverything());
+// }
+
+// main()
+// 	.then(() => (process.exit(0)))
+// 	.catch((errorObject_) => {
+// 		console.error(errorObject_);
+// 		process.exit(1);
+// 	});
