@@ -17,7 +17,9 @@ async function mintRandomWalkNft(randomWalkNft_, minterSigner_) {
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	let randomWalkNftMintEventLog_ = transactionReceipt_.logs[1];
 	let randomWalkNftMintEventParsedLog_ = randomWalkNft_.interface.parseLog(randomWalkNftMintEventLog_);
-	return randomWalkNftMintEventParsedLog_.args.tokenId;
+	let nftId_ = randomWalkNftMintEventParsedLog_.args.tokenId;
+	console.info(`Minted a Random Walk NFT with Id = ${nftId_}.`);
+	return nftId_;
 }
 
 module.exports = {
