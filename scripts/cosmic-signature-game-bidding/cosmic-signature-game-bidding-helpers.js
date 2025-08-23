@@ -191,12 +191,15 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 			break;
 		}
 	}
+	const timeStamp1_ = performance.now();
 	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
 			.bidWithCstAndDonateToken(nextCstBidPrices_[0], "bidWithCstAndDonateToken", donatedTokenAddress_, donatedTokenAmount_);
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
+	const timeStamp2_ = performance.now();
+	console.info(`Took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
