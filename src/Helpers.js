@@ -292,7 +292,7 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 	// 	);
 	// }
 
-	return transactionReceipt_
+	return transactionReceipt_;
 }
 
 // #endregion

@@ -81,6 +81,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
 			.bidWithEth(randomWalkNftId_, "bidWithEthPlusRandomWalkNft", {value: nextEthPlusRandomWalkNftBidPrices_[0],});
+	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
 		nextEthPlusRandomWalkNftBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[nextEthBidPriceIndex_]);
@@ -88,7 +89,6 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 			break;
 		}
 	}
-	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
@@ -154,6 +154,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
 			.bidWithEthAndDonateNft(randomWalkNftId_, "bidWithEthPlusRandomWalkNftAndDonateNft", donatedNftAddress_, donatedNftId_, {value: nextEthPlusRandomWalkNftBidPrices_[0],});
+	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
 		nextEthPlusRandomWalkNftBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[nextEthBidPriceIndex_]);
@@ -161,7 +162,6 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 			break;
 		}
 	}
-	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);

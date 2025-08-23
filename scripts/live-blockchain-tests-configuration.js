@@ -108,9 +108,8 @@ const configuration =
 				// The first one shall be owned by bidder 2, the second by bidder 3, the third again by bidder 2, and so on.
 				// When we run out of NFTs you have provided we will mint more.
 				randomWalkNftIds:
-					// [],
-					// todo-0 testing
-					[5n, 0n,],
+					[],
+					// [5n, 0n,],
 
 				numRoundsToPlay: 3,
 			},
