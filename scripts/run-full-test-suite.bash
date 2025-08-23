@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# todo-1 This is a legacy script. Delete it.
+# todo-1 This is a legacy script. Is it OK to delete it?
 
 # todo-1 Some day, someone should implement better error handling in this script.
 
