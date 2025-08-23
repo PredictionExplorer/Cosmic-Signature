@@ -46,9 +46,9 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Observe the newly created "scripts/temp/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;.json" file. It contains addresses of all deployed contracts. Save it to a more reliable location, but leave the original in-place, so that other scripts could use it.
 
-- Only if you are delaing with a mainnet or a testnet, execute "scripts/run-register-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
+- Only if you are dealing with a mainnet or a testnet, execute "scripts/run-register-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
 
-- Only if you are delaing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
+- Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
 
 #### Caveats
 
