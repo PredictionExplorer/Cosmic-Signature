@@ -1,6 +1,6 @@
 ### Note
 
-This document is old, although it's still mostly correct.
+This document is old, although it's still to some degree correct.
 
 ### "BiddingOpenBid.sol" and "CosmicSignatureGameOpenBid.sol" as an example of `CosmicSignatureGame` upgrade
 
