@@ -33,6 +33,7 @@ const { validateCosmicSignatureDao } = require("./cosmic-signature-dao/cosmic-si
 const { validateCosmicSignatureGameState, configureCosmicSignatureGame } = require("./cosmic-signature-game-after-deployment/cosmic-signature-game-after-deployment-helpers.js");
 const { donateEthToCosmicSignatureGame } = require("./cosmic-signature-game-eth-donations/helpers.js");
 const { ensureDurationElapsedSinceRoundActivationIsAtLeast, waitUntilCstDutchAuctionElapsedDurationIsAtLeast, bidWithEth, bidWithEthPlusRandomWalkNft, bidWithEthAndDonateNft, bidWithEthPlusRandomWalkNftAndDonateNft, bidWithCstAndDonateToken } = require("./cosmic-signature-game-bidding/cosmic-signature-game-bidding-helpers.js");
+const { finalizeTesting } = require("./selfdestructible-cosmic-signature-game/selfdestructible-cosmic-signature-game-helpers.js");
 const { waitUntilMainPrizeTime, claimMainPrize } = require("./cosmic-signature-game-main-prize/cosmic-signature-game-main-prize-helpers.js");
 const { State } = require("./live-blockchain-tests-state.js");
 
@@ -67,7 +68,12 @@ main()
 // #region `prepare1`
 
 function prepare1() {
+	validateConfiguration();
+
 	// Comment-202509132 relates and/or applies.
+	// [Comment-202509244]
+	// Does any of this logic belong to `validateConfiguration`? Regardless, let's leave it alone.
+	// [/Comment-202509244]
 	{
 		let hardhatModeCodeAsString_ = process.env.HARDHAT_MODE_CODE ?? "";
 		if (hardhatModeCodeAsString_.length <= 0) {
@@ -92,6 +98,19 @@ function prepare1() {
 	}
 
 	console.info();
+}
+
+// #endregion
+// #region `validateConfiguration`
+
+/// Comment-202509244 relates.
+function validateConfiguration() {
+	// Comment-202509242 relates and/or applies.
+	if ( configuration.finalizeTesting &&
+	     configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName != "SelfDestructibleCosmicSignatureGame"
+	) {
+		throw new Error("In the configuration, finalizeTesting is true, but cosmicSignatureContractsDeployment.cosmicSignatureGameContractName is not \"SelfDestructibleCosmicSignatureGame\".");
+	}
 }
 
 // #endregion
@@ -151,6 +170,7 @@ async function main() {
 	await configureCosmicSignatureContractsIfNeeded();
 	await donateEthToCosmicSignatureGameIfNeeded();
 	await playCosmicSignatureGameIfNeeded();
+	await finalizeTestingIfNeeded();
 
 
 	// todo-0 Write more code.
@@ -388,6 +408,16 @@ async function playCosmicSignatureGameIfNeeded() {
 			}
 		}
 	}
+}
+
+// #endregion
+// #region `finalizeTestingIfNeeded`
+
+async function finalizeTestingIfNeeded() {
+	if ( ! configuration.finalizeTesting ) {
+		return;
+	}
+	await finalizeTesting(state.contracts.cosmicSignatureGameProxy, state.ownerSigner);
 }
 
 // #endregion

@@ -32,7 +32,9 @@ const configuration =
 			// Configuration of our production (as opposed to testing) contracts deployment.
 			cosmicSignatureContractsDeployment: {
 				cosmicSignatureGameContractName:
+					// Comment-202509242 relates.
 					"SelfDestructibleCosmicSignatureGame",
+
 					// "SpecialCosmicSignatureGame",
 					// "CosmicSignatureGame",
 
@@ -103,6 +105,13 @@ const configuration =
 			cosmicSignatureGamePlaying: {
 				numRoundsToPlay: 3,
 			},
+
+			// [Comment-202509242]
+			// At the end, call `SelfDestructibleCosmicSignatureGame.finalizeTesting`.
+			// For this to work, `cosmicSignatureContractsDeployment.cosmicSignatureGameContractName`
+			// must be "SelfDestructibleCosmicSignatureGame".
+			// [/Comment-202509242]
+			finalizeTesting: true,
 		}
 	);
 
