@@ -44,6 +44,7 @@ class State {
 
 	/** @type {object} */
 	contracts;
+	nextRandomWalkNftIndex = 0;
 
 	constructor() {
 		// Doing nothing.

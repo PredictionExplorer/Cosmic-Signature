@@ -68,6 +68,10 @@ main()
 // #region `prepare1`
 
 function prepare1() {
+	// process.on("unhandledRejection", (reason_, promise_) => {
+	// 	console.error("Unhandled rejection from:", promise_, "\nReason:", reason_);
+	// });
+
 	validateConfiguration();
 
 	// Comment-202509132 relates and/or applies.
@@ -162,20 +166,19 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 // #region `main`
 
 async function main() {
-	// todo-0 print new lines as needed
-	// await hre.run("compile");
-	await createCosmicSignatureContracts(await runDeployCosmicSignatureContractsIfNeeded());
-	await fundAccountsWithEthIfNeeded();
-	await validateCosmicSignatureContractStatesIfNeeded();
-	await configureCosmicSignatureContractsIfNeeded();
-	await donateEthToCosmicSignatureGameIfNeeded();
-	await playCosmicSignatureGameIfNeeded();
-	await finalizeTestingIfNeeded();
-
-
-	// todo-0 Write more code.
-
-	console.info(`${nodeOsModule.EOL}Done.`);
+		// todo-0 print new lines as needed
+		// await hre.run("compile");
+		await createCosmicSignatureContracts(await runDeployCosmicSignatureContractsIfNeeded());
+		await fundAccountsWithEthIfNeeded();
+		await validateCosmicSignatureContractStatesIfNeeded();
+		await configureCosmicSignatureContractsIfNeeded();
+		await donateEthToCosmicSignatureGameIfNeeded();
+		try {
+			await playCosmicSignatureGameIfNeeded();
+		} finally {
+			await finalizeTestingIfNeeded();
+		}
+		console.info(`${nodeOsModule.EOL}Done.`);
 }
 
 // #endregion
@@ -384,10 +387,10 @@ async function playCosmicSignatureGameIfNeeded() {
 			await ensureDurationElapsedSinceRoundActivationIsAtLeast(state.contracts.cosmicSignatureGameProxy, state.ownerSigner, configuration.cosmicSignatureGame.ethDutchAuctionDuration * 2n / 3n);
 
 			await bidWithEth(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer);
-			const randomWalkNft1Id_ = await mintRandomWalkNft(state.contracts.randomWalkNft, state.bidder2Signer);
+			const randomWalkNft1Id_ = await getRandomWalkNft(state.bidder2Signer);
 			await bidWithEthPlusRandomWalkNft(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, randomWalkNft1Id_);
 			await bidWithEthAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.randomWalkNftAddress, randomWalkNft1Id_, donatedNftIndexes_);
-			const randomWalkNft2Id_ = await mintRandomWalkNft(state.contracts.randomWalkNft, state.bidder3Signer);
+			const randomWalkNft2Id_ = await getRandomWalkNft(state.bidder3Signer);
 			await bidWithEthPlusRandomWalkNftAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder3Signer, randomWalkNft2Id_, state.contracts.randomWalkNftAddress, randomWalkNft2Id_);
 
 			// Reducing CST bid price.
@@ -399,15 +402,35 @@ async function playCosmicSignatureGameIfNeeded() {
 		}
 	} finally {
 		try {
-			await withdrawEverything(state.contracts.prizesWallet, state.bidder1Signer, true, [], []);
+			console.info();
 		} finally {
 			try {
-				await withdrawEverything(state.contracts.prizesWallet, state.bidder2Signer, true, donatedTokensToClaim_, donatedNftIndexes_);
+				await withdrawEverything(state.contracts.prizesWallet, state.bidder1Signer, true, [], []);
 			} finally {
-				await withdrawEverything(state.contracts.prizesWallet, state.bidder3Signer, true, [], []);
+				try {
+					await withdrawEverything(state.contracts.prizesWallet, state.bidder2Signer, true, donatedTokensToClaim_, donatedNftIndexes_);
+				} finally {
+					await withdrawEverything(state.contracts.prizesWallet, state.bidder3Signer, true, [], []);
+				}
 			}
 		}
 	}
+}
+
+// #endregion
+// #region `getRandomWalkNft`
+
+async function getRandomWalkNft(minterSigner_) {
+	/** @type {bigint} */
+	let randomWalkNftId_;
+	if (state.nextRandomWalkNftIndex < configuration.cosmicSignatureGamePlaying.randomWalkNftIds.length) {
+		randomWalkNftId_ = configuration.cosmicSignatureGamePlaying.randomWalkNftIds[state.nextRandomWalkNftIndex];
+		++ state.nextRandomWalkNftIndex;
+		console.info(`Using a Random Walk NFT with Id = ${randomWalkNftId_}.`);
+	} else {
+		randomWalkNftId_ = await mintRandomWalkNft(state.contracts.randomWalkNft, minterSigner_);
+	}
+	return randomWalkNftId_;
 }
 
 // #endregion
