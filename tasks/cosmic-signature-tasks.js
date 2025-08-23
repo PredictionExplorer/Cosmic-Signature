@@ -193,9 +193,9 @@ task("register-cosmic-signature-contracts", "Verifies and registers deployed Cos
 		{
 			const regExpPattern =
 				"^\\s*Verification completed with the following errors\\.\\s*" +
-				"Error 1\: Failed to verify ERC1967Proxy contract at " +
+				"Error 1\\: Failed to verify ERC1967Proxy contract at " +
 				deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress +
-				"\: Already Verified\\s*$";
+				"\\: Already Verified\\s*$";
 			const regExp = new RegExp(regExpPattern, "s");
 			if ( ! regExp.test(errorObject.message) ) {
 				throw errorObject;
