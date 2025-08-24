@@ -224,7 +224,7 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 Sometimes (always?) Hardhat forgets to apply the configured `gasMultiplier`.
 This hack fixes that.
 This issue is said to have been fixed in Hardhat 3.
-todo-2 Are they going to fix the issue In Hardhat 2?
+todo-2 Are they going to fix the issue in Hardhat 2?
 Comment-202508265 relates.
 [/Comment-202509185]
 */
