@@ -502,6 +502,7 @@ const hardhatUserConfig = {
 			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
+			// todo-3 Is this URL still valid? MetaMask uses a different one.
 			url: "http://170.187.142.12:22545/",
 
 			// Comment-202509209 applies.
